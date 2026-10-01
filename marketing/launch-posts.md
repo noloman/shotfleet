@@ -12,7 +12,7 @@ Lead with the story (the bug it found), not the product.
 
 **Title:** My app's onboarding was broken in 4 languages and I only found out by automating store screenshots
 
-I ship a workout app in 18 languages. My "localized" App Store screenshots were the English set copied into every language folder, because my Maestro screenshot flow taps English buttons and couldn't run in German or Japanese.
+I ship a workout app in 18 languages. My first "localized" App Store screenshots were the English set copied into every language folder, because my Maestro screenshot flow taps English buttons and couldn't run in German or Japanese. Fixing that properly took about 630 lines of capture and compose scripts written for that one app.
 
 So I wrote a tool that rewrites the flow's English taps into each language using the strings compiled into the app ("Next" becomes Weiter, 次へ, İleri…), runs every language in parallel on simulators and emulators, and then reads each screenshot back to check it really shows that language.
 

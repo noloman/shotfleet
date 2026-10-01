@@ -140,7 +140,7 @@ checked 72 screenshots: <span class="ok">0 problems</span></pre>
   <section aria-labelledby="real">
     <p class="eyebrow">Real output · WOD Tracker</p>
     <h2 id="real">One flow, 18 languages, both stores.</h2>
-    <p class="lede">These came straight out of a run on a real app. Before shotfleet, its iOS listing had the same English screenshots copied into every language folder.</p>
+    <p class="lede">These came straight out of a run on a real app. Its first localized listing was the English set copied into every language folder. Fixing that by hand took about 630 lines of capture and compose scripts written for this one app.</p>
     <div class="shots">
       <figure><img src="img/ios_ja.jpg" alt="Train tab in Japanese, iPhone"><figcaption><span>ja · iOS</span><span class="tag">pass</span></figcaption></figure>
       <figure><img src="img/ios_ar.jpg" alt="Progress tab in Arabic, iPhone"><figcaption><span>ar · iOS</span><span class="tag">pass</span></figcaption></figure>
@@ -169,7 +169,7 @@ checked 72 screenshots: <span class="ok">0 problems</span></pre>
     <ol class="steps">
       <li><h3>Write the flow once, in English</h3><p>A normal Maestro flow: <code>tapOn: "Next"</code>, <code>takeScreenshot: 01_home</code>. Or point shotfleet at the flow you already have.</p></li>
       <li><h3>shotfleet translates it</h3><p>It reads the strings compiled into your <code>.app</code> or APK, so "Next" becomes <code>(Nächste|Weiter)</code> in German, <code>次へ</code> in Japanese. No accessibility IDs, no per-language copies.</p></li>
-      <li><h3>Every language runs at once</h3><p>Simulators and emulators at store sizes (1320×2868 for iPhone; 1080×1920, the tallest phone shape Google Play accepts), each set to one language, with a 9:41 status bar.</p></li>
+      <li><h3>Every language runs at once</h3><p>Simulators and emulators at store sizes (1320×2868 for iPhone, 1080×1920 for Android phones), each set to one language, with a 9:41 status bar.</p></li>
       <li><h3>Checked, then exported</h3><p>Each image is read back and compared to your app's strings. Passing languages go straight into fastlane's <code>deliver</code> and <code>supply</code> folders.</p></li>
     </ol>
   </section>

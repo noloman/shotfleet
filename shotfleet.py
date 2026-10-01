@@ -370,8 +370,7 @@ def wait_booted(emus, timeout=600):
         time.sleep(3)
 
 def android_pool(n, cfg):
-    """Boot n read-only copies of one AVD. The AVD is created on first use at 1080x1920:
-    Google Play rejects phone screenshots taller than 2:1, which rules out most modern phone shapes."""
+    """Boot n read-only copies of one AVD, created on first use as a 1080x1920 phone."""
     avd = cfg.get("avd", "shotfleet_android")
     avd_dir = Path.home() / ".android/avd" / f"{avd}.avd"
     if not avd_dir.exists():

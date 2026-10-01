@@ -3,6 +3,6 @@
 apk = "~/Developer/CrossfitTracker/.claude/worktrees/onboarding-goals-scroll/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
 package = "me.manulorenzo.crossfittracker.android.debug"
 flow = "android.yaml"
-avd = "shotfleet_android"   # created on first use at 1080x1920 (Play rejects phone screenshots taller than 2:1)
+avd = "shotfleet_android"   # created on first use at 1080x1920
 parallel = 4
 out = "out-android"
