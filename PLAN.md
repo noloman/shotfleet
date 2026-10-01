@@ -10,7 +10,7 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
 4. [x] `shotfleet export --fastlane <dir>`: copies screenshots into the folders fastlane `deliver`/`supply` upload from,
        mapping each locale to its App Store / Google Play code.
 5. [x] README: a 10-minute quickstart, how selectors get translated, what the checks catch, limits.
-6. [ ] (paused for macOS update) Verify end to end on CrossfitTracker: iOS 18/18, Android 18/18, export to a scratch folder.
+6. [x] Verify end to end on CrossfitTracker: iOS 18/18, Android 18/18, export to a scratch folder.
 
 ## Phase 2: validation assets (Claude drafts, Manu publishes)
 7. [x] Landing page draft (private preview): the problem, the CrossfitTracker demo grid, the bug it found,
@@ -24,8 +24,8 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
 ## Phase 4: only if Go
 11. [ ] License key check, Homebrew tap, release builds, support email, CI mode.
 
-## Status (paused 2026-10-01 for a macOS update)
-- Done: steps 1-5, landing page draft (`site/index.html`, not published yet), launch post drafts (`marketing/launch-posts.md`).
-- Step 6 interrupted: with other sessions building, Maestro's automatic `simctl diagnose` on failed flows
-  wedged CoreSimulator. Added a watchdog that kills those dumps and a memory-pressure guard; not yet verified.
-- Resume: run `.explore/verify.sh` on a quiet Mac, regenerate `site/img/` thumbnails, publish the page preview.
+## Status (2026-10-01)
+- Phases 1-2 done. Verified on CrossfitTracker: iOS 18/18 in 8m54s, Android 18/18 in 15m24s, all on the
+  first attempt, 0 check problems; both exported into fastlane deliver/supply folders.
+- Landing page draft: https://claude.ai/artifact/XzrP9PFaTXr8Lc8EcXu4aJ (private). Source in `site/`.
+- Next is Phase 3, Manu's: host the page, connect signups, post `marketing/launch-posts.md`.
