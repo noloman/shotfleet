@@ -1,6 +1,7 @@
 #!/bin/sh
-# Build the released shotfleet: one executable with Python and the OCR helper inside.
-#   packaging/build.sh                      -> dist/shotfleet (arm64), dist/shotfleet-<version>-macos-arm64.tar.gz
+# Build the released shotfleet: a folder with the executable, Python and the OCR helper inside (a folder starts in
+# ~0.15 s; a one-file build unpacks itself on every launch, ~1.2 s, measured).
+#   packaging/build.sh                      -> dist/shotfleet/ (arm64), dist/shotfleet-<version>-macos-arm64.tar.gz
 # Signing and notarization run when these are set (Manu's Apple Developer account):
 #   DEVELOPER_ID="Developer ID Application: Name (TEAMID)"   NOTARY_PROFILE=<xcrun notarytool store-credentials name>
 set -eu
@@ -11,16 +12,32 @@ rm -rf build dist && mkdir -p build
 swiftc -O ocr.swift -o build/ocr
 [ -d build/venv ] || python3 -m venv build/venv
 build/venv/bin/pip install --quiet --upgrade pyinstaller
-set -- --onefile --name shotfleet --add-binary "$PWD/build/ocr:." \
+set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
 if [ -n "${DEVELOPER_ID:-}" ]; then  # PyInstaller signs the bundled pieces too, with hardened-runtime entitlements
   codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" build/ocr
   set -- "$@" --codesign-identity "$DEVELOPER_ID" --osx-entitlements-file "$PWD/packaging/entitlements.plist"
 fi
 build/venv/bin/pyinstaller "$@" shotfleet.py
+if [ -n "${DEVELOPER_ID:-}" ]; then
+  # Re-sign every binary in the folder, deepest first (PyInstaller's signing leaves Homebrew's Python framework
+  # with a signature Apple's notary rejects), then the executable with the hardened-runtime entitlements.
+  find dist/shotfleet -type f | while read -r f; do file -b "$f" | grep -q Mach-O && echo "$f"; done \
+    | awk '{ print gsub("/", "/"), $0 }' | sort -rn | cut -d' ' -f2- | while read -r f; do
+      codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$f"
+    done
+  find dist/shotfleet -name "*.framework" -type d | while read -r fw; do
+    codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" "$fw"
+  done
+  codesign --force --options runtime --timestamp --entitlements packaging/entitlements.plist \
+    --sign "$DEVELOPER_ID" dist/shotfleet/shotfleet
+  codesign --verify --deep --strict dist/shotfleet/shotfleet
+fi
 tar -C dist -czf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz" shotfleet
 if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
-  (cd dist && ditto -c -k shotfleet "shotfleet-$VERSION-macos-$ARCH.zip")
-  xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait
+  (cd dist && ditto -c -k --keepParent shotfleet "shotfleet-$VERSION-macos-$ARCH.zip")
+  xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
+    | tee build/notary.log
+  grep -q "status: Accepted" build/notary.log || { echo "notarization failed: xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE" >&2; exit 1; }
 fi
 shasum -a 256 dist/*.tar.gz

@@ -59,6 +59,10 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
 - Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake licence API,
   and the real Lemon Squeezy API rejects unknown keys correctly.
 - Apple silicon only for now (Intel needs a universal2 Python for the build).
+- Folder build, not one file: starts in ~0.1 s instead of ~1.2 s (the one-file build unpacked itself on every launch;
+  measured 5 runs each). install.sh puts the folder in ~/Library/Application Support/shotfleet/app and links the
+  command onto the PATH. Every binary is re-signed (PyInstaller's own signing of Homebrew's Python framework was
+  rejected by Apple's notary); notarization accepted, quarantined install tested.
 - Gumroad as a second store: its licence keys work too (activation counts uses, at most 3 Macs; refunds and
   chargebacks are refused; weekly re-checks don't count). Tested against a fake API built from Gumroad's source.
 - Left for Manu: the Lemon Squeezy product, optionally the Gumroad one (LAUNCH.md). Then `packaging/go-live.sh`.
