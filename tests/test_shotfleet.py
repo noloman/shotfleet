@@ -819,5 +819,22 @@ class ExternalOcr(unittest.TestCase):
         self.assertEqual(sf.TESSERACT["he"], "heb"); self.assertEqual(sf.TESSERACT["el"], "ell")
 
 
+class Mcp(unittest.TestCase):
+    def test_protocol_handshake_tools_and_errors(self):
+        msgs = [{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
+                {"jsonrpc": "2.0", "method": "notifications/initialized"},
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+                {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "check", "arguments": {"folder": "/no/such"}}},
+                {"jsonrpc": "2.0", "id": 4, "method": "nope"}]
+        r = subprocess.run([sys.executable, str(Path(sf.__file__)), "mcp"], input="\n".join(map(json.dumps, msgs)) + "\n",
+                           capture_output=True, text=True, timeout=60)
+        out = {m["id"]: m for m in map(json.loads, r.stdout.splitlines())}
+        self.assertEqual(sorted(out), [1, 2, 3, 4])  # nothing for the notification, nothing else on stdout
+        self.assertEqual(out[1]["result"]["protocolVersion"], "2025-06-18")
+        self.assertEqual({t["name"] for t in out[2]["result"]["tools"]}, {"check", "doctor", "run"})
+        self.assertTrue(out[3]["result"]["isError"]); self.assertIn("no folder", out[3]["result"]["content"][0]["text"])
+        self.assertEqual(out[4]["error"]["code"], -32601)
+
+
 if __name__ == "__main__":
     unittest.main()

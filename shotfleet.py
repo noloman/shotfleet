@@ -1586,6 +1586,7 @@ def main(argv=None):
     ap.add_argument("--version", action="version", version=f"shotfleet {VERSION}")
     sub = ap.add_subparsers(dest="cmd", required=True, metavar="command")
     sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
+    sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
     p = sub.add_parser("init", help="write a starter config and flow for an app")
     p.add_argument("app", help="simulator .app or .apk"); p.add_argument("dir", nargs="?", default=".", help="where to write them (default: here)")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
@@ -1618,6 +1619,64 @@ def main(argv=None):
         return code
     return main_cmd(a)
 
+MCP_TOOLS = [
+    {"name": "check", "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
+     "no copies across languages, none missing, and the stores' size/count/transparency rules. Works on fastlane "
+     "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
+     "folders. Returns the report as JSON (problems, notes, screenshots).",
+     "inputSchema": {"type": "object", "required": ["folder"], "properties": {
+         "folder": {"type": "string", "description": "folder with the screenshots"},
+         "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
+         "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"}}}},
+    {"name": "doctor", "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet.",
+     "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "run", "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
+     "Boots simulators or emulators and takes minutes.",
+     "inputSchema": {"type": "object", "required": ["config"], "properties": {
+         "config": {"type": "string"}, "locales": {"type": "array", "items": {"type": "string"}}}}},
+]
+
+def mcp_call(name, args):
+    """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
+    import contextlib, io
+    log = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
+            if name == "doctor": code = cmd_doctor()
+            elif name == "check":
+                if not Path(args["folder"]).expanduser().is_dir(): raise Fail(f"no folder at {args['folder']}")
+                code = cmd_check(Path(args["folder"]).expanduser(), app=args.get("app"), strings_files=args.get("strings"),
+                                 report_dir=Path(args["folder"]).expanduser() / "shotfleet-check")
+            elif name == "run": code = cmd_run(args["config"], args.get("locales"))
+            else: return f"unknown tool {name}", True
+    except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:
+        return f"{e}\n\n{log.getvalue()[-2000:]}", True
+    report = json.loads(LAST_REPORT.read_text()) if name in ("check", "run") and LAST_REPORT else None
+    text = json.dumps({"exit": code, **report}, ensure_ascii=False) if report else log.getvalue()
+    return text, False
+
+def cmd_mcp():
+    """Model Context Protocol server on stdin/stdout (JSON-RPC, one message per line)."""
+    def send(msg): sys.__stdout__.write(json.dumps(msg, ensure_ascii=False) + "\n"); sys.__stdout__.flush()
+    for line in sys.stdin:
+        if not line.strip(): continue
+        try: msg = json.loads(line)
+        except ValueError: send({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}}); continue
+        mid, method, params = msg.get("id"), msg.get("method"), msg.get("params") or {}
+        if mid is None: continue  # notifications (initialized, cancelled)
+        if method == "initialize":
+            result = {"protocolVersion": params.get("protocolVersion", "2025-06-18"), "capabilities": {"tools": {}},
+                      "serverInfo": {"name": "shotfleet", "version": VERSION}}
+        elif method == "tools/list": result = {"tools": MCP_TOOLS}
+        elif method == "tools/call":
+            text, err = mcp_call(params.get("name"), params.get("arguments") or {})
+            result = {"content": [{"type": "text", "text": text}], "isError": err}
+        elif method == "ping": result = {}
+        else:
+            send({"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown method {method}"}}); continue
+        send({"jsonrpc": "2.0", "id": mid, "result": result})
+    return 0
+
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
 
@@ -1632,6 +1691,7 @@ def main_cmd(a):
 def main_dispatch(a):
     try:
         if a.cmd == "doctor": return cmd_doctor()
+        if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "init": return cmd_init(a.app, a.dir)
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
         if a.cmd == "check":

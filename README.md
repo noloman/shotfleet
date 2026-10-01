@@ -83,6 +83,12 @@ jobs:
             shotfleet-check/
 ```
 
+## With AI agents
+
+`shotfleet mcp` is an MCP server with `check`, `run` and `doctor` tools. Add it to Claude Code with
+`claude mcp add shotfleet -- shotfleet mcp`, or to any MCP client as the command `shotfleet mcp`. There is also a
+Claude Code skill in `skill/shotfleet/`.
+
 ## How it works
 
 | | iOS | Android |
