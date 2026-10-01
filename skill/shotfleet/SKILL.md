@@ -16,6 +16,7 @@ shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json > check.json
 
 - `<fastlane-dir>` holds `screenshots/<locale>/` (deliver) or `metadata/android/<locale>/images/phoneScreenshots/` (supply), or plain `<locale>/` folders.
 - `--app` is a simulator build (`Debug-iphonesimulator/*.app`) or an APK. Without it, only language detection is used.
+- Flutter / React Native / .NET / Unity apps: pass `--strings '<glob>'` (e.g. `'lib/l10n/*.arb'`, `'locales/*/translation.json'`) instead of `--app`; in a config, set `strings = "<glob>"`.
 - Exit codes: 0 clean, 1 problems, 2 setup error (stderr says what to fix).
 - Read `problems` in the JSON. Each one is `<locale>/<file>: <what>`. Report them to the user as-is and open `shotfleet-check/index.html` for the visual grid.
 - Pass the fastlane folder or the `screenshots/` folder itself; both work. If `shotfleet` isn't on PATH, use `python3 path/to/shotfleet.py`.

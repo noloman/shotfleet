@@ -106,6 +106,7 @@ runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 parallel = 4            # simulators
 out = "out"
 # locales = ["de", "ja"]   # default: every language the app ships
+# base_locale = "de"        # the language your flow is written in (default en)
 
 [android]                 # in its own file
 apk = "path/to/app-debug.apk"
@@ -114,6 +115,24 @@ flow = "flow.yaml"
 parallel = 4            # emulators
 out = "out"
 ```
+
+### Flutter, React Native, .NET MAUI, Unity and translation-platform exports
+
+These frameworks don't keep their translations in a form shotfleet can read inside the built app, so point it at the
+source files instead. Add `strings` to either section (globs, relative to the config):
+
+```toml
+strings = "lib/l10n/*.arb"                      # Flutter
+strings = "src/locales/*/translation.json"      # React Native / Expo with i18next
+strings = ["Resources/Strings/*.resx"]          # .NET MAUI
+```
+
+Supported: `.arb`, i18next/react-intl `.json` (nested keys, `_one`/`_other` plurals), `.xcstrings`, `.strings`,
+`.stringsdict`, Android/Compose `strings.xml`, XLIFF (`.xlf`, `.xliff`), `.resx`, gettext `.po`, `.properties`, and
+CSV with one column per language (Unity Localization, spreadsheets). ICU plurals (`{count, plural, one{…} other{…}}`)
+and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The language comes from `@@locale`, the file name
+(`app_de.arb`, `Resources.de.resx`) or the folder (`locales/de/`, `values-de/`). `check` takes the same files:
+`shotfleet check fastlane/ --strings 'lib/l10n/*.arb'`.
 
 ## Tips
 
@@ -132,7 +151,8 @@ out = "out"
 ## Limits
 
 - Needs Python 3.11 or newer. macOS's own `python3` is 3.9; `brew install python` gets a current one (shotfleet says so if you run it with an older one).
-- Strings are read from the build: `.strings` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` on Android, and Compose Multiplatform resources on both. Plurals (`.stringsdict`, `<plurals>`) aren't used yet. Flutter and React Native aren't supported yet.
+- Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
+- Flutter and React Native support (via source files) is tested with sample files, not yet on a real Flutter/RN app.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 

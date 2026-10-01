@@ -214,11 +214,11 @@ def add_cvr(out, path, text, base):
     for line in text.splitlines():
         kind, key, value = (line.split("|", 2) + ["", ""])[:3]
         if kind == "string":
-            out.setdefault(loc, {})[f"cmp:{key}"] = base64.b64decode(value).decode("utf-8", "replace")
+            out.setdefault(loc, {})[f"cmp:{key}"] = unescape_android(base64.b64decode(value).decode("utf-8", "replace"))
         elif kind == "plurals":  # ponytail: format inferred from compose-resources' writer, not seen in a real app yet
             for item in value.split(","):
                 form, _, b64 = item.partition(":")
-                if b64: out.setdefault(loc, {})[f"cmp:{key}#{form}"] = base64.b64decode(b64).decode("utf-8", "replace")
+                if b64: out.setdefault(loc, {})[f"cmp:{key}#{form}"] = unescape_android(base64.b64decode(b64).decode("utf-8", "replace"))
 
 LOCALE_QUALIFIER = re.compile(r"^(?:([a-z]{2,3})(?:-r([A-Z]{2}))?|b\+([a-z]{2,3})((?:\+[A-Za-z0-9]+)*))$")
 
@@ -229,8 +229,175 @@ def android_locale(q):
     if m.group(3): return m.group(3) + m.group(4).replace("+", "-")
     return m.group(1) + (f"-{m.group(2)}" if m.group(2) else "")
 
+# ---------- strings from source files (Flutter, React Native, .NET, Unity, translation platforms) ----------
+
+def locale_from_path(path, codes=None):
+    """Language of a translation file from how ecosystems name them: app_de.arb, de.json, Resources.de.resx,
+    messages_pt_BR.properties, locales/de/translation.json, values-de/strings.xml, de.lproj/... None if unknown."""
+    path = Path(path)
+    ok = lambda c: re.fullmatch(r"[a-z]{2,3}(?:[-_](?:[A-Z]{2}|[A-Z][a-z]{3}|\d{3}))*", c or "")
+    stem = path.name.split(".")[0] if path.suffix != ".lproj" else path.stem
+    parts = path.name.split(".")
+    if len(parts) >= 3 and ok(parts[-2]): return parts[-2].replace("_", "-")         # Resources.de.resx, en.lproj
+    if ok(stem): return stem.replace("_", "-")                                       # de.json, de.po
+    if m := re.search(r"[_-]([a-z]{2,3}(?:[-_](?:[A-Z]{2}|[A-Z][a-z]{3}))?)$", stem):  # app_de.arb, messages_pt_BR
+        return m.group(1).replace("_", "-")
+    for d in [path.parent, *path.parent.parents][:3]:
+        if d.name.startswith("values"):
+            return android_locale(d.name[7:]) if d.name != "values" else "base"
+        if d.suffix == ".lproj": return d.stem
+        if ok(d.name): return d.name.replace("_", "-")
+    return None
+
+def icu_forms(key, text):
+    """{key: text} or, for ICU plural/select ('{n, plural, one{# item} other{# items}}'), one entry per form,
+    with '#' standing for the number. ponytail: the first plural/select block only; nested ones stay as text."""
+    m = re.search(r"\{\s*(\w+)\s*,\s*(plural|select|selectordinal)\s*,", text)
+    if not m: return {key: text}
+    depth, i = 1, m.end()
+    while i < len(text) and depth:
+        depth += {"{": 1, "}": -1}.get(text[i], 0); i += 1
+    body, head, tail = text[m.end():i - 1], text[:m.start()], text[i:]
+    out = {}
+    for f in re.finditer(r"\s*(=?\w+)\s*\{", body):
+        if f.start() and body[f.start() - 1] not in " }\n\t": continue
+        d, j = 1, f.end()
+        while j < len(body) and d:
+            d += {"{": 1, "}": -1}.get(body[j], 0); j += 1
+        form_text = body[f.end():j - 1].replace("#", "{%s}" % m.group(1))
+        out[f"{key}#{f.group(1)}"] = head + form_text + tail
+    return out or {key: text}
+
+def flatten(d, prefix=""):
+    """Nested JSON (i18next, Lokalise) -> {'a.b.c': text}."""
+    out = {}
+    for k, v in d.items():
+        if isinstance(v, dict): out.update(flatten(v, f"{prefix}{k}."))
+        elif isinstance(v, str): out[prefix + k] = v
+    return out
+
+def read_translation_file(f, base):
+    """{locale: {key: text}} from one source file, by format."""
+    import xml.etree.ElementTree as ET
+    f, ext = Path(f), Path(f).suffix.lower()
+    lp = locale_from_path(f)
+    lp = base if lp in (None, "base") else lp
+    if ext == ".arb":  # Flutter: {"@@locale": "de", "next": "Weiter", "@next": {...}}
+        d = json.loads(f.read_text())
+        lp = d.get("@@locale", lp).replace("_", "-")
+        out = {}
+        for k, v in d.items():
+            if not k.startswith("@") and isinstance(v, str): out.update(icu_forms(k, v))
+        return {lp: out}
+    if ext == ".json":  # i18next / react-intl / Lokalise: nested keys, key_one/key_other plurals
+        out = {}
+        for k, v in flatten(json.loads(f.read_text())).items():
+            k = re.sub(r"_(zero|one|two|few|many|other)$", r"#\1", k)
+            out.update(icu_forms(k, v))
+        return {lp: out}
+    if ext == ".xcstrings":  # String Catalog source: every language in one file
+        d, out = json.loads(f.read_text()), {}
+        src = d.get("sourceLanguage", base)
+        for key, entry in d.get("strings", {}).items():
+            locs = entry.get("localizations", {})
+            if src not in locs: out.setdefault(src, {})[key] = key  # source text is the key
+            for loc, l in locs.items():
+                if "stringUnit" in l: out.setdefault(loc, {})[key] = l["stringUnit"].get("value", "")
+                for kind in ("plural", "device"):
+                    for form, v in l.get("variations", {}).get(kind, {}).items():
+                        if "stringUnit" in v: out.setdefault(loc, {})[f"{key}#{form}"] = v["stringUnit"].get("value", "")
+        return out
+    if ext in (".strings", ".stringsdict"):
+        r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
+        if r.returncode: return {}
+        d = json.loads(r.stdout)
+        return {lp: stringsdict_forms(d) if ext == ".stringsdict" else d}
+    if ext == ".xml":  # Android strings.xml / Compose Multiplatform composeResources
+        root, out = ET.parse(f).getroot(), {}
+        def text(e):  # Android: "..." around the whole value only preserves whitespace
+            t = "".join(e.itertext()).strip()
+            return unescape_android(t[1:-1] if len(t) >= 2 and t[0] == t[-1] == '"' else t)
+        for e in root:
+            if e.tag == "string" and e.get("translatable") != "false": out[e.get("name")] = text(e)
+            elif e.tag == "plurals":
+                for item in e.findall("item"): out[f"{e.get('name')}#{item.get('quantity')}"] = text(item)
+        return {lp: out}
+    if ext in (".xlf", ".xliff"):  # XLIFF 1.2/2.0 exports: source and target languages in one file
+        root = ET.parse(f).getroot()
+        ns = lambda tag: [e for e in root.iter() if e.tag.split("}")[-1] == tag]
+        out = {}
+        for fl in ns("file") or [root]:
+            src = (fl.get("source-language") or root.get("srcLang") or base)
+            tgt = (fl.get("target-language") or root.get("trgLang") or lp)
+            for u in [e for e in fl.iter() if e.tag.split("}")[-1] in ("trans-unit", "unit")]:
+                key = u.get("id") or u.get("resname")
+                get = lambda tag: next(("".join(e.itertext()) for e in u.iter() if e.tag.split("}")[-1] == tag), None)
+                if (v := get("source")) is not None: out.setdefault(src, {})[key] = v
+                if (v := get("target")) is not None and tgt: out.setdefault(tgt, {})[key] = v
+        return out
+    if ext == ".resx":  # .NET / MAUI: Resources.resx (base), Resources.de.resx
+        root = ET.parse(f).getroot()
+        return {lp: {d.get("name"): d.findtext("value", "") for d in root.findall("data") if d.get("type") is None}}
+    if ext == ".po":  # gettext: msgid is the source text
+        out, msgid, ctx, cur = {}, None, "", None
+        for line in f.read_text(errors="replace").splitlines() + [""]:
+            if m := re.match(r'(msgctxt|msgid|msgstr)\s+"(.*)"', line):
+                cur = m.group(1); val = json.loads(f'"{m.group(2)}"')
+                if cur == "msgctxt": ctx = val
+                elif cur == "msgid": msgid = val
+                else:
+                    if msgid and val: out[f"{ctx}|{msgid}" if ctx else msgid] = val
+                    ctx = ""
+            elif line.startswith('"') and cur == "msgid" and msgid is not None:
+                msgid += json.loads(line)
+        return {lp: out, base: {k: k.split("|")[-1] for k in out}} if lp != base else {base: out}
+    if ext == ".properties":  # Java/Kotlin ResourceBundle
+        out = {}
+        for line in f.read_text(errors="replace").splitlines():
+            if line.strip() and not line.lstrip().startswith(("#", "!")) and ("=" in line or ":" in line):
+                k, v = (re.split(r"\s*[=:]\s*", line.strip(), maxsplit=1) + [""])[:2]
+                out[k] = v.encode().decode("unicode_escape") if "\\u" in v else v
+        return {lp: out}
+    if ext == ".csv":  # Unity Localization / spreadsheet exports: Key,en,de,...
+        import csv
+        rows = list(csv.reader(f.read_text(errors="replace").splitlines()))
+        if not rows: return {}
+        head, out = rows[0], {}
+        langs = [(i, h.split("(")[-1].rstrip(")").strip() if "(" in h else h.strip()) for i, h in enumerate(head[1:], 1)]
+        for r in rows[1:]:
+            for i, l in langs:
+                if i < len(r) and r[i] and re.fullmatch(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]+)*", l):
+                    out.setdefault(l.replace("_", "-"), {})[r[0]] = r[i]
+        return out
+    raise Fail(f"don't know how to read {f.name}: supported are .arb .json .xcstrings .strings .stringsdict .xml "
+               ".xlf .xliff .resx .po .properties .csv")
+
+def config_strings(cfg, path):
+    """The config's `strings`: a folder of .lproj, or glob(s) of source files relative to the config. None if unset."""
+    if "strings" not in cfg: return None
+    pats = [cfg["strings"]] if isinstance(cfg["strings"], str) else cfg["strings"]
+    if len(pats) == 1 and path(pats[0]).is_dir() and any(path(pats[0]).glob("*.lproj")):
+        return load_strings(path(pats[0]))
+    return load_strings_files([str(path(p)) for p in pats], cfg.get("base_locale", "en"))
+
+def load_strings_files(patterns, base="en"):
+    """{locale: {key: text}} from translation source files matched by glob patterns (relative to cwd or absolute)."""
+    import glob
+    files = sorted({f for p in ([patterns] if isinstance(patterns, str) else patterns)
+                    for f in glob.glob(os.path.expanduser(p), recursive=True) if Path(f).is_file()})
+    if not files: raise Fail(f"no translation files match {patterns}")
+    out = {}
+    for f in files:
+        for lp, t in read_translation_file(f, base).items():
+            out.setdefault(lp, {}).update(t)
+    return {lp: t for lp, t in out.items() if t}
+
 def unescape_android(v):
-    return v.replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n")
+    """Android resource escapes: \\" \\' \\n \\t \\@ \\? \\uXXXX."""
+    v = re.sub(r"(?:\\u[0-9a-fA-F]{4})+", lambda m: m.group(0).encode().decode("unicode_escape")
+               .encode("utf-16", "surrogatepass").decode("utf-16"), v)  # emoji arrive as surrogate pairs
+    return v.replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n").replace("\\t", "\t") \
+            .replace("\\@", "@").replace("\\?", "?")
 
 def load_strings_apk(apk, base="en"):
     """{locale: {name: value}} from the string resources compiled into an APK (default config -> base)."""
@@ -559,7 +726,7 @@ def cmd_run(config_path, only=None, parallel=None):
     cfg.setdefault("runtime", latest_ios_runtime())
     cfg["app"] = str(path(cfg["app"]))
     # default: the strings compiled into the app under test, so selectors always match the binary
-    strings = load_strings(path(cfg["strings"]) if "strings" in cfg else Path(cfg["app"]))
+    strings = config_strings(cfg, path) or load_strings(Path(cfg["app"]))
     flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
@@ -735,7 +902,7 @@ def flow_devices(debug_dir):
 
 def android_run(cfg, path, out, only, parallel):
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
-    strings = load_strings_apk(apk, cfg.get("base_locale", "en"))
+    strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
     locales = only or cfg.get("locales") or shipped_locales(strings)
     flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
@@ -855,7 +1022,8 @@ def norm(text):
     return " ".join(unicodedata.normalize("NFKC", t).casefold().split())
 
 # printf (%d, %1$@, %.1f, %lld), and {name} / {0} placeholders (ICU, Compose, .NET)
-SPEC = re.compile(r"%(?:(\d+)\$)?[-+ 0#']*(?:\d+|\*)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXfFeEgGsScCoaAp%])|\{(\w+)\}")
+SPEC = re.compile(r"%(?:(\d+)\$)?[-+ 0#']*(?:\d+|\*)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXfFeEgGsScCoaAp%])"
+                  r"|\{\{\s*(\w+)\s*\}\}|\{(\w+)\}")
 NUMBER = r"-?\d[\d.,' \u00a0\u202f]*"
 
 def has_format(text):
@@ -870,7 +1038,7 @@ def format_regex(fmt, literal=re.escape, named=True):
     for m in SPEC.finditer(fmt):
         out.append(literal(fmt[pos:m.start()])); pos = m.end()
         if m.group(2) == "%": out.append(literal("%")); continue
-        if m.group(1) or m.group(3): name = m.group(1) or m.group(3)
+        if m.group(1) or m.group(3) or m.group(4): name = m.group(1) or m.group(3) or m.group(4)
         else: auto += 1; name = str(auto)
         group = "a" + re.sub(r"\W", "_", name)
         pat = NUMBER if m.group(2) and m.group(2) in "dDiuUxXfFeEgGaAo" else ".+?"
@@ -887,7 +1055,7 @@ def fill_format(fmt, args):
     def sub(m):
         nonlocal auto
         if m.group(2) == "%": return "%"
-        if m.group(1) or m.group(3): name = m.group(1) or m.group(3)
+        if m.group(1) or m.group(3) or m.group(4): name = m.group(1) or m.group(3) or m.group(4)
         else: auto += 1; name = str(auto)
         return args.get("a" + re.sub(r"\W", "_", name), "\0")
     out = SPEC.sub(sub, fmt)
@@ -998,7 +1166,7 @@ def read_text(ocr, png, timeout=120):
 
 LAST_REPORT = None  # check.json of the last check, for --json
 
-def cmd_check(folder, strings=None, app=None, report_dir=None):
+def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
     folder = Path(folder)
@@ -1016,6 +1184,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
         if not strings: raise Fail(f"{app.name} contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)")
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
+    elif strings_files:  # Flutter, React Native, .NET, Unity, exports: translations from source files
+        strings = load_strings_files(strings_files)
+        strings = {lp: strings[lp] for lp in shipped_locales(strings)}
     elif strings is None and run_json.exists():
         run = json.loads(run_json.read_text())
         src = run["apk"] if run.get("platform") == "android" else run["app"]
@@ -1262,6 +1433,9 @@ def main(argv=None):
     p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
     p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
     p.add_argument("--report", help="where to write check.json and index.html (default: ./shotfleet-check)")
+    p.add_argument("--strings", action="append", metavar="GLOB",
+                   help="translation files instead of --app, e.g. 'lib/l10n/*.arb' or 'locales/*/translation.json' "
+                        "(.arb .json .xcstrings .strings .xml .xlf .resx .po .properties .csv); repeatable")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
@@ -1295,9 +1469,9 @@ def main_dispatch(a):
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
-            if not a.app and not (Path(a.out) / "run.json").exists():
+            if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
-            return cmd_check(a.out, app=a.app, report_dir=a.report)
+            return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings)
         if a.cmd == "export": return cmd_export(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2

@@ -661,5 +661,82 @@ class Evidence(unittest.TestCase):
         self.assertIsNotNone(sf.judge_screen("en-GB", {"chars": 90, "text": text}, t)[1])
 
 
+class SourceFiles(unittest.TestCase):
+    def files(self, files):
+        d = Path(tempfile.mkdtemp())
+        for rel, body in files.items():
+            (d / rel).parent.mkdir(parents=True, exist_ok=True); (d / rel).write_text(body)
+        return d
+
+    def test_language_from_file_and_folder_names(self):
+        cases = {"lib/l10n/app_de.arb": "de", "lib/l10n/app_pt_BR.arb": "pt-BR", "locales/de/translation.json": "de",
+                 "i18n/ja.json": "ja", "Resources/AppResources.fr.resx": "fr", "po/zh_Hant.po": "zh-Hant",
+                 "res/values-b+sr+Latn/strings.xml": "sr-Latn", "res/values/strings.xml": "base",
+                 "messages_pt_BR.properties": "pt-BR", "Resources/AppResources.resx": None}
+        for path, want in cases.items():
+            self.assertEqual(sf.locale_from_path(path), want, path)
+
+    def test_flutter_arb_with_icu_plurals(self):
+        d = self.files({"l10n/app_en.arb": '{"@@locale": "en", "next": "Next", "@next": {}, '
+                        '"items": "{count, plural, =0{No items} one{1 item} other{{count} items}}"}',
+                        "l10n/app_de.arb": '{"@@locale": "de", "next": "Weiter", '
+                        '"items": "{count, plural, =0{Keine Elemente} one{1 Element} other{{count} Elemente}}"}'})
+        got = sf.load_strings_files([str(d / "l10n/*.arb")])
+        self.assertEqual(got["de"], {"next": "Weiter", "items#=0": "Keine Elemente", "items#one": "1 Element",
+                                     "items#other": "{count} Elemente"})
+        out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Next\n- assertVisible: 5 items\n", got["en"], got["de"])
+        self.assertIn("'Weiter'", out); self.assertIn("5 Elemente", out); self.assertEqual(missing, [])
+
+    def test_i18next_json(self):
+        d = self.files({"locales/en/translation.json": '{"nav": {"next": "Next"}, "hello": "Hello, {{name}}", "day_one": "{{count}} day", "day_other": "{{count}} days"}',
+                        "locales/de/translation.json": '{"nav": {"next": "Weiter"}, "hello": "Hallo, {{name}}", "day_one": "{{count}} Tag", "day_other": "{{count}} Tage"}'})
+        got = sf.load_strings_files([str(d / "locales/*/translation.json")])
+        self.assertEqual(got["de"]["nav.next"], "Weiter")
+        self.assertEqual(got["de"]["day#other"], "{{count}} Tage")
+        out, _, _ = sf.translate_flow("appId: x\n---\n- assertVisible: Hello, Anna\n- assertVisible: 3 days\n", got["en"], got["de"])
+        self.assertIn("'Hallo, Anna'", out); self.assertIn("3 Tage", out)
+
+    def test_xliff_resx_po_properties_csv_xcstrings(self):
+        d = self.files({
+            "x/de.xliff": '<xliff version="1.2"><file source-language="en" target-language="de"><body>'
+                          '<trans-unit id="next"><source>Next</source><target>Weiter</target></trans-unit></body></file></xliff>',
+            "r/App.resx": '<root><data name="Next"><value>Next</value></data></root>',
+            "r/App.ja.resx": '<root><data name="Next"><value>次へ</value></data></root>',
+            "p/fr.po": 'msgid ""\nmsgstr "Language: fr\\n"\n\nmsgid "Next"\nmsgstr "Suivant"\n',
+            "j/messages_it.properties": "next=Avanti\n# comment\n",
+            "u/table.csv": "Key,English(en),Spanish(es)\nnext,Next,Siguiente\n",
+            "c/Localizable.xcstrings": json.dumps({"sourceLanguage": "en", "strings": {"Next": {"localizations": {
+                "ko": {"stringUnit": {"state": "translated", "value": "다음"}}}},
+                "%lld items": {"localizations": {"ko": {"variations": {"plural": {"other": {"stringUnit": {"value": "%lld개 항목"}}}}}}}}})})
+        got = sf.load_strings_files([str(d / "**/*.*")])
+        self.assertEqual(got["de"]["next"], "Weiter"); self.assertEqual(got["en"]["next"], "Next")
+        self.assertEqual(got["ja"]["Next"], "次へ")
+        self.assertEqual(got["fr"]["Next"], "Suivant")
+        self.assertEqual(got["it"]["next"], "Avanti")
+        self.assertEqual(got["es"]["next"], "Siguiente")
+        self.assertEqual(got["ko"]["Next"], "다음"); self.assertEqual(got["ko"]["%lld items#other"], "%lld개 항목")
+
+    def test_details_each_format_gets_right(self):
+        d = self.files({
+            "l10n/intl_messages.arb": '{"@@locale": "de", "n": "{n, plural, one{# Element} other{# Elemente}}"}',
+            "res/values/strings.xml": '<resources><string name="a">"  Weiter  "</string><string name="b">Sag "hallo"</string></resources>',
+            "c/Localizable.xcstrings": json.dumps({"sourceLanguage": "en", "strings": {"Next": {"localizations": {
+                "ko": {"stringUnit": {"value": "다음"}}}}}})})
+        arb = sf.load_strings_files([str(d / "l10n/*.arb")])
+        self.assertEqual(arb["de"]["n#other"], "{n} Elemente")  # @@locale wins over the file name; # is the number
+        xml = sf.load_strings_files([str(d / "res/values/strings.xml")])
+        self.assertEqual(xml["en"], {"a": "  Weiter  ", "b": 'Sag "hallo"'})
+        cat = sf.load_strings_files([str(d / "c/*.xcstrings")])
+        self.assertEqual(cat["en"], {"Next": "Next"})  # the source text is the key
+
+    def test_unknown_format_and_no_match_explain_themselves(self):
+        d = self.files({"a.yml": "x: 1"})
+        with self.assertRaises(sf.Fail): sf.load_strings_files([str(d / "*.yml")])
+        with self.assertRaises(sf.Fail): sf.load_strings_files([str(d / "*.arb")])
+
+    def test_android_escapes(self):
+        self.assertEqual(sf.unescape_android(r"\ud83d\udcf1 verf\u00fcgbar \"x\" it\'s"), '📱 verfügbar "x" it\'s')
+
+
 if __name__ == "__main__":
     unittest.main()
