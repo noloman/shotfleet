@@ -114,3 +114,5 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
 .page form { max-width: none; }
 .label { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
 .lede { font-size: 1.15rem; color: var(--muted); }
+.points h2.point { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; }
+p a, footer a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
