@@ -480,6 +480,14 @@ def resolve_base(strings, wanted, app=None):
                ". Set base_locale in the config to the language your flow is written in"
                + (f", e.g. base_locale = \"{dev}\"" if dev in strings else ""))
 
+# System dialogs (permission prompts) are drawn in the device language, which stays English: an app running in
+# German still gets "Allow While Using App" (measured on iOS 27 with Maps). Taps on these keep their English text as
+# an alternative to any translation, so "Allow" matches the system's dialog and the app's own "Erlauben" button.
+SYSTEM_BUTTONS = {"Allow", "Don’t Allow", "Allow Once", "Allow While Using App", "Always Allow", "Change to Always Allow",
+                  "Keep Only While Using", "Ask App Not to Track", "Allow Full Access", "Allow All Photos", "Select Photos",
+                  "Limit Access…", "Allow Access to All Photos", "OK", "Cancel",  # iOS (TCC, CoreLocation)
+                  "While using the app", "Only this time", "Don’t allow", "Allow all", "Allow limited access"}  # Android
+
 def translate_flow(flow, base, target):
     """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors, collisions)."""
     by_text = {}
@@ -503,14 +511,16 @@ def translate_flow(flow, base, target):
     def tr(raw):
         """Translated YAML value for one selector value, or None to leave it as it is."""
         text = yaml_unquote(raw)
-        keys = by_text.get(text)
+        keys = by_text.get(text) or by_text.get(text.replace("'", "\u2019"))
+        system = text.replace("'", "\u2019") in SYSTEM_BUTTONS
+        if not keys and system: return None  # the OS's own dialog: stays English
         if not keys:
             forms = tr_format(text)
             if forms is None:
                 missing.append(text); return None
             pattern = "|".join(map(regex_literal, forms))  # any plural form: no per-language plural rules needed
             return yaml_single_quote(pattern if len(forms) == 1 else f"({pattern})")
-        cands = sorted({tg.get(k, text) for tg in targets for k in keys})
+        cands = sorted({tg.get(k, text) for tg in targets for k in keys} | ({text} if system else set()))
         if cands == [text] and regex_literal(text) == text:
             return None
         # same word, different meaning on the same screen (tr: Next = Advanced = "İleri") -> a tap can hit the wrong one
@@ -593,23 +603,39 @@ def localize_flow(flow, lproj, shots_dir):
     store = store_code(lproj, APP_STORE) or lproj  # number/date formats follow the store locale
     locale = {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
     args = [f'      AppleLanguages: "({lproj})"', f'      AppleLocale: "{locale}"']
-    launch = lambda clear: ["- launchApp:"] + (["    clearState: true"] if clear else []) + ["    arguments:"] + args
+
+    def launch(clear, opts=()):
+        """A launchApp step with the user's own options (permissions, appId...) plus the language arguments."""
+        opts = list(opts)
+        top = lambda pat: next((i for i, l in enumerate(opts) if re.match(r"^    " + pat, l)), None)
+        lines = ["- launchApp:"]
+        if clear and top(r"clearState:") is None: lines.append("    clearState: true")
+        i = top(r"arguments:")
+        if i is None: return lines + opts + ["    arguments:"] + args
+        if opts[i].split(":", 1)[1].strip(): raise ValueError("write launchApp arguments as a block, not inline")
+        return lines + opts[:i + 1] + args + opts[i + 1:]
+
     header, sep, body = flow.partition("\n---\n")
     if not sep:
         raise ValueError("flow needs an 'appId:' header followed by '---'")
     header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {lproj}"
-    out = launch(clear=True)  # fresh state per locale: onboarding runs every time
-    started = False  # any step yet besides comments
-    for line in body.splitlines():
-        if re.match(r"^\s*- launchApp\s*$", line):
-            if started: out += launch(clear=False)
+    lines, out, first, started, i = body.splitlines(), [], None, False, 0
+    while i < len(lines):
+        line = lines[i]; i += 1
+        if m := re.match(r"^(\s*)- launchApp:?\s*(.*)$", line):
+            if m.group(2): raise ValueError("write launchApp options as a block under '- launchApp:', not inline")
+            opts = []  # the indented block under it, re-indented to 4 spaces
+            while i < len(lines) and (not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > len(m.group(1))):
+                opts.append(lines[i]); i += 1
+            pad = min((len(l) - len(l.lstrip()) for l in opts if l.strip()), default=4)
+            opts = ["    " + l[pad:] for l in opts if l.strip()]
+            if not started: first = opts  # the user's first launch is shotfleet's fresh-state launch
+            else: out += launch(clear=False, opts=opts)
             started = True
-        elif re.match(r"^\s*- launchApp:", line):
-            raise ValueError("launchApp with options isn't supported yet; use a bare '- launchApp'")
         else:
             started = started or bool(re.match(r"^\s*-", line))
             out.append(line); redirect_screenshot(out, shots_dir)
-    return header + "\n---\n" + "\n".join(out) + "\n"
+    return header + "\n---\n" + "\n".join(launch(clear=True, opts=first or ()) + out) + "\n"
 
 # ---------- simulators ----------
 

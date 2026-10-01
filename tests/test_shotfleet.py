@@ -84,9 +84,25 @@ class LocalizeFlow(unittest.TestCase):
         out = sf.localize_flow(self.FLOW, "de", Path("/out/raw/de"))
         self.assertIn("- takeScreenshot: '/out/raw/de/01_home'", out)
 
-    def test_launch_app_with_options_is_rejected_clearly(self):
-        with self.assertRaisesRegex(ValueError, "launchApp with options"):
-            sf.localize_flow("appId: x\n---\n- launchApp:\n    clearState: true\n", "de", Path("/o"))
+    def test_launch_app_options_are_kept_and_merged(self):
+        flow = ("appId: x\n---\n- launchApp:\n    permissions:\n      all: allow\n    arguments:\n      demo: \"1\"\n"
+                "- tapOn: Next\n")
+        out = sf.localize_flow(flow, "de", Path("/o"))
+        self.assertEqual(out.count("- launchApp"), 1)
+        for line in ("    clearState: true", "    permissions:", "      all: allow", '      AppleLanguages: "(de)"', '      demo: "1"'):
+            self.assertIn(line + "\n", out)
+        self.assertEqual(out.count("    arguments:"), 1)
+        no_clear = sf.localize_flow("appId: x\n---\n- launchApp:\n    clearState: false\n", "de", Path("/o"))
+        self.assertNotIn("clearState: true", no_clear)
+
+    def test_inline_launch_app_options_are_rejected_clearly(self):
+        with self.assertRaisesRegex(ValueError, "as a block"):
+            sf.localize_flow("appId: x\n---\n- launchApp: { clearState: true }\n", "de", Path("/o"))
+
+    def test_system_dialog_buttons_keep_their_english_text(self):  # iOS draws them in the device language
+        out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Allow\n- tapOn: \"Don't Allow\"\n",
+                                            {"a": "Allow"}, {"a": "Erlauben"})
+        self.assertIn("'(Allow|Erlauben)'", out); self.assertIn('"Don\'t Allow"', out); self.assertEqual(missing, [])
 
     def test_flow_without_header_is_rejected_clearly(self):
         with self.assertRaisesRegex(ValueError, "appId"):

@@ -147,6 +147,13 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
         - tapOn: { text: "Accept", optional: true }
   ```
 - **Longer languages push buttons off-screen:** add `scrollUntilVisible` before tapping them.
+- **Permission prompts** ("Allow While Using App", "Don’t Allow") are drawn by iOS and Android in the device language, which stays English even while your app runs in German. Write those taps in English; shotfleet keeps the English text matchable. Better still, skip the prompts: on iOS start the flow with
+  ```yaml
+  - launchApp:
+      permissions:
+        all: allow
+  ```
+  (shotfleet adds its language arguments to your options). On Android shotfleet installs with every permission granted.
 - **Fresh state:** each language starts from a clean install. On iOS that's `clearState`; on Android shotfleet clears the app data itself, because `clearState` would also erase the app language.
 
 ## Limits
@@ -159,5 +166,5 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
 
 - macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.
 - Android needs API 33+ emulators for per-app languages.
-- On iOS, `launchApp` with options isn't supported yet; use a bare `- launchApp`.
+- `launchApp` options must be written as a block (as above), not inline `{ ... }`.
 - Text you type into fields isn't translated, so demo data stays the same in every language.
