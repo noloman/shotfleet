@@ -363,6 +363,11 @@ class CheckAnyFolder(unittest.TestCase):
         tables = {"de": {"Training starten"}, "nl": {"Begin"}}
         ocr = {"chars": 21, "text": "9:41\nTraining starten", "lang": "nl", "langs": {"nl": 0.6}}
         self.assertEqual(sf.judge_screen("nl", ocr, tables), ("nl", None))
+    def test_json_mode_keeps_stdout_machine_readable(self):
+        r = subprocess.run([sys.executable, str(Path(sf.__file__)), "check", "/no/such/folder", "--json"],
+                           capture_output=True, text=True)
+        self.assertEqual((r.returncode, json.loads(r.stdout)), (2, {"exit": 2}))
+        self.assertIn("no folder", r.stderr)
 
 
 if __name__ == "__main__":

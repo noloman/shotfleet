@@ -57,6 +57,31 @@ shotfleet init path/to/app-debug.apk android/      # or an APK
 4. Review `out/index.html`. It's a grid with a row per language and a column per screen, and problems are outlined in red.
 5. Export to fastlane: `shotfleet export ios/out --fastlane fastlane/`. That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
 
+## In CI
+
+`run` and `check` take `--json`: the report goes to stdout as JSON (`exit`, `screenshots`, `problems`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
+
+Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. (This recipe hasn't been run on GitHub yet; the command itself is the one tested above.)
+
+```yaml
+# .github/workflows/screenshots.yml
+on: pull_request
+jobs:
+  check-screenshots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug -derivedDataPath build build
+      - run: python3 shotfleet.py check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-check
+          path: |
+            check.json
+            shotfleet-check/
+```
+
 ## How it works
 
 | | iOS | Android |

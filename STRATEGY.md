@@ -23,7 +23,7 @@ platforms from one flow**. We own checking and cross-platform, and we plug into 
    reads screenshots made by fastlane, StoreScreens, asc or by hand, and runs the same checks (right language,
    copies, missing). Every free capture tool becomes a funnel into us. Possible free tier: checking is free,
    capturing is paid.
-2. **CI mode.** `--json` report, stable exit codes, a GitHub Actions recipe on a macOS runner, and a
+2. **CI mode.** _(done: `--json`, exit codes, Actions recipe; fastlane plugin pending)_ `--json` report, stable exit codes, a GitHub Actions recipe on a macOS runner, and a
    one-command fastlane plugin (`fastlane add_plugin shotfleet`). This is the first thing teams ask for,
    and it's what unlocks a ~$199 team license.
 3. **Flutter and React Native strings** (ARB, i18n JSON). The biggest group of buyers we currently turn away.

@@ -668,6 +668,8 @@ def app_locale(label, available):
     if lang == "id" and "in" in available: return "in"
     return lang if lang in available else None
 
+LAST_REPORT = None  # check.json of the last check, for --json
+
 def cmd_check(folder, strings=None, app=None, report_dir=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
@@ -714,6 +716,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         have = {p.name for p in images[label]}
         if have != names:
             problems.append(f"{label}: missing {', '.join(sorted(names - have))}")
+    global LAST_REPORT; LAST_REPORT = report / "check.json"
     (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
@@ -862,15 +865,25 @@ def main(argv=None):
     p.add_argument("config", help="shotfleet.toml")
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
+    p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p = sub.add_parser("check", help="check screenshots from shotfleet, fastlane or any tool")
     p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
     p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
     p.add_argument("--report", help="where to write check.json and index.html (default: ./shotfleet-check)")
+    p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
     a = ap.parse_args(argv)
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
+    if getattr(a, "json", False):  # CI: stdout carries only the JSON report
+        import contextlib
+        with contextlib.redirect_stdout(sys.stderr): code = main_cmd(a)
+        print(json.dumps({"exit": code, **(json.loads(LAST_REPORT.read_text()) if LAST_REPORT else {})}, ensure_ascii=False))
+        return code
+    return main_cmd(a)
+
+def main_cmd(a):
     try:
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "init": return cmd_init(a.app, a.dir)
