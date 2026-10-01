@@ -18,10 +18,15 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 - System dialogs: measured that iOS draws them in the device language (English), so their taps stay English-matchable;
   iOS launchApp options (permissions: {all: allow}) supported.
 - Emulator benchmark written up (android-emulator-bench/RESULTS.md).
+- Headless emulators (Manu's idea), measured 2026-10-01: shotfleet already ran headless (`-no-window`). Snapshot boots
+  are now used: read-only copies boot in 4-5 s instead of 21-23 s cold (2 rounds each); verified end to end (de+ja,
+  4/4 screenshots). The ATD image is NOT usable for store screenshots: apps launch faster (2.5-4.4 s vs 7.5 s), but
+  every screen capture is black (tried default, swiftshader and host GPU). Also fixed: the status bar showed "3G".
 
 ## Waiting for a quiet Mac
-- 1.5 UI-hierarchy text during `run` (4 Maestro experiments, all-languages.md §F), 2.4 iPad/tablet runs, a planted
-  caption test, MCP `check` on real screenshots, and a clean 8-emulator benchmark round.
+- 1.5 UI-hierarchy text during `run` (4 Maestro experiments, all-languages.md §F), 2.4 iPad/tablet runs, MCP `check`
+  on real screenshots (blocked: macOS ANECompilerService stuck, restart fixes), and a clean 8-emulator benchmark round.
+  Planted caption test: done (caught).
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |

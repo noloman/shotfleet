@@ -864,9 +864,13 @@ class Emu:
     def booted(self):
         return sh(["adb", "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() == "1"
 
-def start_emu(avd, port, read_only=True):
+SNAPSHOT = "shotfleet"
+
+def start_emu(avd, port, read_only=True, snapshot=False):
+    """Headless emulator. Read-only copies boot from the saved snapshot (4-5 s instead of ~22 s cold, measured)."""
+    boot = ["-snapshot", SNAPSHOT, "-no-snapshot-save"] if snapshot else ["-no-snapshot"]
     return subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
-                             "-no-boot-anim", "-no-snapshot"] + (["-read-only"] if read_only else []),
+                             "-no-boot-anim"] + boot + (["-read-only"] if read_only else []),
                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def wait_booted(emus, timeout=600):
@@ -890,14 +894,17 @@ def android_pool(n, cfg, pool):
         ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", "hw.lcd.width=1080",
                        re.sub(r"(?m)^hw\.lcd\.height=.*", "hw.lcd.height=1920",
                        re.sub(r"(?m)^hw\.lcd\.density=.*", "hw.lcd.density=420", ini.read_text()))))
-    if not (avd_dir / "userdata-qemu.img").exists():  # one-time first boot, writable, so copies boot fast
+    if not (avd_dir / "snapshots" / SNAPSHOT).exists():  # one-time: boot writable, save a snapshot copies start from
         e = Emu(5700); p = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
-        wait_booted([e]); time.sleep(20); e.adb("shell", "reboot", "-p", check=False); p.wait(timeout=120)
+        wait_booted([e]); time.sleep(20)
+        e.adb("emu", "avd", "snapshot", "save", SNAPSHOT, check=False)
+        e.adb("emu", "kill", check=False); p.wait(timeout=120)
         pool.remove(e)
+    snap = (avd_dir / "snapshots" / SNAPSHOT).exists()
     for i in range(n):
         e = Emu(5702 + 2 * i)
         if e.booted(): raise Fail(f"{e.serial} is already running. Stop it (adb -s {e.serial} emu kill) and run again")
-        start_emu(avd, e.port); pool.append(e)
+        start_emu(avd, e.port, snapshot=snap); pool.append(e)
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:
