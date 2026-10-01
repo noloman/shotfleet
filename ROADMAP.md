@@ -24,7 +24,8 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
   every screen capture is black (tried default, swiftshader and host GPU). Also fixed: the status bar showed "3G".
 
 ## Waiting for a quiet Mac
-- 1.5 for Android (iOS done: text read from Maestro's driver during the run, exact, any script, no OCR), 2.4 iPad/tablet runs, MCP `check`
+- 1.5 on Android: not possible with Maestro 2.0.10 (`maestro hierarchy` breaks sharded runs); iOS done. 2.4 Android tablets
+  (iOS iPad done: device_types, verified on remoti: 13" iPad 2064x2752 + iPhone 6.9", both exported). MCP `check`
   on real screenshots (blocked: macOS ANECompilerService stuck, restart fixes), and a clean 8-emulator benchmark round.
   Planted caption test: done (caught).
 

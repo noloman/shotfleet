@@ -975,5 +975,33 @@ class ScreenText(unittest.TestCase):
         self.assertIsNone(sf.screen_text(Path(d) / "missing.png"))
 
 
+class MultiDevice(unittest.TestCase):
+    def make(self, d, devices, families):
+        app = Path(d) / "My.app"; app.mkdir()
+        subprocess.run(["/usr/libexec/PlistBuddy", "-c", "Add :UIDeviceFamily array", "-c",
+                        *[x for f in families for x in ("-c", f"Add :UIDeviceFamily: integer {f}")][1:], str(app / "Info.plist")],
+                       capture_output=True)
+        out = Path(d) / "out"
+        for name, size in devices.items():
+            raw = out / name / "raw" / "de"; raw.mkdir(parents=True)
+            (raw / "01_home.png").write_bytes(png_c(*size))
+            (out / name / "run.json").write_text(json.dumps({"app": str(app), "locales": {"de": {"ok": True}}}))
+            (out / name / "check.json").write_text(json.dumps({"problems": []}))
+        return out
+
+    def test_export_keeps_both_sizes_and_ipad_rule_spans_devices(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self.make(d, {"iphone-17-pro-max": (1320, 2868), "ipad-pro-13-inch-m5-12gb": (2064, 2752)}, [1, 2])
+            with contextlib.redirect_stdout(io.StringIO()):
+                sf.cmd_export(out, Path(d) / "fl")
+                self.assertEqual(sf.ipad_set_missing(out), 0)
+            self.assertEqual(sorted(p.name for p in (Path(d) / "fl/screenshots/de-DE").iterdir()),
+                             ["ipad-pro-13-inch-m5-12gb_01_home.png", "iphone-17-pro-max_01_home.png"])
+        with tempfile.TemporaryDirectory() as d:
+            out = self.make(d, {"iphone-17-pro-max": (1320, 2868)}, [1, 2])
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(sf.ipad_set_missing(out), 1)  # iPad app, iPhone set only
+
+
 if __name__ == "__main__":
     unittest.main()

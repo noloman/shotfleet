@@ -813,10 +813,19 @@ def cmd_run(config_path, only=None, parallel=None):
         for d in devices:
             dt = device_type_id(d)
             print(f"\n== {d}")
-            codes.append(ios_run({**cfg, "device_type": dt, "sim_prefix": f"shotfleet-{device_slug(dt)}",
+            codes.append(ios_run({**cfg, "device_type": dt, "sim_prefix": f"shotfleet-{device_slug(dt)}", "multi_device": True,
                                   "out": str(path(cfg.get("out", "out")).resolve() / device_slug(dt))}, path, only, parallel))
-        return max(codes)
+        return max(codes + [ipad_set_missing(path(cfg.get("out", "out")).resolve())])
     return ios_run(cfg, path, only, parallel)
+
+def ipad_set_missing(parent):
+    """Across a multi-device run (parent/<device>/): an app that runs on iPad needs a 13" iPad set somewhere. 1 if missing."""
+    subs = device_runs(parent)
+    app = next((json.loads((d / "run.json").read_text()).get("app") for d in subs), None)
+    if not app or "2" not in plist_value(Path(app) / "Info.plist", "UIDeviceFamily"): return 0
+    if any(apple_class(image_info(p)[0]) == 'iPad 13"' for d in subs for p in (d / "raw").glob("*/*.png")): return 0
+    print('the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types')
+    return 1
 
 def ios_run(cfg, path, only=None, parallel=None):
     cfg = dict(cfg)
@@ -920,7 +929,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
         return 1
-    return max(cmd_check(out, strings), 1 if failed else 0)
+    return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device")), 1 if failed else 0)
 
 # ---------- android ----------
 
@@ -1333,7 +1342,7 @@ def external_ocr(command, png, lp):
 
 LAST_REPORT = None  # check.json of the last check, for --json
 
-def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None):
+def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
     folder = Path(folder)
@@ -1372,7 +1381,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     else: android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
-    ipad = bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
+    ipad = ipad_rule and bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
     store_problems, notes = store_rules(images, android, ipad)
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
@@ -1654,11 +1663,11 @@ def device_runs(out):
     out = Path(out)
     return [] if (out / "run.json").exists() else sorted(d for d in out.iterdir() if (d / "run.json").exists()) if out.is_dir() else []
 
-def cmd_export(out, fastlane):
+def cmd_export(out, fastlane, name_prefix=""):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
     Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
     if subs := device_runs(out):  # iPhone + iPad: both sets go into the same language folders (sizes differ)
-        return max(cmd_export(d, fastlane) for d in subs)
+        return max(cmd_export(d, fastlane, f"{d.name}_") for d in subs)  # same screen names on every device
     out, fastlane = Path(out), Path(fastlane)
     if not (out / "run.json").is_file():
         raise Fail(f"no shotfleet run in {out}. Run 'shotfleet run <config>' first")
@@ -1696,7 +1705,7 @@ def cmd_export(out, fastlane):
         sizes = {png_size(p) for p in new}
         for old in dst.glob("*.png"):  # replace this device's set; other sizes (iPad, 6.5") in the folder stay
             if png_size(old) in sizes: old.unlink()
-        for png in new: shutil.copy2(png, dst / png.name)
+        for png in new: shutil.copy2(png, dst / (name_prefix + png.name))
         done.append(folder)
     print(f"exported {len(done)} listings to {fastlane}: {', '.join(done)}")
     return 0 if not bad else 1
@@ -1921,7 +1930,8 @@ def main_dispatch(a):
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
             if subs := device_runs(a.out):
-                return max(cmd_check(d, app=a.app, report_dir=None, strings_files=a.strings, ocr_command=a.ocr_command) for d in subs)
+                codes = [cmd_check(d, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command, ipad_rule=False) for d in subs]
+                return max(codes + [ipad_set_missing(a.out)])
             if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
             return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command)
