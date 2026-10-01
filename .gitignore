@@ -1,0 +1,4 @@
+.build/
+.explore/
+examples/*/out/
+__pycache__/
