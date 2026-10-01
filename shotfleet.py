@@ -1151,12 +1151,28 @@ def judge_screen(lp, ocr, tables):
         return lp, None
     return got, None
 
-def find_screenshots(folder):
+def caption_problem(lp, ocr, tables, problem):
+    """Framed screenshots carry a marketing caption above the device. Name the common failure plainly
+    (a translated caption over an untranslated app)."""
+    cap, cap_lang = ocr.get("caption", ""), ocr.get("caption_lang")
+    if not cap or not cap_lang: return problem
+    c = canon(lp)
+    want = ("zh-Hant" if "Hant" in c else "zh-Hans") if c.startswith("zh") else LEGACY.get(c.split("-")[0], c.split("-")[0])
+    matches = cap_lang == want or cap_lang in TWINS.get(want, ()) or cap_lang.split("-")[0] == want.split("-")[0] != "zh"
+    if problem and problem.startswith("shows ") and matches:
+        return f"the caption is in {cap_lang} but the app UI {problem}"
+    # ponytail: no "caption in the wrong language" problem on its own: detection misreads short captions
+    # ("A WOD timer on your wrist" as Polish); the app's strings are the evidence, the caption only explains it
+    return problem
+
+def find_screenshots(folder, platform=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
     or plain <locale>/ folders."""
     folder = Path(folder)
     if (folder / "screenshots").is_dir() and (folder / "metadata/android").is_dir():
+        if platform == "ios": return find_screenshots(folder / "screenshots")
+        if platform == "android": return find_screenshots(folder / "metadata" / "android")
         raise Fail(f"{folder} has both iOS and Android screenshots; check {folder / 'screenshots'} and "
                    f"{folder / 'metadata/android'} separately (each with its own --app)")
     for pattern in ("raw/*/*", "metadata/android/*/images/phoneScreenshots/*",
@@ -1222,13 +1238,13 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     tables = string_tables(strings or {})
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
-    images = find_screenshots(folder)
+    images = find_screenshots(folder, platform={".app": "ios", ".apk": "android"}.get(Path(app).suffix) if app else None)
     if not images:
         raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
                    "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png")
-    android = (any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
-               or (app is not None and Path(app).suffix == ".apk")
-               or (run_json.exists() and json.loads(run_json.read_text()).get("platform") == "android"))
+    if app is not None: android = Path(app).suffix == ".apk"  # the build says which store's rules apply
+    elif run_json.exists(): android = json.loads(run_json.read_text()).get("platform") == "android"
+    else: android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
     ipad = bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
@@ -1247,6 +1263,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if r.get("chars", 0) >= 40:  # ponytail: short screens (a watch button) can be identical across languages
             by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
         got, problem = judge_screen(lp or label, r, tables if lp else {})
+        problem = caption_problem(lp or label, r, tables, problem)
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0)})
