@@ -21,7 +21,7 @@ STORE_LOCALE = {
 # lproj code -> language NLLanguageRecognizer reports (differs only for these)
 EXPECTED_LANG = {"nb": "nb", "zh-Hans": "zh-Hans", "zh-Hant": "zh-Hant"}
 SELECTOR_KEYS = ("tapOn", "doubleTapOn", "longPressOn", "assertVisible", "assertNotVisible",
-                 "scrollUntilVisible", "text", "copyTextFrom")
+                 "scrollUntilVisible", "text", "copyTextFrom", "visible", "notVisible")
 
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
@@ -41,6 +41,38 @@ def load_strings(res_dir):
             out[lproj.stem] = table
     return out
 
+LOCALE_QUALIFIER = re.compile(r"^(?:([a-z]{2,3})(?:-r([A-Z]{2}))?|b\+([a-z]{2,3})((?:\+[A-Za-z0-9]+)*))$")
+
+def android_locale(q):
+    """aapt2 config qualifier -> BCP-47 tag ('de', 'pt-rBR' -> 'pt-BR', 'b+zh+Hans' -> 'zh-Hans'); None if not a pure locale."""
+    m = LOCALE_QUALIFIER.match(q)
+    if not m: return None
+    if m.group(3): return m.group(3) + m.group(4).replace("+", "-")
+    return m.group(1) + (f"-{m.group(2)}" if m.group(2) else "")
+
+def load_strings_apk(apk, base="en"):
+    """{locale: {name: value}} from the string resources compiled into an APK (default config -> base)."""
+    aapt2 = sorted(Path(os.environ.get("ANDROID_HOME", Path.home() / "Library/Android/sdk"), "build-tools").glob("*/aapt2"))[-1]
+    r = sh([str(aapt2), "dump", "resources", str(apk)])
+    if r.returncode != 0: raise RuntimeError(f"aapt2 dump failed: {r.stderr.strip()}")
+    out, name = {}, None
+    for line in r.stdout.splitlines():
+        if m := re.match(r"\s*resource 0x[0-9a-f]+ string/(\S+)", line):
+            name = m.group(1); continue
+        if name and (m := re.match(r'\s*\(([^)]*)\) "(.*)"\s*$', line)):
+            loc = base if m.group(1) == "" else android_locale(m.group(1))
+            if loc:  # skip night/land/v31 and other non-locale variants
+                out.setdefault(loc, {})[name] = m.group(2).replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n")
+        elif not line.startswith("      "):
+            name = None
+    return out
+
+def shipped_locales(strings, base="en", min_coverage=0.5):
+    """Locales the app itself is translated into. Library resources (AndroidX, Material) add ~80 locales
+    that only cover their own few strings; those are not languages the app ships."""
+    n = len(strings[base])
+    return sorted(lp for lp, t in strings.items() if lp == base or len(t) >= min_coverage * n)
+
 def yaml_single_quote(s):
     return "'" + s.replace("'", "''") + "'"
 
@@ -55,6 +87,7 @@ def translate_flow(flow, base, target):
     by_text = {}
     for k, v in base.items():
         by_text.setdefault(v, []).append(k)
+    targets = target if isinstance(target, list) else [target]  # several: match any of their translations
     missing, lines, collisions = [], [], []
     for line in flow.splitlines():
         m = SELECTOR_RE.match(line)
@@ -67,15 +100,18 @@ def translate_flow(flow, base, target):
         keys = by_text.get(text)
         if not keys:
             missing.append(text); lines.append(line); continue
-        cands = sorted({target.get(k, text) for k in keys})
+        cands = sorted({tg.get(k, text) for tg in targets for k in keys})
         if cands == [text] and regex_literal(text) == text:
             lines.append(line); continue
         # same word, different meaning on the same screen (tr: Next = Advanced = "İleri") -> a tap can hit the wrong one
-        for k in keys:
-            t = target.get(k, text)
-            clash = sorted({base[o] for o, v in target.items()
-                            if v == t and base.get(o, t) != text and o.split("_")[0] == k.split("_")[0]})
-            if clash: collisions.append(f"{text!r} -> {t!r} also means {', '.join(map(repr, clash))}")
+        for tg in targets:
+            for k in keys:
+                t = tg.get(k, text)
+                # likely on the same screen: same key family (iOS onboarding_*), or another short label like "Advanced"
+                clash = sorted({base[o] for o, v in tg.items()
+                                if v == t and o in base and base[o].casefold() != text.casefold()
+                                and (o.split("_")[0] == k.split("_")[0] or len(base[o].split()) <= 2)})
+                if clash: collisions.append(f"{text!r} -> {t!r} also means {', '.join(map(repr, clash))}")
         # one English label can map to several keys ("Next" -> Weiter / Nächste): match any of them
         pattern = "|".join(map(regex_literal, cands))
         pattern = pattern if len(cands) == 1 else f"({pattern})"
@@ -158,8 +194,13 @@ def junit_results(path):
 
 def cmd_run(config_path, only=None, parallel=None):
     cfg_path = Path(config_path).resolve()
-    cfg = tomllib.loads(cfg_path.read_text())["ios"]
+    doc = tomllib.loads(cfg_path.read_text())
     path = lambda p: cfg_path.parent / Path(p).expanduser()  # absolute/~ paths win, others are relative to the config
+    if "android" in doc:
+        cfg = doc["android"]
+        out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
+        return android_run(cfg, path, out, only, parallel)
+    cfg = doc["ios"]
     cfg["app"] = str(path(cfg["app"]))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = load_strings(path(cfg["strings"]) if "strings" in cfg else Path(cfg["app"]))
@@ -245,6 +286,174 @@ def cmd_run(config_path, only=None, parallel=None):
     failed = [r["lproj"] for r in results if not r["ok"]]
     return max(cmd_check(out, strings), 1 if failed else 0)
 
+# ---------- android ----------
+
+SDK = Path(os.environ.get("ANDROID_HOME", Path.home() / "Library/Android/sdk"))
+DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no notification icons
+    "settings put global sysui_demo_allowed 1",
+    "am broadcast -a com.android.systemui.demo -e command enter",
+    "am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941",
+    "am broadcast -a com.android.systemui.demo -e command battery -e level 100 -e plugged false",
+    "am broadcast -a com.android.systemui.demo -e command network -e wifi show -e level 4 -e fully true",
+    "am broadcast -a com.android.systemui.demo -e command network -e mobile show -e datatype none -e level 4",
+    "am broadcast -a com.android.systemui.demo -e command notifications -e visible false",
+]
+
+class Emu:
+    def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
+    def adb(self, *args, check=True, timeout=180):
+        r = sh(["adb", "-s", self.serial, *args], timeout=timeout)
+        if check and r.returncode != 0:
+            raise RuntimeError(f"adb {' '.join(args)}: {(r.stderr or r.stdout).strip()}")
+        return r.stdout
+    def booted(self):
+        return sh(["adb", "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() == "1"
+
+def start_emu(avd, port, read_only=True):
+    return subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
+                             "-no-boot-anim", "-no-snapshot"] + (["-read-only"] if read_only else []),
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+def wait_booted(emus, timeout=600):
+    t0 = time.time()
+    while not all(e.booted() for e in emus):
+        if time.time() - t0 > timeout: raise RuntimeError("emulators did not boot in time")
+        time.sleep(3)
+
+def android_pool(n, cfg):
+    """Boot n read-only copies of one AVD. The AVD is created on first use at 1080x1920:
+    Google Play rejects phone screenshots taller than 2:1, which rules out most modern phone shapes."""
+    avd = cfg.get("avd", "shotfleet_android")
+    avd_dir = Path.home() / ".android/avd" / f"{avd}.avd"
+    if not avd_dir.exists():
+        image = cfg.get("system_image", "system-images;android-36;google_apis;arm64-v8a")
+        sh([str(SDK / "cmdline-tools/latest/bin/avdmanager"), "create", "avd", "-n", avd, "-k", image, "-d", "pixel_5"], input="no\n")
+        ini = avd_dir / "config.ini"
+        ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", "hw.lcd.width=1080",
+                       re.sub(r"(?m)^hw\.lcd\.height=.*", "hw.lcd.height=1920",
+                       re.sub(r"(?m)^hw\.lcd\.density=.*", "hw.lcd.density=420", ini.read_text()))))
+    if not (avd_dir / "userdata-qemu.img").exists():  # one-time first boot, writable, so copies boot fast
+        e = Emu(5700); p = start_emu(avd, e.port, read_only=False)
+        wait_booted([e]); time.sleep(20); e.adb("shell", "reboot", "-p", check=False); p.wait(timeout=120)
+    pool, procs = [], []
+    for i in range(n):
+        e = Emu(5702 + 2 * i)
+        if e.booted(): raise RuntimeError(f"{e.serial} is already in use; stop it first")
+        procs.append(start_emu(avd, e.port)); pool.append(e)
+        time.sleep(2)  # staggered starts avoid adb port races
+    wait_booted(pool)
+    for e in pool:
+        for c in DEMO_MODE: e.adb("shell", c, check=False)
+    return pool
+
+def android_flow(text, name, shots_dir):
+    """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
+    No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself."""
+    header, sep, body = text.partition("\n---\n")
+    if not sep: raise ValueError("flow needs an 'appId:' header followed by '---'")
+    header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}"
+    out = [] if re.match(r"\s*- launchApp", body.lstrip("\n")) else ["- launchApp"]
+    for line in body.splitlines():
+        if re.match(r"^\s*clearState:", line): continue
+        if m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line):
+            line = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
+        out.append(line)
+    return header + "\n---\n" + "\n".join(out) + "\n"
+
+def flow_devices(debug_dir):
+    """{flow file stem: device serial} from Maestro's own log of how it sharded the run."""
+    m = {}
+    for log in Path(debug_dir).rglob("maestro.log"):
+        for dev, flows in re.findall(r"Selected device (\S+) using port \d+ with execution plan "
+                                     r"ExecutionPlan\(flowsToRun=\[([^\]]*)\]", log.read_text(errors="replace")):
+            for f in flows.split(","):
+                if f.strip(): m[Path(f.strip()).stem] = dev
+    return m
+
+def android_run(cfg, path, out, only, parallel):
+    apk, pkg = str(path(cfg["apk"])), cfg["package"]
+    strings = load_strings_apk(apk, cfg.get("base_locale", "en"))
+    base = strings[cfg.get("base_locale", "en")]
+    locales = only or cfg.get("locales") or shipped_locales(strings)
+    flow = path(cfg["flow"]).read_text()
+    expected = len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
+    shutil.rmtree(out / "flows", ignore_errors=True); shutil.rmtree(out / "tmp", ignore_errors=True)
+    report = {"locales": {}}
+    for lp in locales:
+        if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
+        _, missing, clash = translate_flow(flow, base, strings[lp])
+        for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
+        report["locales"][lp] = {"untranslated_selectors": missing}
+    miss = sorted({m for v in report["locales"].values() for m in v["untranslated_selectors"]})
+    if miss:
+        print("selectors not found in the app's strings (left as-is; they may fail outside English):")
+        for m in miss: print(f"   {m!r}")
+    todo = list(report["locales"])
+    n = min(parallel or cfg.get("parallel", 4), len(todo))
+    print(f"booting {n} emulators ({cfg.get('avd', 'shotfleet_android')}, 1080x1920)", flush=True)
+    pool = android_pool(n, cfg)
+    try:
+        for e in pool: e.adb("install", "-r", "-g", apk)
+
+        def round_(lps, tag):
+            """One locale per emulator. Maestro shards the identical flows across devices in an order we
+            don't control; its log says which flow ran where, and each device's language is known."""
+            lang = {}
+            for e, lp in zip(pool, lps):
+                e.adb("shell", "pm", "clear", pkg)  # fresh onboarding; also resets the app language, so set it after
+                e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
+                for c in DEMO_MODE: e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
+                lang[e.serial] = lp
+            text, _, _ = translate_flow(flow, base, [strings[lp] for lp in lps])
+            fdir = out / "flows" / tag; fdir.mkdir(parents=True)
+            for j in range(len(lps)):
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / "tmp" / tag / f"f{j}"))
+            junit, dbg = out / f"junit_{tag}.xml", out / "debug" / tag
+            try:
+                r = sh(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
+                        "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
+                       timeout=cfg.get("timeout_s", 600) + 300)
+                (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
+            except subprocess.TimeoutExpired:
+                print(f"maestro timed out in {tag}")
+            ran_on, res, results = flow_devices(dbg), junit_results(junit), {}
+            for j in range(len(lps)):
+                fname, dev = f"{tag}_f{j}", ran_on.get(f"{tag}_f{j}")
+                if dev not in lang: continue
+                lp = lang[dev]
+                dst = out / "raw" / lp
+                shutil.rmtree(dst, ignore_errors=True)
+                src = out / "tmp" / tag / f"f{j}"
+                if src.exists(): shutil.move(str(src), dst)
+                else: dst.mkdir(parents=True)
+                shots = len(list(dst.glob("*.png")))
+                r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
+                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev}
+            for lp in lps:
+                results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
+            return results
+
+        t0, final = time.time(), {}
+        print(f"capturing {len(todo)} locales on {n} emulators, {-(-len(todo) // n)} rounds...", flush=True)
+        for i in range(0, len(todo), n):
+            final.update(round_(todo[i:i + n], f"r{i // n + 1}"))
+        retry = [lp for lp, r_ in final.items() if not r_["ok"]]
+        if retry:
+            print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
+            for i in range(0, len(retry), n):
+                for lp, r_ in round_(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True}
+    finally:
+        for e in pool: e.adb("emu", "kill", check=False)
+    for lp in todo:
+        r_ = final[lp]
+        print(f"{'ok  ' if r_['ok'] else 'FAIL'} {lp:8} {r_['screenshots']}/{expected} screenshots"
+              + (" (retried)" if r_.get("retried") else "") + ("" if r_["ok"] else f"  {r_.get('error') or ''}"[:160]))
+        report["locales"][lp].update(r_)
+    report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk)
+    (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
+    print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators")
+    return max(cmd_check(out, strings), 0 if all(r_["ok"] for r_ in final.values()) else 1)
+
 # ---------- check ----------
 
 def ocr_tool():
@@ -260,7 +469,8 @@ def cmd_check(out, strings=None):
     """Verify screenshots: each shows its own locale's strings, and no image is repeated across languages."""
     out = Path(out)
     if strings is None and (out / "run.json").exists():
-        strings = load_strings(Path(json.loads((out / "run.json").read_text())["app"]))
+        run = json.loads((out / "run.json").read_text())
+        strings = load_strings_apk(run["apk"]) if run.get("platform") == "android" else load_strings(Path(run["app"]))
     tables = {lp: set(t.values()) for lp, t in (strings or {}).items()}
     raw = out / "raw"
     ocr = ocr_tool()
