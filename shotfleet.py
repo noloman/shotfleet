@@ -4,7 +4,7 @@
 usage: shotfleet doctor
        shotfleet init <App.app | app.apk> [dir]
        shotfleet run <config.toml> [--locales de,ja] [--parallel N]
-       shotfleet check <out_dir>
+       shotfleet check <folder> [--app App.app|app.apk] [--report dir]
        shotfleet export <out_dir> --fastlane <fastlane_dir>
 
 For each language the app ships, shotfleet rewrites the flow's English text selectors into that
@@ -611,6 +611,10 @@ def ocr_tool():
         if r.returncode != 0: raise RuntimeError("ocr build failed:\n" + r.stderr)
     return str(exe)
 
+SCRIPTS = {"ja": "[\u3040-\u30ff]", "ko": "[\uac00-\ud7af]", "zh": "[\u4e00-\u9fff]", "ru": "[\u0400-\u04ff]",
+           "uk": "[\u0400-\u04ff]", "ar": "[\u0600-\u06ff]", "he": "[\u0590-\u05ff]", "hi": "[\u0900-\u097f]",
+           "th": "[\u0e00-\u0e7f]", "el": "[\u0370-\u03ff]"}
+
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
 
@@ -622,8 +626,11 @@ def judge_screen(lp, ocr, tables):
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
         return got, "no text found (blank or still loading?)"
-    if best == 0:  # nothing matched the app's strings; fall back to language detection
+    if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
         want = EXPECTED_LANG.get(lp, lp.split("-")[0])
+        script = SCRIPTS.get(want.split("-")[0])
+        if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
+            return lp, None
         if ocr.get("lang") != want and ocr.get("langs", {}).get(want, 0) < 0.2:
             return ocr.get("lang"), f"text looks like '{ocr.get('lang')}', expected '{want}'"
         return lp, None
@@ -631,61 +638,106 @@ def judge_screen(lp, ocr, tables):
         return got, f"shows {got} strings ({score[got]} lines) more than {lp} ({score.get(lp, 0)})"
     return got, None
 
-def cmd_check(out, strings=None):
-    """Verify screenshots: each shows its own locale's strings, and no image is repeated across languages."""
-    out = Path(out)
-    if strings is None and (out / "run.json").exists():
-        run = json.loads((out / "run.json").read_text())
+def find_screenshots(folder):
+    """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
+    fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
+    or plain <locale>/ folders."""
+    folder = Path(folder)
+    for pattern in ("raw/*/*.png", "metadata/android/*/images/phoneScreenshots/*.png",
+                    "*/images/phoneScreenshots/*.png", "screenshots/*/*.png", "*/*.png"):
+        found = sorted(folder.glob(pattern))
+        if found:
+            out = {}
+            for png in found:
+                label = png.parent.parent.parent.name if png.parent.name == "phoneScreenshots" else png.parent.name
+                out.setdefault(label, []).append(png)
+            return out
+    return {}
+
+ZH = {"zh-CN": "zh-Hans", "zh-Hans": "zh-CN", "zh-TW": "zh-Hant", "zh-HK": "zh-Hant", "zh-Hant": "zh-TW"}
+
+def app_locale(label, available):
+    """The app language a store-locale folder name stands for (de-DE -> de, no -> nb, zh-CN -> zh-Hans); None if unknown."""
+    if label in available: return label
+    for m in (STORE_LOCALE, PLAY_LOCALE):
+        for k, v in m.items():
+            if v == label and k in available: return k
+    if ZH.get(label) in available: return ZH[label]
+    lang = label.split("-")[0]
+    if lang in ("no", "nn") and "nb" in available: return "nb"
+    if lang == "id" and "in" in available: return "in"
+    return lang if lang in available else None
+
+def cmd_check(folder, strings=None, app=None, report_dir=None):
+    """Check screenshots: each shows its own language's strings, none is a copy of another language,
+    and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
+    folder = Path(folder)
+    run_json = folder / "run.json"
+    if app:
+        app = Path(app).expanduser()
+        if app.suffix == ".apk" and not app.is_file(): raise Fail(f"no APK at {app}")
+        if app.suffix != ".apk" and not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
+        strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+        strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
+    elif strings is None and run_json.exists():
+        run = json.loads(run_json.read_text())
         strings = load_strings_apk(run["apk"]) if run.get("platform") == "android" else load_strings(Path(run["app"]))
     tables = {lp: set(t.values()) for lp, t in (strings or {}).items()}
-    raw = out / "raw"
+    report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
+    report.mkdir(parents=True, exist_ok=True)
+    images = find_screenshots(folder)
+    if not images:
+        print(f"no screenshots found in {folder}"); return 1
+    unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
+    problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
+    pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr = ocr_tool()
-    rows, by_hash, problems = [], {}, []
-    if not raw.is_dir() or not any(raw.glob("*/*.png")):
-        print("no screenshots to check"); return 1
-    pngs = [png for lp_dir in sorted(p for p in raw.iterdir() if p.is_dir()) for png in sorted(lp_dir.glob("*.png"))]
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:  # each OCR is its own process
-        ocrs = list(ex.map(lambda png: json.loads(sh([ocr, str(png)]).stdout or "{}"), pngs))
-    for png, r in zip(pngs, ocrs):
-        lp = png.parent.name
+        ocrs = list(ex.map(lambda item: json.loads(sh([ocr, str(item[1])]).stdout or "{}"), pngs))
+    rows, by_hash = [], {}
+    for (label, png), r in zip(pngs, ocrs):
+        lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
-        by_hash.setdefault(h, []).append(f"{lp}/{png.name}")
-        got, problem = judge_screen(lp, r, tables)
-        if problem: problems.append(f"{lp}/{png.name}: {problem}")
-        rows.append({"file": f"{lp}/{png.name}", "sha": h, "lang": got, "chars": r.get("chars", 0)})
-    for h, files in by_hash.items():
-        langs = {f.split("/")[0] for f in files}
-        if len(langs) > 1:
+        if r.get("chars", 0) >= 40:  # ponytail: short screens (a watch button) can be identical across languages
+            by_hash.setdefault(h, []).append((lp or label, f"{label}/{png.name}"))
+        got, problem = judge_screen(lp or label, r, tables if lp else {})
+        if problem: problems.append(f"{label}/{png.name}: {problem}")
+        rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
+                     "chars": r.get("chars", 0)})
+    for h, hits in by_hash.items():
+        langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
+        if len(langs) > 1:  # en-GB and en-US both showing the app's English is fine
             problems.append(f"identical image in {len(langs)} languages: {', '.join(files)}")
-    # expected screenshot set = union across locales; flag locales missing any
-    names = {r["file"].split("/")[1] for r in rows}
-    for lp_dir in sorted(p for p in raw.iterdir() if p.is_dir()):
-        have = {p.name for p in lp_dir.glob("*.png")}
+    names = {r["file"].split("/")[1] for r in rows}  # expected set = union across languages
+    for label in sorted(set(images) - set(unmapped)):
+        have = {p.name for p in images[label]}
         if have != names:
-            problems.append(f"{lp_dir.name}: missing {', '.join(sorted(names - have))}")
-    (out / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems}, indent=1, ensure_ascii=False))
-    write_gallery(out, rows, problems)
-    print(f"\nchecked {len(rows)} screenshots: {len(problems)} problem(s)")
+            problems.append(f"{label}: missing {', '.join(sorted(names - have))}")
+    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems}, indent=1, ensure_ascii=False))
+    write_gallery(report, rows, problems)
+    print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
     for p in problems: print(f"  - {p}")
+    if report != folder: print(f"report: {report / 'index.html'}")
     return 1 if problems else 0
 
 def write_gallery(out, rows, problems):
-    """out/index.html: one row per locale, one column per screen; flagged screenshots outlined in red."""
+    """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red."""
     import html
     flagged = {p.split(":")[0] for p in problems}
     for p in problems:  # "identical image in N languages: a/x.png, b/x.png"
         if p.startswith("identical image"): flagged.update(f.strip() for f in p.split(":", 1)[1].split(","))
+    src = {r["file"]: r.get("src", f"raw/{r['file']}") for r in rows}
     names = sorted({r["file"].split("/")[1] for r in rows})
-    locales = sorted({r["file"].split("/")[0] for r in rows} | {p.split(":")[0] for p in problems if ":" in p and "/" not in p.split(":")[0] and " " not in p.split(":")[0]})
+    locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
     for lp in locales:
         tds = []
         for nm in names:
             f = f"{lp}/{nm}"
-            if (out / "raw" / f).exists():
-                bad = f in flagged
-                tds.append(f'<td><a href="raw/{f}"><img src="raw/{f}" loading="lazy" class="{"bad" if bad else ""}"></a></td>')
+            if f in src:
+                url = html.escape(src[f], quote=True)
+                tds.append(f'<td><a href="{url}"><img src="{url}" loading="lazy" class="{"bad" if f in flagged else ""}"></a></td>')
             else:
                 tds.append('<td class="missing">missing</td>')
         cells.append(f"<tr><th>{html.escape(lp)}</th>{''.join(tds)}</tr>")
@@ -694,7 +746,7 @@ def write_gallery(out, rows, problems):
 <style>body{{font:14px -apple-system,sans-serif;margin:16px;background:#fafafa}}table{{border-collapse:collapse}}
 th{{text-align:right;padding-right:8px;vertical-align:middle}}td{{padding:3px}}img{{width:120px;border:3px solid transparent;border-radius:6px}}
 img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee;color:#d33;text-align:center}}</style>
-<h1>shotfleet: {len(rows)} screenshots, {len(locales)} locales</h1><h3>Problems ({len(problems)})</h3><ul>{probs}</ul>
+<h1>shotfleet: {len(rows)} screenshots, {len(locales)} languages</h1><h3>Problems ({len(problems)})</h3><ul>{probs}</ul>
 <table><tr><th></th>{''.join(f"<th>{html.escape(n)}</th>" for n in names)}</tr>{''.join(cells)}</table>""")
 
 # ---------- doctor / init / export ----------
@@ -810,8 +862,10 @@ def main(argv=None):
     p.add_argument("config", help="shotfleet.toml")
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
-    p = sub.add_parser("check", help="check an existing run's screenshots again")
-    p.add_argument("out", help="the run's output folder")
+    p = sub.add_parser("check", help="check screenshots from shotfleet, fastlane or any tool")
+    p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
+    p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
+    p.add_argument("--report", help="where to write check.json and index.html (default: ./shotfleet-check)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
     a = ap.parse_args(argv)
@@ -823,7 +877,9 @@ def main(argv=None):
         if a.cmd == "run": return cmd_run(a.config, a.locales.split(",") if a.locales else None, a.parallel)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
-            return cmd_check(a.out)
+            if not a.app and not (Path(a.out) / "run.json").exists():
+                print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
+            return cmd_check(a.out, app=a.app, report_dir=a.report)
         if a.cmd == "export": return cmd_export(a.out, a.fastlane)
     except (Fail, RuntimeError) as e:  # RuntimeError: simctl/adb/aapt2 failures, already worded for people
         print(f"shotfleet: {e}", file=sys.stderr); return 2

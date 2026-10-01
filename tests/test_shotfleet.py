@@ -331,5 +331,39 @@ class Config(unittest.TestCase):
         self.assertNotIn("Traceback", r.stderr)
 
 
+class CheckAnyFolder(unittest.TestCase):
+    def layout(self, paths):
+        root = Path(tempfile.mkdtemp())
+        for rel in paths:
+            (root / rel).parent.mkdir(parents=True, exist_ok=True); (root / rel).write_bytes(b"png")
+        return {k: [p.name for p in v] for k, v in sf.find_screenshots(root).items()}
+
+    def test_finds_fastlane_ios_android_and_plain_folders(self):
+        self.assertEqual(self.layout(["screenshots/de-DE/1.png", "screenshots/ja/1.png", "Snapfile"]),
+                         {"de-DE": ["1.png"], "ja": ["1.png"]})
+        self.assertEqual(self.layout(["metadata/android/pt-BR/images/phoneScreenshots/1.png",
+                                      "metadata/android/pt-BR/images/icon.png"]), {"pt-BR": ["1.png"]})
+        self.assertEqual(self.layout(["fr/a.png", "fr/b.png"]), {"fr": ["a.png", "b.png"]})
+        self.assertEqual(self.layout(["raw/ko/a.png", "index.html"]), {"ko": ["a.png"]})
+
+    def test_store_codes_map_to_app_languages(self):
+        app = {"en", "de", "nb", "pt-BR", "zh-Hans", "in"}
+        cases = {"de-DE": "de", "no": "nb", "nb-NO": "nb", "pt-BR": "pt-BR", "en-GB": "en", "zh-CN": "zh-Hans",
+                 "zh-Hans": "zh-Hans", "id": "in", "zh-Hant": None, "zh-TW": None, "fr-FR": None}
+        for store, want in cases.items():
+            self.assertEqual(sf.app_locale(store, app), want, store)
+
+    def test_script_rescues_cjk_screens_detection_misreads(self):
+        ocr = {"chars": 80, "text": "EMOM AMRAP\nTabataタイマー\n9:41\nワーク", "lang": "hr", "langs": {"hr": 0.2}}
+        self.assertEqual(sf.judge_screen("ja", ocr, {"en": {"Start"}}), ("ja", None))
+        ocr = {"chars": 80, "text": "Timer\nRounds\nWork", "lang": "en", "langs": {"en": 0.9}}
+        self.assertIsNotNone(sf.judge_screen("ja", ocr, {"en": {"Start"}})[1])
+
+    def test_one_shared_label_is_not_evidence_of_wrong_language(self):  # "Training starten" is German and Dutch
+        tables = {"de": {"Training starten"}, "nl": {"Begin"}}
+        ocr = {"chars": 21, "text": "9:41\nTraining starten", "lang": "nl", "langs": {"nl": 0.6}}
+        self.assertEqual(sf.judge_screen("nl", ocr, tables), ("nl", None))
+
+
 if __name__ == "__main__":
     unittest.main()

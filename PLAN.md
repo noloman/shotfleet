@@ -13,12 +13,14 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
 6. [x] Verify end to end on CrossfitTracker: iOS 18/18, Android 18/18, export to a scratch folder.
 
 ## Phase 1b: product quality bar (before anything is sold)
-- [x] Test suite: 37 tests, standard library only (`python3 -m unittest discover -s tests`), mutation-checked.
+- [x] Test suite: 43 tests, standard library only (`python3 -m unittest discover -s tests`), mutation-checked.
 - [x] Every expected mistake gives a one-line cause and fix, no tracebacks (config, paths, bundle id, tools, locales).
 - [x] Code review: 10 findings fixed (stale results could mislabel languages; cleanup killed other projects' Maestro drivers; ...).
 - [~] Proven on apps other than CrossfitTracker: Remoti iOS strings (String Catalogs) load correctly; full runs pending
       (need the Mac free of the emulator benchmark).
 - [ ] Docs match behavior exactly; `--help` per command.
+- [x] `shotfleet check <folder> --app <build>` checks screenshots from any tool (fastlane deliver/supply, plain folders).
+      On CrossfitTracker's fastlane screenshots: 1 real finding per platform (zh-Hant/zh-TW listing shows English app), planted errors all caught.
 
 ## Phase 2: validation assets (Claude drafts, Manu publishes)
 7. [x] Landing page draft (private preview): the problem, the CrossfitTracker demo grid, the bug it found,

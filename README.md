@@ -27,6 +27,19 @@ After capture, every screenshot is read with macOS's built-in text recognition a
 - **Missing:** a language that didn't produce every screenshot.
 - **Translation collisions, before anything runs:** for example, `tr: 'Next' -> 'İleri' also means 'Advanced'`. A tap could hit the wrong button there, so you anchor that step with `below:`.
 
+- **Languages your app doesn't have:** a store listing (say Traditional Chinese) whose screenshots can't be in that language because the app isn't translated into it.
+
+### Check screenshots made by any tool
+
+Already have screenshots from fastlane snapshot/screengrab, StoreScreens or by hand? Check them without capturing anything:
+
+```bash
+shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/<locale>/
+shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/<locale>/images/phoneScreenshots/
+```
+
+Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`). The report (`check.json` and `index.html`) goes to `./shotfleet-check` (change it with `--report`), and your fastlane folders are never touched. On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform. It found one real problem: the Traditional Chinese listings have Chinese captions over an English app. When we planted English screenshots in the German folder and deleted a Japanese one, both were reported.
+
 It also finds real localization bugs. On CrossfitTracker it found an onboarding page whose Next button was unreachable on small phones in Japanese, Korean, Chinese and Arabic.
 
 ## Quickstart (about 10 minutes)
