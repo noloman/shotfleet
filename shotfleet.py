@@ -645,12 +645,12 @@ def screenshot_ends(out, nxt):
     map_path = len(out) > 1 and re.match(r"^\s*path:", last) and re.match(r"^\s*- takeScreenshot:\s*$", out[-2])
     return bool(scalar or map_path) and not re.match(r"^\s+\w+:", nxt or "")
 
-def pause_after_screenshot(out):
-    """A 1.5 s pause while shotfleet reads the screen's text from the app (exact, any script; see capture_texts)."""
+def pause_after_screenshot(out, ms=1500):
+    """A pause while shotfleet reads the screen's text from the app (exact, any script; see capture_texts)."""
     step = next(l for l in reversed(out) if re.match(r"^\s*- takeScreenshot", l))
     pad = step[:len(step) - len(step.lstrip())]
     return [f"{pad}- extendedWaitUntil:", f'{pad}    visible: "__shotfleet_reading_screen__"',
-            f"{pad}    timeout: 1500", f"{pad}    optional: true"]
+            f"{pad}    timeout: {ms}", f"{pad}    optional: true"]
 
 # ---------- simulators ----------
 
@@ -971,6 +971,8 @@ def android_flow(text, name, shots_dir):
     header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}"
     first = next((l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")), "")
     out = [] if re.match(r"\s*- launchApp", first) else ["- launchApp"]
+    # ponytail: no screen-text reading on Android: `maestro hierarchy` can't reach the drivers of a sharded run and
+    # tears down its port forwards, which hung the run (measured 2026-10-01); Android screenshots are checked with OCR
     for line in body.splitlines():
         if re.match(r"^\s*clearState:", line): continue
         out.append(line); redirect_screenshot(out, shots_dir)
