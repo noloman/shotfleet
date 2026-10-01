@@ -46,10 +46,11 @@ figure.one figcaption { font-size: 0.92rem; color: var(--soft); }
 form { display: grid; gap: 10px; margin: 0 0 12px; }
 label { font-size: 0.92rem; font-weight: 600; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
-input[type=email], select { font: inherit; font-size: 1rem; padding: 10px 12px; border: 1px solid var(--field); border-radius: 6px; background: var(--bg); color: var(--text); }
+input[type=email], select, textarea { font: inherit; font-size: 1rem; padding: 10px 12px; border: 1px solid var(--field); border-radius: 6px; background: var(--bg); color: var(--text); }
 input[type=email] { flex: 1 1 240px; min-width: 0; }
 input[aria-invalid="true"] { border-color: var(--red); }
 button { font: inherit; font-size: 1rem; font-weight: 600; padding: 10px 18px; border: 0; border-radius: 6px; background: var(--text); color: var(--bg); cursor: pointer; }
 button:disabled { opacity: 0.6; cursor: default; }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; }
+textarea { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; font-size: 1rem; }

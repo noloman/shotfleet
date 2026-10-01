@@ -1,14 +1,16 @@
 // API for the landing page; static files in public/ are served before this runs.
 //   POST /api/signup  {email, platform, ref, website}  -> join the waitlist (KV key "email:<address>")
 //   POST /api/forget  {email}                           -> remove an address from the waitlist
+//   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>")
 // Read signups: ./signups.sh
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
-const MAX_BODY = 2048;
+const MAX_BODY = 4096;
+const ROUTES = new Set(["/api/signup", "/api/forget", "/api/contact"]);
 
 export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
-    if (pathname !== "/api/signup" && pathname !== "/api/forget") return json({ error: "Not found" }, 404);
+    if (!ROUTES.has(pathname)) return json({ error: "Not found" }, 404);
     if (request.method !== "POST") return json({ error: "Use POST" }, 405);
 
     const ip = request.headers.get("cf-connecting-ip") || "unknown";
@@ -21,6 +23,21 @@ export default {
     if (text.length > MAX_BODY) return json({ error: "Request too large" }, 413);
     let body;
     try { body = JSON.parse(text); } catch { return json({ error: "Send JSON" }, 400); }
+
+    if (pathname === "/api/contact") {
+      if (body.website) return json({ ok: true });
+      const message = String(body.message || "").trim();
+      if (message.length < 2) return json({ error: "Write a message first." }, 400);
+      if (message.length > 2000) return json({ error: "That message is too long. Keep it under 2,000 characters." }, 400);
+      const reply = String(body.email || "").trim().toLowerCase();
+      if (reply && (reply.length > 254 || !EMAIL.test(reply))) {
+        return json({ error: "That reply address doesn't look right. Fix it or leave it empty." }, 400);
+      }
+      await env.WAITLIST.put(`msg:${new Date().toISOString()}-${crypto.randomUUID().slice(0, 8)}`,
+        JSON.stringify({ message, email: reply || null, country: request.cf?.country || null }));
+      console.log(JSON.stringify({ event: "contact" }));
+      return json({ ok: true });
+    }
 
     const email = String(body.email || "").trim().toLowerCase();
     if (email.length > 254 || !EMAIL.test(email)) {

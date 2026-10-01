@@ -44,7 +44,19 @@
   <p id="forget-done" role="status" tabindex="-1" hidden>Done. If that address was on the list, it's gone.</p>
 
   <h2>Questions</h2>
-  <p>CONTACT_LINE</p>
+  <p>Write to me here. If you want an answer, add your email and I'll reply there. Messages are stored the same way as signups and deleted once answered.</p>
+  <form id="contact" novalidate>
+    <label for="contact-message">Message</label>
+    <textarea id="contact-message" name="message" rows="5" maxlength="2000" required></textarea>
+    <label for="contact-email">Your email, if you want a reply</label>
+    <div class="row">
+      <input id="contact-email" name="email" type="email" placeholder="you@example.com" autocomplete="email">
+      <button type="submit">Send</button>
+    </div>
+    <input name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
+    <p class="form-error red small" role="alert" hidden></p>
+  </form>
+  <p id="contact-done" role="status" tabindex="-1" hidden>Sent. If you left an email, I'll reply there.</p>
 
   <footer class="small"><a href="/">Back to shotfleet</a></footer>
 </main>
