@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""shotfleet: localized store screenshots from one Maestro flow, on parallel iOS simulators.
+"""shotfleet: localized store screenshots from one Maestro flow, on parallel simulators/emulators.
 
-usage: shotfleet.py run <config.toml> [--locales de,ja] [--parallel N]
-       shotfleet.py check <out_dir>
+usage: shotfleet doctor
+       shotfleet init <App.app | app.apk> [dir]
+       shotfleet run <config.toml> [--locales de,ja] [--parallel N]
+       shotfleet check <out_dir>
+       shotfleet export <out_dir> --fastlane <fastlane_dir>
 
-For each locale the app ships (*.lproj), shotfleet rewrites the flow's English text selectors
-into that language using the app's own .strings files, runs it on a simulator whose app
-language is set to that locale, and verifies every screenshot (right language, not a copy).
+For each language the app ships, shotfleet rewrites the flow's English text selectors into that
+language using the strings compiled into the app, runs every language in parallel, and verifies
+every screenshot (shows that language's strings, isn't a copy of another, none missing).
 """
 import hashlib, json, os, re, shutil, subprocess, sys, time, tomllib
 from pathlib import Path
@@ -175,6 +178,52 @@ def make_pool(n, device_type, runtime, prefix="shotfleet"):
               "--batteryState", "charged", "--batteryLevel", "100")
     return pool
 
+# ---------- host safety ----------
+
+def descendants(root):
+    """PIDs under root (inclusive), from one ps snapshot."""
+    kids = {}
+    for line in sh(["ps", "-Ao", "pid=,ppid="]).stdout.splitlines():
+        pid, ppid = map(int, line.split())
+        kids.setdefault(ppid, []).append(pid)
+    out, todo = set(), [root]
+    while todo:
+        p = todo.pop(); out.add(p); todo += kids.get(p, [])
+    return out
+
+def run_guarded(cmd, timeout, env=None):
+    """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
+    Maestro dumps simulator diagnostics after every failed flow; several at once wedge CoreSimulator
+    (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed."""
+    import threading
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+    done = threading.Event()
+    def watch():
+        while not done.wait(5):
+            ours = descendants(proc.pid)
+            for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
+                if int(line) in ours: sh(["kill", "-9", line])
+    threading.Thread(target=watch, daemon=True).start()
+    try:
+        out, _ = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        for p in descendants(proc.pid): sh(["kill", "-9", str(p)])
+        raise
+    finally:
+        done.set()
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, "")
+
+def fit_parallel(n):
+    """Halve parallelism under memory pressure; refuse when critical. A loaded Mac makes flows time out
+    and retries pile on more load."""
+    level = sh(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
+    if level == "4":
+        sys.exit("macOS reports critical memory pressure; close some apps and run again")
+    if level == "2" and n > 1:
+        print(f"memory pressure is elevated: using {max(1, n // 2)} devices instead of {n}")
+        return max(1, n // 2)
+    return n
+
 # ---------- run ----------
 
 def kill_stale_drivers():
@@ -226,7 +275,7 @@ def cmd_run(config_path, only=None, parallel=None):
         print("selectors not found in the app's strings (left as-is; they may fail outside English):")
         for m in miss: print(f"   {m!r}")
 
-    n = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
+    n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(report["locales"])))
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
     kill_stale_drivers()
     pool = make_pool(n, cfg["device_type"], cfg["runtime"])
@@ -244,12 +293,12 @@ def cmd_run(config_path, only=None, parallel=None):
         for lp in lps: shutil.copy(out / "flows" / f"{lp}.yaml", flows_dir)
         k = min(n, len(lps))
         junit = out / f"junit{attempt}.xml"
-        env = {**os.environ, "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"}  # 4 drivers starting at once are slow
+        env = {**os.environ, "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
         try:
-            r = sh(["maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
-                    "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
-                    "--debug-output", str(out / "debug" / f"attempt{attempt}")],
-                   env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
+            r = run_guarded(["maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
+                             "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
+                             "--debug-output", str(out / "debug" / f"attempt{attempt}")],
+                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
             (out / f"maestro{attempt}.log").write_text(r.stdout + r.stderr)
         except subprocess.TimeoutExpired:
             print("maestro timed out")
@@ -389,7 +438,7 @@ def android_run(cfg, path, out, only, parallel):
         print("selectors not found in the app's strings (left as-is; they may fail outside English):")
         for m in miss: print(f"   {m!r}")
     todo = list(report["locales"])
-    n = min(parallel or cfg.get("parallel", 4), len(todo))
+    n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo)))
     print(f"booting {n} emulators ({cfg.get('avd', 'shotfleet_android')}, 1080x1920)", flush=True)
     pool = android_pool(n, cfg)
     try:
@@ -410,9 +459,9 @@ def android_run(cfg, path, out, only, parallel):
                 (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / "tmp" / tag / f"f{j}"))
             junit, dbg = out / f"junit_{tag}.xml", out / "debug" / tag
             try:
-                r = sh(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
-                        "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
-                       timeout=cfg.get("timeout_s", 600) + 300)
+                r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
+                                 "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
+                                timeout=cfg.get("timeout_s", 600) + 300, env={**os.environ, "MAESTRO_CLI_NO_ANALYTICS": "1"})
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
             except subprocess.TimeoutExpired:
                 print(f"maestro timed out in {tag}")
@@ -542,6 +591,102 @@ img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee
 <h1>shotfleet: {len(rows)} screenshots, {len(locales)} locales</h1><h3>Problems ({len(problems)})</h3><ul>{probs}</ul>
 <table><tr><th></th>{''.join(f"<th>{html.escape(n)}</th>" for n in names)}</tr>{''.join(cells)}</table>""")
 
+# ---------- doctor / init / export ----------
+
+def cmd_doctor():
+    """Check the tools shotfleet drives; print how to fix what's missing."""
+    have = lambda c: shutil.which(c) is not None
+    aapt2 = sorted((SDK / "build-tools").glob("*/aapt2"))
+    checks = [
+        ("maestro", have("maestro"), "curl -Ls https://get.maestro.mobile.dev | bash", "both"),
+        ("swiftc (OCR checks)", have("swiftc"), "xcode-select --install", "both"),
+        ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
+         "install Xcode and an iOS Simulator runtime", "iOS"),
+        ("adb", have("adb"), "Android Studio > SDK Manager > Platform-Tools", "Android"),
+        ("emulator", (SDK / "emulator/emulator").exists(), f"SDK Manager > Android Emulator (ANDROID_HOME={SDK})", "Android"),
+        ("avdmanager", (SDK / "cmdline-tools/latest/bin/avdmanager").exists(), "SDK Manager > Command-line Tools", "Android"),
+        ("aapt2", bool(aapt2), "SDK Manager > Build-Tools", "Android"),
+    ]
+    for name, ok, fix, platform in checks:
+        print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
+    ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
+    ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
+    print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
+    return 0 if ok_ios or ok_android else 1
+
+FLOW_TEMPLATE = """appId: {app_id}
+name: "Store screenshots"
+---
+# Write this flow in English: shotfleet translates every text selector for each language.
+# Tap and assert by the text the user sees; take a screenshot for each store image you want.
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 01_home
+# - tapOn: "Settings"
+# - takeScreenshot: 02_settings
+"""
+
+def cmd_init(app, dest="."):
+    """Write shotfleet.toml + flow.yaml for an .app (iOS simulator build) or .apk."""
+    app, dest = Path(app).expanduser().resolve(), Path(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    if app.suffix == ".apk":
+        aapt2 = sorted((SDK / "build-tools").glob("*/aapt2"))[-1]
+        app_id = re.search(r"package: name='([^']+)'", sh([str(aapt2), "dump", "badging", str(app)]).stdout).group(1)
+        locales = shipped_locales(load_strings_apk(app))
+        cfg = f'[android]\napk = "{app}"\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
+    elif app.suffix == ".app":
+        app_id = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
+        locales = sorted(load_strings(app))
+        cfg = (f'[ios]\napp = "{app}"\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
+               'device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # 1320x2868 = App Store 6.9"\n'
+               f'runtime = "{latest_ios_runtime()}"\nparallel = 4\nout = "out"\n')
+    else:
+        print("pass a simulator .app or an .apk"); return 2
+    for name, text in (("shotfleet.toml", cfg), ("flow.yaml", FLOW_TEMPLATE.format(app_id=app_id))):
+        if (dest / name).exists(): print(f"keeping existing {dest / name}"); continue
+        (dest / name).write_text(text); print(f"wrote {dest / name}")
+    print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
+    print(f"next: edit {dest / 'flow.yaml'}, then: shotfleet run {dest / 'shotfleet.toml'} --locales en")
+    return 0
+
+def latest_ios_runtime():
+    rts = json.loads(sh(["xcrun", "simctl", "list", "runtimes", "-j"]).stdout or '{"runtimes": []}')["runtimes"]
+    ios = [r for r in rts if r.get("platform") == "iOS" and r.get("isAvailable")]
+    return ios[-1]["identifier"] if ios else "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
+
+# Android language tag -> Google Play listing locale (fastlane supply folder names)
+PLAY_LOCALE = {
+    "en": "en-US", "ar": "ar", "da": "da-DK", "de": "de-DE", "es": "es-ES", "fr": "fr-FR", "hi": "hi-IN",
+    "it": "it-IT", "ja": "ja-JP", "ko": "ko-KR", "nb": "no-NO", "nl": "nl-NL", "pl": "pl-PL", "pt": "pt-BR",
+    "pt-BR": "pt-BR", "pt-PT": "pt-PT", "ru": "ru-RU", "sv": "sv-SE", "tr": "tr-TR", "zh-CN": "zh-CN",
+    "zh-TW": "zh-TW", "uk": "uk", "id": "id", "in": "id", "ro": "ro", "fi": "fi-FI", "cs": "cs-CZ",
+}
+
+def cmd_export(out, fastlane):
+    """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
+    Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
+    out, fastlane = Path(out), Path(fastlane)
+    run = json.loads((out / "run.json").read_text())
+    android = run.get("platform") == "android"
+    problems = json.loads((out / "check.json").read_text())["problems"] if (out / "check.json").exists() else []
+    bad = {p.split(":")[0].split("/")[0] for p in problems if not p.startswith("identical")}
+    for p in problems:
+        if p.startswith("identical"): bad.update(f.strip().split("/")[0] for f in p.split(":", 1)[1].split(","))
+    done = []
+    for lp_dir in sorted(d for d in (out / "raw").iterdir() if d.is_dir()):
+        lp = lp_dir.name
+        if lp in bad: print(f"skip {lp}: failed checks (see {out / 'check.json'})"); continue
+        store = (PLAY_LOCALE if android else STORE_LOCALE).get(lp, lp)
+        dst = fastlane / "metadata/android" / store / "images/phoneScreenshots" if android else fastlane / "screenshots" / store
+        dst.mkdir(parents=True, exist_ok=True)
+        for old in dst.glob("*.png"): old.unlink()  # replace the set, don't mix old and new
+        for png in sorted(lp_dir.glob("*.png")): shutil.copy2(png, dst / png.name)
+        done.append(store)
+    print(f"exported {len(done)} locales to {fastlane}: {', '.join(done)}")
+    return 0 if not bad else 1
+
 def main():
     a = sys.argv[1:]
     if len(a) >= 2 and a[0] == "run":
@@ -550,6 +695,12 @@ def main():
         sys.exit(cmd_run(a[1], only, int(opts["--parallel"]) if "--parallel" in opts else None))
     if len(a) == 2 and a[0] == "check":
         sys.exit(cmd_check(a[1]))
+    if a[:1] == ["doctor"]:
+        sys.exit(cmd_doctor())
+    if len(a) in (2, 3) and a[0] == "init":
+        sys.exit(cmd_init(*a[1:]))
+    if len(a) == 4 and a[0] == "export" and a[2] == "--fastlane":
+        sys.exit(cmd_export(a[1], a[3]))
     print(__doc__); sys.exit(2)
 
 if __name__ == "__main__":

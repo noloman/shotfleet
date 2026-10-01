@@ -1,6 +1,6 @@
 # CrossfitTracker Android: Play Store phone screenshots in every language the app ships.
 [android]
-apk = "/Users/manu/Developer/CrossfitTracker/.claude/worktrees/subscription-cancellation-feedback-70656e/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
+apk = "~/Developer/CrossfitTracker/.claude/worktrees/onboarding-goals-scroll/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
 package = "me.manulorenzo.crossfittracker.android.debug"
 flow = "android.yaml"
 avd = "shotfleet_android"   # created on first use at 1080x1920 (Play rejects phone screenshots taller than 2:1)

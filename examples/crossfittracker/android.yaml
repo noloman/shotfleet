@@ -6,14 +6,17 @@ name: "Android Store Screenshots"
     timeout: 5000
 
 # ── Onboarding (Android): 3 intro pages, experience, goals, equipment, summary ──
-# the disclaimer can take a few seconds to appear on a busy emulator; wait for it, then dismiss
-- extendedWaitUntil:
-    visible: "Important Disclaimer"
-    timeout: 8000
-    optional: true
-- tapOn:
-    text: "I Understand"
-    optional: true
+# the disclaimer can appear late on a busy machine: dismiss it until onboarding shows
+- repeat:
+    while:
+      notVisible: "Welcome to WOD Tracker"
+    times: 15
+    commands:
+      - tapOn:
+          text: "I Understand"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
 - assertVisible: "Welcome to WOD Tracker"
 - tapOn: "Next"
 - waitForAnimationToEnd:

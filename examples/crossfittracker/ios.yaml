@@ -10,12 +10,17 @@ name: "iOS Store Screenshots"
 - waitForAnimationToEnd:
     timeout: 3000
 
-# ── Disclaimer (added by shotfleet example: current builds show it before onboarding) ──
-- tapOn:
-    text: "I Understand"
-    optional: true
-- waitForAnimationToEnd:
-    timeout: 3000
+# the disclaimer can appear late on a busy machine: dismiss it until onboarding shows
+- repeat:
+    while:
+      notVisible: "Your Training. Your Data."
+    times: 15
+    commands:
+      - tapOn:
+          text: "I Understand"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
 
 # ── Onboarding (7 pages, redesigned in 1.5.x) ─────
 # 3 intro pages, Experience Level, Training Goals, Equipment: defaults are fine, so Next through them
