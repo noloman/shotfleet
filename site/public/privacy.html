@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Privacy · shotfleet</title>
 <meta name="description" content="What the shotfleet waitlist stores about you, why, and how to delete it.">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0b0f14">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/site.css">
 </head>
@@ -38,7 +39,7 @@
   <form id="forget" novalidate>
     <label for="forget-email">Email</label>
     <div class="inline">
-      <input id="forget-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required style="flex:1 1 240px;width:auto">
+      <input id="forget-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <button class="btn" type="submit">Delete my email</button>
     </div>
     <p class="form-error" role="alert" hidden></p>
@@ -50,7 +51,7 @@
   <form id="contact" novalidate>
     <div class="field"><label for="contact-message">Message</label><textarea id="contact-message" name="message" maxlength="2000" required></textarea></div>
     <div class="field"><label for="contact-email">Your email, if you want a reply</label>
-      <div class="inline"><input id="contact-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" style="flex:1 1 240px;width:auto"><button class="btn" type="submit">Send</button></div></div>
+      <div class="inline"><input id="contact-email" name="email" type="email" placeholder="you@example.com" autocomplete="email"><button class="btn" type="submit">Send</button></div></div>
     <input name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
     <p class="form-error" role="alert" hidden></p>
   </form>

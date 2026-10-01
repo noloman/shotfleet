@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>shotfleet · localized store screenshots</title>
-<meta name="description" content="Write one Maestro flow in English. shotfleet runs it in every language your iOS or Android app ships, in parallel, and checks every screenshot before it reaches the App Store or Google Play.">
+<meta name="description" content="Write one Maestro flow in English. shotfleet runs it in every language your iOS and Android app ships, in parallel, and checks every screenshot before it goes to the stores.">
 <meta property="og:title" content="shotfleet · localized store screenshots">
-<meta property="og:description" content="One Maestro flow in English. Every language your app ships, captured in parallel and checked.">
+<meta property="og:description" content="One English Maestro flow. Every language your app ships, in parallel, checked.">
 <meta property="og:image" content="https://shotfleet.manulorenzop.workers.dev/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -15,11 +15,10 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.manulorenzop.workers.dev/">
-<meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#0b0f14">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preload" href="/fonts/Archivo-400_800-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/IBMPlexMono-500-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -27,190 +26,73 @@
 <header class="top">
   <div class="wrap">
     <a class="brand" href="/">shotfleet</a>
-    <nav aria-label="Sections">
-      <a class="opt" href="#how">How it works</a>
-      <a class="opt" href="#checks">Checks</a>
-      <a href="#price">Pricing</a>
-    </nav>
+    <nav aria-label="Sections"><a href="#price">Pricing</a></nav>
   </div>
 </header>
 
 <main class="wrap">
-
   <div class="hero">
-    <div class="hero-copy">
-      <p class="label">Localized store screenshots</p>
-      <h1>Store screenshots in <em class="amber">every language</em> your app ships.</h1>
-      <p class="lede">Write one Maestro flow in English. shotfleet runs it in every language your iOS and Android app ships, in parallel, and checks each screenshot before it goes to the stores.</p>
-      <div class="cta">
-        <a class="btn" href="#signup">Get early access →</a>
-        <a class="btn ghost" href="#run">See a real run</a>
-      </div>
-      <p class="byline"><span>Built by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a>, who ships WOD Tracker, Stressi and Kuokka on both stores.</span></p>
-    </div>
+    <h1>Store screenshots in every language your app ships.</h1>
+    <p class="sub">One English Maestro flow. Every language, in parallel, checked before it reaches the stores.</p>
+    <a class="btn" href="#signup">Get early access</a>
+    <p class="by">For iOS and Android · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></p>
+  </div>
 
-    <div class="pipe" role="img" aria-label="How shotfleet works: your English flow and your app's strings go in, every language runs in parallel on simulators, each screenshot is checked, and the passing ones land in your fastlane folders.">
-      <div class="node"><span class="t">flow.yaml</span><span class="s">one Maestro flow · English</span></div>
-      <div class="wire"><span>+ strings from your build</span></div>
-      <div class="node key"><span class="t">shotfleet</span><span class="s">tapOn "Next" → Weiter · 次へ · Suivant · İleri</span></div>
-      <div class="wire"><span>parallel simulators</span></div>
-      <div class="fan" aria-hidden="true"><div class="ok">de</div><div class="ok">ja</div><div class="ok">ar</div><div class="ok">ko</div><div class="ok">ru</div><div class="ok">es</div></div>
-      <div class="wire"><span>read back · compared</span></div>
-      <div class="node"><span class="t">fastlane/screenshots</span><span class="s">only languages that pass</span></div>
+  <div class="shots">
+    <figure><img src="img/train_ja.jpg" alt="WOD Tracker's Train screen in Japanese" width="360" height="782"><figcaption>ja</figcaption></figure>
+    <figure><img src="img/train_fr.jpg" alt="The same screen in French" width="360" height="782"><figcaption>fr</figcaption></figure>
+    <figure><img src="img/train_ar.jpg" alt="The same screen in Arabic" width="360" height="782"><figcaption>ar</figcaption></figure>
+    <figure><img src="img/train_ko.jpg" alt="The same screen in Korean" width="360" height="782" loading="lazy"><figcaption>ko</figcaption></figure>
+    <figure><img src="img/train_ru.jpg" alt="The same screen in Russian" width="360" height="782" loading="lazy"><figcaption>ru</figcaption></figure>
+    <figure><img src="img/train_es.jpg" alt="The same screen in Spanish" width="360" height="782" loading="lazy"><figcaption>es</figcaption></figure>
+  </div>
+  <p class="small shots-note">Six of 72 screenshots from one run on my app, WOD Tracker. Nothing in the app was changed to get them.</p>
+
+  <div class="points">
+    <div>
+      <h3>One flow, not eighteen</h3>
+      <p>Your Maestro flow taps “Next”. shotfleet reads the translations inside your build and taps “Weiter”, “次へ” or “İleri” in each language. No copies of the flow, no changes to the app.</p>
+    </div>
+    <div>
+      <h3>iOS and Android</h3>
+      <p>Every language runs at the same time on simulators and emulators. 18 languages took 9 minutes on iOS and 15 on Android, then went straight into fastlane’s folders.</p>
+    </div>
+    <div>
+      <h3>Every screenshot checked</h3>
+      <p>Each image is read back and compared with your app’s strings: wrong language, copies and missing screens are caught. The first run found a real bug in my app.</p>
     </div>
   </div>
 
-  <section aria-labelledby="proof">
-    <div class="head">
-      <div><p class="label">Real output</p><h2 id="proof">One flow. Eighteen languages.</h2></div>
-      <p class="muted">The Train screen of WOD Tracker, my CrossFit app, from a single shotfleet run. Nothing in the app was changed to get these.</p>
-    </div>
-    <div class="strip">
-      <figure><img src="img/train_ja.jpg" alt="Train screen in Japanese" width="360" height="782" loading="lazy" decoding="async"><figcaption><span>ja</span><b>pass</b></figcaption></figure>
-      <figure><img src="img/train_fr.jpg" alt="Train screen in French" width="360" height="782" loading="lazy" decoding="async"><figcaption><span>fr</span><b>pass</b></figcaption></figure>
-      <figure><img src="img/train_ar.jpg" alt="Train screen in Arabic" width="360" height="782" loading="lazy" decoding="async"><figcaption><span>ar</span><b>pass</b></figcaption></figure>
-      <figure><img src="img/train_ko.jpg" alt="Train screen in Korean" width="360" height="782" loading="lazy" decoding="async"><figcaption><span>ko</span><b>pass</b></figcaption></figure>
-      <figure><img src="img/train_ru.jpg" alt="Train screen in Russian" width="360" height="782" loading="lazy" decoding="async"><figcaption><span>ru</span><b>pass</b></figcaption></figure>
-      <figure><img src="img/train_es.jpg" alt="Train screen in Spanish" width="360" height="782" loading="lazy" decoding="async"><figcaption><span>es</span><b>pass</b></figcaption></figure>
-    </div>
-  </section>
-
-  <section aria-labelledby="why">
-    <div class="head">
-      <div><p class="label">Why I built it</p><h2 id="why">My app spoke 18 languages. Its screenshots spoke one.</h2></div>
-    </div>
-    <div class="prose">
-      <p>I build mobile apps on my own: WOD Tracker, Stressi, Kuokka, AnywhereRoles and a few more, most of them on both stores. For WOD Tracker, every language folder in my fastlane setup held the same English screenshots. Anyone browsing the App Store in Japanese saw an app that looked untranslated.</p>
-      <p>The reason was boring. My screenshot script is a Maestro flow, and Maestro taps buttons by their text. In German, “Next” is “Weiter”, so the flow stops on the first screen. When I finally fixed it, it took about 630 lines of capture and compose scripts written for that one app.</p>
-      <p>shotfleet is the general version: it reads the translations already compiled into your app and rewrites every tap for each language, so one English flow covers all of them.</p>
-    </div>
-  </section>
-
-  <section id="run" aria-labelledby="run-h">
-    <div class="head">
-      <div><p class="label">A real run</p><h2 id="run-h">A real run on WOD Tracker.</h2></div>
-      <p class="muted">The actual output, including the warning that saved the Turkish screenshots.</p>
-    </div>
-    <div class="run">
-<pre class="term" aria-label="Terminal output of a shotfleet run"><span class="dim">$</span> shotfleet run shotfleet.toml
-<span class="warn">warning tr: 'Next' -> 'İleri' also means 'Advanced'</span>
-capturing 18 locales on 4 simulators...
-<span class="ok">ok</span>   ar       4/4 screenshots
-<span class="ok">ok</span>   da       4/4 screenshots
-<span class="ok">ok</span>   de       4/4 screenshots
-<span class="dim">…</span>
-captured 18/18 locales in 8m 54s on 4 simulators
-checked 72 screenshots: <span class="ok">0 problem(s)</span>
-
-<span class="dim">$</span> shotfleet export out --fastlane fastlane/
-exported 18 locales to fastlane/</pre>
-      <div class="facts">
-        <div><b>8m 54s</b><span>iOS · 18 languages × 4 screens · 4 simulators</span></div>
-        <div><b>15m 24s</b><span>Android · the same 18 languages · 4 emulators</span></div>
-        <div><b>0 lines</b><span>changed in the app</span></div>
+  <section class="price" id="price" aria-labelledby="price-h">
+    <h2 id="price-h">Early access</h2>
+    <p class="amount">$79<span>once, per developer</span></p>
+    <p class="founder"><b>$49</b> for the first 100 people on the list.</p>
+    <p class="muted">Unlimited apps, a year of updates. Needs a Mac and Maestro; native apps only for now.</p>
+    <form id="signup" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
       </div>
-    </div>
-  </section>
-
-  <section aria-labelledby="bug-h">
-    <div class="bug">
-      <figure>
-        <img src="img/bug_zh.jpg" alt="Chinese onboarding page with its Next button pushed below the bottom of the screen" width="360" height="640" loading="lazy">
-        <figcaption>✗ zh-CN · Next unreachable</figcaption>
-      </figure>
-      <div class="prose">
-        <p class="label">Found on the first run</p>
-        <h2 id="bug-h">Users in four languages couldn’t get through onboarding.</h2>
-        <p>On a common small phone, the Training Goals page pushed its Next button off the bottom in Japanese, Korean, Chinese and Arabic, and the page didn’t scroll. English fit, so I never noticed. The Chinese run got stuck there, and the fix was two lines.</p>
-        <p>A screenshot run is the only time I see my whole app in every language. This one found a real bug.</p>
+      <div class="field">
+        <label for="platform">You ship on</label>
+        <select id="platform" name="platform">
+          <option value="both">iOS and Android</option>
+          <option value="ios">iOS only</option>
+          <option value="android">Android only</option>
+        </select>
       </div>
-    </div>
+      <button class="btn" type="submit">Join the list</button>
+      <input name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
+      <p class="form-error" role="alert" hidden></p>
+    </form>
+    <p id="signup-done" class="done" role="status" tabindex="-1" hidden><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
   </section>
-
-  <section id="checks" aria-labelledby="checks-h">
-    <div class="head">
-      <div><p class="label">What it checks</p><h2 id="checks-h">Every screenshot is read back.</h2></div>
-      <p class="muted">Every screenshot is read back with macOS’s text recognition and compared with your app’s own strings. Languages that fail are left out of the export.</p>
-    </div>
-    <div class="rows">
-      <div class="row"><h3>Wrong language</h3><p>The German folder shows English or Japanese strings, because the app ignored the language or a step fell back to English.</p></div>
-      <div class="row"><h3>Copies</h3><p>The same image in two languages, the classic “English set copied into every folder”.</p></div>
-      <div class="row"><h3>Missing screens</h3><p>A language that stopped part-way through the flow, with the step that failed and why.</p></div>
-      <div class="row"><h3>Word clashes</h3><p>Before anything runs: translations where one word means two things, like Turkish “İleri” for both Next and Advanced, so a tap could land on the wrong button.</p></div>
-    </div>
-  </section>
-
-  <section id="how" aria-labelledby="how-h">
-    <div class="head">
-      <div><p class="label">What you need</p><h2 id="how-h">A Mac, Maestro, and a build.</h2></div>
-      <p class="muted">If fastlane snapshot or screengrab already works for you with UI tests, you probably don’t need this. It’s for apps whose screenshot flows tap text, or that never got localized screenshots working.</p>
-    </div>
-    <div class="needs">
-      <div><p class="label">01 · Mac</p><p>Xcode and a simulator runtime for iOS, the Android SDK and an emulator image for Android. Either platform works on its own.</p></div>
-      <div><p class="label">02 · Maestro 2.x</p><p>A screenshot flow is a short YAML file: launch, tap through, take a screenshot. <code>shotfleet init</code> writes a starter one.</p></div>
-      <div><p class="label">03 · Native app</p><p>A simulator build or an APK. Strings from <code>.strings</code>, String Catalogs or <code>strings.xml</code>. Flutter and React Native aren’t supported yet.</p></div>
-    </div>
-    <p class="small notincl">Not included: device frames and captions (pair it with frameit or your design tool), and a CI mode (it runs on a Mac you control).</p>
-  </section>
-
-  <section aria-labelledby="vs-h">
-    <div class="head">
-      <div><p class="label">If you already use…</p><h2 id="vs-h">Where it fits.</h2></div>
-      <p class="muted">Capturing is getting easy. Checking 72 screenshots by eye is the part nobody does.</p>
-    </div>
-    <div class="rows">
-      <div class="row"><h3>fastlane snapshot / screengrab</h3><p>Free, and great if your UI tests already cover the screens. It needs separate test code for iOS and Android, runs the languages one after another, and doesn't check the results.</p></div>
-      <div class="row"><h3>Maestro on its own</h3><p>Maestro's docs suggest one flow per language. shotfleet keeps your single English flow and runs every language locally, in parallel, without Maestro Cloud.</p></div>
-      <div class="row"><h3>StoreScreens, asc, simshot</h3><p>Newer free tools for capturing App Store screenshots. iOS only, and as far as I can tell none of them checks that each screenshot is in the right language.</p></div>
-      <div class="row"><h3>ButterKit, AppScreens, frameit</h3><p>They add frames and captions to screenshots you already have. Use them after shotfleet: it captures and checks, they make it pretty.</p></div>
-    </div>
-  </section>
-
-  <section id="price" aria-labelledby="price-h">
-    <div class="price">
-      <div>
-        <p class="label">Early access</p>
-        <h2 id="price-h">One license, every app you make.</h2>
-        <p class="amount">$79<span>once · per developer</span></p>
-        <p class="muted">Founder price for the first 100 people on the list: <b class="founder">$49</b>.</p>
-        <ul class="list">
-          <li>iOS and Android</li>
-          <li>Unlimited apps and runs</li>
-          <li>fastlane export and an HTML review page</li>
-          <li>A year of updates, and your version keeps working after that</li>
-        </ul>
-      </div>
-      <div>
-        <h3>It isn’t on sale yet.</h3>
-        <p class="muted">Early access: join the list and you’ll get the $49 founder price when it opens. I’ll write once, when it’s ready. Nothing else.</p>
-        <form id="signup" novalidate>
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
-          </div>
-          <div class="field">
-            <label for="platform">You ship on</label>
-            <select id="platform" name="platform">
-              <option value="both">iOS and Android</option>
-              <option value="ios">iOS only</option>
-              <option value="android">Android only</option>
-            </select>
-          </div>
-          <input name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-          <button class="btn" type="submit">Tell me when it’s ready →</button>
-          <p class="form-error" role="alert" hidden></p>
-        </form>
-        <p id="signup-done" class="done" role="status" tabindex="-1" hidden><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
-      </div>
-    </div>
-  </section>
-
 </main>
 
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/privacy">Privacy</a></span>
+    <a href="/privacy">Privacy</a>
   </div>
 </footer>
 

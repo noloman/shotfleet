@@ -4,11 +4,11 @@ import AppKit
 let W = 1200.0, H = 630.0
 let img = NSImage(size: NSSize(width: W, height: H))
 img.lockFocus()
-NSColor(srgbRed: 0.043, green: 0.059, blue: 0.078, alpha: 1).setFill(); NSRect(x: 0, y: 0, width: W, height: H).fill()
+NSColor.white.setFill(); NSRect(x: 0, y: 0, width: W, height: H).fill()
 
-let ink = NSColor(srgbRed: 0.91, green: 0.933, blue: 0.957, alpha: 1)
-let amber = NSColor(srgbRed: 0.91, green: 0.569, blue: 0.227, alpha: 1)
-let soft = NSColor(srgbRed: 0.576, green: 0.639, blue: 0.706, alpha: 1)
+let ink = NSColor(srgbRed: 0.114, green: 0.114, blue: 0.122, alpha: 1)
+let amber = NSColor(srgbRed: 0.0, green: 0.4, blue: 0.8, alpha: 1)
+let soft = NSColor(srgbRed: 0.431, green: 0.431, blue: 0.451, alpha: 1)
 func draw(_ s: String, _ size: CGFloat, _ weight: NSFont.Weight, _ color: NSColor, _ rect: NSRect) {
     let p = NSMutableParagraphStyle(); p.lineSpacing = 4
     (s as NSString).draw(in: rect, withAttributes: [.font: NSFont.systemFont(ofSize: size, weight: weight), .foregroundColor: color, .paragraphStyle: p])
@@ -27,7 +27,7 @@ for (i, lp) in locales.enumerated() {
     NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10).addClip()
     shot.draw(in: rect)
     NSGraphicsContext.restoreGraphicsState()
-    NSColor(srgbRed: 0.173, green: 0.231, blue: 0.294, alpha: 1).setStroke()
+    NSColor(srgbRed: 0.898, green: 0.898, blue: 0.918, alpha: 1).setStroke()
     let border = NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10); border.lineWidth = 1.5; border.stroke()
     draw(lp, 22, .medium, soft, NSRect(x: x + 2, y: H - top + 8, width: tw, height: 30))
 }
