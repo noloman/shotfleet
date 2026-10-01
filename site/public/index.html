@@ -7,65 +7,17 @@
 <meta name="description" content="Localized App Store and Google Play screenshots from one English Maestro flow, in every language your app ships, checked before upload.">
 <meta property="og:title" content="shotfleet">
 <meta property="og:description" content="My app is translated into 18 languages. Its store screenshots were all in English. So I wrote this.">
-<meta property="og:image" content="/img/train_ja.jpg">
+<meta property="og:image" content="https://shotfleet.manulorenzop.workers.dev/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, French, Arabic, Korean, Russian and Spanish">
+<meta property="og:url" content="https://shotfleet.manulorenzop.workers.dev/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.manulorenzop.workers.dev/">
 <meta name="color-scheme" content="light dark">
-<style>
-:root {
-  --bg: #ffffff;
-  --text: #1c1d1f;
-  --soft: #5d6168;
-  --line: #e3e4e6;
-  --field: #b9bcc1;
-  --link: #1a4fd0;
-  --code-bg: #f4f4f5;
-  --red: #b4301f;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #151618; --text: #e6e6e3; --soft: #a2a5ab; --line: #2c2e32; --field: #4a4d53; --link: #8aaeff; --code-bg: #1e2023; --red: #ff8a78; color-scheme: dark; }
-}
-:root[data-theme="dark"] { --bg: #151618; --text: #e6e6e3; --soft: #a2a5ab; --line: #2c2e32; --field: #4a4d53; --link: #8aaeff; --code-bg: #1e2023; --red: #ff8a78; color-scheme: dark; }
-
-[hidden] { display: none !important; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 18px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-main { max-width: 640px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 80px; }
-h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 24px; letter-spacing: -0.015em; text-wrap: balance; }
-h2 { font-size: 1.25rem; margin: 48px 0 12px; }
-p, ul { margin: 0 0 18px; }
-ul { padding-left: 22px; }
-li { margin-bottom: 6px; }
-a { color: var(--link); text-underline-offset: 3px; }
-a:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible, [tabindex="-1"]:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
-code { font: 0.86em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
-pre { font: 0.82rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; margin: 0 0 22px; }
-.name { font-weight: 600; text-decoration: none; color: var(--text); display: inline-block; margin-bottom: 36px; }
-.small { font-size: 0.85rem; color: var(--soft); }
-.red { color: var(--red); }
-
-/* the screenshots get more room than the text */
-.strip { width: min(940px, calc(100vw - 40px)); margin: 8px 0 8px 50%; transform: translateX(-50%);
-  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-.strip figure { margin: 0; }
-.strip img, figure.one img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); }
-.strip figcaption { font: 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--soft); margin-top: 4px; }
-@media (max-width: 640px) { .strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.caption { margin-bottom: 28px; }
-figure.one { margin: 8px 0 22px; display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; }
-figure.one figcaption { font-size: 0.92rem; color: var(--soft); }
-@media (max-width: 520px) { figure.one { grid-template-columns: 1fr; } figure.one img { max-width: 220px; } }
-
-/* signup */
-.signup { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 8px; }
-form { display: grid; gap: 10px; margin: 0 0 12px; }
-label { font-size: 0.92rem; font-weight: 600; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; }
-input[type=email], select { font: inherit; font-size: 1rem; padding: 10px 12px; border: 1px solid var(--field); border-radius: 6px; background: var(--bg); color: var(--text); }
-input[type=email] { flex: 1 1 240px; min-width: 0; }
-input[aria-invalid="true"] { border-color: var(--red); }
-button { font: inherit; font-size: 1rem; font-weight: 600; padding: 10px 18px; border: 0; border-radius: 6px; background: var(--text); color: var(--bg); cursor: pointer; }
-button:disabled { opacity: 0.6; cursor: default; }
-.trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; }
-</style>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/site.css">
 </head>
 <body>
 <main>
@@ -75,9 +27,11 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px;
 
   <p>I make a workout app called WOD Tracker. It ships in 18 languages on both stores, and until recently every language folder in my fastlane setup held the same English screenshots. Anyone browsing the App Store in Japanese or German saw an app that looked untranslated.</p>
 
+  <p>When I finally fixed it, it took about 630 lines of capture and compose scripts written for that one app. shotfleet is what I wish I'd had instead: the same idea, for any app.</p>
+
   <p>The reason was boring. My screenshot script is a Maestro flow, and Maestro flows tap buttons by their text: <code>tapOn: "Next"</code>. In German that button says “Weiter”, so the flow stops on the first screen. You either write the flow 18 times or you copy the English images everywhere.</p>
 
-  <p>shotfleet is the tool I wrote so I'd never do either again. You keep one flow, in English. It reads the translations already compiled into your app, swaps every tap for the right word in each language, and runs all the languages at the same time on several simulators or emulators.</p>
+  <p>With shotfleet you keep one flow, in English. It reads the translations already compiled into your app, swaps the words in every tap for each language, and runs all the languages at the same time on several simulators or emulators.</p>
 
   <div class="strip">
     <figure><img src="img/train_ja.jpg" alt="WOD Tracker's Train screen in Japanese" width="360" height="782"><figcaption>ja</figcaption></figure>
@@ -90,7 +44,7 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px;
   <p class="caption small">Six of the 72 iPhone screenshots from one run. Nothing in the app was changed to get them.</p>
 
   <h2>What a run looks like</h2>
-  <p>This is the flow, the same one I'd write for English only:</p>
+  <p>This is a shortened version of the real flow. It's plain Maestro, written in English:</p>
 <pre>appId: me.manulorenzo.crossfittracker
 ---
 - tapOn: "I Understand"
@@ -118,13 +72,13 @@ checked 72 screenshots: 0 problem(s)</pre>
     <img src="img/bug_zh.jpg" alt="The Chinese onboarding page, with its Next button pushed below the bottom of the screen" width="360" height="640">
     <figcaption>The Training Goals page in Chinese on a 1080×1920 phone. The Next button is below the edge, and the page didn't scroll.</figcaption>
   </figure>
-  <p>On the first full Android run, Japanese, Korean, Chinese and Arabic all got stuck on the same onboarding page. Their text renders taller, the page didn't scroll, and the Next button ended up off the bottom of the screen. People using those languages on smaller phones could only get past it with Skip. The fix was two lines. I wouldn't have caught it by hand, because I don't walk through my own onboarding in Korean.</p>
+  <p>On the first full Android run, Japanese, Korean, Chinese and Arabic all got stuck on the same onboarding page. Their text renders taller, the page didn't scroll, and the Next button ended up off the bottom of the screen. People using those languages on smaller phones could only get past it by skipping the rest of onboarding. The fix was two lines. I wouldn't have caught it by hand, because I don't walk through my own onboarding in Korean.</p>
 
   <h2>What you need</h2>
   <ul>
     <li>A Mac with Xcode for iOS, and the Android SDK for Android. Either one works on its own.</li>
-    <li><a href="https://maestro.mobile.dev">Maestro</a> 2.x. If you don't use it yet, a screenshot flow is a short YAML file like the one above, and <code>shotfleet init</code> writes a starter one for your app.</li>
-    <li>A simulator build (<code>.app</code>) or an APK. Your text has to come from the app's string files, which it already does if the app is translated.</li>
+    <li><a href="https://maestro.dev">Maestro</a> 2.x. If you don't use it yet, a screenshot flow is a short YAML file like the one above, and <code>shotfleet init</code> writes a starter one for your app.</li>
+    <li>A simulator build (<code>.app</code>) or an APK of a native app. shotfleet reads the strings compiled from <code>Localizable.strings</code> or String Catalogs on iOS, and <code>strings.xml</code> on Android. Flutter, React Native, and Compose Multiplatform resources on iOS aren't supported yet.</li>
   </ul>
 
   <h2>What it doesn't do</h2>
@@ -137,11 +91,11 @@ checked 72 screenshots: 0 problem(s)</pre>
 
   <section class="signup" aria-labelledby="price">
     <h2 id="price">Price</h2>
-    <p>$49, once, for unlimited apps and a year of updates. It isn't on sale yet. If you'd use it, leave your email and I'll write once when it is. Nothing else.</p>
+    <p>$49 once per developer, for unlimited apps and a year of updates. It isn't on sale yet. If you'd use it, leave your email and I'll write once when it is. Nothing else.</p>
     <form id="signup" novalidate>
       <label for="email">Email</label>
       <div class="row">
-        <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required aria-describedby="error">
+        <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required >
         <select id="platform" name="platform" aria-label="Which stores you ship to">
           <option value="both">iOS and Android</option>
           <option value="ios">iOS only</option>
@@ -150,39 +104,14 @@ checked 72 screenshots: 0 problem(s)</pre>
         <button type="submit" id="submit">Tell me when it's ready</button>
       </div>
       <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-      <p id="error" class="red small" role="alert" hidden></p>
+      <p class="form-error red small" role="alert" hidden></p>
     </form>
-    <p id="thanks" role="status" tabindex="-1" hidden>Thanks, you're on the list. I'll email you once, when it's ready.</p>
+    <p id="signup-done" role="status" tabindex="-1" hidden>Thanks, you're on the list. I'll email you once, when it's ready.</p>
   </section>
 
-  <footer class="small">Manu, who makes WOD Tracker and a few other apps.</footer>
+  <footer class="small">Manu, who makes WOD Tracker and a few other apps. · <a href="/privacy">Privacy</a></footer>
 </main>
 
-<script>
-document.getElementById("signup").addEventListener("submit", async function (e) {
-  e.preventDefault();
-  var form = this, email = document.getElementById("email"), btn = document.getElementById("submit");
-  var err = document.getElementById("error"), thanks = document.getElementById("thanks");
-  err.hidden = true;
-  if (!email.value || !email.checkValidity()) {
-    email.setAttribute("aria-invalid", "true");
-    err.textContent = "That doesn't look like an email address.";
-    err.hidden = false; email.focus(); return;
-  }
-  email.removeAttribute("aria-invalid");
-  btn.disabled = true; btn.textContent = "Sending…";
-  try {
-    var r = await fetch("/api/signup", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: email.value, platform: document.getElementById("platform").value,
-                             website: document.getElementById("website").value }) });
-    var d = await r.json().catch(function () { return {}; });
-    if (!r.ok) throw new Error(d.error || "Couldn't save your email. Try again in a minute.");
-    form.hidden = true; thanks.hidden = false; thanks.focus();
-  } catch (x) {
-    err.textContent = (x && x.message && x.message !== "Failed to fetch") ? x.message : "Couldn't reach the server. Check your connection and try again.";
-    err.hidden = false; btn.disabled = false; btn.textContent = "Tell me when it's ready";
-  }
-});
-</script>
+<script src="/forms.js" defer></script>
 </body>
 </html>

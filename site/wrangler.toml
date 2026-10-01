@@ -1,10 +1,24 @@
 name = "shotfleet"
 main = "worker.js"
-compatibility_date = "2026-09-01"
+compatibility_date = "2026-10-01"
 
 [assets]
 directory = "public"
+not_found_handling = "404-page"   # serves public/404.html
+run_worker_first = ["/api/*"]     # everything else is static and never reaches the Worker
 
 [[kv_namespaces]]
 binding = "WAITLIST"
 id = "250f2b013ce343ad91e63fc4501699de"
+
+# per client IP: 5 API calls a minute is plenty for a person, too few for a bot
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
