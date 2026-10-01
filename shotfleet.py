@@ -1122,14 +1122,14 @@ def judge_screen(lp, ocr, tables):
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
         lang = canon(lp).split("-")[0]
-        if LEGACY.get(lang, lang) not in readable_languages() | {"zh"}:
+        if LEGACY.get(lang, lang) not in readable_languages() | {"zh"} and ocr.get("ocr") != "external":
             return None, None  # Hebrew, Georgian, Burmese often read as nothing at all
         return got, "no text found (blank or still loading?)"
     if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
         c = canon(lp)  # zh-CN -> zh-Hans, zh-HK -> zh-Hant-HK, iw -> he: what language detection reports
         want = ("zh-Hant" if c.startswith("zh-Hant") else "zh-Hans") if c.startswith("zh") else \
             EXPECTED_LANG.get(lp, LEGACY.get(lp.split("-")[0], lp.split("-")[0]))
-        if want.split("-")[0] not in readable_languages() | {"zh"}:
+        if want.split("-")[0] not in readable_languages() | {"zh"} and ocr.get("ocr") != "external":
             # macOS can't read this script, and the screen shows no other language's strings: not provable either way
             if ocr.get("lang") == "en" and ocr.get("langs", {}).get("en", 0) > 0.9:
                 return "en", f"text looks like 'en', expected '{want}'"
@@ -1206,9 +1206,32 @@ def read_text(ocr, png, timeout=120):
             pass
     raise RuntimeError(f"text recognition hung twice on {png} (is the Mac overloaded?); run check again")
 
+# Tesseract's names for the scripts macOS can't read (for {tesseract} in --ocr-command)
+TESSERACT = {"el": "ell", "he": "heb", "iw": "heb", "hy": "hye", "ka": "kat", "bn": "ben", "as": "asm", "gu": "guj",
+             "pa": "pan", "ta": "tam", "te": "tel", "kn": "kan", "ml": "mal", "or": "ori", "si": "sin", "km": "khm",
+             "lo": "lao", "my": "mya", "am": "amh", "ur": "urd", "fa": "fas", "ne": "nep", "bg": "bul", "mk": "mkd",
+             "sr": "srp", "be": "bel", "kk": "kaz", "ky": "kir", "mn": "mon", "hu": "hun", "sk": "slk", "hr": "hrv",
+             "sl": "slv", "et": "est", "lv": "lav", "lt": "lit", "is": "isl", "sq": "sqi", "az": "aze", "uz": "uzb",
+             "ca": "cat", "eu": "eus", "gl": "glg", "sw": "swa", "zu": "zul", "af": "afr", "fil": "fil", "tl": "tgl"}
+
+def external_ocr(command, png, lp):
+    """Run the user's OCR command for a language macOS can't read; {image}, {lang} and {tesseract} are filled in.
+    e.g. --ocr-command 'tesseract {image} stdout -l {tesseract}'"""
+    import shlex
+    lang = canon(lp).split("-")[0]
+    args = [a.format(image=str(png), lang=lang, tesseract=TESSERACT.get(lang, lang)) for a in shlex.split(command)]
+    try:
+        r = sh(args, timeout=180)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise Fail(f"--ocr-command failed on {png.name}: {e}")
+    if r.returncode != 0:
+        raise Fail(f"--ocr-command failed on {png.name}: {(r.stderr or r.stdout).strip()[-200:]}")
+    text = "\n".join(l for l in r.stdout.splitlines() if l.strip())
+    return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "external"}
+
 LAST_REPORT = None  # check.json of the last check, for --json
 
-def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None):
+def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
     folder = Path(folder)
@@ -1256,6 +1279,14 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:  # each OCR is its own process
         ocrs = list(ex.map(lambda item: read_text(ocr, item[1]), pngs))
+        ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
+        if ocr_command:  # scripts macOS can't read go to the user's OCR (e.g. Tesseract) instead
+            def unreadable(label):
+                lang = canon(app_locale(label, tables) or label).split("-")[0]
+                return LEGACY.get(lang, lang) not in readable_languages() | {"zh"}
+            redo = [i for i, (label, _) in enumerate(pngs) if unreadable(label)]
+            for i, r in zip(redo, ex.map(lambda i: external_ocr(ocr_command, pngs[i][1], app_locale(pngs[i][0], tables) or pngs[i][0]), redo)):
+                ocrs[i] = {**ocrs[i], **r}
     rows, by_hash = [], {}
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
@@ -1566,6 +1597,9 @@ def main(argv=None):
     p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
     p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
     p.add_argument("--report", help="where to write check.json and index.html (default: ./shotfleet-check)")
+    p.add_argument("--ocr-command", metavar="CMD",
+                   help="text recognition for scripts macOS can't read (Greek, Hebrew, Indic...), e.g. "
+                        "\"tesseract {image} stdout -l {tesseract}\" (also SHOTFLEET_OCR)")
     p.add_argument("--strings", action="append", metavar="GLOB",
                    help="translation files instead of --app, e.g. 'lib/l10n/*.arb' or 'locales/*/translation.json' "
                         "(.arb .json .xcstrings .strings .xml .xlf .resx .po .properties .csv); repeatable")
@@ -1604,7 +1638,7 @@ def main_dispatch(a):
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
             if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
-            return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings)
+            return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command)
         if a.cmd == "export": return cmd_export(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2

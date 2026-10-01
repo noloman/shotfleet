@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest discover -s tests
 """
-import json, subprocess, sys, tempfile, unittest
+import contextlib, io, json, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -795,6 +795,28 @@ class StoreRules(unittest.TestCase):
         d = Path(tempfile.mkdtemp()) / "a.jpg"
         d.write_bytes(b"\xff\xd8\xff\xe0\x00\x04ab\xff\xc0\x00\x11\x08\x07\x80\x04\x38" + b"\0" * 12)
         self.assertEqual(sf.image_info(d), ((1080, 1920), False))
+
+
+class ExternalOcr(unittest.TestCase):
+    def test_scripts_macos_cant_read_go_to_the_ocr_command(self):
+        el = {"a": "Επόμενο", "b": "Ρυθμίσεις", "c": "Έναρξη προπόνησης"}
+        en = {"a": "Next", "b": "Settings", "c": "Start Training"}
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            for lp, words in (("el", el), ("en", en)):
+                (d / lp).mkdir()
+                (d / lp / "1.png").write_bytes(png_c(1320, 2868)); (d / lp / "1.png.txt").write_text("\n".join(words.values()))
+            (d / "el" / "2.png").write_bytes(png_c(1320, 2868)); (d / "el" / "2.png.txt").write_text("\n".join(en.values()))
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = sf.cmd_check(d, strings={"en": en, "el": el}, report_dir=d / "rep", ocr_command="cat {image}.txt")
+            report = json.loads((d / "rep/check.json").read_text())
+        langs = {r["file"]: r["lang"] for r in report["screenshots"]}
+        self.assertEqual(langs["el/1.png"], "el")  # read and verified, not "couldn't read"
+        self.assertTrue(any(p.startswith("el/2.png: shows en") for p in report["problems"]), report["problems"])
+        self.assertEqual(code, 1)
+
+    def test_tesseract_language_names(self):
+        self.assertEqual(sf.TESSERACT["he"], "heb"); self.assertEqual(sf.TESSERACT["el"], "ell")
 
 
 if __name__ == "__main__":

@@ -162,6 +162,7 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
 - Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
 - Flutter and React Native support (via source files) is tested with sample files, not yet on a real Flutter/RN app.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
+- For full verification of those scripts, give `check` an OCR that reads them, e.g. Tesseract (`brew install tesseract tesseract-lang`, about 700 MB): `--ocr-command "tesseract {image} stdout -l {tesseract}"` (or set `SHOTFLEET_OCR`). It's used only for languages macOS can't read; `{lang}` is the language code if your tool wants that instead.
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
 - macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.
