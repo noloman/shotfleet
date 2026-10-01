@@ -254,5 +254,34 @@ class Export(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in (fl / "screenshots").iterdir()), ["tr"])
 
 
+class Config(unittest.TestCase):
+    def _cfg(self, d, text):
+        p = Path(d) / "shotfleet.toml"; p.write_text(text); return p
+
+    def test_mistakes_are_reported_as_one_line_with_the_fix(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "flow.yaml").write_text("appId: x\n---\n")
+            cases = [
+                (None, "no config at"),
+                ("not = [valid", "isn't valid TOML"),
+                ("[ios]\n[android]\n", "exactly one [ios] or [android]"),
+                ('[ios]\napp = "x.app"\n', "missing: bundle_id, flow"),
+                ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "flow.yaml"\n', "no simulator app at"),
+                ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "missing.yaml"\n', "flow file not found"),
+                ('[android]\napk = "nope.apk"\npackage = "a"\nflow = "flow.yaml"\n', "no APK at"),
+            ]
+            for text, msg in cases:
+                path = Path(d) / "absent.toml" if text is None else self._cfg(d, text)
+                with self.subTest(msg=msg), self.assertRaisesRegex(sf.Fail, msg.replace("[", r"\[").replace("]", r"\]")):
+                    sf.load_config(path)
+
+    def test_cli_exits_2_with_a_message_instead_of_a_traceback(self):
+        r = subprocess.run([sys.executable, str(Path(sf.__file__)), "run", "/nonexistent/shotfleet.toml"],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("shotfleet: no config at", r.stderr)
+        self.assertNotIn("Traceback", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

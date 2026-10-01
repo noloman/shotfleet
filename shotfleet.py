@@ -15,6 +15,53 @@ import hashlib, json, os, re, shutil, subprocess, sys, time, tomllib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+VERSION = "0.1.0"
+
+class Fail(Exception):
+    """A user-facing error: printed as one line, no traceback."""
+
+REQUIRED = {"ios": ("app", "bundle_id", "flow"), "android": ("apk", "package", "flow")}
+
+def load_config(config_path):
+    """(platform, cfg, path resolver) with every mistake reported as a Fail that says how to fix it."""
+    cfg_path = Path(config_path).expanduser().resolve()
+    if not cfg_path.is_file():
+        raise Fail(f"no config at {cfg_path}. Create one with: shotfleet init <App.app | app.apk>")
+    try:
+        doc = tomllib.loads(cfg_path.read_text())
+    except tomllib.TOMLDecodeError as e:
+        raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
+    platforms = [k for k in ("ios", "android") if k in doc]
+    if len(platforms) != 1:
+        raise Fail(f"{cfg_path.name} needs exactly one [ios] or [android] section (use one config file per platform)")
+    platform = platforms[0]
+    cfg = doc[platform]
+    missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
+    if missing:
+        raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
+    path = lambda p: cfg_path.parent / Path(p).expanduser()  # absolute/~ paths win, others are relative to the config
+    flow = path(cfg["flow"])
+    if not flow.is_file():
+        raise Fail(f"flow file not found: {flow}")
+    if platform == "ios":
+        app = path(cfg["app"])
+        if not (app / "Info.plist").is_file():
+            raise Fail(f"no simulator app at {app}. Build it for the simulator (Debug-iphonesimulator) and point 'app' at the .app")
+        real = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
+        if real and real != cfg["bundle_id"]:
+            raise Fail(f"bundle_id is {cfg['bundle_id']} but {app.name} is {real}")
+    else:
+        apk = path(cfg["apk"])
+        if not apk.is_file():
+            raise Fail(f"no APK at {apk}")
+        aapt2 = sorted((SDK / "build-tools").glob("*/aapt2"))
+        if aapt2:
+            m = re.search(r"package: name='([^']+)'", sh([str(aapt2[-1]), "dump", "badging", str(apk)]).stdout)
+            if m and m.group(1) != cfg["package"]:
+                raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
+    if not shutil.which("maestro"):
+        raise Fail("Maestro isn't installed. Install it with: curl -Ls https://get.maestro.mobile.dev | bash")
+    return platform, cfg, path
 # lproj code -> App Store Connect / fastlane locale
 STORE_LOCALE = {
     "en": "en-US", "ar": "ar-SA", "da": "da", "de": "de-DE", "es": "es-ES", "fr": "fr-FR", "hi": "hi",
@@ -219,7 +266,7 @@ def fit_parallel(n):
     and retries pile on more load."""
     level = sh(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
     if level == "4":
-        sys.exit("macOS reports critical memory pressure; close some apps and run again")
+        raise Fail("macOS reports critical memory pressure. Close some apps and run again")
     if level == "2" and n > 1:
         print(f"memory pressure is elevated: using {max(1, n // 2)} devices instead of {n}")
         return max(1, n // 2)
@@ -243,21 +290,19 @@ def junit_results(path):
     return res
 
 def cmd_run(config_path, only=None, parallel=None):
-    cfg_path = Path(config_path).resolve()
-    doc = tomllib.loads(cfg_path.read_text())
-    path = lambda p: cfg_path.parent / Path(p).expanduser()  # absolute/~ paths win, others are relative to the config
-    if "android" in doc:
-        cfg = doc["android"]
+    platform, cfg, path = load_config(config_path)
+    if platform == "android":
         out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
         return android_run(cfg, path, out, only, parallel)
-    cfg = doc["ios"]
+    cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
+    cfg.setdefault("runtime", latest_ios_runtime())
     cfg["app"] = str(path(cfg["app"]))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = load_strings(path(cfg["strings"]) if "strings" in cfg else Path(cfg["app"]))
     flow = path(cfg["flow"]).read_text()
     base_locale = cfg.get("base_locale", "en")
     if base_locale not in strings:
-        sys.exit(f"the app has no {base_locale}.lproj strings; set base_locale in the config to the language your flow is written in")
+        raise Fail(f"the app has no {base_locale} strings. Set base_locale in the config to the language your flow is written in")
     en = strings[base_locale]
     locales = only or cfg.get("locales") or sorted(strings)
     out = path(cfg.get("out", "out")).resolve()
@@ -279,6 +324,8 @@ def cmd_run(config_path, only=None, parallel=None):
         print("selectors not found in the app's strings (left as-is; they may fail outside English):")
         for m in miss: print(f"   {m!r}")
 
+    if not report["locales"]:
+        raise Fail(f"none of those languages are in the app. It ships: {', '.join(sorted(strings))}")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(report["locales"])))
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
     kill_stale_drivers()
@@ -441,6 +488,8 @@ def android_run(cfg, path, out, only, parallel):
         print("selectors not found in the app's strings (left as-is; they may fail outside English):")
         for m in miss: print(f"   {m!r}")
     todo = list(report["locales"])
+    if not todo:
+        raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings))}")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo)))
     print(f"booting {n} emulators ({cfg.get('avd', 'shotfleet_android')}, 1080x1920)", flush=True)
     pool = android_pool(n, cfg)
@@ -679,6 +728,8 @@ def cmd_export(out, fastlane):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
     Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
     out, fastlane = Path(out), Path(fastlane)
+    if not (out / "run.json").is_file():
+        raise Fail(f"no shotfleet run in {out}. Run 'shotfleet run <config>' first")
     run = json.loads((out / "run.json").read_text())
     android = run.get("platform") == "android"
     problems = json.loads((out / "check.json").read_text())["problems"] if (out / "check.json").exists() else []
@@ -698,21 +749,38 @@ def cmd_export(out, fastlane):
     print(f"exported {len(done)} locales to {fastlane}: {', '.join(done)}")
     return 0 if not bad else 1
 
-def main():
-    a = sys.argv[1:]
-    if len(a) >= 2 and a[0] == "run":
-        opts = dict(zip(a[2::2], a[3::2]))
-        only = opts.get("--locales", "").split(",") if "--locales" in opts else None
-        sys.exit(cmd_run(a[1], only, int(opts["--parallel"]) if "--parallel" in opts else None))
-    if len(a) == 2 and a[0] == "check":
-        sys.exit(cmd_check(a[1]))
-    if a[:1] == ["doctor"]:
-        sys.exit(cmd_doctor())
-    if len(a) in (2, 3) and a[0] == "init":
-        sys.exit(cmd_init(*a[1:]))
-    if len(a) == 4 and a[0] == "export" and a[2] == "--fastlane":
-        sys.exit(cmd_export(a[1], a[3]))
-    print(__doc__); sys.exit(2)
+def main(argv=None):
+    import argparse
+    ap = argparse.ArgumentParser(prog="shotfleet", description="Localized App Store and Google Play screenshots from one English Maestro flow.")
+    ap.add_argument("--version", action="version", version=f"shotfleet {VERSION}")
+    sub = ap.add_subparsers(dest="cmd", required=True, metavar="command")
+    sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
+    p = sub.add_parser("init", help="write a starter config and flow for an app")
+    p.add_argument("app", help="simulator .app or .apk"); p.add_argument("dir", nargs="?", default=".", help="where to write them (default: here)")
+    p = sub.add_parser("run", help="capture every language and check the screenshots")
+    p.add_argument("config", help="shotfleet.toml")
+    p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
+    p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
+    p = sub.add_parser("check", help="check an existing run's screenshots again")
+    p.add_argument("out", help="the run's output folder")
+    p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
+    p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
+    a = ap.parse_args(argv)
+    if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
+        ap.error("--parallel must be 1 or more")
+    try:
+        if a.cmd == "doctor": return cmd_doctor()
+        if a.cmd == "init": return cmd_init(a.app, a.dir)
+        if a.cmd == "run": return cmd_run(a.config, a.locales.split(",") if a.locales else None, a.parallel)
+        if a.cmd == "check":
+            if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
+            return cmd_check(a.out)
+        if a.cmd == "export": return cmd_export(a.out, a.fastlane)
+    except (Fail, RuntimeError) as e:  # RuntimeError: simctl/adb/aapt2 failures, already worded for people
+        print(f"shotfleet: {e}", file=sys.stderr); return 2
+    except KeyboardInterrupt:
+        kill_stale_drivers()
+        print("\nshotfleet: stopped. Simulators and emulators may still be running.", file=sys.stderr); return 130
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
