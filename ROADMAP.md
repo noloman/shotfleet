@@ -13,6 +13,15 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
   String Catalogs, multi-line Android strings, YAML quoting, non-language folders).
 - 1.3 translations from source files (Flutter ARB, i18next, .xcstrings, XLIFF, .resx, .po, .properties, CSV).
 - 2.2 store-rule linter (sizes per Apple display class, Play limits, alpha, counts, recommendation eligibility).
+- 1.6 --ocr-command (e.g. Tesseract) for scripts macOS can't read; 2.3 caption vs app language (message only: caption
+  language alone is too unreliable to fail on); 2.5 MCP server (`shotfleet mcp`); 2.6 fastlane upload recipes.
+- System dialogs: measured that iOS draws them in the device language (English), so their taps stay English-matchable;
+  iOS launchApp options (permissions: {all: allow}) supported.
+- Emulator benchmark written up (android-emulator-bench/RESULTS.md).
+
+## Waiting for a quiet Mac
+- 1.5 UI-hierarchy text during `run` (4 Maestro experiments, all-languages.md §F), 2.4 iPad/tablet runs, a planted
+  caption test, MCP `check` on real screenshots, and a clean 8-emulator benchmark round.
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |
