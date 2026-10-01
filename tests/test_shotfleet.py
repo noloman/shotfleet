@@ -154,8 +154,7 @@ class LoadStrings(unittest.TestCase):
       () <plural>
 """
         fake = subprocess.CompletedProcess([], 0, dump, "")
-        with mock.patch.object(sf, "sh", return_value=fake), \
-             mock.patch.object(sf.Path, "glob", return_value=iter([Path("/sdk/build-tools/36.0.0/aapt2")])):
+        with mock.patch.object(sf, "sh", return_value=fake), mock.patch.object(sf, "aapt2", return_value="aapt2"):
             got = sf.load_strings_apk("app.apk")
         self.assertEqual(got["en"], {"next": "Next", "quote": 'Say "hi"'})
         self.assertEqual(got["de"], {"next": "Weiter"})
@@ -252,6 +251,43 @@ class Export(unittest.TestCase):
             fl = Path(d) / "fastlane"
             sf.cmd_export(out, fl)
             self.assertEqual(sorted(p.name for p in (fl / "screenshots").iterdir()), ["tr"])
+
+
+class ReviewFixes(unittest.TestCase):
+    def test_map_form_screenshots_are_redirected_on_both_platforms(self):
+        flow = "appId: x\n---\n- takeScreenshot:\n    path: 01_home\n- takeScreenshot: 02_log\n"
+        ios = sf.localize_flow(flow, "de", Path("/o/raw/de"))
+        android = sf.android_flow(flow, "f", Path("/o/tmp/f"))
+        for out, d in ((ios, "/o/raw/de"), (android, "/o/tmp/f")):
+            self.assertIn(f"    path: '{d}/01_home'", out)
+            self.assertIn(f"- takeScreenshot: '{d}/02_log'", out)
+        self.assertEqual(sf.count_screenshots(flow), 2)
+
+    def test_driver_cleanup_only_touches_our_simulators(self):
+        killed = []
+        def fake_sh(cmd, **kw):
+            if cmd[0] == "pgrep": return subprocess.CompletedProcess(cmd, 0, "11\n22\n", "")
+            if cmd[0] == "ps":
+                args = {"11": "xcodebuild test-without-building -xctestrun /t/maestro.xctestrun -destination id=OURS",
+                        "22": "xcodebuild test-without-building -xctestrun /t/maestro.xctestrun -destination id=SOMEONE_ELSE"}
+                return subprocess.CompletedProcess(cmd, 0, args[cmd[-1]], "")
+            if cmd[0] == "kill": killed.append(cmd[-1])
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+        with mock.patch.object(sf, "sh", side_effect=fake_sh), mock.patch.object(sf, "OUR_SIMS", {"OURS"}):
+            sf.kill_stale_drivers()
+        self.assertEqual(killed, ["11"])
+
+    def test_no_simulators_of_ours_means_nothing_is_killed(self):
+        with mock.patch.object(sf, "sh") as fake, mock.patch.object(sf, "OUR_SIMS", set()):
+            sf.kill_stale_drivers()
+        fake.assert_not_called()
+
+    def test_missing_aapt2_is_a_friendly_failure(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "SDK", Path(d)):
+            with self.assertRaisesRegex(sf.Fail, "aapt2 not found"):
+                sf.load_strings_apk("app.apk")
+            with self.assertRaisesRegex(sf.Fail, "aapt2 not found"):
+                sf.cmd_init(str(Path(d) / "app.apk"), d) if (Path(d) / "app.apk").write_bytes(b"x") else None
 
 
 class Config(unittest.TestCase):

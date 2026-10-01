@@ -54,11 +54,9 @@ def load_config(config_path):
         apk = path(cfg["apk"])
         if not apk.is_file():
             raise Fail(f"no APK at {apk}")
-        aapt2 = sorted((SDK / "build-tools").glob("*/aapt2"))
-        if aapt2:
-            m = re.search(r"package: name='([^']+)'", sh([str(aapt2[-1]), "dump", "badging", str(apk)]).stdout)
-            if m and m.group(1) != cfg["package"]:
-                raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
+        m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(apk)]).stdout)
+        if m and m.group(1) != cfg["package"]:
+            raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
     if not shutil.which("maestro"):
         raise Fail("Maestro isn't installed. Install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
@@ -75,6 +73,13 @@ SELECTOR_KEYS = ("tapOn", "doubleTapOn", "longPressOn", "assertVisible", "assert
 
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
+
+def aapt2():
+    """Newest aapt2 in the Android SDK; Fail with the fix if there is none."""
+    found = sorted((SDK / "build-tools").glob("*/aapt2"))
+    if not found:
+        raise Fail(f"aapt2 not found under {SDK}/build-tools. Install Build-Tools in Android Studio's SDK Manager (or set ANDROID_HOME)")
+    return str(found[-1])
 
 # ---------- strings ----------
 
@@ -103,8 +108,7 @@ def android_locale(q):
 
 def load_strings_apk(apk, base="en"):
     """{locale: {name: value}} from the string resources compiled into an APK (default config -> base)."""
-    aapt2 = sorted(Path(os.environ.get("ANDROID_HOME", Path.home() / "Library/Android/sdk"), "build-tools").glob("*/aapt2"))[-1]
-    r = sh([str(aapt2), "dump", "resources", str(apk)])
+    r = sh([aapt2(), "dump", "resources", str(apk)])
     if r.returncode != 0: raise RuntimeError(f"aapt2 dump failed: {r.stderr.strip()}")
     out, name = {}, None
     for line in r.stdout.splitlines():
@@ -169,6 +173,30 @@ def translate_flow(flow, base, target):
         lines.append(prefix + yaml_single_quote(pattern))
     return "\n".join(lines) + "\n", sorted(set(missing)), sorted(set(collisions))
 
+def redirect_screenshot(lines, shots_dir):
+    """Rewrite one flow line if it names a screenshot, so files land in shots_dir. Handles the scalar
+    form ('- takeScreenshot: 01_home') and the map form ('- takeScreenshot:' then '    path: 01_home')."""
+    line = lines[-1]
+    if m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line):
+        lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
+    elif (m := re.match(r"^(\s*path:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line)) and len(lines) > 1 \
+            and re.match(r"^\s*- takeScreenshot:\s*$", lines[-2]):
+        lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
+
+def print_untranslated(report):
+    miss = sorted({m for v in report["locales"].values() for m in v["untranslated_selectors"]})
+    if miss:
+        print("selectors not found in the app's strings (left as-is; they may fail outside English):")
+        for m in miss: print(f"   {m!r}")
+
+def print_result(lp, r, expected):
+    print(f"{'ok  ' if r['ok'] else 'FAIL'} {lp:8} {r['screenshots']}/{expected} screenshots"
+          + (" (retried)" if r.get("retried") or r.get("attempts", 1) > 1 else "")
+          + ("" if r["ok"] else f"  {r.get('error') or ''}"[:160]))
+
+def count_screenshots(flow):
+    return len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
+
 def localize_flow(flow, lproj, shots_dir):
     """Make a translated flow self-contained for one locale.
 
@@ -189,10 +217,8 @@ def localize_flow(flow, lproj, shots_dir):
             out += launch(clear=False)
         elif re.match(r"^\s*- launchApp:", line):
             raise ValueError("launchApp with options isn't supported yet; use a bare '- launchApp'")
-        elif m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line):
-            out.append(f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}")
         else:
-            out.append(line)
+            out.append(line); redirect_screenshot(out, shots_dir)
     return header + "\n---\n" + "\n".join(out) + "\n"
 
 # ---------- simulators ----------
@@ -274,10 +300,17 @@ def fit_parallel(n):
 
 # ---------- run ----------
 
+OUR_SIMS = set()  # UDIDs of shotfleet's simulators, so cleanup never touches anyone else's
+
 def kill_stale_drivers():
-    # a Maestro iOS driver left over from an earlier run keeps port 7001 bound to *its* simulator,
-    # and the next run then silently drives the wrong device
-    sh(["pkill", "-f", "xcodebuild test-without-building.*maestro"])
+    """Kill Maestro iOS drivers attached to shotfleet's simulators. A driver left over from an earlier run
+    keeps port 7001 bound to *its* simulator, and the next run then silently drives the wrong device.
+    Drivers for other simulators (other projects, other terminals) are left alone."""
+    if not OUR_SIMS: return
+    for pid in sh(["pgrep", "-f", "xcodebuild test-without-building"]).stdout.split():
+        args = sh(["ps", "-o", "args=", "-p", pid]).stdout
+        if "maestro" in args and any(u in args for u in OUR_SIMS):
+            sh(["kill", pid])
 
 def junit_results(path):
     import xml.etree.ElementTree as ET
@@ -306,7 +339,10 @@ def cmd_run(config_path, only=None, parallel=None):
     en = strings[base_locale]
     locales = only or cfg.get("locales") or sorted(strings)
     out = path(cfg.get("out", "out")).resolve()
-    shutil.rmtree(out / "flows", ignore_errors=True)  # raw/<locale> is cleared per locale below, so a partial rerun keeps the rest
+    # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
+    # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
+    for d in ("flows", "debug"): shutil.rmtree(out / d, ignore_errors=True)
+    for f in out.glob("junit*.xml"): f.unlink()
     (out / "flows").mkdir(parents=True)
 
     # translate every flow first, so selector problems show up before any simulator boots
@@ -319,23 +355,21 @@ def cmd_run(config_path, only=None, parallel=None):
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
         (out / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp))
         report["locales"][lp] = {"untranslated_selectors": missing}
-    miss = sorted({m for v in report["locales"].values() for m in v["untranslated_selectors"]})
-    if miss:
-        print("selectors not found in the app's strings (left as-is; they may fail outside English):")
-        for m in miss: print(f"   {m!r}")
+    print_untranslated(report)
 
     if not report["locales"]:
         raise Fail(f"none of those languages are in the app. It ships: {', '.join(sorted(strings))}")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(report["locales"])))
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
-    kill_stale_drivers()
     pool = make_pool(n, cfg["device_type"], cfg["runtime"])
+    OUR_SIMS.update(s.udid for s in pool)
+    kill_stale_drivers()
     for sim in pool:  # install once; each flow's clearState gives every locale a fresh start
         sim.run("terminate", sim.udid, cfg["bundle_id"], check=False)
         sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
         sim.run("install", sim.udid, cfg["app"])
 
-    expected = len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
+    expected = count_screenshots(flow)
 
     def batch(lps, attempt):
         """Run these locales in one sharded Maestro process; return {lproj: result}."""
@@ -343,7 +377,7 @@ def cmd_run(config_path, only=None, parallel=None):
         flows_dir.mkdir(parents=True)
         for lp in lps: shutil.copy(out / "flows" / f"{lp}.yaml", flows_dir)
         k = min(n, len(lps))
-        junit = out / f"junit{attempt}.xml"
+        junit = out / f"junit{attempt}.xml"; junit.unlink(missing_ok=True)
         env = {**os.environ, "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
         try:
             r = run_guarded(["maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
@@ -361,7 +395,9 @@ def cmd_run(config_path, only=None, parallel=None):
             shots = len(list((out / "raw" / lp).glob("*.png")))
             # Maestro skips its report when a shard crashes; the screenshots on disk are the ground truth then
             r_ = res.get(lp) or {"ok": shots == expected, "error": None if shots == expected else "no result (see maestro log)"}
-            out_[lp] = {**r_, "screenshots": shots, "attempts": attempt}
+            if r_["ok"] and shots != expected:
+                r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {expected} screenshots"}
+            out_[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "attempts": attempt}
         return out_
 
     print(f"capturing {len(report['locales'])} locales on {n} simulators...", flush=True)
@@ -374,8 +410,7 @@ def cmd_run(config_path, only=None, parallel=None):
         final.update(batch(retry, 2))
     results = []
     for lp, r_ in final.items():
-        print(f"{'ok  ' if r_['ok'] else 'FAIL'} {lp:8} {r_['screenshots']}/{expected} screenshots"
-              + (" (retried)" if r_["attempts"] > 1 else "") + ("" if r_["ok"] else f"  {r_.get('error') or ''}"[:160]))
+        print_result(lp, r_, expected)
         results.append({"lproj": lp, **r_})
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
@@ -420,13 +455,17 @@ def wait_booted(emus, timeout=600):
         if time.time() - t0 > timeout: raise RuntimeError("emulators did not boot in time")
         time.sleep(3)
 
-def android_pool(n, cfg):
-    """Boot n read-only copies of one AVD, created on first use as a 1080x1920 phone."""
+def android_pool(n, cfg, pool):
+    """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
+    The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
     avd = cfg.get("avd", "shotfleet_android")
     avd_dir = Path.home() / ".android/avd" / f"{avd}.avd"
     if not avd_dir.exists():
         image = cfg.get("system_image", "system-images;android-36;google_apis;arm64-v8a")
-        sh([str(SDK / "cmdline-tools/latest/bin/avdmanager"), "create", "avd", "-n", avd, "-k", image, "-d", "pixel_5"], input="no\n")
+        r = sh([str(SDK / "cmdline-tools/latest/bin/avdmanager"), "create", "avd", "-n", avd, "-k", image, "-d", "pixel_5"], input="no\n")
+        if r.returncode != 0 or not (avd_dir / "config.ini").exists():
+            raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
+                       f"Install that system image in Android Studio's SDK Manager, or set system_image in the config")
         ini = avd_dir / "config.ini"
         ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", "hw.lcd.width=1080",
                        re.sub(r"(?m)^hw\.lcd\.height=.*", "hw.lcd.height=1920",
@@ -434,16 +473,14 @@ def android_pool(n, cfg):
     if not (avd_dir / "userdata-qemu.img").exists():  # one-time first boot, writable, so copies boot fast
         e = Emu(5700); p = start_emu(avd, e.port, read_only=False)
         wait_booted([e]); time.sleep(20); e.adb("shell", "reboot", "-p", check=False); p.wait(timeout=120)
-    pool, procs = [], []
     for i in range(n):
         e = Emu(5702 + 2 * i)
-        if e.booted(): raise RuntimeError(f"{e.serial} is already in use; stop it first")
-        procs.append(start_emu(avd, e.port)); pool.append(e)
+        if e.booted(): raise Fail(f"{e.serial} is already running. Stop it (adb -s {e.serial} emu kill) and run again")
+        start_emu(avd, e.port); pool.append(e)
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:
         for c in DEMO_MODE: e.adb("shell", c, check=False)
-    return pool
 
 def android_flow(text, name, shots_dir):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
@@ -454,9 +491,7 @@ def android_flow(text, name, shots_dir):
     out = [] if re.match(r"\s*- launchApp", body.lstrip("\n")) else ["- launchApp"]
     for line in body.splitlines():
         if re.match(r"^\s*clearState:", line): continue
-        if m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line):
-            line = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
-        out.append(line)
+        out.append(line); redirect_screenshot(out, shots_dir)
     return header + "\n---\n" + "\n".join(out) + "\n"
 
 def flow_devices(debug_dir):
@@ -475,25 +510,25 @@ def android_run(cfg, path, out, only, parallel):
     base = strings[cfg.get("base_locale", "en")]
     locales = only or cfg.get("locales") or shipped_locales(strings)
     flow = path(cfg["flow"]).read_text()
-    expected = len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
-    shutil.rmtree(out / "flows", ignore_errors=True); shutil.rmtree(out / "tmp", ignore_errors=True)
+    expected = count_screenshots(flow)
+    # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
+    for d in ("flows", "tmp", "debug"): shutil.rmtree(out / d, ignore_errors=True)
+    for f in out.glob("junit*.xml"): f.unlink()
     report = {"locales": {}}
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
         _, missing, clash = translate_flow(flow, base, strings[lp])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
-    miss = sorted({m for v in report["locales"].values() for m in v["untranslated_selectors"]})
-    if miss:
-        print("selectors not found in the app's strings (left as-is; they may fail outside English):")
-        for m in miss: print(f"   {m!r}")
+    print_untranslated(report)
     todo = list(report["locales"])
     if not todo:
         raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings))}")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo)))
     print(f"booting {n} emulators ({cfg.get('avd', 'shotfleet_android')}, 1080x1920)", flush=True)
-    pool = android_pool(n, cfg)
+    pool = []
     try:
+        android_pool(n, cfg, pool)
         for e in pool: e.adb("install", "-r", "-g", apk)
 
         def round_(lps, tag):
@@ -510,6 +545,7 @@ def android_run(cfg, path, out, only, parallel):
             for j in range(len(lps)):
                 (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / "tmp" / tag / f"f{j}"))
             junit, dbg = out / f"junit_{tag}.xml", out / "debug" / tag
+            junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
                 r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
@@ -547,8 +583,7 @@ def android_run(cfg, path, out, only, parallel):
         for e in pool: e.adb("emu", "kill", check=False)
     for lp in todo:
         r_ = final[lp]
-        print(f"{'ok  ' if r_['ok'] else 'FAIL'} {lp:8} {r_['screenshots']}/{expected} screenshots"
-              + (" (retried)" if r_.get("retried") else "") + ("" if r_["ok"] else f"  {r_.get('error') or ''}"[:160]))
+        print_result(lp, r_, expected)
         report["locales"][lp].update(r_)
     report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
@@ -598,16 +633,17 @@ def cmd_check(out, strings=None):
     rows, by_hash, problems = [], {}, []
     if not raw.is_dir() or not any(raw.glob("*/*.png")):
         print("no screenshots to check"); return 1
-    for lp_dir in sorted(p for p in raw.iterdir() if p.is_dir()):
-        lp = lp_dir.name
-        for png in sorted(lp_dir.glob("*.png")):
-            data = png.read_bytes()
-            h = hashlib.sha256(data).hexdigest()[:12]
-            by_hash.setdefault(h, []).append(f"{lp}/{png.name}")
-            r = json.loads(sh([ocr, str(png)]).stdout or "{}")
-            got, problem = judge_screen(lp, r, tables)
-            if problem: problems.append(f"{lp}/{png.name}: {problem}")
-            rows.append({"file": f"{lp}/{png.name}", "sha": h, "lang": got, "chars": r.get("chars", 0)})
+    pngs = [png for lp_dir in sorted(p for p in raw.iterdir() if p.is_dir()) for png in sorted(lp_dir.glob("*.png"))]
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:  # each OCR is its own process
+        ocrs = list(ex.map(lambda png: json.loads(sh([ocr, str(png)]).stdout or "{}"), pngs))
+    for png, r in zip(pngs, ocrs):
+        lp = png.parent.name
+        h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
+        by_hash.setdefault(h, []).append(f"{lp}/{png.name}")
+        got, problem = judge_screen(lp, r, tables)
+        if problem: problems.append(f"{lp}/{png.name}: {problem}")
+        rows.append({"file": f"{lp}/{png.name}", "sha": h, "lang": got, "chars": r.get("chars", 0)})
     for h, files in by_hash.items():
         langs = {f.split("/")[0] for f in files}
         if len(langs) > 1:
@@ -656,7 +692,7 @@ img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee
 def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
-    aapt2 = sorted((SDK / "build-tools").glob("*/aapt2"))
+    has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
     checks = [
         ("maestro", have("maestro"), "curl -Ls https://get.maestro.mobile.dev | bash", "both"),
         ("swiftc (OCR checks)", have("swiftc"), "xcode-select --install", "both"),
@@ -665,7 +701,7 @@ def cmd_doctor():
         ("adb", have("adb"), "Android Studio > SDK Manager > Platform-Tools", "Android"),
         ("emulator", (SDK / "emulator/emulator").exists(), f"SDK Manager > Android Emulator (ANDROID_HOME={SDK})", "Android"),
         ("avdmanager", (SDK / "cmdline-tools/latest/bin/avdmanager").exists(), "SDK Manager > Command-line Tools", "Android"),
-        ("aapt2", bool(aapt2), "SDK Manager > Build-Tools", "Android"),
+        ("aapt2", has_aapt2, "SDK Manager > Build-Tools", "Android"),
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
@@ -692,11 +728,14 @@ def cmd_init(app, dest="."):
     app, dest = Path(app).expanduser().resolve(), Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
     if app.suffix == ".apk":
-        aapt2 = sorted((SDK / "build-tools").glob("*/aapt2"))[-1]
-        app_id = re.search(r"package: name='([^']+)'", sh([str(aapt2), "dump", "badging", str(app)]).stdout).group(1)
+        if not app.is_file(): raise Fail(f"no APK at {app}")
+        m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
+        if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
+        app_id = m.group(1)
         locales = shipped_locales(load_strings_apk(app))
         cfg = f'[android]\napk = "{app}"\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
     elif app.suffix == ".app":
+        if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
         app_id = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
         locales = sorted(load_strings(app))
         cfg = (f'[ios]\napp = "{app}"\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
