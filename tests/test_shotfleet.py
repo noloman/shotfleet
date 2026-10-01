@@ -213,9 +213,9 @@ class MaestroOutput(unittest.TestCase):
 
 
 class JudgeScreen(unittest.TestCase):
-    TABLES = {"de": {"Weiter", "Einstellungen", "Training starten"},
+    TABLES = sf.string_tables({k: {v: v for v in vals} for k, vals in {"de": {"Weiter", "Einstellungen", "Training starten"},
               "en": {"Next", "Settings", "Start Training"},
-              "ja": {"次へ", "設定"}}
+              "ja": {"次へ", "設定"}}.items()})
 
     def test_screen_in_the_right_language_passes(self):
         self.assertEqual(sf.judge_screen("de", {"chars": 40, "text": "9:41\nEinstellungen\nWeiter"}, self.TABLES), ("de", None))
@@ -226,7 +226,7 @@ class JudgeScreen(unittest.TestCase):
         self.assertIn("shows en strings", problem)
 
     def test_shared_words_count_for_the_expected_locale(self):
-        tables = {"de": {"Training", "Log"}, "en": {"Training", "Log"}}
+        tables = sf.string_tables({"de": {"a": "Training", "b": "Log"}, "en": {"a": "Training", "b": "Log"}})
         self.assertEqual(sf.judge_screen("de", {"chars": 10, "text": "Training\nLog"}, tables), ("de", None))
 
     def test_blank_screen_fails(self):
@@ -396,7 +396,7 @@ class CheckAnyFolder(unittest.TestCase):
         self.assertIsNotNone(sf.judge_screen("ja", ocr, {"en": {"Start"}})[1])
 
     def test_one_shared_label_is_not_evidence_of_wrong_language(self):  # "Training starten" is German and Dutch
-        tables = {"de": {"Training starten"}, "nl": {"Begin"}}
+        tables = sf.string_tables({"de": {"s": "Training starten"}, "nl": {"b": "Begin"}})
         ocr = {"chars": 21, "text": "9:41\nTraining starten", "lang": "nl", "langs": {"nl": 0.6}}
         self.assertEqual(sf.judge_screen("nl", ocr, tables), ("nl", None))
     def test_json_mode_keeps_stdout_machine_readable(self):
@@ -530,6 +530,20 @@ class FirstRun(unittest.TestCase):
         d = Path(tempfile.mkdtemp())
         self.assertEqual(sf.config_path(d / "build/App.app", d), "build/App.app")
         self.assertTrue(sf.config_path(Path.home() / "Library/x/App.app", "/tmp/a/b/c/d").startswith("~/Library"))
+
+
+class TolerantMatching(unittest.TestCase):
+    def test_ocr_and_strings_meet_halfway(self):
+        same = [("Paramètres", "PARAMETRES"), ("Réglages\u202f:", "Réglages :"), ("الجولة ٢/١٢", "الجولة 2/12"),
+                ("\u200fمرحبا", "مرحبا"), ("Beállítások", "Beallitasok"), ("Kő", "Kö"), ("ｆｕｌｌ", "full"),
+                ("دور ۳", "دور 3"), ("  two   spaces ", "two spaces")]
+        for a, b in same:
+            self.assertEqual(sf.norm(a), sf.norm(b), (a, b))
+        self.assertNotEqual(sf.norm("Weiter"), sf.norm("Weiterer"))
+
+    def test_upper_case_android_button_still_counts(self):
+        tables = sf.string_tables({"de": {"n": "Weiter", "s": "Einstellungen"}, "en": {"n": "Next", "s": "Settings"}})
+        self.assertEqual(sf.judge_screen("de", {"chars": 30, "text": "WEITER\nEINSTELLUNGEN"}, tables), ("de", None))
 
 
 if __name__ == "__main__":

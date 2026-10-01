@@ -28,7 +28,7 @@ def main(apk, out):
     out = Path(out); out.mkdir(parents=True, exist_ok=True)
     strings = {lp: t for lp, t in sf.load_strings_apk(apk).items() if lp not in ("en-XA", "en-XC", "ar-XB")}
     keys = [k for k in KEYS if all(k in t for t in strings.values())]
-    tables = {lp: set(t.values()) for lp, t in strings.items()}
+    tables = sf.string_tables(strings)
     jobs = [{"out": str(out / f"{lp}.png"), "lines": [strings[lp][k] for k in keys]} for lp in strings]
     (out / "jobs.json").write_text(json.dumps(jobs, ensure_ascii=False))
     subprocess.run([str(Path(sf.__file__).parent / ".build/render"), str(out / "jobs.json")], check=True)

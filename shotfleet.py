@@ -734,12 +734,28 @@ def readable_languages():
 # Only scripts no other language shares: Cyrillic/Arabic/Han/Devanagari would let Russian pass as Ukrainian
 SCRIPTS = {"ja": "[\u3040-\u30ff]", "ko": "[\uac00-\ud7af]", "th": "[\u0e00-\u0e7f]"}
 
+BIDI = dict.fromkeys(map(ord, "\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\u061c\u200b\ufeff"))
+
+@functools.lru_cache(maxsize=None)
+def norm(text):
+    """Text as OCR and string tables can both agree on: NFKC (NBSP, full-width), no bidi/zero-width marks,
+    native digits (Arabic-Indic, Persian, Devanagari...) as ASCII, no accents (OCR drops Hungarian ő), casefolded
+    (Android's all-caps buttons), single spaces."""
+    import unicodedata
+    t = unicodedata.normalize("NFKD", text.translate(BIDI))
+    t = "".join(str(unicodedata.decimal(c)) if c.isdecimal() else c for c in t if not unicodedata.combining(c))
+    return " ".join(unicodedata.normalize("NFKC", t).casefold().split())
+
+def string_tables(strings):
+    """{locale: set of normalized strings} for judge_screen."""
+    return {lp: {norm(v) for v in t.values()} for lp, t in strings.items()}
+
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
 
     Scores each locale by how many recognized lines are exactly one of its strings: generic language
     detection is unreliable on short UI labels (it reads Russian tab bars as Kazakh)."""
-    lines = {l.strip() for l in ocr.get("text", "").splitlines() if len(l.strip()) > 1}
+    lines = {n for l in ocr.get("text", "").splitlines() if len(n := norm(l)) > 1}
     score = {o: len(lines & vals) for o, vals in tables.items()}
     best = max(score.values(), default=0)
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
@@ -833,7 +849,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         if not Path(src).exists():
             raise Fail(f"the app this run used is gone ({src}); pass the build with --app")
         strings = load_strings_apk(src) if run.get("platform") == "android" else load_strings(Path(src))
-    tables = {lp: set(t.values()) for lp, t in (strings or {}).items()}
+    tables = string_tables(strings or {})
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
     images = find_screenshots(folder)
