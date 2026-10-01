@@ -1,3 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Localized App Store and Google Play screenshots from one English Maestro flow: every language your app ships, captured in parallel and checked.">
+<meta property="og:title" content="shotfleet: every language, on every store screenshot">
+<meta property="og:description" content="One English Maestro flow in, verified App Store and Google Play screenshots in every language out.">
+<meta property="og:image" content="/img/ios_ja.jpg">
+<meta name="color-scheme" content="light dark">
 <title>shotfleet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,7 +39,8 @@
   --bg: #0f131a; --surface: #171d27; --ink: #e8ecf2; --muted: #9aa5b5; --line: #2a3240;
   --accent: #7d9cff; --pass: #4cc488; --fail: #ff7a6e; --code-bg: #1c2330; color-scheme: dark;
 }
-body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+img { max-width: 100%; }
 .wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 0 64px; }
 h1, h2, h3 { font-family: var(--display); line-height: 1.1; text-wrap: balance; margin: 0; }
 h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
@@ -92,14 +103,17 @@ td.y { color: var(--pass); } td.n { color: var(--muted); }
 form { display: flex; flex-wrap: wrap; gap: 10px; }
 input[type=email] { flex: 1 1 220px; min-width: 0; font: 1rem var(--body); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
 #thanks { color: var(--pass); font-weight: 500; }
+.err { color: var(--fail); }
+select { font: 1rem var(--body); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 @media (max-width: 720px) { .price { grid-template-columns: 1fr; } }
 footer { padding-block: 48px 0; color: var(--muted); font-size: 0.9rem; }
 .draft { margin-top: 16px; font: 500 0.8rem var(--mono); color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; }
 </style>
+</head>
+<body>
 
 <div class="wrap">
-  <p class="draft">Draft preview. The signup form is not connected yet.</p>
-
   <header class="hero">
     <div class="next-words" aria-label="The word Next in the app's languages">
       <span>Next</span><span>Weiter</span><span>次へ</span><span>Suivant</span><span>Siguiente</span><span>التالي</span><span>다음</span><span>Далее</span><span>下一步</span><span class="clash" title="In Turkish, Next and Advanced are the same word">İleri</span>
@@ -207,9 +221,17 @@ checked 72 screenshots: <span class="ok">0 problems</span></pre>
         <form id="signup" novalidate>
           <label for="email" class="note" style="flex-basis:100%">Email</label>
           <input id="email" type="email" placeholder="you@studio.dev" autocomplete="email" required>
-          <button class="btn" type="submit">Get early access</button>
+          <label for="platform" class="note" style="flex-basis:100%">You ship on</label>
+          <select id="platform">
+            <option value="both">iOS and Android</option>
+            <option value="ios">iOS</option>
+            <option value="android">Android</option>
+          </select>
+          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
+          <button class="btn" type="submit" id="submit">Get early access</button>
         </form>
-        <p id="thanks" hidden>Thanks. This preview doesn't save emails yet.</p>
+        <p id="thanks" hidden>You're on the list. One email when early access opens.</p>
+        <p id="error" class="err" role="alert" hidden></p>
         <p class="note">Needs macOS, Xcode for iOS, the Android SDK for Android, and Maestro 2.x.</p>
       </div>
     </div>
@@ -219,11 +241,28 @@ checked 72 screenshots: <span class="ok">0 problems</span></pre>
 </div>
 
 <script>
-document.getElementById("signup").addEventListener("submit", function (e) {
+document.getElementById("signup").addEventListener("submit", async function (e) {
   e.preventDefault();
-  var email = document.getElementById("email");
-  if (!email.value || !email.checkValidity()) { email.focus(); email.setAttribute("aria-invalid", "true"); return; }
+  var email = document.getElementById("email"), btn = document.getElementById("submit");
+  var err = document.getElementById("error"), thanks = document.getElementById("thanks");
+  err.hidden = true;
+  if (!email.value || !email.checkValidity()) {
+    email.setAttribute("aria-invalid", "true"); err.textContent = "Enter an email address like you@studio.dev."; err.hidden = false; email.focus(); return;
+  }
   email.removeAttribute("aria-invalid");
-  document.getElementById("thanks").hidden = false;
+  btn.disabled = true; btn.textContent = "Joining…";
+  try {
+    var r = await fetch("/api/signup", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: email.value, platform: document.getElementById("platform").value,
+                             website: document.getElementById("website").value }) });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) throw new Error(d.error || "Something went wrong. Try again in a minute.");
+    document.getElementById("signup").hidden = true; thanks.hidden = false;
+  } catch (x) {
+    err.textContent = x.message || "Couldn't reach the server. Check your connection and try again."; err.hidden = false;
+    btn.disabled = false; btn.textContent = "Get early access";
+  }
 });
 </script>
+</body>
+</html>

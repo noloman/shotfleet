@@ -1,0 +1,10 @@
+name = "shotfleet"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "public"
+
+[[kv_namespaces]]
+binding = "WAITLIST"
+id = "250f2b013ce343ad91e63fc4501699de"

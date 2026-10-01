@@ -18,7 +18,8 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
 8. [x] Launch post drafts for r/iOSProgramming, r/androiddev, Indie Hackers, the Maestro community and X.
 
 ## Phase 3: decide (Manu, about 2 weeks)
-9. [ ] Manu: host the page, connect a waitlist/pre-order (e.g. Lemon Squeezy), post the drafts.
+9. [~] Live at https://shotfleet.manulorenzop.workers.dev (Cloudflare Worker + KV waitlist; `site/signups.sh` lists signups).
+       Posting the drafts needs Manu's OK per post.
 10. [ ] Go if 30+ signups or 5+ pre-orders; otherwise keep shotfleet as an internal tool.
 
 ## Phase 4: only if Go

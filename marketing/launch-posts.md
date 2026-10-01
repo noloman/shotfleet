@@ -1,7 +1,7 @@
 # Launch post drafts
 
 Post these yourself, after the landing page is live and the signup form is connected.
-Replace LINK with the page URL. Check each community's self-promotion rules first;
+Replace https://shotfleet.manulorenzop.workers.dev with the page URL. Check each community's self-promotion rules first;
 r/iOSProgramming and r/androiddev only allow promotion in certain threads or days.
 
 Lead with the story (the bug it found), not the product.
@@ -24,7 +24,7 @@ Other things it caught:
 
 Full run: 18 languages × 4 screens, both platforms, about 15 minutes per platform on an M1 Pro, exported straight into fastlane's folders.
 
-I'm thinking of releasing it (one-time license). Would this be useful to you? How do you handle localized screenshots today? LINK
+I'm thinking of releasing it (one-time license). Would this be useful to you? How do you handle localized screenshots today? https://shotfleet.manulorenzop.workers.dev
 
 ---
 
@@ -36,7 +36,7 @@ I'm an indie mobile developer with a few apps on both stores. Localized screensh
 
 I built a CLI for my own apps. It takes one English UI flow, auto-translates it for every language the app ships, captures them all in parallel, and checks each image. It already found a real bug: users in 4 languages couldn't finish onboarding on small phones.
 
-Before polishing it for sale, I'm testing demand with a landing page and an early-access list: LINK.
+Before polishing it for sale, I'm testing demand with a landing page and an early-access list: https://shotfleet.manulorenzop.workers.dev.
 
 What I know about the market so far:
 - fastlane (free) already captures screenshots, but it needs UI-test setup and runs one language at a time.
@@ -59,7 +59,7 @@ Two Maestro things I ran into along the way, in case they're useful:
 1. On Android, two separate `maestro test` processes on different devices share host port 7001 and can silently drive each other's device. Use one sharded run instead.
 2. Sharded runs don't expose a shard index to flows, so I map flows to devices from the debug log.
 
-Landing page with examples: LINK
+Landing page with examples: https://shotfleet.manulorenzop.workers.dev
 
 ---
 
@@ -75,4 +75,4 @@ Landing page with examples: LINK
 
 5/ Bonus: in Turkish, "Next" and "Advanced" are the same word. It warns about clashes like that before running.
 
-6/ I'm considering releasing it. Early access: LINK
+6/ I'm considering releasing it. Early access: https://shotfleet.manulorenzop.workers.dev
