@@ -1122,14 +1122,14 @@ def judge_screen(lp, ocr, tables):
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
         lang = canon(lp).split("-")[0]
-        if LEGACY.get(lang, lang) not in readable_languages() | {"zh"} and ocr.get("ocr") != "external":
+        if LEGACY.get(lang, lang) not in readable_languages() | {"zh"}:
             return None, None  # Hebrew, Georgian, Burmese often read as nothing at all
         return got, "no text found (blank or still loading?)"
     if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
         c = canon(lp)  # zh-CN -> zh-Hans, zh-HK -> zh-Hant-HK, iw -> he: what language detection reports
         want = ("zh-Hant" if c.startswith("zh-Hant") else "zh-Hans") if c.startswith("zh") else \
             EXPECTED_LANG.get(lp, LEGACY.get(lp.split("-")[0], lp.split("-")[0]))
-        if want.split("-")[0] not in readable_languages() | {"zh"} and ocr.get("ocr") != "external":
+        if want.split("-")[0] not in readable_languages() | {"zh"}:
             # macOS can't read this script, and the screen shows no other language's strings: not provable either way
             if ocr.get("lang") == "en" and ocr.get("langs", {}).get("en", 0) > 0.9:
                 return "en", f"text looks like 'en', expected '{want}'"
