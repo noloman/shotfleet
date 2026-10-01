@@ -2,3 +2,4 @@
 .explore/
 examples/*/out*/
 __pycache__/
+.wrangler/
