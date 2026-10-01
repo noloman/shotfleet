@@ -1702,6 +1702,31 @@ LICENCE_API = os.environ.get("SHOTFLEET_LICENCE_API", "https://api.lemonsqueezy.
 LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json"
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.manulorenzop.workers.dev/#price"
+GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
+GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh
+MAX_MACS = 3
+
+def is_gumroad_key(key):
+    """Gumroad keys are four groups of 8 (ABCDEF12-...); Lemon Squeezy keys are UUIDs (8-4-4-4-12)."""
+    return bool(re.fullmatch(r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{8}){3}", key.strip()))
+
+def gumroad_verify(key, count_use):
+    """Gumroad's licence check -> (ok, uses, reason). Every check counts a use unless count_use is False."""
+    import urllib.parse, urllib.request, urllib.error
+    data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
+                                   "increment_uses_count": "true" if count_use else "false"}).encode()
+    try:
+        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15) as r:
+            body = json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        with e:
+            try: body = json.loads(e.read() or b"{}")
+            except ValueError: raise OSError(f"Gumroad answered {e.code}")
+    if not body.get("success"): return False, 0, body.get("message", "invalid key").rstrip(".")
+    p = body.get("purchase") or {}
+    for flag in ("refunded", "chargebacked", "disputed"):
+        if p.get(flag): return False, body.get("uses", 0), f"the purchase was {flag}"
+    return True, body.get("uses", 0), None
 
 def licence_api(action, **fields):
     """POST to Lemon Squeezy's licence API -> JSON. Network problems raise OSError."""
@@ -1717,6 +1742,15 @@ def licence_api(action, **fields):
 
 def cmd_activate(key):
     import socket
+    if is_gumroad_key(key):
+        ok, uses, why = gumroad_verify(key, count_use=True)
+        if not ok: raise Fail(f"that key didn't activate: {why}. Keys come with your purchase: {BUY_URL}")
+        if uses > MAX_MACS:
+            raise Fail(f"this key is already active on {MAX_MACS} Macs. To move it, email manulorenzop@gmail.com")
+        LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
+        print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
+        return 0
     r = licence_api("activate", license_key=key.strip(), instance_name=socket.gethostname())
     if not r.get("activated"):
         raise Fail(f"that key didn't activate: {(r.get('error') or 'unknown error').rstrip('.')}. "
@@ -1729,6 +1763,9 @@ def cmd_activate(key):
 def cmd_deactivate():
     if not LICENCE_FILE.exists(): print("no licence on this Mac"); return 0
     lic = json.loads(LICENCE_FILE.read_text())
+    if lic.get("store") == "gumroad":  # Gumroad can't free an activation from here
+        LICENCE_FILE.unlink(); print("removed from this Mac. If you've used all 3 activations, email manulorenzop@gmail.com to move it")
+        return 0
     try: licence_api("deactivate", license_key=lic["key"], instance_id=lic["instance"])
     except OSError: pass  # offline: forget it locally anyway
     LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
@@ -1739,9 +1776,11 @@ def require_licence():
     Checked online at most weekly; works offline for 30 days after the last good check."""
     if not getattr(sys, "frozen", False): return  # running from source
     if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
-        try: r = licence_api("validate", license_key=key)
+        try:
+            if is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
+            else: r = licence_api("validate", license_key=key); valid, why = r.get("valid"), r.get("error")
         except OSError: return  # don't fail a build because the licence server is unreachable
-        if not r.get("valid"): raise Fail(f"SHOTFLEET_KEY isn't a valid licence ({r.get('error') or 'invalid'})")
+        if not valid: raise Fail(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
         return
     if not LICENCE_FILE.exists():
         raise Fail(f"`run` and `export` need a licence: shotfleet activate <key> (buy one at {BUY_URL}). "
@@ -1750,12 +1789,15 @@ def require_licence():
     age = (time.time() - lic.get("checked", 0)) / 86400
     if age < LICENCE_RECHECK_DAYS: return
     try:
-        r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
+        if lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
+        else:
+            r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
+            valid, why = r.get("valid"), r.get("error") or r.get("license_key", {}).get("status")
     except OSError:
         if age < LICENCE_OFFLINE_DAYS: return
         raise Fail("couldn't reach the licence server for 30 days; connect once to keep using `run`")
-    if not r.get("valid"):
-        raise Fail(f"this licence is no longer valid ({r.get('error') or r.get('license_key', {}).get('status')}). {BUY_URL}")
+    if not valid:
+        raise Fail(f"this licence is no longer valid ({why}). {BUY_URL}")
     LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time()}))
 
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C

@@ -13,7 +13,7 @@ What it caught on my own apps while I built it:
 - store listings with translated captions over an app that was still in English,
 - screenshot sizes App Store Connect would have refused.
 
-Buy: <CHECKOUT LINK>
+Buy (Lemon Squeezy or Gumroad): https://shotfleet.manulorenzop.workers.dev/#price
 Install: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh
 Then: shotfleet activate <your key>
 

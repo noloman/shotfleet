@@ -59,4 +59,6 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
 - Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake licence API,
   and the real Lemon Squeezy API rejects unknown keys correctly.
 - Apple silicon only for now (Intel needs a universal2 Python for the build).
-- Left for Manu: the Lemon Squeezy product (LAUNCH.md, ~20 min). Then `packaging/go-live.sh <checkout link>`.
+- Gumroad as a second store: its licence keys work too (activation counts uses, at most 3 Macs; refunds and
+  chargebacks are refused; weekly re-checks don't count). Tested against a fake API built from Gumroad's source.
+- Left for Manu: the Lemon Squeezy product, optionally the Gumroad one (LAUNCH.md). Then `packaging/go-live.sh`.

@@ -897,5 +897,63 @@ class Licence(unittest.TestCase):
         with mock.patch.object(sf.sys, "frozen", False): sf.require_licence()
 
 
+class GumroadLicence(unittest.TestCase):
+    """Against a fake Gumroad /v2/licenses/verify (shape from antiwork/gumroad licenses_controller.rb)."""
+    GOOD, REFUNDED = "ABCDEF12-34567890-ABCDEF12-34567890", "11111111-22222222-33333333-44444444"
+
+    def setUp(self):
+        import http.server, threading, urllib.parse
+        self.uses, self.calls, test = {self.GOOD: 0, self.REFUNDED: 0}, [], self
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                b = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
+                test.calls.append(b)
+                key = b.get("license_key")
+                if key not in test.uses or b.get("product_id") != "prod1":
+                    self.send_response(404); self.end_headers()
+                    self.wfile.write(b'{"success":false,"message":"That license does not exist for the provided product."}'); return
+                if b.get("increment_uses_count") != "false": test.uses[key] += 1
+                body = {"success": True, "uses": test.uses[key], "purchase": {"refunded": key == test.REFUNDED, "chargebacked": False}}
+                self.send_response(200); self.end_headers(); self.wfile.write(json.dumps(body).encode())
+            def log_message(self, *a): pass
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        d = Path(tempfile.mkdtemp())
+        self.patches = [mock.patch.object(sf, "GUMROAD_API", f"http://127.0.0.1:{self.server.server_port}/v2/licenses"),
+                        mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "prod1"),
+                        mock.patch.object(sf, "LICENCE_FILE", d / "licence.json"),
+                        mock.patch.object(sf.sys, "frozen", True, create=True)]
+        for p in self.patches: p.start()
+
+    def tearDown(self):
+        for p in self.patches: p.stop()
+        self.server.shutdown()
+
+    def activate(self, key):
+        with contextlib.redirect_stdout(io.StringIO()): return sf.cmd_activate(key)
+
+    def test_key_formats(self):
+        self.assertTrue(sf.is_gumroad_key(self.GOOD))
+        self.assertFalse(sf.is_gumroad_key("38b1460a-5104-4067-a91d-77b872934d51"))  # Lemon Squeezy UUID
+
+    def test_three_macs_then_refused(self):
+        for _ in range(3): self.activate(self.GOOD)
+        with self.assertRaisesRegex(sf.Fail, "3 Macs"): self.activate(self.GOOD)
+
+    def test_refunded_and_unknown_keys_are_refused(self):
+        with self.assertRaisesRegex(sf.Fail, "refunded"): self.activate(self.REFUNDED)
+        with self.assertRaisesRegex(sf.Fail, "does not exist"): self.activate("99999999-99999999-99999999-99999999")
+
+    def test_weekly_recheck_doesnt_use_an_activation(self):
+        self.activate(self.GOOD)
+        lic = json.loads(sf.LICENCE_FILE.read_text())
+        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": 0}))
+        sf.require_licence()
+        self.assertEqual(self.uses[self.GOOD], 1)
+        self.assertEqual(self.calls[-1]["increment_uses_count"], "false")
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
+        self.assertEqual(self.uses[self.GOOD], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
