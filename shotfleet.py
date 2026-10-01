@@ -791,11 +791,36 @@ def junit_results(path):
                                "error": (fail.get("message") or fail.text or "").strip()[:300] if fail is not None else None}
     return res
 
+def device_type_id(name):
+    """'iPad Pro 13-inch (M5)' or a full com.apple.CoreSimulator.SimDeviceType identifier -> the identifier."""
+    if name.startswith("com.apple."): return name
+    types = json.loads(sh(["xcrun", "simctl", "list", "devicetypes", "-j"]).stdout or '{"devicetypes": []}')["devicetypes"]
+    match = next((t["identifier"] for t in types if t["name"].casefold() == name.casefold()), None)
+    if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
+    return match
+
+def device_slug(device_type):
+    """com.apple...iPad-Pro-13-inch-M5-12GB -> ipad-pro-13-inch-m5-12gb (a folder and simulator-name prefix)."""
+    return device_type.rsplit(".", 1)[-1].lower()
+
 def cmd_run(config_path, only=None, parallel=None):
     platform, cfg, path = load_config(config_path)
     if platform == "android":
         out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
         return android_run(cfg, path, out, only, parallel)
+    if devices := cfg.get("device_types"):  # iPhone and iPad sets from one flow: out/<device>/ each
+        codes = []
+        for d in devices:
+            dt = device_type_id(d)
+            print(f"\n== {d}")
+            codes.append(ios_run({**cfg, "device_type": dt, "sim_prefix": f"shotfleet-{device_slug(dt)}",
+                                  "out": str(path(cfg.get("out", "out")).resolve() / device_slug(dt))}, path, only, parallel))
+        return max(codes)
+    return ios_run(cfg, path, only, parallel)
+
+def ios_run(cfg, path, only=None, parallel=None):
+    cfg = dict(cfg)
+    if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
     cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
     cfg.setdefault("runtime", latest_ios_runtime())
     cfg["app"] = str(path(cfg["app"]))
@@ -828,7 +853,7 @@ def cmd_run(config_path, only=None, parallel=None):
         raise Fail(f"none of those languages are in the app. It ships: {', '.join(sorted(strings))}")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(report["locales"])))
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
-    pool = make_pool(n, cfg["device_type"], cfg["runtime"])
+    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"))
     OUR_SIMS.update(s.udid for s in pool)
     kill_stale_drivers()
     for sim in pool:  # install once; each flow's clearState gives every locale a fresh start
@@ -892,6 +917,9 @@ def cmd_run(config_path, only=None, parallel=None):
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
     failed = [r["lproj"] for r in results if not r["ok"]]
+    if not any((out / "raw").glob("*/*.png")):
+        print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
+        return 1
     return max(cmd_check(out, strings), 1 if failed else 0)
 
 # ---------- android ----------
@@ -1621,9 +1649,16 @@ def png_size(path):
     head = Path(path).read_bytes()[:24]
     return (int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")) if head[:8] == b"\x89PNG\r\n\x1a\n" else None
 
+def device_runs(out):
+    """Sub-folders of a multi-device run (out/<device>/run.json), or [] for a single run."""
+    out = Path(out)
+    return [] if (out / "run.json").exists() else sorted(d for d in out.iterdir() if (d / "run.json").exists()) if out.is_dir() else []
+
 def cmd_export(out, fastlane):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
     Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
+    if subs := device_runs(out):  # iPhone + iPad: both sets go into the same language folders (sizes differ)
+        return max(cmd_export(d, fastlane) for d in subs)
     out, fastlane = Path(out), Path(fastlane)
     if not (out / "run.json").is_file():
         raise Fail(f"no shotfleet run in {out}. Run 'shotfleet run <config>' first")
@@ -1885,6 +1920,8 @@ def main_dispatch(a):
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
+            if subs := device_runs(a.out):
+                return max(cmd_check(d, app=a.app, report_dir=None, strings_files=a.strings, ocr_command=a.ocr_command) for d in subs)
             if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
             return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command)

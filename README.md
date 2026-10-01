@@ -130,6 +130,8 @@ parallel = 4            # simulators
 out = "out"
 # locales = ["de", "ja"]   # default: every language the app ships
 # base_locale = "de"        # the language your flow is written in (default en)
+# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes from one flow: out/<device>/;
+#                            # `check out` and `export out` handle both, and the App Store takes both in one folder
 
 [android]                 # in its own file
 apk = "path/to/app-debug.apk"
