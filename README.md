@@ -58,6 +58,21 @@ shotfleet init path/to/app-debug.apk android/      # or an APK
 4. Review `out/index.html`. It's a grid with a row per language and a column per screen, and problems are outlined in red.
 5. Export to fastlane: `shotfleet export ios/out --fastlane fastlane/`. That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
 
+## Uploading
+
+shotfleet stops at fastlane's folders; fastlane uploads them. Screenshots only, nothing else touched:
+
+```bash
+# App Store: replaces the screenshots of every language folder in fastlane/screenshots
+fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --force
+
+# Google Play: uploads metadata/android/<locale>/images/phoneScreenshots
+fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --skip_upload_changelogs --skip_upload_images
+```
+
+Run `shotfleet check fastlane/` right before uploading: export already skips languages that failed, and the check
+also catches folders you edited by hand.
+
 ## In CI
 
 `run` and `check` take `--json`: the report goes to stdout as JSON (`exit`, `screenshots`, `problems`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
