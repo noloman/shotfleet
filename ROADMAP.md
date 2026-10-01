@@ -8,6 +8,9 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 - Every audit finding fixed (export data loss, wrong-language passes, untranslated anchors, leaks, tracebacks).
 - First-run fixes (Python 3.9 message, wrong build types, platform mismatch, quieter check without --app, init paths).
 - All 50 App Store and 87 Play listing codes; 85-language measurement (tools/langmatrix.py).
+- 1.1 tolerant matching; 1.2 plurals (.stringsdict, <plurals>, Compose) and format strings (matching + translating
+  'Round 2 of 12' into every plural form); 1.4 base language and region fallback; real-app defects (English-keyed
+  String Catalogs, multi-line Android strings, YAML quoting, non-language folders).
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |

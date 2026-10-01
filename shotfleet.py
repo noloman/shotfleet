@@ -147,6 +147,12 @@ def load_strings(res_dir):
     for lproj in sorted(res_dir.rglob("*.lproj")):
         if lproj.stem == "Base": continue  # Base.lproj is layout/fallback storage, not a language
         where = lproj.parent.relative_to(res_dir).as_posix()
+        for f in sorted(lproj.glob("*.stringsdict")):
+            r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
+            if r.returncode == 0:
+                table = stringsdict_forms(json.loads(r.stdout))
+                if where != ".": table = {f"{where}/{f.stem}:{k}": v for k, v in table.items()}
+                out.setdefault(canon_lproj(lproj.stem), {}).update(table)
         for f in sorted(lproj.glob("*.strings")):
             r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
             if r.returncode == 0:
@@ -164,7 +170,32 @@ def load_strings(res_dir):
     if keys:
         base = out.setdefault(dev, {})
         for k in keys - base.keys():
+            if "#" in k: continue  # plural forms (few, many) English doesn't have
             base[k] = k.split(":", 1)[1] if "/" in k.split(":", 1)[0] and ":" in k else k
+    return out
+
+def stringsdict_forms(d):
+    """{key#form: text} for every plural/device/width form in a .stringsdict, e.g. items#one = "1 item".
+    A form's text replaces its %#@var@ in the format; other variables take their 'other' form."""
+    out = {}
+    for key, entry in d.items():
+        if not isinstance(entry, dict): continue
+        if "NSStringDeviceSpecificRuleType" in entry or "NSStringVariableWidthRuleType" in entry:
+            rules = entry.get("NSStringDeviceSpecificRuleType") or entry.get("NSStringVariableWidthRuleType")
+            for form, text in rules.items():
+                if isinstance(text, str): out[f"{key}#{form}"] = text
+            continue
+        fmt = entry.get("NSStringLocalizedFormatKey", "")
+        variables = {v: forms for v, forms in entry.items() if isinstance(forms, dict)}
+        def fill(text, skip):
+            for v, forms in variables.items():
+                if v != skip: text = text.replace(f"%#@{v}@", forms.get("other", ""))
+            return text
+        for v, forms in variables.items():
+            for form, text in forms.items():
+                if not form.startswith("NSString") and isinstance(text, str):
+                    tag = form if len(variables) == 1 else f"{v}.{form}"
+                    out[f"{key}#{tag}"] = fill(fmt.replace(f"%#@{v}@", text), v)
     return out
 
 def canon_lproj(name):
@@ -184,6 +215,10 @@ def add_cvr(out, path, text, base):
         kind, key, value = (line.split("|", 2) + ["", ""])[:3]
         if kind == "string":
             out.setdefault(loc, {})[f"cmp:{key}"] = base64.b64decode(value).decode("utf-8", "replace")
+        elif kind == "plurals":  # ponytail: format inferred from compose-resources' writer, not seen in a real app yet
+            for item in value.split(","):
+                form, _, b64 = item.partition(":")
+                if b64: out.setdefault(loc, {})[f"cmp:{key}#{form}"] = base64.b64decode(b64).decode("utf-8", "replace")
 
 LOCALE_QUALIFIER = re.compile(r"^(?:([a-z]{2,3})(?:-r([A-Z]{2}))?|b\+([a-z]{2,3})((?:\+[A-Za-z0-9]+)*))$")
 
@@ -194,11 +229,14 @@ def android_locale(q):
     if m.group(3): return m.group(3) + m.group(4).replace("+", "-")
     return m.group(1) + (f"-{m.group(2)}" if m.group(2) else "")
 
+def unescape_android(v):
+    return v.replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n")
+
 def load_strings_apk(apk, base="en"):
     """{locale: {name: value}} from the string resources compiled into an APK (default config -> base)."""
     r = sh([aapt2(), "dump", "resources", str(apk)])
     if r.returncode != 0: raise RuntimeError(f"aapt2 dump failed: {r.stderr.strip()}")
-    out, name, pending = {}, None, None
+    out, name, pending, kind, loc = {}, None, None, None, None
     for line in r.stdout.splitlines():
         if pending is not None:  # a value with newlines continues over the next lines
             pending += "\n" + line.strip()
@@ -206,12 +244,17 @@ def load_strings_apk(apk, base="en"):
             line, pending = pending, None
         elif name and (m := re.match(r'\s*\(([^)]*)\) "', line)) and not re.search(r'(?<!\\)"\s*$', line[m.end():]):
             pending = line; continue
-        if m := re.match(r"\s*resource 0x[0-9a-f]+ string/(\S+)", line):
-            name = m.group(1); continue
+        if m := re.match(r"\s*resource 0x[0-9a-f]+ (string|plurals)/(\S+)", line):
+            name, kind, loc = m.group(2), m.group(1), None; continue
+        if name and kind == "plurals":  # (de) (plurals) size=2 / one="..." / other="..."
+            if m := re.match(r"\s*\(([^)]*)\) \(plurals\)", line):
+                loc = base if m.group(1) == "" else android_locale(m.group(1)); continue
+            if loc and (m := re.match(r'\s*(zero|one|two|few|many|other)="(.*)"\s*$', line)):
+                out.setdefault(loc, {})[f"{name}#{m.group(1)}"] = unescape_android(m.group(2)); continue
         if name and (m := re.match(r'\s*\(([^)]*)\) "(.*)"\s*$', line, re.S)):
             loc = base if m.group(1) == "" else android_locale(m.group(1))
             if loc:  # skip night/land/v31 and other non-locale variants
-                out.setdefault(loc, {})[name] = m.group(2).replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n")
+                out.setdefault(loc, {})[name] = unescape_android(m.group(2))
         elif not line.startswith("      "):
             name = None
     import zipfile
@@ -277,13 +320,29 @@ def translate_flow(flow, base, target):
         by_text.setdefault(v, []).append(k)
     targets = target if isinstance(target, list) else [target]  # several: match any of their translations
     missing, lines, collisions = [], [], []
+    formats = [(k, re.compile("^" + format_regex(v) + "$", re.S)) for k, v in base.items() if has_format(v)]
+
+    def tr_format(text):
+        """'Round 2 of 12' -> every target form of the matching format, filled with 2 and 12."""
+        for k, rx in formats:
+            if m := rx.match(text):
+                family = k.split("#")[0]
+                forms = {fill_format(v, m.groupdict()) for tg in targets for o, v in tg.items()
+                         if o == k or o.split("#")[0] == family and "#" in o}
+                forms.discard(None)
+                if forms: return sorted(forms)
+        return None
 
     def tr(raw):
         """Translated YAML value for one selector value, or None to leave it as it is."""
         text = yaml_unquote(raw)
         keys = by_text.get(text)
         if not keys:
-            missing.append(text); return None
+            forms = tr_format(text)
+            if forms is None:
+                missing.append(text); return None
+            pattern = "|".join(map(regex_literal, forms))  # any plural form: no per-language plural rules needed
+            return yaml_single_quote(pattern if len(forms) == 1 else f"({pattern})")
         cands = sorted({tg.get(k, text) for tg in targets for k in keys})
         if cands == [text] and regex_literal(text) == text:
             return None
@@ -795,9 +854,66 @@ def norm(text):
     t = "".join(str(unicodedata.decimal(c)) if c.isdecimal() else c for c in t if not unicodedata.combining(c))
     return " ".join(unicodedata.normalize("NFKC", t).casefold().split())
 
+# printf (%d, %1$@, %.1f, %lld), and {name} / {0} placeholders (ICU, Compose, .NET)
+SPEC = re.compile(r"%(?:(\d+)\$)?[-+ 0#']*(?:\d+|\*)?(?:\.\d+)?(?:hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXfFeEgGsScCoaAp%])|\{(\w+)\}")
+NUMBER = r"-?\d[\d.,' \u00a0\u202f]*"
+
+def has_format(text):
+    """True for 'Day %d of 15'; false for plain text and for .stringsdict placeholders like '%1$#@jobs@'
+    (their plural forms are loaded separately)."""
+    return "#@" not in text and any(m.group(2) != "%" for m in SPEC.finditer(text))
+
+def format_regex(fmt, literal=re.escape, named=True):
+    """Regex source for what fmt looks like once filled in: numbers for %d, anything for %@ / {name}.
+    Groups are named a<arg> (a1, a2... or the placeholder name) so values can be carried to a translation."""
+    out, seen, pos, auto = [], set(), 0, 0
+    for m in SPEC.finditer(fmt):
+        out.append(literal(fmt[pos:m.start()])); pos = m.end()
+        if m.group(2) == "%": out.append(literal("%")); continue
+        if m.group(1) or m.group(3): name = m.group(1) or m.group(3)
+        else: auto += 1; name = str(auto)
+        group = "a" + re.sub(r"\W", "_", name)
+        pat = NUMBER if m.group(2) and m.group(2) in "dDiuUxXfFeEgGaAo" else ".+?"
+        if not named: out.append(f"(?:{pat})"); continue
+        if group in seen: out.append(f"(?P={group})"); continue
+        seen.add(group)
+        out.append(f"(?P<{group}>{pat})")
+    out.append(literal(fmt[pos:]))
+    return "".join(out)
+
+def fill_format(fmt, args):
+    """fmt with its placeholders replaced by args ({'a1': '2', 'aname': 'Anna'}); None if an arg is missing."""
+    auto = 0
+    def sub(m):
+        nonlocal auto
+        if m.group(2) == "%": return "%"
+        if m.group(1) or m.group(3): name = m.group(1) or m.group(3)
+        else: auto += 1; name = str(auto)
+        return args.get("a" + re.sub(r"\W", "_", name), "\0")
+    out = SPEC.sub(sub, fmt)
+    return None if "\0" in out else out
+
+def norm_piece(text):
+    """norm() for a piece of a format string: same folding, but edge spaces kept ("Round " + "%d")."""
+    lead, trail = text[:1].isspace(), text[-1:].isspace()
+    core = norm(text)
+    return (" " if lead and core else "") + core + (" " if trail and core else "")
+
+class Table(frozenset):
+    """A locale's normalized strings, plus one regex for its format strings ("day %d of 15")."""
+    formats = None
+
 def string_tables(strings):
-    """{locale: set of normalized strings} for judge_screen."""
-    return {lp: {norm(v) for v in with_fallback(strings, lp).values()} for lp in strings}
+    """{locale: Table} for judge_screen."""
+    tables = {}
+    for lp in strings:
+        values = with_fallback(strings, lp).values()
+        t = Table(norm(v) for v in values)
+        pats = [format_regex(v, lambda piece: re.escape(norm_piece(piece)), named=False) for v in values
+                if has_format(v) and len(re.sub(r"[\W\d_]", "", SPEC.sub("", v))) >= 3]  # "%d" alone matches anything
+        t.formats = re.compile("^(?:" + "|".join(f"(?:{p})" for p in pats) + ")$") if pats else None
+        tables[lp] = t
+    return tables
 
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
@@ -805,7 +921,9 @@ def judge_screen(lp, ocr, tables):
     Scores each locale by how many recognized lines are exactly one of its strings: generic language
     detection is unreliable on short UI labels (it reads Russian tab bars as Kazakh)."""
     lines = {n for l in ocr.get("text", "").splitlines() if len(n := norm(l)) > 1}
-    score = {o: len(lines & vals) for o, vals in tables.items()}
+    score = {o: len(lines & vals) + (sum(1 for l in lines - vals if vals.formats.match(l))
+                                      if getattr(vals, "formats", None) else 0)
+             for o, vals in tables.items()}
     best = max(score.values(), default=0)
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
@@ -831,8 +949,12 @@ def judge_screen(lp, ocr, tables):
                 and langs.get(ocr.get("lang"), 0) >= 0.8:
             return ocr.get("lang"), f"text looks like '{ocr.get('lang')}', expected '{want}'"
         return lp, None
-    if got != lp:
+    # on a screen with little evidence, one borrowed word ("Round" on a French watch) isn't enough; with plenty,
+    # one line is what separates regional variants ("Colour" vs "Color")
+    if got != lp and score[got] - score.get(lp, 0) >= (2 if score[got] < 3 else 1):
         return got, f"shows {got} strings ({score[got]} lines) more than {lp} ({score.get(lp, 0)})"
+    if got != lp:
+        return lp, None
     return got, None
 
 def find_screenshots(folder):

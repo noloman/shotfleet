@@ -600,5 +600,66 @@ class RealAppDefects(unittest.TestCase):
             self.assertEqual(sorted(sf.find_screenshots(d)), ["de-DE", "zh-Hans"])
 
 
+class PluralsAndFormats(unittest.TestCase):
+    EN = {"r": "Round %1$d of %2$d", "h": "Hello, %@", "d#one": "%d day since your last PR",
+          "d#other": "%d days since your last PR"}
+    PL = {"r": "Runda %1$d z %2$d", "h": "Cześć, %@", "d#one": "%d dzień od PR", "d#few": "%d dni od PR",
+          "d#many": "%d dni od PR", "d#other": "%d dnia od PR"}
+
+    def test_selectors_with_numbers_translate_into_every_plural_form(self):
+        flow = "appId: x\n---\n- tapOn: Round 2 of 12\n- assertVisible: 3 days since your last PR\n- tapOn: Hello, Anna\n"
+        out, missing, _ = sf.translate_flow(flow, self.EN, self.PL)
+        self.assertIn("'Runda 2 z 12'", out)
+        self.assertIn("'(3 dni od PR|3 dnia od PR|3 dzień od PR)'", out)
+        self.assertIn("'Cześć, Anna'", out)
+        self.assertEqual(missing, [])
+
+    def test_positional_arguments_keep_their_meaning(self):
+        self.assertEqual(sf.fill_format("%2$d من %1$d", {"a1": "2", "a2": "12"}), "12 من 2")
+        self.assertIsNone(sf.fill_format("%1$d / %3$d", {"a1": "2"}))
+
+    def test_lines_with_numbers_count_for_the_right_language(self):
+        t = sf.string_tables({"en": self.EN, "pl": self.PL})
+        self.assertEqual(sf.judge_screen("pl", {"chars": 40, "text": "Runda 2 z 12\nCześć, Anna\n3 dni od PR"}, t), ("pl", None))
+        got, problem = sf.judge_screen("pl", {"chars": 40, "text": "Round 2 of 12\nHello, Anna\n3 days since your last PR"}, t)
+        self.assertEqual(got, "en"); self.assertIsNotNone(problem)
+
+    def test_bare_placeholders_are_not_evidence(self):  # "%d" or "%@ %@" would match any line
+        t = sf.string_tables({"en": {"n": "%d", "x": "%@ %@"}})
+        self.assertIsNone(t["en"].formats)
+
+    def test_stringsdict_forms(self):
+        d = {"items": {"NSStringLocalizedFormatKey": "%#@n@ in %#@lists@",
+                       "n": {"NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "NSStringFormatValueTypeKey": "d",
+                             "one": "%d item", "other": "%d items"},
+                       "lists": {"NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "one": "%d list", "other": "%d lists"}},
+             "title": {"NSStringDeviceSpecificRuleType": {"iphone": "Tap here", "ipad": "Click here"}}}
+        got = sf.stringsdict_forms(d)
+        self.assertEqual(got["items#n.one"], "%d item in %d lists")
+        self.assertEqual(got["items#lists.one"], "%d items in %d list")
+        self.assertEqual(got["title#ipad"], "Click here")
+
+    def test_android_plurals(self):
+        dump = ('Package name=x id=7f\n  type plurals id=0e entryCount=1\n    resource 0x7f0e0001 plurals/days\n'
+                '      () (plurals) size=2\n        one="%1$d day"\n        other="%1$d days"\n'
+                '      (pl) (plurals) size=3\n        one="%1$d dzień"\n        few="%1$d dni"\n        other="%1$d dnia"\n')
+        with mock.patch.object(sf, "aapt2", return_value="aapt2"), \
+             mock.patch.object(sf, "sh", return_value=subprocess.CompletedProcess([], 0, dump, "")):
+            got = sf.load_strings_apk("x.apk")
+        self.assertEqual(got["pl"], {"days#one": "%1$d dzień", "days#few": "%1$d dni", "days#other": "%1$d dnia"})
+
+
+class Evidence(unittest.TestCase):
+    def test_one_borrowed_word_on_a_sparse_screen_is_not_wrong_language(self):  # French watch: "Round 1/12"
+        t = sf.string_tables({"en": {"r": "Round %1$d/%2$d", "p": "Pause"}, "fr": {"r": "Tour %1$d/%2$d", "p": "Pause"}})
+        self.assertEqual(sf.judge_screen("fr", {"chars": 40, "text": "TRAVAIL\nRound 1/12\nPause\nTerminer"}, t), ("fr", None))
+
+    def test_one_word_still_separates_regional_variants_on_a_full_screen(self):
+        common = {f"k{i}": f"Shared label {i}" for i in range(6)}
+        t = sf.string_tables({"en": {**common, "c": "Color"}, "en-GB": {**common, "c": "Colour"}})
+        text = "\n".join([*common.values(), "Color"])
+        self.assertIsNotNone(sf.judge_screen("en-GB", {"chars": 90, "text": text}, t)[1])
+
+
 if __name__ == "__main__":
     unittest.main()
