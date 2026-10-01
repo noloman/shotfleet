@@ -35,6 +35,7 @@ def load_strings(res_dir):
     """{lproj: {key: value}} from every *.strings file in every *.lproj under res_dir."""
     out = {}
     for lproj in sorted(Path(res_dir).glob("*.lproj")):
+        if lproj.stem == "Base": continue  # Base.lproj is layout/fallback storage, not a language
         table = {}
         for f in lproj.glob("*.strings"):
             r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
@@ -254,7 +255,10 @@ def cmd_run(config_path, only=None, parallel=None):
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = load_strings(path(cfg["strings"]) if "strings" in cfg else Path(cfg["app"]))
     flow = path(cfg["flow"]).read_text()
-    en = strings[cfg.get("base_locale", "en")]
+    base_locale = cfg.get("base_locale", "en")
+    if base_locale not in strings:
+        sys.exit(f"the app has no {base_locale}.lproj strings; set base_locale in the config to the language your flow is written in")
+    en = strings[base_locale]
     locales = only or cfg.get("locales") or sorted(strings)
     out = path(cfg.get("out", "out")).resolve()
     shutil.rmtree(out / "flows", ignore_errors=True)  # raw/<locale> is cleared per locale below, so a partial rerun keeps the rest
@@ -513,6 +517,26 @@ def ocr_tool():
         if r.returncode != 0: raise RuntimeError("ocr build failed:\n" + r.stderr)
     return str(exe)
 
+def judge_screen(lp, ocr, tables):
+    """(locale the screen shows, problem or None) for one screenshot's OCR result.
+
+    Scores each locale by how many recognized lines are exactly one of its strings: generic language
+    detection is unreliable on short UI labels (it reads Russian tab bars as Kazakh)."""
+    lines = {l.strip() for l in ocr.get("text", "").splitlines() if len(l.strip()) > 1}
+    score = {o: len(lines & vals) for o, vals in tables.items()}
+    best = max(score.values(), default=0)
+    got = lp if score.get(lp, 0) == best else max(score, key=score.get)
+    if not ocr.get("chars"):
+        return got, "no text found (blank or still loading?)"
+    if best == 0:  # nothing matched the app's strings; fall back to language detection
+        want = EXPECTED_LANG.get(lp, lp.split("-")[0])
+        if ocr.get("lang") != want and ocr.get("langs", {}).get(want, 0) < 0.2:
+            return ocr.get("lang"), f"text looks like '{ocr.get('lang')}', expected '{want}'"
+        return lp, None
+    if got != lp:
+        return got, f"shows {got} strings ({score[got]} lines) more than {lp} ({score.get(lp, 0)})"
+    return got, None
+
 def cmd_check(out, strings=None):
     """Verify screenshots: each shows its own locale's strings, and no image is repeated across languages."""
     out = Path(out)
@@ -532,20 +556,8 @@ def cmd_check(out, strings=None):
             h = hashlib.sha256(data).hexdigest()[:12]
             by_hash.setdefault(h, []).append(f"{lp}/{png.name}")
             r = json.loads(sh([ocr, str(png)]).stdout or "{}")
-            # which locale's strings does this screen actually show? (generic language detection is
-            # unreliable on short UI labels: it reads Russian tab bars as Kazakh)
-            lines = {l.strip() for l in r.get("text", "").splitlines() if len(l.strip()) > 1}
-            score = {o: len(lines & vals) for o, vals in tables.items()}
-            best = max(score.values(), default=0)
-            got = lp if score.get(lp, 0) == best else max(score, key=score.get)
-            if not r.get("chars"):
-                problems.append(f"{lp}/{png.name}: no text found (blank or still loading?)")
-            elif best == 0:  # nothing matched the app's strings; fall back to language detection
-                want = EXPECTED_LANG.get(lp, lp.split("-")[0])
-                if r.get("lang") != want and r.get("langs", {}).get(want, 0) < 0.2:
-                    problems.append(f"{lp}/{png.name}: text looks like '{r.get('lang')}', expected '{want}'")
-            elif got != lp:
-                problems.append(f"{lp}/{png.name}: shows {got} strings ({score[got]} lines) more than {lp} ({score.get(lp, 0)})")
+            got, problem = judge_screen(lp, r, tables)
+            if problem: problems.append(f"{lp}/{png.name}: {problem}")
             rows.append({"file": f"{lp}/{png.name}", "sha": h, "lang": got, "chars": r.get("chars", 0)})
     for h, files in by_hash.items():
         langs = {f.split("/")[0] for f in files}
