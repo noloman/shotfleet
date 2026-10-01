@@ -3,7 +3,7 @@
 Everything else is done and scripted. Signing and notarization use your existing Developer ID and the `KeysiNotary`
 profile; the program is served from the shotfleet site (no public repos); `packaging/go-live.sh` does the rest.
 
-## 1. Lemon Squeezy product (the only account step)
+## 1. Lemon Squeezy product
 
 1. Sign in at https://app.lemonsqueezy.com (or sign up and finish the store's identity check; Lemon Squeezy is the
    merchant of record, so it handles VAT and sales tax).
