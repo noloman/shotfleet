@@ -24,13 +24,13 @@ Other things it caught:
 
 Full run: 18 languages × 4 screens, about 9 minutes on iOS and 15 on Android on an M1 Pro, exported straight into fastlane's folders.
 
-I'm thinking of releasing it (one-time license). Would this be useful to you? How do you handle localized screenshots today? https://shotfleet.manulorenzop.workers.dev
+I'm thinking of releasing it as a one-time license. Would this be useful to you? How do you handle localized screenshots today? https://shotfleet.manulorenzop.workers.dev
 
 ---
 
 ## Indie Hackers
 
-**Title:** Validating a $49 dev tool before building the rest: localized store screenshots
+**Title:** Validating a $79 dev tool before building the rest: localized store screenshots
 
 I'm an indie mobile developer with a few apps on both stores. Localized screenshots were a chore I kept skipping. I'd copy English screenshots into every language, so the localized listings looked untranslated.
 
@@ -43,7 +43,7 @@ What I know about the market so far:
 - Design tools (AppScreens etc.) charge $100–600/yr but don't capture from the app.
 - I couldn't find any tool that checks the screenshots are actually in the right language.
 
-My bar is modest: a few thousand dollars a year. Does a $49 one-time license sound right for this?
+My bar is modest: a few thousand dollars a year. Does $79 one-time ($49 for the first 100 on the list) sound right for this?
 
 ---
 

@@ -1,6 +1,6 @@
 # shotfleet: from working prototype to a few $k/year
 
-Goal: find out cheaply whether developers will pay ~$49 for shotfleet, and be ready to sell if they will.
+Goal: find out cheaply whether developers will pay $79 ($49 founder price) for shotfleet, and be ready to sell if they will.
 Success = a few thousand dollars a year. Anything less means it stays a free tool for our own apps.
 
 ## Phase 1: make it work for someone who isn't us (Claude)
