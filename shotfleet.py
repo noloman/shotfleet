@@ -1206,7 +1206,11 @@ def read_text(ocr, png, timeout=120):
             return json.loads(sh([ocr, str(png)], timeout=timeout).stdout or "{}")
         except subprocess.TimeoutExpired:
             pass
-    raise RuntimeError(f"text recognition hung twice on {png} (is the Mac overloaded?); run check again")
+    stuck = [l for l in sh(["ps", "-Ao", "pcpu=,comm="]).stdout.splitlines()
+             if "ANECompilerService" in l and float(l.split()[0]) > 50]
+    raise RuntimeError(f"text recognition hung twice on {png}. " + (
+        "macOS's Neural Engine compiler (ANECompilerService) is stuck at full CPU, which blocks all text recognition; "
+        "restarting the Mac fixes it" if stuck else "Is the Mac overloaded? Run check again"))
 
 # Tesseract's names for the scripts macOS can't read (for {tesseract} in --ocr-command)
 TESSERACT = {"el": "ell", "he": "heb", "iw": "heb", "hy": "hye", "ka": "kat", "bn": "ben", "as": "asm", "gu": "guj",
