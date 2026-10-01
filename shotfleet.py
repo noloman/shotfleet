@@ -11,7 +11,7 @@ For each language the app ships, shotfleet rewrites the flow's English text sele
 language using the strings compiled into the app, runs every language in parallel, and verifies
 every screenshot (shows that language's strings, isn't a copy of another, none missing).
 """
-import hashlib, json, os, re, shutil, subprocess, sys, time, tomllib
+import functools, hashlib, json, os, re, shutil, subprocess, sys, time, tomllib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -61,11 +61,50 @@ def load_config(config_path):
         raise Fail("Maestro isn't installed. Install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
 # lproj code -> App Store Connect / fastlane locale
-STORE_LOCALE = {
-    "en": "en-US", "ar": "ar-SA", "da": "da", "de": "de-DE", "es": "es-ES", "fr": "fr-FR", "hi": "hi",
-    "it": "it", "ja": "ja", "ko": "ko", "nb": "no", "nl": "nl-NL", "pl": "pl", "pt": "pt-BR", "ru": "ru",
-    "sv": "sv", "tr": "tr", "zh-Hans": "zh-Hans", "zh-Hant": "zh-Hant", "uk": "uk", "id": "id", "ro": "ro",
-}
+# Store listing codes, exactly as fastlane deliver/supply folder names (sources: marketing/store-locales.md, 2026-10-01)
+APP_STORE = ("ar-SA bn-BD ca cs da de-DE el en-AU en-CA en-GB en-US es-ES es-MX fi fr-CA fr-FR gu-IN he hi hr hu id it "
+             "ja kn-IN ko ml-IN mr-IN ms nl-NL no or-IN pa-IN pl pt-BR pt-PT ro ru sk sl-SI sv ta-IN te-IN th tr uk "
+             "ur-PK vi zh-Hans zh-Hant").split()
+PLAY = ("af sq am ar hy-AM az-AZ bn-BD eu-ES be bg my-MM ca zh-HK zh-CN zh-TW hr cs-CZ da-DK nl-NL en-AU en-CA en-US "
+        "en-GB en-IN en-SG en-ZA et fil fi-FI fr-CA fr-FR gl-ES ka-GE de-DE el-GR gu iw-IL hi-IN hu-HU is-IS id it-IT "
+        "ja-JP kn-IN kk km-KH ko-KR ky-KG lo-LA lv lt mk-MK ms-MY ms ml-IN mr-IN mn-MN ne-NP no-NO fa fa-AE fa-AF fa-IR "
+        "pl-PL pt-BR pt-PT pa ro rm ru-RU sr si-LK sk sl es-419 es-ES es-US sw sv-SE ta-IN te-IN th tr-TR uk ur vi zu").split()
+# When a language has several listings and the app's locale names no region, its screenshots go to this one
+PRIMARY = {"en": "en-US", "es": "es-ES", "fr": "fr-FR", "pt": "pt-BR", "zh": "zh-Hans", "ms": "ms", "fa": "fa"}
+# App locale spellings -> one canonical form: Android's legacy codes, Chinese by script, Norwegian, old lproj names
+LANG_CANON = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "nb": "no", "nn": "no"}
+CANON = {"zh": "zh-Hans", "zh-CN": "zh-Hans",
+         "zh-SG": "zh-Hans", "zh-TW": "zh-Hant", "zh-HK": "zh-Hant-HK", "zh-MO": "zh-Hant-HK", "es-MX": "es-419",
+         "English": "en", "French": "fr", "German": "de", "Japanese": "ja", "Spanish": "es", "Italian": "it", "Dutch": "nl"}
+
+def canon(code):
+    lang, _, rest = code.replace("_", "-").partition("-")
+    code = LANG_CANON.get(lang, lang) + ("-" + rest if rest else "")
+    return CANON.get(code, code)
+
+def store_code(app_locale, store):
+    """The listing an app locale's screenshots belong to in `store` (APP_STORE or PLAY), or None if that store
+    has no listing in that language. E.g. App Store: de -> de-DE, nb -> no, zh-Hant-HK -> zh-Hant; Play: iw -> iw-IL."""
+    c = canon(app_locale)
+    by_canon = {}
+    for code in store:
+        by_canon.setdefault(canon(code), code)
+    if c in by_canon: return by_canon[c]
+    lang, *rest = c.split("-")
+    same = [code for code in store if canon(code).split("-")[0] == lang]
+    if lang == "zh":  # by script; Hong Kong falls back to Traditional
+        same = [code for code in same if canon(code).startswith("zh-Hant" if "Hant" in c else "zh-Hans")]
+    if lang == "es" and rest and rest[0] != "ES":  # any Latin American Spanish -> es-419 / es-MX
+        same = [code for code in same if code in ("es-419", "es-MX")] or same
+    if rest:
+        regional = [code for code in same if code.split("-")[-1] == rest[-1]]
+        if regional: return regional[0]
+    if len(same) > 1:
+        primary = [code for code in same if code == PRIMARY.get(lang) or canon(code) == canon(PRIMARY.get(lang, ""))]
+        plain = [code for code in same if "-" not in canon(code)] or [code for code in same if code.split("-")[-1].lower() == lang]
+        return (primary or plain or same)[0]
+    return same[0] if same else None
+
 # lproj code -> language NLLanguageRecognizer reports (differs only for these)
 EXPECTED_LANG = {"nb": "nb", "zh-Hans": "zh-Hans", "zh-Hant": "zh-Hant"}
 SELECTOR_KEYS = ("tapOn", "doubleTapOn", "longPressOn", "assertVisible", "assertNotVisible",
@@ -84,25 +123,47 @@ def aapt2():
 # ---------- strings ----------
 
 def load_strings(res_dir):
-    """{lproj: {key: value}} from every *.strings file in every *.lproj under res_dir."""
-    out = {}
-    for lproj in sorted(Path(res_dir).glob("*.lproj")):
+    """{lproj: {key: value}} from every *.strings table in the app: its own *.lproj folders, plus those inside
+    frameworks, Swift package bundles and an embedded Watch app (keys there are prefixed with their bundle path),
+    plus Compose Multiplatform resources (*.cvr)."""
+    res_dir, out = Path(res_dir), {}
+    for lproj in sorted(res_dir.rglob("*.lproj")):
         if lproj.stem == "Base": continue  # Base.lproj is layout/fallback storage, not a language
-        table = {}
-        for f in lproj.glob("*.strings"):
+        where = lproj.parent.relative_to(res_dir).as_posix()
+        for f in sorted(lproj.glob("*.strings")):
             r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
             if r.returncode == 0:
-                table.update(json.loads(r.stdout))
-        if table:
-            out[lproj.stem] = table
-    return out
+                table = json.loads(r.stdout)
+                if where != ".": table = {f"{where}/{f.stem}:{k}": v for k, v in table.items()}
+                out.setdefault(canon_lproj(lproj.stem), {}).update(table)
+    for f in sorted(res_dir.rglob("*.cvr")):
+        add_cvr(out, f.relative_to(res_dir).as_posix(), f.read_text(errors="replace"), "en")
+    return {lp: t for lp, t in out.items() if t}
+
+def canon_lproj(name):
+    """Old lproj names (English.lproj) and underscores (en_GB.lproj) -> the code iOS uses for AppleLanguages."""
+    name = name.replace("_", "-")
+    return CANON.get(name, name) if name[:1].isupper() else name
+
+CVR_DIR = re.compile(r"composeResources/[^/]+/values(?:-([^/]+))?/[^/]+\.cvr$")
+
+def add_cvr(out, path, text, base):
+    """Compose Multiplatform resources: lines of 'string|key|base64(value)' in composeResources/<pkg>/values-<q>/*.cvr."""
+    m = CVR_DIR.search(path)
+    loc = m and (base if m.group(1) is None else android_locale(m.group(1)))
+    if not loc: return
+    import base64
+    for line in text.splitlines():
+        kind, key, value = (line.split("|", 2) + ["", ""])[:3]
+        if kind == "string":
+            out.setdefault(loc, {})[f"cmp:{key}"] = base64.b64decode(value).decode("utf-8", "replace")
 
 LOCALE_QUALIFIER = re.compile(r"^(?:([a-z]{2,3})(?:-r([A-Z]{2}))?|b\+([a-z]{2,3})((?:\+[A-Za-z0-9]+)*))$")
 
 def android_locale(q):
     """aapt2 config qualifier -> BCP-47 tag ('de', 'pt-rBR' -> 'pt-BR', 'b+zh+Hans' -> 'zh-Hans'); None if not a pure locale."""
     m = LOCALE_QUALIFIER.match(q)
-    if not m: return None
+    if not m or q in ("car", "en-rXA", "ar-rXB", "en-rXC"): return None  # 'car' is a UI mode; X? are pseudolocales
     if m.group(3): return m.group(3) + m.group(4).replace("+", "-")
     return m.group(1) + (f"-{m.group(2)}" if m.group(2) else "")
 
@@ -120,6 +181,11 @@ def load_strings_apk(apk, base="en"):
                 out.setdefault(loc, {})[name] = m.group(2).replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n")
         elif not line.startswith("      "):
             name = None
+    import zipfile
+    if not zipfile.is_zipfile(apk): return out
+    with zipfile.ZipFile(apk) as z:  # Compose Multiplatform keeps its strings in assets, not resources.arsc
+        for n in z.namelist():
+            if n.endswith(".cvr"): add_cvr(out, n, z.read(n).decode("utf-8", "replace"), base)
     return out
 
 def shipped_locales(strings, base="en", min_coverage=0.5):
@@ -214,7 +280,8 @@ def localize_flow(flow, lproj, shots_dir):
     any flow to any device. So the language travels with the flow, as launch arguments, not with
     the simulator.
     """
-    locale = STORE_LOCALE.get(lproj, lproj).replace("-", "_")  # number/date formats follow the store locale
+    store = store_code(lproj, APP_STORE) or lproj  # number/date formats follow the store locale
+    locale = {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
     args = [f'      AppleLanguages: "({lproj})"', f'      AppleLocale: "{locale}"']
     launch = lambda clear: ["- launchApp:"] + (["    clearState: true"] if clear else []) + ["    arguments:"] + args
     header, sep, body = flow.partition("\n---\n")
@@ -611,6 +678,15 @@ def ocr_tool():
         if r.returncode != 0: raise RuntimeError("ocr build failed:\n" + r.stderr)
     return str(exe)
 
+TWINS = {"ms": ("id",), "id": ("ms",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
+LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil"}  # Android's old codes -> what language detection reports
+
+@functools.cache
+def readable_languages():
+    """Base languages this Mac's text recognition reads (macOS 27: 33 codes, e.g. CJK, Cyrillic, Arabic, Thai, Hindi;
+    not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts)."""
+    return {c.split("-")[0] for c in json.loads(sh([ocr_tool(), "--langs"]).stdout or "[]")}
+
 SCRIPTS = {"ja": "[\u3040-\u30ff]", "ko": "[\uac00-\ud7af]", "zh": "[\u4e00-\u9fff]", "ru": "[\u0400-\u04ff]",
            "uk": "[\u0400-\u04ff]", "ar": "[\u0600-\u06ff]", "he": "[\u0590-\u05ff]", "hi": "[\u0900-\u097f]",
            "th": "[\u0e00-\u0e7f]", "el": "[\u0370-\u03ff]"}
@@ -627,11 +703,16 @@ def judge_screen(lp, ocr, tables):
     if not ocr.get("chars"):
         return got, "no text found (blank or still loading?)"
     if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
-        want = EXPECTED_LANG.get(lp, lp.split("-")[0])
+        want = EXPECTED_LANG.get(lp, LEGACY.get(lp.split("-")[0], lp.split("-")[0]))
+        if want.split("-")[0] not in readable_languages() | {"zh"}:
+            # macOS can't read this script, and the screen shows no other language's strings: not provable either way
+            if ocr.get("lang") == "en" and ocr.get("langs", {}).get("en", 0) > 0.9:
+                return "en", f"text looks like 'en', expected '{want}'"
+            return None, None
         script = SCRIPTS.get(want.split("-")[0])
         if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
             return lp, None
-        if ocr.get("lang") != want and ocr.get("langs", {}).get(want, 0) < 0.2:
+        if ocr.get("lang") not in (want, *TWINS.get(want, ())) and ocr.get("langs", {}).get(want, 0) < 0.2:
             return ocr.get("lang"), f"text looks like '{ocr.get('lang')}', expected '{want}'"
         return lp, None
     if got != lp:
@@ -654,19 +735,15 @@ def find_screenshots(folder):
             return out
     return {}
 
-ZH = {"zh-CN": "zh-Hans", "zh-Hans": "zh-CN", "zh-TW": "zh-Hant", "zh-HK": "zh-Hant", "zh-Hant": "zh-TW"}
-
 def app_locale(label, available):
-    """The app language a store-locale folder name stands for (de-DE -> de, no -> nb, zh-CN -> zh-Hans); None if unknown."""
+    """The app language a store folder name stands for (de-DE -> de, no -> nb, zh-CN -> zh-Hans, iw-IL -> iw), or None."""
     if label in available: return label
-    for m in (STORE_LOCALE, PLAY_LOCALE):
-        for k, v in m.items():
-            if v == label and k in available: return k
-    if ZH.get(label) in available: return ZH[label]
-    lang = label.split("-")[0]
-    if lang in ("no", "nn") and "nb" in available: return "nb"
-    if lang == "id" and "in" in available: return "in"
-    return lang if lang in available else None
+    store = PLAY if label in PLAY else APP_STORE
+    for a in sorted(available, key=lambda a: -len(a)):  # most specific first: pt-PT before pt
+        if store_code(a, store) == label: return a
+    for a in available:  # a folder that isn't a store code, e.g. plain zh-Hans for an app with zh
+        if canon(a) == canon(label) or canon(a) == canon(label).split("-")[0]: return a
+    return None
 
 LAST_REPORT = None  # check.json of the last check, for --json
 
@@ -707,6 +784,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0)})
+    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None})
+    if unread:
+        print(f"macOS can't read the script of {', '.join(unread)}: those screens were only checked for showing another "
+              "language, copies and missing screens")
     for h, hits in by_hash.items():
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
         if len(langs) > 1:  # en-GB and en-US both showing the app's English is fine
@@ -821,12 +902,6 @@ def latest_ios_runtime():
     return ios[-1]["identifier"] if ios else "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 
 # Android language tag -> Google Play listing locale (fastlane supply folder names)
-PLAY_LOCALE = {
-    "en": "en-US", "ar": "ar", "da": "da-DK", "de": "de-DE", "es": "es-ES", "fr": "fr-FR", "hi": "hi-IN",
-    "it": "it-IT", "ja": "ja-JP", "ko": "ko-KR", "nb": "no-NO", "nl": "nl-NL", "pl": "pl-PL", "pt": "pt-BR",
-    "pt-BR": "pt-BR", "pt-PT": "pt-PT", "ru": "ru-RU", "sv": "sv-SE", "tr": "tr-TR", "zh-CN": "zh-CN",
-    "zh-TW": "zh-TW", "uk": "uk", "id": "id", "in": "id", "ro": "ro", "fi": "fi-FI", "cs": "cs-CZ",
-}
 
 def cmd_export(out, fastlane):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
@@ -840,17 +915,30 @@ def cmd_export(out, fastlane):
     bad = {p.split(":")[0].split("/")[0] for p in problems if not p.startswith("identical")}
     for p in problems:
         if p.startswith("identical"): bad.update(f.strip().split("/")[0] for f in p.split(":", 1)[1].split(","))
+    store = PLAY if android else APP_STORE
+    root = fastlane / "metadata/android" if android else fastlane / "screenshots"
+    existing = sorted(d.name for d in root.iterdir() if d.is_dir()) if root.is_dir() else []
+    langs = sorted((d.name for d in (out / "raw").iterdir() if d.is_dir()), key=lambda l: -len(l))  # pt-PT before pt
+    targets = {}  # listing folder -> app locale whose screenshots it gets
+    for lp in langs:
+        code = store_code(lp, store)
+        if code is None:
+            print(f"skip {lp}: {'Google Play' if android else 'the App Store'} has no listing in that language"); continue
+        folder = next((e for e in existing if canon(e) == canon(code)), code)  # keep your spelling: nb-NO, he-IL
+        targets.setdefault(folder, lp)
+    for e in existing:  # listings you already have in the same language: en-GB, es-419, pt-PT get en, es, pt
+        lp = e not in targets and app_locale(e, set(langs))
+        if lp:
+            targets[e] = lp; print(f"{e}: no {e} translation in the app, so it gets the {lp} screenshots")
     done = []
-    for lp_dir in sorted(d for d in (out / "raw").iterdir() if d.is_dir()):
-        lp = lp_dir.name
-        if lp in bad: print(f"skip {lp}: failed checks (see {out / 'check.json'})"); continue
-        store = (PLAY_LOCALE if android else STORE_LOCALE).get(lp, lp)
-        dst = fastlane / "metadata/android" / store / "images/phoneScreenshots" if android else fastlane / "screenshots" / store
+    for folder, lp in sorted(targets.items()):
+        if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
+        dst = root / folder / "images/phoneScreenshots" if android else root / folder
         dst.mkdir(parents=True, exist_ok=True)
         for old in dst.glob("*.png"): old.unlink()  # replace the set, don't mix old and new
-        for png in sorted(lp_dir.glob("*.png")): shutil.copy2(png, dst / png.name)
-        done.append(store)
-    print(f"exported {len(done)} locales to {fastlane}: {', '.join(done)}")
+        for png in sorted((out / "raw" / lp).glob("*.png")): shutil.copy2(png, dst / png.name)
+        done.append(folder)
+    print(f"exported {len(done)} listings to {fastlane}: {', '.join(done)}")
     return 0 if not bad else 1
 
 def main(argv=None):

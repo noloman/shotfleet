@@ -4,9 +4,13 @@ import Foundation
 import NaturalLanguage
 import Vision
 
-let url = URL(fileURLWithPath: CommandLine.arguments[1])
 let request = VNRecognizeTextRequest()
 request.recognitionLevel = .accurate
+if CommandLine.arguments[1] == "--langs" {  // languages this Mac's text recognition can read
+    print(String(data: try JSONSerialization.data(withJSONObject: try request.supportedRecognitionLanguages()), encoding: .utf8)!)
+    exit(0)
+}
+let url = URL(fileURLWithPath: CommandLine.arguments[1])
 request.automaticallyDetectsLanguage = true
 try VNImageRequestHandler(url: url).perform([request])
 

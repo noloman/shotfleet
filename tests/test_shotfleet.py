@@ -132,11 +132,22 @@ class Locales(unittest.TestCase):
         strings = {"en": dict(keys), **{f"l{n}": dict(keys) for n in range(30)}}
         self.assertEqual(len(sf.shipped_locales(strings)), 31)
 
-    def test_every_store_locale_maps_to_a_folder_name(self):
-        for lp in ("en", "de", "ja", "zh-Hans", "nb", "pt"):
-            self.assertIn(lp, sf.STORE_LOCALE)
-        for lp in ("en", "de", "ja", "zh-CN", "nb", "pt", "in"):
-            self.assertIn(lp, sf.PLAY_LOCALE)
+    def test_every_store_listing_code_maps_to_itself(self):
+        for store in (sf.APP_STORE, sf.PLAY):
+            self.assertEqual([c for c in store if sf.store_code(c, store) != c], [])
+
+    def test_app_locales_map_to_the_right_listing(self):
+        apple = {"en": "en-US", "de": "de-DE", "de-AT": "de-DE", "nb": "no", "nn": "no", "iw": "he", "in": "id",
+                 "pt": "pt-BR", "pt-PT": "pt-PT", "zh": "zh-Hans", "zh-CN": "zh-Hans", "zh-HK": "zh-Hant",
+                 "zh-Hant-HK": "zh-Hant", "zh-Hant": "zh-Hant", "es-419": "es-MX", "es-MX": "es-MX", "es": "es-ES",
+                 "ar": "ar-SA", "ur": "ur-PK", "sl": "sl-SI", "ta": "ta-IN", "en_GB": "en-GB", "German": "de-DE",
+                 "fil": None, "sr": None, "eo": None}
+        play = {"en": "en-US", "en-IN": "en-IN", "iw": "iw-IL", "he": "iw-IL", "nb": "no-NO", "in": "id", "tl": "fil",
+                "zh-Hans": "zh-CN", "zh-Hant": "zh-TW", "zh-HK": "zh-HK", "es-MX": "es-419", "es-US": "es-US",
+                "pt": "pt-BR", "sr-Latn": "sr", "hy": "hy-AM", "fa": "fa", "ms": "ms", "eo": None}
+        for store, cases in ((sf.APP_STORE, apple), (sf.PLAY, play)):
+            for app, want in cases.items():
+                self.assertEqual(sf.store_code(app, store), want, app)
 
 
 class LoadStrings(unittest.TestCase):
@@ -264,6 +275,30 @@ class Export(unittest.TestCase):
             sf.cmd_export(out, fl)
             self.assertEqual(sorted(p.name for p in (fl / "screenshots").iterdir()), ["tr"])
 
+    def test_existing_spellings_and_same_language_listings_are_kept_up_to_date(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._out(d, "android", [])
+            for lp in ("nb", "es"):
+                (out / "raw" / lp).mkdir(); (out / "raw" / lp / "01_home.png").write_bytes(lp.encode())
+            fl = Path(d) / "fastlane"; root = fl / "metadata/android"
+            for folder in ("nb-NO", "es-419", "zh-TW"):
+                (root / folder / "images/phoneScreenshots").mkdir(parents=True)
+                (root / folder / "images/phoneScreenshots/old.png").write_bytes(b"old")
+            sf.cmd_export(out, fl)
+            shot = lambda f: [p.read_bytes() for p in (root / f / "images/phoneScreenshots").iterdir()]
+            self.assertEqual(shot("nb-NO"), [b"nb"])  # your spelling, not a second no-NO folder
+            self.assertFalse((root / "no-NO").exists())
+            self.assertEqual(shot("es-419"), [b"es"])  # same language, no more specific translation
+            self.assertEqual(shot("zh-TW"), [b"old"])  # language the app doesn't have: left alone
+
+    def test_languages_without_a_store_listing_are_skipped(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._out(d, "ios", [])
+            (out / "raw" / "eo").mkdir(); (out / "raw" / "eo" / "01_home.png").write_bytes(b"eo")
+            fl = Path(d) / "fastlane"
+            sf.cmd_export(out, fl)
+            self.assertEqual(sorted(p.name for p in (fl / "screenshots").iterdir()), ["de-DE", "ja", "tr"])
+
 
 class ReviewFixes(unittest.TestCase):
     def test_map_form_screenshots_are_redirected_on_both_platforms(self):
@@ -347,9 +382,10 @@ class CheckAnyFolder(unittest.TestCase):
         self.assertEqual(self.layout(["raw/ko/a.png", "index.html"]), {"ko": ["a.png"]})
 
     def test_store_codes_map_to_app_languages(self):
-        app = {"en", "de", "nb", "pt-BR", "zh-Hans", "in"}
-        cases = {"de-DE": "de", "no": "nb", "nb-NO": "nb", "pt-BR": "pt-BR", "en-GB": "en", "zh-CN": "zh-Hans",
-                 "zh-Hans": "zh-Hans", "id": "in", "zh-Hant": None, "zh-TW": None, "fr-FR": None}
+        app = {"en", "de", "nb", "pt", "pt-PT", "zh-Hans", "in", "iw", "es"}
+        cases = {"de-DE": "de", "no": "nb", "no-NO": "nb", "pt-BR": "pt", "pt-PT": "pt-PT", "en-US": "en",
+                 "zh-CN": "zh-Hans", "zh-Hans": "zh-Hans", "id": "in", "iw-IL": "iw", "he": "iw", "es-ES": "es",
+                 "zh-Hant": None, "zh-TW": None, "fr-FR": None}
         for store, want in cases.items():
             self.assertEqual(sf.app_locale(store, app), want, store)
 
@@ -368,6 +404,37 @@ class CheckAnyFolder(unittest.TestCase):
                            capture_output=True, text=True)
         self.assertEqual((r.returncode, json.loads(r.stdout)), (2, {"exit": 2}))
         self.assertIn("no folder", r.stderr)
+
+
+class LocalizationFormats(unittest.TestCase):
+    def test_compose_multiplatform_resources(self):
+        import base64
+        b = lambda t: base64.b64encode(t.encode()).decode()
+        out = {}
+        sf.add_cvr(out, "assets/composeResources/app.generated.resources/values-pt-rBR/strings.commonMain.cvr",
+                   f"version:0\nstring|next|{b('Próximo')}\nplurals|items|xyz\n", "en")
+        sf.add_cvr(out, "composeResources/app.generated.resources/values/strings.commonMain.cvr", f"string|next|{b('Next')}", "en")
+        sf.add_cvr(out, "composeResources/app.generated.resources/values-night/strings.cvr", f"string|x|{b('y')}", "en")
+        self.assertEqual(out, {"pt-BR": {"cmp:next": "Próximo"}, "en": {"cmp:next": "Next"}})
+
+    def test_strings_in_bundles_frameworks_and_watch_apps(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Path(d) / "My.app"
+            for rel, body in [("de.lproj/Localizable.strings", '"next" = "Weiter";'),
+                              ("Feature_Feature.bundle/de.lproj/Localizable.strings", '"next" = "Nächste";'),
+                              ("Watch/W.app/de.lproj/Localizable.strings", '"start" = "Training starten";'),
+                              ("German.lproj/Main.strings", '"title" = "Titel";'),
+                              ("Base.lproj/Main.strings", '"title" = "Title";')]:
+                (app / rel).parent.mkdir(parents=True, exist_ok=True); (app / rel).write_text(body)
+            self.assertEqual(sf.load_strings(app), {"de": {
+                "next": "Weiter", "title": "Titel", "Feature_Feature.bundle/Localizable:next": "Nächste",
+                "Watch/W.app/Localizable:start": "Training starten"}})
+
+    def test_pseudolocales_and_ui_modes_are_not_languages(self):
+        for q in ("en-rXA", "ar-rXB", "en-rXC", "car", "night", "v31", "ldrtl"):
+            self.assertIsNone(sf.android_locale(q), q)
+        self.assertEqual([sf.android_locale(q) for q in ("b+sr+Latn", "b+es+419", "in", "iw", "fil", "zh-rTW")],
+                         ["sr-Latn", "es-419", "in", "iw", "fil", "zh-TW"])
 
 
 if __name__ == "__main__":
