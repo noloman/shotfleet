@@ -25,6 +25,10 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
        $49 one-time pricing, a waitlist / pre-order button.
 8. [x] Launch post drafts for r/iOSProgramming, r/androiddev, Indie Hackers, the Maestro community and X.
 
+## Strategy
+See STRATEGY.md: positioning against fastlane, StoreScreens/asc, Maestro and design tools; product moves; 6-week launch plan.
+The decision rule there (50 founder sales in 60 days) supersedes the signup count below once the sale opens.
+
 ## Phase 3: decide (Manu, about 2 weeks)
 9. [~] Live at https://shotfleet.manulorenzop.workers.dev (Cloudflare Worker + KV waitlist; `site/signups.sh` lists signups).
        Posting the drafts needs Manu's OK per post.
