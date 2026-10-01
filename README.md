@@ -93,6 +93,8 @@ out = "out"
 
 ## Limits
 
+- Native apps only. Strings come from `.strings` (including String Catalogs, which Xcode compiles to `.strings`) on iOS and `strings.xml` on Android. Flutter, React Native and Compose Multiplatform resources on iOS aren't read yet.
+
 - macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.
 - Android needs API 33+ emulators for per-app languages.
 - On iOS, `launchApp` with options isn't supported yet; use a bare `- launchApp`.
