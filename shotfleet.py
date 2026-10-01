@@ -108,7 +108,8 @@ def store_code(app_locale, store):
 # lproj code -> language NLLanguageRecognizer reports (differs only for these)
 EXPECTED_LANG = {"nb": "nb", "zh-Hans": "zh-Hans", "zh-Hant": "zh-Hant"}
 SELECTOR_KEYS = ("tapOn", "doubleTapOn", "longPressOn", "assertVisible", "assertNotVisible",
-                 "scrollUntilVisible", "text", "copyTextFrom", "visible", "notVisible")
+                 "scrollUntilVisible", "text", "copyTextFrom", "visible", "notVisible",
+                 "below", "above", "leftOf", "rightOf", "childOf", "containsChild")  # relative anchors are text too
 
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
@@ -195,10 +196,12 @@ def shipped_locales(strings, base="en", min_coverage=0.5):
     locales. Counting raw coverage breaks for apps with few strings of their own: an English-only app
     with 240 strings looks "translated" into 86 languages. So first separate the app's own strings
     (translated into fewer locales than the libraries' near-universal set), then measure coverage of those."""
+    if base not in strings: return sorted(strings)
     others = [lp for lp in strings if lp != base]
     counts = {k: sum(k in strings[lp] for lp in others) for k in strings[base]}
     top = max(counts.values(), default=0)
-    own = {k for k, c in counts.items() if c < 0.9 * top} if top else set(counts)
+    # libraries come translated into ~80 locales; with fewer locales every key is the app's own
+    own = {k for k, c in counts.items() if c < 0.9 * top} if top >= 20 else set(counts)
     if len(own) < 0.1 * len(counts):  # nearly everything is universal: the app itself is translated everywhere
         own = set(counts)
     return sorted([base] + [lp for lp in others
@@ -213,27 +216,25 @@ def regex_literal(s):
 
 SELECTOR_RE = re.compile(r"^(\s*-?\s*(?:%s):\s*)(.+?)\s*$" % "|".join(SELECTOR_KEYS))
 
+INLINE_RE = re.compile(r"(\b(?:%s)\s*:\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
+
 def translate_flow(flow, base, target):
-    """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors)."""
+    """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors, collisions)."""
     by_text = {}
     for k, v in base.items():
         by_text.setdefault(v, []).append(k)
     targets = target if isinstance(target, list) else [target]  # several: match any of their translations
     missing, lines, collisions = [], [], []
-    for line in flow.splitlines():
-        m = SELECTOR_RE.match(line)
-        if not m:
-            lines.append(line); continue
-        prefix, raw = m.groups()
-        if raw.startswith(("{", "[", "&", "*")):  # map form continues on following lines (text: ...)
-            lines.append(line); continue
+
+    def tr(raw):
+        """Translated YAML value for one selector value, or None to leave it as it is."""
         text = raw[1:-1] if raw[:1] in "'\"" and raw[-1:] == raw[:1] else raw
         keys = by_text.get(text)
         if not keys:
-            missing.append(text); lines.append(line); continue
+            missing.append(text); return None
         cands = sorted({tg.get(k, text) for tg in targets for k in keys})
         if cands == [text] and regex_literal(text) == text:
-            lines.append(line); continue
+            return None
         # same word, different meaning on the same screen (tr: Next = Advanced = "İleri") -> a tap can hit the wrong one
         for tg in targets:
             for k in keys:
@@ -245,17 +246,39 @@ def translate_flow(flow, base, target):
                 if clash: collisions.append(f"{text!r} -> {t!r} also means {', '.join(map(repr, clash))}")
         # one English label can map to several keys ("Next" -> Weiter / Nächste): match any of them
         pattern = "|".join(map(regex_literal, cands))
-        pattern = pattern if len(cands) == 1 else f"({pattern})"
-        lines.append(prefix + yaml_single_quote(pattern))
+        return yaml_single_quote(pattern if len(cands) == 1 else f"({pattern})")
+
+    for line in flow.splitlines():
+        m = SELECTOR_RE.match(line)
+        if not m:
+            lines.append(line); continue
+        prefix, raw = m.groups()
+        raw, comment = split_comment(raw)
+        if raw.startswith("{") and raw.endswith("}"):  # inline map: { text: "Accept", optional: true }
+            raw = INLINE_RE.sub(lambda g: g.group(1) + (tr(g.group(2).strip()) or g.group(2)) + g.group(3), raw)
+            lines.append(prefix + raw + comment); continue
+        if not raw or raw.startswith(("{", "[", "&", "*")):  # map form continues on following lines (text: ...)
+            lines.append(line); continue
+        new = tr(raw)
+        lines.append(line if new is None else prefix + new + comment)
     return "\n".join(lines) + "\n", sorted(set(missing)), sorted(set(collisions))
+
+def split_comment(raw):
+    """('"Next"', ' # comment') -- a YAML comment starts at ' #' outside quotes."""
+    quote = None
+    for i, ch in enumerate(raw):
+        if ch in "'\"" and quote in (None, ch): quote = None if quote else ch
+        elif ch == "#" and quote is None and (i == 0 or raw[i - 1] in " \t"):
+            return raw[:i].rstrip(), " " + raw[i:]
+    return raw, ""
 
 def redirect_screenshot(lines, shots_dir):
     """Rewrite one flow line if it names a screenshot, so files land in shots_dir. Handles the scalar
     form ('- takeScreenshot: 01_home') and the map form ('- takeScreenshot:' then '    path: 01_home')."""
     line = lines[-1]
-    if m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line):
+    if m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line):
         lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
-    elif (m := re.match(r"^(\s*path:\s*)['\"]?([^'\"]+?)['\"]?\s*$", line)) and len(lines) > 1 \
+    elif (m := re.match(r"^(\s*path:\s*)['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line)) and len(lines) > 1 \
             and re.match(r"^\s*- takeScreenshot:\s*$", lines[-2]):
         lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
 
@@ -289,12 +312,15 @@ def localize_flow(flow, lproj, shots_dir):
         raise ValueError("flow needs an 'appId:' header followed by '---'")
     header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {lproj}"
     out = launch(clear=True)  # fresh state per locale: onboarding runs every time
+    started = False  # any step yet besides comments
     for line in body.splitlines():
         if re.match(r"^\s*- launchApp\s*$", line):
-            out += launch(clear=False)
+            if started: out += launch(clear=False)
+            started = True
         elif re.match(r"^\s*- launchApp:", line):
             raise ValueError("launchApp with options isn't supported yet; use a bare '- launchApp'")
         else:
+            started = started or bool(re.match(r"^\s*-", line))
             out.append(line); redirect_screenshot(out, shots_dir)
     return header + "\n---\n" + "\n".join(out) + "\n"
 
@@ -311,7 +337,10 @@ class Sim:
 def make_pool(n, device_type, runtime, prefix="shotfleet"):
     """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar."""
     existing = json.loads(sh(["xcrun", "simctl", "list", "devices", "-j"]).stdout)["devices"].get(runtime, [])
-    by_name = {d["name"]: d for d in existing if d.get("isAvailable")}
+    by_name = {d["name"]: d for d in existing if d.get("isAvailable") and d.get("deviceTypeIdentifier", device_type) == device_type}
+    for d in existing:  # same name, other device type (config changed): replace it, or screenshots get the wrong size
+        if d["name"].startswith(prefix + "-") and d["name"] not in by_name:
+            sh(["xcrun", "simctl", "delete", d["udid"]])
     pool = []
     for i in range(n):
         name = f"{prefix}-{i + 1}"
@@ -357,8 +386,10 @@ def run_guarded(cmd, timeout, env=None):
     threading.Thread(target=watch, daemon=True).start()
     try:
         out, _ = proc.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        for p in descendants(proc.pid): sh(["kill", "-9", str(p)])
+    except BaseException as e:  # timeout, Ctrl-C, SIGTERM: never leave Maestro and its drivers running
+        for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
+        partial = proc.communicate()[0] or ""
+        if isinstance(e, subprocess.TimeoutExpired): e.output = partial
         raise
     finally:
         done.set()
@@ -409,18 +440,18 @@ def cmd_run(config_path, only=None, parallel=None):
     cfg["app"] = str(path(cfg["app"]))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = load_strings(path(cfg["strings"]) if "strings" in cfg else Path(cfg["app"]))
-    flow = path(cfg["flow"]).read_text()
+    flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
     base_locale = cfg.get("base_locale", "en")
     if base_locale not in strings:
         raise Fail(f"the app has no {base_locale} strings. Set base_locale in the config to the language your flow is written in")
     en = strings[base_locale]
-    locales = only or cfg.get("locales") or sorted(strings)
+    locales = only or cfg.get("locales") or shipped_locales(strings, base_locale)
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
     # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
-    for d in ("flows", "debug"): shutil.rmtree(out / d, ignore_errors=True)
+    for d in ("flows", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
-    (out / "flows").mkdir(parents=True)
+    (out / ".work" / "flows").mkdir(parents=True)
 
     # translate every flow first, so selector problems show up before any simulator boots
     report = {"locales": {}}
@@ -430,7 +461,7 @@ def cmd_run(config_path, only=None, parallel=None):
         text, missing, clash = translate_flow(flow, en, strings[lp])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
-        (out / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp))
+        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -450,20 +481,21 @@ def cmd_run(config_path, only=None, parallel=None):
 
     def batch(lps, attempt):
         """Run these locales in one sharded Maestro process; return {lproj: result}."""
-        flows_dir = out / "flows" / f"attempt{attempt}"
+        flows_dir = out / ".work" / "flows" / f"attempt{attempt}"
         flows_dir.mkdir(parents=True)
-        for lp in lps: shutil.copy(out / "flows" / f"{lp}.yaml", flows_dir)
+        for lp in lps: shutil.copy(out / ".work" / "flows" / f"{lp}.yaml", flows_dir)
         k = min(n, len(lps))
         junit = out / f"junit{attempt}.xml"; junit.unlink(missing_ok=True)
         env = {**os.environ, "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
         try:
             r = run_guarded(["maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
-                             "--debug-output", str(out / "debug" / f"attempt{attempt}")],
+                             "--debug-output", str(out / ".work" / "debug" / f"attempt{attempt}")],
                             env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
             (out / f"maestro{attempt}.log").write_text(r.stdout + r.stderr)
-        except subprocess.TimeoutExpired:
-            print("maestro timed out")
+        except subprocess.TimeoutExpired as e:
+            (out / f"maestro{attempt}.log").write_text(e.output or "")
+            print(f"maestro timed out (log: {out / f'maestro{attempt}.log'})")
         finally:
             kill_stale_drivers()
         res = junit_results(junit)
@@ -548,8 +580,9 @@ def android_pool(n, cfg, pool):
                        re.sub(r"(?m)^hw\.lcd\.height=.*", "hw.lcd.height=1920",
                        re.sub(r"(?m)^hw\.lcd\.density=.*", "hw.lcd.density=420", ini.read_text()))))
     if not (avd_dir / "userdata-qemu.img").exists():  # one-time first boot, writable, so copies boot fast
-        e = Emu(5700); p = start_emu(avd, e.port, read_only=False)
+        e = Emu(5700); p = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
         wait_booted([e]); time.sleep(20); e.adb("shell", "reboot", "-p", check=False); p.wait(timeout=120)
+        pool.remove(e)
     for i in range(n):
         e = Emu(5702 + 2 * i)
         if e.booted(): raise Fail(f"{e.serial} is already running. Stop it (adb -s {e.serial} emu kill) and run again")
@@ -565,7 +598,8 @@ def android_flow(text, name, shots_dir):
     header, sep, body = text.partition("\n---\n")
     if not sep: raise ValueError("flow needs an 'appId:' header followed by '---'")
     header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}"
-    out = [] if re.match(r"\s*- launchApp", body.lstrip("\n")) else ["- launchApp"]
+    first = next((l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")), "")
+    out = [] if re.match(r"\s*- launchApp", first) else ["- launchApp"]
     for line in body.splitlines():
         if re.match(r"^\s*clearState:", line): continue
         out.append(line); redirect_screenshot(out, shots_dir)
@@ -586,10 +620,10 @@ def android_run(cfg, path, out, only, parallel):
     strings = load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
     locales = only or cfg.get("locales") or shipped_locales(strings)
-    flow = path(cfg["flow"]).read_text()
+    flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
     expected = count_screenshots(flow)
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
-    for d in ("flows", "tmp", "debug"): shutil.rmtree(out / d, ignore_errors=True)
+    for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     report = {"locales": {}}
     for lp in locales:
@@ -618,10 +652,10 @@ def android_run(cfg, path, out, only, parallel):
                 for c in DEMO_MODE: e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
             text, _, _ = translate_flow(flow, base, [strings[lp] for lp in lps])
-            fdir = out / "flows" / tag; fdir.mkdir(parents=True)
+            fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / "tmp" / tag / f"f{j}"))
-            junit, dbg = out / f"junit_{tag}.xml", out / "debug" / tag
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}"))
+            junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
                 r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
@@ -637,7 +671,7 @@ def android_run(cfg, path, out, only, parallel):
                 lp = lang[dev]
                 dst = out / "raw" / lp
                 shutil.rmtree(dst, ignore_errors=True)
-                src = out / "tmp" / tag / f"f{j}"
+                src = out / ".work" / "tmp" / tag / f"f{j}"
                 if src.exists(): shutil.move(str(src), dst)
                 else: dst.mkdir(parents=True)
                 shots = len(list(dst.glob("*.png")))
@@ -687,9 +721,8 @@ def readable_languages():
     not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts)."""
     return {c.split("-")[0] for c in json.loads(sh([ocr_tool(), "--langs"]).stdout or "[]")}
 
-SCRIPTS = {"ja": "[\u3040-\u30ff]", "ko": "[\uac00-\ud7af]", "zh": "[\u4e00-\u9fff]", "ru": "[\u0400-\u04ff]",
-           "uk": "[\u0400-\u04ff]", "ar": "[\u0600-\u06ff]", "he": "[\u0590-\u05ff]", "hi": "[\u0900-\u097f]",
-           "th": "[\u0e00-\u0e7f]", "el": "[\u0370-\u03ff]"}
+# Only scripts no other language shares: Cyrillic/Arabic/Han/Devanagari would let Russian pass as Ukrainian
+SCRIPTS = {"ja": "[\u3040-\u30ff]", "ko": "[\uac00-\ud7af]", "th": "[\u0e00-\u0e7f]"}
 
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
@@ -703,7 +736,9 @@ def judge_screen(lp, ocr, tables):
     if not ocr.get("chars"):
         return got, "no text found (blank or still loading?)"
     if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
-        want = EXPECTED_LANG.get(lp, LEGACY.get(lp.split("-")[0], lp.split("-")[0]))
+        c = canon(lp)  # zh-CN -> zh-Hans, zh-HK -> zh-Hant-HK, iw -> he: what language detection reports
+        want = ("zh-Hant" if c.startswith("zh-Hant") else "zh-Hans") if c.startswith("zh") else \
+            EXPECTED_LANG.get(lp, LEGACY.get(lp.split("-")[0], lp.split("-")[0]))
         if want.split("-")[0] not in readable_languages() | {"zh"}:
             # macOS can't read this script, and the screen shows no other language's strings: not provable either way
             if ocr.get("lang") == "en" and ocr.get("langs", {}).get("en", 0) > 0.9:
@@ -724,9 +759,12 @@ def find_screenshots(folder):
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
     or plain <locale>/ folders."""
     folder = Path(folder)
-    for pattern in ("raw/*/*.png", "metadata/android/*/images/phoneScreenshots/*.png",
-                    "*/images/phoneScreenshots/*.png", "screenshots/*/*.png", "*/*.png"):
-        found = sorted(folder.glob(pattern))
+    if (folder / "screenshots").is_dir() and (folder / "metadata/android").is_dir():
+        raise Fail(f"{folder} has both iOS and Android screenshots; check {folder / 'screenshots'} and "
+                   f"{folder / 'metadata/android'} separately (each with its own --app)")
+    for pattern in ("raw/*/*", "metadata/android/*/images/phoneScreenshots/*",
+                    "*/images/phoneScreenshots/*", "screenshots/*/*", "*/*"):
+        found = sorted(p for p in folder.glob(pattern) if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
         if found:
             out = {}
             for png in found:
@@ -769,7 +807,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings is None and run_json.exists():
         run = json.loads(run_json.read_text())
-        strings = load_strings_apk(run["apk"]) if run.get("platform") == "android" else load_strings(Path(run["app"]))
+        src = run["apk"] if run.get("platform") == "android" else run["app"]
+        if not Path(src).exists():
+            raise Fail(f"the app this run used is gone ({src}); pass the build with --app")
+        strings = load_strings_apk(src) if run.get("platform") == "android" else load_strings(Path(src))
     tables = {lp: set(t.values()) for lp, t in (strings or {}).items()}
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
@@ -788,7 +829,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
         if r.get("chars", 0) >= 40:  # ponytail: short screens (a watch button) can be identical across languages
-            by_hash.setdefault(h, []).append((lp or label, f"{label}/{png.name}"))
+            by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
@@ -888,12 +929,12 @@ def cmd_init(app, dest="."):
         if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
         app_id = m.group(1)
         locales = shipped_locales(load_strings_apk(app))
-        cfg = f'[android]\napk = "{app}"\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
+        cfg = f'[android]\napk = {json.dumps(str(app))}\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
     elif app.suffix == ".app":
         if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
         app_id = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
         locales = sorted(load_strings(app))
-        cfg = (f'[ios]\napp = "{app}"\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
+        cfg = (f'[ios]\napp = {json.dumps(str(app))}\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
                'device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # 1320x2868 = App Store 6.9"\n'
                f'runtime = "{latest_ios_runtime()}"\nparallel = 4\nout = "out"\n')
     else:
@@ -912,6 +953,11 @@ def latest_ios_runtime():
 
 # Android language tag -> Google Play listing locale (fastlane supply folder names)
 
+def png_size(path):
+    """(width, height) from a PNG header, or None if it isn't a PNG."""
+    head = Path(path).read_bytes()[:24]
+    return (int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big")) if head[:8] == b"\x89PNG\r\n\x1a\n" else None
+
 def cmd_export(out, fastlane):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
     Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
@@ -920,10 +966,14 @@ def cmd_export(out, fastlane):
         raise Fail(f"no shotfleet run in {out}. Run 'shotfleet run <config>' first")
     run = json.loads((out / "run.json").read_text())
     android = run.get("platform") == "android"
-    problems = json.loads((out / "check.json").read_text())["problems"] if (out / "check.json").exists() else []
+    if not (out / "check.json").is_file():
+        raise Fail(f"{out} hasn't been checked. Run 'shotfleet check {out}' first")
+    problems = json.loads((out / "check.json").read_text())["problems"]
     bad = {p.split(":")[0].split("/")[0] for p in problems if not p.startswith("identical")}
     for p in problems:
         if p.startswith("identical"): bad.update(f.strip().split("/")[0] for f in p.split(":", 1)[1].split(","))
+    for lp, r in run.get("locales", {}).items():  # failed captures and empty folders never replace a listing
+        if not r.get("ok") or not any((out / "raw" / lp).glob("*.png")): bad.add(lp)
     store = PLAY if android else APP_STORE
     root = fastlane / "metadata/android" if android else fastlane / "screenshots"
     existing = sorted(d.name for d in root.iterdir() if d.is_dir()) if root.is_dir() else []
@@ -944,8 +994,11 @@ def cmd_export(out, fastlane):
         if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
         dst = root / folder / "images/phoneScreenshots" if android else root / folder
         dst.mkdir(parents=True, exist_ok=True)
-        for old in dst.glob("*.png"): old.unlink()  # replace the set, don't mix old and new
-        for png in sorted((out / "raw" / lp).glob("*.png")): shutil.copy2(png, dst / png.name)
+        new = sorted((out / "raw" / lp).glob("*.png"))
+        sizes = {png_size(p) for p in new}
+        for old in dst.glob("*.png"):  # replace this device's set; other sizes (iPad, 6.5") in the folder stay
+            if png_size(old) in sizes: old.unlink()
+        for png in new: shutil.copy2(png, dst / png.name)
         done.append(folder)
     print(f"exported {len(done)} listings to {fastlane}: {', '.join(done)}")
     return 0 if not bad else 1
@@ -980,22 +1033,33 @@ def main(argv=None):
         return code
     return main_cmd(a)
 
+def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
+    raise KeyboardInterrupt
+
 def main_cmd(a):
+    import signal
+    signal.signal(signal.SIGTERM, on_sigterm)
+    try:
+        return main_dispatch(a)
+    finally:
+        for udid in OUR_SIMS: sh(["xcrun", "simctl", "shutdown", udid])  # also clears the status bar override
+
+def main_dispatch(a):
     try:
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "init": return cmd_init(a.app, a.dir)
-        if a.cmd == "run": return cmd_run(a.config, a.locales.split(",") if a.locales else None, a.parallel)
+        if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
             if not a.app and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
             return cmd_check(a.out, app=a.app, report_dir=a.report)
         if a.cmd == "export": return cmd_export(a.out, a.fastlane)
-    except (Fail, RuntimeError) as e:  # RuntimeError: simctl/adb/aapt2 failures, already worded for people
+    except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2
     except KeyboardInterrupt:
         kill_stale_drivers()
-        print("\nshotfleet: stopped. Simulators and emulators may still be running.", file=sys.stderr); return 130
+        print("\nshotfleet: stopped.", file=sys.stderr); return 130
 
 if __name__ == "__main__":
     sys.exit(main())

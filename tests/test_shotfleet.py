@@ -437,5 +437,74 @@ class LocalizationFormats(unittest.TestCase):
                          ["sr-Latn", "es-419", "in", "iw", "fil", "zh-TW"])
 
 
+def png(w, h):  # just enough of a PNG for png_size
+    return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big")
+
+
+class AuditFixes(unittest.TestCase):
+    def test_inline_maps_relative_anchors_and_comments_are_translated(self):
+        flow = ("appId: x\n---\n- tapOn: { text: \"Next\", optional: true }\n- tapOn:\n    text: Next\n"
+                "    below: \"Settings\"\n- tapOn: \"Next\" # the big button\n")
+        out, missing, _ = sf.translate_flow(flow, {"n": "Next", "s": "Settings"}, {"n": "Weiter", "s": "Einstellungen"})
+        self.assertIn("{ text: 'Weiter', optional: true }", out)
+        self.assertIn("below: 'Einstellungen'", out)
+        self.assertIn("- tapOn: 'Weiter' # the big button", out)
+        self.assertEqual(missing, [])
+
+    def test_shared_script_is_not_proof_of_language(self):  # Russian in the Ukrainian folder
+        ocr = {"chars": 60, "text": "Настройки\nДалее\nГотово", "lang": "ru", "langs": {"ru": 0.95}}
+        self.assertIsNotNone(sf.judge_screen("uk", ocr, {})[1])
+
+    def test_export_never_wipes_a_listing_with_a_failed_or_empty_capture(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "out"
+            for lp in ("de", "ja"): (out / "raw" / lp).mkdir(parents=True)
+            (out / "raw/de/01.png").write_bytes(png(1320, 2868))
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "locales": {"de": {"ok": False}, "ja": {"ok": True}}}))
+            (out / "check.json").write_text(json.dumps({"problems": []}))
+            fl = Path(d) / "fl"
+            for lp in ("de-DE", "ja"): (fl / "screenshots" / lp).mkdir(parents=True); (fl / "screenshots" / lp / "old.png").write_bytes(png(1320, 2868))
+            self.assertEqual(sf.cmd_export(out, fl), 1)
+            self.assertTrue((fl / "screenshots/de-DE/old.png").exists())
+            self.assertTrue((fl / "screenshots/ja/old.png").exists())
+
+    def test_export_replaces_only_the_same_device_size(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True)
+            (out / "raw/de/01.png").write_bytes(png(1320, 2868))
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "locales": {"de": {"ok": True}}}))
+            (out / "check.json").write_text(json.dumps({"problems": []}))
+            dst = Path(d) / "fl/screenshots/de-DE"; dst.mkdir(parents=True)
+            (dst / "old_iphone.png").write_bytes(png(1320, 2868)); (dst / "ipad.png").write_bytes(png(2064, 2752))
+            sf.cmd_export(out, Path(d) / "fl")
+            self.assertEqual(sorted(p.name for p in dst.iterdir()), ["01.png", "ipad.png"])
+
+    def test_export_needs_a_check_first(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d); (out / "run.json").write_text("{}")
+            with self.assertRaises(sf.Fail): sf.cmd_export(out, out / "fl")
+
+    def test_partly_translated_apps_keep_their_languages(self):
+        en = {f"k{i}": "x" for i in range(100)}
+        de = {f"k{i}": "y" for i in range(80)}
+        self.assertEqual(sf.shipped_locales({"en": en, "de": de}), ["de", "en"])
+        self.assertEqual(sf.shipped_locales({"de": de, "fr": de}), ["de", "fr"])  # no English at all: no crash
+
+    def test_flows_launch_once_and_screenshot_comments_are_ignored(self):
+        flow = "appId: x\n---\n# start\n- launchApp\n- takeScreenshot: 01_home # first\n"
+        ios = sf.localize_flow(flow, "de", Path("/s"))
+        self.assertEqual(ios.count("- launchApp"), 1)
+        self.assertIn("/s/01_home'", ios)
+        self.assertEqual(sf.android_flow(flow, "f", Path("/s")).count("- launchApp"), 1)
+
+    def test_folders_with_both_platforms_or_jpegs(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "screenshots/de-DE").mkdir(parents=True); (Path(d) / "metadata/android").mkdir(parents=True)
+            with self.assertRaises(sf.Fail): sf.find_screenshots(d)
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "fr").mkdir(); (Path(d) / "fr/a.jpg").write_bytes(b"j"); (Path(d) / "fr/notes.txt").write_text("")
+            self.assertEqual({k: [p.name for p in v] for k, v in sf.find_screenshots(d).items()}, {"fr": ["a.jpg"]})
+
+
 if __name__ == "__main__":
     unittest.main()
