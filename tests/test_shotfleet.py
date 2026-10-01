@@ -120,6 +120,18 @@ class Locales(unittest.TestCase):
                    "zu": {str(i): "z" for i in range(11)}}
         self.assertEqual(sf.shipped_locales(strings), ["de", "en"])
 
+    def test_english_only_app_with_library_translations_ships_only_english(self):
+        # 240 app strings, 150 library strings translated into 80 locales (like Now in Android)
+        lib = {f"lib_{i}": "x" for i in range(150)}
+        strings = {"en": {**{f"app_{i}": "y" for i in range(240)}, **lib}}
+        strings.update({f"l{n}": dict(lib) for n in range(80)})
+        self.assertEqual(sf.shipped_locales(strings), ["en"])
+
+    def test_app_translated_everywhere_keeps_all_its_languages(self):
+        keys = {f"k{i}": "x" for i in range(50)}
+        strings = {"en": dict(keys), **{f"l{n}": dict(keys) for n in range(30)}}
+        self.assertEqual(len(sf.shipped_locales(strings)), 31)
+
     def test_every_store_locale_maps_to_a_folder_name(self):
         for lp in ("en", "de", "ja", "zh-Hans", "nb", "pt"):
             self.assertIn(lp, sf.STORE_LOCALE)

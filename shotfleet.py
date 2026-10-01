@@ -123,10 +123,20 @@ def load_strings_apk(apk, base="en"):
     return out
 
 def shipped_locales(strings, base="en", min_coverage=0.5):
-    """Locales the app itself is translated into. Library resources (AndroidX, Material) add ~80 locales
-    that only cover their own few strings; those are not languages the app ships."""
-    n = len(strings[base])
-    return sorted(lp for lp, t in strings.items() if lp == base or len(t) >= min_coverage * n)
+    """Locales the app itself is translated into.
+
+    Library resources (AndroidX, Material, Play Services) bring their own strings translated into ~80
+    locales. Counting raw coverage breaks for apps with few strings of their own: an English-only app
+    with 240 strings looks "translated" into 86 languages. So first separate the app's own strings
+    (translated into fewer locales than the libraries' near-universal set), then measure coverage of those."""
+    others = [lp for lp in strings if lp != base]
+    counts = {k: sum(k in strings[lp] for lp in others) for k in strings[base]}
+    top = max(counts.values(), default=0)
+    own = {k for k, c in counts.items() if c < 0.9 * top} if top else set(counts)
+    if len(own) < 0.1 * len(counts):  # nearly everything is universal: the app itself is translated everywhere
+        own = set(counts)
+    return sorted([base] + [lp for lp in others
+                            if own and sum(k in strings[lp] for k in own) >= min_coverage * len(own)])
 
 def yaml_single_quote(s):
     return "'" + s.replace("'", "''") + "'"
