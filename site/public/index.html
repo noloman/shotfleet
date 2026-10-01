@@ -3,264 +3,184 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Localized App Store and Google Play screenshots from one English Maestro flow: every language your app ships, captured in parallel and checked.">
-<meta property="og:title" content="shotfleet: every language, on every store screenshot">
-<meta property="og:description" content="One English Maestro flow in, verified App Store and Google Play screenshots in every language out.">
-<meta property="og:image" content="/img/ios_ja.jpg">
-<meta name="color-scheme" content="light dark">
 <title>shotfleet</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="description" content="Localized App Store and Google Play screenshots from one English Maestro flow, in every language your app ships, checked before upload.">
+<meta property="og:title" content="shotfleet">
+<meta property="og:description" content="My app is translated into 18 languages. Its store screenshots were all in English. So I wrote this.">
+<meta property="og:image" content="/img/train_ja.jpg">
+<meta name="color-scheme" content="light dark">
 <style>
-/* Layout: a QA report you read top to bottom. Hero = the word "Next" in the app's languages,
-   then the captured grid, the bug it caught, how it works, price. Pass/fail colors carry meaning. */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --ink: #141a24;
-  --muted: #5a6474;
-  --line: #dde2ea;
-  --accent: #2f5bd8;
-  --pass: #1d7a4c;
-  --fail: #c2362b;
-  --code-bg: #eef1f6;
-  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --bg: #ffffff;
+  --text: #1c1d1f;
+  --soft: #5d6168;
+  --line: #e3e4e6;
+  --field: #b9bcc1;
+  --link: #1a4fd0;
+  --code-bg: #f4f4f5;
+  --red: #b4301f;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0f131a; --surface: #171d27; --ink: #e8ecf2; --muted: #9aa5b5; --line: #2a3240;
-    --accent: #7d9cff; --pass: #4cc488; --fail: #ff7a6e; --code-bg: #1c2330; color-scheme: dark;
-  }
+  :root:not([data-theme="light"]) { --bg: #151618; --text: #e6e6e3; --soft: #a2a5ab; --line: #2c2e32; --field: #4a4d53; --link: #8aaeff; --code-bg: #1e2023; --red: #ff8a78; color-scheme: dark; }
 }
-:root[data-theme="dark"] {
-  --bg: #0f131a; --surface: #171d27; --ink: #e8ecf2; --muted: #9aa5b5; --line: #2a3240;
-  --accent: #7d9cff; --pass: #4cc488; --fail: #ff7a6e; --code-bg: #1c2330; color-scheme: dark;
-}
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
-img { max-width: 100%; }
-.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 20px; padding-block: 0 64px; }
-h1, h2, h3 { font-family: var(--display); line-height: 1.1; text-wrap: balance; margin: 0; }
-h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); }
-p { margin: 0; }
-.lede { font-size: 1.15rem; color: var(--muted); max-width: 60ch; }
-section { padding-block: 56px 0; display: grid; gap: 20px; }
-.eyebrow { font: 500 0.78rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-code, pre { font-family: var(--mono); }
+:root[data-theme="dark"] { --bg: #151618; --text: #e6e6e3; --soft: #a2a5ab; --line: #2c2e32; --field: #4a4d53; --link: #8aaeff; --code-bg: #1e2023; --red: #ff8a78; color-scheme: dark; }
 
-/* hero */
-.hero { padding-block: 48px 0; display: grid; gap: 24px; }
-.next-words { display: flex; flex-wrap: wrap; gap: 8px; font-family: var(--display); font-weight: 700; }
-.next-words span { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 1.05rem; }
-.next-words span.clash { border-color: var(--fail); color: var(--fail); }
-.hero h1 { font-size: clamp(2.3rem, 6vw, 4rem); max-width: 18ch; }
-.cta-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-.btn { font: 600 1rem var(--body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); cursor: pointer; text-decoration: none; }
-.btn.ghost { background: transparent; color: var(--accent); }
-.btn:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.note { font-size: 0.9rem; color: var(--muted); }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 18px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding-inline: 20px; padding-block: 48px 80px; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 24px; letter-spacing: -0.015em; text-wrap: balance; }
+h2 { font-size: 1.25rem; margin: 48px 0 12px; }
+p, ul { margin: 0 0 18px; }
+ul { padding-left: 22px; }
+li { margin-bottom: 6px; }
+a { color: var(--link); text-underline-offset: 3px; }
+a:focus-visible, input:focus-visible, select:focus-visible, button:focus-visible, [tabindex="-1"]:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+code { font: 0.86em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { font: 0.82rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); padding: 14px 16px; border-radius: 6px; overflow-x: auto; margin: 0 0 22px; }
+.name { font-weight: 600; text-decoration: none; color: var(--text); display: inline-block; margin-bottom: 36px; }
+.small { font-size: 0.85rem; color: var(--soft); }
+.red { color: var(--red); }
 
-/* terminal */
-pre.term { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; font-size: 0.86rem; line-height: 1.55; margin: 0; }
-.ok { color: var(--pass); } .bad { color: var(--fail); } .dim { color: var(--muted); }
+/* the screenshots get more room than the text */
+.strip { width: min(940px, calc(100vw - 40px)); margin: 8px 0 8px 50%; transform: translateX(-50%);
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.strip figure { margin: 0; }
+.strip img, figure.one img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); }
+.strip figcaption { font: 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--soft); margin-top: 4px; }
+@media (max-width: 640px) { .strip { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.caption { margin-bottom: 28px; }
+figure.one { margin: 8px 0 22px; display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; }
+figure.one figcaption { font-size: 0.92rem; color: var(--soft); }
+@media (max-width: 520px) { figure.one { grid-template-columns: 1fr; } figure.one img { max-width: 220px; } }
 
-/* screenshot grid */
-.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-.shots figure { margin: 0; display: grid; gap: 6px; }
-.shots img { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
-.shots figcaption { font: 500 0.8rem var(--mono); color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
-.tag { color: var(--pass); }
-
-/* bug story */
-.bug { display: grid; grid-template-columns: 220px 1fr; gap: 28px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--fail); border-radius: 12px; padding: 24px; }
-.bug img { width: 100%; border-radius: 10px; border: 1px solid var(--line); }
-.bug > div { display: grid; gap: 12px; min-width: 0; }
-@media (max-width: 640px) { .bug { grid-template-columns: 1fr; } .bug img { max-width: 220px; } }
-
-/* steps + checks */
-.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; counter-reset: step; }
-.steps li { list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
-.steps li::before { counter-increment: step; content: counter(step); font: 700 0.85rem var(--mono); color: var(--accent); }
-.steps ol { margin: 0; padding: 0; }
-.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px 24px; padding: 0; margin: 0; }
-.checks li { list-style: none; display: grid; gap: 2px; }
-.checks b { font-family: var(--display); font-size: 1.05rem; }
-
-/* comparison */
-.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.95rem; }
-th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-tr:last-child td { border-bottom: 0; }
-th { font: 600 0.8rem var(--mono); letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-td.y { color: var(--pass); } td.n { color: var(--muted); }
-
-/* pricing */
-.price { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 28px; }
-.price .amount { font: 700 3rem/1 var(--display); }
-.price ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
-form { display: flex; flex-wrap: wrap; gap: 10px; }
-input[type=email] { flex: 1 1 220px; min-width: 0; font: 1rem var(--body); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
-#thanks { color: var(--pass); font-weight: 500; }
-.err { color: var(--fail); }
-select { font: 1rem var(--body); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+/* signup */
+.signup { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 8px; }
+form { display: grid; gap: 10px; margin: 0 0 12px; }
+label { font-size: 0.92rem; font-weight: 600; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+input[type=email], select { font: inherit; font-size: 1rem; padding: 10px 12px; border: 1px solid var(--field); border-radius: 6px; background: var(--bg); color: var(--text); }
+input[type=email] { flex: 1 1 240px; min-width: 0; }
+input[aria-invalid="true"] { border-color: var(--red); }
+button { font: inherit; font-size: 1rem; font-weight: 600; padding: 10px 18px; border: 0; border-radius: 6px; background: var(--text); color: var(--bg); cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: default; }
 .trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-@media (max-width: 720px) { .price { grid-template-columns: 1fr; } }
-footer { padding-block: 48px 0; color: var(--muted); font-size: 0.9rem; }
-.draft { margin-top: 16px; font: 500 0.8rem var(--mono); color: var(--muted); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; }
+footer { border-top: 1px solid var(--line); margin-top: 56px; padding-top: 16px; }
 </style>
 </head>
 <body>
+<main>
+  <a class="name" href="/">shotfleet</a>
 
-<div class="wrap">
-  <header class="hero">
-    <div class="next-words" aria-label="The word Next in the app's languages">
-      <span>Next</span><span>Weiter</span><span>次へ</span><span>Suivant</span><span>Siguiente</span><span>التالي</span><span>다음</span><span>Далее</span><span>下一步</span><span class="clash" title="In Turkish, Next and Advanced are the same word">İleri</span>
-    </div>
-    <h1>Every language your app ships, on every store screenshot.</h1>
-    <p class="lede">shotfleet takes one Maestro flow you write in English, translates its taps with your app's own strings, captures every language in parallel on simulators and emulators, and checks every image before it goes to the App Store or Google Play.</p>
-    <div class="cta-row">
-      <a class="btn" href="#price">Get early access</a>
-      <a class="btn ghost" href="#how">How it works</a>
-      <span class="note">macOS · iOS and Android · works with fastlane</span>
-    </div>
-    <pre class="term" aria-label="Example run"><span class="dim">$</span> shotfleet run shotfleet.toml
-<span class="dim">warning tr: 'Next' -> 'İleri' also means 'Advanced'; anchor that step</span>
+  <h1>My app is translated into 18 languages. Its store screenshots were all in English.</h1>
+
+  <p>I make a workout app called WOD Tracker. It ships in 18 languages on both stores, and until recently every language folder in my fastlane setup held the same English screenshots. Anyone browsing the App Store in Japanese or German saw an app that looked untranslated.</p>
+
+  <p>The reason was boring. My screenshot script is a Maestro flow, and Maestro flows tap buttons by their text: <code>tapOn: "Next"</code>. In German that button says “Weiter”, so the flow stops on the first screen. You either write the flow 18 times or you copy the English images everywhere.</p>
+
+  <p>shotfleet is the tool I wrote so I'd never do either again. You keep one flow, in English. It reads the translations already compiled into your app, swaps every tap for the right word in each language, and runs all the languages at the same time on several simulators or emulators.</p>
+
+  <div class="strip">
+    <figure><img src="img/train_ja.jpg" alt="WOD Tracker's Train screen in Japanese" width="360" height="782"><figcaption>ja</figcaption></figure>
+    <figure><img src="img/train_fr.jpg" alt="The same screen in French" width="360" height="782"><figcaption>fr</figcaption></figure>
+    <figure><img src="img/train_ar.jpg" alt="The same screen in Arabic" width="360" height="782"><figcaption>ar</figcaption></figure>
+    <figure><img src="img/train_ko.jpg" alt="The same screen in Korean" width="360" height="782"><figcaption>ko</figcaption></figure>
+    <figure><img src="img/train_ru.jpg" alt="The same screen in Russian" width="360" height="782"><figcaption>ru</figcaption></figure>
+    <figure><img src="img/train_es.jpg" alt="The same screen in Spanish" width="360" height="782"><figcaption>es</figcaption></figure>
+  </div>
+  <p class="caption small">Six of the 72 iPhone screenshots from one run. Nothing in the app was changed to get them.</p>
+
+  <h2>What a run looks like</h2>
+  <p>This is the flow, the same one I'd write for English only:</p>
+<pre>appId: me.manulorenzo.crossfittracker
+---
+- tapOn: "I Understand"
+- tapOn: "Next"
+- tapOn: "Start Training"
+- takeScreenshot: 01_train
+- tapOn: "Log"
+- takeScreenshot: 02_log</pre>
+  <p>And this is what happens when shotfleet runs it:</p>
+<pre>$ shotfleet run shotfleet.toml
+<span class="red">warning tr: 'Next' -> 'İleri' also means 'Advanced'</span>
 capturing 18 locales on 4 simulators...
-<span class="ok">ok</span>   ar       4/4 screenshots
-<span class="ok">ok</span>   de       4/4 screenshots
-<span class="ok">ok</span>   ja       4/4 screenshots
-<span class="ok">ok</span>   tr       4/4 screenshots
-<span class="dim">...</span>
+ok   ar       4/4 screenshots
+ok   da       4/4 screenshots
+ok   de       4/4 screenshots
+...
 captured 18/18 locales in 8m 54s on 4 simulators
-checked 72 screenshots: <span class="ok">0 problems</span></pre>
-  </header>
+checked 72 screenshots: 0 problem(s)</pre>
+  <p>That warning is real. In Turkish, “Next” and “Advanced” are the same word, and the onboarding page shows both. The first time I ran it, Maestro tapped “Advanced”. Now shotfleet warns you before running, and you tell that one step which button you mean.</p>
+  <p>After the run, every screenshot is read back with macOS's built-in text recognition and compared with your app's own strings. It flags a German folder that shows English, two languages with the identical image, and languages that stopped halfway. Then <code>shotfleet export</code> copies the ones that passed into your fastlane <code>deliver</code> and <code>supply</code> folders.</p>
+  <p>Android is slower: about 15 minutes for the same 18 languages on four emulators.</p>
 
-  <section aria-labelledby="real">
-    <p class="eyebrow">Real output · WOD Tracker</p>
-    <h2 id="real">One flow, 18 languages, both stores.</h2>
-    <p class="lede">These came straight out of a run on a real app. Its first localized listing was the English set copied into every language folder. Fixing that by hand took about 630 lines of capture and compose scripts written for this one app.</p>
-    <div class="shots">
-      <figure><img src="img/ios_ja.jpg" alt="Train tab in Japanese, iPhone"><figcaption><span>ja · iOS</span><span class="tag">pass</span></figcaption></figure>
-      <figure><img src="img/ios_ar.jpg" alt="Progress tab in Arabic, iPhone"><figcaption><span>ar · iOS</span><span class="tag">pass</span></figcaption></figure>
-      <figure><img src="img/ios_de.jpg" alt="Log tab in German, iPhone"><figcaption><span>de · iOS</span><span class="tag">pass</span></figcaption></figure>
-      <figure><img src="img/ios_tr.jpg" alt="Profile tab in Turkish, iPhone"><figcaption><span>tr · iOS</span><span class="tag">pass</span></figcaption></figure>
-      <figure><img src="img/android_hi.jpg" alt="Train tab in Hindi, Android"><figcaption><span>hi · Android</span><span class="tag">pass</span></figcaption></figure>
-      <figure><img src="img/android_zh-CN.jpg" alt="Progress tab in Chinese, Android"><figcaption><span>zh-CN · Android</span><span class="tag">pass</span></figcaption></figure>
-    </div>
-  </section>
+  <h2>It found a bug I didn't know about</h2>
+  <figure class="one">
+    <img src="img/bug_zh.jpg" alt="The Chinese onboarding page, with its Next button pushed below the bottom of the screen" width="360" height="640">
+    <figcaption>The Training Goals page in Chinese on a 1080×1920 phone. The Next button is below the edge, and the page didn't scroll.</figcaption>
+  </figure>
+  <p>On the first full Android run, Japanese, Korean, Chinese and Arabic all got stuck on the same onboarding page. Their text renders taller, the page didn't scroll, and the Next button ended up off the bottom of the screen. People using those languages on smaller phones could only get past it with Skip. The fix was two lines. I wouldn't have caught it by hand, because I don't walk through my own onboarding in Korean.</p>
 
-  <section aria-labelledby="bug">
-    <p class="eyebrow">Found on the first run</p>
-    <div class="bug">
-      <img src="img/bug_zh.jpg" alt="Chinese onboarding page whose Next button is off-screen">
-      <div>
-        <h2 id="bug">Users in four languages couldn't finish onboarding.</h2>
-        <p>On a common small phone, the Training Goals page pushed its Next button off the bottom in Japanese, Korean, Chinese and Arabic, and the page didn't scroll. English fit, so nobody noticed. shotfleet's Chinese run got stuck there, which led to a two-line fix.</p>
-        <p class="note">Screenshot runs are the only time most teams walk through the app in every language. shotfleet makes that walk useful.</p>
+  <h2>What you need</h2>
+  <ul>
+    <li>A Mac with Xcode for iOS, and the Android SDK for Android. Either one works on its own.</li>
+    <li><a href="https://maestro.mobile.dev">Maestro</a> 2.x. If you don't use it yet, a screenshot flow is a short YAML file like the one above, and <code>shotfleet init</code> writes a starter one for your app.</li>
+    <li>A simulator build (<code>.app</code>) or an APK. Your text has to come from the app's string files, which it already does if the app is translated.</li>
+  </ul>
+
+  <h2>What it doesn't do</h2>
+  <ul>
+    <li>No device frames or marketing captions. It captures the real app; put frameit or your design tool after it.</li>
+    <li>No CI mode yet. It runs on a Mac you control.</li>
+    <li>Icon-only buttons have no text to translate, so those steps keep using Maestro's <code>id:</code> selectors.</li>
+  </ul>
+  <p>If you already have fastlane snapshot or screengrab working with UI tests, you probably don't need this. It's for people whose screenshot scripts tap text, or who never got localized screenshots working at all.</p>
+
+  <section class="signup" aria-labelledby="price">
+    <h2 id="price">Price</h2>
+    <p>$49, once, for unlimited apps and a year of updates. It isn't on sale yet. If you'd use it, leave your email and I'll write once when it is. Nothing else.</p>
+    <form id="signup" novalidate>
+      <label for="email">Email</label>
+      <div class="row">
+        <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required aria-describedby="error">
+        <select id="platform" name="platform" aria-label="Which stores you ship to">
+          <option value="both">iOS and Android</option>
+          <option value="ios">iOS only</option>
+          <option value="android">Android only</option>
+        </select>
+        <button type="submit" id="submit">Tell me when it's ready</button>
       </div>
-    </div>
+      <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
+      <p id="error" class="red small" role="alert" hidden></p>
+    </form>
+    <p id="thanks" role="status" tabindex="-1" hidden>Thanks, you're on the list. I'll email you once, when it's ready.</p>
   </section>
 
-  <section id="how" aria-labelledby="how-h">
-    <p class="eyebrow">How it works</p>
-    <h2 id="how-h">Your existing flow, no app changes.</h2>
-    <ol class="steps">
-      <li><h3>Write the flow once, in English</h3><p>A normal Maestro flow: <code>tapOn: "Next"</code>, <code>takeScreenshot: 01_home</code>. Or point shotfleet at the flow you already have.</p></li>
-      <li><h3>shotfleet translates it</h3><p>It reads the strings compiled into your <code>.app</code> or APK, so "Next" becomes <code>(Nächste|Weiter)</code> in German, <code>次へ</code> in Japanese. No accessibility IDs, no per-language copies.</p></li>
-      <li><h3>Every language runs at once</h3><p>Simulators and emulators at store sizes (1320×2868 for iPhone, 1080×1920 for Android phones), each set to one language, with a 9:41 status bar.</p></li>
-      <li><h3>Checked, then exported</h3><p>Each image is read back and compared to your app's strings. Passing languages go straight into fastlane's <code>deliver</code> and <code>supply</code> folders.</p></li>
-    </ol>
-  </section>
-
-  <section aria-labelledby="checks-h">
-    <p class="eyebrow">What it checks</p>
-    <h2 id="checks-h">Catches what a quick look misses.</h2>
-    <ul class="checks">
-      <li><b>Wrong language</b><span class="note">The German folder shows English or Japanese strings.</span></li>
-      <li><b>Copies</b><span class="note">The same image in two languages.</span></li>
-      <li><b>Missing images</b><span class="note">A language that stopped part-way through the flow.</span></li>
-      <li><b>Word clashes</b><span class="note">Before any run: Turkish "Next" and "Advanced" are both İleri, so a tap could hit the wrong button.</span></li>
-    </ul>
-  </section>
-
-  <section aria-labelledby="vs">
-    <p class="eyebrow">Compared</p>
-    <h2 id="vs">Where it fits.</h2>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th></th><th>shotfleet</th><th>fastlane snapshot / screengrab</th><th>Screenshot design tools</th></tr></thead>
-        <tbody>
-          <tr><td>Captures the real app</td><td class="y">Yes</td><td class="y">Yes</td><td class="n">No, you upload images</td></tr>
-          <tr><td>Setup</td><td>One Maestro flow in English</td><td>UI test target, helper files, IDs or per-language code</td><td>Upload</td></tr>
-          <tr><td>Languages at once</td><td class="y">All, in parallel</td><td class="n">One after another</td><td class="n">n/a</td></tr>
-          <tr><td>Checks each image</td><td class="y">Language, copies, missing, clashes</td><td class="n">No</td><td class="n">No</td></tr>
-          <tr><td>Frames and captions</td><td class="n">No (pair it with one)</td><td>frameit</td><td class="y">Yes</td></tr>
-          <tr><td>Price</td><td>$49 once</td><td>Free</td><td>$100–600 a year</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section id="price" aria-labelledby="price-h">
-    <p class="eyebrow">Early access</p>
-    <div class="price">
-      <div style="display:grid;gap:12px">
-        <h2 id="price-h">One license, every app you make.</h2>
-        <p><span class="amount">$49</span> <span class="note">once, for a solo developer</span></p>
-        <ul>
-          <li>iOS and Android</li>
-          <li>Unlimited apps and runs</li>
-          <li>fastlane export and the HTML review page</li>
-          <li>Updates for a year</li>
-        </ul>
-      </div>
-      <div style="display:grid;gap:12px;align-content:start">
-        <p>Leave your email and we'll send early access with the launch discount. No spam; one email when it's ready.</p>
-        <form id="signup" novalidate>
-          <label for="email" class="note" style="flex-basis:100%">Email</label>
-          <input id="email" type="email" placeholder="you@studio.dev" autocomplete="email" required>
-          <label for="platform" class="note" style="flex-basis:100%">You ship on</label>
-          <select id="platform">
-            <option value="both">iOS and Android</option>
-            <option value="ios">iOS</option>
-            <option value="android">Android</option>
-          </select>
-          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-          <button class="btn" type="submit" id="submit">Get early access</button>
-        </form>
-        <p id="thanks" hidden>You're on the list. One email when early access opens.</p>
-        <p id="error" class="err" role="alert" hidden></p>
-        <p class="note">Needs macOS, Xcode for iOS, the Android SDK for Android, and Maestro 2.x.</p>
-      </div>
-    </div>
-  </section>
-
-  <footer>shotfleet · made by an indie developer who got tired of copying English screenshots into 18 folders.</footer>
-</div>
+  <footer class="small">Manu, who makes WOD Tracker and a few other apps.</footer>
+</main>
 
 <script>
 document.getElementById("signup").addEventListener("submit", async function (e) {
   e.preventDefault();
-  var email = document.getElementById("email"), btn = document.getElementById("submit");
+  var form = this, email = document.getElementById("email"), btn = document.getElementById("submit");
   var err = document.getElementById("error"), thanks = document.getElementById("thanks");
   err.hidden = true;
   if (!email.value || !email.checkValidity()) {
-    email.setAttribute("aria-invalid", "true"); err.textContent = "Enter an email address like you@studio.dev."; err.hidden = false; email.focus(); return;
+    email.setAttribute("aria-invalid", "true");
+    err.textContent = "That doesn't look like an email address.";
+    err.hidden = false; email.focus(); return;
   }
   email.removeAttribute("aria-invalid");
-  btn.disabled = true; btn.textContent = "Joining…";
+  btn.disabled = true; btn.textContent = "Sending…";
   try {
     var r = await fetch("/api/signup", { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: email.value, platform: document.getElementById("platform").value,
                              website: document.getElementById("website").value }) });
     var d = await r.json().catch(function () { return {}; });
-    if (!r.ok) throw new Error(d.error || "Something went wrong. Try again in a minute.");
-    document.getElementById("signup").hidden = true; thanks.hidden = false;
+    if (!r.ok) throw new Error(d.error || "Couldn't save your email. Try again in a minute.");
+    form.hidden = true; thanks.hidden = false; thanks.focus();
   } catch (x) {
-    err.textContent = x.message || "Couldn't reach the server. Check your connection and try again."; err.hidden = false;
-    btn.disabled = false; btn.textContent = "Get early access";
+    err.textContent = (x && x.message && x.message !== "Failed to fetch") ? x.message : "Couldn't reach the server. Check your connection and try again.";
+    err.hidden = false; btn.disabled = false; btn.textContent = "Tell me when it's ready";
   }
 });
 </script>
