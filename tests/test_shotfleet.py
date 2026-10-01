@@ -506,5 +506,31 @@ class AuditFixes(unittest.TestCase):
             self.assertEqual({k: [p.name for p in v] for k, v in sf.find_screenshots(d).items()}, {"fr": ["a.jpg"]})
 
 
+class FirstRun(unittest.TestCase):
+    def cli(self, *args, python=sys.executable):
+        return subprocess.run([python, str(Path(sf.__file__)), *args], capture_output=True, text=True)
+
+    def test_old_python_gets_a_sentence_not_a_traceback(self):
+        if not Path("/usr/bin/python3").exists(): self.skipTest("no system python")
+        r = self.cli("doctor", python="/usr/bin/python3")
+        if r.returncode == 2 and "3.11" in r.stderr: return
+        self.assertNotIn("Traceback", r.stderr)
+
+    def test_wrong_build_types_say_what_to_pass(self):
+        for name, words in (("x.ipa", "simulator .app"), ("x.aab", "assembleDebug"), ("x.zip", "unzip")):
+            r = self.cli("init", name, tempfile.mkdtemp())
+            self.assertEqual(r.returncode, 2); self.assertIn(words, r.stderr)
+
+    def test_empty_folder_and_empty_locales_are_setup_errors(self):
+        r = self.cli("check", tempfile.mkdtemp())
+        self.assertEqual(r.returncode, 2); self.assertIn("Expected one of", r.stderr)
+        self.assertEqual(self.cli("run", "x.toml", "--locales", "").returncode, 2)
+
+    def test_config_paths_are_short(self):
+        d = Path(tempfile.mkdtemp())
+        self.assertEqual(sf.config_path(d / "build/App.app", d), "build/App.app")
+        self.assertTrue(sf.config_path(Path.home() / "Library/x/App.app", "/tmp/a/b/c/d").startswith("~/Library"))
+
+
 if __name__ == "__main__":
     unittest.main()

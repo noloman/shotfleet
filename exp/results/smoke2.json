@@ -1,0 +1,115 @@
+{
+ "summary": {
+  "label": "smoke2",
+  "avd": "droidslim_test",
+  "n": 2,
+  "boot_s_max": 28.9,
+  "boot_s_median": 27.299999999999997,
+  "disabled_pkgs": [
+   41
+  ],
+  "launches": 21,
+  "launch_fail": 0,
+  "launch_ms_p50": 525,
+  "launch_ms_p90": 1263,
+  "fleet_rss_mb": 4373,
+  "fleet_footprint_mb": 8416,
+  "fleet_cpu_pct": 326.0,
+  "swapouts_during": 0,
+  "swapins_during": 22614,
+  "swap_growth_mb": -360,
+  "compressor_growth_mb": -761,
+  "pressure_max": 1,
+  "anr": 0,
+  "am_kills": 21
+ },
+ "baseline": {
+  "free_mb": 61,
+  "compressor_mb": 10622,
+  "swapins": 41188903,
+  "swapouts": 50228071,
+  "swap_used_mb": 17260.75,
+  "pressure": 1
+ },
+ "boot": {
+  "emulator-5600": 25.7,
+  "emulator-5602": 28.9
+ },
+ "samples": [
+  {
+   "t": 52,
+   "free_mb": 66,
+   "compressor_mb": 10315,
+   "swapins": 41205211,
+   "swapouts": 50228071,
+   "swap_used_mb": 16980.75,
+   "pressure": 1,
+   "rss_mb": 4984,
+   "cpu_pct": 76.1,
+   "footprint_mb": 8201
+  },
+  {
+   "t": 63,
+   "free_mb": 656,
+   "compressor_mb": 10623,
+   "swapins": 41207988,
+   "swapouts": 50228071,
+   "swap_used_mb": 16948.75,
+   "pressure": 1,
+   "rss_mb": 4454,
+   "cpu_pct": 398.4,
+   "footprint_mb": 8381
+  },
+  {
+   "t": 73,
+   "free_mb": 69,
+   "compressor_mb": 9814,
+   "swapins": 41210735,
+   "swapouts": 50228071,
+   "swap_used_mb": 16908.69,
+   "pressure": 1,
+   "rss_mb": 4326,
+   "cpu_pct": 123.4,
+   "footprint_mb": 8424
+  },
+  {
+   "t": 83,
+   "free_mb": 70,
+   "compressor_mb": 9861,
+   "swapins": 41211517,
+   "swapouts": 50228071,
+   "swap_used_mb": 16900.69,
+   "pressure": 1,
+   "rss_mb": 4340,
+   "cpu_pct": 706.2,
+   "footprint_mb": 8442
+  }
+ ],
+ "launches": {
+  "emulator-5600": [
+   822,
+   1051,
+   1450,
+   916,
+   785,
+   434,
+   439,
+   436,
+   340,
+   348,
+   456
+  ],
+  "emulator-5602": [
+   851,
+   1263,
+   1565,
+   1101,
+   1076,
+   470,
+   525,
+   451,
+   424,
+   455
+  ]
+ }
+}

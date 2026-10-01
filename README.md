@@ -8,7 +8,7 @@ capturing 18 locales on 4 simulators...
 ok   ar       4/4 screenshots
 ok   de       4/4 screenshots
 ...
-captured 18/18 locales in 870s on 4 simulators
+captured 18/18 locales in 534s on 4 simulators
 checked 72 screenshots: 0 problem(s)
 ```
 
@@ -45,7 +45,7 @@ It also finds real localization bugs. On CrossfitTracker it found an onboarding 
 ## Quickstart (about 10 minutes)
 
 ```bash
-ln -s "$PWD/shotfleet.py" /opt/homebrew/bin/shotfleet   # from this folder; Python 3.11+, no dependencies
+ln -s "$PWD/shotfleet.py" "$(brew --prefix)/bin/shotfleet"   # run in the folder with shotfleet.py
 shotfleet doctor                                   # checks Maestro, Xcode, Android SDK
 shotfleet init path/to/MyApp.app   ios/            # simulator build (Debug-iphonesimulator)
 shotfleet init path/to/app-debug.apk android/      # or an APK
@@ -131,7 +131,10 @@ out = "out"
 
 ## Limits
 
-- Native apps only. Strings come from `.strings` (including String Catalogs, which Xcode compiles to `.strings`) on iOS and `strings.xml` on Android. Flutter, React Native and Compose Multiplatform resources on iOS aren't read yet.
+- Needs Python 3.11 or newer. macOS's own `python3` is 3.9; `brew install python` gets a current one (shotfleet says so if you run it with an older one).
+- Strings are read from the build: `.strings` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` on Android, and Compose Multiplatform resources on both. Plurals (`.stringsdict`, `<plurals>`) aren't used yet. Flutter and React Native aren't supported yet.
+- Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
+- `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
 - macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.
 - Android needs API 33+ emulators for per-app languages.

@@ -11,7 +11,12 @@ For each language the app ships, shotfleet rewrites the flow's English text sele
 language using the strings compiled into the app, runs every language in parallel, and verifies
 every screenshot (shows that language's strings, isn't a copy of another, none missing).
 """
-import functools, hashlib, json, os, re, shutil, subprocess, sys, time, tomllib
+import sys
+if sys.version_info < (3, 11):
+    print(f"shotfleet needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable}).\n"
+          "Install one with: brew install python", file=sys.stderr)
+    sys.exit(2)
+import functools, hashlib, json, os, re, shutil, subprocess, time, tomllib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -50,6 +55,10 @@ def load_config(config_path):
         real = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
         if real and real != cfg["bundle_id"]:
             raise Fail(f"bundle_id is {cfg['bundle_id']} but {app.name} is {real}")
+        if device_build(app):
+            raise Fail(f"{app.name} is a device build; simulators need a simulator build (Debug-iphonesimulator). "
+                       "Build with: xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build")
+        cfg["app"] = str(app)
     else:
         apk = path(cfg["apk"])
         if not apk.is_file():
@@ -57,6 +66,7 @@ def load_config(config_path):
         m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(apk)]).stdout)
         if m and m.group(1) != cfg["package"]:
             raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
+        cfg["apk"] = str(apk)
     if not shutil.which("maestro"):
         raise Fail("Maestro isn't installed. Install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
@@ -713,7 +723,7 @@ def ocr_tool():
     return str(exe)
 
 TWINS = {"ms": ("id",), "id": ("ms",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
-LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil"}  # Android's old codes -> what language detection reports
+LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
 
 @functools.cache
 def readable_languages():
@@ -734,6 +744,9 @@ def judge_screen(lp, ocr, tables):
     best = max(score.values(), default=0)
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
+        lang = canon(lp).split("-")[0]
+        if LEGACY.get(lang, lang) not in readable_languages() | {"zh"}:
+            return None, None  # Hebrew, Georgian, Burmese often read as nothing at all
         return got, "no text found (blank or still loading?)"
     if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
         c = canon(lp)  # zh-CN -> zh-Hans, zh-HK -> zh-Hant-HK, iw -> he: what language detection reports
@@ -747,7 +760,10 @@ def judge_screen(lp, ocr, tables):
         script = SCRIPTS.get(want.split("-")[0])
         if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
             return lp, None
-        if ocr.get("lang") not in (want, *TWINS.get(want, ())) and ocr.get("langs", {}).get(want, 0) < 0.2:
+        langs = ocr.get("langs", {})
+        # short, language-neutral screens ("AMRAP / EMOM / Tabata") get low-confidence guesses: not evidence
+        if ocr.get("lang") not in (want, *TWINS.get(want, ())) and langs.get(want, 0) < 0.2 \
+                and langs.get(ocr.get("lang"), 0) >= 0.8:
             return ocr.get("lang"), f"text looks like '{ocr.get('lang')}', expected '{want}'"
         return lp, None
     if got != lp:
@@ -802,7 +818,13 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
     if app:
         app = Path(app).expanduser()
         if app.suffix == ".apk" and not app.is_file(): raise Fail(f"no APK at {app}")
-        if app.suffix != ".apk" and not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
+        if app.suffix not in (".apk", ".app"): raise Fail(build_hint(app))
+        if app.suffix == ".app" and not (app / "Info.plist").is_file(): raise Fail(f"no app at {app}")
+        layout_android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
+        layout_ios = (folder / "screenshots").is_dir() or folder.name == "screenshots"
+        if (layout_android and app.suffix == ".app") or (layout_ios and app.suffix == ".apk"):
+            raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
+                       f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings is None and run_json.exists():
@@ -816,7 +838,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
     report.mkdir(parents=True, exist_ok=True)
     images = find_screenshots(folder)
     if not images:
-        print(f"no screenshots found in {folder}"); return 1
+        raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
+                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png")
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
@@ -889,8 +912,11 @@ def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
+    maestro = sh(["maestro", "--version"], timeout=60).stdout.strip().splitlines()[-1:] if have("maestro") else []
+    maestro_ok = bool(maestro) and maestro[0].split(".")[0].isdigit() and int(maestro[0].split(".")[0]) >= 2
     checks = [
-        ("maestro", have("maestro"), "curl -Ls https://get.maestro.mobile.dev | bash", "both"),
+        (f"maestro {maestro[0] if maestro else ''}".strip(), maestro_ok,
+         "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
         ("swiftc (OCR checks)", have("swiftc"), "xcode-select --install", "both"),
         ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
          "install Xcode and an iOS Simulator runtime", "iOS"),
@@ -910,7 +936,9 @@ FLOW_TEMPLATE = """appId: {app_id}
 name: "Store screenshots"
 ---
 # Write this flow in English: shotfleet translates every text selector for each language.
-# Tap and assert by the text the user sees; take a screenshot for each store image you want.
+# Tap and assert by the text the user sees, exactly as it appears in your English strings
+# ("Next", not "next"); take a screenshot for each store image you want.
+# Tips (dialogs, collisions, scrolling): see "Tips" in the README.
 - launchApp
 - waitForAnimationToEnd:
     timeout: 5000
@@ -918,6 +946,29 @@ name: "Store screenshots"
 # - tapOn: "Settings"
 # - takeScreenshot: 02_settings
 """
+
+def device_build(app):
+    """True for an iphoneos build (archives, device runs): it can't be installed on a simulator."""
+    plat = sh(["/usr/libexec/PlistBuddy", "-c", "Print DTPlatformName", str(Path(app) / "Info.plist")]).stdout.strip()
+    return plat == "iphoneos"
+
+WRONG_BUILD = {
+    ".ipa": "an .ipa is a device build. Pass the simulator .app instead (Build/Products/Debug-iphonesimulator/<App>.app)",
+    ".aab": "an .aab can't be installed directly. Build an APK instead: ./gradlew assembleDebug",
+    ".xcarchive": "pass the simulator .app, not an archive (archives are device builds)",
+    ".zip": "unzip it first, then pass the .app or .apk inside",
+}
+
+def build_hint(app):
+    return WRONG_BUILD.get(Path(app).suffix.lower(), "pass a simulator .app or an .apk")
+
+def config_path(target, dest):
+    """How the config should spell a path: relative when it's close (same project), else ~/..."""
+    target = Path(target).expanduser().resolve()
+    rel = os.path.relpath(target, Path(dest).resolve())
+    if not rel.startswith("../../.."): return rel
+    home = str(Path.home())
+    return "~" + str(target)[len(home):] if str(target).startswith(home + "/") else str(target)
 
 def cmd_init(app, dest="."):
     """Write shotfleet.toml + flow.yaml for an .app (iOS simulator build) or .apk."""
@@ -929,21 +980,24 @@ def cmd_init(app, dest="."):
         if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
         app_id = m.group(1)
         locales = shipped_locales(load_strings_apk(app))
-        cfg = f'[android]\napk = {json.dumps(str(app))}\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
+        cfg = f'[android]\napk = {json.dumps(config_path(app, dest))}\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
     elif app.suffix == ".app":
         if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
+        if device_build(app): raise Fail(f"{app.name} is a device build: {WRONG_BUILD['.xcarchive']}")
         app_id = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
-        locales = sorted(load_strings(app))
-        cfg = (f'[ios]\napp = {json.dumps(str(app))}\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
+        locales = shipped_locales(load_strings(app))
+        cfg = (f'[ios]\napp = {json.dumps(config_path(app, dest))}\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
                'device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # 1320x2868 = App Store 6.9"\n'
-               f'runtime = "{latest_ios_runtime()}"\nparallel = 4\nout = "out"\n')
+               f'runtime = "{latest_ios_runtime()}"   # newest installed; list them: xcrun simctl list runtimes\n'
+               'parallel = 4\nout = "out"\n')
     else:
-        print("pass a simulator .app or an .apk"); return 2
+        raise Fail(build_hint(app))
     for name, text in (("shotfleet.toml", cfg), ("flow.yaml", FLOW_TEMPLATE.format(app_id=app_id))):
         if (dest / name).exists(): print(f"keeping existing {dest / name}"); continue
         (dest / name).write_text(text); print(f"wrote {dest / name}")
     print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
-    print(f"next: edit {dest / 'flow.yaml'}, then: shotfleet run {dest / 'shotfleet.toml'} --locales en")
+    print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots simulators, takes a few minutes):\n"
+          f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
 
 def latest_ios_runtime():
@@ -1024,6 +1078,8 @@ def main(argv=None):
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
     a = ap.parse_args(argv)
+    if a.cmd == "run" and a.locales is not None and not a.locales.strip(","):
+        ap.error("--locales is empty; leave it out to run every language")
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
     if getattr(a, "json", False):  # CI: stdout carries only the JSON report
