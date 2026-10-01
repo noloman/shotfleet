@@ -426,9 +426,11 @@ class LocalizationFormats(unittest.TestCase):
                               ("German.lproj/Main.strings", '"title" = "Titel";'),
                               ("Base.lproj/Main.strings", '"title" = "Title";')]:
                 (app / rel).parent.mkdir(parents=True, exist_ok=True); (app / rel).write_text(body)
-            self.assertEqual(sf.load_strings(app), {"de": {
+            got = sf.load_strings(app)
+            self.assertEqual(got["de"], {
                 "next": "Weiter", "title": "Titel", "Feature_Feature.bundle/Localizable:next": "Nächste",
-                "Watch/W.app/Localizable:start": "Training starten"}})
+                "Watch/W.app/Localizable:start": "Training starten"})
+            self.assertEqual(got["en"]["Watch/W.app/Localizable:start"], "start")  # no en table: keys are the text
 
     def test_pseudolocales_and_ui_modes_are_not_languages(self):
         for q in ("en-rXA", "ar-rXB", "en-rXC", "car", "night", "v31", "ldrtl"):
@@ -544,6 +546,58 @@ class TolerantMatching(unittest.TestCase):
     def test_upper_case_android_button_still_counts(self):
         tables = sf.string_tables({"de": {"n": "Weiter", "s": "Einstellungen"}, "en": {"n": "Next", "s": "Settings"}})
         self.assertEqual(sf.judge_screen("de", {"chars": 30, "text": "WEITER\nEINSTELLUNGEN"}, tables), ("de", None))
+
+
+class BaseAndFallback(unittest.TestCase):
+    STRINGS = {"en-GB": {"n": "Next", "c": "Colour"}, "pt": {"n": "Próximo", "c": "Cor"}, "pt-BR": {"c": "Cor!"},
+               "zh-Hant": {"n": "下一步"}, "zh-Hant-HK": {}}
+
+    def test_regional_locales_fall_back_to_their_language(self):
+        self.assertEqual(sf.with_fallback(self.STRINGS, "pt-BR"), {"n": "Próximo", "c": "Cor!"})
+        self.assertEqual(sf.with_fallback(self.STRINGS, "zh-Hant-HK"), {"n": "下一步"})
+
+    def test_flow_translates_through_the_fallback(self):
+        out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Next\n", self.STRINGS["en-GB"],
+                                            sf.with_fallback(self.STRINGS, "pt-BR"))
+        self.assertIn("'Próximo'", out); self.assertEqual(missing, [])
+
+    def test_base_language_found_or_explained(self):
+        self.assertEqual(sf.resolve_base(self.STRINGS, "en"), "en-GB")  # app ships only British English
+        self.assertEqual(sf.resolve_base({"de": {}, "en": {}}, "de"), "de")
+        with self.assertRaises(sf.Fail) as e: sf.resolve_base({"de": {}}, "en")
+        self.assertIn("base_locale", str(e.exception))
+
+
+class RealAppDefects(unittest.TestCase):
+    def test_string_catalog_keyed_by_english_text(self):  # Keysi: no en table in the build
+        with tempfile.TemporaryDirectory() as d:
+            for lp, rows in {"de": '"Next" = "Weiter"; "Delete key" = "Schlüssel löschen";', "ja": '"Next" = "次へ";'}.items():
+                (Path(d) / f"{lp}.lproj").mkdir(); (Path(d) / f"{lp}.lproj/Localizable.strings").write_text(rows)
+            got = sf.load_strings(Path(d))
+        self.assertEqual(got["en"], {"Next": "Next", "Delete key": "Delete key"})
+        out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Next\n", got["en"], got["de"])
+        self.assertIn("'Weiter'", out); self.assertEqual(missing, [])
+
+    def test_multi_line_android_strings(self):
+        dump = ('Package name=x id=7f\n  type string id=10 entryCount=1\n    resource 0x7f120272 string/share\n'
+                '      () "%1$s\n      Next renewal: %2$s"\n      (de) "%1$s\n      Nächste Verlängerung: %2$s"\n'
+                '    resource 0x7f120273 string/ok\n      () "OK"\n')
+        with mock.patch.object(sf, "aapt2", return_value="aapt2"), \
+             mock.patch.object(sf, "sh", return_value=subprocess.CompletedProcess([], 0, dump, "")):
+            got = sf.load_strings_apk("x.apk")
+        self.assertEqual(got["de"]["share"], "%1$s\nNächste Verlängerung: %2$s")
+        self.assertEqual(got["en"], {"share": "%1$s\nNext renewal: %2$s", "ok": "OK"})
+
+    def test_yaml_quoted_selectors(self):
+        base, de = {"w": "What's new", "s": 'Say "hi"'}, {"w": "Neuigkeiten", "s": "Sag „hallo“"}
+        out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: 'What''s new'\n- tapOn: \"Say \\\"hi\\\"\"\n", base, de)
+        self.assertEqual(missing, []); self.assertIn("'Neuigkeiten'", out)
+
+    def test_non_language_store_folders_are_ignored(self):
+        with tempfile.TemporaryDirectory() as d:
+            for f in ("de-DE", "ipad_only", "default", "zh-Hans"):
+                (Path(d) / f).mkdir(); (Path(d) / f / "1.png").write_bytes(b"p")
+            self.assertEqual(sorted(sf.find_screenshots(d)), ["de-DE", "zh-Hans"])
 
 
 if __name__ == "__main__":

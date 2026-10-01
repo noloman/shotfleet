@@ -133,6 +133,12 @@ def aapt2():
 
 # ---------- strings ----------
 
+def plist_value(plist, key):
+    """A top-level Info.plist value, or "" (PlistBuddy prints its errors on stdout)."""
+    if not Path(plist).is_file(): return ""
+    r = sh(["/usr/libexec/PlistBuddy", "-c", f"Print {key}", str(plist)])
+    return r.stdout.strip() if r.returncode == 0 else ""
+
 def load_strings(res_dir):
     """{lproj: {key: value}} from every *.strings table in the app: its own *.lproj folders, plus those inside
     frameworks, Swift package bundles and an embedded Watch app (keys there are prefixed with their bundle path),
@@ -149,7 +155,17 @@ def load_strings(res_dir):
                 out.setdefault(canon_lproj(lproj.stem), {}).update(table)
     for f in sorted(res_dir.rglob("*.cvr")):
         add_cvr(out, f.relative_to(res_dir).as_posix(), f.read_text(errors="replace"), "en")
-    return {lp: t for lp, t in out.items() if t}
+    out = {lp: t for lp, t in out.items() if t}
+    # String Catalogs keyed by their English text ("Next" = "Weiter") ship no English table for those keys:
+    # the key is the development-language string
+    dev = plist_value(res_dir / "Info.plist", "CFBundleDevelopmentRegion") or "en"
+    dev = canon_lproj(dev) if dev in out or dev[:1].isupper() else dev
+    keys = {k for lp, t in out.items() if lp != dev for k in t}
+    if keys:
+        base = out.setdefault(dev, {})
+        for k in keys - base.keys():
+            base[k] = k.split(":", 1)[1] if "/" in k.split(":", 1)[0] and ":" in k else k
+    return out
 
 def canon_lproj(name):
     """Old lproj names (English.lproj) and underscores (en_GB.lproj) -> the code iOS uses for AppleLanguages."""
@@ -182,11 +198,17 @@ def load_strings_apk(apk, base="en"):
     """{locale: {name: value}} from the string resources compiled into an APK (default config -> base)."""
     r = sh([aapt2(), "dump", "resources", str(apk)])
     if r.returncode != 0: raise RuntimeError(f"aapt2 dump failed: {r.stderr.strip()}")
-    out, name = {}, None
+    out, name, pending = {}, None, None
     for line in r.stdout.splitlines():
+        if pending is not None:  # a value with newlines continues over the next lines
+            pending += "\n" + line.strip()
+            if not re.search(r'(?<!\\)"\s*$', line): continue
+            line, pending = pending, None
+        elif name and (m := re.match(r'\s*\(([^)]*)\) "', line)) and not re.search(r'(?<!\\)"\s*$', line[m.end():]):
+            pending = line; continue
         if m := re.match(r"\s*resource 0x[0-9a-f]+ string/(\S+)", line):
             name = m.group(1); continue
-        if name and (m := re.match(r'\s*\(([^)]*)\) "(.*)"\s*$', line)):
+        if name and (m := re.match(r'\s*\(([^)]*)\) "(.*)"\s*$', line, re.S)):
             loc = base if m.group(1) == "" else android_locale(m.group(1))
             if loc:  # skip night/land/v31 and other non-locale variants
                 out.setdefault(loc, {})[name] = m.group(2).replace('\\"', '"').replace("\\'", "'").replace("\\n", "\n")
@@ -228,6 +250,26 @@ SELECTOR_RE = re.compile(r"^(\s*-?\s*(?:%s):\s*)(.+?)\s*$" % "|".join(SELECTOR_K
 
 INLINE_RE = re.compile(r"(\b(?:%s)\s*:\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
 
+def with_fallback(strings, lp):
+    """The strings the app shows in lp, the way iOS and Android resolve them: lp's own, then its parents'
+    (zh-Hant-HK -> zh-Hant -> zh, pt-BR -> pt) for keys lp doesn't translate."""
+    parts = lp.split("-")
+    out = {}
+    for i in range(1, len(parts) + 1):
+        out.update(strings.get("-".join(parts[:i]), {}))
+    return out
+
+def resolve_base(strings, wanted, app=None):
+    """The table the flow's language lives in: `wanted` (default en), else its regional variant (en-GB only),
+    else the app's development language. Fail with the fix if none fits."""
+    if wanted in strings: return wanted
+    regional = sorted(lp for lp in strings if lp.split("-")[0] == wanted)
+    if regional: return regional[0]
+    dev = plist_value(Path(app) / "Info.plist", "CFBundleDevelopmentRegion") if app else ""
+    raise Fail(f"the app has no {wanted} strings" + (f" (it's developed in {dev})" if dev else "") +
+               ". Set base_locale in the config to the language your flow is written in"
+               + (f", e.g. base_locale = \"{dev}\"" if dev in strings else ""))
+
 def translate_flow(flow, base, target):
     """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors, collisions)."""
     by_text = {}
@@ -238,7 +280,7 @@ def translate_flow(flow, base, target):
 
     def tr(raw):
         """Translated YAML value for one selector value, or None to leave it as it is."""
-        text = raw[1:-1] if raw[:1] in "'\"" and raw[-1:] == raw[:1] else raw
+        text = yaml_unquote(raw)
         keys = by_text.get(text)
         if not keys:
             missing.append(text); return None
@@ -272,6 +314,15 @@ def translate_flow(flow, base, target):
         new = tr(raw)
         lines.append(line if new is None else prefix + new + comment)
     return "\n".join(lines) + "\n", sorted(set(missing)), sorted(set(collisions))
+
+def yaml_unquote(raw):
+    """A YAML scalar's value: 'It''s' -> It's, "Say \\"hi\\"" -> Say "hi", plain stays."""
+    if len(raw) >= 2 and raw[0] == raw[-1] == "'":
+        return raw[1:-1].replace("''", "'")
+    if len(raw) >= 2 and raw[0] == raw[-1] == '"':
+        try: return json.loads(raw)
+        except ValueError: return raw[1:-1]
+    return raw
 
 def split_comment(raw):
     """('"Next"', ' # comment') -- a YAML comment starts at ' #' outside quotes."""
@@ -451,9 +502,7 @@ def cmd_run(config_path, only=None, parallel=None):
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = load_strings(path(cfg["strings"]) if "strings" in cfg else Path(cfg["app"]))
     flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
-    base_locale = cfg.get("base_locale", "en")
-    if base_locale not in strings:
-        raise Fail(f"the app has no {base_locale} strings. Set base_locale in the config to the language your flow is written in")
+    base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
     locales = only or cfg.get("locales") or shipped_locales(strings, base_locale)
     out = path(cfg.get("out", "out")).resolve()
@@ -468,7 +517,7 @@ def cmd_run(config_path, only=None, parallel=None):
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
-        text, missing, clash = translate_flow(flow, en, strings[lp])
+        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp))
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
         (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp))
@@ -638,7 +687,7 @@ def android_run(cfg, path, out, only, parallel):
     report = {"locales": {}}
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
-        _, missing, clash = translate_flow(flow, base, strings[lp])
+        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp))
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
@@ -661,7 +710,7 @@ def android_run(cfg, path, out, only, parallel):
                 e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
                 for c in DEMO_MODE: e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
-            text, _, _ = translate_flow(flow, base, [strings[lp] for lp in lps])
+            text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             for j in range(len(lps)):
                 (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}"))
@@ -748,7 +797,7 @@ def norm(text):
 
 def string_tables(strings):
     """{locale: set of normalized strings} for judge_screen."""
-    return {lp: {norm(v) for v in t.values()} for lp, t in strings.items()}
+    return {lp: {norm(v) for v in with_fallback(strings, lp).values()} for lp in strings}
 
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
@@ -801,7 +850,8 @@ def find_screenshots(folder):
             out = {}
             for png in found:
                 label = png.parent.parent.parent.name if png.parent.name == "phoneScreenshots" else png.parent.name
-                out.setdefault(label, []).append(png)
+                if re.fullmatch(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*", label) or label in CANON:
+                    out.setdefault(label, []).append(png)  # not ipad_only/, default/, appleTV/
             return out
     return {}
 
@@ -838,10 +888,11 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
         if app.suffix == ".app" and not (app / "Info.plist").is_file(): raise Fail(f"no app at {app}")
         layout_android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
         layout_ios = (folder / "screenshots").is_dir() or folder.name == "screenshots"
-        if (layout_android and app.suffix == ".app") or (layout_ios and app.suffix == ".apk"):
+        if (layout_android and not layout_ios and app.suffix == ".app") or (layout_ios and not layout_android and app.suffix == ".apk"):
             raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+        if not strings: raise Fail(f"{app.name} contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)")
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings is None and run_json.exists():
         run = json.loads(run_json.read_text())
@@ -965,8 +1016,7 @@ name: "Store screenshots"
 
 def device_build(app):
     """True for an iphoneos build (archives, device runs): it can't be installed on a simulator."""
-    plat = sh(["/usr/libexec/PlistBuddy", "-c", "Print DTPlatformName", str(Path(app) / "Info.plist")]).stdout.strip()
-    return plat == "iphoneos"
+    return plist_value(Path(app) / "Info.plist", "DTPlatformName") == "iphoneos"
 
 WRONG_BUILD = {
     ".ipa": "an .ipa is a device build. Pass the simulator .app instead (Build/Products/Debug-iphonesimulator/<App>.app)",
