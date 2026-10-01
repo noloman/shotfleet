@@ -745,6 +745,15 @@ def app_locale(label, available):
         if canon(a) == canon(label) or canon(a) == canon(label).split("-")[0]: return a
     return None
 
+def read_text(ocr, png, timeout=120):
+    """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever."""
+    for _ in range(2):
+        try:
+            return json.loads(sh([ocr, str(png)], timeout=timeout).stdout or "{}")
+        except subprocess.TimeoutExpired:
+            pass
+    raise RuntimeError(f"text recognition hung twice on {png} (is the Mac overloaded?); run check again")
+
 LAST_REPORT = None  # check.json of the last check, for --json
 
 def cmd_check(folder, strings=None, app=None, report_dir=None):
@@ -773,7 +782,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None):
     ocr = ocr_tool()
     from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:  # each OCR is its own process
-        ocrs = list(ex.map(lambda item: json.loads(sh([ocr, str(item[1])]).stdout or "{}"), pngs))
+        ocrs = list(ex.map(lambda item: read_text(ocr, item[1]), pngs))
     rows, by_hash = [], {}
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
