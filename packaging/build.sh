@@ -10,7 +10,7 @@ VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("sh
 ARCH=$(uname -m)
 rm -rf build dist && mkdir -p build
 swiftc -O ocr.swift -o build/ocr
-[ -d build/venv ] || python3 -m venv build/venv
+build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; python3 -m venv build/venv; }  # its Python may be gone (brew upgrade)
 build/venv/bin/pip install --quiet --upgrade pyinstaller
 set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN

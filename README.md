@@ -20,7 +20,7 @@ shotfleet reads the translations **compiled into your app** and rewrites the scr
 
 ## What it checks
 
-After capture, every screenshot is read with macOS's built-in text recognition and compared against your app's own strings:
+After capture, every screenshot's text is compared against your app's own strings. On iOS, shotfleet reads the text straight from the app while each screenshot is on screen (exact, in every script); otherwise, and for screenshots made by other tools, it uses macOS's built-in text recognition:
 
 - **Wrong language:** the German folder actually shows English or Japanese strings.
 - **Copies:** the same image in two languages.

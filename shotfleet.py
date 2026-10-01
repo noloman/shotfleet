@@ -16,7 +16,11 @@ if sys.version_info < (3, 11):
     print(f"shotfleet needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable}).\n"
           "Install one with: brew install python", file=sys.stderr)
     sys.exit(2)
-import functools, hashlib, json, os, re, shutil, subprocess, time, tomllib
+import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
+import subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+# everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
+import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -210,7 +214,6 @@ def add_cvr(out, path, text, base):
     m = CVR_DIR.search(path)
     loc = m and (base if m.group(1) is None else android_locale(m.group(1)))
     if not loc: return
-    import base64
     for line in text.splitlines():
         kind, key, value = (line.split("|", 2) + ["", ""])[:3]
         if kind == "string":
@@ -278,7 +281,6 @@ def flatten(d, prefix=""):
 
 def read_translation_file(f, base):
     """{locale: {key: text}} from one source file, by format."""
-    import xml.etree.ElementTree as ET
     f, ext = Path(f), Path(f).suffix.lower()
     lp = locale_from_path(f)
     lp = base if lp in (None, "base") else lp
@@ -359,7 +361,6 @@ def read_translation_file(f, base):
                 out[k] = v.encode().decode("unicode_escape") if "\\u" in v else v
         return {lp: out}
     if ext == ".csv":  # Unity Localization / spreadsheet exports: Key,en,de,...
-        import csv
         rows = list(csv.reader(f.read_text(errors="replace").splitlines()))
         if not rows: return {}
         head, out = rows[0], {}
@@ -382,7 +383,6 @@ def config_strings(cfg, path):
 
 def load_strings_files(patterns, base="en"):
     """{locale: {key: text}} from translation source files matched by glob patterns (relative to cwd or absolute)."""
-    import glob
     files = sorted({f for p in ([patterns] if isinstance(patterns, str) else patterns)
                     for f in glob.glob(os.path.expanduser(p), recursive=True) if Path(f).is_file()})
     if not files: raise Fail(f"no translation files match {patterns}")
@@ -424,7 +424,6 @@ def load_strings_apk(apk, base="en"):
                 out.setdefault(loc, {})[name] = unescape_android(m.group(2))
         elif not line.startswith("      "):
             name = None
-    import zipfile
     if not zipfile.is_zipfile(apk): return out
     with zipfile.ZipFile(apk) as z:  # Compose Multiplatform keeps its strings in assets, not resources.arsc
         for n in z.namelist():
@@ -635,7 +634,23 @@ def localize_flow(flow, lproj, shots_dir):
         else:
             started = started or bool(re.match(r"^\s*-", line))
             out.append(line); redirect_screenshot(out, shots_dir)
+            nxt = lines[i] if i < len(lines) else ""
+            if screenshot_ends(out, nxt): out += pause_after_screenshot(out)
     return header + "\n---\n" + "\n".join(launch(clear=True, opts=first or ()) + out) + "\n"
+
+def screenshot_ends(out, nxt):
+    """True when `out` just finished a takeScreenshot step (scalar form, or the map form's path line)."""
+    last = out[-1]
+    scalar = re.match(r"^\s*- takeScreenshot:\s*\S", last)
+    map_path = len(out) > 1 and re.match(r"^\s*path:", last) and re.match(r"^\s*- takeScreenshot:\s*$", out[-2])
+    return bool(scalar or map_path) and not re.match(r"^\s+\w+:", nxt or "")
+
+def pause_after_screenshot(out):
+    """A 1.5 s pause while shotfleet reads the screen's text from the app (exact, any script; see capture_texts)."""
+    step = next(l for l in reversed(out) if re.match(r"^\s*- takeScreenshot", l))
+    pad = step[:len(step) - len(step.lstrip())]
+    return [f"{pad}- extendedWaitUntil:", f'{pad}    visible: "__shotfleet_reading_screen__"',
+            f"{pad}    timeout: 1500", f"{pad}    optional: true"]
 
 # ---------- simulators ----------
 
@@ -684,11 +699,45 @@ def descendants(root):
         p = todo.pop(); out.add(p); todo += kids.get(p, [])
     return out
 
+def ios_screen_texts(port, bundle_id):
+    """Every label and value on screen, from the Maestro iOS driver's accessibility tree (exact Unicode)."""
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/viewHierarchy", method="POST",
+                                 data=json.dumps({"appIds": [bundle_id], "excludeKeyboardElements": False}).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=5) as r: tree = json.loads(r.read())
+    texts = []
+    def walk(e):
+        for k in ("label", "title", "value", "placeholderValue"):
+            v = e.get(k)
+            if isinstance(v, str) and v.strip() and v.strip() not in texts: texts.append(v.strip())
+        for c in e.get("children") or []: walk(c)
+    walk(tree.get("axElement", tree))
+    return texts
+
+def capture_texts(stop, debug_dir, raw_dir, bundle_id):
+    """While Maestro runs: when a screenshot appears in raw/<locale>/, read that screen's text from the driver of the
+    simulator running that locale (Maestro's log says which device and port run which flow) and save it next to it
+    as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR."""
+    port_of, done = {}, set()
+    pat = re.compile(r"Selected device \S+ using port (\d+) with execution plan ExecutionPlan\(flowsToRun=\[([^\]]*)\]")
+    while not stop.is_set():
+        for log in Path(debug_dir).rglob("maestro.log"):
+            for port, flows in pat.findall(log.read_text(errors="replace")):
+                for f in flows.split(","): port_of[Path(f.strip()).stem] = port
+        for png in Path(raw_dir).glob("*/*.png"):
+            if png in done or png.parent.name not in port_of: continue
+            done.add(png)
+            try:
+                texts = ios_screen_texts(port_of[png.parent.name], bundle_id)
+                png.with_suffix(".texts.json").write_text(json.dumps(texts, ensure_ascii=False))
+            except (OSError, ValueError):
+                pass  # no tree: check falls back to OCR for this screenshot
+        stop.wait(0.2)
+
 def run_guarded(cmd, timeout, env=None):
     """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
     Maestro dumps simulator diagnostics after every failed flow; several at once wedge CoreSimulator
     (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed."""
-    import threading
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
     done = threading.Event()
     def watch():
@@ -734,7 +783,6 @@ def kill_stale_drivers():
             sh(["kill", pid])
 
 def junit_results(path):
-    import xml.etree.ElementTree as ET
     if not path.exists(): return {}
     res = {}
     for tc in ET.parse(path).iter("testcase"):
@@ -798,6 +846,10 @@ def cmd_run(config_path, only=None, parallel=None):
         k = min(n, len(lps))
         junit = out / f"junit{attempt}.xml"; junit.unlink(missing_ok=True)
         env = {**os.environ, "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
+        stop = threading.Event()
+        reader = threading.Thread(target=capture_texts, daemon=True,
+                                  args=(stop, out / ".work" / "debug" / f"attempt{attempt}", out / "raw", cfg["bundle_id"]))
+        reader.start()
         try:
             r = run_guarded(["maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
@@ -808,6 +860,7 @@ def cmd_run(config_path, only=None, parallel=None):
             (out / f"maestro{attempt}.log").write_text(e.output or "")
             print(f"maestro timed out (log: {out / f'maestro{attempt}.log'})")
         finally:
+            stop.set(); reader.join(timeout=10)
             kill_stale_drivers()
         res = junit_results(junit)
         out_ = {}
@@ -1051,7 +1104,6 @@ def norm(text):
     """Text as OCR and string tables can both agree on: NFKC (NBSP, full-width), no bidi/zero-width marks,
     native digits (Arabic-Indic, Persian, Devanagari...) as ASCII, no accents (OCR drops Hungarian ő), casefolded
     (Android's all-caps buttons), single spaces."""
-    import unicodedata
     t = unicodedata.normalize("NFKD", text.translate(BIDI))
     t = "".join(str(unicodedata.decimal(c)) if c.isdecimal() else c for c in t if not unicodedata.combining(c))
     return " ".join(unicodedata.normalize("NFKC", t).casefold().split())
@@ -1206,6 +1258,14 @@ def app_locale(label, available):
         if canon(a) == canon(label) or canon(a) == canon(label).split("-")[0]: return a
     return None
 
+def screen_text(png):
+    """The screen's text as the app reported it during the run (exact, any script), in OCR's result shape; or None."""
+    f = Path(png).with_suffix(".texts.json")
+    if not f.exists(): return None
+    texts = [" ".join(t.split()) for t in json.loads(f.read_text())]  # one element per line, as tables are normalized
+    text = "\n".join(texts)
+    return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "app", "lines": []}
+
 def read_text(ocr, png, timeout=120):
     """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever."""
     for _ in range(2):
@@ -1230,7 +1290,6 @@ TESSERACT = {"el": "ell", "he": "heb", "iw": "heb", "hy": "hye", "ka": "kat", "b
 def external_ocr(command, png, lp):
     """Run the user's OCR command for a language macOS can't read; {image}, {lang} and {tesseract} are filled in.
     e.g. --ocr-command 'tesseract {image} stdout -l {tesseract}'"""
-    import shlex
     lang = canon(lp).split("-")[0]
     args = [a.format(image=str(png), lang=lang, tesseract=TESSERACT.get(lang, lang)) for a in shlex.split(command)]
     try:
@@ -1289,9 +1348,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr = ocr_tool()
-    from concurrent.futures import ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:  # each OCR is its own process
-        ocrs = list(ex.map(lambda item: read_text(ocr, item[1]), pngs))
+        ocrs = list(ex.map(lambda item: screen_text(item[1]) or read_text(ocr, item[1]), pngs))
         ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
         if ocr_command:  # scripts macOS can't read go to the user's OCR (e.g. Tesseract) instead
             def unreadable(label):
@@ -1339,7 +1397,6 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
 
 def write_gallery(out, rows, problems):
     """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red."""
-    import html
     flagged = {p.split(":")[0] for p in problems}
     for p in problems:  # "identical image in N languages: a/x.png, b/x.png"
         if p.startswith("identical image"): flagged.update(f.strip() for f in p.split(":", 1)[1].split(","))
@@ -1369,7 +1426,6 @@ img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee
 
 def latest_release():
     """Newest released version, or None (offline, or no releases yet)."""
-    import urllib.request
     try:
         with urllib.request.urlopen("https://shotfleet.manulorenzop.workers.dev/download/VERSION", timeout=5) as r:
             return r.read().decode().strip() or None
@@ -1643,7 +1699,6 @@ def main(argv=None):
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
     if getattr(a, "json", False):  # CI: stdout carries only the JSON report
-        import contextlib
         with contextlib.redirect_stdout(sys.stderr): code = main_cmd(a)
         print(json.dumps({"exit": code, **(json.loads(LAST_REPORT.read_text()) if LAST_REPORT else {})}, ensure_ascii=False))
         return code
@@ -1668,7 +1723,6 @@ MCP_TOOLS = [
 
 def mcp_call(name, args):
     """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
-    import contextlib, io
     log = io.StringIO()
     try:
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
@@ -1723,7 +1777,6 @@ def is_gumroad_key(key):
 
 def gumroad_verify(key, count_use):
     """Gumroad's licence check -> (ok, uses, reason). Every check counts a use unless count_use is False."""
-    import urllib.parse, urllib.request, urllib.error
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
     try:
@@ -1741,7 +1794,6 @@ def gumroad_verify(key, count_use):
 
 def licence_api(action, **fields):
     """POST to Lemon Squeezy's licence API -> JSON. Network problems raise OSError."""
-    import urllib.parse, urllib.request, urllib.error
     req = urllib.request.Request(f"{LICENCE_API}/{action}", data=urllib.parse.urlencode(fields).encode(),
                                  headers={"Accept": "application/json"})
     try:
@@ -1752,7 +1804,6 @@ def licence_api(action, **fields):
         except ValueError: raise OSError(f"licence server answered {e.code}")
 
 def cmd_activate(key):
-    import socket
     if is_gumroad_key(key):
         ok, uses, why = gumroad_verify(key, count_use=True)
         if not ok: raise Fail(f"that key didn't activate: {why}. Keys come with your purchase: {BUY_URL}")
@@ -1815,7 +1866,6 @@ def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
 
 def main_cmd(a):
-    import signal
     signal.signal(signal.SIGTERM, on_sigterm)
     try:
         return main_dispatch(a)

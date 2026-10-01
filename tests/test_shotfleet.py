@@ -955,5 +955,25 @@ class GumroadLicence(unittest.TestCase):
         self.assertEqual(self.uses[self.GOOD], 1)
 
 
+class ScreenText(unittest.TestCase):
+    def test_flows_pause_after_each_screenshot(self):
+        flow = "appId: x\n---\n- takeScreenshot: a\n- tapOn: Next\n- takeScreenshot:\n    path: b\n- tapOn: Done\n"
+        out = sf.localize_flow(flow, "de", Path("/s"))
+        self.assertEqual(out.count("__shotfleet_reading_screen__"), 2)
+        self.assertLess(out.index("/s/a'"), out.index("__shotfleet_reading_screen__"))
+        self.assertLess(out.index("path: '/s/b'"), out.rindex("__shotfleet_reading_screen__"))
+        self.assertLess(out.rindex("__shotfleet_reading_screen__"), out.index("- tapOn: Done"))
+
+    def test_check_prefers_the_apps_own_text(self):
+        with tempfile.TemporaryDirectory() as d:
+            png = Path(d) / "el" / "1.png"; png.parent.mkdir(); png.write_bytes(png_c(1320, 2868))
+            png.with_suffix(".texts.json").write_text(json.dumps(["Επόμενο", "Ρυθμίσεις\nσυσκευής"]))
+            r = sf.screen_text(png)
+        self.assertEqual(r["text"], "Επόμενο\nΡυθμίσεις συσκευής")  # one element per line
+        t = sf.string_tables({"el": {"a": "Επόμενο", "b": "Ρυθμίσεις\nσυσκευής"}, "en": {"a": "Next", "b": "Device settings"}})
+        self.assertEqual(sf.judge_screen("el", r, t), ("el", None))  # Greek verified: no OCR involved
+        self.assertIsNone(sf.screen_text(Path(d) / "missing.png"))
+
+
 if __name__ == "__main__":
     unittest.main()
