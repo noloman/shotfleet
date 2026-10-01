@@ -738,5 +738,48 @@ class SourceFiles(unittest.TestCase):
         self.assertEqual(sf.unescape_android(r"\ud83d\udcf1 verf\u00fcgbar \"x\" it\'s"), '📱 verfügbar "x" it\'s')
 
 
+def png_c(w, h, color_type=2):  # PNG header with a color type: 2 = RGB, 6 = RGBA
+    return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big") + bytes([8, color_type]) + b"\0" * 8 + b"IDAT"
+
+
+class StoreRules(unittest.TestCase):
+    def images(self, spec):
+        d = Path(tempfile.mkdtemp()); out = {}
+        for label, files in spec.items():
+            (d / label).mkdir()
+            for name, data in files.items():
+                (d / label / name).write_bytes(data); out.setdefault(label, []).append(d / label / name)
+        return out
+
+    def test_app_store_sizes_alpha_counts_and_required_class(self):
+        imgs = self.images({"de-DE": {f"{i}.png": png_c(1320, 2868) for i in range(11)},
+                            "ja": {"a.png": png_c(1179, 2556), "b.png": png_c(1320, 2868, 6), "c.png": png_c(1000, 2000)},
+                            "fr-FR": {"w.png": png_c(416, 496), "l.png": png_c(2868, 1320)}})
+        problems, _ = sf.store_rules(imgs, android=False)
+        text = "\n".join(problems)
+        self.assertIn("de-DE: 11 iPhone 6.9\" screenshots", text)
+        self.assertIn("ja/b.png: has transparency", text)
+        self.assertIn("ja/c.png: 1000x2000 isn't an App Store screenshot size", text)
+        self.assertNotIn("fr-FR", text)  # watch size and landscape 6.9" are fine
+        ja_only_63 = self.images({"ja": {"a.png": png_c(1179, 2556)}})
+        self.assertIn('need a 6.9" or 6.5" set', sf.store_rules(ja_only_63, android=False)[0][0])
+        self.assertIn('13" iPad', sf.store_rules(self.images({"de": {"a.png": png_c(1320, 2868)}}), android=False, ipad=True)[0][0])
+
+    def test_google_play_limits_and_notes(self):
+        imgs = self.images({"de-DE": {f"{i}.png": png_c(1080, 2400) for i in range(9)},
+                            "ja-JP": {f"{i}.png": png_c(1080, 1920) for i in range(4)},
+                            "ko-KR": {"a.png": png_c(200, 400), "b.jpg": b"\xff\xd8\xff\xc0\x00\x11\x08\x07\x80\x04\x38" + b"\0" * 12}})
+        problems, notes = sf.store_rules(imgs, android=True)
+        self.assertIn("de-DE: 9 phone screenshots; Google Play takes at most 8", problems)
+        self.assertTrue(any("ko-KR/a.png: 200x400 is outside" in p for p in problems))
+        self.assertEqual(len([n for n in notes if "longer than 2:1" in n]), 1)  # grouped, not per file
+        self.assertTrue(any("de-DE, ko-KR" in n and "recommendations" in n for n in notes))  # ja-JP qualifies
+
+    def test_image_info_reads_jpeg_size(self):
+        d = Path(tempfile.mkdtemp()) / "a.jpg"
+        d.write_bytes(b"\xff\xd8\xff\xe0\x00\x04ab\xff\xc0\x00\x11\x08\x07\x80\x04\x38" + b"\0" * 12)
+        self.assertEqual(sf.image_info(d), ((1080, 1920), False))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -11,6 +11,8 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 - 1.1 tolerant matching; 1.2 plurals (.stringsdict, <plurals>, Compose) and format strings (matching + translating
   'Round 2 of 12' into every plural form); 1.4 base language and region fallback; real-app defects (English-keyed
   String Catalogs, multi-line Android strings, YAML quoting, non-language folders).
+- 1.3 translations from source files (Flutter ARB, i18next, .xcstrings, XLIFF, .resx, .po, .properties, CSV).
+- 2.2 store-rule linter (sizes per Apple display class, Play limits, alpha, counts, recommendation eligibility).
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |

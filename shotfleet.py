@@ -1200,6 +1200,13 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if not images:
         raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
                    "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png")
+    android = (any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
+               or (app is not None and Path(app).suffix == ".apk")
+               or (run_json.exists() and json.loads(run_json.read_text()).get("platform") == "android"))
+    ios_app = app if app is not None and Path(app).suffix == ".app" else \
+        (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
+    ipad = bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
+    store_problems, notes = store_rules(images, android, ipad)
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
@@ -1231,10 +1238,15 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if have != names:
             problems.append(f"{label}: missing {', '.join(sorted(names - have))}")
     global LAST_REPORT; LAST_REPORT = report / "check.json"
-    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems}, indent=1, ensure_ascii=False))
+    problems += store_problems
+    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
     for p in problems: print(f"  - {p}")
+    if notes:
+        print(f"notes ({len(notes)}, not blocking):")
+        for n in notes[:12]: print(f"  - {n}")
+        if len(notes) > 12: print(f"  ... {len(notes) - 12} more in {report / 'check.json'}")
     if report != folder: print(f"report: {report / 'index.html'}")
     return 1 if problems else 0
 
@@ -1365,6 +1377,84 @@ def latest_ios_runtime():
     return ios[-1]["identifier"] if ios else "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
 
 # Android language tag -> Google Play listing locale (fastlane supply folder names)
+
+# App Store screenshot sizes per display class (Apple's Screenshot specifications, 2026-10-01; research/store-specs.md).
+# iPhone and iPad sizes are portrait; landscape (swapped) is accepted too.
+APPLE_SIZES = {
+    'iPhone 6.9"': [(1260, 2736), (1290, 2796), (1320, 2868)], 'iPhone 6.5"': [(1284, 2778), (1242, 2688)],
+    'iPhone 6.3"': [(1179, 2556), (1206, 2622)], 'iPhone 6.1"': [(1170, 2532), (1125, 2436), (1080, 2340)],
+    'iPhone 5.5"': [(1242, 2208)], 'iPhone 4.7"': [(750, 1334)], 'iPhone 4"': [(640, 1096), (640, 1136)],
+    'iPhone 3.5"': [(640, 920), (640, 960)],
+    'iPad 13"': [(2064, 2752), (2048, 2732)], 'iPad 11"': [(1488, 2266), (1668, 2420), (1668, 2388), (1640, 2360)],
+    'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024)],
+    "Apple Watch": [(422, 514), (410, 502), (416, 496), (396, 484), (368, 448), (312, 390)],
+    "Mac": [(1280, 800), (1440, 900), (2560, 1600), (2880, 1800)], "Apple TV": [(1920, 1080), (3840, 2160)],
+}
+
+def apple_class(size):
+    for cls, sizes in APPLE_SIZES.items():
+        rotate = cls.startswith(("iPhone", "iPad"))
+        if size in sizes or rotate and size and (size[1], size[0]) in sizes: return cls
+    return None
+
+def image_info(path):
+    """((width, height), has_alpha) for a PNG or JPEG; (None, False) if unreadable."""
+    data = Path(path).read_bytes()
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        size = (int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big"))
+        alpha = data[25] in (4, 6) or b"tRNS" in data[:data.find(b"IDAT")]  # color type with alpha, or a tRNS chunk
+        return size, alpha
+    if data[:2] == b"\xff\xd8":  # JPEG: size from the first SOFn marker
+        i = 2
+        while i + 9 < len(data):
+            if data[i] != 0xFF: i += 1; continue
+            marker, length = data[i + 1], int.from_bytes(data[i + 2:i + 4], "big")
+            if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+                return (int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")), False
+            i += 2 + length
+    return None, False
+
+def store_rules(images, android, ipad=False):
+    """(problems, notes) against the stores' published screenshot rules (research/store-specs.md).
+    Problems are what the store rejects; notes are worth knowing but don't block an upload."""
+    problems, notes, long_ones, not_eligible = [], [], {}, []
+    for label, pngs in sorted(images.items()):
+        info = {p: image_info(p) for p in pngs}
+        for p, (size, alpha) in info.items():
+            name = f"{label}/{p.name}"
+            if size is None: problems.append(f"{name}: not a PNG or JPEG the stores accept"); continue
+            if alpha: problems.append(f"{name}: has transparency (an alpha channel); both stores reject it")
+            if android:
+                if min(size) < 320 or max(size) > 3840:
+                    problems.append(f"{name}: {size[0]}x{size[1]} is outside Google Play's 320-3840 px")
+                elif max(size) > 2 * min(size):
+                    long_ones.setdefault(size, set()).add(label)
+            elif apple_class(size) is None:
+                problems.append(f"{name}: {size[0]}x{size[1]} isn't an App Store screenshot size")
+        if android:
+            phone = [p for p, (size, _) in info.items() if size]
+            if len(phone) > 8: problems.append(f"{label}: {len(phone)} phone screenshots; Google Play takes at most 8")
+            big = [p for p in phone if min(info[p][0]) >= 1080 and max(info[p][0]) * 9 == min(info[p][0]) * 16]
+            if len(big) < 4: not_eligible.append(label)
+        else:
+            classes = {}
+            for p, (size, _) in info.items():
+                if c := apple_class(size): classes.setdefault(c, []).append(p)
+            for c, ps in classes.items():
+                if len(ps) > 10: problems.append(f"{label}: {len(ps)} {c} screenshots; the App Store takes at most 10")
+            iphone = [c for c in classes if c.startswith("iPhone")]
+            if iphone and not {'iPhone 6.9"', 'iPhone 6.5"'} & set(iphone):
+                problems.append(f"{label}: iPhone screenshots need a 6.9\" or 6.5\" set (has {', '.join(sorted(iphone))})")
+            if ipad and not any(c == 'iPad 13"' for c in classes):
+                problems.append(f"{label}: the app runs on iPad, so the App Store requires 13\" iPad screenshots")
+    for (w, h), labels in sorted(long_ones.items()):  # one line per size, not one per file
+        notes.append(f"{w}x{h} screenshots in {len(labels)} listing(s) are longer than 2:1, which Google's rules say "
+                     "isn't allowed (Play has accepted 20:9 phone screenshots in practice)")
+    if not_eligible:
+        notes.append(f"{len(not_eligible)} listing(s) ({', '.join(not_eligible[:6])}{', ...' if len(not_eligible) > 6 else ''}) "
+                     "have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play "
+                     "won't consider them for recommendations")
+    return problems, notes
 
 def png_size(path):
     """(width, height) from a PNG header, or None if it isn't a PNG."""
