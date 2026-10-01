@@ -180,7 +180,7 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
 
 ## Limits
 
-- Needs Python 3.11 or newer. macOS's own `python3` is 3.9; `brew install python` gets a current one (shotfleet says so if you run it with an older one).
+- The installed program brings its own Python. Running from source needs Python 3.11+ (macOS's own `python3` is 3.9; `brew install python`).
 - Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
 - Flutter and React Native support (via source files) is tested with sample files, not yet on a real Flutter/RN app.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
