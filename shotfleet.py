@@ -1015,6 +1015,8 @@ def android_run(cfg, path, out, only, parallel):
 # ---------- check ----------
 
 def ocr_tool():
+    if getattr(sys, "frozen", False):  # released build: the helper ships prebuilt inside it
+        return str(Path(sys._MEIPASS) / "ocr")
     exe = HERE / ".build" / "ocr"
     src = HERE / "ocr.swift"
     if not exe.exists() or exe.stat().st_mtime < src.stat().st_mtime:
@@ -1354,12 +1356,26 @@ img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee
 
 # ---------- doctor / init / export ----------
 
+def latest_release():
+    """Newest released version, or None (offline, or no releases yet)."""
+    import urllib.request
+    try:
+        req = urllib.request.Request("https://api.github.com/repos/noloman/shotfleet-releases/releases/latest",
+                                     headers={"Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=5) as r: return json.loads(r.read()).get("tag_name", "").lstrip("v") or None
+    except (OSError, ValueError):
+        return None
+
 def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
-    maestro = sh(["maestro", "--version"], timeout=60).stdout.strip().splitlines()[-1:] if have("maestro") else []
-    maestro_ok = bool(maestro) and maestro[0].split(".")[0].isdigit() and int(maestro[0].split(".")[0]) >= 2
+    try:  # Maestro is a JVM app: --version can take long on a busy Mac
+        maestro = sh(["maestro", "--version"], timeout=120).stdout.strip().splitlines()[-1:] if have("maestro") else []
+    except subprocess.TimeoutExpired:
+        maestro = ["(version check timed out)"]
+    maestro_ok = bool(maestro) and (maestro[0].startswith("(") or
+                                    maestro[0].split(".")[0].isdigit() and int(maestro[0].split(".")[0]) >= 2)
     checks = [
         (f"maestro {maestro[0] if maestro else ''}".strip(), maestro_ok,
          "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
@@ -1376,6 +1392,8 @@ def cmd_doctor():
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
+    if (latest := latest_release()) and latest != VERSION:
+        print(f"shotfleet {latest} is out (you have {VERSION}): brew upgrade shotfleet")
     return 0 if ok_ios or ok_android else 1
 
 FLOW_TEMPLATE = """appId: {app_id}
@@ -1587,6 +1605,8 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True, metavar="command")
     sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
+    p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
+    sub.add_parser("deactivate", help="free this Mac's activation (to move the licence)")
     p = sub.add_parser("init", help="write a starter config and flow for an app")
     p.add_argument("app", help="simulator .app or .apk"); p.add_argument("dir", nargs="?", default=".", help="where to write them (default: here)")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
@@ -1647,7 +1667,7 @@ def mcp_call(name, args):
                 if not Path(args["folder"]).expanduser().is_dir(): raise Fail(f"no folder at {args['folder']}")
                 code = cmd_check(Path(args["folder"]).expanduser(), app=args.get("app"), strings_files=args.get("strings"),
                                  report_dir=Path(args["folder"]).expanduser() / "shotfleet-check")
-            elif name == "run": code = cmd_run(args["config"], args.get("locales"))
+            elif name == "run": require_licence(); code = cmd_run(args["config"], args.get("locales"))
             else: return f"unknown tool {name}", True
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:
         return f"{e}\n\n{log.getvalue()[-2000:]}", True
@@ -1677,6 +1697,68 @@ def cmd_mcp():
         send({"jsonrpc": "2.0", "id": mid, "result": result})
     return 0
 
+# ---------- licence (released builds only; a source checkout is the developer's own) ----------
+
+LICENCE_API = os.environ.get("SHOTFLEET_LICENCE_API", "https://api.lemonsqueezy.com/v1/licenses")
+LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json"
+LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
+BUY_URL = "https://shotfleet.manulorenzop.workers.dev/#price"
+
+def licence_api(action, **fields):
+    """POST to Lemon Squeezy's licence API -> JSON. Network problems raise OSError."""
+    import urllib.parse, urllib.request, urllib.error
+    req = urllib.request.Request(f"{LICENCE_API}/{action}", data=urllib.parse.urlencode(fields).encode(),
+                                 headers={"Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r: return json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:  # 4xx carries a JSON error body
+        try:
+            with e: return json.loads(e.read() or b"{}")
+        except ValueError: raise OSError(f"licence server answered {e.code}")
+
+def cmd_activate(key):
+    import socket
+    r = licence_api("activate", license_key=key.strip(), instance_name=socket.gethostname())
+    if not r.get("activated"):
+        raise Fail(f"that key didn't activate: {(r.get('error') or 'unknown error').rstrip('.')}. "
+                   f"Keys come with your purchase: {BUY_URL}")
+    LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "instance": r["instance"]["id"], "checked": time.time()}))
+    print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
+    return 0
+
+def cmd_deactivate():
+    if not LICENCE_FILE.exists(): print("no licence on this Mac"); return 0
+    lic = json.loads(LICENCE_FILE.read_text())
+    try: licence_api("deactivate", license_key=lic["key"], instance_id=lic["instance"])
+    except OSError: pass  # offline: forget it locally anyway
+    LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
+    return 0
+
+def require_licence():
+    """`run` and `export` need a licence in released builds; `check`, `doctor` and `init` are free.
+    Checked online at most weekly; works offline for 30 days after the last good check."""
+    if not getattr(sys, "frozen", False): return  # running from source
+    if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
+        try: r = licence_api("validate", license_key=key)
+        except OSError: return  # don't fail a build because the licence server is unreachable
+        if not r.get("valid"): raise Fail(f"SHOTFLEET_KEY isn't a valid licence ({r.get('error') or 'invalid'})")
+        return
+    if not LICENCE_FILE.exists():
+        raise Fail(f"`run` and `export` need a licence: shotfleet activate <key> (buy one at {BUY_URL}). "
+                   "`check` is free.")
+    lic = json.loads(LICENCE_FILE.read_text())
+    age = (time.time() - lic.get("checked", 0)) / 86400
+    if age < LICENCE_RECHECK_DAYS: return
+    try:
+        r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
+    except OSError:
+        if age < LICENCE_OFFLINE_DAYS: return
+        raise Fail("couldn't reach the licence server for 30 days; connect once to keep using `run`")
+    if not r.get("valid"):
+        raise Fail(f"this licence is no longer valid ({r.get('error') or r.get('license_key', {}).get('status')}). {BUY_URL}")
+    LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time()}))
+
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
 
@@ -1693,6 +1775,9 @@ def main_dispatch(a):
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "init": return cmd_init(a.app, a.dir)
+        if a.cmd in ("run", "export"): require_licence()
+        if a.cmd == "activate": return cmd_activate(a.key)
+        if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")

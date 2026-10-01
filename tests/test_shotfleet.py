@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest discover -s tests
 """
-import contextlib, io, json, subprocess, sys, tempfile, unittest
+import contextlib, io, json, os, subprocess, sys, tempfile, time, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -834,6 +834,67 @@ class Mcp(unittest.TestCase):
         self.assertEqual({t["name"] for t in out[2]["result"]["tools"]}, {"check", "doctor", "run"})
         self.assertTrue(out[3]["result"]["isError"]); self.assertIn("no folder", out[3]["result"]["content"][0]["text"])
         self.assertEqual(out[4]["error"]["code"], -32601)
+
+
+class Licence(unittest.TestCase):
+    """Against a fake Lemon Squeezy licence API on localhost."""
+    def setUp(self):
+        import http.server, threading, urllib.parse
+        self.calls, test = [], self
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                body = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
+                test.calls.append((self.path.rsplit("/", 1)[-1], body))
+                good = body.get("license_key") == "GOOD"
+                reply = {"activate": {"activated": good, "instance": {"id": "inst1"}, "error": None if good else "license_key not found"},
+                         "validate": {"valid": good, "error": None if good else "expired"},
+                         "deactivate": {"deactivated": True}}[self.path.rsplit("/", 1)[-1]]
+                self.send_response(200 if good or "deactivate" in self.path else 400); self.end_headers()
+                self.wfile.write(json.dumps(reply).encode())
+            def log_message(self, *a): pass
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.dir = Path(tempfile.mkdtemp())
+        self.patches = [mock.patch.object(sf, "LICENCE_API", f"http://127.0.0.1:{self.server.server_port}/v1/licenses"),
+                        mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
+                        mock.patch.object(sf.sys, "frozen", True, create=True)]
+        for p in self.patches: p.start()
+
+    def tearDown(self):
+        for p in self.patches: p.stop()
+        self.server.shutdown()
+
+    def quiet(self, f, *a):
+        with contextlib.redirect_stdout(io.StringIO()): return f(*a)
+
+    def test_released_build_needs_a_licence_for_run(self):
+        with self.assertRaisesRegex(sf.Fail, "shotfleet activate"): sf.require_licence()
+        with self.assertRaisesRegex(sf.Fail, "didn't activate"): self.quiet(sf.cmd_activate, "BAD")
+        self.quiet(sf.cmd_activate, "GOOD")
+        sf.require_licence()  # fresh: no network call
+        self.assertEqual([c[0] for c in self.calls], ["activate", "activate"])
+
+    def test_weekly_recheck_and_offline_grace(self):
+        self.quiet(sf.cmd_activate, "GOOD")
+        lic = json.loads(sf.LICENCE_FILE.read_text())
+        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 8 * 86400}))
+        sf.require_licence(); self.assertEqual(self.calls[-1][0], "validate")
+        with mock.patch.object(sf, "LICENCE_API", "http://127.0.0.1:9/nope"):  # unreachable
+            sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 10 * 86400}))
+            sf.require_licence()  # within 30 days offline
+            sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 31 * 86400}))
+            with self.assertRaisesRegex(sf.Fail, "30 days"): sf.require_licence()
+
+    def test_revoked_licence_and_ci_key(self):
+        sf.LICENCE_FILE.write_text(json.dumps({"key": "REVOKED", "instance": "x", "checked": 0}))
+        with self.assertRaisesRegex(sf.Fail, "no longer valid"): sf.require_licence()
+        sf.LICENCE_FILE.unlink()
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "GOOD"}): sf.require_licence()
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "BAD"}):
+            with self.assertRaisesRegex(sf.Fail, "SHOTFLEET_KEY"): sf.require_licence()
+
+    def test_source_checkout_never_asks(self):
+        with mock.patch.object(sf.sys, "frozen", False): sf.require_licence()
 
 
 if __name__ == "__main__":
