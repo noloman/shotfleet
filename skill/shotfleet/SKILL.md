@@ -18,7 +18,14 @@ shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json > check.json
 - `--app` is a simulator build (`Debug-iphonesimulator/*.app`) or an APK. Without it, only language detection is used.
 - Exit codes: 0 clean, 1 problems, 2 setup error (stderr says what to fix).
 - Read `problems` in the JSON. Each one is `<locale>/<file>: <what>`. Report them to the user as-is and open `shotfleet-check/index.html` for the visual grid.
-- Never edit or delete files in the fastlane folder; the report goes to `./shotfleet-check`.
+- Pass the fastlane folder or the `screenshots/` folder itself; both work. If `shotfleet` isn't on PATH, use `python3 path/to/shotfleet.py`.
+- With `--json`, stdout is only JSON (`exit`, `screenshots`, `problems`); progress goes to stderr.
+- Problem kinds and what they mean:
+  - `<locale>/<file>: shows <x> strings ... more than <y>` or `text looks like ...`: wrong language; re-capture that locale.
+  - `identical image in N languages: ...`: a copy; usually the same root cause as a wrong-language line, so count issues, not lines.
+  - `<locale>: missing <files>`: that locale lacks screens the others have.
+  - `<locale>: the app has no <locale> translation`: the store listing exists but the app isn't translated into it.
+- Never edit or delete files in the fastlane folder; the report goes to `./shotfleet-check` (`src` paths in the JSON are relative to it).
 
 ## Capturing
 
