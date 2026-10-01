@@ -850,7 +850,7 @@ DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no no
     "am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941",
     "am broadcast -a com.android.systemui.demo -e command battery -e level 100 -e plugged false",
     "am broadcast -a com.android.systemui.demo -e command network -e wifi show -e level 4 -e fully true",
-    "am broadcast -a com.android.systemui.demo -e command network -e mobile show -e datatype none -e level 4",
+    "am broadcast -a com.android.systemui.demo -e command network -e mobile hide",  # "datatype none" still showed 3G
     "am broadcast -a com.android.systemui.demo -e command notifications -e visible false",
 ]
 
