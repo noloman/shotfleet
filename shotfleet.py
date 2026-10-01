@@ -1360,10 +1360,9 @@ def latest_release():
     """Newest released version, or None (offline, or no releases yet)."""
     import urllib.request
     try:
-        req = urllib.request.Request("https://api.github.com/repos/noloman/shotfleet-releases/releases/latest",
-                                     headers={"Accept": "application/vnd.github+json"})
-        with urllib.request.urlopen(req, timeout=5) as r: return json.loads(r.read()).get("tag_name", "").lstrip("v") or None
-    except (OSError, ValueError):
+        with urllib.request.urlopen("https://shotfleet.manulorenzop.workers.dev/download/VERSION", timeout=5) as r:
+            return r.read().decode().strip() or None
+    except (OSError, ValueError, UnicodeDecodeError):
         return None
 
 def cmd_doctor():
@@ -1393,7 +1392,7 @@ def cmd_doctor():
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
     if (latest := latest_release()) and latest != VERSION:
-        print(f"shotfleet {latest} is out (you have {VERSION}): brew upgrade shotfleet")
+        print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh")
     return 0 if ok_ios or ok_android else 1
 
 FLOW_TEMPLATE = """appId: {app_id}

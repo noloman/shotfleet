@@ -1,18 +1,15 @@
 #!/bin/sh
-# Publish a release: build (signed + notarized when DEVELOPER_ID/NOTARY_PROFILE are set), upload the tarball to
-# noloman/shotfleet-releases, and point the Homebrew tap at it. Needs both public repos to exist.
+# Publish a release on the shotfleet site: build (signed + notarized), copy it to site/public/download, deploy.
+# Buyers install with: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh
 set -eu
 cd "$(dirname "$0")/.."
+export DEVELOPER_ID="${DEVELOPER_ID:-Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)}"
+export NOTARY_PROFILE="${NOTARY_PROFILE:-KeysiNotary}"
 packaging/build.sh
 VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("shotfleet.py").read()).group(1))')
-TAR="dist/shotfleet-$VERSION-macos-arm64.tar.gz"
-SHA=$(shasum -a 256 "$TAR" | cut -d' ' -f1)
-gh release create "v$VERSION" "$TAR" --repo noloman/shotfleet-releases --title "shotfleet $VERSION" --notes-file CHANGELOG.md
-TAP=$(mktemp -d)
-gh repo clone noloman/homebrew-shotfleet "$TAP"
-mkdir -p "$TAP/Formula"
-sed -e "s/@VERSION@/$VERSION/g" -e "s/@SHA256@/$SHA/" packaging/shotfleet.rb > "$TAP/Formula/shotfleet.rb"
-git -C "$TAP" add Formula/shotfleet.rb
-git -C "$TAP" commit -m "shotfleet $VERSION"
-git -C "$TAP" push
-echo "released $VERSION: brew install noloman/shotfleet/shotfleet"
+D=site/public/download; mkdir -p "$D"
+cp "dist/shotfleet-$VERSION-macos-arm64.tar.gz" "$D/shotfleet-macos-arm64.tar.gz"
+(cd "$D" && shasum -a 256 shotfleet-macos-arm64.tar.gz > shotfleet-macos-arm64.tar.gz.sha256)
+echo "$VERSION" > "$D/VERSION"
+(cd site && npx --yes wrangler@latest deploy)
+echo "released $VERSION"

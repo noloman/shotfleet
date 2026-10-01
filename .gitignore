@@ -6,3 +6,4 @@ __pycache__/
 exp/
 build/
 dist/
+site/public/download/

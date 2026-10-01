@@ -46,7 +46,8 @@ It also finds real localization bugs. On CrossfitTracker it found an onboarding 
 ## Quickstart (about 10 minutes)
 
 ```bash
-ln -s "$PWD/shotfleet.py" "$(brew --prefix)/bin/shotfleet"   # run in the folder with shotfleet.py
+curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # signed, notarized; Apple silicon
+shotfleet activate <your key>                      # from your purchase email (`check` works without one)
 shotfleet doctor                                   # checks Maestro, Xcode, Android SDK
 shotfleet init path/to/MyApp.app   ios/            # simulator build (Debug-iphonesimulator)
 shotfleet init path/to/app-debug.apk android/      # or an APK

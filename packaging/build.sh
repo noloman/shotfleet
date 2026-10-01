@@ -11,13 +11,13 @@ rm -rf build dist && mkdir -p build
 swiftc -O ocr.swift -o build/ocr
 [ -d build/venv ] || python3 -m venv build/venv
 build/venv/bin/pip install --quiet --upgrade pyinstaller
-SIGN=""
+set -- --onefile --name shotfleet --add-binary "$PWD/build/ocr:." \
+  --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
 if [ -n "${DEVELOPER_ID:-}" ]; then  # PyInstaller signs the bundled pieces too, with hardened-runtime entitlements
   codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" build/ocr
-  SIGN="--codesign-identity $DEVELOPER_ID --osx-entitlements-file packaging/entitlements.plist"
+  set -- "$@" --codesign-identity "$DEVELOPER_ID" --osx-entitlements-file "$PWD/packaging/entitlements.plist"
 fi
-build/venv/bin/pyinstaller --onefile --name shotfleet --add-binary "$PWD/build/ocr:." $SIGN \
-  --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN shotfleet.py
+build/venv/bin/pyinstaller "$@" shotfleet.py
 tar -C dist -czf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz" shotfleet
 if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   (cd dist && ditto -c -k shotfleet "shotfleet-$VERSION-macos-$ARCH.zip")

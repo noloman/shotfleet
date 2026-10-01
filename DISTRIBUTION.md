@@ -50,13 +50,13 @@ paying the easy path, not to win against crackers.
 Only needed once the founder sale opens (STRATEGY.md week 4). Until then the waitlist is enough.
 
 ## Status (2026-10-01)
-- Done and tested: `packaging/build.sh` (one 9 MB executable with the OCR helper; no Python or Swift needed),
-  `activate`/`deactivate`, licence gate on `run`/`export` (released builds only; tested against a fake Lemon Squeezy API,
-  and the real API answers unknown keys correctly), `doctor` update notice, Homebrew formula (installed, tested and
-  removed through a local tap), `packaging/release.sh`.
-- Apple silicon only for now: Intel needs a universal2 Python (python.org installer) for the build.
-- Signing/notarization steps are in build.sh but untested until Manu's Developer ID exists.
-- Startup takes ~1 s+ (one-file build unpacks itself each run; 6 s measured on an overloaded Mac). Re-measure when idle;
-  switch to a folder build if it's slow.
-- Waiting on Manu: Lemon Squeezy store/product with licence keys, Developer ID + notary profile,
-  `noloman/homebrew-shotfleet` and `noloman/shotfleet-releases` repos. Then `packaging/release.sh`.
+- Decision: no public repos. The signed, notarized program is served from the shotfleet site; buyers install with
+  `curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh` (checksum-verified; installs on the PATH).
+  `doctor` announces newer versions from `/download/VERSION`. The Homebrew formula (packaging/shotfleet.rb) is kept
+  for later if buyers ask for `brew install`; it was tested through a local tap.
+- Signing and notarization: done with the existing Developer ID (2357A78TMR) and `KeysiNotary` profile. Apple accepted
+  the 0.1.0 build; a quarantined copy runs without a Gatekeeper prompt.
+- Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake licence API,
+  and the real Lemon Squeezy API rejects unknown keys correctly.
+- Apple silicon only for now (Intel needs a universal2 Python for the build).
+- Left for Manu: the Lemon Squeezy product (LAUNCH.md, ~20 min). Then `packaging/go-live.sh <checkout link>`.

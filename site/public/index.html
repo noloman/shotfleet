@@ -68,6 +68,7 @@
     <p class="amount">$79<span>once, per developer</span></p>
     <p class="founder"><b>$49</b> for the first 100 people on the list.</p>
     <p class="muted">Unlimited apps, a year of updates. Needs a Mac and Maestro. Reads native iOS and Android strings, Compose Multiplatform, and Flutter and React Native translation files.</p>
+    <!-- WAITLIST -->
     <form id="signup" novalidate>
       <div class="field">
         <label for="email">Email</label>
@@ -86,13 +87,19 @@
       <p class="form-error" role="alert" hidden></p>
     </form>
     <p id="signup-done" class="done" role="status" tabindex="-1" hidden><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
+    <!-- /WAITLIST -->
+    <!-- SALE
+    <p><a class="btn" href="@CHECKOUT@">Buy shotfleet</a></p>
+    <p class="small">Founder price applies automatically for the first 100. Then install:<br><code>curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
+    <p class="small">14-day refunds, no questions. <a href="/terms">Licence and refunds</a>.</p>
+    SALE -->
   </section>
 </main>
 
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <a href="/privacy">Privacy</a>
+    <span><a href="/privacy">Privacy</a> · <a href="/terms">Licence</a></span>
   </div>
 </footer>
 

@@ -6,3 +6,10 @@
 
 /img/*
   Cache-Control: public, max-age=604800
+
+/download/*
+  Cache-Control: no-cache
+
+/install.sh
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: no-cache
