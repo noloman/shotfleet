@@ -807,6 +807,15 @@ def cmd_run(config_path, only=None, parallel=None):
     platform, cfg, path = load_config(config_path)
     if platform == "android":
         out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
+        if devices := cfg.get("devices"):  # phone and tablet sets from one flow: out/<device>/ each
+            unknown = [d for d in devices if d not in ANDROID_DEVICES]
+            if unknown: raise Fail(f"unknown Android device {', '.join(unknown)}; use {', '.join(ANDROID_DEVICES)}")
+            codes = []
+            for d in devices:
+                print(f"\n== {d}")
+                (out / d).mkdir(exist_ok=True)
+                codes.append(android_run({**cfg, "device": d}, path, out / d, only, parallel))
+            return max(codes)
         return android_run(cfg, path, out, only, parallel)
     if devices := cfg.get("device_types"):  # iPhone and iPad sets from one flow: out/<device>/ each
         codes = []
@@ -969,21 +978,31 @@ def wait_booted(emus, timeout=600):
         if time.time() - t0 > timeout: raise RuntimeError("emulators did not boot in time")
         time.sleep(3)
 
+# Exactly 9:16 at 1080px+ so Google Play can recommend the listing (research/store-specs.md)
+ANDROID_DEVICES = {
+    "phone": {"avd": "shotfleet_android", "profile": "pixel_5", "size": (1080, 1920, 420), "folder": "phoneScreenshots"},
+    "tablet": {"avd": "shotfleet_android_tablet", "profile": "pixel_tablet", "size": (1440, 2560, 320),
+               "folder": "tenInchScreenshots"},
+}
+
 def android_pool(n, cfg, pool):
     """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
     The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
-    avd = cfg.get("avd", "shotfleet_android")
+    device = cfg.get("device", "phone")
+    kind = ANDROID_DEVICES[device]
+    avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
     avd_dir = Path.home() / ".android/avd" / f"{avd}.avd"
     if not avd_dir.exists():
         image = cfg.get("system_image", "system-images;android-36;google_apis;arm64-v8a")
-        r = sh([str(SDK / "cmdline-tools/latest/bin/avdmanager"), "create", "avd", "-n", avd, "-k", image, "-d", "pixel_5"], input="no\n")
+        r = sh([str(SDK / "cmdline-tools/latest/bin/avdmanager"), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n")
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
             raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
                        f"Install that system image in Android Studio's SDK Manager, or set system_image in the config")
         ini = avd_dir / "config.ini"
-        ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", "hw.lcd.width=1080",
-                       re.sub(r"(?m)^hw\.lcd\.height=.*", "hw.lcd.height=1920",
-                       re.sub(r"(?m)^hw\.lcd\.density=.*", "hw.lcd.density=420", ini.read_text()))))
+        w, h, dpi = kind["size"]
+        ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
+                       re.sub(r"(?m)^hw\.lcd\.height=.*", f"hw.lcd.height={h}",
+                       re.sub(r"(?m)^hw\.lcd\.density=.*", f"hw.lcd.density={dpi}", ini.read_text()))))
     if not (avd_dir / "snapshots" / SNAPSHOT).exists():  # one-time: boot writable, save a snapshot copies start from
         e = Emu(5700); p = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
         wait_booted([e]); time.sleep(20)
@@ -1046,7 +1065,9 @@ def android_run(cfg, path, out, only, parallel):
     if not todo:
         raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings))}")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo)))
-    print(f"booting {n} emulators ({cfg.get('avd', 'shotfleet_android')}, 1080x1920)", flush=True)
+    kind = ANDROID_DEVICES[cfg.get("device", "phone")]
+    name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
+    print(f"booting {n} emulators ({name}, {kind['size'][0]}x{kind['size'][1]})", flush=True)
     pool = []
     try:
         android_pool(n, cfg, pool)
@@ -1070,7 +1091,9 @@ def android_run(cfg, path, out, only, parallel):
             try:
                 r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
-                                timeout=cfg.get("timeout_s", 600) + 300, env={**os.environ, "MAESTRO_CLI_NO_ANALYTICS": "1"})
+                                timeout=cfg.get("timeout_s", 600) + 300,
+                                env={**os.environ, "MAESTRO_CLI_NO_ANALYTICS": "1",
+                                     "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
             except subprocess.TimeoutExpired:
                 print(f"maestro timed out in {tag}")
@@ -1106,9 +1129,13 @@ def android_run(cfg, path, out, only, parallel):
         r_ = final[lp]
         print_result(lp, r_, expected)
         report["locales"][lp].update(r_)
-    report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk)
+    report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk,
+                  device=cfg.get("device", "phone"))
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators")
+    if not any((out / "raw").glob("*/*.png")):
+        print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
+        return 1
     return max(cmd_check(out, strings), 0 if all(r_["ok"] for r_ in final.values()) else 1)
 
 # ---------- check ----------
@@ -1699,7 +1726,7 @@ def cmd_export(out, fastlane, name_prefix=""):
     done = []
     for folder, lp in sorted(targets.items()):
         if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
-        dst = root / folder / "images/phoneScreenshots" if android else root / folder
+        dst = root / folder / "images" / ANDROID_DEVICES[run.get("device", "phone")]["folder"] if android else root / folder
         dst.mkdir(parents=True, exist_ok=True)
         new = sorted((out / "raw" / lp).glob("*.png"))
         sizes = {png_size(p) for p in new}
