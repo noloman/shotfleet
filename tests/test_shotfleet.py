@@ -1103,6 +1103,36 @@ class SimpleConfig(unittest.TestCase):
         self.assertFalse(d.exists())
 
 
+class JavaForMaestro(unittest.TestCase):
+    def test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro(self):
+        sf.java_env.cache_clear()
+        home = "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+        majors = {home + "/bin/java": 21}
+        with mock.patch.dict(os.environ, {"PATH": "/usr/bin", "JAVA_HOME": ""}), \
+             mock.patch.object(sf.shutil, "which", return_value=None), \
+             mock.patch.object(sf, "java_major", side_effect=lambda j: majors.get(str(j), 0)), \
+             mock.patch.object(sf.Path, "exists", return_value=False), mock.patch.object(sf.glob, "glob", return_value=[]):
+            self.assertEqual(sf.find_java(), (True, home))
+            sf.java_env.cache_clear()
+            self.assertEqual(sf.java_env()["JAVA_HOME"], home); self.assertTrue(sf.java_env()["PATH"].startswith(home + "/bin:"))
+        sf.java_env.cache_clear()
+
+    def test_a_working_system_java_needs_nothing_set(self):
+        sf.java_env.cache_clear()
+        with mock.patch.dict(os.environ, {"JAVA_HOME": ""}), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/java"), \
+             mock.patch.object(sf, "java_major", return_value=17):
+            self.assertEqual(sf.find_java(), (True, None)); self.assertEqual(sf.java_env(), {})
+        sf.java_env.cache_clear()
+
+    def test_no_java_is_reported(self):
+        sf.java_env.cache_clear()
+        with mock.patch.dict(os.environ, {"JAVA_HOME": ""}), mock.patch.object(sf.shutil, "which", return_value=None), \
+             mock.patch.object(sf, "java_major", return_value=0), mock.patch.object(sf.Path, "exists", return_value=False), \
+             mock.patch.object(sf.glob, "glob", return_value=[]):
+            self.assertEqual(sf.find_java(), (False, None))
+        sf.java_env.cache_clear()
+
+
 class PolarLicence(unittest.TestCase):
     """Polar licence keys and the free tier (the other stores' tests are in the class above)."""
     def setUp(self):

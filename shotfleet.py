@@ -939,7 +939,7 @@ def ios_run(cfg, path, only=None, parallel=None):
         for lp in lps: shutil.copy(out / ".work" / "flows" / f"{lp}.yaml", flows_dir)
         k = min(n, len(lps))
         junit = out / f"junit{attempt}.xml"; junit.unlink(missing_ok=True)
-        env = {**os.environ, "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
+        env = {**os.environ, **java_env(), "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
         stop = threading.Event()
         reader = threading.Thread(target=capture_texts, daemon=True,
                                   args=(stop, out / ".work" / "debug" / f"attempt{attempt}", out / "raw", cfg["bundle_id"]))
@@ -1143,7 +1143,7 @@ def android_run(cfg, path, out, only, parallel):
                 r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
                                 timeout=cfg.get("timeout_s", 600) + 300,
-                                env={**os.environ, "MAESTRO_CLI_NO_ANALYTICS": "1",
+                                env={**os.environ, **java_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
                                      "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
             except subprocess.TimeoutExpired:
@@ -1577,12 +1577,36 @@ def latest_release():
     except (OSError, ValueError, UnicodeDecodeError):
         return None
 
+def java_major(java):
+    try: r = sh([str(java), "-version"], timeout=30)
+    except (OSError, subprocess.TimeoutExpired): return 0
+    m = re.search(r'version "(\d+)', r.stderr + r.stdout)
+    return int(m.group(1)) if m else 0
+
+def find_java():
+    """(ok, JAVA_HOME to set or None) for Maestro, which needs Java 17+. Homebrew's openjdk is keg-only, so installing it
+    never puts `java` on the PATH: look in the places a JDK really lives instead of telling people to edit their shell."""
+    if (cur := os.environ.get("JAVA_HOME")) and java_major(Path(cur) / "bin/java") >= 17: return True, None
+    if shutil.which("java") and java_major(shutil.which("java")) >= 17: return True, None
+    homes = [sh(["/usr/libexec/java_home", "-v", "17+"], timeout=30).stdout.strip() if Path("/usr/libexec/java_home").exists() else ""]
+    homes += [f"/opt/homebrew/opt/openjdk{v}/libexec/openjdk.jdk/Contents/Home" for v in ("", "@21", "@17")]
+    homes += [str(Path.home() / ".sdkman/candidates/java/current")] + sorted(glob.glob("/Library/Java/JavaVirtualMachines/*/Contents/Home"))
+    for h in homes:
+        if h and java_major(Path(h) / "bin/java") >= 17: return True, h
+    return False, None
+
+@functools.cache
+def java_env():
+    """Environment additions that make Maestro find its Java ({} when the system's already works)."""
+    ok, home = find_java()
+    return {"JAVA_HOME": home, "PATH": f"{home}/bin:{os.environ.get('PATH', '')}"} if ok and home else {}
+
 def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
     try:  # Maestro is a JVM app: --version can take long on a busy Mac
-        maestro = sh(["maestro", "--version"], timeout=120).stdout.strip().splitlines()[-1:] if have("maestro") else []
+        maestro = sh(["maestro", "--version"], timeout=120, env={**os.environ, **java_env()}).stdout.strip().splitlines()[-1:] if have("maestro") else []
     except subprocess.TimeoutExpired:
         maestro = ["(version check timed out)"]
     maestro_ok = bool(maestro) and (maestro[0].startswith("(") or
@@ -1590,7 +1614,8 @@ def cmd_doctor():
     checks = [
         (f"maestro {maestro[0] if maestro else ''}".strip(), maestro_ok,
          "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
-        ("swiftc (OCR checks)", have("swiftc"), "xcode-select --install", "both"),
+        ("java 17+", find_java()[0], "brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)", "both"),
+        ("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both"),
         ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
          "install Xcode and an iOS Simulator runtime", "iOS"),
         ("adb", have("adb"), "Android Studio > SDK Manager > Platform-Tools", "Android"),
@@ -1612,7 +1637,9 @@ def cmd_doctor():
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
     if (latest := latest_release()) and latest != VERSION:
         print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh")
-    return 0 if ok_ios or ok_android else 1
+    print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
+          else "next: fix the MISSING lines above, then run shotfleet doctor again")
+    return 0 if ok_ios or ok_android else 2
 
 FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text selector for each language.
 # Tap and assert by the text the user sees, exactly as it appears in your English strings
