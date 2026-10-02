@@ -215,3 +215,14 @@ class Fixtures(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BuildScriptChecksGatekeeper(unittest.TestCase):
+    def test_a_notarized_build_is_verified_with_a_quarantined_spctl_assessment_before_it_can_ship(self):
+        s = (Path(__file__).resolve().parent.parent / "packaging/build.sh").read_text()
+        i = s.index("status: Accepted")
+        tail = s[i:]
+        self.assertIn("com.apple.quarantine", tail)
+        self.assertIn("spctl --assess --type execute", tail)
+        self.assertIn("source=Notarized Developer ID", tail)
+        self.assertLess(tail.index("source=Notarized Developer ID"), tail.index("shasum -a 256"))  # checked before the checksum is printed for release.sh

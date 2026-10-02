@@ -39,5 +39,11 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
     | tee build/notary.log
   grep -q "status: Accepted" build/notary.log || { echo "notarization failed: xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE" >&2; exit 1; }
+  # Don't trust the verdict alone: unpack the tarball we will ship, mark it as downloaded (quarantine) and ask Gatekeeper.
+  CHECK=$(mktemp -d); tar -C "$CHECK" -xzf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz"
+  xattr -w com.apple.quarantine "0081;00000000;Safari;" "$CHECK/shotfleet/shotfleet"
+  spctl --assess --type execute -vv "$CHECK/shotfleet/shotfleet" 2>&1 | tee build/spctl.log
+  grep -q "source=Notarized Developer ID" build/spctl.log || { rm -rf "$CHECK"; echo "Gatekeeper does not accept the shipped build as notarized (build/spctl.log): do not publish" >&2; exit 1; }
+  rm -rf "$CHECK"
 fi
 shasum -a 256 dist/*.tar.gz
