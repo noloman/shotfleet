@@ -1425,3 +1425,58 @@ class FrameworkHints(unittest.TestCase):
         with contextlib.redirect_stderr(err), self.assertRaisesRegex(sf.Fail, "no translations"):
             sf.cmd_check(self.dir / "out", app=flutter)
         self.assertIn('strings = "lib/l10n/*.arb"', err.getvalue())
+
+
+class RetryOnSlowSimulator(unittest.TestCase):
+    """iPad run on a loaded Mac: Maestro's clearState timed out between uninstall and reinstall, the app was gone,
+    and the retry failed in 2 s per language with 'Unknown error' because nothing reinstalled it."""
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp())
+        app = self.d / "My.app"
+        for lp, word in (("en", "Next"), ("de", "Weiter")):
+            (app / f"{lp}.lproj").mkdir(parents=True)
+            (app / f"{lp}.lproj" / "Localizable.strings").write_text(f'"next" = "{word}";\n')
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "x.y", "CFBundleLocalizations": ["en", "de"]}))
+        (self.d / "flow.yaml").write_text('- launchApp\n- takeScreenshot: 01\n')
+        (self.d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nlocales = ["de"]\n')
+        self.calls, self.runs = [], 0
+
+    def fake_sim(self):
+        calls = self.calls
+        class S:
+            udid = "U1"
+            def run(self, *a, check=True): calls.append(a[0]); return ""
+        return S()
+
+    def fake_maestro(self, cmd, env=None, timeout=None):
+        self.runs += 1
+        flows = Path(cmd[cmd.index("test") + 1]); out = flows.parent.parent.parent
+        ok = self.runs == 2 and self.calls[-1] == "install"  # the retry only works when the app was reinstalled just before
+        if ok: (out / "raw" / "de" / "01.png").write_bytes(b"x")
+        Path(cmd[cmd.index("--output") + 1]).write_text(
+            f'<testsuites><testsuite><testcase name="de" time="2">{"" if ok else "<failure>Unknown error</failure>"}</testcase></testsuite></testsuites>')
+        return subprocess.CompletedProcess(cmd, 0 if ok else 1, "", "")
+
+    def run_it(self, level):
+        real = sf.sh
+        def sh(cmd, **kw): return subprocess.CompletedProcess(cmd, 0, level, "") if cmd[0] == "sysctl" else real(cmd, **kw)
+        with mock.patch.object(sf, "make_pool", return_value=[self.fake_sim()]), mock.patch.object(sf, "run_guarded", self.fake_maestro), \
+             mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"), \
+             mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "cmd_check", return_value=0), \
+             mock.patch.object(sf, "java_env", return_value={}), mock.patch.object(sf, "sh", sh), \
+             contextlib.redirect_stdout(io.StringIO()) as out:
+            code = sf.cmd_run(str(self.d / "shotfleet.toml"))
+        return code, out.getvalue()
+
+    def test_retry_reinstalls_the_app_first(self):
+        code, out = self.run_it("1")
+        self.assertEqual(self.calls.count("install"), 2)  # once before the run, once before the retry
+        self.assertEqual(code, 0, out)
+        self.assertIn("retrying 1: de", out)
+
+    def test_overload_note_only_when_the_mac_was_loaded(self):
+        with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "2", "")):
+            self.assertIn("used 1 simulators instead of 2", sf.overload_note(2, 1))
+            self.assertIn("short of memory", sf.overload_note(1, 1))
+        with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "1", "")):
+            self.assertEqual(sf.overload_note(2, 2), "")

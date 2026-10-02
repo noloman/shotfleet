@@ -910,6 +910,14 @@ def fit_parallel(n):
         return max(1, n // 2)
     return n
 
+def overload_note(want, n):
+    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
+    level = sh(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
+    if n >= want and level not in ("2", "4"): return ""
+    return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
+            + ", and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer."
+            + " Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>\n")
+
 # ---------- run ----------
 
 OUR_SIMS = set()  # UDIDs of shotfleet's simulators, so cleanup never touches anyone else's
@@ -1056,15 +1064,18 @@ def ios_run(cfg, path, only=None, parallel=None):
 
     if not report["locales"]:
         raise Fail(f"none of those languages are in the app. It ships: {', '.join(sorted(strings))}")
-    n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(report["locales"])))
+    want = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
+    n = fit_parallel(want)
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
     pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"))
     OUR_SIMS.update(s.udid for s in pool)
     kill_stale_drivers()
-    for sim in pool:  # install once; each flow's clearState gives every locale a fresh start
-        sim.run("terminate", sim.udid, cfg["bundle_id"], check=False)
-        sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
-        sim.run("install", sim.udid, cfg["app"])
+    def install(sims):  # each flow's clearState gives every locale a fresh start
+        for sim in sims:
+            sim.run("terminate", sim.udid, cfg["bundle_id"], check=False)
+            sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
+            sim.run("install", sim.udid, cfg["app"])
+    install(pool)
 
     expected = count_screenshots(flow)
 
@@ -1110,11 +1121,15 @@ def ios_run(cfg, path, only=None, parallel=None):
     if retry:  # simulators and drivers flake; one retry of just the failures is cheap
         print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
         for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
+        # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
+        # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
+        install(pool[:min(n, len(retry))])
         final.update(batch(retry, 2))
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
         results.append({"lproj": lp, **r_})
+    if not all(r["ok"] for r in results): print(overload_note(want, n), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
