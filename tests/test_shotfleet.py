@@ -1557,3 +1557,33 @@ class TypedTextPerLanguage(unittest.TestCase):
     def test_android_flows_get_the_defaults_only(self):
         text = sf.android_flow(self.FLOW, "f0", Path("/o"), sf.inputs_for({"name": "Alex", "ja": {"name": "田中"}}, "", defaults_only=True))
         self.assertIn('name: "Alex"', text); self.assertNotIn("田中", text)
+
+
+class CorruptLicenceFile(unittest.TestCase):
+    """A half-written licence.json (a crash, a full disk) must never crash a command or lock the user out of the free tier."""
+    BAD = ("", "{", '{"key": "ABC', "[]", '"text"', "null", "{}", '{"key": ""}')
+
+    def run_with(self, content):
+        d = Path(tempfile.mkdtemp()); f = d / "licence.json"; f.write_text(content)
+        return mock.patch.object(sf, "LICENCE_FILE", f), f
+
+    def test_every_command_survives_an_unreadable_file(self):
+        for content in self.BAD:
+            patch, f = self.run_with(content)
+            with patch, mock.patch.object(sys, "frozen", True, create=True), mock.patch.dict(os.environ, {}, clear=False):  # the gate only applies to released builds
+                os.environ.pop("SHOTFLEET_KEY", None)
+                self.assertIsNone(sf.read_licence(), content)
+                with self.assertRaises(sf.NoLicence) as cm: sf.require_licence()   # export is refused, with a way out
+                self.assertIn("activate again", str(cm.exception))
+                sf.LOCALE_CAP = None
+                with contextlib.redirect_stderr(io.StringIO()): sf.apply_free_tier()
+                self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES, content)         # run falls back to the free tier
+                sf.LOCALE_CAP = None
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out): self.assertEqual(sf.cmd_deactivate(), 0)
+                self.assertFalse(f.exists(), content)                                 # the broken file is removed
+                self.assertIn("unreadable", out.getvalue())
+
+    def test_a_good_file_still_reads(self):
+        patch, _ = self.run_with(json.dumps({"key": "K", "store": "gumroad", "checked": 1}))
+        with patch: self.assertEqual(sf.read_licence()["key"], "K")

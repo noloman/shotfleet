@@ -2448,8 +2448,7 @@ def cmd_activate(key):
         # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
         ok, uses, why = gumroad_verify(key, count_use=False)
         if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
-        try: known = json.loads(LICENCE_FILE.read_text()).get("key") == key.strip()  # this Mac already holds it: no new activation
-        except (OSError, ValueError): known = False
+        known = (read_licence() or {}).get("key") == key.strip()  # this Mac already holds it: no new activation
         if not known:
             if uses >= MAX_MACS:
                 raise Fail(f"this key has used all {MAX_MACS} activations. Email hello@shotfleet.com and I'll reset the count")
@@ -2468,9 +2467,17 @@ def cmd_activate(key):
     print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
     return 0
 
+def read_licence():
+    """The stored licence as a dict, or None when the file is missing or unreadable (a half-written file must never crash a command)."""
+    try: lic = json.loads(LICENCE_FILE.read_text())
+    except (OSError, ValueError): return None
+    return lic if isinstance(lic, dict) and lic.get("key") else None
+
 def cmd_deactivate():
     if not LICENCE_FILE.exists(): print("no licence on this Mac"); return 0
-    lic = json.loads(LICENCE_FILE.read_text())
+    lic = read_licence()
+    if lic is None:
+        LICENCE_FILE.unlink(); print("the saved licence on this Mac was unreadable, so I removed it. Activate again with: shotfleet activate <key>"); return 0
     if lic.get("store") == "polar":
         try: polar_post("deactivate", key=lic["key"], activation_id=lic["activation"])
         except OSError: pass  # offline: forget it locally anyway
@@ -2501,7 +2508,10 @@ def require_licence():
     if not LICENCE_FILE.exists():
         raise NoLicence(f"`export` and every language in `run` need a licence: shotfleet activate <key> (buy one at {BUY_URL}; checkout is on Gumroad). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
-    lic = json.loads(LICENCE_FILE.read_text())
+    lic = read_licence()
+    if lic is None:
+        raise NoLicence("the saved licence on this Mac is unreadable: activate again with `shotfleet activate <key>` (the key is in your purchase email). "
+                        "`check` is free, and `run` captures up to 2 languages without one.")
     age = (time.time() - lic.get("checked", 0)) / 86400
     if age < LICENCE_RECHECK_DAYS: return
     try:
