@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>shotfleet documentation: install, config, CI, hooks</title>
+<meta name="description" content="How to install and run shotfleet: quickstart, config keys, hooks, overrides, inputs, a CI recipe, agent skills, requirements and limits.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="shotfleet documentation: install, config, CI, hooks">
+<meta property="og:description" content="Quickstart, config keys, hooks, overrides, inputs, a CI recipe, agent skills, requirements and limits.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:url" content="https://shotfleet.com/docs">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/docs">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/site.css">
+<style>
+.docs { max-width: 760px; }
+.docs h2 { scroll-margin-top: 96px; }
+.docs h3 { margin-top: 8px; scroll-margin-top: 96px; }
+.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
+.docs pre code { background: none; padding: 0; font: inherit; }
+.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.docs .toc { background: color-mix(in srgb, var(--ink) 4%, transparent); border-radius: 12px; padding: 16px 20px; }
+.docs .toc ol { columns: 2; column-gap: 32px; }
+@media (max-width: 560px) { .docs .toc ol { columns: 1; } }
+.docs table { min-width: 0; }
+.docs td:first-child { white-space: nowrap; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+  </nav>
+</header>
+<main class="wrap" id="main">
+ <div class="page docs">
+  <p class="label">Docs</p>
+  <h1>shotfleet documentation</h1>
+  <p class="lede">Localized App Store and Google Play screenshots from one English Maestro flow: capture, check, export to fastlane.</p>
+  <p class="small">Last checked against version 0.1.0 on 2026-10-02.</p>
+
+  <nav class="toc" aria-label="On this page">
+    <ol>
+      <li><a href="#requirements">Requirements</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="#quickstart">Quickstart</a></li>
+      <li><a href="#check">Check screenshots from any tool</a></li>
+      <li><a href="#config">Config</a></li>
+      <li><a href="#strings">Flutter, React Native and other frameworks</a></li>
+      <li><a href="#hooks">Hooks</a></li>
+      <li><a href="#overrides">Overrides</a></li>
+      <li><a href="#inputs">Inputs</a></li>
+      <li><a href="#ci">In CI</a></li>
+      <li><a href="#agents">With AI agents</a></li>
+      <li><a href="#limits">Limits</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="requirements">Requirements</h2>
+  <ul>
+    <li>macOS on Apple silicon only. The installer refuses Intel Macs.</li>
+    <li>Maestro 2.x and Java 17+ (Maestro needs it).</li>
+    <li>Xcode for iOS, the Android SDK for Android.</li>
+    <li>Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in <code>ANDROID_HOME</code>, <code>ANDROID_SDK_ROOT</code>, <code>~/Library/Android/sdk</code>, Homebrew's <code>android-commandlinetools</code>, or next to an <code>adb</code> on your PATH, and uses any installed arm64 <code>google_apis</code> or <code>google_apis_playstore</code> image of API 33 or newer (or the <code>system_image</code> from the config). <code>shotfleet doctor</code> prints the <code>sdkmanager</code> commands for whatever is missing.</li>
+    <li>The installed program brings its own Python. Running from source needs Python 3.11+.</li>
+  </ul>
+
+  <h2 id="install">Install</h2>
+<pre><code>curl -fsSL https://shotfleet.com/install.sh | sh
+shotfleet activate &lt;your key&gt;    # from your purchase email (check works without one)
+shotfleet doctor                 # checks Maestro, Java, Xcode, Android SDK</code></pre>
+  <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. <code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; see <a href="/terms">licence and refunds</a>.</p>
+
+  <h2 id="quickstart">Quickstart</h2>
+  <p>Once Maestro and a simulator build exist, in your project folder:</p>
+<pre><code>shotfleet init
+shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself</code></pre>
+  <p><code>shotfleet init</code> without arguments only reads folders, never builds. For iOS it takes the newest <code>Debug-iphonesimulator</code> app in Xcode's default DerivedData folder (<code>~/Library/Developer/Xcode/DerivedData</code>) whose <code>info.plist</code> points at an Xcode project in this folder (or one folder below it, or above it). For Android it takes the newest APK under <code>app/build/outputs/apk/debug</code> (or <code>&lt;module&gt;/build/outputs/apk/debug</code>, one folder below). It prints which build it chose and how old it is. If it finds nothing it exits with the exact <code>xcodebuild</code> and <code>./gradlew assembleDebug</code> commands to run; then run <code>shotfleet init</code> again.</p>
+  <ol>
+    <li>Edit the generated <code>flow.yaml</code>: <a href="https://maestro.mobile.dev">Maestro</a> steps in English. Navigate by the text users see and add a <code>takeScreenshot:</code> for each store image. No <code>appId</code> is needed: shotfleet uses each build's own id, so one flow serves iOS and Android.</li>
+    <li>Try one language: <code>shotfleet run --locales en</code></li>
+    <li>Run them all: <code>shotfleet run</code> (finds <code>./shotfleet.toml</code>; both platforms if the file has both, <code>--platform ios</code> for one).</li>
+    <li>Review <code>out/index.html</code> (<code>out-ios/</code> and <code>out-android/</code> if the config has both platforms). It is a grid with a row per language and a column per screen, and problems are outlined in red.</li>
+    <li>Export to fastlane: <code>shotfleet export out --fastlane fastlane/</code> (<code>out-ios</code> or <code>out-android</code> if the config has both). That writes <code>deliver</code>'s <code>screenshots/&lt;locale&gt;/</code> or <code>supply</code>'s <code>metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code>. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.</li>
+  </ol>
+<pre><code>shotfleet run --locales en
+shotfleet run
+shotfleet run --platform ios
+shotfleet export out --fastlane fastlane/</code></pre>
+
+  <h3 id="uploading">Uploading</h3>
+  <p>shotfleet stops at fastlane's folders; fastlane uploads them. Screenshots only, nothing else touched:</p>
+<pre><code># App Store: replaces the screenshots of every language folder in fastlane/screenshots
+fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --force
+
+# Google Play: uploads metadata/android/&lt;locale&gt;/images/phoneScreenshots
+fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --skip_upload_changelogs --skip_upload_images</code></pre>
+  <p>Run <code>shotfleet check fastlane/</code> right before uploading: export already skips languages that failed, and the check also catches folders you edited by hand.</p>
+
+  <h3 id="how-it-works">How it works</h3>
+  <p>shotfleet reads the translations compiled into your app and rewrites every selector in the flow to match any translation of that English label. If "Next" has two keys, German matches <code>(Nächste|Weiter)</code>. Selectors that use <code>id:</code> pass through untouched.</p>
+  <ul>
+    <li><strong>iOS:</strong> strings come from <code>*.lproj/*.strings</code> inside the <code>.app</code>; the language is set with launch arguments <code>-AppleLanguages (de)</code>; N simulators, iPhone 17 Pro Max (1320x2868, App Store 6.9"); the status bar is overridden with <code>simctl status_bar</code> (9:41, full battery); one sharded Maestro run.</li>
+    <li><strong>Android:</strong> strings come from <code>aapt2 dump resources</code> of the APK, keeping only languages the app itself ships; the language is a per-app locale set with <code>cmd locale set-app-locales</code> (Android 13+); N read-only emulators at 1080x1920; SystemUI demo mode (9:41, full battery, no notifications); rounds of one language per emulator.</li>
+  </ul>
+  <p><strong>Fresh state:</strong> each language starts from a clean install. On iOS that is <code>clearState</code>; on Android shotfleet clears the app data itself, because <code>clearState</code> would also erase the app language.</p>
+
+  <h2 id="check">Check screenshots from any tool</h2>
+  <p>Already have screenshots from fastlane snapshot or screengrab, StoreScreens or by hand? Check them without capturing anything:</p>
+<pre><code>shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/&lt;locale&gt;/
+shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code></pre>
+  <p>Store codes are mapped back to your app's languages (<code>de-DE</code> to <code>de</code>, <code>no</code> to <code>nb</code>, <code>zh-CN</code> to <code>zh-Hans</code>). The report (<code>check.json</code> and <code>index.html</code>) goes to <code>./shotfleet-check</code> (change it with <code>--report</code>), and your fastlane folders are never touched. After capture or on an existing folder, every screenshot's text is compared against your app's own strings. On iOS, shotfleet reads the text straight from the app while each screenshot is on screen; otherwise, and for screenshots made by other tools, it uses macOS's built-in text recognition. It reports:</p>
+  <ul>
+    <li><strong>Wrong language:</strong> the German folder actually shows English or Japanese strings.</li>
+    <li><strong>Copies:</strong> the same image in two languages.</li>
+    <li><strong>Missing:</strong> a language that did not produce every screenshot.</li>
+    <li><strong>Translation collisions, before anything runs:</strong> for example <code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>. A tap could hit the wrong button there, so you anchor that step with <code>below:</code> or use an override.</li>
+    <li><strong>Store rules:</strong> sizes each store accepts (every App Store display class, Play's 320 to 3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad.</li>
+    <li><strong>Languages your app does not have:</strong> a store listing (say Traditional Chinese) whose screenshots cannot be in that language because the app is not translated into it.</li>
+  </ul>
+  <p><code>check</code> without <code>--app</code> relies on language detection, which cannot judge short screens; pass <code>--app</code> for the full check.</p>
+
+  <h2 id="config">Config</h2>
+  <p>The whole config can be this (<code>shotfleet init</code> writes it):</p>
+<pre><code>[ios]
+app = "path/to/MyApp.app"
+
+[android]                 # optional: the same file and flow serve both platforms
+apk = "path/to/app-debug.apk"</code></pre>
+  <p>Everything else is read from the build or has a default; set it only to change it. A typo or a wrong type is refused with a one-line message before anything runs.</p>
+  <div class="tablewrap" tabindex="0" role="region" aria-label="Config keys, scrolls sideways on narrow screens">
+  <table>
+    <caption class="sr">Config keys, the section they go in and their defaults</caption>
+    <thead><tr><th scope="col">Key</th><th scope="col">Section</th><th scope="col">Default</th><th scope="col">What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>app</code></td><td>ios</td><td>none</td><td>The simulator build (Debug-iphonesimulator).</td></tr>
+      <tr><td><code>apk</code></td><td>android</td><td>none</td><td>The debug APK.</td></tr>
+      <tr><td><code>flow</code></td><td>ios, android</td><td><code>flow.yaml</code></td><td>The English Maestro flow, shared by both platforms (an <code>appId:</code> header is set for you).</td></tr>
+      <tr><td><code>out</code></td><td>ios, android</td><td><code>out</code>, or <code>out-ios</code> and <code>out-android</code> when the file has both platforms</td><td>Output folder.</td></tr>
+      <tr><td><code>parallel</code></td><td>ios, android</td><td>4</td><td>Simulators (emulators on Android).</td></tr>
+      <tr><td><code>locales</code></td><td>ios, android</td><td>every language the app ships</td><td>Languages to capture, for example <code>["de", "ja"]</code>.</td></tr>
+      <tr><td><code>base_locale</code></td><td>ios, android</td><td><code>en</code></td><td>The language your flow is written in.</td></tr>
+      <tr><td><code>strings</code></td><td>ios, android</td><td>read from the build</td><td>Translation files as globs, relative to the config (see below).</td></tr>
+      <tr><td><code>bundle_id</code></td><td>ios</td><td>read from the app</td><td>The bundle id. On Android the package is read from the APK.</td></tr>
+      <tr><td><code>device_type</code></td><td>ios</td><td>the 6.9" iPhone (<code>com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max</code>)</td><td>The simulator device type.</td></tr>
+      <tr><td><code>runtime</code></td><td>ios</td><td>newest installed</td><td>The simulator runtime, for example <code>com.apple.CoreSimulator.SimRuntime.iOS-26-5</code>.</td></tr>
+      <tr><td><code>device_types</code></td><td>ios</td><td>none</td><td>Several sizes from one flow, for example <code>["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]</code>; output goes to <code>out/&lt;device&gt;/</code>, <code>check out</code> and <code>export out</code> handle both, and the App Store takes both in one folder.</td></tr>
+      <tr><td><code>devices</code></td><td>android</td><td>phone</td><td><code>["phone", "tablet"]</code>: phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the listing); output goes to <code>out/&lt;device&gt;/</code>, exported to <code>phoneScreenshots</code> and <code>tenInchScreenshots</code>.</td></tr>
+    </tbody>
+  </table>
+  </div>
+<pre><code>[ios]
+flow = "flow.yaml"
+out = "out"
+parallel = 4
+locales = ["de", "ja"]
+base_locale = "de"
+device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]
+
+[android]
+devices = ["phone", "tablet"]</code></pre>
+
+  <h3 id="strings">Flutter, React Native, .NET MAUI, Unity and translation-platform exports</h3>
+  <p>These frameworks do not keep their translations in a form shotfleet can read inside the built app, so point it at the source files instead. Add <code>strings</code> to either section (globs, relative to the config):</p>
+<pre><code>strings = "lib/l10n/*.arb"                      # Flutter
+strings = "src/locales/*/translation.json"      # React Native / Expo with i18next
+strings = ["Resources/Strings/*.resx"]          # .NET MAUI</code></pre>
+  <p>Supported: <code>.arb</code>, i18next and react-intl <code>.json</code> (nested keys, <code>_one</code> and <code>_other</code> plurals), <code>.xcstrings</code>, <code>.strings</code>, <code>.stringsdict</code>, Android and Compose <code>strings.xml</code>, XLIFF (<code>.xlf</code>, <code>.xliff</code>), <code>.resx</code>, gettext <code>.po</code>, <code>.properties</code>, and CSV with one column per language (Unity Localization, spreadsheets). ICU plurals and placeholders (<code>%d</code>, <code>%1$@</code>, <code>{name}</code>, <code>{{name}}</code>) are understood. The language comes from <code>@@locale</code>, the file name (<code>app_de.arb</code>, <code>Resources.de.resx</code>) or the folder (<code>locales/de/</code>, <code>values-de/</code>). <code>check</code> takes the same files:</p>
+<pre><code>shotfleet check fastlane/ --strings 'lib/l10n/*.arb'</code></pre>
+
+  <h2 id="hooks">Hooks</h2>
+  <p>Nothing here is on by default: a config without these tables behaves exactly as above. Hooks run your own commands (<code>/bin/sh</code>, in the config's folder, output on stderr) around a run and an export:</p>
+<pre><code>[hooks]
+before_run   = "make build-sim"                 # a string, or a list of commands run in order
+after_run    = 'curl -sS -X POST -H "Content-type: application/json" "$SLACK_WEBHOOK_URL" --data "{\"text\":\"shotfleet $SHOTFLEET_PLATFORM: $SHOTFLEET_PROBLEMS problem(s)\"}"'
+before_export = "git diff --quiet"              # a non-zero exit stops the export
+after_export  = 'fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --screenshots_path "$SHOTFLEET_FASTLANE/screenshots"'
+# hook_timeout_s = 1800                         # default 600 per command</code></pre>
+  <p>A failing <code>before_*</code> hook stops the command (exit 2); a failing <code>after_*</code> hook makes the exit code 1, so CI notices. Variables: <code>SHOTFLEET_EVENT</code>, <code>_VERSION</code>, <code>_CONFIG</code>, <code>_PLATFORM</code>, <code>_OUT</code>, <code>_BUNDLE_ID</code>; <code>before_run</code> and <code>after_run</code> also get <code>_LOCALES</code>; <code>after_run</code> gets <code>_EXIT</code>, <code>_PROBLEMS</code>, <code>_REPORT</code> (<code>&lt;out&gt;/check.json</code>); the export hooks get <code>_FASTLANE</code>, <code>_REPORT</code> (and <code>_EXIT</code> after the export). <code>--no-hooks</code> skips them for a dry run.</p>
+
+  <h2 id="overrides">Overrides</h2>
+  <p>Overrides replace what shotfleet would tap for one language. They are the fix for a collision warning (<code>'Next' -&gt; 'İleri' also means 'Advanced'</code>) and for labels that are not in your app's strings:</p>
+<pre><code>[overrides.tr]                         # the language as shotfleet names it: tr, pt-BR, zh-Hans...
+"Next" = "İleri"                       # literal text
+"Advanced" = "re:Gelişmiş.*"           # "re:" = a regular expression
+"Search" = "Ara"</code></pre>
+
+  <h2 id="inputs">Inputs</h2>
+  <p>Inputs set the text a flow types, per language. Write <code>inputText: ${name}</code> in the flow and give the values in the config:</p>
+<pre><code>[inputs]                               # typed in every language that has no value of its own
+name = "Alex"
+[inputs.ja]                            # the language as shotfleet names it; pt covers pt-BR too
+name = "田中"</code></pre>
+  <p>The value goes into that language's flow as a Maestro <code>env:</code> entry. This works on iOS; Android runs type the <code>[inputs]</code> defaults only, because Maestro hands any flow to any emulator. The values are tested as flow text, not yet run on a device, so check the first screenshots in a script like Japanese or Arabic. Text you type is not translated by itself: it stays the same in every language unless you set <code>[inputs]</code> (iOS only).</p>
+
+  <h3 id="more">Plugins and the rest</h3>
+  <p><code>shotfleet foo</code> runs <code>shotfleet-foo</code> from your PATH (like <code>git</code> and <code>gh</code>), when <code>foo</code> is not a built-in command. <code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code> and use stable exit codes, so they script like any other tool; <code>SHOTFLEET_OCR</code> or <code>--ocr-command</code> swaps the text reader; <code>strings = "glob"</code> swaps the translation source.</p>
+
+  <h2 id="ci">In CI</h2>
+  <p><code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code>: the result goes to stdout as JSON (<code>exit</code>, <code>screenshots</code>, <code>problems</code> for <code>run</code> and <code>check</code>; <code>exit</code>, <code>exported</code>, <code>skipped</code> for <code>export</code>) and progress goes to stderr. Exit codes: <code>0</code> all good, <code>1</code> problems found, <code>2</code> setup error (the message says what to fix), <code>130</code> interrupted.</p>
+  <p>Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. <code>check</code> is free and needs no licence. This recipe has not been run on GitHub yet; the command itself is the one tested above.</p>
+<pre><code># .github/workflows/screenshots.yml
+on: pull_request
+jobs:
+  check-screenshots:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug -derivedDataPath build build
+      - run: curl -fsSL https://shotfleet.com/install.sh | sh   # Apple silicon runner
+      - run: shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json &gt; check.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-check
+          path: |
+            check.json
+            shotfleet-check/</code></pre>
+  <p>To use <code>run</code> or <code>export</code> in CI, set <code>SHOTFLEET_KEY</code> to your licence key (keep it in a secret). It is checked online on each run and uses none of your 3 activations; if the licence server cannot be reached the job is not failed. With an invalid key, <code>export</code> refuses and <code>run</code> captures only 2 languages.</p>
+
+  <h2 id="agents">With AI agents</h2>
+  <p><code>shotfleet mcp</code> is an MCP server with <code>check</code>, <code>run</code> and <code>doctor</code> tools. Add it to Claude Code with <code>claude mcp add shotfleet -- shotfleet mcp</code>, or to any MCP client as the command <code>shotfleet mcp</code>.</p>
+  <p>There are also three agent skills that ship with the program: <code>shotfleet</code> (install, set up, run, check and troubleshoot), <code>shotfleet-ci</code> (add <code>shotfleet check</code> to CI) and <code>shotfleet-review</code> (turn a check report into a fix list). Copy them into a skills folder:</p>
+<pre><code>shotfleet skill install
+shotfleet skill install --project
+shotfleet skill install --dir &lt;folder&gt;</code></pre>
+  <p><code>shotfleet skill install</code> copies them into <code>~/.claude/skills</code>, <code>--project</code> into <code>./.claude/skills</code>, and <code>--dir &lt;folder&gt;</code> into another agent's skills folder. Skills that are already there are kept unless you pass <code>--force</code>.</p>
+
+  <h2 id="limits">Limits</h2>
+  <ul>
+    <li><strong>Where strings come from:</strong> <code>.strings</code>, <code>.stringsdict</code> and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), <code>strings.xml</code> and <code>&lt;plurals&gt;</code> on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see above). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.</li>
+    <li>Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).</li>
+    <li>If you pass <code>init</code>, <code>run</code> or <code>check</code> a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a <code>hint:</code> on stderr with the <code>strings =</code> line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run.</li>
+    <li><strong>Text recognition</strong> is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it cannot read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), <code>check</code> still catches screens in another language, copies and missing screens, and says which screens it could not read.</li>
+    <li>If macOS text recognition stops answering (its <code>ANECompilerService</code> occasionally gets stuck until a restart), <code>check</code> switches to Tesseract automatically when it is installed (<code>brew install tesseract tesseract-lang</code>), and otherwise tells you to restart. iOS runs are not affected: they read the app's own text.</li>
+    <li>For full verification of those scripts, give <code>check</code> an OCR that reads them, for example Tesseract (about 700 MB): <code>--ocr-command "tesseract {image} stdout -l {tesseract}"</code> (or set <code>SHOTFLEET_OCR</code>). It is used only for languages macOS cannot read; <code>{lang}</code> is the language code if your tool wants that instead.</li>
+    <li><code>launchApp</code> options must be written as a block, not inline <code>{ ... }</code>.</li>
+    <li><strong>Permission prompts</strong> ("Allow While Using App", "Don't Allow") are drawn by iOS and Android in the device language, which stays English even while your app runs in German. Write those taps in English; shotfleet keeps the English text matchable. Better still, skip the prompts: on iOS start the flow with a <code>launchApp</code> block that has <code>permissions: all: allow</code> (shotfleet adds its language arguments to your options). On Android shotfleet installs with every permission granted.</li>
+    <li><strong>Dialogs that appear late</strong> (disclaimers, consent screens): dismiss them in a loop until your first real screen is visible, not with a fixed wait. Longer languages push buttons off-screen: add <code>scrollUntilVisible</code> before tapping them.</li>
+    <li>shotfleet uploads nothing to a store: fastlane does that (see Uploading above).</li>
+  </ul>
+
+  <p class="small">Manuel Lorenzo Parejo · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></p>
+ </div>
+</main>
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+  </div>
+</footer>
+</body>
+</html>

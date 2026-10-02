@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The button nobody could reach: how translated text broke my Android onboarding</title>
+<meta name="description" content="In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="The button nobody could reach: how translated text broke my Android onboarding">
+<meta property="og:description" content="In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:url" content="https://shotfleet.com/guides/the-button-nobody-could-reach">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/guides/the-button-nobody-could-reach">
+<link rel="icon" href="../../public/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/site.css">
+<style>
+.docs { max-width: 760px; }
+.docs h2 { scroll-margin-top: 96px; }
+.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
+.docs pre code { background: none; padding: 0; font: inherit; }
+.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.docs img { max-width: 100%; height: auto; border-radius: 12px; }
+.docs table { min-width: 0; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "The button nobody could reach: how translated text broke my Android onboarding",
+  "description": "In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it.",
+  "author": {
+    "@type": "Person",
+    "name": "Manuel Lorenzo Parejo"
+  },
+  "datePublished": "BUILD_DATE",
+  "mainEntityOfPage": "https://shotfleet.com/guides/the-button-nobody-could-reach"
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+  </nav>
+</header>
+<main class="wrap" id="main">
+ <div class="page docs">
+  <p class="label">Guide</p>
+<h1>The button nobody could reach: how translated text broke my Android onboarding</h1>
+<p>My workout app is in 18 languages. Its onboarding has three intro pages, then experience level, training goals, equipment and a summary. Every page has a Next button at the bottom.</p>
+<p>On a small Android phone, in Japanese, Korean, Chinese and Arabic, the Next button on the Training Goals page was below the bottom of the screen. The page did not scroll. English fit, so nobody had noticed, including me.</p>
+<p><img src="/img/bug_zh.jpg" alt="Chinese onboarding page with four goal cards and no Next button" loading="lazy"></p>
+<p>The screenshot above is the Chinese page on a 1080 by 1920 emulator. Four goal cards, a Skip link top right, and no way forward. The text in those four languages runs taller than English in the same font size, and the cards pushed the button off the bottom.</p>
+<h2>How I found it</h2>
+<p>I was running my onboarding in every language the app ships, on a store-size emulator, to capture Play Store screenshots. The tool I built for that is shotfleet: it takes one English Maestro flow, rewrites the taps for each language and runs them in parallel. On the Android run, the capture for those four languages got stuck on the same page, because the flow could not tap Next. The tool's output lists any language that did not produce every screenshot, so the four languages stood out.</p>
+<p>I want to be exact about this: the tool did not detect "a button is off screen". The capture got stuck, and I looked at why. Its <code>check</code> command, which reads finished screenshots, would not have found this either, because a screenshot of a page with a missing button is not wrong in any way it can see. What found the bug was running the real app, in every language, on a phone-sized screen, and looking at where it stopped.</p>
+<h2>The fix</h2>
+<p>It was a small fix: the Training Goals and Experience Level pages got a vertical scroll, like the Equipment page already had. The change is 8 added lines and 2 removed in one file:</p>
+<pre><code class="language-kotlin">// Scrolls so Next stays reachable when long translations (ja, ko, zh, ar) outgrow small screens.
+Column(
+    modifier = Modifier
+        .padding(horizontal = 24.dp)
+        .verticalScroll(rememberScrollState()),
+    horizontalAlignment = Alignment.CenterHorizontally,
+) { /* the page content */ }</code></pre>
+<p>The Experience Level page had the same layout. It only fit by luck: its text happened to be short enough. I fixed both.</p>
+<h2>Why a test flow did not save me</h2>
+<p>My Maestro flow already had a <code>scrollUntilVisible</code> before each Next tap:</p>
+<pre><code class="language-yaml">- scrollUntilVisible:
+    element:
+      text: "Next"
+    direction: DOWN</code></pre>
+<p>That is the right habit for long languages, and it is in my own tips. But it only helps if the page can scroll. On a page with no scroll container there is nothing to scroll, the button stays hidden, and the step times out. Per Maestro's docs an element counts as visible only when it is fully displayed in the viewport by default, so a button that sits half under the edge counts as not visible too.</p>
+<h2>How to test for this in your own app</h2>
+<ol><li>Pick the languages with the longest text. In my case they were Japanese, Korean, Chinese and Arabic.</li><li>Use a small screen. A big emulator hides the problem. I used 1080 by 1920.</li><li>Walk the whole onboarding, not just the home screen, in each language, and fail loudly if the primary button is not visible. In Maestro, put an <code>assertVisible</code> on the button text at the end of each page, or use <code>scrollUntilVisible</code> and treat a timeout as a bug in the app, not in the test.</li><li>On Android 13 or newer you can set one app's language without changing the phone's. Article 2 shows the command and the traps.</li><li>Do it for every language you ship. I would not have guessed which four it would be.</li></ol>
+<p>If your layout is a fixed <code>Column</code>, make it scroll or pin the primary button outside the scrolling content. Either fixes this class of bug.</p>
+<h2>What I did not find</h2>
+<p>This is one bug in one app, found on one screen size. I do not know how common it is, and I would not claim that a tool catches "all localization bugs". It does not. It found this one because it ran the whole flow in every language and the flow could not finish.</p>
+<h2>When not to use shotfleet</h2>
+<p>If your app has a few languages and you already click through them before a release, you do not need it. If your onboarding is short and fixed, a manual run in your longest language on a small phone is enough. shotfleet needs an Apple silicon Mac, Maestro 2.x, Java 17+, the Android SDK with API 33+ emulators, and a Maestro flow you write; it makes no frames or captions and does not upload to the stores. Its <code>check</code> command is free and it is <code>run</code> that needs a licence beyond 2 languages: $29 for the first 100 buyers, then $49 once, with a 14-day refund (https://shotfleet.com/#price).</p>
+<p>If you ship in more than a handful of languages and have never watched your onboarding in all of them on a small phone, that is the thing I would do first.</p>
+ </div>
+</main>
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+  </div>
+</footer>
+</body>
+</html>

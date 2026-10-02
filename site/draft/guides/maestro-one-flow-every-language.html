@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps</title>
+<meta name="description" content="Maestro cannot set the locale inside a flow. Here is how to run one flow in every language on iOS and Android, and the four traps that give you English by mistake.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps">
+<meta property="og:description" content="Maestro cannot set the locale inside a flow. Here is how to run one flow in every language on iOS and Android, and the four traps that give you English by mistake.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:url" content="https://shotfleet.com/guides/maestro-one-flow-every-language">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/guides/maestro-one-flow-every-language">
+<link rel="icon" href="../../public/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/site.css">
+<style>
+.docs { max-width: 760px; }
+.docs h2 { scroll-margin-top: 96px; }
+.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
+.docs pre code { background: none; padding: 0; font: inherit; }
+.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.docs img { max-width: 100%; height: auto; border-radius: 12px; }
+.docs table { min-width: 0; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps",
+  "description": "Maestro cannot set the locale inside a flow. Here is how to run one flow in every language on iOS and Android, and the four traps that give you English by mistake.",
+  "author": {
+    "@type": "Person",
+    "name": "Manuel Lorenzo Parejo"
+  },
+  "datePublished": "BUILD_DATE",
+  "mainEntityOfPage": "https://shotfleet.com/guides/maestro-one-flow-every-language"
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+  </nav>
+</header>
+<main class="wrap" id="main">
+ <div class="page docs">
+  <p class="label">Guide</p>
+<h1>Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps</h1>
+<p>You wrote a Maestro flow for your app and now want the same screens in German, Japanese and Arabic, for screenshots or for a smoke test. The docs are short on this, and the failure mode is quiet: every run goes green and the images are in English.</p>
+<p>I build a tool around this problem (shotfleet, mentioned once near the end). Everything before that is plain Maestro and <code>adb</code>.</p>
+<h2>What the docs say</h2>
+<p>Maestro's locale page says there is "no place within a Flow itself" (a <code>launchApp</code> or <code>config.yaml</code>) to define the locale. The documented route is the <code>--device-locale</code> flag on <code>maestro start-device</code> (and <code>maestro cloud</code>), not on <code>maestro test</code>, combined with tags:</p>
+<pre><code class="language-bash">maestro start-device --platform android --device-locale fr_FR
+maestro test --include-tags french .maestro/</code></pre>
+<p>That works, and it changes the whole device. For N languages you start N devices in turn, or restart one. It also means the language lives in your shell script and tags, not in the flow.</p>
+<h2>A per-app alternative: no device change</h2>
+<p>You can also set the language for your app only, and keep the device as it is.</p>
+<h3>iOS: launch arguments</h3>
+<p><code>launchApp</code> takes an <code>arguments</code> map of key-value pairs that are passed to the app as launch arguments. iOS reads <code>AppleLanguages</code> and <code>AppleLocale</code> from them, so one flow can take the language as a variable:</p>
+<pre><code class="language-yaml"># flow.yaml  (no env: default in the header, see trap 1)
+appId: com.example.myapp
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(${APP_LANG})"
+      AppleLocale: "${APP_LOCALE}"
+- tapOn:
+    id: onboarding_next
+- takeScreenshot: shots/${APP_LANG}/02_onboarding</code></pre>
+<p>Run it once per language, with the variables after <code>test</code>:</p>
+<pre><code class="language-bash">for pair in en:en_US de:de_DE ja:ja_JP; do
+  maestro --device "$UDID" test \
+    -e APP_LANG="${pair%%:*}" -e APP_LOCALE="${pair##*:}" flow.yaml
+done</code></pre>
+<h3>Android: per-app locales (Android 13, API 33 and up)</h3>
+<p>Android 13 added per-app language preferences. From the outside you set one with a shell command, before the flow starts:</p>
+<pre><code class="language-bash">adb -s emulator-5554 shell pm clear com.example.myapp
+adb -s emulator-5554 shell cmd locale set-app-locales com.example.myapp --locales de</code></pre>
+<p>Then run the same flow without <code>clearState</code>, because of trap 3. To keep one file for both platforms, put the iOS <code>launchApp</code> in a <code>runFlow</code> with <code>when: platform: iOS</code> and the Android one in <code>when: platform: Android</code>.</p>
+<h3>The selectors</h3>
+<p>A flow that says <code>tapOn: "Next"</code> fails in German. Two ways out: tap by <code>id:</code> (accessibility identifier on iOS, resource id on Android), which does not change with the language, or write the translated text per language. If your app has ids on everything you tap, you are done and need nothing else in this article.</p>
+<h2>Four traps that give you English by mistake</h2>
+<p><strong>1. A default in the flow header beats the command line.</strong> One developer documented this with Maestro 2.10: the flow had <code>env: { LOCALE: en }</code> as a default, and every "Portuguese" and "Spanish" run still came out in English. He fixed it by removing the default from the header, and he caught it only by looking at the images (<a href="https://github.com/RogerioDoCarmo/morse_app/pull/216">PR #216</a>). Maestro's parameters page says that constants defined in a subflow override same-name parameters from the parent. Do not put a default for the language in the header. Pass the language only with <code>-e</code>, and look at the first image of each run.</p>
+<p><strong>2. <code>-e</code> goes after <code>test</code>.</strong> In the same PR the iOS script put <code>-e</code> before <code>test</code>, and it failed silently while looking like it passed. The order is <code>maestro --device X test -e KEY=VALUE flow.yaml</code>.</p>
+<p><strong>3. On Android, clearing state clears the language.</strong> <code>clearState</code> wipes the app's data, and the per-app language goes with it. Clear first with <code>pm clear</code>, set the language, then launch without <code>clearState</code>. Otherwise you get the system language back.</p>
+<p><strong>4. Parallel runs on Android.</strong> Two separate <code>maestro test</code> processes on two devices share a host port (7001 in the version I used, 2.0.10) and can drive each other's device. Use one run that shards across devices (<code>--shard-split</code>). Newer Maestro versions pick a port per shard, so check yours.</p>
+<p>Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this once on iOS, with Maps), so write those taps in English or skip them with <code>permissions: all: allow</code> in <code>launchApp</code>. And long languages push buttons off the screen: use <code>scrollUntilVisible</code> before the tap, with <code>direction: DOWN</code> (<a href="https://shotfleet.com/the-button-nobody-could-reach">article 3</a> has the story).</p>
+<h2>Read the images, not the exit code</h2>
+<p>All four traps pass. The only way to catch them is to look at the output, or to have something look for you: <code>shotfleet check shots/ --app path/to/MyApp.app</code> reads each image back and reports wrong-language and duplicate images. It is free (no licence, no account) and works on any folder of screenshots.</p>
+<h2>Where shotfleet fits</h2>
+<p>Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so <code>tapOn: "Next"</code> becomes <code>(Nächste|Weiter)</code> in German. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS and 15 on Android on one Mac, four simulators in parallel. That is one app and Maestro 2.0.10, so treat it as a data point. <code>run</code> is free for 2 languages; a licence unlocks every language and <code>export</code>: $29 for the first 100 buyers, then $49 once, 14-day refund.</p>
+<h2>When not to use shotfleet</h2>
+<p>If your app has ids on everything you tap, three or four languages, and one platform, the loop above is enough. If you test on real devices or in a device cloud, shotfleet does not help; it runs simulators and emulators on your Mac. It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. It makes no frames or captions and does not upload to the stores. For Flutter and React Native it works from your translation files; I have tested that on real translation files but not on a real Flutter or React Native app yet, so I do not claim it.</p>
+ </div>
+</main>
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+  </div>
+</footer>
+</body>
+</html>
