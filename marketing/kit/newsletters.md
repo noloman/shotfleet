@@ -2,7 +2,7 @@
 
 Owner: Manu submits. Nothing here has been submitted. Written 2026-10-02.
 Rule: submit an article, never the landing page, one link per newsletter, once. None of them guarantees inclusion; accept silence. Do not follow up before four weeks. Do not ask anyone to share it.
-Ready when: the real domain is live; the article is published and indexed; the page is clean (no popup, no cookie banner: the site has none); the blog has an RSS feed (needed for the iOS Dev Directory, see below; the site had no feed at research time, so add `/feed.xml` first); and the article's TO VERIFY list is ticked. Do not submit before launch week unless an article is final: MARKETING.md puts newsletters in days 2 to 7 of launch week.
+Ready when: the real domain is live; the article is published and indexed; the page is clean (no popup; the only banner is the analytics choice, which sets nothing until the visitor accepts); the blog has an RSS feed (needed for the iOS Dev Directory, see below; the site had no feed at research time, so add `/feed.xml` first); and the article's TO VERIFY list is ticked. Do not submit before launch week unless an article is final: MARKETING.md puts newsletters in days 2 to 7 of launch week.
 
 Routes were read on 2026-10-02 from each site (V) except where marked.
 
