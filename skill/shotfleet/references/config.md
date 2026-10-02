@@ -18,7 +18,7 @@ With both, output goes to `out-ios/` and `out-android/`; with one, to `out/`.
 
 ## Keys
 
-Tables allowed: `[ios]`, `[android]`, `[hooks]`, `[overrides.<locale>]`. Any other table is refused.
+Tables allowed: `[ios]`, `[android]`, `[hooks]`, `[overrides.<locale>]`, `[inputs]`. Any other table is refused.
 
 Keys valid in `[ios]` and `[android]`:
 
@@ -101,6 +101,21 @@ strings.
 ```
 
 Values must be strings (`should map English texts to text in that language`).
+
+## Inputs
+
+Text a flow types, per language. The flow says `inputText: ${name}`:
+
+```toml
+[inputs]            # default for every language without its own value
+name = "Alex"
+[inputs.ja]         # language as shotfleet names it; `pt` covers pt-BR
+name = "田中"
+```
+
+Values must be text and names letters, digits or `_`. iOS runs get the language's value as a Maestro `env:` entry in that
+language's flow; Android runs type the defaults only. Unit-tested as flow text, not yet run on a device: check the first
+screenshots in a script like Japanese or Arabic.
 
 ## Plugins and other switches
 

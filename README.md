@@ -204,6 +204,19 @@ Variables: `SHOTFLEET_EVENT`, `_VERSION`, `_CONFIG`, `_PLATFORM`, `_OUT`, `_BUND
 "Search" = "Ara"
 ```
 
+**Inputs** set the text a flow types, per language. Write `inputText: ${name}` in the flow and give the values in the config:
+
+```toml
+[inputs]                               # typed in every language that has no value of its own
+name = "Alex"
+[inputs.ja]                            # the language as shotfleet names it; pt covers pt-BR too
+name = "田中"
+```
+
+The value goes into that language's flow as a Maestro `env:` entry. This works on iOS; Android runs type the
+`[inputs]` defaults only, because Maestro hands any flow to any emulator. The values are tested as flow text, not yet
+run on a device, so check the first screenshots in a script like Japanese or Arabic.
+
 **Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH (like `git` and `gh`), when `foo` isn't a built-in command.
 
 **Anything else**: `run`, `check` and `export` take `--json` and use stable exit codes (0 ok, 1 problems, 2 setup error), so
@@ -245,4 +258,4 @@ translation source.
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+ (Maestro needs it).
 - Android needs API 33+ emulators for per-app languages.
 - `launchApp` options must be written as a block (as above), not inline `{ ... }`.
-- Text you type into fields isn't translated, so demo data stays the same in every language.
+- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS only, see above).

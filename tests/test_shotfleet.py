@@ -1480,3 +1480,37 @@ class RetryOnSlowSimulator(unittest.TestCase):
             self.assertIn("short of memory", sf.overload_note(1, 1))
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "1", "")):
             self.assertEqual(sf.overload_note(2, 2), "")
+
+
+class TypedTextPerLanguage(unittest.TestCase):
+    FLOW = "appId: x\n---\n- launchApp\n- tapOn: Next\n- inputText: ${name}\n- takeScreenshot: 01\n"
+
+    def test_the_localized_flow_carries_that_languages_text_in_its_header(self):
+        inputs = {"name": "Alex", "ja": {"name": "田中"}, "pt": {"name": "Ana"}}
+        ja = sf.localize_flow(self.FLOW, "ja", Path("/o"), sf.inputs_for(inputs, "ja")).split("\n---\n")[0]
+        self.assertIn('env:\n  name: "田中"', ja)
+        de = sf.localize_flow(self.FLOW, "de", Path("/o"), sf.inputs_for(inputs, "de")).split("\n---\n")[0]
+        self.assertIn('name: "Alex"', de)                       # no German value: the default
+        self.assertEqual(sf.inputs_for(inputs, "pt-BR"), {"name": "Ana"})  # the language part matches a region
+
+    def test_an_env_block_the_user_wrote_is_extended_not_duplicated(self):
+        flow = "appId: x\nenv:\n  mode: fast\n---\n- launchApp\n"
+        header = sf.localize_flow(flow, "ja", Path("/o"), {"name": "田中"}).split("\n---\n")[0]
+        self.assertEqual(header.count("env:"), 1)
+        self.assertIn("mode: fast", header); self.assertIn('name: "田中"', header)
+
+    def test_quotes_and_colons_in_the_text_stay_one_yaml_string(self):
+        header = sf.with_env("appId: x", {"q": 'say "hi": #1'})
+        self.assertIn('q: "say \\"hi\\": #1"', header)
+
+    def test_a_flow_without_inputs_is_unchanged(self):
+        self.assertEqual(sf.localize_flow(self.FLOW, "de", Path("/o"), {}), sf.localize_flow(self.FLOW, "de", Path("/o")))
+
+    def test_the_config_checker_refuses_non_text_and_bad_names(self):
+        sf.check_tables({"ios": {}, "inputs": {"name": "a", "ja": {"name": "田中"}}}, "t.toml")
+        for bad in ({"inputs": {"name": 3}}, {"inputs": {"ja": {"na me": "x"}}}, {"inputs": {"ja": {"name": 1}}}):
+            with self.assertRaises(sf.Fail): sf.check_tables(bad, "t.toml")
+
+    def test_android_flows_get_the_defaults_only(self):
+        text = sf.android_flow(self.FLOW, "f0", Path("/o"), sf.inputs_for({"name": "Alex", "ja": {"name": "田中"}}, "", defaults_only=True))
+        self.assertIn('name: "Alex"', text); self.assertNotIn("田中", text)

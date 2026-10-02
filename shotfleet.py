@@ -35,7 +35,7 @@ KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "b
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "system_image": str, "devices": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
-TABLES = ("ios", "android", "hooks", "overrides")  # the optional tables [hooks] and [overrides.<locale>] are documented in the README
+TABLES = ("ios", "android", "hooks", "overrides", "inputs")  # the optional tables [hooks] and [overrides.<locale>] are documented in the README
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
 
 def check_tables(doc, name):
@@ -54,6 +54,10 @@ def check_tables(doc, name):
             raise Fail(f"[hooks] in {name} has an unknown event '{key}'" + (f"; did you mean '{near[0]}'?" if near else f". Events: {', '.join(HOOK_EVENTS)}"))
         elif not (isinstance(value, str) or isinstance(value, list) and all(isinstance(c, str) for c in value)):
             raise Fail(f"[hooks] {key} in {name} should be a command (a string) or a list of commands")
+    for key, value in doc.get("inputs", {}).items():  # [inputs] name = "default"; [inputs.<locale>] name = "that language's text"
+        for k, v in (value.items() if isinstance(value, dict) else [(key, value)]):
+            if not isinstance(v, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k):
+                raise Fail(f"[inputs] in {name}: '{k}' should be a name (letters, digits, _) set to text, e.g. name = \"Alex\" or, under [inputs.ja], name = \"田中\"")
     for locale, table in doc.get("overrides", {}).items():
         if not isinstance(table, dict) or not all(isinstance(v, str) for v in table.values()):
             raise Fail(f"[overrides.{locale}] in {name} should map English texts to text in that language, e.g. \"Next\" = \"İleri\"")
@@ -99,6 +103,7 @@ def load_config(config_path, platform=None):
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a {names}, not {value!r}")
     cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
+    cfg["_inputs"] = doc.get("inputs", {})
     cfg.setdefault("flow", "flow.yaml")
     cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
     missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
@@ -734,7 +739,25 @@ def with_app_id(flow, app_id):
     header = re.sub(r"(?m)^appId:.*\n?", "", header).strip("\n")
     return f"appId: {app_id}\n{header}{chr(10) if header else ''}---\n{body}"
 
-def localize_flow(flow, lproj, shots_dir):
+def inputs_for(inputs, lproj, defaults_only=False):
+    """Text to type for one language: the [inputs] defaults, then [inputs.<locale>] (exact, else the language part: pt for pt-BR)."""
+    out = {k: v for k, v in (inputs or {}).items() if isinstance(v, str)}
+    if not defaults_only:
+        for key in (lproj.split("-")[0], lproj):
+            if isinstance(inputs.get(key), dict): out.update(inputs[key])
+    return out
+
+def with_env(header, env):
+    """The flow header with `env:` values added (merged into an `env:` block the user already wrote), for `inputText: ${name}`."""
+    if not env: return header
+    lines = header.splitlines()
+    new = [f"  {k}: {json.dumps(v, ensure_ascii=False)}" for k, v in env.items()]
+    for i, l in enumerate(lines):
+        if re.match(r"^env:\s*$", l):
+            return "\n".join(lines[:i + 1] + new + lines[i + 1:])
+    return "\n".join(lines + ["env:"] + new)
+
+def localize_flow(flow, lproj, shots_dir, env=None):
     """Make a translated flow self-contained for one locale.
 
     Maestro can only run several simulators at once from one process (--shard-split), which hands
@@ -759,7 +782,7 @@ def localize_flow(flow, lproj, shots_dir):
     header, sep, body = flow.partition("\n---\n")
     if not sep:
         raise ValueError("flow needs an 'appId:' header followed by '---'")
-    header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {lproj}"
+    header = with_env(re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {lproj}", env)
     lines, out, first, started, i = body.splitlines(), [], None, False, 0
     while i < len(lines):
         line = lines[i]; i += 1
@@ -1058,7 +1081,7 @@ def ios_run(cfg, path, only=None, parallel=None):
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
-        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp))
+        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp, inputs_for(cfg.get("_inputs"), lp)))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -1221,12 +1244,12 @@ def android_pool(n, cfg, pool):
     for e in pool:
         for c in DEMO_MODE: e.adb("shell", c, check=False)
 
-def android_flow(text, name, shots_dir):
+def android_flow(text, name, shots_dir, env=None):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
     No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself."""
     header, sep, body = text.partition("\n---\n")
     if not sep: raise ValueError("flow needs an 'appId:' header followed by '---'")
-    header = re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}"
+    header = with_env(re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}", env)
     first = next((l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")), "")
     out = [] if re.match(r"\s*- launchApp", first) else ["- launchApp"]
     # ponytail: no screen-text reading on Android: `maestro hierarchy` can't reach the drivers of a sharded run and
@@ -1255,6 +1278,8 @@ def android_run(cfg, path, out, only, parallel):
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
+    if any(isinstance(v, dict) for v in cfg.get("_inputs", {}).values()):
+        print("note: [inputs.<locale>] values are used on iOS only; Android runs type the [inputs] defaults (Maestro hands any flow to any emulator)")
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
@@ -1289,7 +1314,7 @@ def android_run(cfg, path, out, only, parallel):
             text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}"))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}", inputs_for(cfg.get("_inputs"), "", defaults_only=True)))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
