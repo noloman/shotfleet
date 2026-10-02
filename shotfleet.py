@@ -1857,6 +1857,30 @@ def java_env():
     ok, home = find_java()
     return {"JAVA_HOME": home, "PATH": f"{home}/bin:{os.environ.get('PATH', '')}"} if ok and home else {}
 
+DOCTOR_OCR_TIMEOUT_S = 60  # doctor never waits longer than this for text recognition
+
+MAESTRO_TESTED = ("2.0.10",)  # the only Maestro every real run used; extend after re-testing a newer one
+
+def parse_maestro_version(*outputs):
+    """The version in `maestro --version` output (a line like '2.0.10' or 'v2.0.10', maybe after JVM warnings), or None."""
+    for text in outputs:
+        for line in reversed((text or "").strip().splitlines()):
+            if m := re.match(r"\s*(?:maestro\s+)?v?(\d+(?:\.\d+)+)\b", line, re.I): return m.group(1)
+    return None
+
+def read_maestro_version(timeout=120):
+    """Installed Maestro's version, or None when it can't be read (garbage output, a timeout: it is a JVM app, slow on a busy Mac)."""
+    try: r = sh(["maestro", "--version"], timeout=timeout, env={**os.environ, **java_env()})
+    except (OSError, subprocess.TimeoutExpired): return None
+    return parse_maestro_version(r.stdout, r.stderr)
+
+def maestro_warning(version):
+    """One line when this isn't a Maestro shotfleet was tested with; None when it is. Never a reason to stop."""
+    tested = ", ".join(MAESTRO_TESTED)
+    if version in MAESTRO_TESTED: return None
+    if version is None: return f"could not read Maestro's version; shotfleet was tested with Maestro {tested} and it may work with yours"
+    return f"Maestro {version} is not the version shotfleet was tested with ({tested}); it may work"
+
 def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
@@ -1864,14 +1888,11 @@ def cmd_doctor():
     image, later = find_image(), "(command below)"
     has_adb, has_emulator, has_avdmanager = adb_cmd() != "adb" or have("adb"), (SDK / "emulator/emulator").exists(), bool(cmdline_tool("avdmanager"))
     has_image = bool(image) or (Path.home() / ".android/avd/shotfleet_android.avd").exists()  # an existing AVD needs no image
-    try:  # Maestro is a JVM app: --version can take long on a busy Mac
-        maestro = sh(["maestro", "--version"], timeout=120, env={**os.environ, **java_env()}).stdout.strip().splitlines()[-1:] if have("maestro") else []
-    except subprocess.TimeoutExpired:
-        maestro = ["(version check timed out)"]
-    maestro_ok = bool(maestro) and (maestro[0].startswith("(") or
-                                    maestro[0].split(".")[0].isdigit() and int(maestro[0].split(".")[0]) >= 2)
+    maestro_v = read_maestro_version() if have("maestro") else None  # a JVM app: --version can take long on a busy Mac
+    maestro_ok = have("maestro") and (maestro_v is None or int(maestro_v.split(".")[0]) >= 2)  # unreadable: installed, warned about below
+    tested = ", ".join(MAESTRO_TESTED)
     checks = [
-        (f"maestro {maestro[0] if maestro else ''}".strip(), maestro_ok,
+        (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if have("maestro") else "maestro", maestro_ok,
          "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
         ("java 17+", find_java()[0], "brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)", "both"),
         ("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both"),
@@ -1885,6 +1906,7 @@ def cmd_doctor():
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
+    if have("maestro") and (w := maestro_warning(maestro_v)): print(f"note: {w}")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -1892,13 +1914,24 @@ def cmd_doctor():
     if pkgs or not has_avdmanager:  # without sdkmanager, Homebrew's command-line tools (installed first) bring avdmanager too
         cmds = sdkmanager_commands(pkgs) if pkgs else sdkmanager_commands([])[:-1]
         print("Android: to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
-    print("...  text recognition   (first use after a restart can take a few minutes while macOS prepares it)", flush=True)
-    try:
-        t0 = time.time(); read = sh([ocr_tool(), "--warmup"], timeout=600).stdout.strip()
-        print(f"{'ok  ' if read == 'Ready' else 'PROBLEM'} text recognition   ready in {time.time() - t0:.0f} s"
-              + ("" if read == "Ready" else f" but read {read!r}; screenshot checks may be unreliable"))
-    except (subprocess.TimeoutExpired, RuntimeError) as e:
-        print(f"PROBLEM text recognition   didn't answer ({e}); restarting the Mac usually fixes it")
+    print(f"...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most {DOCTOR_OCR_TIMEOUT_S} s)", flush=True)
+    try:  # a timeout or an empty answer is a busy Mac or the one-time model compile (17 to 188 s measured), not a broken setup
+        t0 = time.time(); r = sh([ocr_tool(), "--warmup"], timeout=DOCTOR_OCR_TIMEOUT_S); read = r.stdout.strip()
+    except subprocess.TimeoutExpired:
+        read, r = None, None
+    except (OSError, RuntimeError) as e:
+        read, r = None, e
+    if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
+        print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
+              f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it")
+    elif isinstance(r, Exception):
+        print(f"PROBLEM text recognition   can't start ({r}); restarting the Mac usually fixes it")
+    elif r.returncode != 0:
+        print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; restarting the Mac usually fixes it")
+    elif read == "Ready":
+        print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
+    else:
+        print(f"note: text recognition read {read!r} instead of 'Ready'; screenshot checks may be unreliable")
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
@@ -2572,7 +2605,9 @@ def main_dispatch(a):
         global NO_HOOKS
         NO_HOOKS = bool(getattr(a, "no_hooks", False))
         if a.cmd == "export": require_licence()
-        if a.cmd == "run": apply_free_tier()
+        if a.cmd == "run":
+            apply_free_tier()
+            if shutil.which("maestro") and (w := maestro_warning(read_maestro_version(60))): print(f"note: {w}", file=sys.stderr)
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)

@@ -554,7 +554,7 @@
   ],
   "where_text": [
    "It needs an Apple silicon Mac, Maestro and Java 17+.",
-   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+"
+   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+"
   ],
   "status": "partial",
   "proof": "JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro, test_no_java_is_reported; doctor checks it (shotfleet.py:1714-1752). README's own prerequisite line omits Java 17+ and the site omits Xcode/Android SDK.",

@@ -258,7 +258,7 @@ translation source.
 - For full verification of those scripts, give `check` an OCR that reads them, e.g. Tesseract (`brew install tesseract tesseract-lang`, about 700 MB): `--ocr-command "tesseract {image} stdout -l {tesseract}"` (or set `SHOTFLEET_OCR`). It's used only for languages macOS can't read; `{lang}` is the language code if your tool wants that instead.
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
-- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+ (Maestro needs it).
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; it may still work, nothing is blocked.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing.
 - `launchApp` options must be written as a block (as above), not inline `{ ... }`.
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS only, see above).

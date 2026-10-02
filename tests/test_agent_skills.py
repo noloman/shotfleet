@@ -230,9 +230,11 @@ class LlmsTxt(unittest.TestCase):
 
     def test_requirements_match_the_readme(self):
         readme = (ROOT / "README.md").read_text()
-        for fact in ("Apple silicon", "Java 17+", "Maestro 2.x"):
+        for fact in ("Apple silicon", "Java 17+"):
             self.assertIn(fact, readme)
             self.assertIn(fact, LLMS)
+        self.assertIn("Maestro (tested with 2.0.10)", readme)
+        self.assertIn("Maestro", LLMS)
         self.assertTrue(LLMS.startswith("# shotfleet\n\n> "))
 
     def test_it_does_not_promise_an_upload_or_a_live_sale(self):
