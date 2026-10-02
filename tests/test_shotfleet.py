@@ -1351,3 +1351,77 @@ class ReviewGrid(unittest.TestCase):
         self.assertEqual(page.count("<small>"), 2)  # one visible note per flagged cell
         self.assertIn("file://", page)              # the report can be moved; the screenshots stay where they are
         self.assertNotIn('src="../shots', page)
+
+
+class FrameworkHints(unittest.TestCase):
+    """Flutter, React Native and the like keep their translations in compiled code: tell the user the `strings =` line to add."""
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp()); self.addCleanup(__import__("shutil").rmtree, self.dir, True)
+        p = mock.patch.object(sf, "HINTED", set()); p.start(); self.addCleanup(p.stop)
+
+    def app(self, name, files):
+        app = self.dir / name; app.mkdir()
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.example." + name[:-4], "DTPlatformName": "iphonesimulator"}))
+        for f in files: (app / f).parent.mkdir(parents=True, exist_ok=True); (app / f).write_bytes(b"x")
+        return app
+
+    def hints(self, build, strings_set=False):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err): sf.framework_hint(build, strings_set, self.dir)
+        return [l for l in err.getvalue().splitlines()]
+
+    def flutter(self): return self.app("flutter.app", ["Frameworks/App.framework/flutter_assets/kernel_blob.bin", "Frameworks/Flutter.framework/Flutter"])
+    def rn(self): return self.app("rn.app", ["Frameworks/hermes.framework/hermes", "RCTI18nStrings.bundle/en.lproj/x"])
+    def native(self): return self.app("native.app", ["en.lproj/Localizable.strings", "de.lproj/Localizable.strings"])
+
+    def test_flutter_build_gets_the_strings_line_and_the_debug_banner_warning(self):
+        got = self.hints(self.flutter())
+        self.assertEqual(len(got), 2); self.assertTrue(all(l.startswith("hint: ") for l in got))
+        self.assertIn('strings = "lib/l10n/*.arb"', got[0]); self.assertIn("DEBUG banner", got[1])
+
+    def test_flutter_apk_is_recognised_too_and_a_release_build_has_no_banner_warning(self):
+        import zipfile
+        apk = self.dir / "app.apk"
+        with zipfile.ZipFile(apk, "w") as z: z.writestr("lib/arm64-v8a/libflutter.so", "x"); z.writestr("assets/flutter_assets/AssetManifest.json", "{}")
+        got = self.hints(apk)
+        self.assertEqual(len(got), 1); self.assertIn('strings = "lib/l10n/*.arb"', got[0])
+
+    def test_react_native_debug_build_is_told_to_add_strings_and_to_build_release(self):
+        got = self.hints(self.rn())
+        self.assertIn('strings = "src/locales/*/translation.json"', got[0]); self.assertIn("Metro", got[1]); self.assertIn("Release", got[1])
+        self.assertEqual(self.hints(self.app("rel.app", ["main.jsbundle"]), strings_set=True), [])  # Release with strings set: nothing to say
+
+    def test_the_line_names_the_translation_files_found_in_the_project(self):
+        (self.dir / "src/translations").mkdir(parents=True); (self.dir / "src/translations/en.json").write_text("{}")
+        self.assertIn('strings = "src/translations/*.json"', self.hints(self.rn())[0])
+
+    def test_a_native_ios_build_gets_no_hint(self):
+        self.assertEqual(self.hints(self.native()), [])
+
+    def test_each_hint_is_shown_once_and_strings_in_the_config_silences_the_strings_hint(self):
+        flutter = self.flutter()
+        self.assertEqual(len(self.hints(flutter)), 2); self.assertEqual(self.hints(flutter), [])
+        sf.HINTED.clear(); got = self.hints(flutter, strings_set=True)
+        self.assertEqual(len(got), 1); self.assertIn("DEBUG banner", got[0])
+
+    def test_init_prints_the_strings_line_for_a_flutter_build_and_stays_quiet_for_a_native_one(self):
+        for build, expect in ((self.flutter(), 'strings = "lib/l10n/*.arb"'), (self.native(), None)):
+            sf.HINTED.clear(); err, out = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+                self.assertEqual(sf.cmd_init(str(build), self.dir / build.stem), 0)
+            if expect: self.assertIn(expect, err.getvalue()); self.assertIn("hint: ", err.getvalue())
+            else: self.assertNotIn("hint:", err.getvalue())
+            self.assertIn("languages", out.getvalue())
+
+    def test_run_and_check_show_the_hint_before_they_can_fail(self):
+        flutter = self.flutter()
+        (self.dir / "shotfleet.toml").write_text(f'[ios]\napp = "{flutter}"\n'); (self.dir / "flow.yaml").write_text("- launchApp\n")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), mock.patch.object(sf, "latest_ios_runtime", return_value="rt"), \
+             self.assertRaises(sf.Fail):  # no translations in the stub, so the run stops; the hint came first
+            sf.cmd_run(str(self.dir / "shotfleet.toml"))
+        self.assertIn('strings = "lib/l10n/*.arb"', err.getvalue())
+        sf.HINTED.clear(); err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaisesRegex(sf.Fail, "no translations"):
+            sf.cmd_check(self.dir / "out", app=flutter)
+        self.assertIn('strings = "lib/l10n/*.arb"', err.getvalue())

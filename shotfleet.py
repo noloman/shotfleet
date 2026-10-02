@@ -525,6 +525,38 @@ def note_partly_translated(strings, base):
     for lp, pct in partly_translated(strings, base):
         print(f"note: {lp} is only {pct}% translated in the app, so it is skipped; add locales = [..., \"{lp}\"] to the config to capture it anyway")
 
+FRAMEWORKS = [  # (name, marker in the build's file names, candidate `strings` globs; the first is the default)
+    ("Flutter", r"flutter_assets|libflutter\.so|Flutter\.framework", ["lib/l10n/*.arb", "assets/translations/*.json"]),
+    ("React Native", r"main\.jsbundle|index\.android\.bundle|hermes|libreactnativejni|React-Core_privacy|RCTI18nStrings",
+     ["src/locales/*/translation.json", "src/translations/*.json", "locales/*.json"]),
+    ("Unity", r"UnityFramework|libunity\.so|UnityPlayer", ["Localization/*.csv"]),
+    (".NET MAUI", r"Microsoft\.Maui|libmonodroid|libxamarin-app|assemblies\.blob", ["Resources/Strings/*.resx", "Resources/*.resx"]),
+]
+HINTED = set()  # hints already printed, so a run over many devices says each once
+
+def framework_hint(build, strings_set, root="."):
+    """Print (to stderr, once, never blocking) what to add to shotfleet.toml when `build` is Flutter, React Native, MAUI or
+    Unity, whose translations are compiled into code shotfleet can't read, and warn about debug builds whose screenshots
+    would show a banner or a red box. ponytail: file-name markers only, not confirmed on real builds of every version."""
+    b = Path(build)
+    names = [p.relative_to(b).as_posix() for p in b.rglob("*")] if b.is_dir() else zipfile.ZipFile(b).namelist() if zipfile.is_zipfile(b) else []
+    text = "\n".join(names)
+    name, _, globs = next((f for f in FRAMEWORKS if re.search(f[1], text)), (None, None, None))
+    if not name: return
+    msgs = []
+    if not strings_set:
+        line = next((g for g in globs if glob.glob(g, root_dir=root)), globs[0])
+        msgs.append(f'{name} keeps its translations inside compiled code, which shotfleet cannot read from the build. '
+                    f'Add this to shotfleet.toml (point it at your translation files): strings = "{line}"')
+    if name == "Flutter" and "kernel_blob.bin" in text:
+        msgs.append("this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets "
+                    "debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)")
+    if name == "React Native" and not re.search(r"main\.jsbundle|index\.android\.bundle", text):
+        msgs.append("this React Native build has no JavaScript bundle, so it is a Debug build that loads its code from the Metro "
+                    "dev server: screenshots show the red box or fail offline. Build Release (--configuration Release on iOS, --variant release on Android)")
+    for m in msgs:
+        if m not in HINTED: HINTED.add(m); print("hint: " + m, file=sys.stderr)
+
 def shipped_locales(strings, base="en", min_coverage=0.5):
     """Locales the app itself is translated into.
 
@@ -995,6 +1027,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
     cfg.setdefault("runtime", latest_ios_runtime())
     cfg["app"] = str(path(cfg["app"]))
+    framework_hint(cfg["app"], "strings" in cfg, path("."))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = config_strings(cfg, path) or load_strings(Path(cfg["app"]))
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
@@ -1200,6 +1233,7 @@ def flow_devices(debug_dir):
 
 def android_run(cfg, path, out, only, parallel):
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
+    framework_hint(apk, "strings" in cfg, path("."))
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
     if not only and not cfg.get("locales"): note_partly_translated(strings, cfg.get("base_locale", "en"))
@@ -1561,6 +1595,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if (layout_android and not layout_ios and app.suffix == ".app") or (layout_ios and not layout_android and app.suffix == ".apk"):
             raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
+        framework_hint(app, bool(strings_files))
         strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
         if not strings: raise Fail(f"{app.name} contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)")
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
@@ -1820,6 +1855,7 @@ def cmd_init(builds, dest="."):
             found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(load_strings(app))))
         else:
             raise Fail(build_hint(app))
+    for build in builds: framework_hint(Path(build).expanduser().resolve(), False, dest)
     dest.mkdir(parents=True, exist_ok=True)
     for name, text in (("shotfleet.toml", "\n\n".join(sections) + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
         if (dest / name).exists():
