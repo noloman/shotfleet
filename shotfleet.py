@@ -1324,6 +1324,16 @@ def app_locale(label, available):
         if canon(a) == canon(label) or canon(a) == canon(label).split("-")[0]: return a
     return None
 
+def warm_up_ocr(ocr):
+    """One recognition on its own before the parallel ones, so macOS compiles its model once (minutes after a restart).
+    If even that doesn't answer, macOS's recognition service is stuck: say so now instead of timing out per image."""
+    try:
+        if sh([ocr, "--warmup"], timeout=600).stdout.strip(): return
+    except subprocess.TimeoutExpired:
+        pass
+    raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy use); "
+               "restarting the Mac fixes it. Or check with another OCR: --ocr-command 'tesseract {image} stdout -l {tesseract}'")
+
 def screen_text(png):
     """The screen's text as the app reported it during the run (exact, any script), in OCR's result shape; or None."""
     f = Path(png).with_suffix(".texts.json")
@@ -1414,7 +1424,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr = ocr_tool()
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:  # each OCR is its own process
+    if any(not Path(png).with_suffix(".texts.json").exists() for _, png in pngs): warm_up_ocr(ocr)
+    # ponytail: 4 at a time; 10 parallel first-use requests are the likely trigger of macOS's text-recognition
+    # service wedging (seen twice); raise it if that turns out to be unrelated
+    with ThreadPoolExecutor(max_workers=4) as ex:  # each OCR is its own process
         ocrs = list(ex.map(lambda item: screen_text(item[1]) or read_text(ocr, item[1]), pngs))
         ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
         if ocr_command:  # scripts macOS can't read go to the user's OCR (e.g. Tesseract) instead
