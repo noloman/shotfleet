@@ -18,7 +18,7 @@ Commands:
 - `shotfleet run <dir>/shotfleet.toml --locales en`: captures one language first; without `--locales`, all of them. Boots simulators and takes minutes: ask first.
 - `shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json --report <report-dir>`: verifies screenshots, free, no simulators. Use `--strings '<glob>'` instead of `--app` for Flutter or React Native translation files.
 - `shotfleet export <out> --fastlane <fastlane-dir>`: copies the languages that passed into fastlane's folders (needs a licence). Only when asked.
-- `shotfleet activate <key>`: the user runs this themselves with the key from their purchase email.
+- `shotfleet activate <key>`: the user runs this themselves with the key from their Gumroad receipt email.
 
 Exit codes for `run`, `check`, `export`: 0 all good, 1 problems found, 2 setup error (stderr says what to fix), 130
 interrupted. `--json` prints JSON to stdout (`exit`, `screenshots`, `problems`, `notes`; `export`: `exit`, `exported`,

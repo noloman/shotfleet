@@ -63,7 +63,7 @@
    "Your app and screenshots are never uploaded."
   ],
   "status": "partial",
-  "proof": "Code audit 2026-10-02: grep urlopen in shotfleet.py finds only Polar/Lemon Squeezy/Gumroad licence calls, https://shotfleet.com/download/VERSION (doctor) and http://127.0.0.1 (Maestro driver). No test pins this. 2026-10-02: a test lists every host named in shotfleet.py (the site, Polar, Gumroad, Lemon Squeezy for licence checks, a local test server); no runtime traffic capture exists.",
+  "proof": "Code audit 2026-10-02: grep urlopen in shotfleet.py finds only Gumroad (the store; Polar and Lemon Squeezy code stays for old keys) licence calls, https://shotfleet.com/download/VERSION (doctor) and http://127.0.0.1 (Maestro driver). A test lists every host named in shotfleet.py (the site, Gumroad, Polar, Lemon Squeezy for licence checks, a local test server); no runtime traffic capture exists.",
   "layer": "unit",
   "assertion": "AST/grep test: every http(s) URL literal in shotfleet.py is in an allow-list {site /download/VERSION, api.polar.sh, api.lemonsqueezy.com, api.gumroad.com, 127.0.0.1}; no request body contains file bytes. Fixture: run `check` with the network blocked (sandbox-exec deny network*) and assert exit 0.",
   "fix": "",
@@ -718,10 +718,10 @@
    "$49 one-time ($29 for the first 100 buyers)",
    "The first 100 buyers pay $29 instead of $49",
    "$49 once, $29 founder",
-   "`FOUNDER29` $29 code for the first 100"
+   "`FOUNDER29` $20 off for the first 100"
   ],
   "status": "partial",
-  "proof": "Amounts agree everywhere ($49 / $29 / 100 / 14 days; checked 2026-10-02). Who gets $29 does not: index.html 'first 100 people', LAUNCH.md '100 redemptions' (code FOUNDER29 on the checkout link: anyone), launch-posts-v2.md:44,113 and STRATEGY.md 'first 100 on the list', launch-email.md 'before anyone else'. Polar product is 49 USD and 49 EUR with 20 off in each (LAUNCH.md:14-15): EU buyers pay 29 EUR, the page shows $ only.",
+  "proof": "Amounts agree everywhere ($49 / $29 / 100 / 14 days; checked 2026-10-02). Who gets $29 does not: index.html 'first 100 people', LAUNCH.md 'first 100' (code FOUNDER29, applied automatically on the Gumroad product: anyone), launch-posts-v2.md:44,113 and STRATEGY.md 'first 100 on the list', launch-email.md 'before anyone else'. 2026-10-02 (Gumroad): the plan is a $49 list price with FOUNDER29 = $20 off, limit 100 uses, applied automatically; Gumroad adds VAT on top of the price (cannot be inclusive), so the page says 'before VAT where it applies'. Unverified: what the page shows after the 100th use (research/gumroad-setup.md section 4).",
   "layer": "site",
   "assertion": "Script: collect every $N and 'first 100' phrase in index.html, README, LAUNCH.md, DISTRIBUTION.md, marketing/*.md; assert the set of amounts == {29, 49} and the who-gets-it wording is identical.",
   "fix": "Say 'the first 100 buyers' everywhere, and delete 'on the list'."
@@ -775,10 +775,10 @@
    "Unlimited apps and projects, including client and commercial work."
   ],
   "status": "partial",
-  "proof": "Client: GumroadLicence.test_three_macs_then_refused (client-side count); PolarLicence.test_ci_key_validates_without_taking_an_activation (CI key takes no slot). For Polar, the 3-activation limit is server-side only (LAUNCH.md:12, benefit created 2026-10-01 'up to 3 activations') and the client never saw the real Polar API: PolarLicence mocks polar_post itself, so the request shape (organization_id, label, activation_id) and the 403/404/422 handling are unproven. POLAR_ORG_ID is still '' in shotfleet.py:2082 until go-live.sh runs. SHOTFLEET_KEY for CI is documented nowhere public (only DISTRIBUTION.md:25).",
+  "proof": "Client: GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing (the 4th activation is refused and spends nothing), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, PolarLicence.test_ci_key_validates_without_taking_an_activation and GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Never run against the real Gumroad with this product (no product exists yet); the fake follows Gumroad's help article and Keysi's live measurements (a real purchase verified there 2026-09-11). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs.",
   "layer": "device",
-  "assertion": "Against Polar's sandbox org (sandbox-api.polar.sh): activate the same key 4 times: the 4th is refused with a message naming 3 activations; a revoked key fails validate; SHOTFLEET_KEY validates and consumes no slot. Unit: a release-build test asserting POLAR_ORG_ID is non-empty.",
-  "fix": "Document SHOTFLEET_KEY for CI in README and terms."
+  "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key from 4 different Macs (or by clearing licence.json): the 4th is refused with 'all 3 activations' and the Gumroad Uses row still reads 3; SHOTFLEET_KEY validates and the Uses row does not move.",
+  "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8)."
  },
  {
   "id": "C046",
@@ -792,30 +792,30 @@
    "re-checks at most weekly, works offline for 30 days"
   ],
   "status": "proven",
-  "proof": "Licence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), PolarLicence.test_activate_validate_and_deactivate (fresh = no network; 8 days = validate). Same code path for Polar (shotfleet.py:2197-2230).",
+  "proof": "Licence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence).",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
  },
  {
   "id": "C047",
-  "claim": "Polar: a refunded or revoked key stops working",
+  "claim": "Gumroad: a refunded, charged-back or disputed key stops working at the next weekly check (a won dispute keeps working)",
   "where": [
    "site/public/terms.html",
    "DISTRIBUTION.md"
   ],
   "where_text": [
    "ask for a refund within 14 days of buying and you'll get it",
-   "refunds and\n  chargebacks are refused"
+   "refunds, chargebacks and disputes are\n  refused"
   ],
   "status": "partial",
-  "proof": "The client treats only HTTP 200 from Polar's validate as valid (shotfleet.py:2216-2219) and ignores the response's `status` field; Polar documents a status in the 200 body (docs read 2026-10-02) and does not say what a revoked key returns. PolarLicence.fake returns 200 {status: granted} for every good key and never a revoked one. If Polar answers 200 with status 'revoked', a refunded buyer keeps the product.",
+  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid.",
   "layer": "device",
-  "assertion": "Polar sandbox: buy, refund, wait for revocation, then `validate` the key: the CLI must raise NoLicence. Unit: polar_post stub returns (200, {'status': 'revoked'}) and require_licence must raise.",
+  "assertion": "Real Gumroad product: buy with a test code, refund the sale in the dashboard, set licence.json 'checked' back 8 days and run `shotfleet export`: it must raise NoLicence ('refunded').",
   "fix": "",
   "fixed_by": "code",
-  "fixed": "Polar's docs (validate): the 200 body has status 'granted' only; revoked, disabled or expired keys answer 404. The client already refused any non-200; it now also refuses a 200 whose status is not 'granted' (a body without status is still accepted, on purpose, so a harmless schema change cannot lock buyers out). Not run against live Polar: no purchase exists yet.",
-  "test": "PolarKeyStatus.test_revoked_key_is_refused, PolarKeyStatus.test_a_200_whose_status_is_not_granted_is_refused, PolarKeyStatus.test_ci_key_is_held_to_the_same_rule"
+  "fixed": "Rewritten for Gumroad 2026-10-02. gumroad_verify checks refunded, chargebacked and disputed (a won dispute keeps the licence) and treats a 5xx as an outage, not a verdict. Not run against live Gumroad: no product exists yet.",
+  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation"
  },
  {
   "id": "C048",
@@ -856,17 +856,17 @@
  },
  {
   "id": "C050",
-  "claim": "Move to a new Mac with shotfleet deactivate; don't share your key",
+  "claim": "A key has 3 activations: deactivate removes it from a Mac but cannot give one back; a fourth Mac means an email and a manual reset; don't share your key",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "Moving to a new Mac: <code>shotfleet deactivate</code> on the old one."
+   "A key can be activated 3 times, and activating again on a Mac that already holds it counts nothing."
   ],
   "status": "proven",
-  "proof": "PolarLicence.test_activate_validate_and_deactivate (deactivate calls the API with the activation id and deletes the licence file); Licence deactivate path for Lemon Squeezy. If the old Mac is gone the buyer needs LAUNCH.md's 'customers can free an activation' in Polar's portal (untested).",
+  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried.",
   "layer": "unit",
-  "assertion": "Already covered; add: deactivate offline still removes the local file (shotfleet.py:2186 swallows OSError).",
+  "assertion": "Already covered; add: a human resets a Uses row once in the real dashboard.",
   "fix": ""
  },
  {
@@ -901,10 +901,10 @@
    "the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run"
   ],
   "status": "partial",
-  "proof": "The released build asks Polar's API about its key about weekly and stops after 30 offline days or any non-200 (shotfleet.py:2197-2230). So it also depends on Polar's API shape staying the same, the organization staying open and the key not being revoked: a promise of 'keeps working' is stronger than the code (third-party dependency, no kill-proof fallback).",
+  "proof": "The released build asks Gumroad's licence API about its key about weekly and stops after 30 offline days or when Gumroad says the key does not exist or the purchase was refunded, charged back or disputed. A 5xx or timeout never invalidates (GumroadLicence.test_a_gumroad_outage_is_not_a_verdict). So it still depends on Gumroad's API shape and on the product staying published: a promise of 'keeps working' is stronger than the code (third-party dependency, no kill-proof fallback).",
   "layer": "unit",
-  "assertion": "Test that a validate answer of 5xx/timeout never invalidates (it falls under the offline grace); and a release gate that pins the Polar API version used.",
-  "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Polar) is reachable at least once every 30 days.'",
+  "assertion": "Release gate that pins the Gumroad licence answer shape used (success, uses, purchase.refunded/chargebacked/disputed).",
+  "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Gumroad) is reachable at least once every 30 days.'",
   "fixed_by": "wording",
   "fixed": "Terms now say it exactly: the version keeps working as long as macOS, Xcode and Maestro let it and the licence check can run (about weekly, offline for up to 30 days). The weekly/30-day numbers are read from the code in a test.",
   "test": "Offer.test_limits_match_the_code"
@@ -919,12 +919,12 @@
    "I plan to offer an optional renewal for further updates after the first year; it is not available yet."
   ],
   "status": "fixed",
-  "proof": "No renewal product exists: LAUNCH.md lists exactly one Polar product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic.",
+  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic.",
   "layer": "legal",
-  "assertion": "A Polar product 'shotfleet renewal' exists and its key extends the update window.",
+  "assertion": "A Gumroad product 'shotfleet renewal' exists and its key extends the update window.",
   "fix": "After a year, I plan to offer an optional renewal for further updates (not available yet).",
   "fixed_by": "wording",
-  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in Polar is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.'",
+  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.'",
   "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
  },
  {
@@ -943,43 +943,43 @@
    "14-day refunds"
   ],
   "status": "partial",
-  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Polar (merchant of record); nothing in code or tests. The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
+  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
   "layer": "legal",
-  "assertion": "Human: confirm in Polar's dashboard that refunds can be issued after 14 days of the order and which email receives requests.",
+  "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
   "fix": "Drop either 'if shotfleet doesn't work for your app' or 'no questions asked'."
  },
  {
   "id": "C055",
-  "claim": "Payment goes through Polar as merchant of record, which handles VAT; I never see your card details",
+  "claim": "Payment goes through Gumroad as merchant of record, which handles VAT; I never see your card details",
   "where": [
    "site/public/terms.html",
    "site/public/privacy.html",
    "LAUNCH.md"
   ],
   "where_text": [
-   "You buy through Polar, which sells shotfleet to you as the merchant of record.",
+   "You buy through Gumroad, which sells shotfleet to you as the merchant of record.",
    "which sells shotfleet to you as the merchant of record",
-   "Polar** (merchant of record: it charges and pays the VAT"
+   "Payments are on **Gumroad** (merchant of record since 2025-01-01"
   ],
-  "status": "unverifiable",
-  "proof": "Third-party arrangement; LAUNCH.md says the account review is still pending ('nothing can be sold until it passes') and Netherlands KvK/tax duties are Manu's. Untestable here.",
+  "status": "evidence",
+  "proof": "Gumroad's own pages read 2026-10-02 say it is merchant of record for all sales since 2025-01-01 and collects and remits VAT and sales tax worldwide (gumroad.com/pricing; help 121 and 10; its terms). Prices are before VAT (Gumroad cannot make a digital price VAT-inclusive), which the page, terms and README now say. Not seen on a live shotfleet checkout: no product exists yet.",
   "layer": "legal",
-  "assertion": "Human: Polar account approved, payout connected, checkout link opens at $29.",
+  "assertion": "Human: open the live checkout from a Dutch IP or card country and see VAT added on top of $29; check the receipt.",
   "fix": ""
  },
  {
   "id": "C056",
-  "claim": "Founder price applies automatically for the first 100 (checkout link)",
+  "claim": "The founder price applies automatically for the first 100 (a code applied automatically on the Gumroad product)",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "Founder price applies automatically for the first 100 buyers."
+   "the founder price applies automatically for the first 100 buyers."
   ],
   "status": "unverifiable",
-  "proof": "Depends on a checkout link with FOUNDER29 attached (LAUNCH.md step 2), which does not exist yet; 100 redemptions configured 2026-10-01.",
+  "proof": "Depends on the Gumroad product having FOUNDER29 ($20 off, limit 100 uses) set to apply automatically (research/gumroad-setup.md checklist step 5), which does not exist yet. Unverified: what the page shows once the 100 uses are spent (Gumroad documents only a validity-period end as returning to the full price), and whether a test purchase uses one.",
   "layer": "legal",
-  "assertion": "Human: open the checkout link in a private window and read $29.00 in the order summary; with discount.redemptions_count at 100 it must read $49.",
+  "assertion": "Human: open the product page in a private window and read $49 crossed out and $29 in the order summary; after a test of the limit (or at 100 uses) it must read $49.",
   "fix": ""
  },
  {
@@ -1432,25 +1432,25 @@
  },
  {
   "id": "C085",
-  "claim": "Licence key is checked with Polar on activation and about weekly: the key and your Mac's name at activation, nothing else",
+  "claim": "Licence key is checked with Gumroad on activation and about weekly: the key, the product ID and whether to count an activation; no Mac name",
   "where": [
    "site/public/privacy.html"
   ],
   "where_text": [
-   "The installed program checks your licence key with Polar when you activate it and about once a week after. It sends Polar your key, the activation id Polar gave your Mac, the program version, and your Mac's name when you activate."
+   "The installed program checks your licence key with Gumroad when you activate it and about once a week after. It sends Gumroad your key, the product ID, and whether the call should count as an activation (only the first call on a new Mac does); it sends no Mac name, no activation id and no program version, and the request carries your IP address and Python's standard user-agent string."
   ],
-  "status": "partial",
-  "proof": "PolarLicence.test_activate_validate_and_deactivate asserts the calls at function level: activate(key,label), validate(key, activation_id). polar_post (shotfleet.py:2105) also sends organization_id and a shotfleet/<version> User-Agent, and the CLI's `doctor` fetches the site's /download/VERSION (an unpublicised request) and the IP reaches both servers. No test sees real HTTP bodies. Fixed 2026-10-02: wording now matches polar_post (key, organization id, activation id, label on activate, User-Agent shotfleet/<version>) and latest_release.",
+  "status": "proven",
+  "proof": "GumroadLicence.test_nothing_counts_a_use_except_one_activation records the raw form fields the fake server receives: exactly product_id, license_key and increment_uses_count (no label, no hostname, no activation id), and the request has no custom User-Agent (Python's default is sent). The CLI's `doctor` also asks this site for /download/VERSION (said on the page).",
   "layer": "unit",
-  "assertion": "Local HTTP server standing in for Polar records the raw request: JSON keys == {organization_id, key, label} at activation and {organization_id, key, activation_id} at validate; headers contain no hostname.",
-  "fix": "'...the key and your Mac's name (at activation), plus an activation ID and the program version. doctor also asks this site for the latest version number.'",
+  "assertion": "Already covered.",
+  "fix": "",
   "fixed_by": "wording",
-  "fixed": "The old sentence said 'the key, and your Mac's name ... nothing else', which left out the activation id and the program version (User-Agent) that polar_post really sends, and doctor's request for /download/VERSION. The privacy page now lists all of it (read from polar_post and latest_release in shotfleet.py).",
-  "test": "PrivacyPage.test_privacy_says_what_the_program_and_the_site_really_do"
+  "fixed": "Rewritten for Gumroad 2026-10-02: Gumroad's licence API takes only product_id, license_key and increment_uses_count, so the Mac name, activation id and program version the Polar path sent are gone from the text.",
+  "test": "PrivacyPage.test_privacy_says_what_the_program_and_the_site_really_do, GumroadLicence.test_nothing_counts_a_use_except_one_activation"
  },
  {
   "id": "C086",
-  "claim": "I receive your name, email, country and order details from Polar so I can support you",
+  "claim": "I receive your name, email, country and order details from Gumroad so I can support you",
   "where": [
    "site/public/privacy.html"
   ],
@@ -1458,9 +1458,9 @@
    "I receive your name, email, country and order details so I can support you."
   ],
   "status": "unverifiable",
-  "proof": "Depends on Polar's merchant dashboard; no account approved yet (LAUNCH.md).",
+  "proof": "Depends on Gumroad's seller dashboard and sales export (name, email, country are in the sale record); no sale exists yet.",
   "layer": "legal",
-  "assertion": "Human: check what Polar's order export contains once the first sale lands.",
+  "assertion": "Human: check what Gumroad's order export contains once the first sale lands.",
   "fix": ""
  },
  {
@@ -1502,7 +1502,7 @@
    "LAUNCH.md"
   ],
   "where_text": [
-   "turns the page into \"Buy shotfleet\" with your checkout link"
+   "turns the page into \"Buy shotfleet\" with your product URL"
   ],
   "status": "evidence",
   "proof": "Audit snippet 2026-10-02 applying packaging/go-live.sh's two regexes in memory to the current index.html: no 'waitlist', 'early access', 'isn’t released', '@CHECKOUT@' or signup form remains; three Buy links; heading becomes 'Buy shotfleet'. The WAITLIST/SALE markers sit on 4-space-indented lines in the header, hero and price card, which the regexes require. The page was being edited during the audit (reveal.js added): this must be re-run after the redesign settles.",
@@ -1568,15 +1568,15 @@
  },
  {
   "id": "C093",
-  "claim": "Licence: Polar, Lemon Squeezy and Gumroad keys all work; Gumroad counts 3 Macs; refunded/chargebacked Gumroad keys are refused",
+  "claim": "Licence: Gumroad keys are sold (3 activations, one count per key); Polar and Lemon Squeezy keys still work in code; refunded, charged-back and disputed Gumroad keys are refused",
   "where": [
    "DISTRIBUTION.md"
   ],
   "where_text": [
-   "its licence keys work too (activation counts uses, at most 3 Macs; refunds and"
+   "Gumroad is the store: its licence keys count activations (3 per key;"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_three_macs_then_refused, test_refunded_and_unknown_keys_are_refused, test_weekly_recheck_doesnt_use_an_activation, test_key_formats; Licence.* (Lemon Squeezy); PolarLicence.* (mocked). Only Polar is sold (LAUNCH.md); DISTRIBUTION.md 'Left for Manu: the Lemon Squeezy product' contradicts LAUNCH.md ('Lemon Squeezy asks for a company number, so it is not used').",
+  "proof": "GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.* (Lemon Squeezy); PolarLicence.* (mocked). Only Gumroad is sold (LAUNCH.md); Polar was dropped 2026-10-02 because Stripe asks a Dutch resident for a KvK.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -1850,7 +1850,7 @@
    "A live \"N of 100 left\" counter is not built."
   ],
   "status": "proven",
-  "proof": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text keeps the text and rejects any counter number after the go-live transform; Smoke.test_a_counter_number_that_nothing_feeds_fails makes the live smoke test fail on one. Open item in LAUNCH.md: a live count needs a Polar organization token from Manu and an unverified redemptions endpoint.",
+  "proof": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text keeps the text and rejects any counter number after the go-live transform; Smoke.test_a_counter_number_that_nothing_feeds_fails makes the live smoke test fail on one. LAUNCH.md open item: Gumroad shows FOUNDER29's use count in the dashboard only, so no live counter is planned.",
   "layer": "site",
   "assertion": "After go-live, the live page says 'first 100 buyers' and shows no number of buyers left (tools/golive/smoke.sh checks this).",
   "fix": "",

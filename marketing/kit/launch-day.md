@@ -1,7 +1,7 @@
 # Launch day checklist (Manu posts everything)
 
 Owner: Manu, who does all posting from his own accounts. Claude has posted nothing and will not. Written 2026-10-02.
-Plan it comes from: MARKETING.md phase 1 and research/marketing-research.md section 6.2 (Day 0 waitlist email, Indie Hackers and social; Day 1 Show HN; Days 2 to 7 directories and newsletters). The sale cannot open before Polar approves (LAUNCH.md) and the Dutch tax question is answered.
+Plan it comes from: MARKETING.md phase 1 and research/marketing-research.md section 6.2 (Day 0 waitlist email, Indie Hackers and social; Day 1 Show HN; Days 2 to 7 directories and newsletters). The sale cannot open before the Gumroad product is published (LAUNCH.md, research/gumroad-setup.md section 6) and the Dutch tax question is answered.
 
 Times below are your local time (Netherlands). Show HN is timed for the US morning, which is early afternoon for you; the advice that Tuesday to Thursday is best comes from vendor blogs and is unverified. The one hard rule is that the product is runnable and you can answer for hours. Do not launch on a Friday, on a day with a flight, or on a day you cannot reply within the hour.
 
@@ -37,11 +37,11 @@ Files you will paste from (all in marketing/kit/ unless noted):
 
 | Time | Do | Paste from | Check |
 |---|---|---|---|
-| 08:00 | Coffee. Open three tabs: the site, Polar's dashboard (orders, FOUNDER29 redemptions), a terminal in the repo | none | Polar approved; checkout link in hand |
-| 08:15 | `POLAR_ORG_ID=16188b30-3a8a-4fdc-8282-d350ae6ec1bb packaging/go-live.sh --dry-run <checkout link>` first (LAUNCH.md has the id) | none | "dry run clean" |
+| 08:00 | Coffee. Open three tabs: the site, Gumroad's Sales dashboard (orders, FOUNDER29 uses), a terminal in the repo | none | product published; product URL and ID in hand |
+| 08:15 | `tools/golive/storefront.sh <product URL> <product ID> 49`, then `packaging/go-live.sh --dry-run <product URL> <product ID>` first | none | "dry run clean" |
 | 08:30 | The real run: same command without `--dry-run`. It builds, signs, notarizes, uploads, deploys and prints the waitlist | none | No error; the site on https://shotfleet.com/ shows Buy, not the waitlist |
 | 09:00 | Run the preflight item 3 again on the live site (clean Mac or user): install line from the page, not from memory | none | Install works from the page |
-| 09:15 | Buy button: open it logged out, confirm the founder price shows ($29) and the counter reads N of 100 left. Do not complete a purchase | none | Price and counter correct |
+| 09:15 | Buy button: open it logged out, confirm Gumroad shows $49 crossed out and $29 with the founder discount applied. Do not complete a purchase | none | Price correct |
 | 09:30 | Waitlist email: copy the addresses from the go-live output into BCC, subject and body as written. Only use the addresses on the list, from your own account; do not add anyone. Send once | marketing/launch-email.md | Sent; tag in the buy link is already `#price` (no utm needed for your own list) |
 | 09:45 | Indie Hackers: add the product page (name, tagline, descriptions) | directories.md section 7, link `https://shotfleet.com/?utm_source=indiehackers` | Page live |
 | 10:15 | Indie Hackers story post: your own short story of the unreachable Next button, not the $49 validation draft in marketing/launch-posts-v2.md (that draft predates the sale and says fastlane runs languages one after another, which is unverifiable: claims C094). Use the first-comment backstory in show-hn.md as the base; mention the price once | show-hn.md (first comment, shortened) | Posted once |
@@ -100,10 +100,10 @@ Funnel by source, day, browser language and event (this prints signups with emai
 site/signups.sh --visits | grep "$(date +%F)"
 ```
 
-Each line reads `hit:<day>|<source>|<language>|<event> <count>`. Events: `view` (page loaded), `runs` (the real-run section seen), `pricing` (the price section seen), `cta` (a button clicked). Compare by source: `hn`, `indiehackers`, `mastodon`, `bluesky`, `x`, `macapps`, and the direct visits (empty source). Install and download file hits are not counted (they are static files), so installs are unknown; ask in threads and count the Polar activations.
+Each line reads `hit:<day>|<source>|<language>|<event> <count>`. Events: `view` (page loaded), `runs` (the real-run section seen), `pricing` (the price section seen), `cta` (a button clicked). Compare by source: `hn`, `indiehackers`, `mastodon`, `bluesky`, `x`, `macapps`, and the direct visits (empty source). Install and download file hits are not counted (they are static files), so installs are unknown; ask in threads and read the order count and each key's uses in Gumroad.
 
 Also keep open:
-- Polar dashboard: orders, FOUNDER29 redemptions (the counter on the buy page should move; if it does not, tell Claude), refunds.
+- Gumroad dashboard: orders, FOUNDER29 uses (the page shows no counter; watch the number yourself and tell Claude near 90), refunds, sales by UTM source.
 - Your inbox: refund and support emails. Write down the minutes each one takes (MARKETING.md: stop marketing and fix setup friction first if support per sale passes 30 minutes).
 - Hacker News: your post's comment count and rank, and https://news.ycombinator.com/newest for the first minutes.
 
@@ -133,7 +133,7 @@ Stop posting new things first; keep answering. Write down the time and what you 
 |---|---|
 | `install.sh` fails or the download 404s | Say so in the thread within minutes ("the installer is broken for X, fixing, thanks"). Fix by re-running `packaging/release.sh` or asking Claude to check `site/public/download` (VERSION, tarball, .sha256). Test on a clean Mac before saying it is fixed |
 | Checksum mismatch reports | Treat as urgent: it is a real integrity problem. Pull the download (ask Claude to remove the tarball from `site/public/download` and redeploy), say so publicly, rebuild |
-| Checkout or licence activation fails for a buyer | Reply by email within the hour, refund immediately if they ask, find the cause in Polar's activation records, tell the thread what happened |
+| Checkout or licence activation fails for a buyer | Reply by email within the hour, refund immediately if they ask, find the cause in the sale's License key section in Gumroad (the Uses row shows how many activations it has used), tell the thread what happened |
 | Counter does not move or shows a wrong number | Remove the claim from your next posts; tell Claude. Never type a number by hand into a post |
 | A statement in a post or the site turns out false | Correct it in the thread the same hour ("I said X; that is wrong, the truth is Y") and tell Claude to fix the site and add a test to tests/claims.json. Do not delete the post |
 | Site down or wrong page | Check `curl -sI https://shotfleet.com/`; Cloudflare dashboard; if the go-live deploy is the cause, ask Claude to revert the go-live commits and redeploy the waitlist. There is no one-command rollback script |

@@ -33,11 +33,11 @@ Not worth it now: Product Hunt, paid ads, sponsored slots, YouTube pitching, awe
 | 6 | Build story on Mastodon, Bluesky, X with the grid, no price, `?utm_source=` tags | Manu posts from `marketing/kit/social.md` | 2 posts a week |
 | 7 | AlternativeTo listing now (months in queue); email Console.dev when the free tier installs | Manu submits from `marketing/kit/directories.md` | Listing pending |
 | 8 | 3-5 design partners from people who publicly report a locale problem: free licence for an honest write-up, written permission before any quote | Manu asks | 2 signed-off quotes before any testimonial appears |
-| 9 | Founder price shown as plain text ("launch price, first 100 buyers", kept by go-live). A live "N of 100 left" number needs a Polar organization token that only Manu can create and an endpoint for FOUNDER29 redemptions that is not verified yet, so no number is shown until it is backed by data | Manu creates the token; Claude wires it | Text live at launch; counter only if verified |
+| 9 | Founder price shown as plain text ("launch price, first 100 buyers", kept by go-live). A live "N of 100 left" number would need Gumroad's use count for FOUNDER29, which only the dashboard shows (reading it by API needs Manu's Gumroad token, which must not go into the site), so no number is shown | none planned | Text live at launch; the count is read by hand in Gumroad |
 
-Measurement is already in place: visits, pricing views, CTA clicks and runs-section views by source (`site/signups.sh --visits`), signups with source, country and browser language. Polar gives orders, redemptions and refunds.
+Measurement is already in place: visits, pricing views, CTA clicks and runs-section views by source (`site/signups.sh --visits`), signups with source, country and browser language. Gumroad gives orders, FOUNDER29 uses, refunds and sales by UTM source (links carry `utm_source` and `utm_campaign`, which Gumroad keeps).
 
-### Phase 1, launch week (after Polar approves and `packaging/go-live.sh` runs)
+### Phase 1, launch week (after the Gumroad product is published, the first payout review has started and `packaging/go-live.sh` runs)
 - Day 0: email the waitlist (`marketing/launch-email.md`); Indie Hackers product page and one story post; r/macapps once if its rules allow.
 - Day 1-2: Show HN with title "Show HN: One English Maestro flow, every language your app ships, checked". First comment: backstory, limits, pricing. Manu answers for hours.
 - Day 2-7: DevHunt, Uneed, Peerlist; send article links (not the product) to the newsletters above; Maestro Slack announcement only if the channel rules allow.
@@ -64,4 +64,4 @@ Cross-post the same text to several subreddits or Slack channels; drive-by links
 1. Domain name (Manu).
 2. Reddit sidebars (blocked for our tools): Manu reads each before posting.
 3. Whether install and download hits are counted (they are static files, so no): add a counted `/download/` redirect when the domain moves.
-4. Polar review status and the Dutch tax question (LAUNCH.md): the sale cannot open before them.
+4. The Gumroad product (LAUNCH.md, research/gumroad-setup.md section 6), what Stripe asks after the first sales, and the Dutch tax question: the sale cannot open before the product exists.

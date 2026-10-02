@@ -18,8 +18,8 @@
 | Trust | Signed with Manu's Developer ID and notarized by Apple | Without it Gatekeeper blocks the download ("cannot be opened") |
 | Install | `curl -fsSL https://shotfleet.com/install.sh \| sh` (checksum-verified). No Homebrew formula is published | One line, no public repos needed (Homebrew was the first plan; see Status) |
 | Where binaries live | The shotfleet site's `/download` folder (no public repos; source stays private) | The installer reads it over HTTPS and checks the SHA-256 |
-| Payment | Polar checkout from the site (merchant of record: handles VAT/sales tax worldwide; personal accounts allowed, Netherlands supported; ID check through Stripe) | Lemon Squeezy asks for a KvK (none here). Polar Starter: 5% + $0.50, +1.5% international cards, Stripe payout fees |
-| Licence | `shotfleet activate <key>` validates once with the store's licence API (Polar: SHOTFLEET- keys, no secret in the app; Gumroad and Lemon Squeezy keys still work), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
+| Payment | Gumroad product linked from the site (merchant of record since 2025-01-01: handles VAT/sales tax worldwide, added on top of the price; Individual account, Netherlands bank payout; the same account sells Keysi) | Lemon Squeezy and Polar end in a Stripe check that asks for a KvK (none here; dropped 2026-10-02). Gumroad: 10% + $0.50 plus card 2.9% + $0.30, so about $24.46 net at $29 (research/gumroad-setup.md) |
+| Licence | `shotfleet activate <key>` validates once with the store's licence API (Gumroad keys: four groups of 8 hex characters, no secret in the app, one use count per key, 3 activations; Polar and Lemon Squeezy keys still work in code but nothing sells them), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
 | Free vs paid | `check`, `doctor`, `init` free; `run` free up to 2 languages; every language and `export` need a key | STRATEGY.md 2.1: checking is the funnel |
 | Updates | `shotfleet doctor` mentions a newer release (read from the site's `/download/VERSION`; `--version` makes no network call); re-running `install.sh` installs it | A year of updates is part of the $49 |
 | CI | Same binary; key passed as `SHOTFLEET_KEY` | Team licence later |
@@ -42,7 +42,7 @@ paying the easy path, not to win against crackers.
 |---|---|---|
 | PyInstaller build script + universal `ocr` binary, `activate` command, key check, free/paid split, tests | Claude | ~1 day |
 | Developer ID certificate (needs the Apple Developer account) and an app-specific password for notarization | Manu | 15 min |
-| Polar account (personal, ID check; review up to 14 days) + product ($49, `FOUNDER29` $29 code for the first 100) + a License Key benefit: done except the review (LAUNCH.md) | Manu | 30 min plus review |
+| Gumroad product ($49, `FOUNDER29` $20 off for the first 100, applied automatically, License key block on the Content page, 14-day refund policy) and the payout review (research/gumroad-setup.md section 6, LAUNCH.md) | Manu | 30 min plus review |
 | `noloman/homebrew-shotfleet` and `noloman/shotfleet-releases` public repos | Manu creates, Claude fills | 10 min |
 | Release script: build, sign, notarize, upload, update the tap formula | Claude | ~half a day |
 | Site: buy button, install instructions, licence/refund terms | Claude drafts, Manu approves | ~half a day |
@@ -63,9 +63,11 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
   measured 5 runs each). install.sh puts the folder in ~/Library/Application Support/shotfleet/app and links the
   command onto the PATH. Every binary is re-signed (PyInstaller's own signing of Homebrew's Python framework was
   rejected by Apple's notary); notarization accepted, quarantined install tested.
-- Gumroad as a second store: its licence keys work too (activation counts uses, at most 3 Macs; refunds and
-  chargebacks are refused; weekly re-checks don't count). Tested against a fake API built from Gumroad's source.
-- Left for Manu: finish the Polar account review and make the checkout link (LAUNCH.md). Then `packaging/go-live.sh`.
-- Go-live is rehearsed before it is run: `packaging/go-live.sh --dry-run <checkout link>` does every step on a copy, and
-  `tools/golive/smoke.sh https://shotfleet.com <checkout link>` checks the live site afterwards, both tested offline
+- Gumroad is the store: its licence keys count activations (3 per key; a refused attempt and a repeat on the same Mac count
+  nothing; `deactivate` cannot give one back, so a fourth Mac means an email); refunds, chargebacks and disputes are
+  refused; weekly re-checks and CI keys don't count; a Gumroad outage is not a verdict. Tested against a fake API built from Gumroad's help pages and source.
+- Left for Manu: create the Gumroad product and give the product URL and ID (LAUNCH.md). Then `packaging/go-live.sh`.
+- Go-live is rehearsed before it is run: `packaging/go-live.sh --dry-run <product URL> <product ID>` does every step on a copy,
+  `tools/golive/storefront.sh <product URL> <product ID>` reads the live Gumroad product (published, licence keys on, refund policy)
+  and `tools/golive/smoke.sh https://shotfleet.com <product URL>` checks the live site afterwards, both tested offline
   (tests/test_golive.py). Order of steps: LAUNCH.md.

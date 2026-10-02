@@ -5,12 +5,12 @@ Source: MARKETING.md phase 2 ("One paid experiment, about $30"). Ads are separat
 
 ## What this buys, and what it does not
 
-It buys learning: do paid clicks from developers in these communities reach the pricing section and the free command? It does not buy sales. One $29 sale nets about $27 after Polar's fees (research/pricing-2026-10.md), so a single sale pays most of it back, and none is not a failure. Reddit's current cost per click is unverified (no number was obtainable); do not assume one.
+It buys learning: do paid clicks from developers in these communities reach the pricing section and the free command? It does not buy sales. One $29 sale nets about $24.46 after Gumroad's fees (research/gumroad-setup.md), so a single sale pays most of it back, and none is not a failure. Reddit's current cost per click is unverified (no number was obtainable); do not assume one.
 
 ## Ready when (all of these)
 
 1. The sale is live and `curl -fsSL https://shotfleet.com/install.sh | sh` installs on a clean Apple silicon Mac. Do not send paid traffic to a waitlist.
-2. The founder-price counter ("N of 100 left", from Polar's FOUNDER29 redemptions) is on the buy page, or the ad body that mentions $29 (variant B) is not used. The first-100 price is the only urgency that is true; it must match the page.
+2. The page states the first-100 price in plain text (there is no counter), and the ad body that mentions $29 (variant B) says "first 100 buyers" and "before VAT" like the page. The first-100 price is the only urgency that is true; it must match the page.
 3. The site has had at least one week of organic traffic, so there is a baseline (see "Baseline" below).
 4. `tools/check-claims.sh` is green and the home page says Apple silicon, Maestro 2.x and Java 17+.
 5. You have read Reddit's ad policy and the ad-format limits in the ads manager that day. The limits used here (headline up to 100 characters, body up to 150) come from the brief; if the manager shows different limits, shorten rather than lengthen.
@@ -73,7 +73,7 @@ Watch on days 1, 3 and at the end:
 site/signups.sh --visits
 ```
 
-Read the lines that contain `|reddit-ads|` and compare: `view` (page loaded), `runs` (the real-run section scrolled into view), `pricing` (the price section scrolled into view), `cta` (a button clicked). Also from Reddit: impressions, clicks, spend. Also from Polar: any order that day.
+Read the lines that contain `|reddit-ads|` and compare: `view` (page loaded), `runs` (the real-run section scrolled into view), `pricing` (the price section scrolled into view), `cta` (a button clicked). Also from Reddit: impressions, clicks, spend. Also from Gumroad: any order that day (UTM source).
 
 ## Baseline
 

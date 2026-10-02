@@ -55,7 +55,7 @@ Before posting: if (and only if) `spctl` on the release binary says "Notarized D
 
 ### 1. "Closed source and curl | sh. Why should I run this?"
 
-> Fair. I will not pretend that is nothing. What I can say: the install script is about 15 lines of shell, so read it before you pipe it. It refuses anything that is not macOS on Apple silicon, downloads one tarball and its SHA-256, checks the sum, and puts the program in `~/Library/Application Support/shotfleet`. The program is signed with my Apple Developer ID. `shotfleet check` needs no key and no account, so you can try the part that reads screenshots first. As far as network use goes, I went through the code: the only hosts it talks to are the licence stores (Polar, Lemon Squeezy, Gumroad) when you activate and about weekly after that, my site for a version number when you run `doctor`, and 127.0.0.1 for Maestro. I have not done a packet capture, so if you care, run it behind Little Snitch and tell me what you see. It is closed source today, and I know that rules it out for some of you.
+> Fair. I will not pretend that is nothing. What I can say: the install script is about 15 lines of shell, so read it before you pipe it. It refuses anything that is not macOS on Apple silicon, downloads one tarball and its SHA-256, checks the sum, and puts the program in `~/Library/Application Support/shotfleet`. The program is signed with my Apple Developer ID. `shotfleet check` needs no key and no account, so you can try the part that reads screenshots first. As far as network use goes, I went through the code: the only hosts it talks to are the licence store (Gumroad; Polar and Lemon Squeezy keys still work in code) when you activate and about weekly after that, my site for a version number when you run `doctor`, and 127.0.0.1 for Maestro. I have not done a packet capture, so if you care, run it behind Little Snitch and tell me what you see. It is closed source today, and I know that rules it out for some of you.
 
 Honest limits: the tool is not auditable by reading it. Say that, do not argue it. Add "and notarized" after "signed" only once `spctl` confirms it on the release binary (answer 2).
 
@@ -79,9 +79,9 @@ Do not say Maestro "recommends one flow per locale", and do not imply endorsemen
 
 ### 5. "What leaves my machine? Privacy?"
 
-> Your app and your screenshots are never uploaded; the program runs on your Mac. Network use: licence activation and a weekly re-check with the store that sold the key (the key and your Mac's name at activation), a version lookup on my site when you run `doctor`, and local traffic to Maestro. `check` and `init` need no network. I checked this by reading every URL in the code, not with a network capture.
+> Your app and your screenshots are never uploaded; the program runs on your Mac. Network use: licence activation and a weekly re-check with the store that sold the key (the key and the product ID, no Mac name), a version lookup on my site when you run `doctor`, and local traffic to Maestro. `check` and `init` need no network. I checked this by reading every URL in the code, not with a network capture.
 
-The privacy page may list a few more fields (activation id, program version in the User-Agent); keep this answer in line with the live privacy page. Claims C004, C085 are partial.
+Keep this answer in line with the live privacy page. Claims C004, C085 are partial.
 
 ### 6. "Intel Macs? Linux? Windows? Can I run it in CI?"
 
@@ -101,13 +101,13 @@ Before posting: replace "2.0.10" and "2.11.0" with what `maestro --version` and 
 
 ### 9. "Why is it paid? Why $29 / $49?"
 
-> Capturing is becoming free: fastlane, Maestro on its own, and newer tools. What I charge for is the multi-language run and the export, because that is where my own time went. The free parts are `check` and a 2-language `run`, so you can see real results on your own app first. $29 for the first 100 buyers, then $49 once per developer, with a year of updates; after that your version keeps working as long as macOS, Xcode and Maestro let it. I do not have demand data at any price yet; this launch is partly how I find out. Payment goes through Polar as merchant of record.
+> Capturing is becoming free: fastlane, Maestro on its own, and newer tools. What I charge for is the multi-language run and the export, because that is where my own time went. The free parts are `check` and a 2-language `run`, so you can see real results on your own app first. $29 for the first 100 buyers, then $49 once per developer, with a year of updates; after that your version keeps working as long as macOS, Xcode and Maestro let it. I do not have demand data at any price yet; this launch is partly how I find out. Payment goes through Gumroad as merchant of record; prices are before VAT where it applies.
 
-(Say "Polar handles VAT" only after checking that the live checkout does; claims C055 is unverifiable.)
+(Say "Gumroad handles VAT" only after checking that the live checkout does; claims C055 is unverifiable.)
 
 ### 10. "What is the refund policy?"
 
-> 14 days. Reply to the purchase email and I refund it, by hand through Polar. If shotfleet does not work for your app I would rather know why than keep the money.
+> 14 days. Reply to the Gumroad receipt or email hello@shotfleet.com and I refund it, by hand through Gumroad. If shotfleet does not work for your app I would rather know why than keep the money.
 
 ### 11. "How does the checking work? Is it OCR?"
 

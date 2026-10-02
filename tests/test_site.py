@@ -271,7 +271,7 @@ esac
 class PrivacyPage(unittest.TestCase):
     def test_privacy_says_what_the_program_and_the_site_really_do(self):
         text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", (PUB / "privacy.html").read_text()))
-        for must in ("about once a week", "activation id", "program version", "shotfleet doctor", "latest version number",
+        for must in ("about once a week", "the product ID", "count as an activation", "shotfleet doctor", "latest version number",
                      "by day, by the site or link you came from, and by your browser's language", "your IP address is not stored",
                      "I will delete the waitlist within 30 days after I send the launch email",
                      "kept until I've answered them", "I delete them on request", "Your app and screenshots are never uploaded"):

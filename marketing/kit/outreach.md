@@ -10,7 +10,7 @@ Facts you may use: 18 languages x 4 screens = 72 screenshots, 9 minutes iOS and 
 ## 1. Design partners (3 to 5 people, free licence for an honest write-up)
 
 Who: only people who publicly said they have a locale or screenshot problem (a GitHub issue, a Maestro Slack question, a post) and invited help. Write to the thread or to the email on their public profile, never to a private DM.
-Ready when: the free tier installs on a clean Mac and a licence key can be issued (the Polar benefit exists: LAUNCH.md). Track each person in a note: name, where they asked, date sent, answer.
+Ready when: the free tier installs on a clean Mac and a licence key can be issued (the Gumroad product has its License key block: LAUNCH.md). Track each person in a note: name, where they asked, date sent, answer.
 Wait: 2 weeks, then stop.
 
 Subject (email) or first line (thread reply): `Your locale screenshot problem: I may have a tool, and a free licence if you try it`

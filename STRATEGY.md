@@ -42,7 +42,7 @@ we integrate instead.
 | 2 | Publish the head-to-head write-up (fastlane vs shotfleet on WOD Tracker) on the site; send to iOS Dev Weekly, Android Weekly, Indie Dev Monday. | Visits, signups |
 | 2–3 | Build `check` for any screenshots (2.1); announce it as a free command. | Downloads of the free command |
 | 3 | Show HN with the review grid and the onboarding bug. | Signups, HN comments as research |
-| 4 | Founder sale opens for the list: $29 for the first 100, through Polar (Lemon Squeezy needs a KvK). | Sales (the real Go signal) |
+| 4 | Founder sale opens for the list: $29 for the first 100, through Gumroad (Lemon Squeezy and Polar end in a Stripe check that asks for a KvK). | Sales (the real Go signal) |
 | 5–6 | CI mode + fastlane plugin for buyers; collect two case studies (output grid + quote). | Activation, refunds |
 
 **Decision rule** (replaces "30 signups"): **50 founder sales ($29) within 60 days** of opening the sale means

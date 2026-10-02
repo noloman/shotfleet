@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Store:** sales and licences go through Gumroad (Polar was dropped: its payout provider asks a Dutch resident for a KvK). A Gumroad key has 3 activations; refusing a key never uses one, activating again on the same Mac counts nothing, and refunded, charged-back or disputed purchases stop working at the next weekly check (a won dispute keeps working). `deactivate` cannot give an activation back, so moving to a fourth Mac means an email. Polar and Lemon Squeezy keys still work.
 - **Simpler setup:** only the build is required in `shotfleet.toml`; bundle id, package and flow are read or defaulted.
   One config and one flow serve iOS and Android (an `appId:` header is set per build), `shotfleet run` needs no
   arguments, `init` takes several builds, and a typo or wrong type in the config is refused with a one-line message.

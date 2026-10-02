@@ -45,13 +45,13 @@ It also finds real localization bugs. On CrossfitTracker it found an onboarding 
 
 ## Free and paid
 
-`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, with a year of updates and a 14-day refund (see the site's licence page).
+`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
 
 ## Quickstart (once Maestro and a simulator build exist)
 
 ```bash
 curl -fsSL https://shotfleet.com/install.sh | sh   # signed, notarized; Apple silicon
-shotfleet activate <your key>                      # from your purchase email (`check` works without one)
+shotfleet activate <your key>                      # from your Gumroad receipt email (`check` works without one)
 shotfleet doctor                                   # checks Maestro, Java, Xcode, Android SDK
 shotfleet init                                     # in your project folder: uses the newest Debug simulator build and Gradle debug APK it finds
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself

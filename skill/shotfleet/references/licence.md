@@ -11,16 +11,16 @@ year of updates, a 14-day refund; up to 3 of the user's Macs plus their CI. Deta
 
 ## Activate
 
-The user gets a key in the purchase email. They run it themselves:
+The user gets a key in the Gumroad receipt email (also in their Gumroad library). They run it themselves:
 
 ```bash
 shotfleet activate <key>
 ```
 
 - Do not ask for the key in chat, and do not run `activate` with a key that was pasted into chat or found in a file: tell the user to run it in their own terminal.
-- Success prints `activated on <hostname>. Thanks for buying shotfleet!`. The key and the Mac's name are sent to the licence provider; nothing else.
+- Success prints `activated on <hostname>. Thanks for buying shotfleet!`. The key and the product ID are sent to Gumroad, which keeps one count of activations per key; nothing else, and no Mac name.
 - Failure prints `that key didn't activate: <reason>`. Wrong key, revoked or refunded key, or no network. Keys come with the purchase.
-- `shotfleet deactivate` frees this Mac's activation (to move the licence to another Mac). A key that is already active on 3 Macs says so; `deactivate` on an old Mac fixes it.
+- A key has 3 activations. Activating again on a Mac that already holds the key counts nothing. `shotfleet deactivate` removes the key from this Mac but cannot give the activation back (Gumroad needs the seller's token for that). A key with all 3 used says `activations. Email hello@shotfleet.com`: the user emails and the developer resets the count in Gumroad.
 
 ## Where the key lives
 

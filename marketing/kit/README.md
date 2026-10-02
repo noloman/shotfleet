@@ -42,8 +42,8 @@ Before launch (Manu, on a clean Mac or user account unless noted):
 
 1. `curl -fsSL https://shotfleet.com/install.sh | sh` installs the release; `shotfleet check` and `shotfleet run --locales en,de` work with no key (claims C057 untested; C048 partial). At research time `/download/VERSION` returned 404.
 2. `spctl -a -vv -t exec $(which shotfleet)` on the release binary says Notarized Developer ID, and a quarantined copy opens without a prompt (C058; roadmap step "Build, sign, notarize").
-3. Real purchase with FOUNDER29 and a refund, end to end, including `shotfleet activate`, all languages, deactivate, key stops validating after the refund (roadmap N2); the "N of 100 left" counter moves with a real redemption.
-4. Polar handles VAT on the live checkout (C055 unverifiable): do not say it until the checkout shows it.
+3. Real purchase with FOUNDER29 and a refund, end to end, including `shotfleet activate`, all languages, deactivate, key stops validating after the refund (roadmap N2); FOUNDER29's use count in Gumroad moves with a real purchase (there is no counter on the page).
+4. Gumroad handles VAT as merchant of record (C055 unverifiable until the live checkout shows it): the page says prices are before VAT where it applies; do not say "VAT included" anywhere.
 5. GitHub Actions recipe for `check` run on GitHub once (README says it has not been); fix the README line that runs `python3 shotfleet.py` if it is still there.
 6. Maestro version: state what you ran (2.0.10 on the dev Mac; 2.11.0 was current upstream in research) and whether the 18-language run was repeated on a newer one.
 7. Network use: the answer in show-hn.md rests on reading the code, not on a packet capture; run Little Snitch or `nettop` once if you want to say more.

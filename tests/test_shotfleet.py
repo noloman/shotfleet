@@ -984,6 +984,7 @@ class GumroadLicence(unittest.TestCase):
     def test_nothing_counts_a_use_except_one_activation(self):
         self.activate(self.GOOD); self.stale(); sf.require_licence()
         with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
+        self.assertTrue(all(set(c) == {"product_id", "license_key", "increment_uses_count"} for c in self.calls))  # nothing else is sent
         counted = [c for c in self.calls if c["increment_uses_count"] != "false"]
         self.assertEqual(len(counted), 1); self.assertEqual(self.uses[self.GOOD], 1)
         self.assertEqual(self.calls[-1]["increment_uses_count"], "false")

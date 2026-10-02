@@ -22,7 +22,7 @@
 ## Price and licence
 
 - `check` is free for everyone. `run` is free for up to 2 languages.
-- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. It includes a year of updates and a 14-day refund.
+- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. It includes a year of updates and a 14-day refund. Prices are before VAT where it applies; checkout is on Gumroad, the merchant of record.
 - The home page says whether shotfleet is on sale yet or still on an early-access list.
 
 ## Links

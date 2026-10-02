@@ -1,34 +1,43 @@
-# Launch: your part (about 20 minutes, then Polar's review)
+# Launch: your part (about 30 minutes in Gumroad, then Gumroad's first-payout review)
+
+> **2026-10-02: Polar was dropped.** Polar pays out through Stripe, and Stripe will ask a Dutch resident for a KvK number.
+> The sale moves to **Gumroad**, which you already use for Keysi (Individual account, EUR bank payout, no KvK entered).
+> Everything about Polar below this note is gone; the Polar organization, product, discount and checkout links are no
+> longer used and can be deleted or left. Why Gumroad, what it costs and what is still unverified:
+> `research/gumroad-setup.md`. Its last section is the click-by-click checklist for the Gumroad product.
 
 Everything else is done and scripted. Signing and notarization use your Developer ID and the `KeysiNotary` profile;
 the program is served from the shotfleet site (no public repos); `packaging/go-live.sh` does the rest.
 
-Payments are on **Polar** (merchant of record: it charges and pays the VAT; a personal account is allowed, so no KvK is
-needed to open it). Lemon Squeezy asks for a company number, so it is not used. Prices: **$49** once, **$29 for the
-first 100** (code `FOUNDER29`), a free tier (`check` plus 2 languages in `run`), 14-day refunds.
+Payments are on **Gumroad** (merchant of record since 2025-01-01: it charges and pays the VAT and sales tax worldwide; an
+Individual account needs no business registration). Lemon Squeezy and Polar are not used: both end in a Stripe check that
+asks for a KvK. Prices: **$49** once, **$29 for the first 100** (code `FOUNDER29`, applied automatically),
+a free tier (`check` plus 2 languages in `run`), 14-day refunds. Gumroad cannot show a VAT-inclusive price, so the page says prices
+are before VAT where it applies. Fees: 10% + $0.50 plus card processing 2.9% + $0.30, so about $24.46 net at $29 and
+$41.88 at $49.
 
-## Already done in Polar (organization "NullTwenty", id `16188b30-3a8a-4fdc-8282-d350ae6ec1bb`)
+## 1. Create the product in Gumroad (only you can: sign-in, identity, bank, terms)
 
-- A **License Key benefit**: prefix `SHOTFLEET`, never expires, up to 3 activations, customers can free an activation.
-- The product **shotfleet**: one-time, 49 EUR and 49 USD, with that benefit attached (price set 2026-10-02; before that it was Free).
-- The discount **FOUNDER29** ("Founder price"): 20 USD / 20 EUR off, 100 redemptions, 1 per customer (created 2026-10-02).
-- The launch checkout link (founder price preset, return to https://shotfleet.com/#price): `https://buy.polar.sh/polar_cl_8zeKCsIGKxzOSzqGWva0UdjhFmDg2vrt0NoBB3Coq7l`. Viewed 2026-10-02 as a Dutch buyer: 49 EUR, minus 20 Founder price, 29 EUR total, VAT included; Polar shows "payments are currently unavailable" until the review passes.
-- Support email `hello@shotfleet.com` (forwarded by Cloudflare Email Routing) and website `https://shotfleet.com/`.
-- The **standard link** (same product, no preset discount; for after the 100th redemption): `https://buy.polar.sh/polar_cl_0JsvKw9nyrXd3B5srS64PWUuOg7mIl1olUUHv2TW7K5` (created 2026-10-02). Until the swap, the launch link stops applying the discount after 100 redemptions, so check the count (Polar, Discounts) as sales come in.
+Follow section 6 of `research/gumroad-setup.md` (a Claude-in-Chrome session can do the clicks; it stops at every step
+marked MANU ONLY). In short: one product `shotfleet` at $49, **License key block inserted on the Content page** (the step
+that was missed on Keysi: without it buyers get no key), a 14-day refund policy on the product, the code `FOUNDER29`
+($20 off, limit 100 uses, applied automatically), no file upload (the installer is public; Gumroad sells only the key).
+You hand back two things: the **product URL** (`https://<account>.gumroad.com/l/<permalink>`) and the **product ID**
+(22 characters ending in `==`, shown in the License key block while you edit).
 
-Check them at https://polar.sh/dashboard/nulltwenty/products .
+Before you publish the product:
 
-## 1. Finish the account review (only you can; Polar → Finance → Account Review)
-
-1. **Verify your identity** (passport or ID card plus a selfie, through Stripe).
-2. **Connect a payout account** (your bank; pick the Netherlands as the country).
-3. **Set up checkout**, then **Submit for review**. Polar's review can take up to 14 days; nothing can be sold until it passes.
-   Before you submit, ask the Belastingdienst or an accountant whether regular software sales need a KvK registration in your
-   case. A merchant of record handles the sales VAT only, not your own tax or registration duties.
+1. Check the payout status on Settings, Payments. If Stripe asks for a KvK or company document anywhere, stop and tell me.
+   The honest unknown is the check Stripe runs after the first sales; Keysi has not reached it yet (see the research file).
+2. Ask the Belastingdienst or an accountant whether regular software sales need a KvK registration for income tax. A
+   merchant of record handles the sales VAT only, not your own tax or registration duties. This is separate from Stripe.
 
 ## 2. The checkout link
 
-The launch link above is ready: pass it to `go-live.sh`. After 100 redemptions switch the Buy buttons to the standard link.
+The product URL is the link on every Buy button (`go-live.sh` puts it in the page). The founder price needs no second
+link: the code is applied automatically for the first 100 buyers, and the 101st pays $49 by itself. Check the code's use
+count in Gumroad (Checkout, Discounts) as sales come in, and read the research file's two open points (what the page shows
+after the 100th use; whether a test purchase uses one).
 
 ## 3. Check this Mac (once, before the rehearsal)
 
@@ -45,48 +54,58 @@ The launch link above is ready: pass it to `go-live.sh`. After 100 redemptions s
 - **Cloudflare:** `cd site && npx wrangler whoami` shows the account that owns `shotfleet.com`.
 - Tools: python3, swiftc, xcrun, codesign, node and npx on the PATH (the rehearsal checks these).
 
-## 4. Rehearse (changes nothing; a few seconds, a few minutes with the claims check)
+## 4. Check the live product, then rehearse (read only)
 
 ```sh
-POLAR_ORG_ID=16188b30-3a8a-4fdc-8282-d350ae6ec1bb packaging/go-live.sh --dry-run <checkout link>
+tools/golive/storefront.sh <product URL> <product ID> 49
+packaging/go-live.sh --dry-run <product URL> <product ID>
 ```
 
-It copies the working tree to a temp folder and, there, runs the same `sed` on `shotfleet.py`, the same git commits and the
-same page transform as the real run, then prints the diff, checks the page (checkout link in the nav, hero and price
-card; no WAITLIST or SALE markers; no counter number; install line once), runs the claims check on the result, checks
-this Mac (step 3's git and signing items) and lists what the real run would do. It never builds, notarizes, uploads,
-deploys or pushes. It ends with `dry run clean`; any `FAIL` line means do not go on. Nothing in it needs the network.
+`storefront.sh` reads the Gumroad product page and fails on the three silent ways to lose a sale: the product is
+unpublished, licence keys are off, no refund policy (or one that is not 14 days); it also checks the product ID is on the
+page, the list price, and that `licenses/verify` answers (a made-up key is rejected; nothing is counted). It needs the
+network and is tested offline against a fake page (`tests/test_golive.py`).
 
-## 5. Go live (the one-shot; tell me the link and I run it, or you do)
+The dry run copies the working tree to a temp folder and, there, runs the same `sed` on `shotfleet.py` (it sets
+`GUMROAD_PRODUCT_ID`), the same git commit and the same page transform as the real run, then prints the diff, checks the
+page (product link in the nav, hero and price card; no WAITLIST or SALE markers; no counter number; install line once),
+runs the claims check on the result, checks this Mac (step 3's git and signing items) and lists what the real run would do.
+It never builds, notarizes, uploads, deploys or pushes. It ends with `dry run clean`; any `FAIL` line means do not go on.
+A product URL that is not `gumroad.com/l/<permalink>` or an ID that is not 22 characters and `==` is a warning, not a stop.
+
+## 5. Go live (the one-shot; tell me the URL and ID and I run it, or you do)
 
 ```sh
-POLAR_ORG_ID=16188b30-3a8a-4fdc-8282-d350ae6ec1bb packaging/go-live.sh <checkout link>
+packaging/go-live.sh <product URL> <product ID>
 ```
 
-In this order: sets the organization in `shotfleet.py` and commits it; `packaging/release.sh` (claims gate, build, sign,
+In this order: sets the product ID in `shotfleet.py` and commits it; `packaging/release.sh` (claims gate, build, sign,
 notarize, copy to `site/public/download`, deploy: at this moment the waitlist page is still what visitors see, next to a
-working `install.sh`); turns the page into "Buy shotfleet" with your checkout link; deploys; commits "Site: sale open"
-and pushes; prints the waitlist emails. Deploys and the push cannot be undone by the script. If it stops halfway, do
-not simply run it again: the second run's organization commit would fail with "nothing to commit" and stop. Look at the last line it printed, then run the
-remaining steps by hand (`packaging/release.sh`, the page transform, `cd site && npx wrangler deploy`, commit, push);
-the page transform is safe to repeat.
+working `install.sh`); turns the page into "Buy shotfleet" with your product URL; deploys; commits "Site: sale open"
+and pushes; prints the waitlist emails. Deploys and the push cannot be undone by the script. If it stops halfway, look at
+the last line it printed, then run the remaining steps by hand (`packaging/release.sh`, the page transform,
+`cd site && npx wrangler deploy`, commit, push); the page transform is safe to repeat, and the product-ID commit is skipped
+when the ID is already there.
 
 ## 6. Smoke test the live site (read only, from a clean environment)
 
 ```sh
-env -i sh tools/golive/smoke.sh https://shotfleet.com <checkout link>
+env -i sh tools/golive/smoke.sh https://shotfleet.com <product URL>
 ```
 
 Fetches `/`, `/install.sh`, `/download/VERSION`, the archive and its `.sha256`, `/robots.txt`, `/sitemap.xml` and the
-other pages; checks the status codes, the checkout link (3 places), no waitlist form, no counter number, the CSP header
+other pages; checks the status codes, the product link (3 places), no waitlist form, no counter number, the CSP header
 and the http to https redirect; verifies the archive against its checksum; runs `install.sh`'s own checksum lines
 (stopped before it extracts anything, so nothing is installed on your PATH) and, on an Apple silicon Mac, unpacks the
 program in a temp folder and compares `--version` with `/download/VERSION`. Any `FAIL` means: fix it before the email.
 The script itself is tested offline against a fake server (`tests/test_golive.py`).
 
-Still by hand after the smoke test: open the page in a browser and click the buy button (the link must open Polar's
-checkout at $29), then do one real install on a clean Mac account (`curl -fsSL https://shotfleet.com/install.sh | sh`,
-`shotfleet doctor`) and one real test purchase of your own with a refund.
+Still by hand after the smoke test: open the page in a browser and click the buy button (the link must open Gumroad's
+product page showing $49 crossed out and $29), then do one real install on a clean Mac account
+(`curl -fsSL https://shotfleet.com/install.sh | sh`, `shotfleet doctor`) and one test purchase: Gumroad's own "Test card"
+checkout while logged in, or a single-use 100%-off code (never your own card; Gumroad can suspend the account for that).
+Activate the key it issues, activate again (counts nothing), refund the sale in the dashboard and check the next weekly
+check refuses it.
 
 ## 7. Send the launch email (your account, your words; draft in marketing/launch-email.md)
 
@@ -106,13 +125,19 @@ button removes messages left with that reply address, and you can remove any oth
 `cd site && npx wrangler kv key delete "<msg:...>" --binding WAITLIST --remote` (list them with `site/signups.sh`).
 Put a reminder in your calendar the day you send the email.
 
+## 9. Support: moving a key to another Mac
+
+A key has 3 activations; Gumroad has no per-Mac record and the program cannot give one back (that needs your Gumroad
+token). When a buyer writes for a fourth Mac: Gumroad, Sales, the sale, License key section, Uses row, minus or Reset. That
+is the whole job. The terms say exactly this.
+
 ## Open items (not done, because they need something only you can give)
 
 - **A live "N of 100 left" counter is not built.** The buy page says "First 100 buyers: $29" as plain text and `go-live.sh`
-  keeps it; it shows no number, because nothing true feeds one yet (the smoke test and the tests fail the page if a counter
-  number appears). To make it live: create a Polar **organization access token** (Polar dashboard, organization settings,
-  read access to discounts) and put it into the site Worker as a secret with `cd site && npx wrangler secret put
-  POLAR_TOKEN`; then the Worker can read the redemptions of `FOUNDER29` and the page can show the real count. I have not
-  verified which Polar endpoint reports redemptions, so that is the first thing to check against Polar's API reference.
-  Until then do not write "only N left" anywhere (MARKETING.md rule).
+  keeps it; it shows no number, because nothing true feeds one (the smoke test and the tests fail the page if a counter
+  number appears). Gumroad shows a discount code's use count in your dashboard; reading it by API would need your Gumroad token
+  (unverified), which must not go into the site, so no live counter is planned. Until then do not write "only N left" anywhere
+  (MARKETING.md rule).
+- The 14-day refund option in Gumroad's editor, the page after 100 uses, what Stripe asks after the first sales and the card-fee
+  base when VAT is added are unverified: the list is at the end of `research/gumroad-setup.md`.
 - The notarization profile and Cloudflare login can only be checked on your Mac (step 3).
