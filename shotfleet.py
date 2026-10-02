@@ -1840,7 +1840,8 @@ def main(argv=None):
     p.add_argument("builds", nargs="+", metavar="build", help="a simulator .app and/or an .apk (both go in one config)")
     p.add_argument("--dir", default=".", help="where to write them (default: here)")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
-    p.add_argument("config", help="shotfleet.toml")
+    p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config file (default: ./shotfleet.toml)")
+    p.add_argument("--platform", choices=("ios", "android"), help="only this platform when the config has both")
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
@@ -2110,7 +2111,7 @@ def main_dispatch(a):
         if a.cmd == "run": apply_free_tier()
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
-        if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
+        if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
             if subs := device_runs(a.out):
