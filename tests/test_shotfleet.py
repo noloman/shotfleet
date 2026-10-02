@@ -1337,3 +1337,17 @@ class PolarLicence(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReviewGrid(unittest.TestCase):
+    def test_each_flagged_cell_names_its_problem_and_images_outside_the_report_keep_working(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); rep = d / "rep"; rep.mkdir(); (d / "shots" / "de").mkdir(parents=True)
+            (d / "shots" / "de" / "01.png").write_bytes(b"x")
+            rows = [{"file": "de/01.png", "src": "../shots/de/01.png"}, {"file": "fr/01.png", "src": "../shots/de/01.png"}]
+            sf.write_gallery(rep, rows, ["de/01.png: shows en (expected de)", "identical image in 2 languages: de/01.png, fr/01.png"])
+            page = (rep / "index.html").read_text()
+        self.assertIn("shows en (expected de)", page)
+        self.assertEqual(page.count("<small>"), 2)  # one visible note per flagged cell
+        self.assertIn("file://", page)              # the report can be moved; the screenshots stay where they are
+        self.assertNotIn('src="../shots', page)

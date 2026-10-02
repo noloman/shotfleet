@@ -32,7 +32,7 @@ See STRATEGY.md: positioning against fastlane, StoreScreens/asc, Maestro and des
 The decision rule there (50 founder sales in 60 days) supersedes the signup count below once the sale opens.
 
 ## Phase 3: decide (Manu, about 2 weeks)
-9. [~] Live at https://shotfleet.manulorenzop.workers.dev (Cloudflare Worker + KV waitlist; `site/signups.sh` lists signups).
+9. [~] Live at https://shotfleet.com (Cloudflare Worker + KV waitlist; `site/signups.sh` lists signups).
        Posting the drafts needs Manu's OK per post.
 10. [ ] Go if 30+ signups or 5+ pre-orders; otherwise keep shotfleet as an internal tool.
 

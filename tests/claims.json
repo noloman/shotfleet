@@ -63,7 +63,7 @@
    "Your app and screenshots are never uploaded."
   ],
   "status": "partial",
-  "proof": "Code audit 2026-10-02: grep urlopen in shotfleet.py finds only Polar/Lemon Squeezy/Gumroad licence calls, https://shotfleet.manulorenzop.workers.dev/download/VERSION (doctor) and http://127.0.0.1 (Maestro driver). No test pins this. 2026-10-02: a test lists every host named in shotfleet.py (the site, Polar, Gumroad, Lemon Squeezy for licence checks, a local test server); no runtime traffic capture exists.",
+  "proof": "Code audit 2026-10-02: grep urlopen in shotfleet.py finds only Polar/Lemon Squeezy/Gumroad licence calls, https://shotfleet.com/download/VERSION (doctor) and http://127.0.0.1 (Maestro driver). No test pins this. 2026-10-02: a test lists every host named in shotfleet.py (the site, Polar, Gumroad, Lemon Squeezy for licence checks, a local test server); no runtime traffic capture exists.",
   "layer": "unit",
   "assertion": "AST/grep test: every http(s) URL literal in shotfleet.py is in an allow-list {site /download/VERSION, api.polar.sh, api.lemonsqueezy.com, api.gumroad.com, 127.0.0.1}; no request body contains file bytes. Fixture: run `check` with the network blocked (sandbox-exec deny network*) and assert exit 0.",
   "fix": "",
@@ -991,12 +991,12 @@
    "marketing/launch-email.md"
   ],
   "where_text": [
-   "curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh",
-   "curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh",
-   "Install: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh"
+   "curl -fsSL https://shotfleet.com/install.sh | sh",
+   "curl -fsSL https://shotfleet.com/install.sh | sh",
+   "Install: curl -fsSL https://shotfleet.com/install.sh | sh"
   ],
   "status": "untested",
-  "proof": "install.sh is live (curl 2026-10-02: 200 text/plain) but https://shotfleet.manulorenzop.workers.dev/download/VERSION is 404: no release is published, so the one-liner fails today (expected before launch; packaging/release.sh publishes it). DISTRIBUTION.md Status 2026-10-01: install tested incl. quarantine. install.sh honours SHOTFLEET_BASE for testing.",
+  "proof": "install.sh is live (curl 2026-10-02: 200 text/plain) but https://shotfleet.com/download/VERSION is 404: no release is published, so the one-liner fails today (expected before launch; packaging/release.sh publishes it). DISTRIBUTION.md Status 2026-10-01: install tested incl. quarantine. install.sh honours SHOTFLEET_BASE for testing.",
   "layer": "device",
   "assertion": "Release gate: serve dist tarball + .sha256 locally, run `SHOTFLEET_BASE=http://127.0.0.1:8000 sh install.sh` under a throwaway HOME, assert `shotfleet --version` runs, a tampered checksum is refused, and Intel Macs get the message.",
   "fix": ""
@@ -1141,7 +1141,7 @@
   "proof": "A buyer installs the signed program, not shotfleet.py (README.md:229 'The installed program brings its own Python'; source is not shipped, DISTRIBUTION.md). The recipe cannot run as written; it is marked 'hasn't been run on GitHub yet' (honest) but is still the wrong command. Also needs install.sh on the runner and, for run, SHOTFLEET_KEY.",
   "layer": "device",
   "assertion": "Run the recipe on a macos-15 runner in a private repo with the released binary: exit 0 and the artifact contains check.json.",
-  "fix": "- run: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh  then  shotfleet check fastlane/ --app ... --json > check.json",
+  "fix": "- run: curl -fsSL https://shotfleet.com/install.sh | sh  then  shotfleet check fastlane/ --app ... --json > check.json",
   "fixed_by": "wording",
   "fixed": "The recipe ran python3 shotfleet.py, which buyers do not have (they get the signed program). It now installs with install.sh and runs the installed shotfleet command; a test parses the recipe's command line with the real argument parser, and another runs check --json and parses its output (exit, screenshots, problems). SHOTFLEET_KEY, which the code does read, is documented under the recipe for run and export. 'Not run on GitHub yet' stays in the README because it is still true.",
   "test": "DocumentedCommands.test_ci_recipe_uses_the_installed_command_and_a_json_flag_that_exists, JsonReports.test_check_json_is_valid_json_with_the_documented_keys_and_nothing_else_on_stdout"
@@ -1293,7 +1293,7 @@
    "This site has no cookies and no tracking scripts, and it loads nothing from other servers."
   ],
   "status": "evidence",
-  "proof": "2026-10-02: curl -D- https://shotfleet.manulorenzop.workers.dev/ shows no Set-Cookie and a CSP of default-src 'self' (site/public/_headers:2); every script (forms.js, tabs.js, reveal.js, zoom.js) and stylesheet is same-origin. Not code-pinned: the Cloudflare dashboard (Web Analytics, Bot Fight Mode) can add beacons or cookies without a deploy. Cloudflare also adds `report-to`/`nel` headers (browser network-error reports to a.nel.cloudflare.com, success_fraction 0) and wrangler.toml:20-24 enables Workers observability logs. The wording 'no analytics' was dropped from this sentence in commit 7f27985 when the visit counter was added (see next claim).",
+  "proof": "2026-10-02: curl -D- https://shotfleet.com/ shows no Set-Cookie and a CSP of default-src 'self' (site/public/_headers:2); every script (forms.js, tabs.js, reveal.js, zoom.js) and stylesheet is same-origin. Not code-pinned: the Cloudflare dashboard (Web Analytics, Bot Fight Mode) can add beacons or cookies without a deploy. Cloudflare also adds `report-to`/`nel` headers (browser network-error reports to a.nel.cloudflare.com, success_fraction 0) and wrangler.toml:20-24 enables Workers observability logs. The wording 'no analytics' was dropped from this sentence in commit 7f27985 when the visit counter was added (see next claim).",
   "layer": "site",
   "assertion": "Static: no <script src>/<link href>/<img src> to another origin in any page; _headers CSP has default-src 'self'. Live: after every deploy, GET / and assert no Set-Cookie header and no third-party host in the HTML.",
   "fix": ""
@@ -1699,12 +1699,12 @@
  },
  {
   "id": "C101",
-  "claim": "Buy link https://shotfleet.manulorenzop.workers.dev/#price points at the price section",
+  "claim": "Buy link https://shotfleet.com/#price points at the price section",
   "where": [
    "marketing/launch-email.md"
   ],
   "where_text": [
-   "Buy: https://shotfleet.manulorenzop.workers.dev/#price"
+   "Buy: https://shotfleet.com/#price"
   ],
   "status": "partial",
   "proof": "index.html has id=\"price\" on the pricing section (line ~305). Live site returns 200.",

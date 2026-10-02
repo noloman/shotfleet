@@ -1652,10 +1652,16 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
 
 def write_gallery(out, rows, problems):
     """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red."""
-    flagged = {p.split(":")[0] for p in problems}
-    for p in problems:  # "identical image in N languages: a/x.png, b/x.png"
-        if p.startswith("identical image"): flagged.update(f.strip() for f in p.split(":", 1)[1].split(","))
-    src = {r["file"]: r.get("src", f"raw/{r['file']}") for r in rows}
+    why = {}  # screenshot -> the reasons it was flagged, shown under the cell and as a tooltip
+    for p in problems:
+        if p.startswith("identical image"):  # "identical image in N languages: a/x.png, b/x.png"
+            for f in p.split(":", 1)[1].split(","): why.setdefault(f.strip(), []).append(p.split(":", 1)[0])
+        else:
+            f, _, reason = p.partition(":"); why.setdefault(f, []).append(reason.strip() or p)
+    flagged = set(why)
+    def locate(rel):  # relative to the report; an absolute file: URL when the image lives outside it, so moving the report keeps the images
+        return (Path(out) / rel).resolve().as_uri() if rel.startswith("..") else rel
+    src = {r["file"]: locate(r.get("src", f"raw/{r['file']}")) for r in rows}
     names = sorted({r["file"].split("/")[1] for r in rows})
     locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
@@ -1665,7 +1671,9 @@ def write_gallery(out, rows, problems):
             f = f"{lp}/{nm}"
             if f in src:
                 url = html.escape(src[f], quote=True)
-                tds.append(f'<td><a href="{url}"><img src="{url}" loading="lazy" class="{"bad" if f in flagged else ""}"></a></td>')
+                reason = html.escape("; ".join(why.get(f, [])), quote=True)
+                note = f'<small>{reason}</small>' if reason else ""
+                tds.append(f'<td><a href="{url}"><img src="{url}" loading="lazy" title="{reason}" class="{"bad" if f in flagged else ""}"></a>{note}</td>')
             else:
                 tds.append('<td class="missing">missing</td>')
         cells.append(f"<tr><th>{html.escape(lp)}</th>{''.join(tds)}</tr>")
@@ -1673,7 +1681,7 @@ def write_gallery(out, rows, problems):
     (out / "index.html").write_text(f"""<!doctype html><meta charset="utf-8"><title>shotfleet results</title>
 <style>body{{font:14px -apple-system,sans-serif;margin:16px;background:#fafafa}}table{{border-collapse:collapse}}
 th{{text-align:right;padding-right:8px;vertical-align:middle}}td{{padding:3px}}img{{width:120px;border:3px solid transparent;border-radius:6px}}
-img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee;color:#d33;text-align:center}}</style>
+img.bad{{border-color:#d33}}small{{display:block;width:120px;color:#a22;font-size:11px;line-height:1.25}}td.missing{{width:120px;height:260px;background:#fee;color:#d33;text-align:center}}</style>
 <h1>shotfleet: {len(rows)} screenshots, {len(locales)} languages</h1><h3>Problems ({len(problems)})</h3><ul>{probs}</ul>
 <table><tr><th></th>{''.join(f"<th>{html.escape(n)}</th>" for n in names)}</tr>{''.join(cells)}</table>""")
 
@@ -1682,7 +1690,7 @@ img.bad{{border-color:#d33}}td.missing{{width:120px;height:260px;background:#fee
 def latest_release():
     """Newest released version, or None (offline, or no releases yet)."""
     try:
-        with urllib.request.urlopen("https://shotfleet.manulorenzop.workers.dev/download/VERSION", timeout=5) as r:
+        with urllib.request.urlopen("https://shotfleet.com/download/VERSION", timeout=5) as r:
             return r.read().decode().strip() or None
     except (OSError, ValueError, UnicodeDecodeError):
         return None
@@ -1746,7 +1754,7 @@ def cmd_doctor():
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
     if (latest := latest_release()) and latest != VERSION:
-        print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh")
+        print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.com/install.sh | sh")
     print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
           else "next: fix the MISSING lines above, then run shotfleet doctor again")
     return 0 if ok_ios or ok_android else 2
@@ -2080,7 +2088,7 @@ def cmd_mcp():
 LICENCE_API = os.environ.get("SHOTFLEET_LICENCE_API", "https://api.lemonsqueezy.com/v1/licenses")
 LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json"
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
-BUY_URL = "https://shotfleet.manulorenzop.workers.dev/#price"
+BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
 GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh
 POLAR_API = os.environ.get("SHOTFLEET_POLAR_API", "https://api.polar.sh/v1/customer-portal/license-keys")

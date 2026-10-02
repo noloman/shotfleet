@@ -13,8 +13,8 @@ What it caught on my own apps while I built it:
 - store listings with translated captions over an app that was still in English,
 - screenshot sizes App Store Connect would have refused.
 
-Buy: https://shotfleet.manulorenzop.workers.dev/#price
-Install: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh
+Buy: https://shotfleet.com/#price
+Install: curl -fsSL https://shotfleet.com/install.sh | sh
 Then: shotfleet activate <your key>
 
 `shotfleet check` is free if you just want to see what it finds in the screenshots you already have.

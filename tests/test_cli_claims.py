@@ -208,7 +208,7 @@ class Versions(unittest.TestCase):
             seen.append(url); return Resp(b"9.9.9\n")
         with mock.patch.object(sf.urllib.request, "urlopen", fake):
             self.assertEqual(sf.latest_release(), "9.9.9")
-        self.assertEqual(seen, ["https://shotfleet.manulorenzop.workers.dev/download/VERSION"])
+        self.assertEqual(seen, ["https://shotfleet.com/download/VERSION"])
         with mock.patch.object(sf.urllib.request, "urlopen", side_effect=OSError("offline")):
             self.assertIsNone(sf.latest_release())  # silent when offline
 
@@ -240,7 +240,7 @@ class PolarKeyStatus(unittest.TestCase):
 class NothingIsUploaded(unittest.TestCase):
     def test_the_program_only_names_the_servers_it_talks_to(self):
         hosts = set(re.findall(r"https?://([A-Za-z0-9.-]+)", SOURCE))
-        allowed = {"shotfleet.manulorenzop.workers.dev",  # install hint, /download/VERSION
+        allowed = {"shotfleet.com",  # install hint, /download/VERSION
                    "api.polar.sh", "api.gumroad.com", "api.lemonsqueezy.com",  # licence checks
                    "127.0.0.1",  # local test servers
                    "get.maestro.mobile.dev"}  # text of an install hint

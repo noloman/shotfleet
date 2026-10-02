@@ -16,7 +16,7 @@
 |---|---|---|
 | Package | A single executable built with PyInstaller (Python bundled), plus the prebuilt `ocr` helper, Apple silicon only (arm64) | No Python or Swift needed on the buyer's Mac; source not shipped as plain text |
 | Trust | Signed with Manu's Developer ID and notarized by Apple | Without it Gatekeeper blocks the download ("cannot be opened") |
-| Install | `curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh \| sh` (checksum-verified). No Homebrew formula is published | One line, no public repos needed (Homebrew was the first plan; see Status) |
+| Install | `curl -fsSL https://shotfleet.com/install.sh \| sh` (checksum-verified). No Homebrew formula is published | One line, no public repos needed (Homebrew was the first plan; see Status) |
 | Where binaries live | The shotfleet site's `/download` folder (no public repos; source stays private) | The installer reads it over HTTPS and checks the SHA-256 |
 | Payment | Polar checkout from the site (merchant of record: handles VAT/sales tax worldwide; personal accounts allowed, Netherlands supported; ID check through Stripe) | Lemon Squeezy asks for a KvK (none here). Polar Starter: 5% + $0.50, +1.5% international cards, Stripe payout fees |
 | Licence | `shotfleet activate <key>` validates once with the store's licence API (Polar: SHOTFLEET- keys, no secret in the app; Gumroad and Lemon Squeezy keys still work), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
@@ -51,7 +51,7 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
 
 ## Status (2026-10-01)
 - Decision: no public repos. The signed, notarized program is served from the shotfleet site; buyers install with
-  `curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh` (checksum-verified; installs on the PATH).
+  `curl -fsSL https://shotfleet.com/install.sh | sh` (checksum-verified; installs on the PATH).
   `doctor` announces newer versions from `/download/VERSION`. The Homebrew formula (packaging/shotfleet.rb) is kept
   for later if buyers ask for `brew install`; it was tested through a local tap.
 - Signing and notarization: done with the existing Developer ID (2357A78TMR) and `KeysiNotary` profile. Apple accepted

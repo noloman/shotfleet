@@ -50,7 +50,7 @@ It also finds real localization bugs. On CrossfitTracker it found an onboarding 
 ## Quickstart (once Maestro and a simulator build exist)
 
 ```bash
-curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # signed, notarized; Apple silicon
+curl -fsSL https://shotfleet.com/install.sh | sh   # signed, notarized; Apple silicon
 shotfleet activate <your key>                      # from your purchase email (`check` works without one)
 shotfleet doctor                                   # checks Maestro, Java, Xcode, Android SDK
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # a simulator build (Debug-iphonesimulator) and/or an APK
@@ -92,7 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug -derivedDataPath build build
-      - run: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # Apple silicon runner
+      - run: curl -fsSL https://shotfleet.com/install.sh | sh   # Apple silicon runner
       - run: shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json
       - uses: actions/upload-artifact@v4
         if: always()

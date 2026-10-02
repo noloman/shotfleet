@@ -206,7 +206,7 @@ class GoLive(unittest.TestCase):
         for marker in ("WAITLIST", "SALE", "@CHECKOUT@", "@GUMROAD@", "data-signup", "id=\"signup", "isn’t released yet", "Get early access", "Join the list"):
             self.assertNotIn(marker, live, marker)
         self.assertGreaterEqual(live.count(f'href="{CHECKOUT}"'), 3)  # nav, hero, price card
-        self.assertEqual(live.count("curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh"), 1)
+        self.assertEqual(live.count("curl -fsSL https://shotfleet.com/install.sh | sh"), 1)
         self.assertIn("Buy shotfleet", live); self.assertNotIn("Early access", live)
         self.assertIn("It needs an Apple silicon Mac, Maestro and Java 17+.", live)
         for must in ("<h1>", 'id="price"', 'data-full="img/full/stressi_ja.jpg"', "/forms.js", "/tabs.js"): self.assertIn(must, live)

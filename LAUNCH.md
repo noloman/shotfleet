@@ -37,7 +37,7 @@ POLAR_ORG_ID=16188b30-3a8a-4fdc-8282-d350ae6ec1bb packaging/go-live.sh <checkout
 ```
 
 which sets the organization in the program, builds, signs, notarizes and uploads it to the site
-(`curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh`), switches the site from the waitlist to "Buy
+(`curl -fsSL https://shotfleet.com/install.sh | sh`), switches the site from the waitlist to "Buy
 shotfleet" with install steps, deploys it, and prints the waitlist so you can send the email below.
 
 ## 4. Send the launch email (your account, your words; draft in marketing/launch-email.md)

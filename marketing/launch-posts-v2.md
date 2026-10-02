@@ -22,7 +22,7 @@ Full run: 18 languages × 4 screens, about 9 minutes on iOS and 15 on Android, e
 
 I'm thinking of releasing it. Would this be useful to you? How do you handle localized screenshots today?
 
-**Link:** https://shotfleet.manulorenzop.workers.dev
+**Link:** https://shotfleet.com
 
 ---
 
@@ -34,7 +34,7 @@ I'm an indie developer. Localized screenshots were something I kept skipping. My
 
 I built a CLI for my own apps. It takes one English UI flow, rewrites it for every language the app ships (using the app's own translations), captures them all in parallel, and checks each image. It found a real bug: on small phones, users in 4 languages couldn't get through onboarding.
 
-Before polishing it for sale, I'm testing demand with a landing page and an early-access list at https://shotfleet.manulorenzop.workers.dev.
+Before polishing it for sale, I'm testing demand with a landing page and an early-access list at https://shotfleet.com.
 
 What I know about the market:
 - fastlane (free) already captures screenshots, but it needs UI-test setup in your project and runs your languages one after another.
@@ -59,7 +59,7 @@ Two Maestro things I ran into:
 1. On Android, two separate `maestro test` processes on different devices share host port 7001 and can silently drive each other's device. Use one sharded run instead.
 2. Sharded runs don't expose a shard index to flows, so I map flows to devices from the debug log.
 
-Landing page: https://shotfleet.manulorenzop.workers.dev
+Landing page: https://shotfleet.com
 
 ---
 
@@ -76,7 +76,7 @@ It runs all 18 languages in parallel on simulators and emulators, then reads eve
 First Android run: 4 languages stuck on the same page. Taller text, no scrolling, Next off-screen. English fit. A small fix in my app.
 
 ### Post 3
-Bonus: in Turkish, "Next" and "Advanced" are the same word. The tool warns about clashes like that before running. Considering releasing it as a one-time tool. Early access at https://shotfleet.manulorenzop.workers.dev
+Bonus: in Turkish, "Next" and "Advanced" are the same word. The tool warns about clashes like that before running. Considering releasing it as a one-time tool. Early access at https://shotfleet.com
 
 ---
 
@@ -84,7 +84,7 @@ Bonus: in Turkish, "Next" and "Advanced" are the same word. The tool warns about
 
 **Title:** Show HN: One English Maestro flow, every language your app ships, checked
 
-Landing page: https://shotfleet.manulorenzop.workers.dev
+Landing page: https://shotfleet.com
 
 **First comment (post yourself):**
 
