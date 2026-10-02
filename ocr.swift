@@ -1,6 +1,7 @@
 // ocr <image.png> -> {"lang": "de", "chars": 812, "text": "..."}
 // Uses Vision text recognition + NaturalLanguage language detection (both built into macOS).
 import Foundation
+import CoreText
 import NaturalLanguage
 import Vision
 
@@ -8,6 +9,19 @@ let request = VNRecognizeTextRequest()
 request.recognitionLevel = .accurate
 if CommandLine.arguments[1] == "--langs" {  // languages this Mac's text recognition can read
     print(String(data: try JSONSerialization.data(withJSONObject: try request.supportedRecognitionLanguages()), encoding: .utf8)!)
+    exit(0)
+}
+if CommandLine.arguments[1] == "--warmup" {  // draw a word in memory and read it: makes macOS compile its model now
+    let ctx = CGContext(data: nil, width: 400, height: 120, bitsPerComponent: 8, bytesPerRow: 0,
+                        space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    ctx.setFillColor(CGColor(gray: 1, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: 400, height: 120))
+    let font = CTFontCreateWithName("Helvetica" as CFString, 64, nil)
+    let line = CTLineCreateWithAttributedString(NSAttributedString(string: "Ready", attributes: [
+        NSAttributedString.Key(kCTFontAttributeName as String): font,
+        NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: 0, alpha: 1)]))
+    ctx.textPosition = CGPoint(x: 20, y: 35); CTLineDraw(line, ctx)
+    try VNImageRequestHandler(cgImage: ctx.makeImage()!).perform([request])
+    print((request.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: " "))
     exit(0)
 }
 let url = URL(fileURLWithPath: CommandLine.arguments[1])

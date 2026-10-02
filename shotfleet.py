@@ -1521,6 +1521,13 @@ def cmd_doctor():
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
+    print("...  text recognition   (first use after a restart can take a few minutes while macOS prepares it)", flush=True)
+    try:
+        t0 = time.time(); read = sh([ocr_tool(), "--warmup"], timeout=600).stdout.strip()
+        print(f"{'ok  ' if read == 'Ready' else 'PROBLEM'} text recognition   ready in {time.time() - t0:.0f} s"
+              + ("" if read == "Ready" else f" but read {read!r}; screenshot checks may be unreliable"))
+    except (subprocess.TimeoutExpired, RuntimeError) as e:
+        print(f"PROBLEM text recognition   didn't answer ({e}); restarting the Mac usually fixes it")
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
