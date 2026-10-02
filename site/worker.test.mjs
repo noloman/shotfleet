@@ -25,9 +25,11 @@ check("forget removes", (await call("/api/forget", { email: "a@example.com" }), 
 await call("/api/hit", { src: "Reddit.com" });
 await call("/api/hit", { src: "reddit.com" });
 await call("/api/hit", { src: "<script>" });
+await call("/api/hit", { src: "x", ev: "pricing" }); await call("/api/hit", { src: "x", ev: "<bad>" }); await call("/api/hit", { src: "x", ev: "cta" });
 await Promise.all(pending);
 const hits = [...kv].filter(([k]) => k.startsWith("hit:"));
-check("visits are counted per day, source and language", hits.some(([k, v]) => /^hit:\d{4}-\d\d-\d\d\|reddit.com\|xx$/.test(k) && v === "2"));
+check("visits are counted per day, source and language", hits.some(([k, v]) => /^hit:\d{4}-\d\d-\d\d\|reddit.com\|xx\|view$/.test(k) && v === "2"));
+check("known events are kept, unknown ones count as a view", hits.some(([k]) => k.endsWith("|x|xx|pricing")) && hits.some(([k]) => k.endsWith("|x|xx|cta")) && hits.every(([k]) => /\|(view|runs|pricing|cta)$/.test(k)));
 check("source is sanitised", hits.every(([k]) => !/[<>]/.test(k)));
 check("a visit stores nothing about the visitor", hits.every(([k, v]) => /^\d+$/.test(v)));
 

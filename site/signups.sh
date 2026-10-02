@@ -27,7 +27,7 @@ if [ "${1:-}" = "--details" ] || grep -q "^msg:" /tmp/shotfleet_keys.txt; then
     printf '\n%s\n  ' "$k"; npx -y wrangler@latest kv key get "$k" --binding WAITLIST --remote 2>/dev/null
   done; echo
 fi
-# ./signups.sh --visits    page views by day / source / browser language (totals only)
+# ./signups.sh --visits    page events by day / source / browser language / event (totals only)
 if [ "${1:-}" = "--visits" ]; then
   for k in $(npx -y wrangler@latest kv key list --binding WAITLIST --remote --prefix hit: 2>/dev/null | python3 -c "import json,sys;print(' '.join(k['name'].replace('|','%7C') for k in json.load(sys.stdin)))"); do
     k=$(printf '%s' "$k" | sed 's/%7C/|/g'); printf '%s  ' "$k"; npx -y wrangler@latest kv key get "$k" --binding WAITLIST --remote 2>/dev/null; echo

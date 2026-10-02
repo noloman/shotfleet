@@ -1,7 +1,7 @@
 // API for the landing page; static files in public/ are served before this runs.
 //   POST /api/signup  {email, stack?, ref, website}  -> join the waitlist (KV key "email:<address>"); a later call with stack adds the answer
 //   POST /api/forget  {email}                           -> remove an address from the waitlist, and the contact messages left with it as the reply address
-//   POST /api/hit    {src}                              -> count one visit: KV key "hit:<day>|<source>|<language>" holds a total, nothing about the visitor
+//   POST /api/hit    {src, ev}                          -> count one page event (view, runs, pricing, cta): KV key "hit:<day>|<source>|<language>|<event>" holds a total, nothing about the visitor
 //   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>", the reply address also in its metadata so forget can find it)
 // Read signups: ./signups.sh
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
@@ -10,6 +10,7 @@ const STACKS = new Set(["native", "swift", "kotlin", "react-native", "flutter", 
 const PLATFORM_OF = { native: "both", swift: "ios", kotlin: "android" };  // the other stacks ship on both stores or aren't known
 const ROUTES = new Set(["/api/signup", "/api/forget", "/api/contact", "/api/hit"]);
 
+const EVENTS = new Set(["view", "runs", "pricing", "cta"]);
 const pending = new Map();  // visit counts waiting to be written
 
 export default {
@@ -22,7 +23,8 @@ export default {
       let b = {}; try { b = JSON.parse((await request.text()).slice(0, 200)); } catch {}
       const slug = (s, n) => String(s || "").toLowerCase().replace(/[^a-z0-9.-]/g, "").slice(0, n);
       const src = slug(b.src, 40) || "direct", lang = slug((request.headers.get("accept-language") || "").split(/[-,;]/)[0], 3) || "xx";
-      const key = `hit:${new Date().toISOString().slice(0, 10)}|${src}|${lang}`;
+      const ev = EVENTS.has(b.ev) ? b.ev : "view";
+      const key = `hit:${new Date().toISOString().slice(0, 10)}|${src}|${lang}|${ev}`;
       pending.set(key, (pending.get(key) || 0) + 1);
       // KV's free tier allows 1,000 writes a day and signups share them, so counts are batched per isolate and written every
       // HIT_BATCH visits. A recycled isolate loses its unflushed counts: fine for "which link brings people", not for billing.
@@ -84,6 +86,7 @@ export default {
         platform: ["ios", "android", "both"].includes(body.platform) ? body.platform : (PLATFORM_OF[stack] || "unknown"),
         stack,
         country: request.cf?.country || null,
+        lang: String(request.headers.get("accept-language") || "").split(/[-,;]/)[0].toLowerCase().replace(/[^a-z]/g, "").slice(0, 3) || null,
         ref: String(body.ref || "").slice(0, 300),   // external referrer + utm_* tags, sent by the page
       }));
       console.log(JSON.stringify({ event: "signup", country: request.cf?.country || null }));

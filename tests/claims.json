@@ -1300,17 +1300,17 @@
  },
  {
   "id": "C077",
-  "claim": "The site adds one to a running total per page view, split by day, source and browser language; the total is not linked to you and your IP address is not stored",
+  "claim": "On the home page the site adds one to a running total per page view and per action (reaching the run or pricing section, a button click), split by day, source and browser language; the totals are not linked to you and your IP address is not stored",
   "where": [
    "site/public/privacy.html",
    "site/public/privacy.html"
   ],
   "where_text": [
-   "It adds one to a running total for each page view, split by day, by the site or link you came from, and by your browser's language.",
-   "That total is not linked to you and your IP address is not stored."
+   "On the home page it adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.",
+   "Those totals are not linked to you and your IP address is not stored."
   ],
   "status": "partial",
-  "proof": "site/worker.test.mjs (node, 2026-10-02, 13 checks ok): 'visits are counted per day, source and language', 'source is sanitised', 'a visit stores nothing about the visitor'. Code: worker.js /api/hit keeps only key hit:<day>|<source>|<lang> -> integer; src = utm_source or the referrer host (forms.js:11-17), language = first 3 letters of Accept-Language. Differences: counts are batched per isolate and lost when an isolate is recycled (worker.js comment), so 'one for each page view' undercounts; /api/hit runs before the rate limiter; whether Cloudflare's Workers Logs (observability on) retain request IPs is unchecked.",
+  "proof": "site/worker.test.mjs: 'visits are counted per day, source and language', 'known events are kept, unknown ones count as a view', 'source is sanitised', 'a visit stores nothing about the visitor'. Code: worker.js /api/hit keeps only key hit:<day>|<source>|<lang>|<event> -> integer; site/public/analytics.js sends only {src, ev}. Counts are batched per isolate and can be lost when an isolate is recycled, so totals can undercount. Whether Cloudflare's Workers Logs retain request IPs is unchecked.",
   "layer": "site",
   "assertion": "Worker test with HIT_BATCH=1: one /api/hit with cf-connecting-ip=1.2.3.4 and a User-Agent writes exactly one KV key, whose key and value contain neither; forms.js sends only {src}.",
   "fix": ""
@@ -1332,13 +1332,13 @@
  },
  {
   "id": "C079",
-  "claim": "The waitlist stores your email, what you build with, your country, the referrer and utm_ tags, and the time; the IP address itself isn't stored",
+  "claim": "The waitlist stores your email, what you build with, your country and browser language, the referrer and utm_ tags, and the time; the IP address itself isn't stored",
   "where": [
    "site/public/privacy.html",
    "site/public/privacy.html"
   ],
   "where_text": [
-   "Your country, which Cloudflare works out from your IP address. The IP address itself isn't stored.",
+   "Your country, which Cloudflare works out from your IP address, and your browser's language. The IP address itself isn't stored.",
    "The site that linked you here and any <code>utm_</code> tags in the link"
   ],
   "status": "partial",
