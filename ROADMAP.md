@@ -23,11 +23,15 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
   4/4 screenshots). The ATD image is NOT usable for store screenshots: apps launch faster (2.5-4.4 s vs 7.5 s), but
   every screen capture is black (tried default, swiftshader and host GPU). Also fixed: the status bar showed "3G".
 
-## Waiting for a quiet Mac
-- 1.5 on Android: not possible with Maestro 2.0.10 (`maestro hierarchy` breaks sharded runs); iOS done. 2.4 Android tablets
-  (iOS iPad done: device_types, verified on remoti: 13" iPad 2064x2752 + iPhone 6.9", both exported). MCP `check`
-  on real screenshots (blocked: macOS ANECompilerService stuck, restart fixes), and a clean 8-emulator benchmark round.
-  Planted caption test: done (caught).
+## Done 2026-10-02
+- 2.4 iPad and Android tablets from one flow: `device_types` (iOS) and `devices` (Android). Verified: remoti iPhone 6.9" +
+  iPad 13" (2064x2752); CrossfitTracker phone 1080x1920 + tablet 1440x2560, exported to phoneScreenshots/tenInchScreenshots.
+- MCP `check` on real screenshots: 72 screenshots, 18 languages, 0 problems, 29 s (after the Mac restart fixed OCR).
+- 1.5 on Android: not possible with Maestro 2.0.10 (`maestro hierarchy` breaks sharded runs); iOS reads app text exactly.
+
+## Still open
+- A clean 8-emulator benchmark round on an idle Mac.
+- After a restart, macOS text recognition needs ~4 min to recompile its model on first use (doctor could warm it up).
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |

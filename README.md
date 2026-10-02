@@ -139,6 +139,8 @@ package = "com.example.myapp"
 flow = "flow.yaml"
 parallel = 4            # emulators
 out = "out"
+# devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
+#                                 # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
 ```
 
 ### Flutter, React Native, .NET MAUI, Unity and translation-platform exports
