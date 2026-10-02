@@ -1,0 +1,23 @@
+import w from "./worker.js";
+const kv = new Map();
+const env = { WAITLIST: { get: async k => kv.get(k) ?? null, put: async (k, v) => kv.set(k, v), delete: async k => kv.delete(k) },
+              LIMITER: { limit: async () => ({ success: true }) } };
+const call = async (path, body) => (await w.fetch(new Request("https://x" + path, { method: "POST", body: JSON.stringify(body), headers: { "content-length": "100" } }), env)).status;
+let ok = true; const check = (name, cond) => { console.log((cond ? "ok   " : "FAIL ") + name); ok &&= cond; };
+check("signup 200", await call("/api/signup", { email: "A@Example.com", ref: "x" }) === 200);
+let rec = JSON.parse(kv.get("email:a@example.com"));
+check("stored with unknown stack and platform", rec.stack === null && rec.platform === "unknown");
+check("follow-up 200", await call("/api/signup", { email: "a@example.com", stack: "flutter" }) === 200);
+rec = JSON.parse(kv.get("email:a@example.com"));
+check("follow-up adds the stack, keeps the date", rec.stack === "flutter" && !!rec.at && rec.platform === "unknown");
+await call("/api/signup", { email: "a@example.com", stack: "swift" });
+check("a second answer does not overwrite the first", JSON.parse(kv.get("email:a@example.com")).stack === "flutter");
+await call("/api/signup", { email: "b@example.com", stack: "swift" });
+check("swift implies ios", JSON.parse(kv.get("email:b@example.com")).platform === "ios");
+await call("/api/signup", { email: "c@example.com", stack: "<script>" });
+check("unknown stack is dropped", JSON.parse(kv.get("email:c@example.com")).stack === null);
+check("bad email 400", await call("/api/signup", { email: "nope" }) === 400);
+await call("/api/signup", { email: "bot@example.com", website: "http://spam" });
+check("honeypot is not stored", !kv.has("email:bot@example.com"));
+check("forget removes", (await call("/api/forget", { email: "a@example.com" }), !kv.has("email:a@example.com")));
+process.exit(ok ? 0 : 1);
