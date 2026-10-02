@@ -1227,6 +1227,60 @@ class Extending(unittest.TestCase):
             sf.main(["run", "x.toml"]); ex3.assert_not_called()
 
 
+class FrameworkFixes(unittest.TestCase):
+    """Bugs found by reading real Flutter, React Native and gettext projects (research/frameworks.md)."""
+    def files(self, spec):
+        root = Path(tempfile.mkdtemp())
+        for rel, text in spec.items():
+            (root / rel).parent.mkdir(parents=True, exist_ok=True); (root / rel).write_text(text)
+        return root
+
+    def test_empty_accessibility_tree_falls_back_to_ocr_but_a_short_real_screen_does_not(self):
+        d = Path(tempfile.mkdtemp()); png = d / "1.png"; png.write_bytes(png_c(10, 10))
+        png.with_suffix(".texts.json").write_text("[]"); self.assertIsNone(sf.screen_text(png))
+        png.with_suffix(".texts.json").write_text('["", "  "]'); self.assertIsNone(sf.screen_text(png))
+        png.with_suffix(".texts.json").write_text('["Επόμενο"]'); self.assertEqual(sf.screen_text(png)["text"], "Επόμενο")
+
+    def test_a_locale_folder_beats_a_short_namespace_file_name(self):
+        self.assertEqual(sf.locale_from_path("locales/en/app.json"), "en")
+        self.assertEqual(sf.locale_from_path("locales/pt-BR/ui.json"), "pt-BR")
+        self.assertEqual(sf.locale_from_path("locales/de/translation.json"), "de")
+        self.assertEqual(sf.locale_from_path("locales/de.json"), "de")          # unchanged: the stem is the language
+        self.assertEqual(sf.locale_from_path("app/de.json"), "de")              # a folder called app is not a language
+
+    def test_i18next_namespaces_that_share_a_key_both_survive(self):
+        root = self.files({"locales/en/common.json": '{"title": "Home"}', "locales/en/settings.json": '{"title": "Settings"}',
+                           "locales/de/common.json": '{"title": "Startseite"}', "locales/de/settings.json": '{"title": "Einstellungen"}'})
+        s = sf.load_strings_files(str(root / "locales/*/*.json"))
+        self.assertEqual(sorted(s), ["de", "en"])
+        self.assertEqual(sorted(s["en"].values()), ["Home", "Settings"]); self.assertEqual(sorted(s["de"].values()), ["Einstellungen", "Startseite"])
+        out, missing, _ = sf.translate_flow('- tapOn: "Settings"\n- tapOn: "Home"\n', s["en"], s["de"])
+        self.assertEqual((out, missing), ("- tapOn: 'Einstellungen'\n- tapOn: 'Startseite'\n", []))
+
+    PO = (b'msgid ""\nmsgstr ""\n"Language: de\\n"\n"Plural-Forms: nplurals=2; plural=(n != 1);\\n"\n\n'
+          b'msgid "Next"\nmsgstr "Weiter"\n\n'
+          b'msgid "%d item"\nmsgid_plural "%d items"\nmsgstr[0] "%d Eintrag"\nmsgstr[1] "%d Eintr\xc3\xa4ge"\n')
+
+    def test_po_uses_the_language_header_and_reads_plural_forms(self):
+        root = Path(tempfile.mkdtemp()); (root / "messages.po").write_bytes(self.PO)   # no language in the path
+        s = sf.read_translation_file(root / "messages.po", "en")
+        self.assertEqual(s["de"]["Next"], "Weiter"); self.assertEqual(s["en"]["Next"], "Next")   # not stored as the base language
+        self.assertEqual({s["de"]["%d item#0"], s["de"]["%d item#1"]}, {"%d Eintrag", "%d Einträge"})
+        out, missing, _ = sf.translate_flow('- tapOn: "3 items"\n', s["en"], s["de"])
+        self.assertEqual(missing, []); self.assertIn("3 Eintr", out)
+
+    def test_partly_translated_languages_are_reported_not_dropped_silently(self):
+        en = {f"k{i}": f"Text {i}" for i in range(10)}
+        ja = {f"k{i}": "x" for i in range(3)}      # 30%: skipped by the 50% rule
+        de = dict(en)
+        strings = {"en": en, "de": de, "ja": ja}
+        self.assertEqual(sf.partly_translated(strings, "en"), [("ja", 30)])
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en")
+        self.assertIn("ja is only 30% translated", buf.getvalue()); self.assertIn('locales = [..., "ja"]', buf.getvalue())
+        self.assertEqual(sf.partly_translated({"en": en, "de": de}, "en"), [])
+
+
 class PolarLicence(unittest.TestCase):
     """Polar licence keys and the free tier (the other stores' tests are in the class above)."""
     def setUp(self):

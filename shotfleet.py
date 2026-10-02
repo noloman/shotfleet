@@ -294,6 +294,8 @@ def android_locale(q):
 
 # ---------- strings from source files (Flutter, React Native, .NET, Unity, translation platforms) ----------
 
+KNOWN_LANGS = {c.split("-")[0].lower() for c in APP_STORE + PLAY} | {"en"}
+
 def locale_from_path(path, codes=None):
     """Language of a translation file from how ecosystems name them: app_de.arb, de.json, Resources.de.resx,
     messages_pt_BR.properties, locales/de/translation.json, values-de/strings.xml, de.lproj/... None if unknown."""
@@ -302,6 +304,9 @@ def locale_from_path(path, codes=None):
     stem = path.name.split(".")[0] if path.suffix != ".lproj" else path.stem
     parts = path.name.split(".")
     if len(parts) >= 3 and ok(parts[-2]): return parts[-2].replace("_", "-")         # Resources.de.resx, en.lproj
+    lang = lambda c: c.split("-")[0].split("_")[0].lower() in KNOWN_LANGS
+    if ok(path.parent.name) and lang(path.parent.name) and not lang(stem):           # locales/en/app.json: a namespace file
+        return path.parent.name.replace("_", "-")
     if ok(stem): return stem.replace("_", "-")                                       # de.json, de.po
     if m := re.search(r"[_-]([a-z]{2,3}(?:[-_](?:[A-Z]{2}|[A-Z][a-z]{3}))?)$", stem):  # app_de.arb, messages_pt_BR
         return m.group(1).replace("_", "-")
@@ -401,18 +406,28 @@ def read_translation_file(f, base):
         root = ET.parse(f).getroot()
         return {lp: {d.get("name"): d.findtext("value", "") for d in root.findall("data") if d.get("type") is None}}
     if ext == ".po":  # gettext: msgid is the source text
-        out, msgid, ctx, cur = {}, None, "", None
-        for line in f.read_text(errors="replace").splitlines() + [""]:
-            if m := re.match(r'(msgctxt|msgid|msgstr)\s+"(.*)"', line):
-                cur = m.group(1); val = json.loads(f'"{m.group(2)}"')
-                if cur == "msgctxt": ctx = val
-                elif cur == "msgid": msgid = val
-                else:
-                    if msgid and val: out[f"{ctx}|{msgid}" if ctx else msgid] = val
-                    ctx = ""
-            elif line.startswith('"') and cur == "msgid" and msgid is not None:
-                msgid += json.loads(line)
-        return {lp: out, base: {k: k.split("|")[-1] for k in out}} if lp != base else {base: out}
+        entries = []
+        for block in re.split(r"\n\s*\n", f.read_text(errors="replace")):
+            fields, cur = {}, None
+            for line in block.splitlines():
+                line = line.strip()
+                if m := re.match(r'(msgctxt|msgid_plural|msgid|msgstr(?:\[\d+\])?)\s+(".*")$', line):
+                    cur = m.group(1); fields[cur] = json.loads(m.group(2))
+                elif line.startswith('"') and cur: fields[cur] += json.loads(line)
+            if "msgid" in fields: entries.append(fields)
+        if locale_from_path(f) is None:  # no language in the path: use the file's own "Language:" header
+            head = next((e.get("msgstr", "") for e in entries if e["msgid"] == ""), "")
+            if m := re.search(r"^Language:\s*([A-Za-z]{2,3}(?:[_-][A-Za-z0-9]+)*)", head, re.M): lp = m.group(1).replace("_", "-")
+        out, src = {}, {}
+        for e in entries:
+            key = f"{e['msgctxt']}|{e['msgid']}" if e.get("msgctxt") else e["msgid"]
+            if not e["msgid"]: continue
+            if "msgid_plural" in e:  # every plural form is an alternative: no per-language plural rules needed
+                for k, v in e.items():
+                    if k.startswith("msgstr[") and v: out[f"{key}#{k[7:-1]}"] = v
+                src[f"{key}#0"], src[f"{key}#1"] = e["msgid"], e["msgid_plural"]
+            elif e.get("msgstr"): out[key] = e["msgstr"]; src[key] = e["msgid"]
+        return {lp: out, base: src} if lp != base else {base: {**src, **out}}
     if ext == ".properties":  # Java/Kotlin ResourceBundle
         out = {}
         for line in f.read_text(errors="replace").splitlines():
@@ -449,7 +464,10 @@ def load_strings_files(patterns, base="en"):
     out = {}
     for f in files:
         for lp, t in read_translation_file(f, base).items():
-            out.setdefault(lp, {}).update(t)
+            have = out.setdefault(lp, {})
+            for k, v in t.items():  # common.json and settings.json may both define "title": keep both, the later one namespaced
+                if k in have and have[k] != v: have[f"{Path(f).stem}:{k}"] = v
+                else: have[k] = v
     return {lp: t for lp, t in out.items() if t}
 
 def unescape_android(v):
@@ -489,6 +507,23 @@ def load_strings_apk(apk, base="en"):
         for n in z.namelist():
             if n.endswith(".cvr"): add_cvr(out, n, z.read(n).decode("utf-8", "replace"), base)
     return out
+
+def partly_translated(strings, base="en", min_coverage=0.5):
+    """[(locale, percent)] for languages the app has some of its own strings in, but too few to count as shipped:
+    shipped_locales skips them silently, which looks like a bug to the developer who is mid-translation."""
+    if base not in strings: return []
+    others = [lp for lp in strings if lp != base]
+    keep = set(shipped_locales(strings, base, min_coverage))
+    counts = {k: sum(k in strings[lp] for lp in others) for k in strings[base]}
+    top = max(counts.values(), default=0)
+    own = {k for k, c in counts.items() if c < 0.9 * top} if top >= 20 else set(counts)
+    if len(own) < 0.1 * len(counts): own = set(counts)
+    pct = lambda lp: 100 * sum(k in strings[lp] for k in own) / len(own) if own else 0
+    return sorted((lp, round(pct(lp))) for lp in others if lp not in keep and 10 <= pct(lp) < 100 * min_coverage)
+
+def note_partly_translated(strings, base):
+    for lp, pct in partly_translated(strings, base):
+        print(f"note: {lp} is only {pct}% translated in the app, so it is skipped; add locales = [..., \"{lp}\"] to the config to capture it anyway")
 
 def shipped_locales(strings, base="en", min_coverage=0.5):
     """Locales the app itself is translated into.
@@ -964,6 +999,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
+    if not only and not cfg.get("locales"): note_partly_translated(strings, base_locale)
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
@@ -1165,6 +1201,7 @@ def android_run(cfg, path, out, only, parallel):
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
+    if not only and not cfg.get("locales"): note_partly_translated(strings, cfg.get("base_locale", "en"))
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
@@ -1456,6 +1493,7 @@ def screen_text(png):
     f = Path(png).with_suffix(".texts.json")
     if not f.exists(): return None
     texts = [" ".join(t.split()) for t in json.loads(f.read_text())]  # one element per line, as tables are normalized
+    if not any(texts): return None  # games, canvases and unlabelled UI report nothing at all: OCR the pixels instead
     text = "\n".join(texts)
     return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "app", "lines": []}
 
