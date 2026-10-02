@@ -48,16 +48,15 @@ It also finds real localization bugs. On CrossfitTracker it found an onboarding 
 ```bash
 curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # signed, notarized; Apple silicon
 shotfleet activate <your key>                      # from your purchase email (`check` works without one)
-shotfleet doctor                                   # checks Maestro, Xcode, Android SDK
-shotfleet init path/to/MyApp.app   ios/            # simulator build (Debug-iphonesimulator)
-shotfleet init path/to/app-debug.apk android/      # or an APK
+shotfleet doctor                                   # checks Maestro, Java, Xcode, Android SDK
+shotfleet init path/to/MyApp.app path/to/app-debug.apk   # a simulator build (Debug-iphonesimulator) and/or an APK
 ```
 
-1. Edit the generated `flow.yaml`. It's a normal [Maestro](https://maestro.mobile.dev) flow written in English. Navigate by the text users see and add a `takeScreenshot:` for each store image.
-2. Try one language: `shotfleet run ios/shotfleet.toml --locales en`.
-3. Run them all: `shotfleet run ios/shotfleet.toml`.
-4. Review `out/index.html`. It's a grid with a row per language and a column per screen, and problems are outlined in red.
-5. Export to fastlane: `shotfleet export ios/out --fastlane fastlane/`. That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
+1. Edit the generated `flow.yaml`: [Maestro](https://maestro.mobile.dev) steps in English. Navigate by the text users see and add a `takeScreenshot:` for each store image. No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android.
+2. Try one language: `shotfleet run --locales en`.
+3. Run them all: `shotfleet run` (finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one).
+4. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red.
+5. Export to fastlane: `shotfleet export out --fastlane fastlane/` (`out-ios` or `out-android` if the config has both). That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
 
 ## Uploading
 
@@ -119,28 +118,35 @@ Every selector is rewritten to match **any** translation of that English label. 
 
 ## Config
 
+The whole config can be this (`shotfleet init` writes it):
+
 ```toml
 [ios]
 app = "path/to/MyApp.app"
-bundle_id = "com.example.myapp"
-flow = "flow.yaml"
-device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
-runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
-parallel = 4            # simulators
-out = "out"
-# locales = ["de", "ja"]   # default: every language the app ships
-# base_locale = "de"        # the language your flow is written in (default en)
-# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes from one flow: out/<device>/;
-#                            # `check out` and `export out` handle both, and the App Store takes both in one folder
 
-[android]                 # in its own file
+[android]                 # optional: the same file and flow serve both platforms
 apk = "path/to/app-debug.apk"
-package = "com.example.myapp"
-flow = "flow.yaml"
-parallel = 4            # emulators
-out = "out"
-# devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
-#                                 # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
+```
+
+Everything else is read from the build or has a default; set it only to change it. A typo or a wrong type is refused
+with a one-line message before anything runs.
+
+```toml
+[ios]
+flow = "flow.yaml"        # default; shared by both platforms (an `appId:` header is set for you)
+out = "out"               # default "out", or "out-ios" / "out-android" when the file has both platforms
+parallel = 4              # simulators (emulators on Android); default 4
+locales = ["de", "ja"]    # default: every language the app ships
+base_locale = "de"        # the language your flow is written in (default en)
+bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
+device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # default: 6.9" iPhone
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-5"                    # default: newest installed
+device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes from one flow: out/<device>/;
+                          # `check out` and `export out` handle both, and the App Store takes both in one folder
+
+[android]
+devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
+                          # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
 ```
 
 ### Flutter, React Native, .NET MAUI, Unity and translation-platform exports
