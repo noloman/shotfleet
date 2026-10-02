@@ -51,3 +51,7 @@ What does hold:
 - Team/CI licence later (about $149).
 - Raise the price as proof arrives (first case studies, notarized release, real Flutter/RN run). Keep the 14-day refund.
 - Decision rule in sales count, not revenue: 50 sales at $29 within 60 days.
+
+## Addendum 2026-10-02: net per sale on Gumroad (replaces the Lemon Squeezy arithmetic in section 3)
+
+Polar and Lemon Squeezy are out (a Dutch KvK would be asked for); the sale is on Gumroad. Fees read from gumroad.com/pricing and help article 66 today: 10% + $0.50, plus card processing 2.9% + $0.30 (not included in the 10%); Discover sales 30%. Net per sale (assuming the percentages run on the list price, not on VAT added on top): $29 -> $24.46 (15.7% in fees), $49 -> $41.88 (14.5%). Against the old figures that is $2.59 and $4.17 less per sale. The $29/$49 decision stands; the page must say prices are before VAT where it applies, because Gumroad cannot show a VAT-inclusive digital price. The 50-sales rule is now $1,223 net at $29. Details, sources and the unverified points: research/gumroad-setup.md.

@@ -1,11 +1,13 @@
 #!/bin/sh
-# Launch day, in one command, once the Polar product exists (LAUNCH.md):
-#   POLAR_ORG_ID=<organization id> packaging/go-live.sh <Polar checkout link>
+# Launch day, in one command, once the Gumroad product exists (LAUNCH.md):
+#   packaging/go-live.sh <Gumroad product URL> <Gumroad product ID>
+# The URL is the product's page (https://<account>.gumroad.com/l/<permalink>); the ID is the one the License key block shows on the
+# product's Content page while editing (22 characters ending in ==). The released program checks keys against that product.
 # Publishes the signed, notarized release on the site (install.sh), switches the site from waitlist to "Buy",
 # deploys it, and prints the waitlist emails for the launch email.
 #
 # Rehearse first (changes nothing outside a temp copy: no build, notarization, deploy or push, no network):
-#   POLAR_ORG_ID=<organization id> packaging/go-live.sh --dry-run <Polar checkout link>
+#   packaging/go-live.sh --dry-run <Gumroad product URL> <Gumroad product ID>
 # It runs the same sed, the same site transform and the same git commits on a copy of the working tree, then prints the
 # diff, checks the result, runs the claims check on it and lists what the real run would do.
 # Dry-run switches: GOLIVE_DRYRUN_DIR=<dir> keeps the copy there; GOLIVE_SKIP_TESTS=1 skips the claims check on it;
@@ -14,8 +16,8 @@
 set -eu
 DRY=0
 if [ "${1:-}" = --dry-run ]; then DRY=1; shift; fi
-CHECKOUT=${1:?usage: POLAR_ORG_ID=<id> packaging/go-live.sh [--dry-run] <checkout URL> [<Gumroad product URL> <Gumroad product ID>]}
-GUMROAD_URL=${2:-}; GUMROAD_ID=${3:-}
+CHECKOUT=${1:?usage: packaging/go-live.sh [--dry-run] <Gumroad product URL> <Gumroad product ID>}
+GUMROAD_ID=${2:?usage: packaging/go-live.sh [--dry-run] <Gumroad product URL> <Gumroad product ID>}
 cd "$(dirname "$0")/.."
 GITOPTS=  # the dry run commits quietly
 
@@ -29,19 +31,14 @@ if [ "$DRY" = 1 ]; then
   echo "== go-live DRY RUN: nothing is built, uploaded, deployed or pushed =="
   echo "-- inputs"
   case "$CHECKOUT" in
-    *[[:space:]\"\'\`\$\\]*) fail "checkout link has spaces, quotes or other odd characters: $CHECKOUT" ;;
-    https://*.polar.sh/*|https://polar.sh/*) ok "checkout link: $CHECKOUT" ;;
-    https://*) warn "checkout link is not on polar.sh: $CHECKOUT" ;;
-    *) fail "checkout link must start with https://: $CHECKOUT" ;;
+    *[[:space:]\"\'\`\$\\]*) fail "product link has spaces, quotes or other odd characters: $CHECKOUT" ;;
+    https://*.gumroad.com/l/?*|https://gumroad.com/l/?*|https://gum.co/?*) ok "Gumroad product link: $CHECKOUT" ;;
+    https://*) warn "product link is not a gumroad.com/l/<permalink> link: $CHECKOUT" ;;
+    *) fail "product link must start with https://: $CHECKOUT" ;;
   esac
-  if [ -n "${POLAR_ORG_ID:-}" ]; then
-    case "$POLAR_ORG_ID" in
-      [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ok "POLAR_ORG_ID is a UUID" ;;
-      *) fail "POLAR_ORG_ID is not a UUID: $POLAR_ORG_ID" ;;
-    esac
-  elif grep -q '^POLAR_ORG_ID = "[^"]' shotfleet.py; then warn "POLAR_ORG_ID not set; shotfleet.py keeps its current value"
-  else fail "POLAR_ORG_ID not set and shotfleet.py has none: released builds could not check Polar keys"; fi
-  if [ -n "$GUMROAD_URL" ] && [ -z "$GUMROAD_ID" ]; then fail "a Gumroad product URL needs the product ID too"; fi
+  if printf '%s' "$GUMROAD_ID" | grep -Eq '[^A-Za-z0-9_=-]|^$'; then fail "Gumroad product ID has odd characters (spaces, quotes, slashes): $GUMROAD_ID"
+  elif printf '%s' "$GUMROAD_ID" | grep -Eq '^[A-Za-z0-9_-]{22}==$'; then ok "Gumroad product ID has the usual shape (22 characters and ==)"
+  else warn "Gumroad product ID is not 22 characters ending in ==: $GUMROAD_ID (copy it from the License key block on the product's Content page)"; fi
   if [ "$BAD" = 1 ]; then echo "== DRY RUN FOUND PROBLEMS: do not run the real go-live yet =="; exit 1; fi  # bad inputs: nothing to rehearse
   if [ "${GOLIVE_SKIP_MACHINE_CHECKS:-}" != 1 ]; then
     echo "-- this Mac"
@@ -70,29 +67,20 @@ fi
 
 # The two edits below are the real run's own code; the dry run executes them on the copy.
 transform_site() {
-python3 - "$CHECKOUT" "$GUMROAD_URL" <<'PY'
+python3 - "$CHECKOUT" <<'PY'
 import re, sys
 p = "site/public/index.html"; s = open(p).read()
 s = re.sub(r"    <!-- WAITLIST -->.*?<!-- /WAITLIST -->\n", "", s, flags=re.S)
-def sale(m):
-    block = m.group(1).replace("@CHECKOUT@", sys.argv[1])
-    if sys.argv[2]: return block.replace("@GUMROAD@", sys.argv[2])
-    return "\n".join(l for l in block.splitlines() if "data-gumroad" not in l)
-s = re.sub(r"    <!-- SALE\n(.*?)\n    SALE -->", sale, s, flags=re.S)
+s = re.sub(r"    <!-- SALE\n(.*?)\n    SALE -->", lambda m: m.group(1).replace("@CHECKOUT@", sys.argv[1]), s, flags=re.S)
 s = s.replace("Early access", "Buy shotfleet")
 open(p, "w").write(s)
 PY
 }
 
-if [ -n "${POLAR_ORG_ID:-}" ]; then  # the released program checks Polar keys against this organization
-  sed -i '' "s/^POLAR_ORG_ID = .*/POLAR_ORG_ID = \"$POLAR_ORG_ID\"  # set by packaging\/go-live.sh/" shotfleet.py
-  git add shotfleet.py && git commit $GITOPTS -m "Polar organization ID for licence checks"
-fi
-if [ -n "$GUMROAD_URL" ]; then  # the released program checks Gumroad keys against this product
-  : "${GUMROAD_ID:?a Gumroad product URL needs the product ID too (LAUNCH.md step 2)}"
-  sed -i '' "s/^GUMROAD_PRODUCT_ID = .*/GUMROAD_PRODUCT_ID = \"$GUMROAD_ID\"  # set by packaging\/go-live.sh/" shotfleet.py
-  git add shotfleet.py && git commit $GITOPTS -m "Gumroad product ID for licence checks"
-fi
+# The released program checks Gumroad keys against this product (and only this one).
+case "$GUMROAD_ID" in *[!A-Za-z0-9_=-]*|"") echo "go-live: the Gumroad product ID has odd characters: $GUMROAD_ID" >&2; exit 2 ;; esac
+sed -i '' "s|^GUMROAD_PRODUCT_ID = .*|GUMROAD_PRODUCT_ID = \"$GUMROAD_ID\"  # set by packaging/go-live.sh|" shotfleet.py
+git add shotfleet.py && { git diff --cached --quiet || git commit $GITOPTS -m "Gumroad product ID for licence checks"; }  # no-op if the ID is already there
 if [ "$DRY" = 0 ]; then packaging/release.sh; fi
 transform_site
 if [ "$DRY" = 0 ]; then
@@ -121,7 +109,12 @@ if grep -Eiq '[0-9]+ (of 100|left|remaining)|spots? left' "$H"; then fail "page 
 [ "$(grep -cF 'curl -fsSL https://shotfleet.com/install.sh | sh' "$H")" = 1 ] && ok "install line appears once" || fail "install line count is not 1"
 python3 -m py_compile shotfleet.py && ok "shotfleet.py compiles" || fail "shotfleet.py does not compile"
 rm -rf __pycache__
-if [ -n "${POLAR_ORG_ID:-}" ]; then grep -qF "POLAR_ORG_ID = \"$POLAR_ORG_ID\"" shotfleet.py && ok "POLAR_ORG_ID line set" || fail "POLAR_ORG_ID line not set"; fi
+grep -qF "GUMROAD_PRODUCT_ID = \"$GUMROAD_ID\"" shotfleet.py && ok "GUMROAD_PRODUCT_ID line set" || fail "GUMROAD_PRODUCT_ID line not set"
+python3 - "$GUMROAD_ID" <<'PY' && ok "shotfleet.py imports and holds the product ID" || fail "shotfleet.py does not import, or does not hold the product ID"
+import sys, shotfleet as sf
+assert sf.GUMROAD_PRODUCT_ID == sys.argv[1]
+PY
+rm -rf __pycache__
 VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("shotfleet.py").read()).group(1))')
 if [ "${GOLIVE_SKIP_TESTS:-}" = 1 ]; then warn "claims check on the copy skipped (GOLIVE_SKIP_TESTS=1)"
 else
@@ -130,15 +123,15 @@ else
   rm -f "$W/claims.log"
 fi
 echo "-- the real run would, in this order"
-say "1. sed POLAR_ORG_ID in shotfleet.py to ${POLAR_ORG_ID:-(unset: no edit)} and commit \"Polar organization ID for licence checks\""
-if [ -n "$GUMROAD_URL" ]; then say "2. sed GUMROAD_PRODUCT_ID to $GUMROAD_ID and commit; the page keeps its Gumroad link $GUMROAD_URL"
-else say "2. skip Gumroad (no URL given); the data-gumroad lines are dropped from the page"; fi
+say "1. sed GUMROAD_PRODUCT_ID in shotfleet.py to $GUMROAD_ID and commit \"Gumroad product ID for licence checks\""
+say "2. (nothing: Gumroad needs no other edit in the program; keys check against api.gumroad.com with that product ID)"
 say "3. packaging/release.sh: tools/check-claims.sh, build $VERSION (sign with DEVELOPER_ID, notarize with ${NOTARY_PROFILE:-KeysiNotary}), copy to site/public/download, write VERSION, wrangler deploy (first deploy: still the waitlist page)"
 say "4. transform site/public/index.html (drop WAITLIST blocks, open SALE blocks with $CHECKOUT, Early access -> Buy shotfleet)"
 say "5. (cd site && npx wrangler deploy): the sale page goes live on shotfleet.com"
 say "6. commit \"Site: sale open\" and git push (needs the upstream the check above found)"
 say "7. site/signups.sh: print the waitlist emails for marketing/launch-email.md"
 echo "after step 5, run: tools/golive/smoke.sh https://shotfleet.com $CHECKOUT"
+echo "and before step 3 (it reads the live Gumroad product page): tools/golive/storefront.sh $CHECKOUT $GUMROAD_ID"
 [ -n "${GOLIVE_DRYRUN_DIR:-}" ] && echo "copy kept in $W"
 if [ "$BAD" = 1 ]; then echo "== DRY RUN FOUND PROBLEMS: do not run the real go-live yet =="; exit 1; fi
 echo "== dry run clean: nothing was built, deployed or pushed =="

@@ -899,23 +899,25 @@ class Licence(unittest.TestCase):
 
 
 class GumroadLicence(unittest.TestCase):
-    """Against a fake Gumroad /v2/licenses/verify (shape from antiwork/gumroad licenses_controller.rb)."""
+    """Against a fake Gumroad /v2/licenses/verify (shape from Gumroad's licence-key help article and antiwork/gumroad licenses_controller.rb)."""
     GOOD, REFUNDED = "ABCDEF12-34567890-ABCDEF12-34567890", "11111111-22222222-33333333-44444444"
 
     def setUp(self):
         import http.server, threading, urllib.parse
-        self.uses, self.calls, test = {self.GOOD: 0, self.REFUNDED: 0}, [], self
+        self.uses, self.calls, self.flags, self.status, test = {self.GOOD: 0, self.REFUNDED: 0}, [], {self.REFUNDED: {"refunded": True}}, 200, self
         class H(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
                 b = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
                 test.calls.append(b)
                 key = b.get("license_key")
+                if test.status >= 500:
+                    self.send_response(test.status); self.end_headers(); self.wfile.write(b'{"success":false,"message":"boom"}'); return
                 if key not in test.uses or b.get("product_id") != "prod1":
                     self.send_response(404); self.end_headers()
                     self.wfile.write(b'{"success":false,"message":"That license does not exist for the provided product."}'); return
                 if b.get("increment_uses_count") != "false": test.uses[key] += 1
-                body = {"success": True, "uses": test.uses[key], "purchase": {"refunded": key == test.REFUNDED, "chargebacked": False}}
-                self.send_response(200); self.end_headers(); self.wfile.write(json.dumps(body).encode())
+                purchase = {"refunded": False, "chargebacked": False, "disputed": False, "dispute_won": False, **test.flags.get(key, {})}
+                self.send_response(200); self.end_headers(); self.wfile.write(json.dumps({"success": True, "uses": test.uses[key], "purchase": purchase}).encode())
             def log_message(self, *a): pass
         self.server = http.server.HTTPServer(("127.0.0.1", 0), H)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -933,27 +935,67 @@ class GumroadLicence(unittest.TestCase):
     def activate(self, key):
         with contextlib.redirect_stdout(io.StringIO()): return sf.cmd_activate(key)
 
-    def test_key_formats(self):
+    def stale(self):  # make the weekly re-check due
+        sf.LICENCE_FILE.write_text(json.dumps({**json.loads(sf.LICENCE_FILE.read_text()), "checked": time.time() - 8 * 86400}))
+
+    def test_key_formats_do_not_collide(self):
         self.assertTrue(sf.is_gumroad_key(self.GOOD))
         self.assertFalse(sf.is_gumroad_key("38b1460a-5104-4067-a91d-77b872934d51"))  # Lemon Squeezy UUID
+        self.assertFalse(sf.is_gumroad_key("SHOTFLEET-1C285B2D-6CE6"))  # Polar
+        self.assertFalse(sf.is_polar_key(self.GOOD))
 
-    def test_three_macs_then_refused(self):
-        for _ in range(3): self.activate(self.GOOD)
-        with self.assertRaisesRegex(sf.Fail, "3 Macs"): self.activate(self.GOOD)
+    def test_three_activations_then_refused_and_the_refusal_costs_nothing(self):
+        for _ in range(3): self.activate(self.GOOD); sf.LICENCE_FILE.unlink()  # three different Macs
+        with self.assertRaisesRegex(sf.Fail, "all 3 activations"): self.activate(self.GOOD)
+        with self.assertRaisesRegex(sf.Fail, "hello@shotfleet.com"): self.activate(self.GOOD)
+        self.assertEqual(self.uses[self.GOOD], 3)  # a refused attempt never burns a use
+        self.assertFalse(sf.LICENCE_FILE.exists())
 
-    def test_refunded_and_unknown_keys_are_refused(self):
+    def test_activating_again_on_the_same_mac_does_not_use_another(self):
+        for _ in range(5): self.activate(self.GOOD)
+        self.assertEqual(self.uses[self.GOOD], 1)
+
+    def test_deactivate_cant_give_the_activation_back_and_says_so(self):
+        self.activate(self.GOOD)
+        with contextlib.redirect_stdout(io.StringIO()) as out: sf.cmd_deactivate()
+        self.assertFalse(sf.LICENCE_FILE.exists()); self.assertIn("can't give the activation back", out.getvalue())
+        self.assertEqual(len(self.calls), 2)  # activate's look and count; deactivate made no request
+
+    def test_refunded_and_unknown_keys_are_refused_without_using_an_activation(self):
         with self.assertRaisesRegex(sf.Fail, "refunded"): self.activate(self.REFUNDED)
         with self.assertRaisesRegex(sf.Fail, "does not exist"): self.activate("99999999-99999999-99999999-99999999")
+        self.assertEqual(self.uses[self.REFUNDED], 0)
+        with self.assertRaisesRegex(sf.Fail, "Gumroad receipt"): self.activate(self.REFUNDED)
 
-    def test_weekly_recheck_doesnt_use_an_activation(self):
-        self.activate(self.GOOD)
-        lic = json.loads(sf.LICENCE_FILE.read_text())
-        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": 0}))
-        sf.require_licence()
-        self.assertEqual(self.uses[self.GOOD], 1)
-        self.assertEqual(self.calls[-1]["increment_uses_count"], "false")
+    def test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check(self):
+        for flags, why in (({"refunded": True}, "refunded"), ({"chargebacked": True}, "charged back"), ({"disputed": True}, "disputed")):
+            with self.subTest(flags=flags):
+                self.flags[self.GOOD] = {}; self.activate(self.GOOD); self.stale()
+                sf.require_licence()  # still fine
+                self.flags[self.GOOD] = flags; self.stale()
+                with self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
+                with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
+                sf.LICENCE_FILE.unlink()
+
+    def test_a_won_dispute_keeps_the_licence(self):
+        self.flags[self.GOOD] = {"disputed": True, "dispute_won": True}
+        self.activate(self.GOOD); self.stale(); sf.require_licence()
+
+    def test_nothing_counts_a_use_except_one_activation(self):
+        self.activate(self.GOOD); self.stale(); sf.require_licence()
         with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
-        self.assertEqual(self.uses[self.GOOD], 1)
+        counted = [c for c in self.calls if c["increment_uses_count"] != "false"]
+        self.assertEqual(len(counted), 1); self.assertEqual(self.uses[self.GOOD], 1)
+        self.assertEqual(self.calls[-1]["increment_uses_count"], "false")
+
+    def test_a_gumroad_outage_is_not_a_verdict(self):
+        self.activate(self.GOOD); self.stale(); self.status = 503
+        sf.require_licence()  # offline grace, the licence stays
+        self.assertTrue(sf.LICENCE_FILE.exists())
+        with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
+
+    def test_a_build_without_a_product_id_fails_loudly(self):
+        with mock.patch.object(sf, "GUMROAD_PRODUCT_ID", ""), self.assertRaisesRegex(sf.Fail, "no Gumroad product id"): self.activate(self.GOOD)
 
 
 class ScreenText(unittest.TestCase):

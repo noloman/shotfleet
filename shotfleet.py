@@ -2345,9 +2345,10 @@ LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
-GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh
+GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh: the product ID from the License key block on the product's Content page
+# Polar is no longer sold through (Polar's payout provider Stripe asks for a KvK, 2026-10-02); its code stays, tested, for keys that already exist.
 POLAR_API = os.environ.get("SHOTFLEET_POLAR_API", "https://api.polar.sh/v1/customer-portal/license-keys")
-POLAR_ORG_ID = ""  # set by packaging/go-live.sh: the Polar organization (a UUID); Polar keys start with SHOTFLEET-
+POLAR_ORG_ID = ""  # the Polar organization (a UUID); Polar keys start with SHOTFLEET-. No longer set by go-live.sh
 MAX_MACS = 3
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
@@ -2400,21 +2401,29 @@ def is_gumroad_key(key):
     return bool(re.fullmatch(r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{8}){3}", key.strip()))
 
 def gumroad_verify(key, count_use):
-    """Gumroad's licence check -> (ok, uses, reason). Every check counts a use unless count_use is False."""
+    """Gumroad's licence check -> (ok, uses, reason). Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
+    and every check bumps it unless count_use is False. Gumroad answers success:true for a refunded or charged-back purchase
+    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict."""
+    if not GUMROAD_PRODUCT_ID: raise Fail("this build has no Gumroad product id (packaging/go-live.sh sets it)")
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
     try:
-        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15) as r:
+        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15, context=_TLS) as r:
             body = json.loads(r.read() or b"{}")
-    except urllib.error.HTTPError as e:
+    except urllib.error.HTTPError as e:  # an unknown key is a 404 with a JSON message
         with e:
+            if e.code >= 500: raise OSError(f"Gumroad answered {e.code}")
             try: body = json.loads(e.read() or b"{}")
             except ValueError: raise OSError(f"Gumroad answered {e.code}")
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
     if not body.get("success"): return False, 0, body.get("message", "invalid key").rstrip(".")
     p = body.get("purchase") or {}
-    for flag in ("refunded", "chargebacked", "disputed"):
-        if p.get(flag): return False, body.get("uses", 0), f"the purchase was {flag}"
-    return True, body.get("uses", 0), None
+    uses = body.get("uses", 0)
+    if p.get("refunded"): return False, uses, "the purchase was refunded"
+    if p.get("chargebacked"): return False, uses, "the purchase was charged back"
+    if p.get("disputed") and not p.get("dispute_won"): return False, uses, "the purchase is disputed"  # a won dispute keeps the licence
+    return True, uses, None
 
 def licence_api(action, **fields):
     """POST to Lemon Squeezy's licence API -> JSON. Network problems raise OSError."""
@@ -2430,16 +2439,22 @@ def licence_api(action, **fields):
 def cmd_activate(key):
     if is_polar_key(key):
         status, body = polar_post("activate", key=key.strip(), label=socket.gethostname())
-        if status != 200: raise Fail(f"that key didn't activate: {str(body.get('detail')).rstrip('.')}. Keys come with your purchase: {BUY_URL}")
+        if status != 200: raise Fail(f"that key didn't activate: {str(body.get('detail')).rstrip('.')}. Your key is in the Gumroad receipt email: {BUY_URL}")
         LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
         LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "polar", "activation": body["id"], "checked": time.time()}))
         print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
         return 0
     if is_gumroad_key(key):
-        ok, uses, why = gumroad_verify(key, count_use=True)
-        if not ok: raise Fail(f"that key didn't activate: {why}. Keys come with your purchase: {BUY_URL}")
-        if uses > MAX_MACS:
-            raise Fail(f"this key is already active on {MAX_MACS} Macs. To move it, email hello@shotfleet.com")
+        # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
+        ok, uses, why = gumroad_verify(key, count_use=False)
+        if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
+        try: known = json.loads(LICENCE_FILE.read_text()).get("key") == key.strip()  # this Mac already holds it: no new activation
+        except (OSError, ValueError): known = False
+        if not known:
+            if uses >= MAX_MACS:
+                raise Fail(f"this key has used all {MAX_MACS} activations. Email hello@shotfleet.com and I'll reset the count")
+            ok, uses, why = gumroad_verify(key, count_use=True)  # ponytail: two people activating at once can pass 3; I reset by hand
+            if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
         LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
         LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
         print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
@@ -2447,7 +2462,7 @@ def cmd_activate(key):
     r = licence_api("activate", license_key=key.strip(), instance_name=socket.gethostname())
     if not r.get("activated"):
         raise Fail(f"that key didn't activate: {(r.get('error') or 'unknown error').rstrip('.')}. "
-                   f"Keys come with your purchase: {BUY_URL}")
+                   f"Your key is in the Gumroad receipt email: {BUY_URL}")
     LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
     LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "instance": r["instance"]["id"], "checked": time.time()}))
     print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
@@ -2461,8 +2476,9 @@ def cmd_deactivate():
         except OSError: pass  # offline: forget it locally anyway
         LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
         return 0
-    if lic.get("store") == "gumroad":  # Gumroad can't free an activation from here
-        LICENCE_FILE.unlink(); print("removed from this Mac. If you've used all 3 activations, email hello@shotfleet.com to move it")
+    if lic.get("store") == "gumroad":  # freeing an activation takes a Gumroad access token, which can't ship in the program
+        LICENCE_FILE.unlink(); print(f"removed from this Mac. Gumroad can't give the activation back from here: "
+                                     f"if all {MAX_MACS} are used, email hello@shotfleet.com and I'll reset the count")
         return 0
     try: licence_api("deactivate", license_key=lic["key"], instance_id=lic["instance"])
     except OSError: pass  # offline: forget it locally anyway
@@ -2483,7 +2499,7 @@ def require_licence():
         if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
         return
     if not LICENCE_FILE.exists():
-        raise NoLicence(f"`export` and every language in `run` need a licence: shotfleet activate <key> (buy one at {BUY_URL}). "
+        raise NoLicence(f"`export` and every language in `run` need a licence: shotfleet activate <key> (buy one at {BUY_URL}; checkout is on Gumroad). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
     lic = json.loads(LICENCE_FILE.read_text())
     age = (time.time() - lic.get("checked", 0)) / 86400

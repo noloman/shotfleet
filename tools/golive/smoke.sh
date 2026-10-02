@@ -28,7 +28,7 @@ if status200 / page; then
     C=$(grep -cF "href=\"$CHECKOUT\"" "$P" || true)
     if [ "$C" -ge 3 ]; then ok "checkout link $CHECKOUT in $C places"; else fail "checkout link $CHECKOUT in $C places (want 3: nav, hero, price card)"; fi
   else
-    C=$(grep -o 'href="https://[^"]*"' "$P" | grep -v 'href="https://shotfleet.com' | grep -c 'polar\|checkout' || true)
+    C=$(grep -o 'href="https://[^"]*"' "$P" | grep -v 'href="https://shotfleet.com' | grep -c 'gumroad\|checkout' || true)
     if [ "$C" -ge 1 ]; then ok "page has a checkout link (pass the link as 2nd argument to check it exactly)"; else fail "no checkout link on the page"; fi
   fi
   if grep -qF "Buy shotfleet" "$P"; then ok "page says Buy shotfleet"; else fail "page does not say Buy shotfleet"; fi

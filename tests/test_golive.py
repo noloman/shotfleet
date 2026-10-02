@@ -1,5 +1,5 @@
 """The go-live rehearsal: packaging/go-live.sh --dry-run and tools/golive/smoke.sh, against a local fake server.
-Nothing here touches the network, Cloudflare, Polar, git remotes or the real PATH. Stdlib only.
+Nothing here touches the network, Cloudflare, Gumroad, git remotes or the real PATH. Stdlib only.
 
 Run: python3 -m unittest discover -s tests
 """
@@ -14,8 +14,8 @@ GOLIVE = ROOT / "packaging/go-live.sh"
 SMOKE = ROOT / "tools/golive/smoke.sh"
 INSTALL = PUB / "install.sh"
 LIVE = "<!-- WAITLIST -->" not in (PUB / "index.html").read_text()  # go-live.sh already ran for real
-CHECKOUT = "https://polar.sh/checkout/test-link"
-ORG = "16188b30-3a8a-4fdc-8282-d350ae6ec1bb"
+CHECKOUT = "https://example.gumroad.com/l/shotfleet"
+PRODUCT_ID = "Zm9vYmFyYmF6cXV4MTI0NQ=="  # the usual Gumroad shape: 22 characters and ==
 ARCHIVE = "shotfleet-macos-arm64.tar.gz"
 CLEAN = "/usr/bin:/bin:/usr/sbin:/sbin"
 APPLE_SILICON = os.uname().sysname == "Darwin" and os.uname().machine == "arm64"
@@ -81,7 +81,7 @@ class Fixture(unittest.TestCase):
         cls.dry = None
         if not LIVE:
             copy = cls.tmp / "copy"
-            cls.dry = run(["sh", str(GOLIVE), "--dry-run", CHECKOUT], env={**os.environ, "POLAR_ORG_ID": ORG, "GOLIVE_DRYRUN_DIR": str(copy),
+            cls.dry = run(["sh", str(GOLIVE), "--dry-run", CHECKOUT, PRODUCT_ID], env={**os.environ, "GOLIVE_DRYRUN_DIR": str(copy),
                           "GOLIVE_SKIP_TESTS": "1", "GOLIVE_SKIP_MACHINE_CHECKS": "1"})
             cls.sale_pub = copy / "site/public"
         cls.sale_html = (cls.sale_pub / "index.html").read_text()
@@ -104,10 +104,10 @@ class DryRun(Fixture):
     def test_the_dry_run_passes_and_says_what_it_would_do(self):
         self.assertEqual(self.dry.returncode, 0, self.dry.stdout + self.dry.stderr)
         out = self.dry.stdout
-        for line in ("dry run clean", "would: 1. sed POLAR_ORG_ID", "would: 3. packaging/release.sh", "would: 5. (cd site && npx wrangler deploy)",
+        for line in ("dry run clean", "would: 1. sed GUMROAD_PRODUCT_ID", "GUMROAD_PRODUCT_ID line set", "Gumroad product ID has the usual shape", "storefront.sh", "would: 3. packaging/release.sh", "would: 5. (cd site && npx wrangler deploy)",
                      "would: 6. commit \"Site: sale open\" and git push", "smoke.sh https://shotfleet.com"):
             self.assertIn(line, out)
-        self.assertIn(f'+POLAR_ORG_ID = "{ORG}"', out)  # the diff summary shows the one-line change to the program
+        self.assertIn(f'+GUMROAD_PRODUCT_ID = "{PRODUCT_ID}"', out)  # the diff summary shows the one-line change to the program
         self.assertIn("site/public/index.html", out)
 
     def test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text(self):
@@ -116,7 +116,7 @@ class DryRun(Fixture):
         for marker in ("WAITLIST", "SALE", "@CHECKOUT@", "@GUMROAD@", "data-signup", 'id="signup', "Early access"): self.assertNotIn(marker, live)
         self.assertIn("first 100 buyers", live)  # honest text: no counter number exists, nothing feeds one (LAUNCH.md open item)
         self.assertNotRegex(live.lower(), r"\d+ (of 100|left|remaining)|spots? left")
-        self.assertIn(f'POLAR_ORG_ID = "{ORG}"', (self.sale_pub.parent.parent / "shotfleet.py").read_text())
+        self.assertIn(f'GUMROAD_PRODUCT_ID = "{PRODUCT_ID}"', (self.sale_pub.parent.parent / "shotfleet.py").read_text())
 
     def test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed(self):
         before = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in ("shotfleet.py", "site/public/index.html")}
@@ -124,7 +124,7 @@ class DryRun(Fixture):
         bin_, log = self.tmp / "bin", self.tmp / "calls.log"; bin_.mkdir(exist_ok=True)
         for tool in ("npx", "xcrun", "codesign", "swiftc"):  # anything the real run would use for the outside world
             f = bin_ / tool; f.write_text(f'#!/bin/sh\necho "{tool} $*" >> "{log}"\n'); f.chmod(f.stat().st_mode | stat.S_IEXEC)
-        r = run(["sh", str(GOLIVE), "--dry-run", CHECKOUT], env={**os.environ, "PATH": f"{bin_}:{os.environ['PATH']}", "POLAR_ORG_ID": ORG,
+        r = run(["sh", str(GOLIVE), "--dry-run", CHECKOUT, PRODUCT_ID], env={**os.environ, "PATH": f"{bin_}:{os.environ['PATH']}",
                 "GOLIVE_SKIP_TESTS": "1", "GOLIVE_SKIP_MACHINE_CHECKS": "1"})
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertFalse(log.exists(), log.read_text() if log.exists() else "")
@@ -133,14 +133,21 @@ class DryRun(Fixture):
 
     def test_bad_inputs_fail_the_dry_run(self):
         env = {**os.environ, "GOLIVE_SKIP_TESTS": "1", "GOLIVE_SKIP_MACHINE_CHECKS": "1"}
-        for args, org, want in ((["http://polar.sh/x"], ORG, "must start with https://"), ([CHECKOUT], "not-a-uuid", "not a UUID"),
-                                ([CHECKOUT, "https://gumroad.com/l/x"], ORG, "needs the product ID")):
-            with self.subTest(args=args, org=org):
-                r = run(["sh", str(GOLIVE), "--dry-run", *args], env={**env, "POLAR_ORG_ID": org})
+        for args, want in ((["http://example.gumroad.com/l/x", PRODUCT_ID], "must start with https://"),
+                           ([CHECKOUT, "not an id!"], "odd characters"), ([CHECKOUT, 'x";rm -rf /;"=='], "odd characters"),
+                           ([CHECKOUT + "?a=b c", PRODUCT_ID], "odd characters")):
+            with self.subTest(args=args):
+                r = run(["sh", str(GOLIVE), "--dry-run", *args], env=env)
                 self.assertEqual(r.returncode, 1, r.stdout); self.assertIn(want, r.stdout); self.assertIn("DRY RUN FOUND PROBLEMS", r.stdout)
 
+    def test_a_link_that_is_not_gumroad_or_an_odd_id_shape_is_a_warning_not_a_failure(self):
+        env = {**os.environ, "GOLIVE_SKIP_TESTS": "1", "GOLIVE_SKIP_MACHINE_CHECKS": "1"}
+        r = run(["sh", str(GOLIVE), "--dry-run", "https://buy.example.com/shotfleet", "shortid=="], env=env)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("not a gumroad.com/l/<permalink> link", r.stdout); self.assertIn("not 22 characters ending in ==", r.stdout)
+
     def test_a_missing_checkout_link_is_a_usage_error_in_both_modes(self):
-        for args in ([], ["--dry-run"]):
+        for args in ([], ["--dry-run"], [CHECKOUT], ["--dry-run", CHECKOUT]):  # the product ID is required too
             r = run(["sh", str(GOLIVE), *args]); self.assertNotEqual(r.returncode, 0); self.assertIn("usage", r.stderr)
 
 
@@ -170,7 +177,7 @@ class Smoke(Fixture):
         self.assertFails(self.site(self.sale_html.replace("<h1>", '<h1 data-signup>', 1)), "still contains: data-signup")
 
     def test_a_page_without_the_expected_checkout_link_fails(self):
-        self.assertFails(self.site(), "checkout link https://polar.sh/checkout/other in 0 places", "https://polar.sh/checkout/other")
+        self.assertFails(self.site(), "checkout link https://example.gumroad.com/l/other in 0 places", "https://example.gumroad.com/l/other")
 
     def test_a_counter_number_that_nothing_feeds_fails(self):
         self.assertFails(self.site(self.sale_html.replace("first 100 buyers", "first 100 buyers (37 of 100 left)", 1)), "counter number")
@@ -182,6 +189,43 @@ class Smoke(Fixture):
     @unittest.skipUnless(APPLE_SILICON, "the program only runs on an Apple silicon Mac")
     def test_a_program_that_disagrees_with_VERSION_fails(self):
         self.assertFails(self.site(version="9.9.9", file_version="9.9.8"), "VERSION says 9.9.9")
+
+
+class Storefront(unittest.TestCase):
+    """tools/golive/storefront.sh against a local stand-in for a Gumroad product page and its licence API (never the real one)."""
+    PAGE = ('<div data-page="{&quot;product&quot;:{&quot;id&quot;:&quot;' + PRODUCT_ID + '&quot;,&quot;price&quot;:49.0,&quot;is_published&quot;:true,'
+            '&quot;is_licensed&quot;:true,&quot;refund_policy&quot;:{&quot;title&quot;:&quot;14-day money back guarantee&quot;}}}"></div>')
+
+    def check(self, page=None, answer=b'{"success":false,"message":"That license does not exist for the provided product."}', *extra):
+        body = (self.PAGE if page is None else page).encode()
+        class H(SimpleHTTPRequestHandler):
+            def do_GET(self): self.send_response(200); self.end_headers(); self.wfile.write(body)
+            def do_POST(self): self.rfile.read(int(self.headers["Content-Length"])); self.send_response(404); self.end_headers(); self.wfile.write(answer)
+            def log_message(self, *a): pass
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), H); self.addCleanup(srv.server_close)
+        threading.Thread(target=srv.serve_forever, daemon=True).start(); self.addCleanup(srv.shutdown)
+        base = f"http://127.0.0.1:{srv.server_address[1]}"
+        return run(["sh", str(ROOT / "tools/golive/storefront.sh"), f"{base}/l/shotfleet", PRODUCT_ID, *extra],
+                   env={**os.environ, "SHOTFLEET_GUMROAD_API": f"{base}/v2/licenses"})
+
+    def assertFails(self, r, message):
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("FAIL", r.stdout); self.assertIn(message, r.stdout)
+
+    def test_a_correct_product_passes(self):
+        r = self.check(None, *[b'{"success":false}'], "49")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        for line in ("the product is published", "licence keys are on", f"the page carries product ID {PRODUCT_ID}", "refund policy: 14-day", "list price is 49.0", "storefront: ok"):
+            self.assertIn(line, r.stdout)
+
+    def test_each_silent_way_to_lose_a_sale_is_caught(self):
+        for old, new, want in (("is_published&quot;:true", "is_published&quot;:false", "UNPUBLISHED"), ("is_licensed&quot;:true", "is_licensed&quot;:false", "licence keys are OFF"),
+                               (PRODUCT_ID, "other", "is not on the page"), ("refund_policy&quot;:{&quot;title&quot;:&quot;14-day money back guarantee&quot;}", "refund_policy&quot;:null", "NO refund policy"),
+                               ("14-day", "30-day", "the site promises 14 days")):
+            with self.subTest(want=want): self.assertFails(self.check(self.PAGE.replace(old, new)), want)
+
+    def test_a_wrong_list_price_and_a_silent_api_are_caught(self):
+        self.assertFails(self.check(None, b'{"success":false}', "29"), "expected 29")
+        self.assertFails(self.check(None, b'{"success":true}'), "did not answer success:false")
 
 
 @unittest.skipUnless(shutil.which("shasum"), "install.sh needs shasum")

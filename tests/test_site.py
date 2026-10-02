@@ -18,7 +18,7 @@ TERMS = (PUB / "terms.html").read_text()
 README = (ROOT / "README.md").read_text()
 EMAIL = (ROOT / "marketing/launch-email.md").read_text()
 POSTS = (ROOT / "marketing/launch-posts-v2.md").read_text()
-CHECKOUT = "https://polar.sh/checkout/test-link"
+CHECKOUT = "https://example.gumroad.com/l/shotfleet"
 LIVE = "<!-- WAITLIST -->" not in INDEX  # go-live.sh already ran: the waitlist copy is gone on purpose
 
 # Phrases that were true once, or never were. None may come back on the site, in the README or in the launch email.
@@ -75,7 +75,7 @@ def go_live(index_html, checkout=CHECKOUT):
     with tempfile.TemporaryDirectory() as d:
         (Path(d) / "site/public").mkdir(parents=True)
         (Path(d) / "site/public/index.html").write_text(index_html)
-        subprocess.run([sys.executable, "-", checkout, ""], input=code, text=True, cwd=d, check=True)
+        subprocess.run([sys.executable, "-", checkout], input=code, text=True, cwd=d, check=True)
         return (Path(d) / "site/public/index.html").read_text()
 
 
