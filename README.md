@@ -167,6 +167,42 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
 (`app_de.arb`, `Resources.de.resx`) or the folder (`locales/de/`, `values-de/`). `check` takes the same files:
 `shotfleet check fastlane/ --strings 'lib/l10n/*.arb'`.
 
+## Extending shotfleet
+
+Nothing here is on by default: a config without these tables behaves exactly as above. Go further when you want to.
+
+**Hooks** run your own commands (`/bin/sh`, in the config's folder, output on stderr) around a run and an export:
+
+```toml
+[hooks]
+before_run   = "make build-sim"                 # a string, or a list of commands run in order
+after_run    = 'curl -sS -X POST -H "Content-type: application/json" "$SLACK_WEBHOOK_URL" --data "{\"text\":\"shotfleet $SHOTFLEET_PLATFORM: $SHOTFLEET_PROBLEMS problem(s)\"}"'
+before_export = "git diff --quiet"              # a non-zero exit stops the export
+after_export  = 'fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --screenshots_path "$SHOTFLEET_FASTLANE/screenshots"'
+# hook_timeout_s = 1800                         # default 600 per command
+```
+
+A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices.
+Variables: `SHOTFLEET_EVENT`, `_VERSION`, `_CONFIG`, `_PLATFORM`, `_OUT`, `_BUNDLE_ID`; `before_run` and `after_run` also get
+`_LOCALES`; `after_run` gets `_EXIT`, `_PROBLEMS`, `_REPORT` (`<out>/check.json`); the export hooks get `_FASTLANE`, `_REPORT`
+(and `_EXIT` after the export). `--no-hooks` skips them for a dry run.
+
+**Overrides** replace what shotfleet would tap for one language, which is the fix for a collision warning (`'Next' ->
+'İleri' also means 'Advanced'`) and for labels that aren't in your app's strings:
+
+```toml
+[overrides.tr]                         # the language as shotfleet names it: tr, pt-BR, zh-Hans...
+"Next" = "İleri"                       # literal text
+"Advanced" = "re:Gelişmiş.*"           # "re:" = a regular expression
+"Search" = "Ara"
+```
+
+**Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH (like `git` and `gh`), when `foo` isn't a built-in command.
+
+**Anything else**: `run`, `check` and `export` take `--json` and use stable exit codes (0 ok, 1 problems, 2 setup error), so
+they script like any other tool; `SHOTFLEET_OCR` / `--ocr-command` swaps the text reader; `strings = "glob"` swaps the
+translation source.
+
 ## Tips
 
 - **Dialogs that appear late** (disclaimers, consent screens): dismiss them in a loop until your first real screen is visible, not with a fixed wait:

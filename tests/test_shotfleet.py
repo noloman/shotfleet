@@ -363,7 +363,8 @@ class Config(unittest.TestCase):
             cases = [
                 (None, "no config at"),
                 ("not = [valid", "isn't valid TOML"),
-                ("[other]\nx = 1\n", "needs an [ios] or an [android] section"),
+                ("[hooks]\n", "needs an [ios] or an [android] section"),
+                ("[hook]\n", "unknown table [hook]; did you mean [hooks]"),
                 ("[ios]\n", "missing: app"),
                 ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "flow.yaml"\n', "no simulator app at"),
                 ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "missing.yaml"\n', "flow file not found"),
@@ -1143,6 +1144,87 @@ class JavaForMaestro(unittest.TestCase):
              mock.patch.object(sf.glob, "glob", return_value=[]):
             self.assertEqual(sf.find_java(), (False, None))
         sf.java_env.cache_clear()
+
+
+class Extending(unittest.TestCase):
+    """The optional extension points: [hooks], [overrides.<locale>], plugins. Off unless the config asks."""
+    def config(self, d, extra):
+        app = Path(d) / "My.app"; app.mkdir(exist_ok=True)
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.x", "DTPlatformName": "iphonesimulator"}))
+        (Path(d) / "flow.yaml").write_text("- launchApp\n")
+        (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n' + extra)
+        return Path(d) / "shotfleet.toml"
+
+    def load(self, d, extra):
+        with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"):
+            return sf.load_config(self.config(d, extra))
+
+    def test_override_wins_over_the_apps_strings_and_re_prefix_is_a_regex(self):
+        flow = '- tapOn: "Next"\n- tapOn: "Advanced"\n- tapOn: "Search"\n'
+        out, missing, clash = sf.translate_flow(flow, {"n": "Next", "a": "Advanced"}, {"n": "İleri", "a": "İleri"},
+                                                [{"Next": "İleri", "Advanced": "re:Gelişmiş.*", "Search": "Ara"}])
+        self.assertEqual(out, "- tapOn: 'İleri'\n- tapOn: 'Gelişmiş.*'\n- tapOn: 'Ara'\n")
+        self.assertEqual((missing, clash), ([], []))  # no 'untranslated' or 'also means' warnings for overridden text
+
+    def test_overrides_of_several_languages_in_one_android_round_are_or_ed(self):
+        out, _, _ = sf.translate_flow('- tapOn: "Next"\n', {"n": "Next"}, [{"n": "Weiter"}, {"n": "Siguiente"}],
+                                      [{"Next": "Weiter!"}, {"Next": "Sig."}])
+        self.assertEqual(out, "- tapOn: '(Weiter!|Sig\\.)'\n")
+
+    def test_config_tables_are_validated(self):
+        with tempfile.TemporaryDirectory() as d:
+            for body, msg in (('[hooks]\nafter_exprt = "x"\n', "unknown event 'after_exprt'; did you mean 'after_export'"),
+                              ('[hooks]\nafter_run = 3\n', "after_run .* should be a command"),
+                              ('[overrides.tr]\n"Next" = 3\n', "overrides.tr"),
+                              ('[hook]\n', "did you mean \\[hooks\\]")):
+                with self.subTest(body=body), self.assertRaisesRegex(sf.Fail, msg): self.load(d, body)
+            platform, cfg, _ = self.load(d, '[hooks]\nafter_run = ["echo a", "echo b"]\n[overrides.tr]\n"Next" = "İleri"\n')
+            self.assertEqual(cfg["_hooks"]["after_run"], ["echo a", "echo b"]); self.assertEqual(cfg["_overrides"], {"tr": {"Next": "İleri"}})
+
+    def test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure(self):
+        with tempfile.TemporaryDirectory() as d:
+            log = Path(d) / "log"
+            hooks = {"after_run": [f'echo "$SHOTFLEET_EVENT $SHOTFLEET_PLATFORM $SHOTFLEET_EXIT" >> {log}', f"echo second >> {log}"]}
+            self.assertEqual(sf.run_hook(hooks, "after_run", str(Path(d) / "shotfleet.toml"), {"SHOTFLEET_PLATFORM": "ios", "SHOTFLEET_EXIT": "0"}), (0, None))
+            self.assertEqual(log.read_text(), "after_run ios 0\nsecond\n")
+            self.assertEqual(sf.run_hook({"before_run": ["exit 3", "echo never"]}, "before_run", str(Path(d) / "x.toml"), {}), (3, "exit 3"))
+            self.assertEqual(sf.run_hook({}, "before_run", "x", {}), (0, None))  # nothing configured: nothing runs
+
+    def test_before_run_failure_aborts_after_run_failure_changes_the_exit_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg_path = self.config(d, '[hooks]\nbefore_run = "exit 5"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform") as cap:
+                with self.assertRaisesRegex(sf.Fail, r"hook before_run failed \(exit 5\)"): sf.run_platform(cfg_path, None, None, "ios")
+                cap.assert_not_called()
+            cfg_path.write_text('[ios]\napp = "My.app"\n[hooks]\nafter_run = "exit 1"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform", return_value=0), \
+                 contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(sf.run_platform(cfg_path, None, None, "ios"), 1)
+
+    def test_no_hooks_flag_and_export_hooks(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True); (out / "raw/de/01.png").write_bytes(png(1320, 2868))
+            marker = Path(d) / "marker"
+            cfg = Path(d) / "shotfleet.toml"; cfg.write_text(f'[hooks]\nafter_export = "echo $SHOTFLEET_FASTLANE >> {marker}"\nbefore_export = "exit 7"\n')
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "config": str(cfg), "locales": {"de": {"ok": True}}}))
+            (out / "check.json").write_text(json.dumps({"problems": []}))
+            with self.assertRaisesRegex(sf.Fail, r"before_export failed \(exit 7\)"): sf.export_with_hooks(out, Path(d) / "fl")
+            cfg.write_text(f'[hooks]\nafter_export = "echo $SHOTFLEET_FASTLANE >> {marker}"\n')
+            sf.export_with_hooks(out, Path(d) / "fl")
+            self.assertEqual(marker.read_text().strip(), str((Path(d) / "fl").resolve()))
+            marker.unlink()
+            with mock.patch.object(sf, "NO_HOOKS", True): sf.export_with_hooks(out, Path(d) / "fl")
+            self.assertFalse(marker.exists())
+
+    def test_unknown_command_runs_a_shotfleet_plugin_from_the_path(self):
+        with mock.patch.object(sf.shutil, "which", side_effect=lambda n: "/bin/shotfleet-foo" if n == "shotfleet-foo" else None), \
+             mock.patch.object(sf.os, "execv", side_effect=SystemExit(0)) as ex:
+            with self.assertRaises(SystemExit): sf.main(["foo", "--bar"])
+        ex.assert_called_once_with("/bin/shotfleet-foo", ["/bin/shotfleet-foo", "--bar"])
+        # built-in commands are never shadowed
+        with mock.patch.object(sf.os, "execv") as ex3, mock.patch.object(sf.shutil, "which", return_value="/bin/shotfleet-run"), \
+             mock.patch.object(sf, "main_cmd", return_value=0):
+            sf.main(["run", "x.toml"]); ex3.assert_not_called()
 
 
 class PolarLicence(unittest.TestCase):

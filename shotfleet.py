@@ -35,6 +35,28 @@ KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "b
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str},
         "android": {"apk": str, "package": str, "avd": str, "system_image": str, "devices": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
+TABLES = ("ios", "android", "hooks", "overrides")  # the optional tables [hooks] and [overrides.<locale>] are documented in the README
+HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
+
+def check_tables(doc, name):
+    """Refuse an unknown top-level table (a typo like [hook] would otherwise be ignored silently) and malformed hooks/overrides."""
+    import difflib
+    for key in doc:
+        if key not in TABLES:
+            near = difflib.get_close_matches(key, TABLES, n=1)
+            raise Fail(f"{name} has an unknown table [{key}]" + (f"; did you mean [{near[0]}]?" if near else f". Known tables: {', '.join(TABLES)}"))
+    for key, value in doc.get("hooks", {}).items():
+        if key == "hook_timeout_s":
+            if not isinstance(value, int) or isinstance(value, bool): raise Fail(f"[hooks] hook_timeout_s in {name} should be a whole number")
+        elif key not in HOOK_EVENTS:
+            import difflib as dl
+            near = dl.get_close_matches(key, HOOK_EVENTS, n=1)
+            raise Fail(f"[hooks] in {name} has an unknown event '{key}'" + (f"; did you mean '{near[0]}'?" if near else f". Events: {', '.join(HOOK_EVENTS)}"))
+        elif not (isinstance(value, str) or isinstance(value, list) and all(isinstance(c, str) for c in value)):
+            raise Fail(f"[hooks] {key} in {name} should be a command (a string) or a list of commands")
+    for locale, table in doc.get("overrides", {}).items():
+        if not isinstance(table, dict) or not all(isinstance(v, str) for v in table.values()):
+            raise Fail(f"[overrides.{locale}] in {name} should map English texts to text in that language, e.g. \"Next\" = \"İleri\"")
 
 def platforms_in(config_path):
     """The platform sections ([ios], [android]) a config file has, in run order."""
@@ -43,6 +65,7 @@ def platforms_in(config_path):
         raise Fail(f"no config at {cfg_path}. Create one with: shotfleet init <App.app | app.apk>")
     try: doc = tomllib.loads(cfg_path.read_text())
     except tomllib.TOMLDecodeError as e: raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
+    check_tables(doc, cfg_path.name)
     found = [k for k in ("ios", "android") if k in doc]
     if not found: raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
     return found
@@ -56,6 +79,7 @@ def load_config(config_path, platform=None):
         doc = tomllib.loads(cfg_path.read_text())
     except tomllib.TOMLDecodeError as e:
         raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
+    check_tables(doc, cfg_path.name)
     platforms = [k for k in ("ios", "android") if k in doc]
     if not platforms:
         raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
@@ -74,6 +98,7 @@ def load_config(config_path, platform=None):
             names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a {names}, not {value!r}")
+    cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
     cfg.setdefault("flow", "flow.yaml")
     cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
     missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
@@ -522,8 +547,14 @@ SYSTEM_BUTTONS = {"Allow", "Don’t Allow", "Allow Once", "Allow While Using App
                   "Limit Access…", "Allow Access to All Photos", "OK", "Cancel",  # iOS (TCC, CoreLocation)
                   "While using the app", "Only this time", "Don’t allow", "Allow all", "Allow limited access"}  # Android
 
-def translate_flow(flow, base, target):
-    """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors, collisions)."""
+def override_pattern(overrides, text):
+    """The regex a user-set [overrides.<locale>] gives for this English text, or None. `re:` prefixes a regular expression."""
+    pats = [(o[text][3:] if o[text].startswith("re:") else regex_literal(o[text])) for o in (overrides or []) if text in o]
+    return None if not pats else pats[0] if len(pats) == 1 else "(" + "|".join(dict.fromkeys(pats)) + ")"
+
+def translate_flow(flow, base, target, overrides=None):
+    """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors, collisions).
+    overrides: a list of {English text: wanted text} dicts, one per target language, that win over the app's strings."""
     by_text = {}
     for k, v in base.items():
         by_text.setdefault(v, []).append(k)
@@ -545,6 +576,7 @@ def translate_flow(flow, base, target):
     def tr(raw):
         """Translated YAML value for one selector value, or None to leave it as it is."""
         text = yaml_unquote(raw)
+        if (pat := override_pattern(overrides, text)) is not None: return yaml_single_quote(pat)
         keys = by_text.get(text) or by_text.get(text.replace("'", "\u2019"))
         system = text.replace("'", "\u2019") in SYSTEM_BUTTONS
         if not keys and system: return None  # the OS's own dialog: stays English
@@ -854,8 +886,42 @@ def cmd_run(config_path, only=None, parallel=None, platform=None):
         codes.append(run_platform(config_path, only, parallel, p))
     return max(codes)
 
+NO_HOOKS = False
+
+def run_hook(hooks, event, config, env_extra):
+    """Run the user's commands for one event (strings run by /bin/sh in the config's folder, output to stderr).
+    Returns (exit code, command) of the first failure, or (0, None). Nothing runs without --no-hooks being absent
+    and a [hooks] table the user wrote."""
+    cmds = hooks.get(event)
+    if NO_HOOKS or not cmds: return 0, None
+    env = {**os.environ, **env_extra, "SHOTFLEET_EVENT": event, "SHOTFLEET_VERSION": VERSION, "SHOTFLEET_CONFIG": config}
+    for cmd in [cmds] if isinstance(cmds, str) else cmds:
+        try:  # output goes to stderr, so `--json` keeps stdout for the report; when stderr is captured (MCP, tests) relay it
+            try: sys.stderr.fileno(); sink = {"stdout": sys.stderr}
+            except (AttributeError, ValueError, io.UnsupportedOperation): sink = {"capture_output": True, "text": True}
+            r = subprocess.run(["/bin/sh", "-c", cmd], cwd=Path(config).parent, env=env, timeout=hooks.get("hook_timeout_s", 600), **sink)
+        except subprocess.TimeoutExpired: return 124, cmd
+        if "capture_output" in sink: print(r.stdout + r.stderr, end="", file=sys.stderr)
+        if r.returncode: return r.returncode, cmd
+    return 0, None
+
 def run_platform(config_path, only, parallel, platform):
     platform, cfg, path = load_config(config_path, platform)
+    out = path(cfg.get("out", "out")).resolve()
+    env = {"SHOTFLEET_PLATFORM": platform, "SHOTFLEET_OUT": str(out), "SHOTFLEET_BUNDLE_ID": cfg.get("bundle_id") or cfg.get("package") or "",
+           "SHOTFLEET_LOCALES": ",".join(only or cfg.get("locales") or [])}
+    rc, cmd = run_hook(cfg["_hooks"], "before_run", cfg["_config"], env)
+    if rc: raise Fail(f"hook before_run failed (exit {rc}): {cmd}")
+    code = capture_platform(platform, cfg, path, only, parallel)
+    problems = 0
+    try: problems = len(json.loads((out / "check.json").read_text()).get("problems", []))
+    except (OSError, ValueError): pass
+    rc, cmd = run_hook(cfg["_hooks"], "after_run", cfg["_config"], {**env, "SHOTFLEET_EXIT": str(code), "SHOTFLEET_PROBLEMS": str(problems),
+                                                               "SHOTFLEET_REPORT": str(out / "check.json")})
+    if rc: print(f"hook after_run failed (exit {rc}): {cmd}", file=sys.stderr)
+    return max(code, 1 if rc else 0)
+
+def capture_platform(platform, cfg, path, only, parallel):
     if platform == "android":
         out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
         if devices := cfg.get("devices"):  # phone and tablet sets from one flow: out/<device>/ each
@@ -907,11 +973,11 @@ def ios_run(cfg, path, only=None, parallel=None):
     (out / ".work" / "flows").mkdir(parents=True)
 
     # translate every flow first, so selector problems show up before any simulator boots
-    report = {"locales": {}}
+    report = {"locales": {}, "config": cfg.get("_config")}
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
-        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp))
+        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
         (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp))
@@ -1105,10 +1171,10 @@ def android_run(cfg, path, out, only, parallel):
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
-    report = {"locales": {}}
+    report = {"locales": {}, "config": cfg.get("_config")}
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
-        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp))
+        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
@@ -1133,7 +1199,7 @@ def android_run(cfg, path, out, only, parallel):
                 e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
                 for c in DEMO_MODE: e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
-            text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps])
+            text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             for j in range(len(lps)):
                 (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}"))
@@ -1859,8 +1925,13 @@ def cmd_export(out, fastlane, name_prefix=""):
     print(f"exported {len(done)} listings to {fastlane}: {', '.join(done)}")
     return 0 if not bad else 1
 
+COMMANDS = ("doctor", "mcp", "activate", "deactivate", "init", "run", "check", "export")
+
 def main(argv=None):
     import argparse
+    args = sys.argv[1:] if argv is None else argv
+    if args and not args[0].startswith("-") and args[0] not in COMMANDS and (exe := shutil.which("shotfleet-" + args[0])):
+        os.execv(exe, [exe, *args[1:]])  # `shotfleet foo` runs `shotfleet-foo` from the PATH, like git and gh do
     ap = argparse.ArgumentParser(prog="shotfleet", description="Localized App Store and Google Play screenshots from one English Maestro flow.")
     ap.add_argument("--version", action="version", version=f"shotfleet {VERSION}")
     sub = ap.add_subparsers(dest="cmd", required=True, metavar="command")
@@ -1877,6 +1948,7 @@ def main(argv=None):
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
+    p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
     p = sub.add_parser("check", help="check screenshots from shotfleet, fastlane or any tool")
     p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
     p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
@@ -1890,6 +1962,7 @@ def main(argv=None):
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
+    p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
     a = ap.parse_args(argv)
     if a.cmd == "run" and a.locales is not None and not a.locales.strip(","):
         ap.error("--locales is empty; leave it out to run every language")
@@ -2117,6 +2190,24 @@ def require_licence():
         raise NoLicence(f"this licence is no longer valid ({why}). {BUY_URL}")
     LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time()}))
 
+def export_with_hooks(out, fastlane):
+    """`export`, with the config's before_export / after_export hooks (found through run.json) around it."""
+    out = Path(out)
+    run_json = next((p for p in [out / "run.json", *[d / "run.json" for d in device_runs(out)]] if p.is_file()), None)
+    run = json.loads(run_json.read_text()) if run_json else {}
+    hooks, config = {}, run.get("config")
+    if config and Path(config).is_file():
+        try: hooks = tomllib.loads(Path(config).read_text()).get("hooks", {})
+        except tomllib.TOMLDecodeError: pass
+    env = {"SHOTFLEET_PLATFORM": run.get("platform", ""), "SHOTFLEET_OUT": str(out.resolve()), "SHOTFLEET_FASTLANE": str(Path(fastlane).resolve()),
+           "SHOTFLEET_REPORT": str(out.resolve() / "check.json")}
+    rc, cmd = run_hook(hooks, "before_export", config or "", env)
+    if rc: raise Fail(f"hook before_export failed (exit {rc}): {cmd}")
+    code = cmd_export(out, fastlane)
+    rc, cmd = run_hook(hooks, "after_export", config or "", {**env, "SHOTFLEET_EXIT": str(code)})
+    if rc: print(f"hook after_export failed (exit {rc}): {cmd}", file=sys.stderr)
+    return max(code, 1 if rc else 0)
+
 def apply_free_tier():
     """`run` without a valid licence still runs, for two languages (the free tier shows the product)."""
     global LOCALE_CAP
@@ -2139,6 +2230,8 @@ def main_dispatch(a):
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "init": return cmd_init(a.builds, a.dir)
+        global NO_HOOKS
+        NO_HOOKS = bool(getattr(a, "no_hooks", False))
         if a.cmd == "export": require_licence()
         if a.cmd == "run": apply_free_tier()
         if a.cmd == "activate": return cmd_activate(a.key)
@@ -2152,7 +2245,7 @@ def main_dispatch(a):
             if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
             return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command)
-        if a.cmd == "export": return cmd_export(a.out, a.fastlane)
+        if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2
     except KeyboardInterrupt:
