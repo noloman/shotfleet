@@ -1502,7 +1502,7 @@
    "LAUNCH.md"
   ],
   "where_text": [
-   "switches the site from the waitlist to \"Buy\nshotfleet\" with install steps"
+   "turns the page into \"Buy shotfleet\" with your checkout link"
   ],
   "status": "evidence",
   "proof": "Audit snippet 2026-10-02 applying packaging/go-live.sh's two regexes in memory to the current index.html: no 'waitlist', 'early access', 'isn’t released', '@CHECKOUT@' or signup form remains; three Buy links; heading becomes 'Buy shotfleet'. The WAITLIST/SALE markers sit on 4-space-indented lines in the header, hero and price card, which the regexes require. The page was being edited during the audit (reveal.js added): this must be re-run after the redesign settles.",
@@ -1837,5 +1837,72 @@
   "layer": "unit",
   "assertion": "Stub bundles in a temp dir: Flutter and React Native stubs print the hint, a native iOS stub prints none, init prints the strings = line, hints are shown once.",
   "fix": ""
+ },
+ {
+  "id": "C110",
+  "claim": "The founder price is plain text ('first 100 buyers') with no counter number; a live 'N of 100 left' counter does not exist yet",
+  "where": [
+   "site/public/index.html",
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "launch price, first 100 buyers",
+   "A live \"N of 100 left\" counter is not built."
+  ],
+  "status": "proven",
+  "proof": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text keeps the text and rejects any counter number after the go-live transform; Smoke.test_a_counter_number_that_nothing_feeds_fails makes the live smoke test fail on one. Open item in LAUNCH.md: a live count needs a Polar organization token from Manu and an unverified redemptions endpoint.",
+  "layer": "site",
+  "assertion": "After go-live, the live page says 'first 100 buyers' and shows no number of buyers left (tools/golive/smoke.sh checks this).",
+  "fix": "",
+  "test": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text"
+ },
+ {
+  "id": "C111",
+  "claim": "packaging/go-live.sh --dry-run rehearses the go-live on a copy: no build, notarization, deploy, push or change to the working tree",
+  "where": [
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "packaging/go-live.sh --dry-run"
+  ],
+  "status": "proven",
+  "proof": "DryRun.test_the_dry_run_passes_and_says_what_it_would_do, DryRun.test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed (fake npx, xcrun, codesign and swiftc record any call; HEAD and the two edited files are unchanged), DryRun.test_bad_inputs_fail_the_dry_run. The sed and the page transform are the real run's own code (test_site.go_live extracts the same heredoc).",
+  "layer": "site",
+  "assertion": "Run it with the real checkout link before the real go-live; it ends with 'dry run clean'. Not checked offline: the notarytool profile and the Cloudflare login (listed in LAUNCH.md step 3).",
+  "fix": "",
+  "test": "DryRun.test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed"
+ },
+ {
+  "id": "C112",
+  "claim": "tools/golive/smoke.sh checks the live site after the deploy (pages, install.sh, VERSION, archive and checksum, CSP, robots and sitemap, https redirect) without installing anything",
+  "where": [
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "tools/golive/smoke.sh https://shotfleet.com"
+  ],
+  "status": "proven",
+  "proof": "Smoke.test_a_good_site_passes_from_a_clean_environment (env -i, local fake server) and the failing cases: wrong checksum, missing CSP, waitlist left on the page, wrong checkout link, counter number, missing VERSION, program version differing from VERSION.",
+  "layer": "site",
+  "assertion": "Run `env -i sh tools/golive/smoke.sh https://shotfleet.com <checkout link>` right after go-live. The http to https redirect is only exercised against the real site (the fake server is http).",
+  "fix": "",
+  "test": "Smoke.test_a_good_site_passes_from_a_clean_environment"
+ },
+ {
+  "id": "C113",
+  "claim": "install.sh refuses a download whose checksum does not match, an Intel Mac and Linux, and installs nothing in those cases",
+  "where": [
+   "site/public/install.sh"
+  ],
+  "where_text": [
+   "checksum mismatch",
+   "needs an Apple silicon Mac"
+  ],
+  "status": "proven",
+  "proof": "InstallScript.test_install_sh_refuses_a_wrong_checksum_and_installs_nothing, InstallScript.test_install_sh_refuses_an_intel_mac, InstallScript.test_install_sh_refuses_linux (real install.sh against a fake server, fake uname, temp HOME).",
+  "layer": "site",
+  "assertion": "Smoke test after go-live runs install.sh's checksum lines on the served archive.",
+  "fix": "",
+  "test": "InstallScript.test_install_sh_refuses_a_wrong_checksum_and_installs_nothing"
  }
 ]

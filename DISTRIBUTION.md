@@ -66,3 +66,6 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
 - Gumroad as a second store: its licence keys work too (activation counts uses, at most 3 Macs; refunds and
   chargebacks are refused; weekly re-checks don't count). Tested against a fake API built from Gumroad's source.
 - Left for Manu: finish the Polar account review and make the checkout link (LAUNCH.md). Then `packaging/go-live.sh`.
+- Go-live is rehearsed before it is run: `packaging/go-live.sh --dry-run <checkout link>` does every step on a copy, and
+  `tools/golive/smoke.sh https://shotfleet.com <checkout link>` checks the live site afterwards, both tested offline
+  (tests/test_golive.py). Order of steps: LAUNCH.md.
