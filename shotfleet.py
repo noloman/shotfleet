@@ -948,9 +948,10 @@ def run_platform(config_path, only, parallel, platform):
     rc, cmd = run_hook(cfg["_hooks"], "before_run", cfg["_config"], env)
     if rc: raise Fail(f"hook before_run failed (exit {rc}): {cmd}")
     code = capture_platform(platform, cfg, path, only, parallel)
-    problems = 0
-    try: problems = len(json.loads((out / "check.json").read_text()).get("problems", []))
-    except (OSError, ValueError): pass
+    problems = 0  # a multi-device run (out/<device>/) keeps one check.json per device
+    for report in [out / "check.json"] + [d / "check.json" for d in device_runs(out)]:
+        try: problems += len(json.loads(report.read_text()).get("problems", []))
+        except (OSError, ValueError): pass
     rc, cmd = run_hook(cfg["_hooks"], "after_run", cfg["_config"], {**env, "SHOTFLEET_EXIT": str(code), "SHOTFLEET_PROBLEMS": str(problems),
                                                                "SHOTFLEET_REPORT": str(out / "check.json")})
     if rc: print(f"hook after_run failed (exit {rc}): {cmd}", file=sys.stderr)

@@ -1201,6 +1201,17 @@ class Extending(unittest.TestCase):
                  contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(sf.run_platform(cfg_path, None, None, "ios"), 1)
 
+    def test_after_run_counts_problems_across_all_devices_of_a_multi_device_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            for dev, n in (("phone", 2), ("tablet", 1)):
+                (Path(d) / "out" / dev).mkdir(parents=True)
+                (Path(d) / "out" / dev / "run.json").write_text("{}"); (Path(d) / "out" / dev / "check.json").write_text(json.dumps({"problems": ["p"] * n}))
+            log = Path(d) / "log"
+            cfg_path = self.config(d, f'[hooks]\nafter_run = "echo $SHOTFLEET_PROBLEMS > {log}"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform", return_value=0):
+                sf.run_platform(cfg_path, None, None, "ios")
+            self.assertEqual(log.read_text().strip(), "3")
+
     def test_no_hooks_flag_and_export_hooks(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True); (out / "raw/de/01.png").write_bytes(png(1320, 2868))
