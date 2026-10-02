@@ -182,7 +182,7 @@
    "README.md"
   ],
   "where_text": [
-   "Then one command puts the passing screenshots into fastlane’s folders.",
+   "Then one command puts the passing App Store and Google Play screenshots into fastlane’s folders.",
    "Languages that failed a check are skipped, so a bad screenshot never reaches a listing."
   ],
   "status": "proven",

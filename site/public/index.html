@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>shotfleet · localized store screenshots</title>
-<meta name="description" content="A command-line tool for macOS: write one Maestro flow in English, and shotfleet runs your app in every language you ship, on iOS and Android, and checks every screenshot before it goes to the stores.">
-<meta property="og:title" content="shotfleet · localized store screenshots">
+<title>shotfleet · Localized store screenshots from one Maestro flow</title>
+<meta name="description" content="A Mac command-line tool: write one Maestro flow in English, capture App Store and Google Play screenshots in every language you ship, and check each one.">
+<meta property="og:title" content="shotfleet · Localized store screenshots from one Maestro flow">
 <meta property="og:description" content="One English Maestro flow. Every language your app ships, in parallel, checked.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -14,16 +14,116 @@
 <meta property="og:url" content="https://shotfleet.com/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
+<meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <link rel="canonical" href="https://shotfleet.com/">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- WAITLIST -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "SoftwareApplication",
+ "@id": "https://shotfleet.com/#software",
+ "name": "shotfleet",
+ "url": "https://shotfleet.com/",
+ "image": "https://shotfleet.com/og.jpg",
+ "description": "A macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by other tools.",
+ "applicationCategory": "DeveloperApplication",
+ "operatingSystem": "macOS (Apple silicon)",
+ "softwareRequirements": "Apple silicon Mac, Maestro 2.x, Java 17 or newer. Xcode for iOS (Debug simulator build), Android SDK with API 33+ emulators for Android.",
+ "author": {
+  "@type": "Person",
+  "name": "Manuel Lorenzo Parejo",
+  "url": "https://manulorenzo.me"
+ },
+ "offers": [
+  {
+   "@type": "Offer",
+   "name": "Free tier",
+   "price": "0",
+   "priceCurrency": "USD",
+   "description": "shotfleet check is free for everyone; run is free for up to 2 languages.",
+   "availability": "https://schema.org/PreOrder"
+  },
+  {
+   "@type": "Offer",
+   "name": "Licence, launch price",
+   "price": "29",
+   "priceCurrency": "USD",
+   "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, a year of updates, 14-day refund.",
+   "availability": "https://schema.org/PreOrder"
+  },
+  {
+   "@type": "Offer",
+   "name": "Licence, standard price",
+   "price": "49",
+   "priceCurrency": "USD",
+   "description": "The price after the first 100 buyers: once per developer, a year of updates, 14-day refund.",
+   "availability": "https://schema.org/PreOrder"
+  }
+ ]
+}
+</script>
+    <!-- /WAITLIST -->
+    <!-- SALE
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "SoftwareApplication",
+ "@id": "https://shotfleet.com/#software",
+ "name": "shotfleet",
+ "url": "https://shotfleet.com/",
+ "image": "https://shotfleet.com/og.jpg",
+ "description": "A macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by other tools.",
+ "applicationCategory": "DeveloperApplication",
+ "operatingSystem": "macOS (Apple silicon)",
+ "softwareRequirements": "Apple silicon Mac, Maestro 2.x, Java 17 or newer. Xcode for iOS (Debug simulator build), Android SDK with API 33+ emulators for Android.",
+ "installUrl": "https://shotfleet.com/install.sh",
+ "author": {
+  "@type": "Person",
+  "name": "Manuel Lorenzo Parejo",
+  "url": "https://manulorenzo.me"
+ },
+ "offers": [
+  {
+   "@type": "Offer",
+   "name": "Free tier",
+   "price": "0",
+   "priceCurrency": "USD",
+   "description": "shotfleet check is free for everyone; run is free for up to 2 languages.",
+   "availability": "https://schema.org/InStock"
+  },
+  {
+   "@type": "Offer",
+   "name": "Licence, launch price",
+   "price": "29",
+   "priceCurrency": "USD",
+   "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, a year of updates, 14-day refund.",
+   "availability": "https://schema.org/InStock",
+   "url": "@CHECKOUT@"
+  },
+  {
+   "@type": "Offer",
+   "name": "Licence, standard price",
+   "price": "49",
+   "priceCurrency": "USD",
+   "description": "The price after the first 100 buyers: once per developer, a year of updates, 14-day refund.",
+   "availability": "https://schema.org/InStock",
+   "url": "@CHECKOUT@"
+  }
+ ]
+}
+</script>
+    SALE -->
 <link rel="stylesheet" href="/site.css">
 <script src="/reveal.js"></script>
 </head>
 <body>
 
+<a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
@@ -37,18 +137,19 @@
   </nav>
 </header>
 
-<main>
+<main id="main">
   <div class="wrap hero">
     <span class="flag b">Mac command-line tool</span>
     <h1>Store screenshots in every language your app ships.</h1>
     <p class="sub">One English Maestro flow, every language, iOS and Android. <b>shotfleet captures them all and checks every screenshot.</b></p>
     <!-- WAITLIST -->
-    <form id="signup-top" class="signup" data-signup novalidate>
+    <form id="signup-top" class="signup" method="post" action="/api/signup" data-signup novalidate>
       <div class="inline">
         <label class="sr" for="signup-top-email">Email</label>
         <input id="signup-top-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
         <button class="btn" type="submit">Get early access<span class="ico" aria-hidden="true">↗</span></button>
       </div>
+      <p class="status small">Not released yet. Join the list and I'll email you once, when it's ready. The first 100 buyers pay $29, then $49.</p>
       <input name="contact_pref" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
       <p class="form-error" id="signup-top-error" role="alert" hidden></p>
     </form>
@@ -84,37 +185,37 @@
       <figure class="ship" style="--i:0">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b></span></span>
         <div class="shot"><img src="img/train_ja.jpg" alt="WOD Tracker's Train screen in Japanese, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>日本語</figcaption>
+        <figcaption lang="ja">日本語</figcaption>
       </figure>
       <figure class="ship" style="--i:1">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>fr</b></span></span>
         <div class="shot"><img src="img/train_fr.jpg" alt="WOD Tracker's Train screen in French, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>Français</figcaption>
+        <figcaption lang="fr">Français</figcaption>
       </figure>
       <figure class="ship" style="--i:2">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ar</b></span></span>
         <div class="shot"><img src="img/train_ar.jpg" alt="WOD Tracker's Train screen in Arabic, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>العربية</figcaption>
+        <figcaption lang="ar">العربية</figcaption>
       </figure>
       <figure class="ship" style="--i:3">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ko</b></span></span>
         <div class="shot"><img src="img/train_ko.jpg" alt="WOD Tracker's Train screen in Korean, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>한국어</figcaption>
+        <figcaption lang="ko">한국어</figcaption>
       </figure>
       <figure class="ship" style="--i:4">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ru</b></span></span>
         <div class="shot"><img src="img/train_ru.jpg" alt="WOD Tracker's Train screen in Russian, checked" width="360" height="782" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>Русский</figcaption>
+        <figcaption lang="ru">Русский</figcaption>
       </figure>
       <figure class="ship" style="--i:5">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>es</b></span></span>
         <div class="shot"><img src="img/train_es.jpg" alt="WOD Tracker's Train screen in Spanish, checked" width="360" height="782" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>Español</figcaption>
+        <figcaption lang="es">Español</figcaption>
       </figure>
       <figure class="ship" style="--i:6">
         <span class="ribbon" aria-hidden="true"><span class="flag k"><b>de</b></span></span>
         <div class="shot"><img src="img/train_de.jpg" alt="WOD Tracker's Train screen in German, checked" width="360" height="782" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
-        <figcaption>Deutsch</figcaption>
+        <figcaption lang="de">Deutsch</figcaption>
       </figure>
       <div class="ship more" style="--i:7"><p>+11</p><span>more languages in the same run</span></div>
   </div>
@@ -135,7 +236,7 @@
       <div class="copy reveal">
         <h2 id="run-h">Run it once. Read the result.</h2>
         <p>18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac. Every image is read back and compared with your app’s own strings.</p>
-        <p>Then one command puts the passing screenshots into fastlane’s folders.</p>
+        <p>Then one command puts the passing App Store and Google Play screenshots into fastlane’s folders.</p>
       </div>
       <div class="terminal reveal" style="--d:1" role="img" aria-label="Terminal output of a shotfleet run: 18 of 18 locales captured in 534 seconds, 72 screenshots checked, 0 problems">
         <div class="terminal-bar" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -216,27 +317,27 @@ app = "<span class="y">MyApp.app</span>"</pre>
         <figure class="ship " style="--i:0">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/stressi_ja.jpg" aria-label="Enlarge: Stressi's body-state screen in Japanese"><img src="img/stressi_ja.jpg" alt="Stressi's body-state screen in Japanese" width="348" height="782" loading="lazy"></button></div>
-        <figcaption>日本語</figcaption>
+        <figcaption lang="ja">日本語</figcaption>
         </figure>
         <figure class="ship " style="--i:1">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ko</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/stressi_ko.jpg" aria-label="Enlarge: Stressi's body-state screen in Korean"><img src="img/stressi_ko.jpg" alt="Stressi's body-state screen in Korean" width="348" height="782" loading="lazy"></button></div>
-        <figcaption>한국어</figcaption>
+        <figcaption lang="ko">한국어</figcaption>
         </figure>
         <figure class="ship " style="--i:2">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>de</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/stressi_de.jpg" aria-label="Enlarge: Stressi's body-state screen in German"><img src="img/stressi_de.jpg" alt="Stressi's body-state screen in German" width="348" height="782" loading="lazy"></button></div>
-        <figcaption>Deutsch</figcaption>
+        <figcaption lang="de">Deutsch</figcaption>
         </figure>
         <figure class="ship " style="--i:3">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>zh</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/stressi_zh.jpg" aria-label="Enlarge: Stressi's body-state screen in Chinese"><img src="img/stressi_zh.jpg" alt="Stressi's body-state screen in Chinese" width="348" height="782" loading="lazy"></button></div>
-        <figcaption>中文</figcaption>
+        <figcaption lang="zh">中文</figcaption>
         </figure>
         <figure class="ship " style="--i:4">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>es</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/stressi_es.jpg" aria-label="Enlarge: Stressi's body-state screen in Spanish"><img src="img/stressi_es.jpg" alt="Stressi's body-state screen in Spanish" width="348" height="782" loading="lazy"></button></div>
-        <figcaption>Español</figcaption>
+        <figcaption lang="es">Español</figcaption>
         </figure>
       </div>
     </div>
@@ -245,27 +346,27 @@ app = "<span class="y">MyApp.app</span>"</pre>
         <figure class="ship land" style="--i:0">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/cairn_ja.jpg" aria-label="Enlarge: Cairn on iPad in Japanese"><img src="img/cairn_ja.jpg" alt="Cairn on iPad in Japanese" width="900" height="675" loading="lazy"></button></div>
-        <figcaption>日本語</figcaption>
+        <figcaption lang="ja">日本語</figcaption>
         </figure>
         <figure class="ship land" style="--i:1">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ko</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/cairn_ko.jpg" aria-label="Enlarge: Cairn on iPad in Korean"><img src="img/cairn_ko.jpg" alt="Cairn on iPad in Korean" width="900" height="675" loading="lazy"></button></div>
-        <figcaption>한국어</figcaption>
+        <figcaption lang="ko">한국어</figcaption>
         </figure>
         <figure class="ship land" style="--i:2">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>de</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/cairn_de.jpg" aria-label="Enlarge: Cairn on iPad in German"><img src="img/cairn_de.jpg" alt="Cairn on iPad in German" width="900" height="675" loading="lazy"></button></div>
-        <figcaption>Deutsch</figcaption>
+        <figcaption lang="de">Deutsch</figcaption>
         </figure>
         <figure class="ship land" style="--i:3">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>zh</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/cairn_zh.jpg" aria-label="Enlarge: Cairn on iPad in Chinese"><img src="img/cairn_zh.jpg" alt="Cairn on iPad in Chinese" width="900" height="675" loading="lazy"></button></div>
-        <figcaption>中文</figcaption>
+        <figcaption lang="zh">中文</figcaption>
         </figure>
         <figure class="ship land" style="--i:4">
           <span class="ribbon" aria-hidden="true"><span class="flag k"><b>fr</b></span></span>
           <div class="shot"><button type="button" class="zoom" data-full="img/full/cairn_fr.jpg" aria-label="Enlarge: Cairn on iPad in French"><img src="img/cairn_fr.jpg" alt="Cairn on iPad in French" width="900" height="675" loading="lazy"></button></div>
-        <figcaption>Français</figcaption>
+        <figcaption lang="fr">Français</figcaption>
         </figure>
       </div>
     </div>
@@ -302,7 +403,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
           <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
         </ul>
     <!-- WAITLIST -->
-    <form id="signup" class="signup" data-signup novalidate>
+    <form id="signup" class="signup" method="post" action="/api/signup" data-signup novalidate>
       <div class="inline">
         <label class="sr" for="signup-email">Email</label>
         <input id="signup-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
