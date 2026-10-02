@@ -1587,3 +1587,193 @@ class CorruptLicenceFile(unittest.TestCase):
     def test_a_good_file_still_reads(self):
         patch, _ = self.run_with(json.dumps({"key": "K", "store": "gumroad", "checked": 1}))
         with patch: self.assertEqual(sf.read_licence()["key"], "K")
+
+
+def shots_with_texts(d, spec, ocr=False):
+    """{label: {name: [lines]}} as screenshot folders: .texts.json (the app's own text, iOS) or <name>.png.txt (read by a fake OCR)."""
+    for label, screens in spec.items():
+        for name, lines in screens.items():
+            png = Path(d) / "shots" / label / f"{name}.png"; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(png_c(1320, 2868))
+            if ocr: Path(f"{png}.txt").write_text("\n".join(lines))
+            else: png.with_suffix(".texts.json").write_text(json.dumps(lines, ensure_ascii=False))
+
+
+class ContentExpect(unittest.TestCase):
+    """[expect.<screenshot>] any / all / not, per language: proves the seeded content is on screen. No device needed."""
+    STRINGS = {"en": {"a": "Next", "b": "Settings"}, "de": {"a": "Weiter", "b": "Einstellungen"}}
+    HOME = {"en": ["Next", "Settings", "Senior iOS Engineer"], "de": ["Weiter", "Einstellungen", "Senior iOS Engineer", "Steinmännchen"]}
+
+    def check(self, expect, spec, ocr=False, readable=("en", "de")):
+        d = tempfile.mkdtemp(); shots_with_texts(d, spec, ocr)
+        fake = lambda _ocr, png, timeout=120: (lambda t: {"text": t, "chars": len(t), "lang": "en", "langs": {"en": 0.9}})(Path(f"{png}.txt").read_text())
+        with mock.patch.object(sf, "warm_up_ocr", return_value=True), mock.patch.object(sf, "ocr_tool", return_value="ocr"), \
+             mock.patch.object(sf, "read_text", fake), mock.patch.object(sf, "readable_languages", return_value=set(readable)), \
+             contextlib.redirect_stdout(io.StringIO()):
+            code = sf.cmd_check(Path(d) / "shots", strings=self.STRINGS, report_dir=Path(d) / "rep", expect=expect)
+        report = json.loads((Path(d) / "rep/check.json").read_text())
+        return code, report
+
+    def test_the_apps_own_text_is_exact_and_matched_like_judge_screen(self):
+        expect = {"01_home": {"any": ["senior ios  ENGINEER"], "not": ["No workouts yet", "Keine Workouts"], "de": {"all": ["Steinmännchen"]}}}
+        code, report = self.check(expect, {lp: {"01_home": t} for lp, t in self.HOME.items()})
+        self.assertEqual((code, report["problems"], report["notes"]), (0, [], []))  # case and spacing are folded; the de rule only applies to de
+
+    def test_a_missing_string_and_an_empty_state_are_each_one_problem_line_with_the_screen(self):
+        expect = {"01_home": {"all": ["Steinmännchen"], "not": ["Settings"]}}
+        code, report = self.check(expect, {lp: {"01_home": t} for lp, t in self.HOME.items()})
+        self.assertEqual(code, 1)
+        self.assertEqual(sorted(report["problems"]), [
+            'en/01_home.png: "Settings" must not be on screen', 'en/01_home.png: expected "Steinmännchen" on screen'])
+
+    def test_any_needs_one_of_the_strings(self):
+        screens = {lp: {"01_home": t} for lp, t in self.HOME.items()}
+        self.assertEqual(self.check({"01_home": {"any": ["Nope", "Senior iOS Engineer"]}}, screens)[1]["problems"], [])
+        problems = self.check({"01_home": {"any": ["Nope", "Never"]}}, screens)[1]["problems"]
+        self.assertEqual(problems, ['de/01_home.png: expected one of "Nope", "Never" on screen', 'en/01_home.png: expected one of "Nope", "Never" on screen'])
+
+    def test_a_locale_table_covers_regional_variants_and_unused_ones_are_noted(self):
+        screens = {"de": {"01_home": self.HOME["de"]}}
+        self.assertEqual(self.check({"01_home": {"de": {"all": ["Nope"]}}}, screens)[1]["problems"], ['de/01_home.png: expected "Nope" on screen'])
+        notes = self.check({"01_home": {"all": ["Senior iOS Engineer"], "fr": {"all": ["x"]}}}, screens)[1]["notes"]
+        self.assertEqual(notes, ["[expect.01_home.fr] matches none of the languages checked"])
+
+    def test_a_table_for_a_screenshot_that_does_not_exist_is_a_problem_with_did_you_mean(self):
+        problems = self.check({"01_hom": {"any": ["x"]}}, {"de": {"01_home": self.HOME["de"]}})[1]["problems"]
+        self.assertEqual(problems, ["[expect.01_hom] matches no screenshot; did you mean [expect.01_home]?"])
+
+    def test_ocr_never_passes_or_fails_what_it_cannot_read(self):
+        # Android: no .texts.json, so OCR. Greek can't be read by this Mac's OCR (readable = en, de): not found proves nothing.
+        screens = {"en": {"01_home": ["Next", "Settings"]}}
+        expect = {"01_home": {"all": ["Επόμενο", "Missing text"], "not": ["Ρυθμίσεις", "Settings"], "any": ["Άλλο"]}}
+        code, report = self.check(expect, screens, ocr=True)
+        self.assertEqual(sorted(report["problems"]), ['en/01_home.png: "Settings" must not be on screen', 'en/01_home.png: expected "Missing text" on screen'])
+        self.assertEqual(len(report["notes"]), 3)
+        self.assertTrue(all("could not verify" in n for n in report["notes"]), report["notes"])
+        # found is found, in any script OCR happened to read; and a readable script checked by OCR still fails when absent
+        ok = self.check({"01_home": {"all": ["Next"], "any": ["Ρυθμίσεις", "Settings"]}}, screens, ocr=True)[1]
+        self.assertEqual((ok["problems"], ok["notes"]), ([], []))
+        # the same Greek strings on iOS (the app's own text) are exact: absent means absent
+        bad = self.check({"01_home": {"all": ["Επόμενο"]}}, {"en": {"01_home": ["Next", "Settings"]}})[1]
+        self.assertEqual(bad["problems"], ['en/01_home.png: expected "Επόμενο" on screen'])
+
+    def test_without_expect_nothing_changes(self):
+        code, report = self.check(None, {"en": {"01_home": self.HOME["en"]}})
+        self.assertEqual(report["problems"], [])
+
+    def test_the_tables_are_validated_like_every_other_setting(self):
+        for body, msg in (('[expect.01_home]\nanny = ["x"]\n', r"unknown setting 'anny'; did you mean 'any'\?"),
+                          ('[expect.01_home]\nany = "x"\n', r"any in shotfleet.toml should be a list of texts"),
+                          ('[expect.01_home]\nnot = []\n', r"not in shotfleet.toml should be a list of texts"),
+                          ('[expect.01_home.de]\nal = ["x"]\n', r"\[expect.01_home.de\].*unknown setting 'al'; did you mean 'all'\?"),
+                          ('[expect]\nany = ["x"]\n', r"'any' should be a table named after a screenshot"),
+                          ('[expect.01_home.any]\nx = ["x"]\n', r"unknown setting 'any'"),
+                          ('[expec.01_home]\n', r"did you mean \[expect\]")):
+            with self.subTest(body=body), tempfile.TemporaryDirectory() as d:
+                f = Path(d) / "shotfleet.toml"; f.write_text(body)
+                with self.assertRaisesRegex(sf.Fail, msg): sf.read_expect(f)
+            with tempfile.TemporaryDirectory() as d:
+                f = Path(d) / "shotfleet.toml"; f.write_text('[ios]\napp = "x.app"\n' + body)
+                with self.assertRaises(sf.Fail): sf.platforms_in(f)
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "shotfleet.toml"; f.write_text('[ios]\napp = "x.app"\n')
+            with self.assertRaisesRegex(sf.Fail, r"no \[expect.<screenshot>\] table"): sf.read_expect(f)
+
+    def test_check_content_cli_reads_the_config_and_keeps_the_json_keys(self):
+        d = Path(tempfile.mkdtemp()); shots_with_texts(d, {lp: {"01_home": t} for lp, t in self.HOME.items()})
+        for lp, words in self.STRINGS.items():
+            (d / "locales" / lp).mkdir(parents=True); (d / "locales" / lp / "translation.json").write_text(json.dumps(words))
+        cfg = d / "shotfleet.toml"; cfg.write_text('[expect.01_home]\nall = ["Steinmännchen"]\n')
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = sf.main(["check", str(d / "shots"), "--strings", str(d / "locales/*/translation.json"), "--content", str(cfg),
+                            "--report", str(d / "rep"), "--json"])
+        report = json.loads(out.getvalue())
+        self.assertEqual((code, set(report)), (1, {"exit", "screenshots", "problems", "notes"}))
+        self.assertEqual(report["problems"], ['en/01_home.png: expected "Steinmännchen" on screen'])
+        self.assertIn("content: [expect] checked on 2 screens", err.getvalue())
+        with contextlib.redirect_stderr(io.StringIO()) as e2:
+            self.assertEqual(sf.main(["check", str(d / "shots"), "--content", str(d / "missing.toml")]), 2)
+        self.assertIn("no config at", e2.getvalue())
+
+    def test_run_passes_the_expect_tables_to_check(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Path(d) / "My.app"; app.mkdir()
+            (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.x", "DTPlatformName": "iphonesimulator"}))
+            (Path(d) / "flow.yaml").write_text("- launchApp\n")
+            (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n[expect.01_home]\nany = ["Hi"]\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"):
+                _, cfg, _ = sf.load_config(Path(d) / "shotfleet.toml")
+        self.assertEqual(cfg["_expect"], {"01_home": {"any": ["Hi"]}})
+
+
+class SetupCommands(unittest.TestCase):
+    """[ios] simctl and [android] shell: per-device commands after boot, built and substituted without a device."""
+    def test_simctl_commands_get_the_udid_and_run_in_order_after_the_status_bar(self):
+        calls = []
+        class FakeSim:
+            def __init__(self, udid): self.udid = udid
+            def run(self, *a, check=True): calls.append(a); return ""
+        listing = json.dumps({"devices": {"rt": []}})
+        with mock.patch.object(sf, "sh", side_effect=lambda cmd, **k: subprocess.CompletedProcess(cmd, 0, listing if "list" in cmd else "U1", "")), \
+             mock.patch.object(sf, "Sim", FakeSim), mock.patch.object(sf, "OUR_SIMS", set()):
+            pool = sf.make_pool(1, "dt", "rt", simctl=["ui $UDID appearance dark", "location ${UDID} set 52.3676,4.9041", 'privacy $UDID grant photos "com.x y"'])
+        udid = pool[0].udid
+        flat = [c for c in calls if c[0] in ("ui", "location", "privacy", "status_bar")]
+        self.assertEqual([c[0] for c in flat], ["status_bar", "ui", "location", "privacy"])
+        self.assertEqual(flat[1], ("ui", udid, "appearance", "dark"))
+        self.assertEqual(flat[2], ("location", udid, "set", "52.3676,4.9041"))
+        self.assertEqual(flat[3], ("privacy", udid, "grant", "photos", "com.x y"))  # quoting is shell-like, not a string split
+
+    def test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop(self):
+        calls = []
+        class FakeEmu:
+            def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
+            def adb(self, *a, check=True, timeout=180): calls.append((self.serial, a, check)); return ""
+            def booted(self): return False
+        home = Path(tempfile.mkdtemp()); (home / ".android/avd/shotfleet_android.avd/snapshots/shotfleet").mkdir(parents=True)
+        with mock.patch.object(sf, "Emu", FakeEmu), mock.patch.object(sf, "start_emu"), mock.patch.object(sf, "wait_booted"), \
+             mock.patch.object(sf.time, "sleep"), mock.patch.object(sf.Path, "home", return_value=home):
+            sf.android_pool(2, {"shell": ["setprop debug.remoti.demo 1", "settings put system font_scale 1.0"]}, [])
+        for serial in ("emulator-5702", "emulator-5704"):
+            mine = [(a, check) for s, a, check in calls if s == serial]
+            self.assertEqual(mine[-2:], [(("shell", "setprop debug.remoti.demo 1"), True), (("shell", "settings put system font_scale 1.0"), True)])
+            self.assertEqual(mine[len(sf.DEMO_MODE) - 1], (("shell", sf.DEMO_MODE[-1]), False))  # demo mode first, and it stays best-effort
+            self.assertEqual(len(mine), len(sf.DEMO_MODE) + 2)
+
+    def test_a_failing_command_is_a_setup_error_that_prints_it(self):
+        class Boom:
+            udid = "U9"
+            def run(self, *a, check=True): raise RuntimeError("simctl " + " ".join(a) + ": Unable to set")
+            def adb(self, *a, check=True): raise RuntimeError("adb " + " ".join(a) + ": Permission denied")
+        with self.assertRaisesRegex(sf.Fail, r"\[ios\] simctl command failed.*simctl ui U9 appearance dark: Unable to set"):
+            sf.run_setup(Boom(), "simctl", ["ui $UDID appearance dark"])
+        with self.assertRaisesRegex(sf.Fail, r"\[android\] shell command failed.*adb shell setprop a b: Permission denied"):
+            sf.run_setup(Boom(), "shell", ["setprop a b"])
+        # as the CLI sees it: exit 2, one line, no traceback
+        boom = sf.Fail("[ios] simctl command failed, stopping before the run: simctl ui U9 appearance dark: Unable to set")
+        with mock.patch.object(sf, "cmd_run", side_effect=boom), mock.patch.object(sf, "apply_free_tier"), \
+             mock.patch.object(sf.shutil, "which", return_value=None), contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(sf.main(["run"]), 2)
+        self.assertEqual(err.getvalue().strip(), f"shotfleet: {boom}")
+
+    def test_the_settings_are_validated_like_every_other_one(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Path(d) / "My.app"; app.mkdir()
+            (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.x", "DTPlatformName": "iphonesimulator"}))
+            (Path(d) / "flow.yaml").write_text("- launchApp\n")
+            cases = (('simctl = "ui"', "simctl in shotfleet.toml should be a list"),
+                     ('simctl = [1]', "simctl in shotfleet.toml should be a list of commands"),
+                     ('simctl = ["ui \\"x"]', "can't read"),
+                     ('simctl_ = []', r"unknown setting 'simctl_'; did you mean 'simctl'\?"),
+                     ('shell = ["x"]', "unknown setting 'shell'"))
+            for line, msg in cases:
+                (Path(d) / "shotfleet.toml").write_text(f'[ios]\napp = "My.app"\n{line}\n')
+                with self.subTest(line=line), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), self.assertRaisesRegex(sf.Fail, msg):
+                    sf.load_config(Path(d) / "shotfleet.toml")
+            apk = Path(d) / "a.apk"; apk.write_bytes(b"x")
+            for line, msg in (('shell = [3]', r"\[android\] shell in shotfleet.toml should be a list of commands"), ('simctl = []', "unknown setting 'simctl'")):
+                (Path(d) / "shotfleet.toml").write_text(f'[android]\napk = "a.apk"\npackage = "p"\n{line}\n')
+                with self.subTest(line=line), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
+                     mock.patch.object(sf, "aapt2", return_value="aapt2"), mock.patch.object(sf, "sh", return_value=subprocess.CompletedProcess([], 0, "", "")), \
+                     self.assertRaisesRegex(sf.Fail, msg):
+                    sf.load_config(Path(d) / "shotfleet.toml")

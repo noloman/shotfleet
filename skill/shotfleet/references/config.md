@@ -20,7 +20,7 @@ With both, output goes to `out-ios/` and `out-android/`; with one, to `out/`.
 
 ## Keys
 
-Tables allowed: `[ios]`, `[android]`, `[hooks]`, `[overrides.<locale>]`, `[inputs]`. Any other table is refused.
+Tables allowed: `[ios]`, `[android]`, `[hooks]`, `[overrides.<locale>]`, `[inputs]`, `[expect.<screenshot>]`. Any other table is refused.
 
 Keys valid in `[ios]` and `[android]`:
 
@@ -43,6 +43,7 @@ Keys valid in `[ios]` and `[android]`:
 | `device_type` | iPhone 17 Pro Max (6.9") | CoreSimulator device type id or name |
 | `device_types` | none | several sizes from one flow, e.g. `["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]`; output goes to `out/<device>/` and `check`/`export` handle the folder; an app that runs on iPad needs the 13" iPad set |
 | `runtime` | newest installed iOS | CoreSimulator runtime id |
+| `simctl` | none | list of `xcrun simctl` commands run once per simulator after boot and the status bar; `$UDID` is the simulator's id, e.g. `["ui $UDID appearance dark"]`; applies to every language |
 
 `[android]` only:
 
@@ -51,6 +52,7 @@ Keys valid in `[ios]` and `[android]`:
 | `apk` (required) | none | debug APK, API 33+ emulators |
 | `package` | read from the APK | refused if it differs |
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots` |
+| `shell` | none | list of commands run as `adb -s <serial> shell <command>` once per emulator right after boot (after demo mode), e.g. `["setprop debug.myapp.demo 1"]`; not run on a real emulator yet |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the README) |
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the README) |
 | `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
@@ -118,6 +120,28 @@ name = "田中"
 Values must be text and names letters, digits or `_`. iOS runs get the language's value as a Maestro `env:` entry in that
 language's flow; Android runs type the defaults only. Unit-tested as flow text, not yet run on a device: check the first
 screenshots in a script like Japanese or Arabic.
+
+A failing `simctl` or `shell` command stops the run before capture (exit 2) and prints the command.
+
+## Expected content
+
+Prove the seeded content is on screen, per language. The table is named after the screenshot (`takeScreenshot: 01_home`):
+
+```toml
+[expect.01_home]
+any = ["Senior iOS Engineer"]     # at least one on screen
+[expect.01_home.de]               # one language only (`pt` covers pt-BR)
+all = ["Steinmännchen"]           # every one on screen
+[expect.03_log]
+not = ["No workouts yet"]         # must not be on screen
+```
+
+Keys are `any`, `all`, `not`, each a non-empty list of texts; a typo is refused (`unknown setting 'anny'; did you mean 'any'?`).
+`run` applies them itself; `shotfleet check <out> --content [shotfleet.toml]` applies them to existing screenshots (free,
+no licence; put `--content` after the folder). Problems are `<locale>/<file>: expected "text" on screen` or `... must not be on
+screen`, a table naming no screenshot is a problem, and a locale table matching no language is a note. Case, accents and spacing are ignored.
+iOS compares the app's own text (exact in any script). Android is OCR: a text in a script macOS can't read is a note,
+`could not verify`, never a pass or a fail. The `check` JSON keeps its keys (`exit`, `screenshots`, `problems`, `notes`).
 
 ## Plugins and other switches
 

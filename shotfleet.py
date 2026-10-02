@@ -4,7 +4,7 @@
 usage: shotfleet doctor
        shotfleet init [App.app] [app.apk] [--dir dir]   (no build given: finds the newest Debug one here)
        shotfleet run <config.toml> [--locales de,ja] [--parallel N]
-       shotfleet check <folder> [--app App.app|app.apk] [--report dir]
+       shotfleet check <folder> [--app App.app|app.apk] [--report dir] [--content [shotfleet.toml]]
        shotfleet export <out_dir> --fastlane <fastlane_dir>
 
 For each language the app ships, shotfleet rewrites the flow's English text selectors into that
@@ -32,10 +32,12 @@ class Fail(Exception):
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int},
-        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str},
-        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "system_image": str, "devices": list}}
+        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
-TABLES = ("ios", "android", "hooks", "overrides", "inputs")  # the optional tables [hooks] and [overrides.<locale>] are documented in the README
+TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect")  # the optional tables [hooks], [overrides.<locale>], [inputs] and [expect.<screenshot>] are documented in the README
+EXPECT_KEYS = ("any", "all", "not")
+EXAMPLE_SETUP = {"shell": '"setprop debug.myapp.demo 1"', "simctl": '"ui $UDID appearance dark"'}
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
 
 def check_tables(doc, name):
@@ -61,29 +63,52 @@ def check_tables(doc, name):
     for locale, table in doc.get("overrides", {}).items():
         if not isinstance(table, dict) or not all(isinstance(v, str) for v in table.values()):
             raise Fail(f"[overrides.{locale}] in {name} should map English texts to text in that language, e.g. \"Next\" = \"İleri\"")
+    check_expect(doc.get("expect", {}), name)
 
-def platforms_in(config_path):
-    """The platform sections ([ios], [android]) a config file has, in run order."""
+def check_expect(expect, name):
+    """[expect.<screenshot>] any/all/not = ["text", ...], with [expect.<screenshot>.<locale>] for one language: refuse typos."""
+    import difflib
+    def rules(table, where):
+        for k, v in table.items():
+            if k not in EXPECT_KEYS or isinstance(v, dict):
+                near = difflib.get_close_matches(k, EXPECT_KEYS, n=1)
+                raise Fail(f"[{where}] in {name} has an unknown setting '{k}'" + (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(EXPECT_KEYS)}"))
+            if not (isinstance(v, list) and v and all(isinstance(t, str) and t.strip() for t in v)):
+                raise Fail(f"[{where}] {k} in {name} should be a list of texts, e.g. {k} = [\"Senior iOS Engineer\"]")
+    for shot, table in expect.items():
+        if not isinstance(table, dict):
+            raise Fail(f"[expect] in {name}: '{shot}' should be a table named after a screenshot, e.g. [expect.{shot}] with any = [\"text\"]")
+        rules({k: v for k, v in table.items() if not isinstance(v, dict) or k in EXPECT_KEYS}, f"expect.{shot}")
+        for locale, sub in table.items():
+            if isinstance(sub, dict) and locale not in EXPECT_KEYS: rules(sub, f"expect.{shot}.{locale}")
+
+def read_doc(config_path):
+    """The parsed config file; a missing file or bad TOML is a Fail that says how to fix it."""
     cfg_path = Path(config_path).expanduser().resolve()
     if not cfg_path.is_file():
         raise Fail(f"no config at {cfg_path}. Create one with: shotfleet init <App.app | app.apk>")
     try: doc = tomllib.loads(cfg_path.read_text())
     except tomllib.TOMLDecodeError as e: raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
     check_tables(doc, cfg_path.name)
+    return cfg_path, doc
+
+def read_expect(config_path):
+    """The [expect.*] tables of a config, for `check --content` (no build, Maestro or licence needed)."""
+    cfg_path, doc = read_doc(config_path)
+    if not doc.get("expect"):
+        raise Fail(f"{cfg_path.name} has no [expect.<screenshot>] table. Add one, e.g. [expect.01_home] with any = [\"text that must be on screen\"]")
+    return doc["expect"]
+
+def platforms_in(config_path):
+    """The platform sections ([ios], [android]) a config file has, in run order."""
+    cfg_path, doc = read_doc(config_path)
     found = [k for k in ("ios", "android") if k in doc]
     if not found: raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
     return found
 
 def load_config(config_path, platform=None):
     """(platform, cfg, path resolver) for one section, with every mistake reported as a Fail that says how to fix it."""
-    cfg_path = Path(config_path).expanduser().resolve()
-    if not cfg_path.is_file():
-        raise Fail(f"no config at {cfg_path}. Create one with: shotfleet init <App.app | app.apk>")
-    try:
-        doc = tomllib.loads(cfg_path.read_text())
-    except tomllib.TOMLDecodeError as e:
-        raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
-    check_tables(doc, cfg_path.name)
+    cfg_path, doc = read_doc(config_path)
     platforms = [k for k in ("ios", "android") if k in doc]
     if not platforms:
         raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
@@ -102,8 +127,14 @@ def load_config(config_path, platform=None):
             names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a {names}, not {value!r}")
+    for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
+        if not all(isinstance(c, str) for c in cfg.get(key, [])):
+            raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
+        for c in cfg.get(key, []):
+            try: shlex.split(c)
+            except ValueError as e: raise Fail(f"[{platform}] {key} in {cfg_path.name}: can't read '{c}': {e}")
     cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
-    cfg["_inputs"] = doc.get("inputs", {})
+    cfg["_inputs"], cfg["_expect"] = doc.get("inputs", {}), doc.get("expect", {})
     cfg.setdefault("flow", "flow.yaml")
     cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
     missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
@@ -827,8 +858,22 @@ class Sim:
             raise RuntimeError(f"simctl {' '.join(args)}: {r.stderr.strip()}")
         return r.stdout
 
-def make_pool(n, device_type, runtime, prefix="shotfleet"):
-    """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar."""
+def run_setup(device, kind, commands):
+    """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
+    or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
+    A failing command is a Fail (exit 2) that prints it."""
+    for cmd in commands:
+        try:
+            if kind == "simctl":
+                args = [a.replace("${UDID}", device.udid).replace("$UDID", device.udid) for a in shlex.split(cmd)]
+                device.run(*args)
+            else:
+                device.adb("shell", cmd)
+        except RuntimeError as e:
+            raise Fail(f"[{'ios' if kind == 'simctl' else 'android'}] {kind} command failed, stopping before the run: {e}")
+
+def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
+    """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar, run the config's [ios] simctl commands."""
     existing = json.loads(sh(["xcrun", "simctl", "list", "devices", "-j"]).stdout)["devices"].get(runtime, [])
     by_name = {d["name"]: d for d in existing if d.get("isAvailable") and d.get("deviceTypeIdentifier", device_type) == device_type}
     for d in existing:  # same name, other device type (config changed): replace it, or screenshots get the wrong size
@@ -849,6 +894,8 @@ def make_pool(n, device_type, runtime, prefix="shotfleet"):
         s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
+        OUR_SIMS.add(s.udid)  # a failing setup command must not leave the simulator booted
+        run_setup(s, "simctl", simctl)
     return pool
 
 # ---------- host safety ----------
@@ -1090,7 +1137,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     want = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
     n = fit_parallel(want)
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
-    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"))
+    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()))
     OUR_SIMS.update(s.udid for s in pool)
     kill_stale_drivers()
     def install(sims):  # each flow's clearState gives every locale a fresh start
@@ -1163,7 +1210,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
         return 1
-    return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device")), 1 if failed else 0)
+    return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device"), expect=cfg.get("_expect")), 1 if failed else 0)
 
 # ---------- android ----------
 
@@ -1306,6 +1353,7 @@ def android_pool(n, cfg, pool):
     wait_booted(pool)
     for e in pool:
         for c in DEMO_MODE: e.adb("shell", c, check=False)
+        run_setup(e, "shell", cfg.get("shell", ()))  # after boot, every run: the snapshot boot discards properties
 
 def android_flow(text, name, shots_dir, env=None):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
@@ -1428,7 +1476,7 @@ def android_run(cfg, path, out, only, parallel):
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
         return 1
-    return max(cmd_check(out, strings), 0 if all(r_["ok"] for r_ in final.values()) else 1)
+    return max(cmd_check(out, strings, expect=cfg.get("_expect")), 0 if all(r_["ok"] for r_ in final.values()) else 1)
 
 # ---------- check ----------
 
@@ -1676,11 +1724,54 @@ def external_ocr(command, png, lp):
     text = "\n".join(l for l in r.stdout.splitlines() if l.strip())
     return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "external"}
 
+# Scripts text recognition may read, as the language that stands for them in readable_languages(); others (Greek, Hebrew...) can't be proven
+SCRIPT_LANG = {"LATIN": "en", "CYRILLIC": "ru", "ARABIC": "ar", "HIRAGANA": "ja", "KATAKANA": "ja", "CJK": "zh", "HANGUL": "ko",
+               "THAI": "th", "DEVANAGARI": "hi"}
+
+def ocr_can_read(text):
+    """True if macOS text recognition reads every letter of `text` (so not finding it on screen proves something)."""
+    for c in text:
+        if not c.isalpha(): continue
+        lang = SCRIPT_LANG.get(unicodedata.name(c, " ").split()[0])
+        if lang is None or (lang not in ("en", "zh") and lang not in readable_languages()): return False
+    return True
+
+def content_rules(table, label, lp):
+    """The any/all/not lists of one [expect.<screenshot>] table that apply to a screenshot of this language: its own
+    lists plus those of every [expect.<screenshot>.<locale>] naming the language (`pt` covers pt-BR). Also the locale keys used."""
+    rules, used = {k: list(v) for k, v in table.items() if isinstance(v, list)}, []
+    mine = {c for c in (label, lp) if c} | {canon(c) for c in (label, lp) if c}
+    for key, sub in table.items():
+        if not isinstance(sub, dict) or key in EXPECT_KEYS: continue
+        if key in mine or canon(key) in mine or canon(key) in {m.split("-")[0] for m in mine}:
+            used.append(key)
+            for k, v in sub.items(): rules.setdefault(k, []).extend(v)
+    return rules, used
+
+def check_content(rules, screen):
+    """(problems, could-not-verify) for one screen's text against any/all/not lists, normalised like judge_screen does.
+    The app's own text (iOS .texts.json) is exact. OCR (Android, or no .texts.json) misses things, so a string it can't
+    read is never reported as present or absent: only as not verifiable."""
+    text = norm(screen.get("text", ""))
+    sure = lambda t: screen.get("ocr") == "app" or ocr_can_read(t)
+    seen = lambda t: norm(t) in text
+    bad, unsure = [], []
+    for t in rules.get("all", []):
+        if not seen(t): (bad if sure(t) else unsure).append(f'expected "{t}" on screen')
+    any_ = rules.get("any", [])
+    if any_ and not any(map(seen, any_)):
+        (bad if all(map(sure, any_)) else unsure).append("expected one of " + ", ".join(f'"{t}"' for t in any_) + " on screen")
+    for t in rules.get("not", []):
+        if seen(t): bad.append(f'"{t}" must not be on screen')
+        elif not sure(t): unsure.append(f'checked that "{t}" is absent')
+    return bad, unsure
+
 LAST_REPORT = None  # check.json of the last check, for --json
 
-def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True):
+def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True, expect=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
-    and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
+    and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder.
+    `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen."""
     folder = Path(folder)
     run_json = folder / "run.json"
     if app:
@@ -1751,7 +1842,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                     if not screen_text(png) and (not use_vision or unreadable(label))]
             for i, r in zip(redo, ex.map(lambda i: external_ocr(ocr_command, pngs[i][1], app_locale(pngs[i][0], tables) or pngs[i][0]), redo)):
                 ocrs[i] = {**ocrs[i], **r}
-    rows, by_hash = [], {}
+    rows, by_hash, expected_used, unverified = [], {}, set(), 0
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -1760,6 +1851,13 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
         if problem: problems.append(f"{label}/{png.name}: {problem}")
+        if png.stem in (expect or {}):
+            rules, used = content_rules(expect[png.stem], label, lp)
+            expected_used.update((png.stem, k) for k in used)
+            bad, unsure = check_content(rules, r)
+            problems += [f"{label}/{png.name}: {m}" for m in bad]
+            notes += [f"{label}/{png.name}: could not verify, {m} (text recognition can't read that script)" for m in unsure]
+            unverified += len(unsure)
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0)})
     unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None})
@@ -1775,11 +1873,20 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         have = {p.name for p in images[label]}
         if have != names:
             problems.append(f"{label}: missing {', '.join(sorted(names - have))}")
+    for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
+        if name not in {Path(r["file"]).stem for r in rows}:
+            import difflib
+            near = difflib.get_close_matches(name, sorted({Path(r["file"]).stem for r in rows}), n=1)
+            problems.append(f"[expect.{name}] matches no screenshot" + (f"; did you mean [expect.{near[0]}]?" if near else ""))
+        notes += [f"[expect.{name}.{k}] matches none of the languages checked" for k, v in expect[name].items()
+                  if isinstance(v, dict) and k not in EXPECT_KEYS and (name, k) not in expected_used]
     global LAST_REPORT; LAST_REPORT = report / "check.json"
     problems += store_problems
     (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
+    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(r['file']).stem in expect})} screens, "
+                     f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
     if notes:
         print(f"notes ({len(notes)}, not blocking):")
@@ -2298,6 +2405,8 @@ def main(argv=None):
     p.add_argument("--strings", action="append", metavar="GLOB",
                    help="translation files instead of --app, e.g. 'lib/l10n/*.arb' or 'locales/*/translation.json' "
                         "(.arb .json .xcstrings .strings .xml .xlf .resx .po .properties .csv); repeatable")
+    p.add_argument("--content", nargs="?", const="shotfleet.toml", metavar="CONFIG",
+                   help="also check the [expect.<screenshot>] texts of this config (default: ./shotfleet.toml) are on screen; put it after the folder")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
@@ -2613,12 +2722,13 @@ def main_dispatch(a):
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
+            expect = read_expect(a.content) if a.content else None
             if subs := device_runs(a.out):
-                codes = [cmd_check(d, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command, ipad_rule=False) for d in subs]
+                codes = [cmd_check(d, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command, ipad_rule=False, expect=expect) for d in subs]
                 return max(codes + [ipad_set_missing(a.out)])
             if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
                 print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
-            return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command)
+            return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command, expect=expect)
         if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2

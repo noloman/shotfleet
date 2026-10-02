@@ -26,7 +26,10 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `no Debug simulator build or Gradle debug APK found for` | `shotfleet init` with no build found none for this folder (it only reads folders: Xcode's default DerivedData for a project here, and `app/build/outputs/apk/debug`); the message lists the exact build commands | run the printed `xcodebuild` / `./gradlew assembleDebug` command, then `init` again; or pass the build path (needed when DerivedData is in a custom location) |
 | `isn't valid TOML` | syntax error in the config | fix the line the message names |
 | `needs an [ios] or an [android] section` | empty config | add `[ios]` with `app` or `[android]` with `apk` |
-| `has an unknown table` | typo such as `[hook]`; known: ios, android, hooks, overrides | use the table it suggests |
+| `has an unknown table` | typo such as `[hook]`; known: ios, android, hooks, overrides, inputs, expect | use the table it suggests |
+| `command failed, stopping before the run` | an `[ios] simctl` or `[android] shell` command exited non-zero; the message shows the command and its error | run that `xcrun simctl ...` / `adb shell ...` yourself on a booted device and fix it; `$UDID` is only replaced in `simctl` |
+| `matches no screenshot` | an `[expect.<name>]` table names a screenshot that isn't in the folder (typo, or the flow doesn't take it) | use the name from `takeScreenshot:` (the message suggests the nearest) |
+| `could not verify` | a note: `[expect]` text in a script macOS can't read, on a screen read by OCR | not a failure; give `--ocr-command` an OCR that reads it (Tesseract), or trust the iOS run, which uses the app's own text |
 | `has an unknown setting` | typo in a key; the message suggests the nearest or lists all | see config.md |
 | `should be a` | wrong type, e.g. `parallel = "4"` | use a whole number, string, list |
 | `is missing:` | `app` (iOS) or `apk` (Android) not set | set it |

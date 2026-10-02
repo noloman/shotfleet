@@ -34,6 +34,7 @@ shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json --report <repo
 - `--app` is a simulator build (`Debug-iphonesimulator/*.app`, never an `.ipa` or archive) or a debug `.apk`. Without it only language detection runs and short screens can't be judged.
 - Translation files instead of a build: `--strings 'lib/l10n/*.arb'` (repeatable).
 - Put `--report` outside the fastlane folder (default is `./shotfleet-check` in the current directory). shotfleet never edits the checked folder.
+- `--content [shotfleet.toml]` (after the folder) also requires the `[expect.<screenshot>]` texts from the config to be on screen (`any`, `all`, `not`, per language); free, no licence, and `run` does it by itself. Missing texts are `problems`; texts OCR can't read are `notes` ("could not verify"). See [references/config.md](references/config.md).
 - First text recognition after a restart can take 30 s to minutes and prints nothing. It is not a hang: wait.
 - Scripts macOS can't read (Greek, Hebrew, most Indic): `check` says which screens it only checked weakly; for full checks add `--ocr-command "tesseract {image} stdout -l {tesseract}"` (needs `brew install tesseract tesseract-lang`).
 

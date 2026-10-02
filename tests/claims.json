@@ -1986,5 +1986,39 @@
   "layer": "site",
   "assertion": "Browser: fresh profile on shotfleet.com shows the banner, no request to google hosts and no cookie; Decline keeps it so; Accept sets _ga and _ga_<id> and sends collect requests; Analytics settings then Decline deletes both.",
   "fix": ""
+ },
+ {
+  "id": "C119",
+  "claim": "check --content / run verifies that the texts you list in [expect.<screenshot>] are on (or off) each screen, per language, and never passes a text OCR cannot read",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "could not verify",
+   "could not verify"
+  ],
+  "status": "partial",
+  "proof": "Unit: ContentExpect.test_the_apps_own_text_is_exact_and_matched_like_judge_screen, ContentExpect.test_ocr_never_passes_or_fails_what_it_cannot_read, ContentExpect.test_check_content_cli_reads_the_config_and_keeps_the_json_keys. Fixtures only (.texts.json and fake OCR); no simulator or emulator run.",
+  "layer": "unit",
+  "assertion": "cmd_check with .texts.json and fake-OCR fixtures: missing, forbidden and unreadable-script texts give a problem, a problem and a note.",
+  "fix": "Keep 'proves the strings you list are present, not that the data looks right'."
+ },
+ {
+  "id": "C120",
+  "claim": "[ios] simctl and [android] shell run your commands once per simulator or emulator after boot; a failing command stops the run with exit 2 and the command printed",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "A command that fails stops the run before anything is captured (exit 2)",
+   "A command that fails stops the run before anything is captured (exit 2)"
+  ],
+  "status": "partial",
+  "proof": "Unit: SetupCommands.test_simctl_commands_get_the_udid_and_run_in_order_after_the_status_bar, SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop, SetupCommands.test_a_failing_command_is_a_setup_error_that_prints_it. Command construction only; not run on a real emulator or simulator.",
+  "layer": "unit",
+  "assertion": "Fake Sim/Emu record the commands in order; a device run with setprop debug.* on an emulator image is still to do.",
+  "fix": "Say the Android commands are unit-tested as command lines only until run on an emulator."
  }
 ]

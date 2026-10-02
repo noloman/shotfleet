@@ -220,6 +220,30 @@ The value goes into that language's flow as a Maestro `env:` entry. This works o
 `[inputs]` defaults only, because Maestro hands any flow to any emulator. The values are tested as flow text, not yet
 run on a device, so check the first screenshots in a script like Japanese or Arabic.
 
+**Device setup** runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:
+
+```toml
+[ios]
+simctl = ["ui $UDID appearance dark", "location $UDID set 52.3676,4.9041"]   # xcrun simctl <args>; $UDID is the simulator's id
+[android]
+shell = ["setprop debug.myapp.demo 1", "settings put system font_scale 1.0"]  # adb -s <serial> shell <command>
+```
+
+A command that fails stops the run before anything is captured (exit 2) and prints the command. iOS commands apply to every language (a different command per language is not possible: one Maestro process serves all simulators). The Android commands are unit-tested as command lines; whether a given `setprop` or `settings` command takes effect on your emulator image has not been tried on a real one.
+
+**Expected content** checks that what you seeded is really on screen, per language. Name the screenshot as in the flow (`takeScreenshot: 01_home`):
+
+```toml
+[expect.01_home]
+any = ["Senior iOS Engineer"]          # at least one of these is on screen
+[expect.01_home.de]                    # only for the German screenshot (pt covers pt-BR)
+all = ["Steinmännchen"]                # every one of these is on screen
+[expect.03_log]
+not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show
+```
+
+`run` checks these automatically; for screenshots you already have, use `shotfleet check out/ --content shotfleet.toml` (free, no licence). A missing or forbidden text is a problem line (`de/01_home.png: expected "Steinmännchen" on screen`), and a table for a screenshot that doesn't exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, `could not verify`, never as a pass; `--ocr-command` helps there. This proves the strings you list are present, not that the data looks right.
+
 **Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH (like `git` and `gh`), when `foo` isn't a built-in command.
 
 **Anything else**: `run`, `check` and `export` take `--json` and use stable exit codes (0 ok, 1 problems, 2 setup error), so
