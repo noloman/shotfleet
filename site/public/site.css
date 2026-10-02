@@ -366,3 +366,9 @@ figcaption { font-size: 0.9rem; }
 .tabs button span { font-size: 0.9rem; }
 .fleet { scrollbar-width: thin; }
 @media (max-width: 520px) { .terminal pre { white-space: pre-wrap; overflow-wrap: anywhere; } }
+/* Analytics consent banner (ga.js). Accept and Decline share one class on purpose: neither is more prominent. */
+.consent { position: fixed; z-index: 50; left: 16px; right: 16px; bottom: 16px; max-width: 40rem; margin-inline: auto; padding: 18px 20px; max-height: calc(100vh - 32px); overflow: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); font-size: 0.95rem; line-height: 1.5; }
+.consent-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
+.consent-btn { min-width: 44px; min-height: 44px; padding: 0 22px; border-radius: 999px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: 650 0.95rem var(--sans); cursor: pointer; }
+.consent-btn:hover { background: var(--tray); }
+.consent-actions a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 3px; }

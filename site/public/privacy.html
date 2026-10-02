@@ -31,7 +31,20 @@
  <div class="page">
   <p class="label">Privacy</p>
   <h1>What I keep, and how to delete it.</h1>
-  <p class="lede">This site has no cookies and no tracking scripts, and it loads nothing from other servers. On the home page it adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language. Those totals are not linked to you and your IP address is not stored. Beyond that, the only thing it stores is what you send when you join the waitlist or write to me.</p>
+  <p class="lede">By default this site sets no cookies and loads nothing from other servers. Google Analytics runs only if you press Accept analytics, and <a href="#analytics">below</a> I explain what that involves. Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language. Those totals are not linked to you and your IP address is not stored. Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me.</p>
+
+  <h2 id="analytics">Analytics (only if you accept)</h2>
+  <p>The first time you visit, a banner asks whether I may use Google Analytics 4 to see how this site is used. Accept analytics and Decline are equal choices. Until you accept, nothing is loaded from Google and no cookie is set. If you decline, or your browser blocks local storage, that stays true. I keep your choice in your browser's local storage under the name <code>shotfleet-analytics</code>, not in a cookie.</p>
+  <p>If you accept:</p>
+  <ul>
+    <li>Your browser loads a script from googletagmanager.com and sends data to Google Analytics: the page address and title, the site that referred you, your browser, operating system, screen size and language, your approximate location, the time, and a few actions I chose (clicking a button, reaching the run or pricing section, joining the waitlist). It does not send your email address.</li>
+    <li>Two cookies are set on shotfleet.com, <code>_ga</code> and <code>_ga_</code> followed by an id from my property. They hold a random identifier so repeat visits can be told apart, and they last up to 13 months.</li>
+    <li>On your IP address, Google <a href="https://support.google.com/analytics/answer/2763052">documents</a> that Google Analytics 4 does not log or store IP addresses. I never see it.</li>
+    <li>Google signals and the advertising features are off, and the consent settings keep ad storage, ad user data and ad personalization denied. Only analytics storage is granted.</li>
+    <li>Google keeps the event data for up to 14 months and then deletes it.</li>
+  </ul>
+  <p>The legal basis is your consent. Google acts as my processor and may process the data in the United States and other countries under its own terms; see <a href="https://policies.google.com/privacy">Google's privacy policy</a>. To withdraw, use Analytics settings in the footer of any page and choose Decline: it stops the data and deletes the two cookies. Clearing this site's data in your browser does the same. You can also change your mind there and accept later.</p>
+  <p>This is separate from the first-party counter described at the top of the page, which keeps page-view totals by source and language, sets no cookie, stores no IP address, and counts every visit because it records nothing about you.</p>
 
   <h2>When you buy</h2>
   <p>Purchases go through Polar (<a href="https://polar.sh/legal/privacy">privacy policy</a>), which sells shotfleet to you as the merchant of record. I receive your name, email, country and order details so I can support you. The installed program checks your licence key with Polar when you activate it and about once a week after. It sends Polar your key, the activation id Polar gave your Mac, the program version, and your Mac's name when you activate. It sends nothing else. <code>shotfleet doctor</code> also asks this site for the latest version number; that is an ordinary page request and I don't record it. Your app and screenshots are never uploaded.</p>
@@ -75,7 +88,8 @@
   <p id="contact-done" class="done" role="status" tabindex="-1" hidden><b>Sent.</b> If you left an email, I'll reply there.</p>
  </div>
 </main>
-<footer><div class="wrap"><span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span><span><a href="/">Home</a></span></div></footer>
+<footer><div class="wrap"><span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span><span><a href="/">Home</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span></div></footer>
 <script src="/forms.js" defer></script>
+<script src="/ga.js" defer></script>
 </body>
 </html>

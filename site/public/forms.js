@@ -64,7 +64,7 @@
     if (!form) return;
     wire(id, "/api/signup", function (f) {
       return { website: f.querySelector(".trap").value, ref: ref.join(" ") };
-    }, null, function (saved) { followup(document.getElementById(id + "-done"), saved); });
+    }, null, function (saved) { document.dispatchEvent(new CustomEvent("shotfleet:signup")); followup(document.getElementById(id + "-done"), saved); });
   });
   wire("forget", "/api/forget", function () { return {}; });
   wire("contact", "/api/contact", function (f) {

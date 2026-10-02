@@ -224,8 +224,9 @@ class Security(unittest.TestCase):
     def test_csp_allows_no_inline_script_and_no_other_origin(self):
         csp = self.csp()
         self.assertEqual(csp["default-src"], ["'self'"])
-        self.assertEqual(csp["script-src"], ["'self'"])  # no 'unsafe-inline', no 'unsafe-eval', no hosts
-        for directive in ("img-src", "connect-src"): self.assertEqual(csp[directive], ["'self'"])
+        # Google Analytics 4 is allowed on purpose, and only loads after consent (ga.js); the exact hosts are pinned in tests/test_consent.py
+        self.assertEqual(csp["script-src"], ["'self'", "https://www.googletagmanager.com"])  # no 'unsafe-inline', no 'unsafe-eval'
+        self.assertEqual(csp["img-src"][0], "'self'"); self.assertEqual(csp["connect-src"][0], "'self'")
         self.assertEqual(csp["frame-ancestors"], ["'none'"])
         self.assertNotIn("unsafe-eval", " ".join(sum(csp.values(), [])))
 

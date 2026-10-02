@@ -1285,28 +1285,28 @@
  },
  {
   "id": "C076",
-  "claim": "This site has no cookies and no tracking scripts, and it loads nothing from other servers",
+  "claim": "By default this site sets no cookies and loads nothing from other servers; Google Analytics runs only after an explicit Accept analytics",
   "where": [
    "site/public/privacy.html"
   ],
   "where_text": [
-   "This site has no cookies and no tracking scripts, and it loads nothing from other servers."
+   "By default this site sets no cookies and loads nothing from other servers. Google Analytics runs only if you press Accept analytics"
   ],
   "status": "evidence",
-  "proof": "2026-10-02: curl -D- https://shotfleet.com/ shows no Set-Cookie and a CSP of default-src 'self' (site/public/_headers:2); every script (forms.js, tabs.js, reveal.js, zoom.js) and stylesheet is same-origin. Not code-pinned: the Cloudflare dashboard (Web Analytics, Bot Fight Mode) can add beacons or cookies without a deploy. Cloudflare also adds `report-to`/`nel` headers (browser network-error reports to a.nel.cloudflare.com, success_fraction 0) and wrangler.toml:20-24 enables Workers observability logs. The wording 'no analytics' was dropped from this sentence in commit 7f27985 when the visit counter was added (see next claim).",
+  "proof": "Static: tests/test_consent.py (Consent.test_nothing_calls_gtag_before_consent, Consent.test_placeholder_id_loads_nothing, Consent.test_csp_lines_are_exactly_what_ga4_needs): ga.js returns before anything while GA_ID is the placeholder, every gtag call and the googletagmanager.com script injection sit in start(), which runs only on a stored or fresh 'granted'. Every other script, stylesheet and image is same-origin (Structure.test_no_resource_comes_from_another_server). The first-party counter sets no cookie. Not code-pinned: the Cloudflare dashboard (Web Analytics, Bot Fight Mode) can add beacons or cookies without a deploy; Cloudflare also adds `report-to`/`nel` headers and wrangler.toml enables Workers observability logs. Live check after deploy: curl -D- https://shotfleet.com/ shows no Set-Cookie, and a fresh browser profile makes no request to google domains before Accept.",
   "layer": "site",
-  "assertion": "Static: no <script src>/<link href>/<img src> to another origin in any page; _headers CSP has default-src 'self'. Live: after every deploy, GET / and assert no Set-Cookie header and no third-party host in the HTML.",
+  "assertion": "Static: only ga.js may inject a script from another origin, and only googletagmanager.com is in script-src; Live: no Set-Cookie and no request to a Google host before Accept.",
   "fix": ""
  },
  {
   "id": "C077",
-  "claim": "On the home page the site adds one to a running total per page view and per action (reaching the run or pricing section, a button click), split by day, source and browser language; the totals are not linked to you and your IP address is not stored",
+  "claim": "On the home page the site adds one to a running total per page view and per action (reaching the run or pricing section, a button click), split by day, source and browser language; the totals are not linked to you and your IP address is not stored (counted whether or not you accept analytics)",
   "where": [
    "site/public/privacy.html",
    "site/public/privacy.html"
   ],
   "where_text": [
-   "On the home page it adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.",
+   "Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.",
    "Those totals are not linked to you and your IP address is not stored."
   ],
   "status": "partial",
@@ -1317,12 +1317,12 @@
  },
  {
   "id": "C078",
-  "claim": "Beyond the counter, the only thing it stores is what you send when you join the waitlist or write to me",
+  "claim": "Beyond the counter (and your analytics choice, kept in your own browser), the only thing stored is what you send when you join the waitlist or write to me",
   "where": [
    "site/public/privacy.html"
   ],
   "where_text": [
-   "Beyond that, the only thing it stores is what you send when you join the waitlist or write to me."
+   "Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me."
   ],
   "status": "partial",
   "proof": "worker.test.mjs asserts stack/platform/at for signups, not the full set of stored fields. worker.js stores email, at, platform, stack, country, ref (and for messages: message, reply email, country). It also logs {event, country}; Cloudflare's rate limiter is keyed by IP. 'platform' (derived from stack) is not listed in privacy.html.",
@@ -1968,6 +1968,23 @@
   "proof": "Unit on fake SDK layouts, PATH and Homebrew prefix: AndroidSdkDiscovery.test_places_are_tried_in_order, AndroidSdkDiscovery.test_the_folder_above_an_adb_on_the_path_is_the_last_resort, AndroidSdkDiscovery.test_any_installed_api_33_plus_arm64_image_is_used_newest_first, AndroidSdkDiscovery.test_the_emulator_is_created_from_the_config_image_else_an_installed_one_else_the_default_with_the_install_command, AndroidSdkDiscovery.test_commands_install_homebrews_command_line_tools_first_when_there_is_no_sdkmanager, DoctorAndroid.test_missing_pieces_come_with_one_exact_sdkmanager_command, DoctorAndroid.test_with_no_android_sdk_at_all_doctor_prints_the_homebrew_route_and_every_package. Unproven: a real Mac with only `brew install --cask android-commandlinetools` (Caskroom layout and the printed commands were not run), real avdmanager on an image other than API 36.",
   "layer": "unit",
   "assertion": "Clean Mac with only the Homebrew command-line tools: doctor's printed commands, run in order, make Android ready (roadmap X3).",
+  "fix": ""
+ },
+ {
+  "id": "C118",
+  "claim": "The analytics banner offers Accept analytics and Decline as equal choices, nothing from Google loads and no _ga cookie is set before Accept, and the footer link Analytics settings reopens the choice",
+  "where": [
+   "site/public/ga.js",
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Accept analytics",
+   "Accept analytics and Decline are equal choices. Until you accept, nothing is loaded from Google and no cookie is set."
+  ],
+  "status": "proven",
+  "proof": "Consent.test_nothing_calls_gtag_before_consent, Consent.test_the_banner_is_built_by_ga_js_with_two_equal_buttons, Consent.test_every_page_with_ga_has_the_settings_link_and_the_other_way_round, Consent.test_placeholder_id_loads_nothing. Static only: no browser run in CI. Withdrawing deletes the _ga cookies (stop() in ga.js); that part is not unit-tested.",
+  "layer": "site",
+  "assertion": "Browser: fresh profile on shotfleet.com shows the banner, no request to google hosts and no cookie; Decline keeps it so; Accept sets _ga and _ga_<id> and sends collect requests; Analytics settings then Decline deletes both.",
   "fix": ""
  }
 ]
