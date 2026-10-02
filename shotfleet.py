@@ -29,10 +29,26 @@ VERSION = "0.1.0"
 class Fail(Exception):
     """A user-facing error: printed as one line, no traceback."""
 
-REQUIRED = {"ios": ("app", "bundle_id", "flow"), "android": ("apk", "package", "flow")}
+# Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
+# early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
+KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int},
+        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str},
+        "android": {"apk": str, "package": str, "avd": str, "system_image": str, "devices": list}}
+REQUIRED = {"ios": ("app",), "android": ("apk",)}
 
-def load_config(config_path):
-    """(platform, cfg, path resolver) with every mistake reported as a Fail that says how to fix it."""
+def platforms_in(config_path):
+    """The platform sections ([ios], [android]) a config file has, in run order."""
+    cfg_path = Path(config_path).expanduser().resolve()
+    if not cfg_path.is_file():
+        raise Fail(f"no config at {cfg_path}. Create one with: shotfleet init <App.app | app.apk>")
+    try: doc = tomllib.loads(cfg_path.read_text())
+    except tomllib.TOMLDecodeError as e: raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
+    found = [k for k in ("ios", "android") if k in doc]
+    if not found: raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
+    return found
+
+def load_config(config_path, platform=None):
+    """(platform, cfg, path resolver) for one section, with every mistake reported as a Fail that says how to fix it."""
     cfg_path = Path(config_path).expanduser().resolve()
     if not cfg_path.is_file():
         raise Fail(f"no config at {cfg_path}. Create one with: shotfleet init <App.app | app.apk>")
@@ -41,24 +57,41 @@ def load_config(config_path):
     except tomllib.TOMLDecodeError as e:
         raise Fail(f"{cfg_path.name} isn't valid TOML: {e}")
     platforms = [k for k in ("ios", "android") if k in doc]
-    if len(platforms) != 1:
-        raise Fail(f"{cfg_path.name} needs exactly one [ios] or [android] section (use one config file per platform)")
-    platform = platforms[0]
+    if not platforms:
+        raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
+    platform = platform or platforms[0]
+    if platform not in doc: raise Fail(f"{cfg_path.name} has no [{platform}] section")
     cfg = doc[platform]
+    known = {**KEYS["common"], **KEYS[platform]}
+    for key, value in cfg.items():
+        if key not in known:
+            import difflib
+            near = difflib.get_close_matches(key, known, n=1)
+            raise Fail(f"[{platform}] in {cfg_path.name} has an unknown setting '{key}'" +
+                       (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(sorted(known))}"))
+        want = known[key]
+        if not isinstance(value, want) or (want is int and isinstance(value, bool)):  # bool is an int in Python
+            names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
+            names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
+            raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a {names}, not {value!r}")
+    cfg.setdefault("flow", "flow.yaml")
+    cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
     missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
     if missing:
         raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
     path = lambda p: cfg_path.parent / Path(p).expanduser()  # absolute/~ paths win, others are relative to the config
     flow = path(cfg["flow"])
     if not flow.is_file():
-        raise Fail(f"flow file not found: {flow}")
+        raise Fail(f"flow file not found: {flow}. `shotfleet init` writes a starter flow")
     if platform == "ios":
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
             raise Fail(f"no simulator app at {app}. Build it for the simulator (Debug-iphonesimulator) and point 'app' at the .app")
         real = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
-        if real and real != cfg["bundle_id"]:
+        if cfg.get("bundle_id") and real and real != cfg["bundle_id"]:
             raise Fail(f"bundle_id is {cfg['bundle_id']} but {app.name} is {real}")
+        cfg["bundle_id"] = cfg.get("bundle_id") or real
+        if not cfg["bundle_id"]: raise Fail(f"can't read the bundle id of {app.name}; set bundle_id in the config")
         if device_build(app):
             raise Fail(f"{app.name} is a device build; simulators need a simulator build (Debug-iphonesimulator). "
                        "Build with: xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build")
@@ -68,8 +101,10 @@ def load_config(config_path):
         if not apk.is_file():
             raise Fail(f"no APK at {apk}")
         m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(apk)]).stdout)
-        if m and m.group(1) != cfg["package"]:
+        if m and cfg.get("package") and m.group(1) != cfg["package"]:
             raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
+        cfg["package"] = cfg.get("package") or (m and m.group(1))
+        if not cfg["package"]: raise Fail(f"can't read the package name of {apk.name}; set package in the config")
         cfg["apk"] = str(apk)
     if not shutil.which("maestro"):
         raise Fail("Maestro isn't installed. Install it with: curl -Ls https://get.maestro.mobile.dev | bash")
@@ -592,6 +627,14 @@ def print_result(lp, r, expected):
 def count_screenshots(flow):
     return len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
 
+def with_app_id(flow, app_id):
+    """The flow with `appId:` set to this build's id, so one flow serves iOS and Android; a flow of bare steps gets a header."""
+    if flow.startswith("---\n") and "\n---\n" not in flow: flow = flow[4:]
+    header, sep, body = flow.partition("\n---\n")
+    if not sep: header, body = "", flow
+    header = re.sub(r"(?m)^appId:.*\n?", "", header).strip("\n")
+    return f"appId: {app_id}\n{header}{chr(10) if header else ''}---\n{body}"
+
 def localize_flow(flow, lproj, shots_dir):
     """Make a translated flow self-contained for one locale.
 
@@ -803,8 +846,16 @@ def device_slug(device_type):
     """com.apple...iPad-Pro-13-inch-M5-12GB -> ipad-pro-13-inch-m5-12gb (a folder and simulator-name prefix)."""
     return device_type.rsplit(".", 1)[-1].lower()
 
-def cmd_run(config_path, only=None, parallel=None):
-    platform, cfg, path = load_config(config_path)
+def cmd_run(config_path, only=None, parallel=None, platform=None):
+    plats = [platform] if platform else platforms_in(config_path)
+    codes = []
+    for p in plats:
+        if len(plats) > 1: print(f"\n=== {p} ===")
+        codes.append(run_platform(config_path, only, parallel, p))
+    return max(codes)
+
+def run_platform(config_path, only, parallel, platform):
+    platform, cfg, path = load_config(config_path, platform)
     if platform == "android":
         out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
         if devices := cfg.get("devices"):  # phone and tablet sets from one flow: out/<device>/ each
@@ -844,7 +895,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     cfg["app"] = str(path(cfg["app"]))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = config_strings(cfg, path) or load_strings(Path(cfg["app"]))
-    flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
+    flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
@@ -1049,7 +1100,7 @@ def android_run(cfg, path, out, only, parallel):
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
-    flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
+    flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
@@ -1563,12 +1614,10 @@ def cmd_doctor():
         print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh")
     return 0 if ok_ios or ok_android else 1
 
-FLOW_TEMPLATE = """appId: {app_id}
-name: "Store screenshots"
----
-# Write this flow in English: shotfleet translates every text selector for each language.
+FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text selector for each language.
 # Tap and assert by the text the user sees, exactly as it appears in your English strings
-# ("Next", not "next"); take a screenshot for each store image you want.
+# ("Next", not "next"); take a screenshot for each store image you want. No appId needed:
+# shotfleet uses each build's own id, so this one flow serves iOS and Android.
 # Tips (dialogs, collisions, scrolling): see "Tips" in the README.
 - launchApp
 - waitForAnimationToEnd:
@@ -1600,32 +1649,38 @@ def config_path(target, dest):
     home = str(Path.home())
     return "~" + str(target)[len(home):] if str(target).startswith(home + "/") else str(target)
 
-def cmd_init(app, dest="."):
-    """Write shotfleet.toml + flow.yaml for an .app (iOS simulator build) or .apk."""
-    app, dest = Path(app).expanduser().resolve(), Path(dest)
+def cmd_init(builds, dest="."):
+    """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android)."""
+    builds = [builds] if isinstance(builds, (str, Path)) else builds
+    dest = Path(dest)
+    sections, found = [], []
+    suffixes = [Path(b).suffix for b in builds]
+    for kind in (".app", ".apk"):
+        if suffixes.count(kind) > 1: raise Fail(f"two {kind} builds given; a config holds one app per platform, so run init once per app")
+    for build in builds:
+        app = Path(build).expanduser().resolve()
+        if app.suffix == ".apk":
+            if not app.is_file(): raise Fail(f"no APK at {app}")
+            m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
+            if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
+            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}\n'
+                            '# devices = ["phone", "tablet"]   # Android sets from one flow\n# locales = ["de", "ja"]   # default: every language the app ships')
+            found.append((m.group(1), shipped_locales(load_strings_apk(app))))
+        elif app.suffix == ".app":
+            if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
+            if device_build(app): raise Fail(f"{app.name} is a device build: {WRONG_BUILD['.xcarchive']}")
+            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}\n'
+                            '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
+                            '# locales = ["de", "ja"]   # default: every language the app ships')
+            found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(load_strings(app))))
+        else:
+            raise Fail(build_hint(app))
     dest.mkdir(parents=True, exist_ok=True)
-    if app.suffix == ".apk":
-        if not app.is_file(): raise Fail(f"no APK at {app}")
-        m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
-        if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
-        app_id = m.group(1)
-        locales = shipped_locales(load_strings_apk(app))
-        cfg = f'[android]\napk = {json.dumps(config_path(app, dest))}\npackage = "{app_id}"\nflow = "flow.yaml"\nparallel = 4\nout = "out"\n'
-    elif app.suffix == ".app":
-        if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
-        if device_build(app): raise Fail(f"{app.name} is a device build: {WRONG_BUILD['.xcarchive']}")
-        app_id = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
-        locales = shipped_locales(load_strings(app))
-        cfg = (f'[ios]\napp = {json.dumps(config_path(app, dest))}\nbundle_id = "{app_id}"\nflow = "flow.yaml"\n'
-               'device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # 1320x2868 = App Store 6.9"\n'
-               f'runtime = "{latest_ios_runtime()}"   # newest installed; list them: xcrun simctl list runtimes\n'
-               'parallel = 4\nout = "out"\n')
-    else:
-        raise Fail(build_hint(app))
-    for name, text in (("shotfleet.toml", cfg), ("flow.yaml", FLOW_TEMPLATE.format(app_id=app_id))):
-        if (dest / name).exists(): print(f"keeping existing {dest / name}"); continue
+    for name, text in (("shotfleet.toml", "\n\n".join(sections) + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
+        if (dest / name).exists():
+            print(f"keeping existing {dest / name}" + (f"; add this to it yourself if it is missing:\n{text}" if name.endswith(".toml") else "")); continue
         (dest / name).write_text(text); print(f"wrote {dest / name}")
-    print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
+    for app_id, locales in found: print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
     print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots simulators, takes a few minutes):\n"
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
@@ -1781,8 +1836,9 @@ def main(argv=None):
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
     p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
     sub.add_parser("deactivate", help="free this Mac's activation (to move the licence)")
-    p = sub.add_parser("init", help="write a starter config and flow for an app")
-    p.add_argument("app", help="simulator .app or .apk"); p.add_argument("dir", nargs="?", default=".", help="where to write them (default: here)")
+    p = sub.add_parser("init", help="write a starter config and flow for your app")
+    p.add_argument("builds", nargs="+", metavar="build", help="a simulator .app and/or an .apk (both go in one config)")
+    p.add_argument("--dir", default=".", help="where to write them (default: here)")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
     p.add_argument("config", help="shotfleet.toml")
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
@@ -2049,7 +2105,7 @@ def main_dispatch(a):
     try:
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "mcp": return cmd_mcp()
-        if a.cmd == "init": return cmd_init(a.app, a.dir)
+        if a.cmd == "init": return cmd_init(a.builds, a.dir)
         if a.cmd == "export": require_licence()
         if a.cmd == "run": apply_free_tier()
         if a.cmd == "activate": return cmd_activate(a.key)

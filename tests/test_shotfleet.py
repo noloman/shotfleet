@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest discover -s tests
 """
-import contextlib, io, json, os, subprocess, sys, tempfile, time, unittest
+import contextlib, io, json, os, subprocess, sys, tempfile, time, tomllib, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -363,8 +363,8 @@ class Config(unittest.TestCase):
             cases = [
                 (None, "no config at"),
                 ("not = [valid", "isn't valid TOML"),
-                ("[ios]\n[android]\n", "exactly one [ios] or [android]"),
-                ('[ios]\napp = "x.app"\n', "missing: bundle_id, flow"),
+                ("[other]\nx = 1\n", "needs an [ios] or an [android] section"),
+                ("[ios]\n", "missing: app"),
                 ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "flow.yaml"\n', "no simulator app at"),
                 ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "missing.yaml"\n', "flow file not found"),
                 ('[android]\napk = "nope.apk"\npackage = "a"\nflow = "flow.yaml"\n', "no APK at"),
@@ -1037,6 +1037,70 @@ class StuckOcrFallback(unittest.TestCase):
         with mock.patch.object(sf.shutil, "which", return_value=None):
             with self.assertRaisesRegex(sf.Fail, "brew install tesseract"):
                 self.check()
+
+
+class SimpleConfig(unittest.TestCase):
+    """One small config for both platforms: only the build is required; ids come from it."""
+    def build(self, d):
+        app = Path(d) / "My.app"; app.mkdir()
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.example.my", "DTPlatformName": "iphonesimulator"}))
+        (Path(d) / "flow.yaml").write_text("- launchApp\n")
+        return app
+
+    def test_bare_steps_and_one_flow_for_both_platforms(self):
+        steps = "- launchApp\n- takeScreenshot: 01\n"
+        self.assertEqual(sf.with_app_id(steps, "com.x"), "appId: com.x\n---\n" + steps)
+        full = "appId: ios.id\nname: Shots\n---\n" + steps
+        self.assertEqual(sf.with_app_id(full, "android.pkg"), "appId: android.pkg\nname: Shots\n---\n" + steps)
+        self.assertEqual(sf.with_app_id("---\n- launchApp\n", "com.x"), "appId: com.x\n---\n- launchApp\n")
+        out = sf.localize_flow(sf.with_app_id(steps, "com.x"), "de", Path("/shots"))
+        self.assertTrue(out.startswith("appId: com.x\nname: de\n---\n"))
+
+    def test_only_the_build_is_required_and_ids_come_from_it(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"):
+                platform, cfg, _ = sf.load_config(Path(d) / "shotfleet.toml")
+                self.assertEqual((platform, cfg["bundle_id"], cfg["flow"], cfg["out"]), ("ios", "com.example.my", "flow.yaml", "out"))
+                (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n[android]\napk = "a.apk"\n')
+                self.assertEqual(sf.platforms_in(Path(d) / "shotfleet.toml"), ["ios", "android"])
+                self.assertEqual(sf.load_config(Path(d) / "shotfleet.toml", "ios")[1]["out"], "out-ios")  # two platforms, two folders
+                (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nbundle_id = "wrong"\n')
+                with self.assertRaisesRegex(sf.Fail, "bundle_id is wrong but My.app is com.example.my"):
+                    sf.load_config(Path(d) / "shotfleet.toml")
+
+    def test_unknown_keys_and_wrong_types_are_one_line_errors(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            for body, msg in (('ipd = true\n', "unknown setting 'ipd'"), ('device_type = 3\n', "device_type .* should be a string"),
+                              ('parallel = "four"\n', "parallel .* should be a whole number"), ('parallel = true\n', "parallel .* should be a whole number"),
+                              ('locales = "de"\n', "locales .* should be a list")):
+                (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n' + body)
+                with self.subTest(body=body), self.assertRaisesRegex(sf.Fail, msg):
+                    sf.load_config(Path(d) / "shotfleet.toml")
+
+    def test_run_goes_through_every_platform_in_the_file(self):
+        seen = []
+        with mock.patch.object(sf, "platforms_in", return_value=["ios", "android"]), \
+             mock.patch.object(sf, "run_platform", side_effect=lambda c, o, p, plat: seen.append(plat) or (1 if plat == "android" else 0)):
+            self.assertEqual(sf.cmd_run("x.toml"), 1)
+            self.assertEqual(sf.cmd_run("x.toml", platform="ios"), 0)
+        self.assertEqual(seen, ["ios", "android", "ios"])
+
+    def test_init_takes_several_builds_into_one_small_config(self):
+        with tempfile.TemporaryDirectory() as d:
+            ios = self.build(d)
+            with mock.patch.object(sf, "load_strings", return_value={"en": {"a": "A"}, "de": {"a": "B"}}):
+                sf.cmd_init([str(ios)], d)
+            toml = (Path(d) / "shotfleet.toml").read_text()
+            self.assertEqual(tomllib.loads(toml)["ios"], {"app": "My.app"}); self.assertNotIn("bundle_id", toml)
+            self.assertNotIn("appId:", (Path(d) / "flow.yaml").read_text().split("No appId needed")[0].replace("# ", ""))
+
+    def test_init_refuses_two_builds_of_one_platform_and_creates_nothing(self):
+        d = Path(tempfile.mkdtemp()) / "new"
+        with self.assertRaisesRegex(sf.Fail, "two .app builds"): sf.cmd_init(["a.app", "b.app"], d)
+        self.assertFalse(d.exists())
 
 
 class PolarLicence(unittest.TestCase):
