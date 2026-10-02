@@ -9,7 +9,7 @@ ok   ar       4/4 screenshots
 ok   de       4/4 screenshots
 ...
 captured 18/18 locales in 534s on 4 simulators
-checked 72 screenshots: 0 problem(s)
+checked 72 screenshots in 18 languages: 0 problem(s)
 ```
 
 ## Why
@@ -43,7 +43,11 @@ Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `n
 
 It also finds real localization bugs. On CrossfitTracker it found an onboarding page whose Next button was unreachable on small phones in Japanese, Korean, Chinese and Arabic.
 
-## Quickstart (about 10 minutes)
+## Free and paid
+
+`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, with a year of updates and a 14-day refund (see the site's licence page).
+
+## Quickstart (once Maestro and a simulator build exist)
 
 ```bash
 curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # signed, notarized; Apple silicon
@@ -75,9 +79,9 @@ also catches folders you edited by hand.
 
 ## In CI
 
-`run` and `check` take `--json`: the report goes to stdout as JSON (`exit`, `screenshots`, `problems`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
+`run`, `check` and `export` take `--json`: the result goes to stdout as JSON (`exit`, `screenshots`, `problems` for `run` and `check`; `exit`, `exported`, `skipped` for `export`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
 
-Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. (This recipe hasn't been run on GitHub yet; the command itself is the one tested above.)
+Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. `check` is free and needs no licence. (This recipe hasn't been run on GitHub yet; the command itself is the one tested above.)
 
 ```yaml
 # .github/workflows/screenshots.yml
@@ -88,7 +92,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug -derivedDataPath build build
-      - run: python3 shotfleet.py check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json
+      - run: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # Apple silicon runner
+      - run: shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -97,6 +102,8 @@ jobs:
             check.json
             shotfleet-check/
 ```
+
+To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations; if the licence server can't be reached the job isn't failed. With an invalid key, `export` refuses and `run` captures only 2 languages.
 
 ## With AI agents
 
@@ -228,13 +235,13 @@ translation source.
 
 - The installed program brings its own Python. Running from source needs Python 3.11+ (macOS's own `python3` is 3.9; `brew install python`).
 - Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
-- Flutter and React Native support (via source files) is tested with sample files, not yet on a real Flutter/RN app.
+- Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - If macOS text recognition stops answering (its `ANECompilerService` occasionally gets stuck until a restart), `check` switches to Tesseract automatically when it's installed (`brew install tesseract tesseract-lang`), and otherwise tells you to restart. iOS runs aren't affected: they read the app's own text.
 - For full verification of those scripts, give `check` an OCR that reads them, e.g. Tesseract (`brew install tesseract tesseract-lang`, about 700 MB): `--ocr-command "tesseract {image} stdout -l {tesseract}"` (or set `SHOTFLEET_OCR`). It's used only for languages macOS can't read; `{lang}` is the language code if your tool wants that instead.
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
-- macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+ (Maestro needs it).
 - Android needs API 33+ emulators for per-app languages.
 - `launchApp` options must be written as a block (as above), not inline `{ ... }`.
 - Text you type into fields isn't translated, so demo data stays the same in every language.

@@ -20,7 +20,7 @@
   <p class="lede">This site has no cookies and no tracking scripts, and it loads nothing from other servers. It adds one to a running total for each page view, split by day, by the site or link you came from, and by your browser's language. That total is not linked to you and your IP address is not stored. Beyond that, the only thing it stores is what you send when you join the waitlist or write to me.</p>
 
   <h2>When you buy</h2>
-  <p>Purchases go through Polar (<a href="https://polar.sh/legal/privacy">privacy policy</a>), which sells shotfleet to you as the merchant of record. I receive your name, email, country and order details so I can support you. Your licence key is checked with Polar when you activate it and about once a week after: the key, and your Mac's name when you activate, nothing else. Your app and screenshots are never uploaded.</p>
+  <p>Purchases go through Polar (<a href="https://polar.sh/legal/privacy">privacy policy</a>), which sells shotfleet to you as the merchant of record. I receive your name, email, country and order details so I can support you. The installed program checks your licence key with Polar when you activate it and about once a week after. It sends Polar your key, the activation id Polar gave your Mac, the program version, and your Mac's name when you activate. It sends nothing else. <code>shotfleet doctor</code> also asks this site for the latest version number; that is an ordinary page request and I don't record it. Your app and screenshots are never uploaded.</p>
 
   <h2>When you join the waitlist</h2>
   <ul>
@@ -35,10 +35,10 @@
   <p>To send you one email when shotfleet is available to buy, and to count how many people are interested. I don't share it, sell it, or add you to any other list.</p>
 
   <h2>Where it's kept, and for how long</h2>
-  <p>In Cloudflare Workers KV, the storage for the small server behind this page. Cloudflare also processes your IP address to serve the page and to limit how often the forms can be sent. I delete the list 30 days after the launch email goes out, or sooner if you ask.</p>
+  <p>In Cloudflare Workers KV, the storage for the small server behind this page. Cloudflare also processes your IP address to serve the page and to limit how often the forms can be sent. I will delete the waitlist within 30 days after I send the launch email, or sooner if you ask. Messages you send through the contact form are kept until I've answered them, and I delete them on request.</p>
 
   <h2>Remove your email</h2>
-  <p>Enter the address you signed up with and it's deleted right away.</p>
+  <p>Enter the address you signed up with and it's deleted right away, together with any contact messages you sent with that address as the reply address.</p>
   <form id="forget" novalidate>
     <label for="forget-email">Email</label>
     <div class="inline">

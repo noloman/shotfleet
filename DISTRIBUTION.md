@@ -10,18 +10,18 @@
 
 ## Recommendation
 
-**One signed, notarized, universal binary, installed with Homebrew or a download, unlocked with a licence key.**
+**One signed, notarized Apple silicon program, installed with a one-line `curl` script, unlocked with a licence key.**
 
 | Piece | Choice | Why |
 |---|---|---|
-| Package | A single executable built with PyInstaller (Python bundled), plus the prebuilt `ocr` helper, universal (Apple silicon + Intel) | No Python or Swift needed on the buyer's Mac; source not shipped as plain text |
+| Package | A single executable built with PyInstaller (Python bundled), plus the prebuilt `ocr` helper, Apple silicon only (arm64) | No Python or Swift needed on the buyer's Mac; source not shipped as plain text |
 | Trust | Signed with Manu's Developer ID and notarized by Apple | Without it Gatekeeper blocks the download ("cannot be opened") |
-| Install | `brew install noloman/shotfleet/shotfleet` and a `.tar.gz` / `.pkg` on the download page | Homebrew is how Mac developers install CLIs; the tap is one small public repo |
-| Where binaries live | A public `noloman/shotfleet-releases` repo (binaries + changelog only); source stays in the private `noloman/shotfleet` | Homebrew needs a public URL; nothing paid is exposed because the binary needs a key |
+| Install | `curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh \| sh` (checksum-verified). No Homebrew formula is published | One line, no public repos needed (Homebrew was the first plan; see Status) |
+| Where binaries live | The shotfleet site's `/download` folder (no public repos; source stays private) | The installer reads it over HTTPS and checks the SHA-256 |
 | Payment | Polar checkout from the site (merchant of record: handles VAT/sales tax worldwide; personal accounts allowed, Netherlands supported; ID check through Stripe) | Lemon Squeezy asks for a KvK (none here). Polar Starter: 5% + $0.50, +1.5% international cards, Stripe payout fees |
 | Licence | `shotfleet activate <key>` validates once with the store's licence API (Polar: SHOTFLEET- keys, no secret in the app; Gumroad and Lemon Squeezy keys still work), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
-| Free vs paid | `check`, `doctor`, `init` free; `run` and `export` need a key | STRATEGY.md 2.1: checking is the funnel |
-| Updates | `shotfleet --version` / `doctor` mention a newer release (GitHub releases API); `brew upgrade` installs it | A year of updates is part of the $49 |
+| Free vs paid | `check`, `doctor`, `init` free; `run` free up to 2 languages; every language and `export` need a key | STRATEGY.md 2.1: checking is the funnel |
+| Updates | `shotfleet doctor` mentions a newer release (read from the site's `/download/VERSION`; `--version` makes no network call); re-running `install.sh` installs it | A year of updates is part of the $49 |
 | CI | Same binary; key passed as `SHOTFLEET_KEY` | Team licence later |
 
 A licence check in a Python app can be removed by a determined person. At $29–49 that's acceptable: the goal is to make
@@ -65,4 +65,4 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
   rejected by Apple's notary); notarization accepted, quarantined install tested.
 - Gumroad as a second store: its licence keys work too (activation counts uses, at most 3 Macs; refunds and
   chargebacks are refused; weekly re-checks don't count). Tested against a fake API built from Gumroad's source.
-- Left for Manu: the Lemon Squeezy product, optionally the Gumroad one (LAUNCH.md). Then `packaging/go-live.sh`.
+- Left for Manu: finish the Polar account review and make the checkout link (LAUNCH.md). Then `packaging/go-live.sh`.

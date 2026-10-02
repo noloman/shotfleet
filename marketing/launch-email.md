@@ -1,9 +1,9 @@
-Subject: shotfleet is out ($29 for you, first 100)
+Subject: shotfleet is out ($29 for the first 100 buyers)
 
 Hi,
 
-You joined the shotfleet list, so you get the founder price before anyone else: $29 instead of $49, for the first
-100 people.
+You joined the shotfleet list, so here is the news right away. The first 100 buyers pay $29 instead of $49, whoever
+buys first.
 
 shotfleet takes one English Maestro flow and captures your App Store and Google Play screenshots in every language
 your app ships, in parallel, then checks each one against your app's own strings before it reaches the stores.

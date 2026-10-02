@@ -2,7 +2,18 @@
 # Waitlist signups and contact messages stored by worker.js.
 #   ./signups.sh            count + email addresses, then messages
 #   ./signups.sh --details  also each signup's platform / country / source
+#   ./signups.sh --purge-waitlist   delete every email: record (do this 30 days after the launch email; messages and visit counts stay)
 cd "$(dirname "$0")"
+if [ "${1:-}" = "--purge-waitlist" ]; then
+  names=$(npx -y wrangler@latest kv key list --binding WAITLIST --remote --prefix email: 2>/dev/null \
+    | python3 -c "import json,sys; print(json.dumps([k['name'] for k in json.load(sys.stdin)]))") || { echo "could not list the waitlist" >&2; exit 1; }
+  echo "$names" | python3 -c "import json,sys; print(len(json.load(sys.stdin)), 'waitlist emails will be deleted (messages and visit counts stay)')"
+  printf 'Type PURGE to delete them: '; read -r answer
+  [ "$answer" = PURGE ] || { echo "nothing deleted"; exit 1; }
+  file=$(mktemp); echo "$names" > "$file"   # ponytail: one list page (1,000 keys); run it again if more are left
+  npx -y wrangler@latest kv bulk delete "$file" --binding WAITLIST --remote --force && rm -f "$file" && echo "deleted"
+  exit
+fi
 keys=$(npx -y wrangler@latest kv key list --binding WAITLIST --remote 2>/dev/null)
 echo "$keys" | python3 -c "
 import json,sys; names=[k['name'] for k in json.load(sys.stdin)]

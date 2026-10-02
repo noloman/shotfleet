@@ -1917,6 +1917,8 @@ def device_runs(out):
     out = Path(out)
     return [] if (out / "run.json").exists() else sorted(d for d in out.iterdir() if (d / "run.json").exists()) if out.is_dir() else []
 
+EXPORT_RESULT = {}  # what `export --json` prints: the listings written and the languages skipped
+
 def cmd_export(out, fastlane, name_prefix=""):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
     Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
@@ -1962,6 +1964,7 @@ def cmd_export(out, fastlane, name_prefix=""):
         for png in new: shutil.copy2(png, dst / (name_prefix + png.name))
         done.append(folder)
     print(f"exported {len(done)} listings to {fastlane}: {', '.join(done)}")
+    EXPORT_RESULT.update(exported=EXPORT_RESULT.get("exported", []) + done, skipped=sorted(bad))
     return 0 if not bad else 1
 
 COMMANDS = ("doctor", "mcp", "activate", "deactivate", "init", "run", "check", "export")
@@ -2001,6 +2004,7 @@ def main(argv=None):
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
+    p.add_argument("--json", action="store_true", help="print the result as JSON on stdout (progress goes to stderr)")
     p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
     a = ap.parse_args(argv)
     if a.cmd == "run" and a.locales is not None and not a.locales.strip(","):
@@ -2008,8 +2012,9 @@ def main(argv=None):
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
     if getattr(a, "json", False):  # CI: stdout carries only the JSON report
+        EXPORT_RESULT.clear()
         with contextlib.redirect_stdout(sys.stderr): code = main_cmd(a)
-        print(json.dumps({"exit": code, **(json.loads(LAST_REPORT.read_text()) if LAST_REPORT else {})}, ensure_ascii=False))
+        print(json.dumps({"exit": code, **(EXPORT_RESULT if a.cmd == "export" else json.loads(LAST_REPORT.read_text()) if LAST_REPORT and LAST_REPORT.is_file() else {})}, ensure_ascii=False))
         return code
     return main_cmd(a)
 
@@ -2120,6 +2125,13 @@ def polar_post(action, **fields):
     except (urllib.error.URLError, TimeoutError) as e:
         raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
 
+def polar_valid(status, body):
+    """(valid, reason) for a Polar `validate` answer. Polar answers 404 for a key that is revoked, disabled or expired, and its
+    200 body carries status "granted"; if a body ever says anything else, don't trust it. A body without a status is accepted."""
+    if status != 200: return False, body.get("detail")
+    st = body.get("status", "granted")
+    return st == "granted", None if st == "granted" else f"status {st}"
+
 def is_gumroad_key(key):
     """Gumroad keys are four groups of 8 (ABCDEF12-...); Lemon Squeezy keys are UUIDs (8-4-4-4-12)."""
     return bool(re.fullmatch(r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{8}){3}", key.strip()))
@@ -2201,8 +2213,7 @@ def require_licence():
     if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
         try:
             if is_polar_key(key):
-                status, body = polar_post("validate", key=key.strip())
-                valid, why = status == 200, body.get("detail")
+                valid, why = polar_valid(*polar_post("validate", key=key.strip()))
             elif is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
             else: r = licence_api("validate", license_key=key); valid, why = r.get("valid"), r.get("error")
         except OSError: return  # don't fail a build because the licence server is unreachable
@@ -2216,8 +2227,7 @@ def require_licence():
     if age < LICENCE_RECHECK_DAYS: return
     try:
         if lic.get("store") == "polar":
-            status, body = polar_post("validate", key=lic["key"], activation_id=lic["activation"])
-            valid, why = status == 200, body.get("detail")
+            valid, why = polar_valid(*polar_post("validate", key=lic["key"], activation_id=lic["activation"]))
         elif lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
         else:
             r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])

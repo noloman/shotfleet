@@ -43,3 +43,17 @@ shotfleet" with install steps, deploys it, and prints the waitlist so you can se
 ## 4. Send the launch email (your account, your words; draft in marketing/launch-email.md)
 
 Posting and emailing stay yours, as agreed.
+
+The founder price ($29) is for the first 100 buyers, whoever buys first: `go-live.sh` puts the buy page live before the email
+goes out, so the email does not promise the list an early window.
+
+## 5. 30 days after the launch email: delete the waitlist (a promise on the privacy page)
+
+```sh
+site/signups.sh --purge-waitlist      # shows the count, asks you to type PURGE, then deletes every email: record
+```
+
+Contact-form messages (`msg:` records) are kept until answered and deleted on request: the visitor's own "delete my email"
+button removes messages left with that reply address, and you can remove any other with
+`cd site && npx wrangler kv key delete "<msg:...>" --binding WAITLIST --remote` (list them with `site/signups.sh`).
+Put a reminder in your calendar the day you send the email.

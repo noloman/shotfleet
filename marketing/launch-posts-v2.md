@@ -8,11 +8,11 @@
 
 **Title:** My app's onboarding was broken in 4 languages on small phones, and I only found out by automating store screenshots
 
-I ship a workout app in 18 languages. My Maestro screenshot flow taps English buttons, so my first "localized" screenshots were just the English set copied into every language folder—because the flow couldn't run in German or Japanese.
+I ship a workout app in 18 languages. My Maestro screenshot flow taps English buttons, so my first "localized" screenshots were just the English set copied into every language folder, because the flow couldn't run in German or Japanese.
 
 I built a tool that rewrites the flow's English taps into each language using the strings compiled into the app (so "Next" becomes "Weiter", "次へ", "İleri"…), runs every language in parallel on simulators and emulators, and reads each screenshot back to check it actually shows that language.
 
-On the first full Android run, Japanese, Korean, Chinese and Arabic all got stuck on the same onboarding page. Their text renders taller, the page didn't scroll, and the Next button was off the bottom of a common small phone. English fit, so nobody had noticed. Two-line fix.
+On the first full Android run, Japanese, Korean, Chinese and Arabic all got stuck on the same onboarding page. Their text renders taller, the page didn't scroll, and the Next button was off the bottom of a common small phone. English fit, so nobody had noticed. A small fix in my app.
 
 Other things it caught:
 - In Turkish, "Next" and "Advanced" are the same word (İleri), so a tap would hit the wrong button.
@@ -30,18 +30,18 @@ I'm thinking of releasing it. Would this be useful to you? How do you handle loc
 
 **Title:** Validating before building more: localized store screenshots for $49 once
 
-I'm an indie developer. Localized screenshots were something I kept skipping—my "localized" listings just had the English set copied into each language.
+I'm an indie developer. Localized screenshots were something I kept skipping. My "localized" listings just had the English set copied into each language.
 
 I built a CLI for my own apps. It takes one English UI flow, rewrites it for every language the app ships (using the app's own translations), captures them all in parallel, and checks each image. It found a real bug: on small phones, users in 4 languages couldn't get through onboarding.
 
 Before polishing it for sale, I'm testing demand with a landing page and an early-access list at https://shotfleet.manulorenzop.workers.dev.
 
 What I know about the market:
-- fastlane (free) already captures screenshots, but it needs UI-test setup and runs one language at a time.
+- fastlane (free) already captures screenshots, but it needs UI-test setup in your project and runs your languages one after another.
 - Design tools like AppScreens cost $99–180/yr but don't capture from the app itself.
 - I couldn't find any tool that verifies the screenshots are actually in the right language.
 
-My pricing: $49 one-time ($29 for the first 100 on the list). Free tier: capture 2 languages and check any screenshots.
+My pricing: $49 one-time ($29 for the first 100 buyers). Free tier: capture 2 languages and check any screenshots.
 
 Does this sound useful? Particularly interested in hearing from anyone shipping 10+ languages.
 
@@ -73,10 +73,10 @@ My screenshot flow tapped English buttons, so "localized" screenshots were just 
 ### Post 2
 It runs all 18 languages in parallel on simulators and emulators, then reads every screenshot back to check it actually shows that language and isn't a copy.
 
-First Android run: 4 languages stuck on the same page. Taller text, no scrolling, Next off-screen. English fit. Two-line fix.
+First Android run: 4 languages stuck on the same page. Taller text, no scrolling, Next off-screen. English fit. A small fix in my app.
 
 ### Post 3
-Bonus: in Turkish, "Next" and "Advanced" are the same word. The tool warns about clashes like that before running. Considering releasing it as a one-time tool—early access at https://shotfleet.manulorenzop.workers.dev
+Bonus: in Turkish, "Next" and "Advanced" are the same word. The tool warns about clashes like that before running. Considering releasing it as a one-time tool. Early access at https://shotfleet.manulorenzop.workers.dev
 
 ---
 
@@ -88,9 +88,9 @@ Landing page: https://shotfleet.manulorenzop.workers.dev
 
 **First comment (post yourself):**
 
-Hi all. I ship a workout app in 18 languages. My Maestro screenshot flow taps English buttons, so I couldn't run it in other languages without per-language copies. I built shotfleet to fix that—it rewrites the flow's English text into each language using the app's own compiled strings, runs every language in parallel on simulators and emulators, and verifies each screenshot.
+Hi all. I ship a workout app in 18 languages. My Maestro screenshot flow taps English buttons, so I couldn't run it in other languages without per-language copies. I built shotfleet to fix that. It rewrites the flow's English text into each language using the app's own compiled strings, runs every language in parallel on simulators and emulators, and verifies each screenshot.
 
-On the first full Android run, the onboarding page was unreachable in Japanese, Korean, Chinese and Arabic on small phones (taller text, no scrolling, button off the bottom). English fit, so the bug wasn't obvious. It was a two-line fix in the app.
+On the first full Android run, the onboarding page was unreachable in Japanese, Korean, Chinese and Arabic on small phones (taller text, no scrolling, button off the bottom). English fit, so the bug wasn't obvious. It was a small fix in my app.
 
 **What it does:** One English flow → every language the app ships → both platforms at once → each image checked (wrong language, copies, missing, store size rules, iPad rule) → exported to fastlane's folders.
 
@@ -102,7 +102,7 @@ On the first full Android run, the onboarding page was unreachable in Japanese, 
 
 **Friction:** macOS only. Needs Xcode, Android SDK, and a Maestro flow written.
 
-**Pricing:** $49 one-time (a year of updates, keeps working afterwards). $29 for the first 100. Free tier: check any screenshots + capture 2 languages in `run`.
+**Pricing:** $49 one-time (a year of updates, keeps working afterwards). $29 for the first 100 buyers. Free tier: check any screenshots + capture 2 languages in `run`.
 
 Would love feedback. How do you handle localized screenshots today?
 
@@ -110,10 +110,10 @@ Would love feedback. How do you handle localized screenshots today?
 
 ## Notes for all posts
 
-- The $29 founder price is only for the first 100 people on the list; mention it once, not repeatedly.
+- The $29 founder price is for the first 100 buyers, whoever buys first (not a list perk); mention it once, not repeatedly.
 - Lead with the real bug story, not the product features.
 - Avoid hype: say "one real bug found" not "catches all localization bugs."
 - Be specific about times and numbers (18 languages, 9 min / 15 min, 4 simulators, small phones).
 - For r/iOSProgramming and r/androiddev: link the same landing page in both posts, add `?utm_source=reddit` to track which subreddit drives signups.
 - Add `?utm_source=` tags to links in each post (reddit, ih, x, hn, maestro, etc.) so the landing page tracks which channel each signup came from.
-- Do NOT claim: real Flutter/React Native run, live permission-alert taps, frames, captions, upload to stores, Android tablets.
+- Do NOT claim: a real Flutter/React Native run, live permission-alert taps, frames, captions, upload to stores. iPad and Android tablet sets are real (verified 2026-10-02: Remoti on an iPad 13", CrossfitTracker on an Android tablet), so they can be claimed.

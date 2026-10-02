@@ -1,8 +1,8 @@
 // API for the landing page; static files in public/ are served before this runs.
 //   POST /api/signup  {email, stack?, ref, website}  -> join the waitlist (KV key "email:<address>"); a later call with stack adds the answer
-//   POST /api/forget  {email}                           -> remove an address from the waitlist
+//   POST /api/forget  {email}                           -> remove an address from the waitlist, and the contact messages left with it as the reply address
 //   POST /api/hit    {src}                              -> count one visit: KV key "hit:<day>|<source>|<language>" holds a total, nothing about the visitor
-//   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>")
+//   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>", the reply address also in its metadata so forget can find it)
 // Read signups: ./signups.sh
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
 const MAX_BODY = 4096;
@@ -54,7 +54,7 @@ export default {
         return json({ error: "That reply address doesn't look right. Fix it or leave it empty." }, 400);
       }
       await env.WAITLIST.put(`msg:${new Date().toISOString()}-${crypto.randomUUID().slice(0, 8)}`,
-        JSON.stringify({ message, email: reply || null, country: request.cf?.country || null }));
+        JSON.stringify({ message, email: reply || null, country: request.cf?.country || null }), { metadata: { email: reply || null } });
       console.log(JSON.stringify({ event: "contact" }));
       return json({ ok: true });
     }
@@ -67,6 +67,9 @@ export default {
 
     if (pathname === "/api/forget") {
       await env.WAITLIST.delete(key);
+      // ponytail: first 1,000 messages only (one KV list page); add the cursor loop if the inbox ever grows that big
+      const { keys } = await env.WAITLIST.list({ prefix: "msg:" });
+      await Promise.all(keys.filter(k => k.metadata?.email === email).map(k => env.WAITLIST.delete(k.name)));
       console.log(JSON.stringify({ event: "forget" }));
       return json({ ok: true }); // same answer whether or not it was on the list
     }
