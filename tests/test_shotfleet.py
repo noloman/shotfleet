@@ -1103,6 +1103,18 @@ class SimpleConfig(unittest.TestCase):
         self.assertFalse(d.exists())
 
 
+class FastlaneBothStores(unittest.TestCase):
+    def test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores(self):
+        root = Path(tempfile.mkdtemp())
+        (root / "screenshots").mkdir(); (root / "metadata/android").mkdir(parents=True)
+        app = root / "My.app"; app.mkdir(); (app / "Info.plist").write_bytes(b"x")
+        seen = []
+        def stop(folder, **kw): seen.append(Path(folder)); raise StopIteration
+        with mock.patch.object(sf, "find_screenshots", side_effect=stop), mock.patch.object(sf, "load_strings", return_value={"en": {"a": "A"}, "de": {"a": "B"}}), \
+             mock.patch.object(sf, "device_build", return_value=False), contextlib.redirect_stdout(io.StringIO()) as out, self.assertRaises(StopIteration):
+            sf.cmd_check(root, app=app)
+        self.assertEqual(seen, [root / "screenshots"]); self.assertIn("checking the iOS ones", out.getvalue())
+
 class JavaForMaestro(unittest.TestCase):
     def test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro(self):
         sf.java_env.cache_clear()

@@ -1446,6 +1446,11 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if app.suffix == ".apk" and not app.is_file(): raise Fail(f"no APK at {app}")
         if app.suffix not in (".apk", ".app"): raise Fail(build_hint(app))
         if app.suffix == ".app" and not (app / "Info.plist").is_file(): raise Fail(f"no app at {app}")
+        if (folder / "screenshots").is_dir() and (folder / "metadata/android").is_dir():  # a fastlane folder for both stores
+            was, folder = folder, folder / ("metadata/android" if app.suffix == ".apk" else "screenshots")
+            print(f"{was} holds iOS and Android screenshots; checking the {'Android' if app.suffix == '.apk' else 'iOS'} ones "
+                  f"in {folder}. Run check again with the other build for the rest")
+            run_json = folder / "run.json"
         layout_android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
         layout_ios = (folder / "screenshots").is_dir() or folder.name == "screenshots"
         if (layout_android and not layout_ios and app.suffix == ".app") or (layout_ios and not layout_android and app.suffix == ".apk"):
