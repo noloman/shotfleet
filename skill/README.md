@@ -51,6 +51,6 @@ The block names what shotfleet is, the six commands (`doctor`, `init`, `run`, `c
 rules. For more detail it points at `skill/shotfleet/`: keep that folder in the repo, or paste the contents of
 `skill/shotfleet/references/troubleshooting.md` next to it.
 
-## Not yet
+## One command
 
-A `shotfleet skill install` command is planned and is **not implemented**: today you copy the folders yourself.
+The installed program carries these skills: `shotfleet skill install` copies them into `~/.claude/skills`, `shotfleet skill install --project` into `./.claude/skills`, and `--dir <folder>` into another agent's skills folder. Skills that are already there are kept unless you pass `--force`.

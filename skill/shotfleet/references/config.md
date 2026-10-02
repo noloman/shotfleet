@@ -50,6 +50,7 @@ Keys valid in `[ios]` and `[android]`:
 | `package` | read from the APK | refused if it differs |
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots` |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the README) |
+| `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the README) |
 | `system_image` | `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
 
 A language with under 50% of the app's own strings translated is skipped with a `note:`; list it in `locales` to
@@ -106,4 +107,5 @@ Values must be strings (`should map English texts to text in that language`).
 - `shotfleet foo` runs `shotfleet-foo` from the PATH when `foo` is not a built-in command (like `git` and `gh`).
 - `SHOTFLEET_OCR` or `--ocr-command` swaps the text reader for scripts macOS can't read: `"tesseract {image} stdout -l {tesseract}"` (`{lang}` is the language code).
 - `SHOTFLEET_KEY` is the licence key for CI (see licence.md and ci.md).
+- `shotfleet skill install` copies these skills into `~/.claude/skills` (`--project` for `./.claude/skills`, `--dir` for another agent).
 - `shotfleet mcp` is an MCP server with `check`, `run` and `doctor`: `claude mcp add shotfleet -- shotfleet mcp`.

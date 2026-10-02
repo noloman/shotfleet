@@ -249,3 +249,22 @@ class NothingIsUploaded(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class McpCheckDoesNotTouchTheFolder(unittest.TestCase):
+    def test_the_mcp_check_tool_writes_its_report_elsewhere_and_config_accepts_avd_tablet(self):
+        with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as cwd:
+            d = Path(d); shots = fixture(d)
+            before = sorted(p.relative_to(shots).as_posix() for p in shots.rglob("*"))
+            old = os.getcwd(); os.chdir(cwd)
+            try:
+                real = sf.cmd_check  # the fake reader stands in for macOS OCR, which compiles a model on first use
+                with mock.patch.object(sf, "cmd_check", lambda *a, **k: real(*a, **k, ocr_command="cat {image}.txt")):
+                    text, err = sf.mcp_call("check", {"folder": str(shots), "strings": str(d / "locales/*/translation.json")})
+            finally:
+                os.chdir(old)
+            after = sorted(p.relative_to(shots).as_posix() for p in shots.rglob("*"))
+            self.assertFalse(err, text)
+            self.assertEqual(before, after)  # nothing was written into the checked folder
+            self.assertTrue((Path(cwd) / "shotfleet-check" / "index.html").exists())
+        self.assertIn("avd_tablet", sf.KEYS["android"])

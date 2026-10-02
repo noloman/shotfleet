@@ -33,7 +33,7 @@ class Fail(Exception):
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str},
-        "android": {"apk": str, "package": str, "avd": str, "system_image": str, "devices": list}}
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "system_image": str, "devices": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides")  # the optional tables [hooks] and [overrides.<locale>] are documented in the README
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
@@ -2026,7 +2026,20 @@ def cmd_export(out, fastlane, name_prefix=""):
     EXPORT_RESULT.update(exported=EXPORT_RESULT.get("exported", []) + done, skipped=sorted(bad))
     return 0 if not bad else 1
 
-COMMANDS = ("doctor", "mcp", "activate", "deactivate", "init", "run", "check", "export")
+COMMANDS = ("doctor", "mcp", "skill", "activate", "deactivate", "init", "run", "check", "export")
+
+def cmd_skill(where, project, force):
+    """Copy the agent skills that ship with shotfleet into Claude Code's skills folder (~/.claude/skills, or ./.claude/skills with --project)."""
+    src = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "skill"
+    skills = sorted(p for p in src.glob("*") if (p / "SKILL.md").is_file()) if src.is_dir() else []
+    if not skills: raise Fail(f"no skills found next to the program ({src}). Copy skill/ from the shotfleet repo instead")
+    dest = Path(where).expanduser() if where else (Path(".claude/skills") if project else Path.home() / ".claude/skills")
+    for s in skills:
+        target = dest / s.name
+        if target.exists() and not force: print(f"kept {target} (already there; --force replaces it)"); continue
+        if target.exists(): shutil.rmtree(target)
+        shutil.copytree(s, target, ignore=shutil.ignore_patterns("__pycache__", ".DS_Store")); print(f"installed {target}")
+    return 0
 
 def main(argv=None):
     import argparse
@@ -2038,6 +2051,9 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True, metavar="command")
     sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
+    p = sub.add_parser("skill", help="install the Claude Code skills for shotfleet")
+    p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills instead of ~/.claude/skills")
+    p.add_argument("--dir", help="install into this skills folder (for other agents)"); p.add_argument("--force", action="store_true", help="replace skills that are already installed")
     p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
     sub.add_parser("deactivate", help="free this Mac's activation (to move the licence)")
     p = sub.add_parser("init", help="write a starter config and flow for your app")
@@ -2102,8 +2118,7 @@ def mcp_call(name, args):
             if name == "doctor": code = cmd_doctor()
             elif name == "check":
                 if not Path(args["folder"]).expanduser().is_dir(): raise Fail(f"no folder at {args['folder']}")
-                code = cmd_check(Path(args["folder"]).expanduser(), app=args.get("app"), strings_files=args.get("strings"),
-                                 report_dir=Path(args["folder"]).expanduser() / "shotfleet-check")
+                code = cmd_check(Path(args["folder"]).expanduser(), app=args.get("app"), strings_files=args.get("strings"))  # report goes to ./shotfleet-check, never into the checked folder
             elif name == "run": apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
             else: return f"unknown tool {name}", True
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:
@@ -2337,6 +2352,7 @@ def main_dispatch(a):
     try:
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "mcp": return cmd_mcp()
+        if a.cmd == "skill": return cmd_skill(a.dir, a.project, a.force)
         if a.cmd == "init": return cmd_init(a.builds, a.dir)
         global NO_HOOKS
         NO_HOOKS = bool(getattr(a, "no_hooks", False))

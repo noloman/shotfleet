@@ -117,12 +117,20 @@ class Commands(unittest.TestCase):
                     self.assertEqual(ns.cmd, argv[0])
         self.assertGreaterEqual(total, 25)
 
-    def test_the_planned_install_command_is_not_claimed(self):
-        self.assertNotIn("skill", sf.COMMANDS)  # if this fails, `shotfleet skill install` exists: update skill/README.md
-        self.assertIn("not implemented", (ROOT / "skill/README.md").read_text())
-        for doc in DOCS:
-            for line in doc.read_text().splitlines():
-                if "skill install" in line: self.assertTrue("planned" in line or "not " in line, f"{doc.name}: {line}")
+    def test_the_install_command_exists_installs_every_skill_and_keeps_what_is_there(self):
+        import tempfile, contextlib, io
+        self.assertIn("skill", sf.COMMANDS)
+        self.assertIn("shotfleet skill install", (ROOT / "skill/README.md").read_text())
+        names = sorted(p.name for p in (ROOT / "skill").iterdir() if (p / "SKILL.md").is_file())
+        with tempfile.TemporaryDirectory() as d, contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(sf.main(["skill", "install", "--dir", d]), 0)
+            self.assertEqual(sorted(p.name for p in Path(d).iterdir()), names)
+            (Path(d) / names[0] / "SKILL.md").write_text("mine")
+            sf.main(["skill", "install", "--dir", d])
+            self.assertEqual((Path(d) / names[0] / "SKILL.md").read_text(), "mine")  # not overwritten without --force
+            sf.main(["skill", "install", "--dir", d, "--force"])
+            self.assertNotEqual((Path(d) / names[0] / "SKILL.md").read_text(), "mine")
+        self.assertIn("kept", out.getvalue())
 
     def test_the_agents_snippet_names_the_six_commands(self):
         snippet = (ROOT / "docs/AGENTS-snippet.md").read_text()
