@@ -4,20 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>shotfleet · localized store screenshots</title>
-<meta name="description" content="Write one Maestro flow in English. shotfleet runs it in every language your iOS and Android app ships, in parallel, and checks every screenshot before it goes to the stores.">
+<meta name="description" content="A command-line tool for macOS: write one Maestro flow in English, and shotfleet runs your app in every language you ship, on iOS and Android, and checks every screenshot before it goes to the stores.">
 <meta property="og:title" content="shotfleet · localized store screenshots">
 <meta property="og:description" content="One English Maestro flow. Every language your app ships, in parallel, checked.">
 <meta property="og:image" content="https://shotfleet.manulorenzop.workers.dev/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The same app screen in Japanese, French, Arabic, Korean, Russian and Spanish">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="https://shotfleet.manulorenzop.workers.dev/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.manulorenzop.workers.dev/">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/site.css">
 </head>
@@ -25,82 +25,243 @@
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="/">shotfleet</a>
-    <nav aria-label="Sections"><a href="#price">Pricing</a></nav>
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <nav aria-label="Sections"><a href="#run">A real run</a><a href="#price">Pricing</a></nav>
   </div>
 </header>
 
-<main class="wrap">
-  <div class="hero">
+<main>
+  <div class="wrap hero">
+    <span class="flag b">Command-line tool · macOS</span>
     <h1>Store screenshots in every language your app ships.</h1>
-    <p class="sub">One English Maestro flow. Every language, in parallel, checked before it reaches the stores.</p>
-    <a class="btn" href="#signup">Get early access</a>
-    <p class="by">For iOS and Android · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></p>
-  </div>
-
-  <div class="shots">
-    <figure><img src="img/train_ja.jpg" alt="WOD Tracker's Train screen in Japanese" width="360" height="782"><figcaption>ja</figcaption></figure>
-    <figure><img src="img/train_fr.jpg" alt="The same screen in French" width="360" height="782"><figcaption>fr</figcaption></figure>
-    <figure><img src="img/train_ar.jpg" alt="The same screen in Arabic" width="360" height="782"><figcaption>ar</figcaption></figure>
-    <figure><img src="img/train_ko.jpg" alt="The same screen in Korean" width="360" height="782" loading="lazy"><figcaption>ko</figcaption></figure>
-    <figure><img src="img/train_ru.jpg" alt="The same screen in Russian" width="360" height="782" loading="lazy"><figcaption>ru</figcaption></figure>
-    <figure><img src="img/train_es.jpg" alt="The same screen in Spanish" width="360" height="782" loading="lazy"><figcaption>es</figcaption></figure>
-  </div>
-  <p class="small shots-note">Six of 72 screenshots from one run on my app, WOD Tracker. Nothing in the app was changed to get them.</p>
-
-  <div class="points">
-    <div>
-      <h2 class="point">One flow, not eighteen</h2>
-      <p>Your Maestro flow taps “Next”. shotfleet reads the translations inside your build and taps “Weiter”, “次へ” or “İleri” in each language. No copies of the flow, no changes to the app.</p>
-    </div>
-    <div>
-      <h2 class="point">iOS and Android</h2>
-      <p>Every language runs at the same time on simulators and emulators. 18 languages took 9 minutes on iOS and 15 on Android, then went straight into fastlane’s folders.</p>
-    </div>
-    <div>
-      <h2 class="point">Every screenshot checked</h2>
-      <p>Each image is read back and compared with your app’s strings: wrong language, copies and missing screens are caught. The first run found a real bug in my app.</p>
-    </div>
-  </div>
-
-  <section class="price" id="price" aria-labelledby="price-h">
-    <h2 id="price-h">Early access</h2>
-    <p class="amount">$79<span>once, per developer</span></p>
-    <p class="founder"><b>$49</b> for the first 100 people on the list.</p>
-    <p class="muted">Unlimited apps, a year of updates. Needs a Mac and Maestro. Reads native iOS and Android strings, Compose Multiplatform, and Flutter and React Native translation files.</p>
+    <p class="sub">Write <b>one Maestro flow in English</b>. shotfleet runs your app in every language you ship, on iOS simulators and Android emulators, and <b>checks every screenshot</b> before it reaches the stores.</p>
     <!-- WAITLIST -->
-    <form id="signup" novalidate>
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+    <form id="signup-top" class="signup" data-signup novalidate>
+      <div class="inline">
+        <label class="sr" for="signup-top-email">Email</label>
+        <input id="signup-top-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+        <button class="btn" type="submit">Get early access</button>
       </div>
-      <div class="field">
-        <label for="platform">You ship on</label>
-        <select id="platform" name="platform">
-          <option value="both">iOS and Android</option>
-          <option value="ios">iOS only</option>
-          <option value="android">Android only</option>
-        </select>
-      </div>
-      <button class="btn" type="submit">Join the list</button>
-      <input name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-      <p class="form-error" role="alert" hidden></p>
+      <input name="contact_pref" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
+      <p class="form-error" id="signup-top-error" role="alert" hidden></p>
     </form>
-    <p id="signup-done" class="done" role="status" tabindex="-1" hidden><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
+    <div id="signup-top-done" class="done" role="status" tabindex="-1" hidden>
+      <p><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
+      <form class="followup" id="stack-top" novalidate>
+        <label for="stack-top-stack">One more thing, if you like: what do you build with?</label>
+        <div class="inline">
+          <select id="stack-top-stack" name="stack">
+              <option value="">Choose one (optional)</option>
+              <option value="native">Native: Swift and Kotlin</option>
+              <option value="swift">Swift only</option>
+              <option value="kotlin">Kotlin only</option>
+              <option value="react-native">React Native / Expo</option>
+              <option value="flutter">Flutter</option>
+              <option value="kmp">Kotlin Multiplatform / Compose</option>
+              <option value="maui">.NET MAUI</option>
+              <option value="unity">Unity or another engine</option>
+              <option value="other">Something else</option>
+          </select>
+          <button class="btn ghost" type="submit">Send</button>
+        </div>
+      </form>
+      <p class="small followup-thanks" hidden>Thanks, that helps me decide what to build next.</p>
+    </div>
+    <!-- /WAITLIST -->
+    <!-- SALE
+    <p class="cta"><a class="btn" href="@CHECKOUT@">Buy shotfleet</a><a class="btn ghost" href="#run">See a real run</a></p>
+    SALE -->
+    <p class="by">Runs on your Mac. Your app and screenshots are never uploaded. · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></p>
+  </div>
+
+  <div class="fleet" role="group" aria-label="The same app screen in seven languages, each checked" tabindex="0">
+      <figure class="ship" style="--i:0">
+        <span class="flag r" aria-hidden="true">ja</span>
+        <div class="shot"><img src="img/train_ja.jpg" alt="WOD Tracker's Train screen in Japanese, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <figure class="ship" style="--i:1">
+        <span class="flag k" aria-hidden="true">fr</span>
+        <div class="shot"><img src="img/train_fr.jpg" alt="WOD Tracker's Train screen in French, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <figure class="ship" style="--i:2">
+        <span class="flag y" aria-hidden="true">ar</span>
+        <div class="shot"><img src="img/train_ar.jpg" alt="WOD Tracker's Train screen in Arabic, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <figure class="ship" style="--i:3">
+        <span class="flag b" aria-hidden="true">ko</span>
+        <div class="shot"><img src="img/train_ko.jpg" alt="WOD Tracker's Train screen in Korean, checked" width="360" height="782"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <figure class="ship" style="--i:4">
+        <span class="flag r" aria-hidden="true">ru</span>
+        <div class="shot"><img src="img/train_ru.jpg" alt="WOD Tracker's Train screen in Russian, checked" width="360" height="782" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <figure class="ship" style="--i:5">
+        <span class="flag y" aria-hidden="true">es</span>
+        <div class="shot"><img src="img/train_es.jpg" alt="WOD Tracker's Train screen in Spanish, checked" width="360" height="782" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <figure class="ship" style="--i:6">
+        <span class="flag b" aria-hidden="true">de</span>
+        <div class="shot"><img src="img/train_de.jpg" alt="WOD Tracker's Train screen in German, checked" width="360" height="782" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+      </figure>
+      <div class="ship more" style="--i:7"><p>+11</p><span>more languages in the same run</span></div>
+  </div>
+  <p class="wrap small fleet-note">Seven of 72 screenshots from one run on my app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. Nothing in the app was changed to get them.</p>
+
+  <section class="wrap section" id="run" aria-labelledby="run-h">
+    <div class="split">
+      <div class="copy">
+        <h2 id="run-h">Run it once. Read the result.</h2>
+        <p>18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac. Each image is read back and compared with your app’s own strings, so a wrong language, a copy, or a missing screen is named, not guessed at.</p>
+        <p>Then one command puts the passing screenshots into fastlane’s folders.</p>
+      </div>
+      <div class="terminal" role="img" aria-label="Terminal output of a shotfleet run: 18 of 18 locales captured in 534 seconds, 72 screenshots checked, 0 problems">
+        <div class="terminal-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+        <pre aria-hidden="true"><span class="dim">$</span> shotfleet run
+<span class="dim">capturing 18 locales on 4 simulators...</span>
+<span class="ok">ok</span>   ar       4/4 screenshots
+<span class="ok">ok</span>   de       4/4 screenshots
+<span class="ok">ok</span>   ja       4/4 screenshots
+<span class="dim">...</span>
+<span class="end">captured 18/18 locales in 534s on 4 simulators
+checked 72 screenshots: 0 problem(s)</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" aria-labelledby="catch-h">
+    <div class="split flip">
+      <div class="copy">
+        <h2 id="catch-h">The first run found a button nobody could reach.</h2>
+        <p>On Android, <b>Japanese, Korean, Chinese and Arabic</b> all got stuck on the same onboarding page. Their text renders taller, the page didn’t scroll, and Next sat below the bottom of a common small phone. English fit, so nobody had noticed.</p>
+        <p>It was a two-line fix in my app.</p>
+      </div>
+      <figure class="catch" style="margin:0">
+        <span class="flag r" aria-hidden="true">zh · stuck</span>
+        <img src="img/bug_zh.jpg" alt="The Chinese onboarding page on a small Android phone: the Next button is missing below the last option" width="360" height="640" loading="lazy">
+      </figure>
+    </div>
+  </section>
+
+  <section class="wrap section" aria-labelledby="flow-h">
+    <div class="split">
+      <div class="copy">
+        <h2 id="flow-h">Your flow says Next. Each language gets its own word.</h2>
+        <p>shotfleet reads the translations compiled into your build and rewrites every text selector. No copies of the flow, no changes to the app. When two words clash in a language, it warns you before anything runs.</p>
+      </div>
+      <div class="codecard">
+        <dl>
+          <div><dt>Your flow</dt><dd>tapOn: "Next"</dd></div>
+          <div><dt>German</dt><dd>tapOn: '<em>(Nächste|Weiter)</em>'</dd></div>
+          <div><dt>Japanese</dt><dd>tapOn: '<em>次へ</em>'</dd></div>
+          <div><dt>Turkish</dt><dd>tapOn: '<em>İleri</em>' <span class="muted">· warning: also means “Advanced”</span></dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" aria-label="What it does">
+    <div class="points">
+      <div>
+        <h2 class="point">One flow, not eighteen</h2>
+        <p>Setup is one command and a two-line config. Your Maestro flow stays in English and is the only thing you maintain.</p>
+      </div>
+      <div>
+        <h2 class="point">iOS, Android and the other sizes</h2>
+        <p>Both platforms from one config and one flow, plus the 13" iPad and Android tablet sets the stores ask for.</p>
+      </div>
+      <div>
+        <h2 class="point">Made to work with the rest</h2>
+        <p>shotfleet makes the correct raw screenshots. Add frames and captions with ButterKit, AppScreens or frameit, and upload with fastlane. It can check screenshots from any of them too.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" aria-labelledby="not-h">
+    <div class="notfor">
+      <h2 id="not-h">Not for you if…</h2>
+      <ul>
+        <li>you don’t have a Mac. iOS simulators need one, and so does the screenshot check.</li>
+        <li>you want frames, captions or store upload. Use ButterKit or AppScreens for those; shotfleet works alongside them.</li>
+        <li>your UI tests already run in every language and you are happy with them. fastlane snapshot is free and does that.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="wrap section" id="price" aria-labelledby="price-h">
+    <h2 id="price-h">Early access</h2>
+    <!-- WAITLIST -->
+    <p class="muted lede-small">shotfleet isn’t released yet. Join the list and I’ll email you once, when it’s ready. It needs a Mac, Maestro and Java 17+. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (tested on sample projects so far).</p>
+    <!-- /WAITLIST -->
+    <!-- SALE
+    <p class="muted lede-small">It needs a Mac, Maestro and Java 17+. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (tested on sample projects so far).</p>
+    SALE -->
+    <div class="plans">
+      <div class="plan main">
+        <h3>Licence</h3>
+        <p class="amount">$29<span>launch price, first 100 people</span></p>
+        <p class="founder">Then <b>$49</b> once, per developer.</p>
+        <ul>
+          <li>Every language, both platforms, iPad and tablets, and export to fastlane</li>
+          <li>Up to 3 of your Macs and your CI, unlimited apps</li>
+          <li>A year of updates; the version you have keeps working</li>
+          <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
+        </ul>
+    <!-- WAITLIST -->
+    <form id="signup" class="signup" data-signup novalidate>
+      <div class="inline">
+        <label class="sr" for="signup-email">Email</label>
+        <input id="signup-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+        <button class="btn" type="submit">Join the list</button>
+      </div>
+      <input name="contact_pref" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
+      <p class="form-error" id="signup-error" role="alert" hidden></p>
+    </form>
+    <div id="signup-done" class="done" role="status" tabindex="-1" hidden>
+      <p><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
+      <form class="followup" id="stack-card" novalidate>
+        <label for="stack-card-stack">One more thing, if you like: what do you build with?</label>
+        <div class="inline">
+          <select id="stack-card-stack" name="stack">
+              <option value="">Choose one (optional)</option>
+              <option value="native">Native: Swift and Kotlin</option>
+              <option value="swift">Swift only</option>
+              <option value="kotlin">Kotlin only</option>
+              <option value="react-native">React Native / Expo</option>
+              <option value="flutter">Flutter</option>
+              <option value="kmp">Kotlin Multiplatform / Compose</option>
+              <option value="maui">.NET MAUI</option>
+              <option value="unity">Unity or another engine</option>
+              <option value="other">Something else</option>
+          </select>
+          <button class="btn ghost" type="submit">Send</button>
+        </div>
+      </form>
+      <p class="small followup-thanks" hidden>Thanks, that helps me decide what to build next.</p>
+    </div>
     <!-- /WAITLIST -->
     <!-- SALE
     <p><a class="btn" href="@CHECKOUT@">Buy shotfleet</a></p>
-    <p class="small" data-gumroad>Prefer Gumroad? <a href="@GUMROAD@">Buy it on Gumroad</a>.</p>
     <p class="small">Founder price applies automatically for the first 100. Then install:<br><code>curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
-    <p class="small">14-day refunds, no questions. <a href="/terms">Licence and refunds</a>.</p>
+    <p class="small">The licence is checked online once and then about weekly, and works offline for 30 days.</p>
     SALE -->
+      </div>
+      <div class="plan">
+        <h3>Free at launch</h3>
+        <ul>
+          <li>Check any screenshots, from fastlane or by hand</li>
+          <li>Capture 2 languages with <code>run</code></li>
+          <li>No account</li>
+        </ul>
+        <p class="cmd" aria-label="Example command"><span>$</span> shotfleet check fastlane/ --app MyApp.app</p>
+      </div>
+    </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/privacy">Privacy</a> · <a href="/terms">Licence</a></span>
+    <span><a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 

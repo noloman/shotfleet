@@ -1,10 +1,12 @@
 // API for the landing page; static files in public/ are served before this runs.
-//   POST /api/signup  {email, platform, ref, website}  -> join the waitlist (KV key "email:<address>")
+//   POST /api/signup  {email, stack?, ref, website}  -> join the waitlist (KV key "email:<address>"); a later call with stack adds the answer
 //   POST /api/forget  {email}                           -> remove an address from the waitlist
 //   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>")
 // Read signups: ./signups.sh
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
 const MAX_BODY = 4096;
+const STACKS = new Set(["native", "swift", "kotlin", "react-native", "flutter", "kmp", "maui", "unity", "other"]);
+const PLATFORM_OF = { native: "both", swift: "ios", kotlin: "android" };  // the other stacks ship on both stores or aren't known
 const ROUTES = new Set(["/api/signup", "/api/forget", "/api/contact"]);
 
 export default {
@@ -53,14 +55,20 @@ export default {
 
     // bots fill the hidden "website" field; answer like a success so they don't adapt
     if (body.website) return json({ ok: true });
-    if (!(await env.WAITLIST.get(key))) {
+    const stack = STACKS.has(body.stack) ? body.stack : null;  // optional follow-up question on the page
+    const existing = await env.WAITLIST.get(key);
+    if (!existing) {
       await env.WAITLIST.put(key, JSON.stringify({
         at: new Date().toISOString(),
-        platform: ["ios", "android", "both"].includes(body.platform) ? body.platform : "unknown",
+        platform: ["ios", "android", "both"].includes(body.platform) ? body.platform : (PLATFORM_OF[stack] || "unknown"),
+        stack,
         country: request.cf?.country || null,
         ref: String(body.ref || "").slice(0, 300),   // external referrer + utm_* tags, sent by the page
       }));
       console.log(JSON.stringify({ event: "signup", country: request.cf?.country || null }));
+    } else if (stack) {  // the follow-up answer for someone already on the list
+      const prev = JSON.parse(existing);
+      if (!prev.stack) await env.WAITLIST.put(key, JSON.stringify({ ...prev, stack, platform: prev.platform !== "unknown" ? prev.platform : (PLATFORM_OF[stack] || "unknown") }));
     }
     return json({ ok: true });
   },

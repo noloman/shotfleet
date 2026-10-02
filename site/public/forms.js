@@ -8,7 +8,7 @@
     new URLSearchParams(location.search).forEach(function (v, k) { if (k.indexOf("utm_") === 0) ref.push(k + "=" + v); });
   } catch (e) {}
 
-  function wire(id, endpoint, extra, validate) {
+  function wire(id, endpoint, extra, validate, onDone) {
     var form = document.getElementById(id);
     if (!form) return;
     var email = form.querySelector("input[type=email]"), btn = form.querySelector("button[type=submit]");
@@ -25,6 +25,7 @@
         var d = await r.json().catch(function () { return {}; });
         if (!r.ok) throw new Error(d.error || "Couldn't save that. Try again in a minute.");
         form.hidden = true; done.hidden = false; done.focus();
+        if (typeof onDone === "function") onDone(email.value);
       } catch (x) {
         err.textContent = (x && x.message && x.message !== "Failed to fetch") ? x.message : "Couldn't reach the server. Check your connection and try again.";
         err.hidden = false; btn.disabled = false; btn.textContent = label;
@@ -33,15 +34,37 @@
   }
 
   function defaultValidate(form, email) {
-    if (!email.value || !email.checkValidity()) {
+    if (!email.value.trim()) {
+      email.setAttribute("aria-invalid", "true");
+      return { field: email, text: "Enter your email address." };
+    }
+    if (!email.checkValidity()) {
       email.setAttribute("aria-invalid", "true");
       return { field: email, text: "That doesn't look like an email address. Check it and try again." };
     }
     email.removeAttribute("aria-invalid");
   }
 
-  wire("signup", "/api/signup", function (f) {
-    return { platform: f.querySelector("select").value, website: f.querySelector(".trap").value, ref: ref.join(" ") };
+  // The signup forms (hero and price card): email first; the stack question comes after, optional, so it never costs a signup.
+  function followup(form, saved) {
+    var f = form.querySelector(".followup"), thanks = form.querySelector(".followup-thanks");
+    if (!f) return;
+    f.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      var stack = f.querySelector("select").value;
+      if (!stack) return;
+      f.querySelector("button").disabled = true;
+      try { await fetch("/api/signup", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: saved, stack: stack, website: "", ref: ref.join(" ") }) }); } catch (x) {}
+      f.hidden = true; thanks.hidden = false;
+    });
+  }
+  ["signup-top", "signup"].forEach(function (id) {
+    var form = document.getElementById(id);
+    if (!form) return;
+    wire(id, "/api/signup", function (f) {
+      return { website: f.querySelector(".trap").value, ref: ref.join(" ") };
+    }, null, function (saved) { followup(document.getElementById(id + "-done"), saved); });
   });
   wire("forget", "/api/forget", function () { return {}; });
   wire("contact", "/api/contact", function (f) {
