@@ -14,7 +14,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | java 17+ | Maestro | `brew install openjdk@21`. shotfleet finds Homebrew's Java itself (it is keg-only, so `java` is not on PATH); do not edit the user's shell profile. |
 | swiftc | check (source checkout only) | `xcode-select --install` |
 | xcrun simctl | iOS | install Xcode and an iOS Simulator runtime |
-| adb, emulator, avdmanager, aapt2 | Android | Android Studio SDK Manager: Platform-Tools, Android Emulator, Command-line Tools, Build-Tools (`ANDROID_HOME` if the SDK is not in `~/Library/Android/sdk`) |
+| adb, emulator, avdmanager, aapt2, system image | Android | run the `sdkmanager` commands that `doctor` prints under `Android: to install what is missing` (it uses the sdkmanager that exists, or installs Homebrew's `android-commandlinetools` first). The SDK is found in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or beside an `adb` on the PATH; `doctor` prints `Android SDK:` with the one it chose. Any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer counts; an existing `shotfleet_android` emulator needs none. |
 | text recognition | check | first use after a restart compiles macOS's model: about 30 s on a quiet Mac, 127 s measured on a loaded one, up to a few minutes. `doctor` prints `...  text recognition` first and the time after. Wait; do not kill it. |
 
 ## Setup errors (exit 2)
@@ -22,7 +22,8 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | Fragment | Cause | Fix |
 |---|---|---|
 | `shotfleet needs Python 3.11 or newer` | running from source with macOS's own python3 (3.9) | `brew install python`, or use the installed program, which brings its own Python |
-| `no config at` | wrong path or no `shotfleet.toml` | `shotfleet init <build>`; `run` looks for `./shotfleet.toml` |
+| `no config at` | wrong path or no `shotfleet.toml` | `shotfleet init` (or `shotfleet init <build>`); `run` looks for `./shotfleet.toml` |
+| `no Debug simulator build or Gradle debug APK found for` | `shotfleet init` with no build found none for this folder (it only reads folders: Xcode's default DerivedData for a project here, and `app/build/outputs/apk/debug`); the message lists the exact build commands | run the printed `xcodebuild` / `./gradlew assembleDebug` command, then `init` again; or pass the build path (needed when DerivedData is in a custom location) |
 | `isn't valid TOML` | syntax error in the config | fix the line the message names |
 | `needs an [ios] or an [android] section` | empty config | add `[ios]` with `app` or `[android]` with `apk` |
 | `has an unknown table` | typo such as `[hook]`; known: ios, android, hooks, overrides | use the table it suggests |
@@ -48,7 +49,8 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `can't read the package name` | aapt2 could not read the APK | set `package`, or rebuild the APK |
 | `doesn't look like a valid APK` | not an APK | rebuild |
 | `Maestro isn't installed` | no `maestro` on PATH | `curl -Ls https://get.maestro.mobile.dev \| bash` |
-| `aapt2 not found under` | SDK Build-Tools missing | install Build-Tools in SDK Manager or set `ANDROID_HOME` |
+| `aapt2 not found under` | SDK Build-Tools missing | `shotfleet doctor` prints the `sdkmanager "build-tools;36.0.0"` command, or set `ANDROID_HOME` |
+| `avdmanager not found under` | SDK command-line tools missing | run the `sdkmanager ... cmdline-tools;latest` command in the message |
 | `don't know how to read` | `strings` file type unsupported | supported: .arb .json .xcstrings .strings .stringsdict .xml .xlf .xliff .resx .po .properties .csv |
 | `no translation files match` | `strings` glob matches nothing (globs are relative to the config) | fix the glob |
 | `Set base_locale in the config` | the app has no `en` strings (the message names its development language) | `base_locale = "<code>"`, the language the flow is written in |
@@ -56,7 +58,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun |
 | `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
 | `unknown Android device` | `devices` entry other than phone, tablet | use `phone` or `tablet` |
-| `couldn't create the emulator` | system image not installed | install it in SDK Manager or set `system_image` |
+| `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |
 | `is already running. Stop it` | a leftover emulator on shotfleet's port | `adb -s emulator-<port> emu kill` |
 | `emulators did not boot in time` | slow boot (600 s limit) | close other apps, rerun |
 | `hook before_run failed` | the user's hook returned non-zero | fix the hook, or `--no-hooks` to skip |

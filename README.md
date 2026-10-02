@@ -53,8 +53,11 @@ It also finds real localization bugs. On CrossfitTracker it found an onboarding 
 curl -fsSL https://shotfleet.com/install.sh | sh   # signed, notarized; Apple silicon
 shotfleet activate <your key>                      # from your purchase email (`check` works without one)
 shotfleet doctor                                   # checks Maestro, Java, Xcode, Android SDK
-shotfleet init path/to/MyApp.app path/to/app-debug.apk   # a simulator build (Debug-iphonesimulator) and/or an APK
+shotfleet init                                     # in your project folder: uses the newest Debug simulator build and Gradle debug APK it finds
+shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
+
+`shotfleet init` without arguments only reads folders, never builds. For iOS it takes the newest `Debug-iphonesimulator` app in Xcode's default DerivedData folder (`~/Library/Developer/Xcode/DerivedData`) whose `info.plist` points at an Xcode project in this folder (or one folder below it, or above it). For Android it takes the newest APK under `app/build/outputs/apk/debug` (or `<module>/build/outputs/apk/debug`, one folder below). It prints which build it chose and how old it is. If it finds nothing it exits with the exact `xcodebuild` and `./gradlew assembleDebug` commands to run, then run `shotfleet init` again. If you build somewhere else (a custom DerivedData location), pass the path as above.
 
 1. Edit the generated `flow.yaml`: [Maestro](https://maestro.mobile.dev) steps in English. Navigate by the text users see and add a `takeScreenshot:` for each store image. No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android.
 2. Try one language: `shotfleet run --locales en`.
@@ -256,6 +259,6 @@ translation source.
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+ (Maestro needs it).
-- Android needs API 33+ emulators for per-app languages.
+- Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing.
 - `launchApp` options must be written as a block (as above), not inline `{ ... }`.
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS only, see above).

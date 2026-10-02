@@ -1,6 +1,8 @@
 # shotfleet.toml
 
-`shotfleet init <build>` writes the config and `flow.yaml`. Only the build is required; everything else is read from
+`shotfleet init <build>` writes the config and `flow.yaml`; `shotfleet init` alone uses the newest Debug simulator build
+(from Xcode's default DerivedData, matched to the project in the current folder) and the newest Gradle debug APK it finds
+there, and says which. Only the build is required; everything else is read from
 the build or defaulted. A typo or a wrong type is refused with a one-line message before anything runs
 (`has an unknown setting 'x'; did you mean 'y'?`, `should be a whole number, not 'x'`). Paths are relative to the
 config file; absolute and `~/` paths work.
@@ -51,7 +53,7 @@ Keys valid in `[ios]` and `[android]`:
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots` |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the README) |
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the README) |
-| `system_image` | `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
+| `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
 
 A language with under 50% of the app's own strings translated is skipped with a `note:`; list it in `locales` to
 capture it anyway.

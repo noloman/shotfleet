@@ -2,7 +2,7 @@
 """shotfleet: localized store screenshots from one Maestro flow, on parallel simulators/emulators.
 
 usage: shotfleet doctor
-       shotfleet init <App.app | app.apk> [dir]
+       shotfleet init [App.app] [app.apk] [--dir dir]   (no build given: finds the newest Debug one here)
        shotfleet run <config.toml> [--locales de,ja] [--parallel N]
        shotfleet check <folder> [--app App.app|app.apk] [--report dir]
        shotfleet export <out_dir> --fastlane <fastlane_dir>
@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one with: brew install python", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -1167,7 +1167,67 @@ def ios_run(cfg, path, only=None, parallel=None):
 
 # ---------- android ----------
 
-SDK = Path(os.environ.get("ANDROID_HOME", Path.home() / "Library/Android/sdk"))
+BREW = Path("/opt/homebrew")
+SDK_PARTS = ("platform-tools", "emulator", "cmdline-tools", "build-tools", "system-images")
+DEFAULT_IMAGE = "system-images;android-36;google_apis;arm64-v8a"
+
+def find_sdk(env=None):
+    """The Android SDK, first match of: ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's
+    android-commandlinetools, the folder above an `adb` on the PATH. A match has at least one SDK folder in it.
+    Nothing found: ANDROID_HOME (or the Android Studio default), so messages still name a place."""
+    env = os.environ if env is None else env
+    cands = [env.get("ANDROID_HOME"), env.get("ANDROID_SDK_ROOT"), Path.home() / "Library/Android/sdk",
+             BREW / "share/android-commandlinetools",
+             *sorted((BREW / "Caskroom/android-commandlinetools").glob("*"), reverse=True)]
+    if adb := shutil.which("adb", path=env.get("PATH", "")):
+        adb = Path(adb).resolve()
+        if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
+    for c in filter(None, cands):
+        if any((Path(c) / part).is_dir() for part in SDK_PARTS): return Path(c)
+    return Path(env.get("ANDROID_HOME") or Path.home() / "Library/Android/sdk")
+
+SDK = find_sdk()
+
+def cmdline_tool(name, sdk=None):
+    """sdkmanager or avdmanager: the SDK's cmdline-tools (latest, else any version), else on the PATH, else Homebrew's. Or None."""
+    sdk = sdk or SDK
+    for p in (sdk / "cmdline-tools/latest/bin" / name, *sorted((sdk / "cmdline-tools").glob(f"*/bin/{name}"), reverse=True),
+              Path(shutil.which(name) or "/nonexistent"), BREW / "bin" / name):
+        if p.is_file(): return p
+
+def find_image(sdk=None):
+    """Package id of the best installed arm64 image of API 33+ (per-app languages need 33), or None: newest API first,
+    google_apis before google_apis_playstore."""
+    sdk, best = sdk or SDK, []
+    for d in (sdk / "system-images").glob("android-*/google_apis*/arm64-v8a"):
+        api = re.fullmatch(r"android-(\d+)(?:\.(\d+))?", d.parent.parent.name)
+        if api and int(api[1]) >= 33 and any((d / f).is_file() for f in ("package.xml", "source.properties")):
+            best.append(((int(api[1]), int(api[2] or 0), d.parent.name == "google_apis"), f"system-images;{d.parent.parent.name};{d.parent.name};arm64-v8a"))
+    return max(best)[1] if best else None
+
+def sdkmanager_commands(packages, sdk=None):
+    """The exact shell commands that install these SDK packages with the sdkmanager that exists (or Homebrew's, installed
+    first), with JAVA_HOME in front when Java is keg-only."""
+    sdk = sdk or SDK
+    tool, cmds = cmdline_tool("sdkmanager", sdk), []
+    java = f"JAVA_HOME={shlex.quote(java_env()['JAVA_HOME'])} " if java_env().get("JAVA_HOME") else ""
+    if not tool:
+        tool = BREW / "share/android-commandlinetools/cmdline-tools/latest/bin/sdkmanager"
+        cmds += ["brew install --cask android-commandlinetools", f"yes | {java}{shlex.quote(str(tool))} --licenses"]
+    known = any((sdk / part).is_dir() for part in SDK_PARTS)
+    root = f"--sdk_root={shlex.quote(str(sdk))} " if known and sdk not in tool.parents else ""
+    return cmds + [f"{java}{shlex.quote(str(tool))} {root}" + " ".join(shlex.quote(p) for p in packages)]
+
+def adb_cmd():
+    """adb from the SDK we found, else whatever is on the PATH."""
+    adb = SDK / "platform-tools/adb"
+    return str(adb) if adb.is_file() else "adb"
+
+def android_env():
+    """What Maestro needs to find the SDK we chose: ANDROID_HOME, and its adb on the PATH."""
+    path = {**os.environ, **java_env()}.get("PATH", "")
+    return {"ANDROID_HOME": str(SDK), "PATH": f"{SDK / 'platform-tools'}:{path}" if adb_cmd() != "adb" else path}
+
 DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no notification icons
     "settings put global sysui_demo_allowed 1",
     "am broadcast -a com.android.systemui.demo -e command enter",
@@ -1181,12 +1241,12 @@ DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no no
 class Emu:
     def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
     def adb(self, *args, check=True, timeout=180):
-        r = sh(["adb", "-s", self.serial, *args], timeout=timeout)
+        r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
         if check and r.returncode != 0:
             raise RuntimeError(f"adb {' '.join(args)}: {(r.stderr or r.stdout).strip()}")
         return r.stdout
     def booted(self):
-        return sh(["adb", "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() == "1"
+        return sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() == "1"
 
 SNAPSHOT = "shotfleet"
 
@@ -1218,11 +1278,14 @@ def android_pool(n, cfg, pool):
     avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
     avd_dir = Path.home() / ".android/avd" / f"{avd}.avd"
     if not avd_dir.exists():
-        image = cfg.get("system_image", "system-images;android-36;google_apis;arm64-v8a")
-        r = sh([str(SDK / "cmdline-tools/latest/bin/avdmanager"), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n")
+        image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
+        avdmanager = cmdline_tool("avdmanager")
+        if not avdmanager:
+            raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + "; ".join(sdkmanager_commands(["cmdline-tools;latest"])))
+        r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n", env={**os.environ, **java_env()})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
             raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
-                       f"Install that system image in Android Studio's SDK Manager, or set system_image in the config")
+                       f"Install the image with: {'; '.join(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
         ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
@@ -1321,7 +1384,7 @@ def android_run(cfg, path, out, only, parallel):
                 r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
                                 timeout=cfg.get("timeout_s", 600) + 300,
-                                env={**os.environ, **java_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
+                                env={**os.environ, **java_env(), **android_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
                                      "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
             except subprocess.TimeoutExpired:
@@ -1798,6 +1861,9 @@ def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
+    image, later = find_image(), "(command below)"
+    has_adb, has_emulator, has_avdmanager = adb_cmd() != "adb" or have("adb"), (SDK / "emulator/emulator").exists(), bool(cmdline_tool("avdmanager"))
+    has_image = bool(image) or (Path.home() / ".android/avd/shotfleet_android.avd").exists()  # an existing AVD needs no image
     try:  # Maestro is a JVM app: --version can take long on a busy Mac
         maestro = sh(["maestro", "--version"], timeout=120, env={**os.environ, **java_env()}).stdout.strip().splitlines()[-1:] if have("maestro") else []
     except subprocess.TimeoutExpired:
@@ -1811,13 +1877,21 @@ def cmd_doctor():
         ("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both"),
         ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
          "install Xcode and an iOS Simulator runtime", "iOS"),
-        ("adb", have("adb"), "Android Studio > SDK Manager > Platform-Tools", "Android"),
-        ("emulator", (SDK / "emulator/emulator").exists(), f"SDK Manager > Android Emulator (ANDROID_HOME={SDK})", "Android"),
-        ("avdmanager", (SDK / "cmdline-tools/latest/bin/avdmanager").exists(), "SDK Manager > Command-line Tools", "Android"),
-        ("aapt2", has_aapt2, "SDK Manager > Build-Tools", "Android"),
+        ("adb", has_adb, f"sdkmanager platform-tools {later}", "Android"),
+        ("emulator", has_emulator, f"sdkmanager emulator {later}", "Android"),
+        ("avdmanager", has_avdmanager, f"sdkmanager command-line tools {later}", "Android"),
+        ("aapt2", has_aapt2, f"sdkmanager build-tools {later}", "Android"),
+        (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager an arm64 image of API 33 or newer {later}", "Android"),
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
+    print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
+    sdkmanager = cmdline_tool("sdkmanager")
+    pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
+                                (has_image, DEFAULT_IMAGE), (has_avdmanager or not sdkmanager, "cmdline-tools;latest")) if not ok]
+    if pkgs or not has_avdmanager:  # without sdkmanager, Homebrew's command-line tools (installed first) bring avdmanager too
+        cmds = sdkmanager_commands(pkgs) if pkgs else sdkmanager_commands([])[:-1]
+        print("Android: to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
     print("...  text recognition   (first use after a restart can take a few minutes while macOS prepares it)", flush=True)
     try:
         t0 = time.time(); read = sh([ocr_tool(), "--warmup"], timeout=600).stdout.strip()
@@ -1869,9 +1943,98 @@ def config_path(target, dest):
     home = str(Path.home())
     return "~" + str(target)[len(home):] if str(target).startswith(home + "/") else str(target)
 
+def age(t):
+    s = time.time() - t
+    return "just now" if s < 90 else f"{s / 60:.0f} min ago" if s < 5400 else f"{s / 3600:.0f} h ago" if s < 172800 else f"{s / 86400:.0f} days ago"
+
+def read_plist(path):
+    try: return plistlib.loads(Path(path).read_bytes())
+    except Exception: return {}  # missing or unreadable (binary, XML or garbage): no answer
+
+def xcode_projects(cwd):
+    """Xcode workspaces and projects in cwd and one folder below (not Pods, node_modules, hidden folders), workspaces first."""
+    return [p for pat in ("*.xcworkspace", "*.xcodeproj", "*/*.xcworkspace", "*/*.xcodeproj") for p in Path(cwd).glob(pat)
+            if p.parent.suffix != ".xcodeproj" and not any(x.startswith(".") or x in ("Pods", "node_modules") for x in p.relative_to(cwd).parts)]
+
+def scheme_for(project):
+    """Name of the shared scheme that launches an .app, read from the files on disk (never from xcodebuild, whose -list
+    resolves Swift packages and wrote 2.4 GB into DerivedData); None when the project has no shared scheme."""
+    for d in (project / "xcshareddata/xcschemes", project.with_suffix(".xcodeproj") / "xcshareddata/xcschemes"):
+        for f in sorted(d.glob("*.xcscheme")):
+            try: root = ET.parse(f).getroot()
+            except (ET.ParseError, OSError): continue
+            if any(r.get("BuildableName", "").endswith(".app") for r in root.iterfind("LaunchAction//BuildableReference")): return f.stem
+
+def derived_apps(cwd, root=None):
+    """Debug simulator builds in Xcode's DerivedData that belong to the project in cwd, newest first: [(mtime, .app, project)].
+    A folder belongs when its info.plist WorkspacePath is cwd, below it (two folders deep, not hidden: worktree copies are
+    other copies) or above it; a folder without that key matches when its name starts with a project name found here."""
+    root, cwd, found = root or Path.home() / "Library/Developer/Xcode/DerivedData", Path(cwd).resolve(), []
+    names = {p.stem.replace(" ", "_") for p in xcode_projects(cwd)}
+    for d in sorted(root.glob("*")):
+        ws = read_plist(d / "info.plist").get("WorkspacePath")
+        if ws:
+            proj = Path(ws).resolve().parent
+            if proj == cwd or cwd in proj.parents: rel = proj.relative_to(cwd)
+            elif proj in cwd.parents: rel = Path()
+            else: continue
+            if len(rel.parts) > 2 or any(x.startswith(".") for x in rel.parts): continue
+            label = (rel / Path(ws).name).as_posix()
+        elif d.name.rpartition("-")[0] in names: label = d.name
+        else: continue
+        for app in d.glob("Build/Products/Debug-iphonesimulator/*.app"):
+            info = read_plist(app / "Info.plist")  # not a test runner, not a device build
+            if info.get("CFBundleExecutable") and not info.get("CFBundleIdentifier", "").endswith(".xctrunner") and info.get("DTPlatformName") != "iphoneos":
+                parts = (app, app / "Info.plist", app / info["CFBundleExecutable"])  # a rebuild rewrites these, not always the folder
+                found.append((max(x.stat().st_mtime for x in parts if x.exists()), app, label))
+    return sorted(found, reverse=True)
+
+def gradle_apks(cwd):
+    """Gradle debug APKs in cwd's app/ (or any module folder one level down, or cwd itself), newest first: [(mtime, apk)]."""
+    cwd = Path(cwd)
+    apks = [a for pat in ("build/outputs/apk/**/debug/*.apk", "*/build/outputs/apk/**/debug/*.apk") for a in cwd.glob(pat)
+            if not any(x.startswith(".") or x == "androidTest" for x in a.relative_to(cwd).parts)]
+    return sorted(((a.stat().st_mtime, a) for a in set(apks)), reverse=True)
+
+def is_watch_apk(apk):
+    try: return "android.hardware.type.watch" in sh([aapt2(), "dump", "badging", str(apk)]).stdout
+    except (Fail, OSError): return False  # no aapt2: can't tell, so don't drop it
+
+def find_builds(cwd, derived=None):
+    """The builds `shotfleet init` uses when none are given: the newest Debug simulator .app for this folder's project and the
+    newest Gradle debug APK, each announced in one line. Reads folders only: never runs xcodebuild or gradle. Nothing found: Fail
+    with the exact build commands."""
+    cwd = Path(cwd).resolve()
+    apps, apks, builds = derived_apps(cwd, derived), gradle_apks(cwd), []
+    if len(apks) > 1: apks = [a for a in apks if not is_watch_apk(a[1])] or apks  # the Wear app is not the phone app
+    projects = xcode_projects(cwd)
+    if apps:
+        t, app, where = apps[0]
+        print(f"iOS: using {app.name} ({app}): Debug-iphonesimulator, built {age(t)}, the newest of {len(apps)} Xcode build(s) of {where}")
+        builds.append(str(app))
+    if apks:
+        t, apk = apks[0]
+        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} Gradle debug APK(s) under {cwd}")
+        builds.append(str(apk))
+    ios_cmd = "xcodebuild -scheme <scheme> -sdk iphonesimulator -configuration Debug build"
+    if projects:
+        proj = projects[0]
+        ios_cmd = (f"xcodebuild {'-workspace' if proj.suffix == '.xcworkspace' else '-project'} {shlex.quote(proj.relative_to(cwd).as_posix())} "
+                   f"-scheme {shlex.quote(scheme_for(proj) or '<scheme>')} -sdk iphonesimulator -configuration Debug build")
+    # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
+    here = [x for x, present in (((ios_cmd, "Debug simulator build", bool(apps)), bool(projects)),
+                                 (("./gradlew assembleDebug", "Gradle debug APK", bool(apks)), (cwd / "gradlew").is_file())) if present]
+    if not builds:
+        raise Fail(f"no Debug simulator build or Gradle debug APK found for {cwd}. Build one, then run shotfleet init again:\n  "
+                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), ("./gradlew assembleDebug", 0, 0)]))
+    for cmd, what, ok in here:
+        if not ok: print(f"note: no {what} yet; to make one: {cmd}")
+    return builds
+
 def cmd_init(builds, dest="."):
-    """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android)."""
-    builds = [builds] if isinstance(builds, (str, Path)) else builds
+    """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android).
+    No builds given: use the newest Debug ones found in the current folder (find_builds)."""
+    builds = [builds] if isinstance(builds, (str, Path)) else builds or find_builds(Path.cwd())
     dest = Path(dest)
     sections, found = [], []
     suffixes = [Path(b).suffix for b in builds]
@@ -2082,7 +2245,8 @@ def main(argv=None):
     p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
     sub.add_parser("deactivate", help="free this Mac's activation (to move the licence)")
     p = sub.add_parser("init", help="write a starter config and flow for your app")
-    p.add_argument("builds", nargs="+", metavar="build", help="a simulator .app and/or an .apk (both go in one config)")
+    p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
+                   "none: use the newest Debug build found for the project in this folder")
     p.add_argument("--dir", default=".", help="where to write them (default: here)")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
     p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config file (default: ./shotfleet.toml)")

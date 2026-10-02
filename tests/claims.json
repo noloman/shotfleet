@@ -1920,5 +1920,54 @@
   "layer": "unit",
   "assertion": "Fixture app with a text field: Japanese value shows in the PNG (read by OCR).",
   "fix": ""
+ },
+ {
+  "id": "C115",
+  "claim": "`shotfleet init` with no arguments only reads folders: it never runs xcodebuild or gradle, creates nothing outside --dir, uses explicit builds exactly as before, and when it finds nothing exits with the exact build commands (never silently)",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`shotfleet init` without arguments only reads folders, never builds.",
+   "exits with the exact `xcodebuild` and `./gradlew assembleDebug` commands to run"
+  ],
+  "status": "proven",
+  "proof": "Unit: InitFindsBuilds.test_nothing_found_prints_the_exact_commands_with_names_read_from_the_files_and_runs_no_build_tool, InitFindsBuilds.test_init_with_nothing_to_find_creates_no_files, InitFindsBuilds.test_init_without_builds_writes_only_into_dir_and_reads_the_build_it_found, InitFindsBuilds.test_explicit_builds_never_look_around_and_no_argument_is_accepted_by_the_parser, InitFindsBuilds.test_an_unrecognised_folder_shows_both_generic_commands, InitFindsBuilds.test_a_workspace_is_preferred_and_a_project_without_a_shared_scheme_gets_a_placeholder.",
+  "layer": "unit",
+  "assertion": "",
+  "fix": "",
+  "test": "InitFindsBuilds.test_nothing_found_prints_the_exact_commands_with_names_read_from_the_files_and_runs_no_build_tool"
+ },
+ {
+  "id": "C116",
+  "claim": "`shotfleet init` with no arguments picks the newest Debug-iphonesimulator app in Xcode's default DerivedData whose info.plist points at an Xcode project in this folder, and the newest Gradle debug APK (not the Wear or androidTest one), and says in one line which and how old",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "For iOS it takes the newest `Debug-iphonesimulator` app in Xcode's default DerivedData folder",
+   "It prints which build it chose and how old it is."
+  ],
+  "status": "partial",
+  "proof": "Unit on fake DerivedData, Gradle and project trees (not a real Xcode or Gradle run): InitFindsBuilds.test_picks_the_newest_debug_build_of_this_projects_xcode_project_and_says_why, InitFindsBuilds.test_a_derived_data_folder_for_a_project_above_the_current_folder_matches_too, InitFindsBuilds.test_a_folder_without_a_workspace_path_matches_by_the_project_name_prefix, InitFindsBuilds.test_test_runners_device_builds_and_other_configurations_are_never_chosen, InitFindsBuilds.test_newest_gradle_debug_apk_wins_the_wear_app_and_android_test_apks_do_not, InitFindsBuilds.test_apks_of_a_product_flavor_and_of_a_module_folder_next_to_cwd_are_found, InitFindsBuilds.test_ios_and_android_builds_are_both_returned_for_one_config. Unproven: the info.plist layout is the one seen on the founder's Mac (research/setup-friction.md section 2), not re-checked on other Xcode versions; custom DerivedData locations are not read; real aapt2 badging of a Wear APK.",
+  "layer": "unit",
+  "assertion": "On CrossfitTracker, Kuokka, Remoti, Cairn: `shotfleet init` in the project folder after one Xcode build picks that build (roadmap X2).",
+  "fix": ""
+ },
+ {
+  "id": "C117",
+  "claim": "Android setup: the SDK is found in ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's android-commandlinetools or beside an adb on the PATH; any installed arm64 google_apis(_playstore) image of API 33+ is used; doctor prints the exact sdkmanager commands for what is missing",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`",
+   "`shotfleet doctor` prints the `sdkmanager` commands for whatever is missing."
+  ],
+  "status": "partial",
+  "proof": "Unit on fake SDK layouts, PATH and Homebrew prefix: AndroidSdkDiscovery.test_places_are_tried_in_order, AndroidSdkDiscovery.test_the_folder_above_an_adb_on_the_path_is_the_last_resort, AndroidSdkDiscovery.test_any_installed_api_33_plus_arm64_image_is_used_newest_first, AndroidSdkDiscovery.test_the_emulator_is_created_from_the_config_image_else_an_installed_one_else_the_default_with_the_install_command, AndroidSdkDiscovery.test_commands_install_homebrews_command_line_tools_first_when_there_is_no_sdkmanager, DoctorAndroid.test_missing_pieces_come_with_one_exact_sdkmanager_command, DoctorAndroid.test_with_no_android_sdk_at_all_doctor_prints_the_homebrew_route_and_every_package. Unproven: a real Mac with only `brew install --cask android-commandlinetools` (Caskroom layout and the printed commands were not run), real avdmanager on an image other than API 36.",
+  "layer": "unit",
+  "assertion": "Clean Mac with only the Homebrew command-line tools: doctor's printed commands, run in order, make Android ready (roadmap X3).",
+  "fix": ""
  }
 ]
