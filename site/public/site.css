@@ -323,3 +323,16 @@ tbody tr:first-child td { background: color-mix(in srgb, var(--blue) 8%, transpa
 .no { color: var(--muted); font-weight: 600; }
 .note { color: var(--muted); font-size: 0.85rem; display: block; }
 
+
+/* Click to enlarge */
+button.zoom { all: unset; display: block; cursor: zoom-in; border-radius: inherit; }
+button.zoom:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+button.zoom img { display: block; }
+dialog#zoom { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 96vh; overflow: visible; }
+dialog#zoom::backdrop { background: rgba(6, 12, 20, 0.84); backdrop-filter: blur(6px); }
+dialog#zoom img { display: block; max-width: 96vw; max-height: 92vh; width: auto; height: auto; border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); cursor: zoom-out; }
+dialog#zoom[open] img { animation: zin 0.35s var(--ease) both; }
+@keyframes zin { from { opacity: 0; transform: scale(0.96); } }
+.zoom-close { all: unset; position: fixed; top: 16px; right: 16px; padding: 10px 18px; border-radius: 999px; background: #fff; color: #0d1b2a; font: 600 0.9rem/1 var(--sans); cursor: pointer; }
+.zoom-close:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { dialog#zoom[open] img { animation: none; } }
