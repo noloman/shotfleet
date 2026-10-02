@@ -12,7 +12,7 @@
     var form = document.getElementById(id);
     if (!form) return;
     var email = form.querySelector("input[type=email]"), btn = form.querySelector("button[type=submit]");
-    var err = form.querySelector(".form-error"), done = document.getElementById(id + "-done"), label = btn.textContent;
+    var err = form.querySelector(".form-error"), done = document.getElementById(id + "-done"), label = btn.innerHTML;
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
       err.hidden = true;
@@ -28,7 +28,7 @@
         if (typeof onDone === "function") onDone(email.value);
       } catch (x) {
         err.textContent = (x && x.message && x.message !== "Failed to fetch") ? x.message : "Couldn't reach the server. Check your connection and try again.";
-        err.hidden = false; btn.disabled = false; btn.textContent = label;
+        err.hidden = false; btn.disabled = false; btn.innerHTML = label;
       }
     });
   }
