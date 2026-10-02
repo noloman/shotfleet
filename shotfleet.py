@@ -2439,7 +2439,7 @@ def cmd_activate(key):
         ok, uses, why = gumroad_verify(key, count_use=True)
         if not ok: raise Fail(f"that key didn't activate: {why}. Keys come with your purchase: {BUY_URL}")
         if uses > MAX_MACS:
-            raise Fail(f"this key is already active on {MAX_MACS} Macs. To move it, email manulorenzop@gmail.com")
+            raise Fail(f"this key is already active on {MAX_MACS} Macs. To move it, email hello@shotfleet.com")
         LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
         LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
         print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
@@ -2462,7 +2462,7 @@ def cmd_deactivate():
         LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
         return 0
     if lic.get("store") == "gumroad":  # Gumroad can't free an activation from here
-        LICENCE_FILE.unlink(); print("removed from this Mac. If you've used all 3 activations, email manulorenzop@gmail.com to move it")
+        LICENCE_FILE.unlink(); print("removed from this Mac. If you've used all 3 activations, email hello@shotfleet.com to move it")
         return 0
     try: licence_api("deactivate", license_key=lic["key"], instance_id=lic["instance"])
     except OSError: pass  # offline: forget it locally anyway

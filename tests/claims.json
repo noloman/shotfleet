@@ -1407,7 +1407,7 @@
    "site/public/privacy.html"
   ],
   "where_text": [
-   "Email me at <a href=\"mailto:manulorenzop@gmail.com\">manulorenzop@gmail.com</a>, or write here."
+   "Email me at <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a>, or write here."
   ],
   "status": "partial",
   "proof": "worker.js:29-42 implements /api/contact; worker.test.mjs has no contact test (nor 404/405/413/429 paths or the 2,000-character limit). 2026-10-02 site/worker.test.mjs: contact 200, too short, too long, bad reply address, honeypot (all 400/200 as designed); not run against real KV.",
