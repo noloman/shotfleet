@@ -100,7 +100,7 @@ Repo: https://github.com/ludovicobesana/awesome-maestro (CC0; sections: Articles
 First PR (article, safer): add under `## Articles`:
 
 ```
-- [Run one Maestro flow in every language](https://DOMAIN/maestro-one-flow-every-language) - Setting the locale per run on iOS and Android, and four traps that produce English screenshots by mistake.
+- [Run one Maestro flow in every language](https://shotfleet.com/maestro-one-flow-every-language?utm_source=awesomemaestro) - Setting the locale per run on iOS and Android, and four traps that produce English screenshots by mistake.
 ```
 
 PR title: `Add article: run one Maestro flow in every language`
@@ -112,7 +112,7 @@ PR body:
 Second PR (tool, only if the Maestro team or the list owner says paid tools are fine), under `## Tools and Integrations`:
 
 ```
-- [shotfleet](https://DOMAIN) - Mac command line tool that runs one English Maestro flow in every language an app ships, on iOS simulators and Android emulators, and checks the screenshots. Free for 2 languages, paid licence for all.
+- [shotfleet](https://shotfleet.com/?utm_source=awesomemaestro) - Mac command line tool that runs one English Maestro flow in every language an app ships, on iOS simulators and Android emulators, and checks the screenshots. Free for 2 languages, paid licence for all.
 ```
 
 PR body: same disclosure, plus "closed source, Apple silicon Mac only, requires Maestro 2.x and Java 17+."

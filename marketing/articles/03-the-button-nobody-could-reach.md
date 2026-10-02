@@ -13,7 +13,7 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 ## Internal link plan
 
-- Product: one disclosed link in "How I found it" to `https://DOMAIN/`; last paragraph links `https://DOMAIN/#price`.
+- Product: one disclosed link in "How I found it" to `https://shotfleet.com/`; last paragraph links `https://shotfleet.com/#price`.
 - Free command: mention `shotfleet check` only as what it does NOT catch here (honest), and link article 1.
 - Article 2 (one Maestro flow per locale) for the "run it in every language" step.
 - Site footer links this article. Do not put it behind a signup.
@@ -22,11 +22,11 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 1. App name. The site and flow say "WOD Tracker", the repo and README say CrossfitTracker, the package is `me.manulorenzo.crossfittracker.android.debug`. The draft says "my workout app". Pick one public name and use it everywhere (research/marketing-research.md 4.1 flags this).
 2. Which languages were observed. Only the Chinese image is kept (claims C012). The commit message of 687ffccd in the CrossfitTracker repo (2026-10-01) names Japanese, Korean, Chinese and Arabic. Manu should confirm he saw all four stuck, or reword to "Chinese, and by the same layout Japanese, Korean and Arabic".
-3. "1080x1920 phone": from the commit message and shotfleet's default emulator size (README: 1080x1920). The image is 360x640 as stored. Confirm density (dp) before you write "360 by 640 dp".
+3. "1080x1920 phone": from the commit message and shotfleet's default emulator size (README line 120 and 155: phone 1080x1920). TICKED for the 1080x1920 figure (README). Still open: the density. The image is 360x640 as stored. Confirm density (dp) before you write "360 by 640 dp".
 4. The code diff in the article is the real one from commit 687ffccd (8 insertions, 2 deletions in `OnboardingScreens.kt`, two `Column`s). Check that the repo owner is fine with showing the file path and snippet; strip the package path if not.
 5. "Users could only leave onboarding via Skip": from the commit message; the image shows a Skip control ("跳过") top right. Confirm Skip really exits onboarding.
 6. Whether a published release of the app shipped the bug. The article says "my app". It must not say real users were stuck unless Manu knows. The commit message says "those users could only leave onboarding via Skip", which implies the shipped layout; confirm and decide the wording.
-7. How shotfleet found it: claims C013 says the capture got stuck (the run surfaced it) and that `check` would NOT find it. The article is written that way. Confirm from the run log if one exists (none is kept in the repo).
+7. TICKED (claims C013, partial, read): the bug stopped the capture and `run` surfaced it; `check` cannot find a missing button, and the article already says so. Still open: no run log is kept in the repo, so Manu confirms from memory. How shotfleet found it: claims C013 says the capture got stuck (the run surfaced it) and that `check` would NOT find it. The article is written that way. Confirm from the run log if one exists (none is kept in the repo).
 8. The free repro steps (`adb ... set-app-locales`, small AVD) are unrun; see article 2 item 4. The font-size line is not included on purpose.
 9. Jetpack Compose snippet: it is the app's own change and compiles there; the generic text around it ("any scrollable container") is standard Android advice and was not run.
 
@@ -40,7 +40,7 @@ My workout app is in 18 languages. Its onboarding has three intro pages, then ex
 
 On a small Android phone, in Japanese, Korean, Chinese and Arabic, the Next button on the Training Goals page was below the bottom of the screen. The page did not scroll. English fit, so nobody had noticed, including me.
 
-![Chinese onboarding page with four goal cards and no Next button](https://DOMAIN/img/bug_zh.jpg)
+![Chinese onboarding page with four goal cards and no Next button](https://shotfleet.com/img/bug_zh.jpg)
 
 The screenshot above is the Chinese page on a 1080 by 1920 emulator. Four goal cards, a Skip link top right, and no way forward. The text in those four languages runs taller than English in the same font size, and the cards pushed the button off the bottom.
 
@@ -95,6 +95,6 @@ This is one bug in one app, found on one screen size. I do not know how common i
 
 ## When not to use shotfleet
 
-If your app has a few languages and you already click through them before a release, you do not need it. If your onboarding is short and fixed, a manual run in your longest language on a small phone is enough. shotfleet needs an Apple silicon Mac, Maestro 2.x, Java 17+, the Android SDK with API 33+ emulators, and a Maestro flow you write; it makes no frames or captions and does not upload to the stores. Its `check` command is free and it is `run` that needs a licence beyond 2 languages: $29 for the first 100 buyers, then $49 once, with a 14-day refund (https://DOMAIN/#price).
+If your app has a few languages and you already click through them before a release, you do not need it. If your onboarding is short and fixed, a manual run in your longest language on a small phone is enough. shotfleet needs an Apple silicon Mac, Maestro 2.x, Java 17+, the Android SDK with API 33+ emulators, and a Maestro flow you write; it makes no frames or captions and does not upload to the stores. Its `check` command is free and it is `run` that needs a licence beyond 2 languages: $29 for the first 100 buyers, then $49 once, with a 14-day refund (https://shotfleet.com/#price).
 
 If you ship in more than a handful of languages and have never watched your onboarding in all of them on a small phone, that is the thing I would do first.

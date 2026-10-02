@@ -28,7 +28,7 @@ First, in order:
 Form text, if you do use it (https://suggest.iosdevweekly.com):
 
 - Name / email: Manu Lorenzo.
-- Link: `https://DOMAIN/fastlane-snapshot-screenshots-all-english`
+- Link: `https://shotfleet.com/fastlane-snapshot-screenshots-all-english?utm_source=iosdevweekly`
 - Link publisher: self-authored.
 - Blog post: yes. Swift library: no.
 - Reason for inclusion (short and specific):
@@ -44,7 +44,7 @@ SwiftLee note: the writers' guide asks for one focused outcome, real development
 Open https://androidweekly.net and use the Submit section. Suggested text if it has a free field:
 
 > Title: Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps
-> Link: `https://DOMAIN/maestro-one-flow-every-language`
+> Link: `https://shotfleet.com/maestro-one-flow-every-language?utm_source=androidweekly`
 > Note: A tutorial for running one Maestro flow in several languages on Android (per-app locales, Android 13+, set with `adb`) and iOS, with four traps that make every run silently English (a default in the flow header that beats the command line, clearState resetting the app language on Android, and others). Author's note: I make a paid tool in this area; it is mentioned once at the end and the article stands without it.
 
 ## Kotlin Weekly (article 3)
@@ -56,7 +56,7 @@ Subject: Link for submission - Kotlin Weekly
 >
 > A short story with a real Compose fix: in Japanese, Korean, Chinese and Arabic the Next button of my Android onboarding sat below the bottom of a small phone, because the page did not scroll and the translated text runs taller. The fix is a `verticalScroll(rememberScrollState())` on two columns. The article shows the diff, the image of the broken screen, and how to test for it in your own app.
 >
-> https://DOMAIN/the-button-nobody-could-reach
+> https://shotfleet.com/the-button-nobody-could-reach?utm_source=kotlinweekly
 >
 > I wrote it. I also make a paid command line tool that found the problem while running my app in every language; the article says plainly that the tool did not detect the button itself, and mentions it only at the end.
 >
@@ -69,7 +69,7 @@ Check before sending: the article's TO VERIFY items 2, 4, 5 and 6 (which languag
 
 Use the form at https://kmpweekly.com/submit, or write to hello@kmpweekly.com:
 
-> Hi, an article for the Kotlin Multiplatform audience: how to produce Google Play (and App Store) screenshots in every language an app ships, using emulators and fastlane, including Compose Multiplatform apps whose strings are in Compose resources. Link: `https://DOMAIN/google-play-screenshots-every-language-emulators`. I wrote it; I also make the tool the last section mentions, optionally. Thanks, Manu.
+> Hi, an article for the Kotlin Multiplatform audience: how to produce Google Play (and App Store) screenshots in every language an app ships, using emulators and fastlane, including Compose Multiplatform apps whose strings are in Compose resources. Link: `https://shotfleet.com/google-play-screenshots-every-language-emulators?utm_source=kmpweekly`. I wrote it; I also make the tool the last section mentions, optionally. Thanks, Manu.
 
 Do not send this until article 5 exists and its steps have been run (see articles/04-ideas.md). If you need to send something sooner, send article 3 with the Kotlin Weekly text above, adjusted to say the app code is Compose, and only after three weeks without it appearing in Kotlin Weekly. Do not claim that the tool has been run on a Kotlin Multiplatform app unless you have the run: the repo's real-app notes include a Compose Multiplatform app (Kuokka) with iOS and Android runs, but state only what you re-check.
 
@@ -77,4 +77,4 @@ Do not send this until article 5 exists and its steps have been run (see article
 
 ## After sending
 
-Log date, newsletter, article, and the `utm_source` visits afterwards. Add `?utm_source=androidweekly` and the like to the link only if the form lets you choose the URL; do not alter a canonical URL on the article itself. If a newsletter links the article, thank the editor by replying to the issue email, not by posting.
+Log date, newsletter, article, and the `utm_source` visits afterwards. The links above already carry `?utm_source=` tags (`iosdevweekly`, `androidweekly`, `kotlinweekly`, `kmpweekly`); if a newsletter strips them, ignore it. Do not change the canonical URL on the article page itself. If a newsletter links the article, thank the editor by replying to the issue email, not by posting.

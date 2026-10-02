@@ -1585,18 +1585,18 @@
   "id": "C094",
   "claim": "fastlane runs one language at a time / is not parallel",
   "where": [
-   "marketing/launch-posts-v2.md",
-   "site/draft/alternatives.html"
+   "marketing/launch-posts-v2.md"
   ],
   "where_text": [
-   "runs your languages one after another",
-   "<td><span class=\"no\">No</span></td>"
+   "it doesn't check the language of what it captured."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Third-party. fastlane snapshot exposes a concurrent_simulators option (parallel across devices; I recall this from fastlane's docs and did not re-fetch it): so 'No' in the draft table is too absolute. research/market-2026.md rates fastlane free, UI-test code per platform. 2026-10-02 posts reworded to 'runs your languages one after another' (the claim that fastlane has no parallel mode stays in the draft table only).",
   "layer": "legal",
   "assertion": "Check fastlane's snapshot docs before the page goes live.",
-  "fix": "fastlane snapshot runs your languages one after another on each simulator."
+  "fix": "fastlane snapshot runs your languages one after another on each simulator.",
+  "fixed_by": "removed",
+  "fixed": "Removed the unverifiable 'runs one after another' claim from launch-posts*.md and the draft table; the posts now say fastlane needs UI-test code in the project and doesn't check the captured language (research/pricing-2026-10.md)."
  },
  {
   "id": "C095",
@@ -1821,6 +1821,21 @@
   "proof": "WebFetch of https://butterkit.app/pricing and https://appscreens.com/pricing on 2026-10-02 (prices, free tiers, 'does not capture from a running app'); fastlane and simshot from research/pricing-2026-10.md (vendor pages, tagged V/A).",
   "layer": "site",
   "assertion": "Re-check both pricing pages on the launch day and every month; the page says 'Not stated' where the vendor page is silent.",
+  "fix": ""
+ },
+ {
+  "id": "C109",
+  "claim": "With a Flutter, React Native, .NET MAUI or Unity build, init, run and check tell you what to add (the strings = line for your translation files) and warn about Flutter and React Native debug builds, without stopping the run",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files"
+  ],
+  "status": "proven",
+  "proof": "FrameworkHints.test_flutter_build_gets_the_strings_line_and_the_debug_banner_warning, FrameworkHints.test_react_native_debug_build_is_told_to_add_strings_and_to_build_release, FrameworkHints.test_a_native_ios_build_gets_no_hint, FrameworkHints.test_init_prints_the_strings_line_for_a_flutter_build_and_stays_quiet_for_a_native_one, FrameworkHints.test_run_and_check_show_the_hint_before_they_can_fail. Stub bundles only: file-name markers are not yet confirmed on real Flutter, React Native, MAUI or Unity builds (roadmap X4).",
+  "layer": "unit",
+  "assertion": "Stub bundles in a temp dir: Flutter and React Native stubs print the hint, a native iOS stub prints none, init prints the strings = line, hints are shown once.",
   "fix": ""
  }
 ]

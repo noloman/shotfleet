@@ -13,7 +13,7 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 ## Internal link plan
 
-- Product: one disclosed mention near the end, link to `https://DOMAIN/` (and `#price` only in the last paragraph).
+- Product: one disclosed mention near the end, link to `https://shotfleet.com/` (and `#price` only in the last paragraph).
 - Free command: `shotfleet check` in the "read the images" step, linking to article 1 and the install section.
 - Article 3 (the button nobody could reach): link from the long-text trap.
 - Do not link the product from the first three sections. The tutorial has to stand alone.
@@ -22,14 +22,14 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 Run each on a throwaway app (tools/fixture-app has en, de, ja, ar, tr on iOS) with the Maestro version you state in the article. The Maestro installed on this Mac is 2.0.10, upstream is 2.11.0 (research/limits-text.md). State the version you tested.
 
-1. iOS flow below: `launchApp` with `arguments: AppleLanguages: "(${APP_LANG})"` and `AppleLocale: "${APP_LOCALE}"`. Does `${...}` expand inside `arguments` values? If not, generate the file per language with `sed`. shotfleet itself writes literal values per language and ran 18/18 on iOS, but not through env variables.
+1. PARTLY TICKED (code read): shotfleet.py:714 writes `AppleLanguages: "(<lproj>)"` and `AppleLocale: "<locale>"` as literals under `launchApp.arguments`, so the argument names and shape are right; whether `${...}` expands inside them is still to run. iOS flow below: `launchApp` with `arguments: AppleLanguages: "(${APP_LANG})"` and `AppleLocale: "${APP_LOCALE}"`. Does `${...}` expand inside `arguments` values? If not, generate the file per language with `sed`. shotfleet itself writes literal values per language and ran 18/18 on iOS, but not through env variables.
 2. `takeScreenshot: shots/${APP_LANG}/02_onboarding` writes to that folder (env in the path).
 3. `maestro --device "$UDID" test -e APP_LANG=de -e APP_LOCALE=de_DE flow.yaml` (flag order is from the morse_app PR and Maestro docs).
-4. Android: `adb -s SERIAL shell cmd locale set-app-locales PACKAGE --locales de` on an API 33+ emulator, then `cmd locale get-app-locales PACKAGE`. Android's own page (developer.android.com/guide/topics/resources/app-languages) does not mention this shell command; the claim rests on community posts and on shotfleet's code, so run it and say what you saw.
-5. Android trap: `clearState` in `launchApp` resets the app language (shotfleet's code comment says `pm clear` also resets it). Run the flow with and without it and confirm.
+4. PARTLY TICKED (code read, not run): shotfleet.py:1237 issues `adb shell cmd locale set-app-locales <pkg> --locales <lp>`, so the command is what shotfleet itself uses; running it on an API 33+ emulator and `get-app-locales` is still to do. Android: `adb -s SERIAL shell cmd locale set-app-locales PACKAGE --locales de` on an API 33+ emulator, then `cmd locale get-app-locales PACKAGE`. Android's own page (developer.android.com/guide/topics/resources/app-languages) does not mention this shell command; the claim rests on community posts and on shotfleet's code, so run it and say what you saw.
+5. PARTLY TICKED (code comment read, not run): shotfleet.py:1178 says clearState "wipes the per-app language shotfleet just set" and strips it from the flow on Android; the with/without run is still to do. Android trap: `clearState` in `launchApp` resets the app language (shotfleet's code comment says `pm clear` also resets it). Run the flow with and without it and confirm.
 6. `runFlow` with `when: platform: iOS` / `Android` runs the right branch (syntax confirmed from docs.maestro.dev/reference/commands-available/runflow; not run).
 7. The env-precedence trap (header `env:` default beating `-e`): reproduce on your Maestro version. The report is for 2.10 in https://github.com/RogerioDoCarmo/morse_app/pull/216; Maestro's parameters page says constants in a subflow override parameters from the parent, which is related but not the same. If you cannot reproduce it, rewrite that trap as "check this" instead of "this happens".
-8. Port 7001 trap: two `maestro test` processes on two Android devices at the same time. Our note is for 2.0.10 (port 7001 to 7128 per shard) and says the port is random per shard in 2.11. Re-test or drop it.
+8. PARTLY TICKED: shotfleet.py:885-889 and claims C098 (`evidence`) back the 2.0.10 statement; the re-test on your Maestro version is still to run. Port 7001 trap: two `maestro test` processes on two Android devices at the same time. Our note is for 2.0.10 (port 7001 to 7128 per shard) and says the port is random per shard in 2.11. Re-test or drop it.
 9. iOS permission alerts stay English while the app is German: measured once with Maps on `main` (research/pricing-2026-10.md). Android not tested. Keep the sentence as "I measured this once on iOS".
 10. Re-open the Maestro docs pages cited and make sure the short phrases still match (locales page, launchApp, parameters-and-constants, scrollUntilVisible).
 
@@ -117,7 +117,7 @@ A flow that says `tapOn: "Next"` fails in German. Two ways out: tap by `id:` (ac
 
 **4. Parallel runs on Android.** Two separate `maestro test` processes on two devices share a host port (7001 in the version I used, 2.0.10) and can drive each other's device. Use one run that shards across devices (`--shard-split`). Newer Maestro versions pick a port per shard, so check yours.
 
-Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this once on iOS, with Maps), so write those taps in English or skip them with `permissions: all: allow` in `launchApp`. And long languages push buttons off the screen: use `scrollUntilVisible` before the tap, with `direction: DOWN` ([article 3](https://DOMAIN/the-button-nobody-could-reach) has the story).
+Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this once on iOS, with Maps), so write those taps in English or skip them with `permissions: all: allow` in `launchApp`. And long languages push buttons off the screen: use `scrollUntilVisible` before the tap, with `direction: DOWN` ([article 3](https://shotfleet.com/the-button-nobody-could-reach) has the story).
 
 ## Read the images, not the exit code
 

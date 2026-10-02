@@ -22,7 +22,7 @@ Tags: maestro, localization, app store screenshots, google play screenshots, fas
 
 Requirements (state them wherever there is a text field): macOS on an Apple silicon Mac (the installer refuses Intel Macs). Xcode for iOS, the Android SDK with API 33+ emulators for Android, Maestro 2.x, Java 17+. A Maestro flow you write (it gets most of the way from `shotfleet init`). Not included: frames, captions, store upload (fastlane uploads).
 
-Links: homepage https://DOMAIN/ ; article https://DOMAIN/the-button-nobody-could-reach . Add `?utm_source=DIRECTORY` (for example `alternativeto`, `devhunt`, `uneed`, `peerlist`, `indiehackers`, `indieappcatalog`) so the funnel counter can split visits.
+Links: homepage `https://shotfleet.com/?utm_source=DIRECTORY` ; article `https://shotfleet.com/the-button-nobody-could-reach?utm_source=DIRECTORY`. Use exactly one tag per directory so `site/signups.sh --visits` splits visits: `alternativeto`, `devhunt`, `uneed`, `peerlist`, `consoledev`, `indieappcatalog`, `indiehackers`, `awesomeaso`, `awesomemaestro`. The homepage URL is what you paste in each form's website field.
 
 Logo and screenshots: use the review grid (red outline version) and the terminal capture from marketing/kit/social.md, plus `site/public/og.jpg`. Do not upload anything that shows another company's logo.
 
@@ -99,7 +99,7 @@ Subject: shotfleet: localized store screenshots from one Maestro flow (free tier
 >
 > Price: $29 for the first 100 buyers, then $49 once per developer, with a 14-day refund.
 >
-> Site: https://DOMAIN/ . A short story of the first bug it showed me: https://DOMAIN/the-button-nobody-could-reach
+> Site: https://shotfleet.com/?utm_source=consoledev . A short story of the first bug it showed me: https://shotfleet.com/the-button-nobody-could-reach?utm_source=consoledev
 >
 > Thanks for reading, and no problem if it is not a fit.
 > Manu
@@ -129,7 +129,7 @@ Repo: https://github.com/rafaecheve/Awesome-ASO. README says: to contribute, edi
 Entry (place it alphabetically in Tools, between "Screenproof" and "Shotlingo"; the list's numbering is uneven, so use `1.` as the other entries do):
 
 ```
-1. [shotfleet](https://DOMAIN) - Mac command line tool that captures App Store and Google Play screenshots in every language from one English Maestro flow and checks each image for wrong language, copies and missing screens. Free to check.
+1. [shotfleet](https://shotfleet.com/?utm_source=awesomeaso) - Mac command line tool that captures App Store and Google Play screenshots in every language from one English Maestro flow and checks each image for wrong language, copies and missing screens. Free to check.
 ```
 
 PR title: `Add shotfleet to Tools`

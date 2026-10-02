@@ -13,8 +13,8 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 ## Internal link plan
 
-- Product: link the word "shotfleet" once in the intro (disclosure) to `https://DOMAIN/`, and once at the end to `https://DOMAIN/#price`. Add `?utm_source=article-snapshot` only on links used outside our own domain.
-- Free command: the call to action is `shotfleet check`, with a link to the install section of `https://DOMAIN/` (confirm the anchor once the site is final).
+- Product: link the word "shotfleet" once in the intro (disclosure) to `https://shotfleet.com/`, and once at the end to `https://shotfleet.com/#price`. Add `?utm_source=article-snapshot` only on links used outside our own domain.
+- Free command: the call to action is `shotfleet check`, with a link to `https://shotfleet.com/#price`, which is where the install command sits (site/public/index.html has no separate install anchor; the sections are `#run`, `#catch`, `#flow`, `#apps`, `#price`).
 - Other articles: link to article 2 (one Maestro flow in every locale) in the "when not to use" paragraph; link to article 4 in 04-ideas.md (QA checklist) once it exists.
 - Footer of the site links to this article (MARKETING.md phase 0).
 
@@ -24,9 +24,9 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 2. `shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app` on a clean Mac with the released installer (`curl ... install.sh | sh`). At the time of writing `/download/VERSION` returned 404, so the installer does not work until the first release is published (claims C057).
 3. Cause 4 ("the app is not translated into that language, so iOS falls back to English") and cause 5 ("the app saved its own language choice"). They are my reasoning, not from an issue thread. Reproduce each once, for example by deleting `de.lproj` from a build and re-running, then edit or soften the text.
 4. That `ls MyApp.app/*.lproj` lists the languages of a build that uses a String Catalog (it should: Xcode compiles catalogs into `.lproj` folders; confirm on your app).
-5. The timing sentence (about 25 seconds, and minutes after a restart) is from claims C030 and README; re-time on the final build.
+5. The timing sentence (about 25 seconds, and minutes after a restart) is from claims C030 and README; re-time on the final build. TICKED 2026-10-02 (read from the repo, nothing run): README line 42 says about 25 seconds per platform for 252 iOS and 126 Android images; C030 is `evidence` (PLAN.md, research/first-run.md ~30 s, cold-test-2 28 s) and ROADMAP records about 4 minutes for the first check after a restart. Still to run: re-time on the final build.
 6. Re-open the four issue links and the fastlane docs page and check that the one-line descriptions below still match. The issues are from 2017 and 2018, so do not imply the bug exists in current fastlane without a fresh reproduction.
-7. Confirm the anchor names on the final site (`#price`, install section).
+7. Confirm the anchor names on the final site (`#price`, install section). TICKED 2026-10-02 (read from the repo, nothing run): `#price` and `#run` exist in site/public/index.html; there is no install-section anchor, so the article links `#price` (the install command is in that block). Done, unless the site is redesigned.
 
 Sources used (fetched 2026-10-02):
 - https://docs.fastlane.tools/actions/snapshot/ and https://docs.fastlane.tools/getting-started/ios/screenshots/
@@ -110,6 +110,6 @@ If your screenshots are already right in every language, you do not need it. If 
 
 ## Where to go from here
 
-If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at https://DOMAIN/#price.
+If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at https://shotfleet.com/#price.
 
 The free part is the `check` command above. Install it, point it at your `fastlane/` folder and read the grid.

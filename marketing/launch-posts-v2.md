@@ -37,7 +37,7 @@ I built a CLI for my own apps. It takes one English UI flow, rewrites it for eve
 Before polishing it for sale, I'm testing demand with a landing page and an early-access list at https://shotfleet.com.
 
 What I know about the market:
-- fastlane (free) already captures screenshots, but it needs UI-test setup in your project and runs your languages one after another.
+- fastlane (free) already captures screenshots, but it needs UI-test code in your project, and it doesn't check the language of what it captured.
 - Design tools like AppScreens cost $99–180/yr but don't capture from the app itself.
 - I couldn't find any tool that verifies the screenshots are actually in the right language.
 
