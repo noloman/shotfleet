@@ -1759,5 +1759,68 @@
   "layer": "site",
   "assertion": "Static: the draft cell values match a machine-readable features.json that the tests above feed.",
   "fix": ""
+ },
+ {
+  "id": "C105",
+  "claim": "One run: 18 languages x 4 screens = 72 screenshots with one English flow on one Mac, 9 minutes on iOS and 15 on Android",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "languages times screens in one run: 72 screenshots, one English flow, one Mac",
+   "for that run on iOS and on Android"
+  ],
+  "status": "evidence",
+  "proof": "research/first-run.md and PLAN.md Status 2026-10-01 (CrossfitTracker iOS 18/18 in 534 s, Android 18/18 about 15 min); research/pricing-2026-10.md section 1 'Proven'.",
+  "layer": "device",
+  "assertion": "Re-run on the release build (roadmap N3/N4) and refresh the numbers if they change by more than 20%.",
+  "fix": ""
+ },
+ {
+  "id": "C106",
+  "claim": "Four languages (ja, ko, zh, ar) shared one unreachable Next button on Android that English hid",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "shared one unreachable Next button on Android. English hid it"
+  ],
+  "status": "evidence",
+  "proof": "research/first-run.md; fix in CrossfitTracker commit 687ffccd (verticalScroll added to two pages).",
+  "layer": "device",
+  "assertion": "Keep the commit reference; if the app changes, keep the screenshot site/public/img/bug_zh.jpg.",
+  "fix": ""
+ },
+ {
+  "id": "C107",
+  "claim": "shotfleet check found 108 problems in 120 store screenshots of another of the author's apps: translated captions over an English UI",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "found by <code>shotfleet check</code> in 120 store screenshots of another of my apps"
+  ],
+  "status": "evidence",
+  "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
+  "layer": "device",
+  "assertion": "Re-run `shotfleet check` on that folder before launch and update the count if it differs.",
+  "fix": ""
+ },
+ {
+  "id": "C108",
+  "claim": "Competitor facts on the alternatives page (ButterKit free tier and Pro $99 once; AppScreens Pro $99/yr and Scale $180/yr, mockups only; fastlane and simshot free; simshot iOS only)",
+  "where": [
+   "site/public/alternatives.html"
+  ],
+  "where_text": [
+   "Pro $99 once",
+   "Pro is $99 a year (10 languages) and Scale $180 a year (80+ locales)",
+   "Checked on 2026-10-02 from each tool"
+  ],
+  "status": "evidence",
+  "proof": "WebFetch of https://butterkit.app/pricing and https://appscreens.com/pricing on 2026-10-02 (prices, free tiers, 'does not capture from a running app'); fastlane and simshot from research/pricing-2026-10.md (vendor pages, tagged V/A).",
+  "layer": "site",
+  "assertion": "Re-check both pricing pages on the launch day and every month; the page says 'Not stated' where the vendor page is silent.",
+  "fix": ""
  }
 ]
