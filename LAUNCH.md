@@ -14,7 +14,7 @@ first 100** (code `FOUNDER29`), a free tier (`check` plus 2 languages in `run`),
 - The discount **FOUNDER29** ("Founder price"): 20 USD / 20 EUR off, 100 redemptions, 1 per customer (created 2026-10-02).
 - The launch checkout link (founder price preset, return to https://shotfleet.com/#price): `https://buy.polar.sh/polar_cl_8zeKCsIGKxzOSzqGWva0UdjhFmDg2vrt0NoBB3Coq7l`. Viewed 2026-10-02 as a Dutch buyer: 49 EUR, minus 20 Founder price, 29 EUR total, VAT included; Polar shows "payments are currently unavailable" until the review passes.
 - Support email `hello@shotfleet.com` (forwarded by Cloudflare Email Routing) and website `https://shotfleet.com/`.
-- Still to create: a **standard link** (the same product without a preset discount), to swap in after the 100th redemption. Until then the launch link would stop applying the discount, so check the redemption count (Polar, Discounts) as sales come in.
+- The **standard link** (same product, no preset discount; for after the 100th redemption): `https://buy.polar.sh/polar_cl_0JsvKw9nyrXd3B5srS64PWUuOg7mIl1olUUHv2TW7K5` (created 2026-10-02). Until the swap, the launch link stops applying the discount after 100 redemptions, so check the count (Polar, Discounts) as sales come in.
 
 Check them at https://polar.sh/dashboard/nulltwenty/products .
 
@@ -28,7 +28,7 @@ Check them at https://polar.sh/dashboard/nulltwenty/products .
 
 ## 2. The checkout link
 
-The launch link above is ready: pass it to `go-live.sh`. After 100 redemptions create the standard link (Polar → Checkout Links → New link → product shotfleet, no preset discount) and switch the Buy buttons to it.
+The launch link above is ready: pass it to `go-live.sh`. After 100 redemptions switch the Buy buttons to the standard link.
 
 ## 3. Check this Mac (once, before the rehearsal)
 
