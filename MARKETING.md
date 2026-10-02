@@ -33,7 +33,7 @@ Not worth it now: Product Hunt, paid ads, sponsored slots, YouTube pitching, awe
 | 6 | Build story on Mastodon, Bluesky, X with the grid, no price, `?utm_source=` tags | Manu posts from `marketing/kit/social.md` | 2 posts a week |
 | 7 | AlternativeTo listing now (months in queue); email Console.dev when the free tier installs | Manu submits from `marketing/kit/directories.md` | Listing pending |
 | 8 | 3-5 design partners from people who publicly report a locale problem: free licence for an honest write-up, written permission before any quote | Manu asks | 2 signed-off quotes before any testimonial appears |
-| 9 | Live "founder price: N of 100 left" counter fed by Polar's FOUNDER29 redemptions, done together with go-live. The only urgency that is true | Claude | Counter on the buy page |
+| 9 | Founder price shown as plain text ("launch price, first 100 buyers", kept by go-live). A live "N of 100 left" number needs a Polar organization token that only Manu can create and an endpoint for FOUNDER29 redemptions that is not verified yet, so no number is shown until it is backed by data | Manu creates the token; Claude wires it | Text live at launch; counter only if verified |
 
 Measurement is already in place: visits, pricing views, CTA clicks and runs-section views by source (`site/signups.sh --visits`), signups with source, country and browser language. Polar gives orders, redemptions and refunds.
 
