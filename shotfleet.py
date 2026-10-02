@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one with: brew install python", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -847,7 +847,7 @@ def ios_run(cfg, path, only=None, parallel=None):
     flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
-    locales = only or cfg.get("locales") or shipped_locales(strings, base_locale)
+    locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
     # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
@@ -1048,7 +1048,7 @@ def android_run(cfg, path, out, only, parallel):
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
-    locales = only or cfg.get("locales") or shipped_locales(strings)
+    locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
     flow = path(cfg["flow"]).read_text().replace("\r\n", "\n")
     expected = count_screenshots(flow)
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
@@ -1839,7 +1839,7 @@ def mcp_call(name, args):
                 if not Path(args["folder"]).expanduser().is_dir(): raise Fail(f"no folder at {args['folder']}")
                 code = cmd_check(Path(args["folder"]).expanduser(), app=args.get("app"), strings_files=args.get("strings"),
                                  report_dir=Path(args["folder"]).expanduser() / "shotfleet-check")
-            elif name == "run": require_licence(); code = cmd_run(args["config"], args.get("locales"))
+            elif name == "run": apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
             else: return f"unknown tool {name}", True
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:
         return f"{e}\n\n{log.getvalue()[-2000:]}", True
@@ -1877,7 +1877,47 @@ LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.manulorenzop.workers.dev/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
 GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh
+POLAR_API = os.environ.get("SHOTFLEET_POLAR_API", "https://api.polar.sh/v1/customer-portal/license-keys")
+POLAR_ORG_ID = ""  # set by packaging/go-live.sh: the Polar organization (a UUID); Polar keys start with SHOTFLEET-
 MAX_MACS = 3
+FREE_LANGUAGES = 2
+LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
+
+class NoLicence(Fail):
+    """No valid licence: `export` stops; `run` falls back to the free tier."""
+
+def cap_locales(locales):
+    if LOCALE_CAP is None or len(locales) <= LOCALE_CAP: return locales
+    print(f"free tier: capturing {LOCALE_CAP} of {len(locales)} languages ({', '.join(locales[:LOCALE_CAP])}). "
+          f"`shotfleet activate <key>` unlocks every language ({BUY_URL})")
+    return locales[:LOCALE_CAP]
+
+def is_polar_key(key):
+    return key.strip().upper().startswith("SHOTFLEET-")
+
+try:  # the released build can't count on the Mac's CA bundle (no Homebrew OpenSSL): use certifi's when it is there
+    import certifi
+    _TLS = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    _TLS = None
+
+def polar_post(action, **fields):
+    """POST to Polar's licence-key API (no secret needed) -> (status, JSON). 403/404/422 mean the key isn't valid;
+    network problems raise OSError. Polar's edge blocks Python's default User-Agent, so send our own."""
+    req = urllib.request.Request(f"{POLAR_API}/{action}", data=json.dumps({"organization_id": POLAR_ORG_ID, **fields}).encode(),
+                                 headers={"Content-Type": "application/json", "Accept": "application/json",
+                                          "User-Agent": f"shotfleet/{VERSION}"})
+    try:
+        with urllib.request.urlopen(req, timeout=15, context=_TLS) as r: return r.status, json.loads(r.read() or b"{}")
+    except urllib.error.HTTPError as e:
+        with e:
+            if e.code in (403, 404, 422):
+                try: detail = json.loads(e.read() or b"{}").get("detail")
+                except ValueError: detail = None
+                return e.code, {"detail": detail if isinstance(detail, str) else "key not found, or revoked or expired"}
+        raise OSError(f"Polar answered {e.code}")
+    except (urllib.error.URLError, TimeoutError) as e:
+        raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
 
 def is_gumroad_key(key):
     """Gumroad keys are four groups of 8 (ABCDEF12-...); Lemon Squeezy keys are UUIDs (8-4-4-4-12)."""
@@ -1912,6 +1952,13 @@ def licence_api(action, **fields):
         except ValueError: raise OSError(f"licence server answered {e.code}")
 
 def cmd_activate(key):
+    if is_polar_key(key):
+        status, body = polar_post("activate", key=key.strip(), label=socket.gethostname())
+        if status != 200: raise Fail(f"that key didn't activate: {str(body.get('detail')).rstrip('.')}. Keys come with your purchase: {BUY_URL}")
+        LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "polar", "activation": body["id"], "checked": time.time()}))
+        print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
+        return 0
     if is_gumroad_key(key):
         ok, uses, why = gumroad_verify(key, count_use=True)
         if not ok: raise Fail(f"that key didn't activate: {why}. Keys come with your purchase: {BUY_URL}")
@@ -1933,6 +1980,11 @@ def cmd_activate(key):
 def cmd_deactivate():
     if not LICENCE_FILE.exists(): print("no licence on this Mac"); return 0
     lic = json.loads(LICENCE_FILE.read_text())
+    if lic.get("store") == "polar":
+        try: polar_post("deactivate", key=lic["key"], activation_id=lic["activation"])
+        except OSError: pass  # offline: forget it locally anyway
+        LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
+        return 0
     if lic.get("store") == "gumroad":  # Gumroad can't free an activation from here
         LICENCE_FILE.unlink(); print("removed from this Mac. If you've used all 3 activations, email manulorenzop@gmail.com to move it")
         return 0
@@ -1947,28 +1999,41 @@ def require_licence():
     if not getattr(sys, "frozen", False): return  # running from source
     if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
         try:
-            if is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
+            if is_polar_key(key):
+                status, body = polar_post("validate", key=key.strip())
+                valid, why = status == 200, body.get("detail")
+            elif is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
             else: r = licence_api("validate", license_key=key); valid, why = r.get("valid"), r.get("error")
         except OSError: return  # don't fail a build because the licence server is unreachable
-        if not valid: raise Fail(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
+        if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
         return
     if not LICENCE_FILE.exists():
-        raise Fail(f"`run` and `export` need a licence: shotfleet activate <key> (buy one at {BUY_URL}). "
-                   "`check` is free.")
+        raise NoLicence(f"`export` and every language in `run` need a licence: shotfleet activate <key> (buy one at {BUY_URL}). "
+                        "`check` is free, and `run` captures up to 2 languages without one.")
     lic = json.loads(LICENCE_FILE.read_text())
     age = (time.time() - lic.get("checked", 0)) / 86400
     if age < LICENCE_RECHECK_DAYS: return
     try:
-        if lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
+        if lic.get("store") == "polar":
+            status, body = polar_post("validate", key=lic["key"], activation_id=lic["activation"])
+            valid, why = status == 200, body.get("detail")
+        elif lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
         else:
             r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
             valid, why = r.get("valid"), r.get("error") or r.get("license_key", {}).get("status")
     except OSError:
         if age < LICENCE_OFFLINE_DAYS: return
-        raise Fail("couldn't reach the licence server for 30 days; connect once to keep using `run`")
+        raise NoLicence("couldn't reach the licence server for 30 days; connect once to keep using every language in `run`")
     if not valid:
-        raise Fail(f"this licence is no longer valid ({why}). {BUY_URL}")
+        raise NoLicence(f"this licence is no longer valid ({why}). {BUY_URL}")
     LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time()}))
+
+def apply_free_tier():
+    """`run` without a valid licence still runs, for two languages (the free tier shows the product)."""
+    global LOCALE_CAP
+    try: require_licence()
+    except NoLicence as e:
+        print(f"note: {e}", file=sys.stderr); LOCALE_CAP = FREE_LANGUAGES
 
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
@@ -1985,7 +2050,8 @@ def main_dispatch(a):
         if a.cmd == "doctor": return cmd_doctor()
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "init": return cmd_init(a.app, a.dir)
-        if a.cmd in ("run", "export"): require_licence()
+        if a.cmd == "export": require_licence()
+        if a.cmd == "run": apply_free_tier()
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)

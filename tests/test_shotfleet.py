@@ -1039,5 +1039,48 @@ class StuckOcrFallback(unittest.TestCase):
                 self.check()
 
 
+class PolarLicence(unittest.TestCase):
+    """Polar licence keys and the free tier (the other stores' tests are in the class above)."""
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp()); self.calls = []
+        self.patches = [mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
+                        mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LOCALE_CAP", None),
+                        mock.patch.object(sf, "polar_post", side_effect=self.fake)]
+        for p in self.patches: p.start(); self.addCleanup(p.stop)
+
+    def fake(self, action, **f):
+        self.calls.append((action, f))
+        if f["key"] == "SHOTFLEET-BAD": return 404, {"detail": "Resource not found"}
+        return 200, {"id": "act-1"} if action == "activate" else {"status": "granted"}
+
+    def test_polar_keys_are_told_apart_by_their_prefix(self):
+        self.assertTrue(sf.is_polar_key(" shotfleet-1C285B2D-6CE6 ")); self.assertFalse(sf.is_polar_key("ABCDEF12-ABCDEF12-ABCDEF12-ABCDEF12"))
+
+    def test_activate_validate_and_deactivate(self):
+        self.assertEqual(sf.cmd_activate("SHOTFLEET-GOOD"), 0)
+        self.assertEqual(json.loads(sf.LICENCE_FILE.read_text())["activation"], "act-1")
+        sf.require_licence(); self.assertEqual([c[0] for c in self.calls], ["activate"])  # fresh: no network
+        lic = json.loads(sf.LICENCE_FILE.read_text()); sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 8 * 86400}))
+        sf.require_licence(); self.assertEqual(self.calls[-1], ("validate", {"key": "SHOTFLEET-GOOD", "activation_id": "act-1"}))
+        sf.cmd_deactivate(); self.assertEqual(self.calls[-1][0], "deactivate"); self.assertFalse(sf.LICENCE_FILE.exists())
+
+    def test_bad_key_is_refused_with_polars_reason(self):
+        with self.assertRaisesRegex(sf.Fail, "didn't activate: Resource not found"): sf.cmd_activate("SHOTFLEET-BAD")
+
+    def test_ci_key_validates_without_taking_an_activation(self):
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-GOOD"}): sf.require_licence()
+        self.assertEqual([c[0] for c in self.calls], ["validate"]); self.assertFalse(sf.LICENCE_FILE.exists())
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-BAD"}), self.assertRaises(sf.NoLicence): sf.require_licence()
+
+    def test_run_without_a_licence_is_the_free_tier_export_is_not(self):
+        with mock.patch.object(sf, "cmd_run", return_value=0):
+            self.assertEqual(sf.main(["run", "x.toml"]), 0); self.assertEqual(sf.LOCALE_CAP, 2)
+        with mock.patch.object(sf, "LOCALE_CAP", None): self.assertEqual(sf.main(["export", "x", "--fastlane", "y"]), 2)
+        with mock.patch.object(sf, "LOCALE_CAP", 2):
+            self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja"]); self.assertEqual(sf.cap_locales(["de"]), ["de"])
+        sf.LOCALE_CAP = None  # (main() set it above; the setUp patch restores it afterwards)
+        self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja", "fr"])
+
+
 if __name__ == "__main__":
     unittest.main()

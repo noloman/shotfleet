@@ -1,12 +1,16 @@
 #!/bin/sh
-# Launch day, in one command, once the Lemon Squeezy product exists (LAUNCH.md):
-#   packaging/go-live.sh https://<store>.lemonsqueezy.com/buy/<id>
+# Launch day, in one command, once the Polar product exists (LAUNCH.md):
+#   POLAR_ORG_ID=<organization id> packaging/go-live.sh <Polar checkout link>
 # Publishes the signed, notarized release on the site (install.sh), switches the site from waitlist to "Buy",
 # deploys it, and prints the waitlist emails for the launch email.
 set -eu
-CHECKOUT=${1:?usage: packaging/go-live.sh <Lemon Squeezy checkout URL> [<Gumroad product URL> <Gumroad product ID>]}
+CHECKOUT=${1:?usage: POLAR_ORG_ID=<id> packaging/go-live.sh <checkout URL> [<Gumroad product URL> <Gumroad product ID>]}
 GUMROAD_URL=${2:-}; GUMROAD_ID=${3:-}
 cd "$(dirname "$0")/.."
+if [ -n "${POLAR_ORG_ID:-}" ]; then  # the released program checks Polar keys against this organization
+  sed -i '' "s/^POLAR_ORG_ID = .*/POLAR_ORG_ID = \"$POLAR_ORG_ID\"  # set by packaging\/go-live.sh/" shotfleet.py
+  git add shotfleet.py && git commit -m "Polar organization ID for licence checks"
+fi
 if [ -n "$GUMROAD_URL" ]; then  # the released program checks Gumroad keys against this product
   : "${GUMROAD_ID:?a Gumroad product URL needs the product ID too (LAUNCH.md step 2)}"
   sed -i '' "s/^GUMROAD_PRODUCT_ID = .*/GUMROAD_PRODUCT_ID = \"$GUMROAD_ID\"  # set by packaging\/go-live.sh/" shotfleet.py

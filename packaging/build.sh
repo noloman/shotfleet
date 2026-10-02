@@ -11,7 +11,7 @@ ARCH=$(uname -m)
 rm -rf build dist && mkdir -p build
 swiftc -O ocr.swift -o build/ocr
 build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; python3 -m venv build/venv; }  # its Python may be gone (brew upgrade)
-build/venv/bin/pip install --quiet --upgrade pyinstaller
+build/venv/bin/pip install --quiet --upgrade pyinstaller certifi
 set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
 if [ -n "${DEVELOPER_ID:-}" ]; then  # PyInstaller signs the bundled pieces too, with hardened-runtime entitlements
