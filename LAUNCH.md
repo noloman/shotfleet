@@ -10,10 +10,13 @@ first 100** (code `FOUNDER29`), a free tier (`check` plus 2 languages in `run`),
 ## Already done in Polar (organization "NullTwenty", id `16188b30-3a8a-4fdc-8282-d350ae6ec1bb`)
 
 - A **License Key benefit**: prefix `SHOTFLEET`, never expires, up to 3 activations, customers can free an activation.
-- The product **shotfleet**: one-time, 49 USD (and 49 EUR) with that benefit attached.
-- The discount **FOUNDER29**: 20 USD / 20 EUR off, 100 redemptions, applies to shotfleet only.
+- The product **shotfleet**: one-time, 49 EUR and 49 USD, with that benefit attached (price set 2026-10-02; before that it was Free).
+- The discount **FOUNDER29** ("Founder price"): 20 USD / 20 EUR off, 100 redemptions, 1 per customer (created 2026-10-02).
+- The launch checkout link (founder price preset, return to https://shotfleet.com/#price): `https://buy.polar.sh/polar_cl_8zeKCsIGKxzOSzqGWva0UdjhFmDg2vrt0NoBB3Coq7l`. Viewed 2026-10-02 as a Dutch buyer: 49 EUR, minus 20 Founder price, 29 EUR total, VAT included; Polar shows "payments are currently unavailable" until the review passes.
+- Support email `hello@shotfleet.com` (forwarded by Cloudflare Email Routing) and website `https://shotfleet.com/`.
+- Still to create: a **standard link** (the same product without a preset discount), to swap in after the 100th redemption. Until then the launch link would stop applying the discount, so check the redemption count (Polar, Discounts) as sales come in.
 
-Check them at https://polar.sh/dashboard/nulltwenty/products . Change the EUR price there if you prefer another number.
+Check them at https://polar.sh/dashboard/nulltwenty/products .
 
 ## 1. Finish the account review (only you can; Polar → Finance → Account Review)
 
@@ -23,10 +26,9 @@ Check them at https://polar.sh/dashboard/nulltwenty/products . Change the EUR pr
    Before you submit, ask the Belastingdienst or an accountant whether regular software sales need a KvK registration in your
    case. A merchant of record handles the sales VAT only, not your own tax or registration duties.
 
-## 2. Make the checkout link
+## 2. The checkout link
 
-Polar → **Checkout Links → New link** → product shotfleet, add the discount `FOUNDER29` so the founder price applies
-automatically. Copy the link.
+The launch link above is ready: pass it to `go-live.sh`. After 100 redemptions create the standard link (Polar → Checkout Links → New link → product shotfleet, no preset discount) and switch the Buy buttons to it.
 
 ## 3. Check this Mac (once, before the rehearsal)
 
