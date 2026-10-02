@@ -110,8 +110,8 @@ main { position: relative; }
 .btn.ghost .ico { background: var(--tray); }
 
 /* ---------- signal pennants: the signature ---------- */
-.flag { display: inline-grid; place-items: center; height: 34px; padding: 0 24px 0 14px; font: 700 1.1rem/1 var(--signal); letter-spacing: 0.06em; text-transform: uppercase;
-  clip-path: polygon(0 0, 100% 0, 86% 50%, 100% 100%, 0 100%); background: var(--ink); color: var(--paper); }
+.flag { display: inline-grid; place-items: center; height: 34px; padding: 0 30px 0 14px; font: 700 1.1rem/1 var(--signal); letter-spacing: 0.06em; text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 13px) 50%, 100% 100%, 0 100%); background: var(--ink); color: var(--paper); }
 .flag b { font: 700 1.1rem/1 var(--signal); letter-spacing: 0.06em; text-transform: uppercase; }
 .flag.y { background: var(--yellow); color: #0d1b2a; }
 .flag.r { background: var(--red); color: #fff; }
@@ -125,7 +125,7 @@ main { position: relative; }
 :root[data-theme="dark"] .flag.r { background: #ff6b5e; color: #0a121c; }
 :root[data-theme="dark"] .flag.k { background: #2a3f57; color: #ffffff; }
 .ribbon { display: inline-block; justify-self: start; position: relative; z-index: 1; }
-.ribbon .flag { display: inline-flex; align-items: center; height: 30px; padding: 0 24px 0 12px; }
+.ribbon .flag { display: inline-flex; align-items: center; height: 30px; padding: 0 28px 0 12px; }
 .ribbon .flag.k b { color: var(--yellow); }
 
 /* ---------- hero ---------- */
