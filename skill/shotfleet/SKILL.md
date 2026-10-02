@@ -1,49 +1,99 @@
 ---
 name: shotfleet
-description: Capture and check localized App Store / Google Play screenshots with shotfleet. Use when the user wants store screenshots in several languages, wants to verify existing fastlane screenshots are in the right language, or asks whether screenshots are missing, duplicated or untranslated.
+description: Install, set up, run, check and troubleshoot shotfleet, a macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow and verifies them. Use when the user mentions shotfleet, shotfleet.toml or flow.yaml for many languages, store screenshots in several languages, fastlane screenshots that may be in the wrong language, copied, missing or untranslated screenshots, "check my screenshots", or when a shotfleet doctor, init, run, check or export command fails or prints a problem. Covers iOS and Android; Flutter and React Native work from translation files.
 ---
 
 # shotfleet
 
-shotfleet runs one English Maestro flow in every language an iOS or Android app ships, and checks each
-screenshot against the app's own strings using macOS text recognition. Requires macOS, Python 3.11+, Maestro.
+shotfleet rewrites one English Maestro flow into every language an app ships, runs all languages in parallel on
+simulators or emulators, and checks every screenshot against the app's own strings (text recognition on macOS,
+or the app's own text for iOS runs). It also checks screenshots made by any other tool, with no simulator.
+Needs an Apple silicon Mac, Maestro 2.x and Java 17+; iOS needs Xcode, Android needs the Android SDK.
 
-## Checking existing screenshots (no simulators needed)
+Start with `shotfleet --version`. If it is missing, the README's installer is
+`curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script. If the shell
+cannot find `shotfleet` but the user has the source, use `python3 path/to/shotfleet.py` (Python 3.11+).
 
-```bash
-shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json > check.json
-```
+## Which path?
 
-- `<fastlane-dir>` holds `screenshots/<locale>/` (deliver) or `metadata/android/<locale>/images/phoneScreenshots/` (supply), or plain `<locale>/` folders.
-- `--app` is a simulator build (`Debug-iphonesimulator/*.app`) or an APK. Without it, only language detection is used.
-- Flutter / React Native / .NET / Unity apps: pass `--strings '<glob>'` (e.g. `'lib/l10n/*.arb'`, `'locales/*/translation.json'`) instead of `--app`; in a config, set `strings = "<glob>"`.
-- Exit codes: 0 clean, 1 problems, 2 setup error (stderr says what to fix).
-- Read `problems` in the JSON. Each one is `<locale>/<file>: <what>`. Report them to the user as-is and open `shotfleet-check/index.html` for the visual grid.
-- Pass the fastlane folder or the `screenshots/` folder itself; both work. If `shotfleet` isn't on PATH, use `python3 path/to/shotfleet.py`.
-- With `--json`, stdout is only JSON (`exit`, `screenshots`, `problems`); progress goes to stderr.
-- Problem kinds and what they mean:
-  - `<locale>/<file>: shows <x> strings ... more than <y>` or `text looks like ...`: wrong language; re-capture that locale.
-  - `identical image in N languages: ...`: a copy; usually the same root cause as a wrong-language line, so count issues, not lines.
-  - `<locale>: missing <files>`: that locale lacks screens the others have.
-  - `<locale>: the app has no <locale> translation`: the store listing exists but the app isn't translated into it.
-- Never edit or delete files in the fastlane folder; the report goes to `./shotfleet-check` (`src` paths in the JSON are relative to it).
+1. **The user has screenshots (fastlane or any folder) and wants to know if they are right** -> [Check](#check). No simulators, no licence.
+2. **The user wants to capture screenshots in many languages** -> [Capture](#capture): `doctor`, `init`, write the flow, `run` one language, then all.
+3. **The app is Flutter, React Native, .NET MAUI or Unity** -> same paths, plus `strings = "<glob>"` in the config or `--strings '<glob>'` on `check`, pointing at the translation files. Details in [references/config.md](references/config.md).
+4. **The user wants it in CI** -> use the `shotfleet-ci` skill, or [references/ci.md](references/ci.md).
+5. **There is a check report to explain** -> use the `shotfleet-review` skill.
+6. **A command printed an error or a hint** -> [references/troubleshooting.md](references/troubleshooting.md) (grep the message).
+7. **Licence, activation, free tier** -> [references/licence.md](references/licence.md).
 
-## Capturing
+## Check
 
 ```bash
-shotfleet doctor                       # fix anything it reports first
-shotfleet init <app> <dir>             # writes <dir>/shotfleet.toml and <dir>/flow.yaml
-shotfleet run <dir>/shotfleet.toml --locales en   # one language first
-shotfleet run <dir>/shotfleet.toml --json         # all languages
-shotfleet export <dir>/out --fastlane fastlane/   # only languages that passed
+shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json --report <report-dir> > check.json
 ```
 
-Writing the flow: navigate by the English text users see (`tapOn: "Next"`), add `takeScreenshot: 01_name`
-per store image. shotfleet translates the selectors. If it warns about a collision
-(`tr: 'Next' -> 'İleri' also means 'Advanced'`), anchor that step with `below:`/`above:`. Dismiss dialogs
-that appear late with `repeat: while: notVisible:`. Don't write one flow per language.
+- `<fastlane-dir>` is the fastlane folder or its `screenshots/` folder (deliver: `screenshots/<locale>/`), or `metadata/android/<locale>/images/phoneScreenshots/` (supply), or plain `<locale>/` folders. A folder with both stores is checked one store per run: `--app` (an `.app` or an `.apk`) picks which.
+- `--app` is a simulator build (`Debug-iphonesimulator/*.app`, never an `.ipa` or archive) or a debug `.apk`. Without it only language detection runs and short screens can't be judged.
+- Translation files instead of a build: `--strings 'lib/l10n/*.arb'` (repeatable).
+- Put `--report` outside the fastlane folder (default is `./shotfleet-check` in the current directory). shotfleet never edits the checked folder.
+- First text recognition after a restart can take 30 s to minutes and prints nothing. It is not a hang: wait.
+- Scripts macOS can't read (Greek, Hebrew, most Indic): `check` says which screens it only checked weakly; for full checks add `--ocr-command "tesseract {image} stdout -l {tesseract}"` (needs `brew install tesseract tesseract-lang`).
 
-## Don't
+## Capture
 
-- Don't claim screenshots are correct without running `check` and reading its problems.
-- Don't upload to the stores; that is the user's call.
+```bash
+shotfleet doctor                                   # fix every MISSING line first
+shotfleet init <MyApp.app> <app-debug.apk> --dir <dir>   # either build or both; writes shotfleet.toml and flow.yaml
+shotfleet run <dir>/shotfleet.toml --locales en    # ONE language first: boots simulators, takes minutes
+shotfleet run <dir>/shotfleet.toml --json          # all languages
+shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that passed; needs a licence
+```
+
+1. The build must be a **Debug simulator build** for iOS (`xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build`) or an APK (`./gradlew assembleDebug`, API 33+ emulators).
+2. Edit `flow.yaml` (English Maestro steps, one `takeScreenshot:` per store image): see [references/flow-writing.md](references/flow-writing.md).
+3. `run` prints `warning <lang>: ... also means ...` for translation collisions and `selectors not found in the app's strings` for labels it could not translate. Fix those before the full run (anchor with `below:`/`above:`, or `[overrides.<lang>]`).
+4. `export` writes into the user's fastlane folder (it replaces same-size PNGs in the listing folders). Run it only when asked, after `check` is clean.
+5. Free tier: `run` captures 2 languages without a licence and `export` refuses. Never ask the user to paste the key into chat.
+
+## Exit codes (run, check, export, doctor)
+
+| Code | Meaning | What to do |
+|---|---|---|
+| 0 | all good | report what was checked |
+| 1 | problems found (or a language failed, or an `after_*` hook failed) | read `problems`, see the `shotfleet-review` skill |
+| 2 | setup error: stderr says `shotfleet: <what to fix>` | fix it, see troubleshooting.md |
+| 130 | interrupted | rerun |
+
+`doctor` exits 2 only when neither iOS nor Android is ready.
+
+## Reading `--json`
+
+`stdout` is only JSON; progress goes to stderr. Read `exit` first.
+
+- `check` and `run`: `{"exit", "screenshots": [{"file": "<locale>/<name>.png", "src", "sha", "lang", "chars"}], "problems": ["<locale>/<file>: <what>", ...], "notes": [...]}`. `problems` fail the check; `notes` are worth knowing and do not. `lang` is the language the screen shows (null when macOS can't read that script). `src` is relative to the report folder.
+- `export`: `{"exit", "exported": ["<listing folder>", ...], "skipped": ["<locale>", ...]}`. A skipped language failed a check.
+- With `exit` 2 the JSON has only `exit`.
+- With several devices (`device_types`, `devices`) `--json` carries only the last device's report: read each `<out>/<device>/check.json`.
+- Count issues, not lines: one wrong-language locale usually yields a wrong-language line, a copy line and a missing line.
+
+## Tell the user
+
+- What you ran, the exit code, the number of problems, and the path of `index.html` (open it for the grid: a row per language, a column per screen, problems outlined in red).
+- For each problem group: which locale to recapture and whether the cause is in the app (untranslated string, button off-screen in a long language) or in the flow.
+- What was not covered: scripts macOS can't read, `check` without `--app`, Android screens (read by text recognition only).
+
+## Do not
+
+- Do not say screenshots are correct without running `check` and reading `problems`.
+- Do not upload to App Store Connect or Google Play; fastlane does that and the user decides.
+- Do not edit, move or delete files in the fastlane folder; only `export`, when asked, writes there.
+- Do not put the licence key in a repo, a config file, a command you echo, or chat. Never print `licence.json`.
+- Do not claim Flutter or React Native work beyond reading their translation files (not yet run on a real Flutter or React Native app).
+- Do not translate typed text: `inputText` is not rewritten, so demo data stays the same in every language.
+- Do not write one flow per language; write one English flow.
+- Do not start many simulators yourself or run `run` without asking: it uses the Mac heavily for minutes.
+
+## More
+
+[references/troubleshooting.md](references/troubleshooting.md), [references/flow-writing.md](references/flow-writing.md),
+[references/config.md](references/config.md), [references/ci.md](references/ci.md), [references/licence.md](references/licence.md).
+The tool also ships an MCP server (`shotfleet mcp`) with `check`, `run` and `doctor`; its `check` writes the report into a
+`shotfleet-check` folder inside the folder it checks, so prefer the CLI with `--report` for a fastlane folder.
