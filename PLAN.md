@@ -1,6 +1,6 @@
 # shotfleet: from working prototype to a few $k/year
 
-Goal: find out cheaply whether developers will pay $79 ($49 founder price) for shotfleet, and be ready to sell if they will.
+Goal: find out cheaply whether developers will pay $49 ($29 founder price) for shotfleet, and be ready to sell if they will.
 Success = a few thousand dollars a year. Anything less means it stays a free tool for our own apps.
 
 ## Phase 1: make it work for someone who isn't us (Claude)
@@ -24,7 +24,7 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
 
 ## Phase 2: validation assets (Claude drafts, Manu publishes)
 7. [x] Landing page draft (private preview): the problem, the CrossfitTracker demo grid, the bug it found,
-       $49 one-time pricing, a waitlist / pre-order button.
+       one-time pricing, a waitlist / pre-order button.
 8. [x] Launch post drafts for r/iOSProgramming, r/androiddev, Indie Hackers, the Maestro community and X.
 
 ## Strategy

@@ -18,13 +18,13 @@
 | Trust | Signed with Manu's Developer ID and notarized by Apple | Without it Gatekeeper blocks the download ("cannot be opened") |
 | Install | `brew install noloman/shotfleet/shotfleet` and a `.tar.gz` / `.pkg` on the download page | Homebrew is how Mac developers install CLIs; the tap is one small public repo |
 | Where binaries live | A public `noloman/shotfleet-releases` repo (binaries + changelog only); source stays in the private `noloman/shotfleet` | Homebrew needs a public URL; nothing paid is exposed because the binary needs a key |
-| Payment | Lemon Squeezy checkout from the site (merchant of record: handles VAT/sales tax worldwide) | Already in the plan; one fee, no tax paperwork |
-| Licence | `shotfleet activate <key>` validates once with Lemon Squeezy's licence API, stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
+| Payment | Polar checkout from the site (merchant of record: handles VAT/sales tax worldwide; personal accounts allowed, Netherlands supported; ID check through Stripe) | Lemon Squeezy asks for a KvK (none here). Polar Starter: 5% + $0.50, +1.5% international cards, Stripe payout fees |
+| Licence | `shotfleet activate <key>` validates once with the store's licence API (Polar: SHOTFLEET- keys, no secret in the app; Gumroad and Lemon Squeezy keys still work), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
 | Free vs paid | `check`, `doctor`, `init` free; `run` and `export` need a key | STRATEGY.md 2.1: checking is the funnel |
-| Updates | `shotfleet --version` / `doctor` mention a newer release (GitHub releases API); `brew upgrade` installs it | A year of updates is part of the $79 |
+| Updates | `shotfleet --version` / `doctor` mention a newer release (GitHub releases API); `brew upgrade` installs it | A year of updates is part of the $49 |
 | CI | Same binary; key passed as `SHOTFLEET_KEY` | Team licence later |
 
-A licence check in a Python app can be removed by a determined person. At $49–79 that's acceptable: the goal is to make
+A licence check in a Python app can be removed by a determined person. At $29–49 that's acceptable: the goal is to make
 paying the easy path, not to win against crackers.
 
 ## Alternatives considered
@@ -42,7 +42,7 @@ paying the easy path, not to win against crackers.
 |---|---|---|
 | PyInstaller build script + universal `ocr` binary, `activate` command, key check, free/paid split, tests | Claude | ~1 day |
 | Developer ID certificate (needs the Apple Developer account) and an app-specific password for notarization | Manu | 15 min |
-| Lemon Squeezy store + product ($79, $49 founder discount code) + licence keys enabled; API key | Manu | 30 min |
+| Polar account (personal, ID check; review up to 14 days) + product ($49, `FOUNDER29` $29 code for the first 100) + a License Key benefit: done except the review (LAUNCH.md) | Manu | 30 min plus review |
 | `noloman/homebrew-shotfleet` and `noloman/shotfleet-releases` public repos | Manu creates, Claude fills | 10 min |
 | Release script: build, sign, notarize, upload, update the tap formula | Claude | ~half a day |
 | Site: buy button, install instructions, licence/refund terms | Claude drafts, Manu approves | ~half a day |

@@ -55,7 +55,7 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 | 2.7 | Variant sets for custom product pages / Play experiments | Unproven demand; AppScreens sells it | M | maybe |
 
 ## 3. Sell it
-DISTRIBUTION.md: bundled signed binary, Homebrew tap, Lemon Squeezy licence, `check` free. Needed by the founder sale (STRATEGY.md week 4).
+DISTRIBUTION.md: bundled signed binary, Homebrew tap, Polar licence, `check` free. Needed by the founder sale (STRATEGY.md week 4).
 
 ## Order
 1.1 → 1.4 → 1.2 → 1.3 → 2.2 → 2.1 → (experiments for 1.5 on a quiet Mac) → 1.5 → 2.3 → 3 → 2.4.
