@@ -1,8 +1,9 @@
 import w from "./worker.js";
 const kv = new Map();
 const env = { WAITLIST: { get: async k => kv.get(k) ?? null, put: async (k, v) => kv.set(k, v), delete: async k => kv.delete(k) },
-              LIMITER: { limit: async () => ({ success: true }) } };
-const call = async (path, body) => (await w.fetch(new Request("https://x" + path, { method: "POST", body: JSON.stringify(body), headers: { "content-length": "100" } }), env)).status;
+              LIMITER: { limit: async () => ({ success: true }) }, HIT_BATCH: 3 };
+const ctx = { waitUntil: p => (pending.push(p)) }; const pending = [];
+const call = async (path, body) => (await w.fetch(new Request("https://x" + path, { method: "POST", body: JSON.stringify(body), headers: { "content-length": "100" } }), env, ctx)).status;
 let ok = true; const check = (name, cond) => { console.log((cond ? "ok   " : "FAIL ") + name); ok &&= cond; };
 check("signup 200", await call("/api/signup", { email: "A@Example.com", ref: "x" }) === 200);
 let rec = JSON.parse(kv.get("email:a@example.com"));
@@ -20,4 +21,12 @@ check("bad email 400", await call("/api/signup", { email: "nope" }) === 400);
 await call("/api/signup", { email: "bot@example.com", website: "http://spam" });
 check("honeypot is not stored", !kv.has("email:bot@example.com"));
 check("forget removes", (await call("/api/forget", { email: "a@example.com" }), !kv.has("email:a@example.com")));
+await call("/api/hit", { src: "Reddit.com" });
+await call("/api/hit", { src: "reddit.com" });
+await call("/api/hit", { src: "<script>" });
+await Promise.all(pending);
+const hits = [...kv].filter(([k]) => k.startsWith("hit:"));
+check("visits are counted per day, source and language", hits.some(([k, v]) => /^hit:\d{4}-\d\d-\d\d\|reddit.com\|xx$/.test(k) && v === "2"));
+check("source is sanitised", hits.every(([k]) => !/[<>]/.test(k)));
+check("a visit stores nothing about the visitor", hits.every(([k, v]) => /^\d+$/.test(v)));
 process.exit(ok ? 0 : 1);

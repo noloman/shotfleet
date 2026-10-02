@@ -8,6 +8,13 @@
     new URLSearchParams(location.search).forEach(function (v, k) { if (k.indexOf("utm_") === 0) ref.push(k + "=" + v); });
   } catch (e) {}
 
+  // one anonymous count per page view: the source and nothing else (the server adds the day and the browser language)
+  try {
+    var q = new URLSearchParams(location.search), host = document.referrer && new URL(document.referrer).host;
+    fetch("/api/hit", { method: "POST", keepalive: true, headers: { "content-type": "application/json" },
+      body: JSON.stringify({ src: q.get("utm_source") || (host && host !== location.host ? host : "") }) });
+  } catch (e) {}
+
   function wire(id, endpoint, extra, validate, onDone) {
     var form = document.getElementById(id);
     if (!form) return;

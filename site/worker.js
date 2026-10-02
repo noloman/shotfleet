@@ -1,19 +1,37 @@
 // API for the landing page; static files in public/ are served before this runs.
 //   POST /api/signup  {email, stack?, ref, website}  -> join the waitlist (KV key "email:<address>"); a later call with stack adds the answer
 //   POST /api/forget  {email}                           -> remove an address from the waitlist
+//   POST /api/hit    {src}                              -> count one visit: KV key "hit:<day>|<source>|<language>" holds a total, nothing about the visitor
 //   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>")
 // Read signups: ./signups.sh
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
 const MAX_BODY = 4096;
 const STACKS = new Set(["native", "swift", "kotlin", "react-native", "flutter", "kmp", "maui", "unity", "other"]);
 const PLATFORM_OF = { native: "both", swift: "ios", kotlin: "android" };  // the other stacks ship on both stores or aren't known
-const ROUTES = new Set(["/api/signup", "/api/forget", "/api/contact"]);
+const ROUTES = new Set(["/api/signup", "/api/forget", "/api/contact", "/api/hit"]);
+
+const pending = new Map();  // visit counts waiting to be written
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     if (!ROUTES.has(pathname)) return json({ error: "Not found" }, 404);
     if (request.method !== "POST") return json({ error: "Use POST" }, 405);
+
+    if (pathname === "/api/hit") {  // before the rate limit so page views never use up a visitor's signup budget
+      let b = {}; try { b = JSON.parse((await request.text()).slice(0, 200)); } catch {}
+      const slug = (s, n) => String(s || "").toLowerCase().replace(/[^a-z0-9.-]/g, "").slice(0, n);
+      const src = slug(b.src, 40) || "direct", lang = slug((request.headers.get("accept-language") || "").split(/[-,;]/)[0], 3) || "xx";
+      const key = `hit:${new Date().toISOString().slice(0, 10)}|${src}|${lang}`;
+      pending.set(key, (pending.get(key) || 0) + 1);
+      // KV's free tier allows 1,000 writes a day and signups share them, so counts are batched per isolate and written every
+      // HIT_BATCH visits. A recycled isolate loses its unflushed counts: fine for "which link brings people", not for billing.
+      if ([...pending.values()].reduce((a, n) => a + n, 0) >= Number(env.HIT_BATCH || 20)) {
+        const batch = [...pending]; pending.clear();
+        ctx.waitUntil(Promise.all(batch.map(async ([k, n]) => env.WAITLIST.put(k, String(Number(await env.WAITLIST.get(k) || 0) + n)))));
+      }
+      return json({ ok: true });
+    }
 
     const ip = request.headers.get("cf-connecting-ip") || "unknown";
     const { success } = await env.LIMITER.limit({ key: ip });
