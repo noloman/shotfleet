@@ -1324,15 +1324,15 @@ def app_locale(label, available):
         if canon(a) == canon(label) or canon(a) == canon(label).split("-")[0]: return a
     return None
 
-def warm_up_ocr(ocr):
+def warm_up_ocr(ocr, timeout=600):
     """One recognition on its own before the parallel ones, so macOS compiles its model once (minutes after a restart).
-    If even that doesn't answer, macOS's recognition service is stuck: say so now instead of timing out per image."""
+    False if even that doesn't answer: macOS's recognition service (ANECompilerService) is stuck."""
     try:
-        if sh([ocr, "--warmup"], timeout=600).stdout.strip(): return
+        return bool(sh([ocr, "--warmup"], timeout=timeout).stdout.strip())
     except subprocess.TimeoutExpired:
-        pass
-    raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy use); "
-               "restarting the Mac fixes it. Or check with another OCR: --ocr-command 'tesseract {image} stdout -l {tesseract}'")
+        return False
+
+TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
 
 def screen_text(png):
     """The screen's text as the app reported it during the run (exact, any script), in OCR's result shape; or None."""
@@ -1356,7 +1356,10 @@ def read_text(ocr, png, timeout=120):
         "restarting the Mac fixes it" if stuck else "Is the Mac overloaded? Run check again"))
 
 # Tesseract's names for the scripts macOS can't read (for {tesseract} in --ocr-command)
-TESSERACT = {"el": "ell", "he": "heb", "iw": "heb", "hy": "hye", "ka": "kat", "bn": "ben", "as": "asm", "gu": "guj",
+TESSERACT = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "it": "ita", "pt": "por", "nl": "nld", "sv": "swe",
+             "da": "dan", "no": "nor", "nb": "nor", "fi": "fin", "pl": "pol", "cs": "ces", "ro": "ron", "tr": "tur",
+             "ru": "rus", "uk": "ukr", "ar": "ara", "ja": "jpn", "ko": "kor", "th": "tha", "vi": "vie", "hi": "hin",
+             "mr": "mar", "id": "ind", "in": "ind", "ms": "msa", "el": "ell", "he": "heb", "iw": "heb", "hy": "hye", "ka": "kat", "bn": "ben", "as": "asm", "gu": "guj",
              "pa": "pan", "ta": "tam", "te": "tel", "kn": "kan", "ml": "mal", "or": "ori", "si": "sin", "km": "khm",
              "lo": "lao", "my": "mya", "am": "amh", "ur": "urd", "fa": "fas", "ne": "nep", "bg": "bul", "mk": "mkd",
              "sr": "srp", "be": "bel", "kk": "kaz", "ky": "kir", "mn": "mon", "hu": "hun", "sk": "slk", "hr": "hrv",
@@ -1366,14 +1369,17 @@ TESSERACT = {"el": "ell", "he": "heb", "iw": "heb", "hy": "hye", "ka": "kat", "b
 def external_ocr(command, png, lp):
     """Run the user's OCR command for a language macOS can't read; {image}, {lang} and {tesseract} are filled in.
     e.g. --ocr-command 'tesseract {image} stdout -l {tesseract}'"""
-    lang = canon(lp).split("-")[0]
-    args = [a.format(image=str(png), lang=lang, tesseract=TESSERACT.get(lang, lang)) for a in shlex.split(command)]
+    c = canon(lp); lang = c.split("-")[0]
+    tess = ("chi_tra" if "Hant" in c else "chi_sim") if lang == "zh" else TESSERACT.get(lang, lang)
+    args = [a.format(image=str(png), lang=lang, tesseract=tess,
+                     tesseract_with_english=tess if tess == "eng" else f"eng+{tess}") for a in shlex.split(command)]
     try:
         r = sh(args, timeout=180)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Fail(f"--ocr-command failed on {png.name}: {e}")
     if r.returncode != 0:
-        raise Fail(f"--ocr-command failed on {png.name}: {(r.stderr or r.stdout).strip()[-200:]}")
+        hint = " (install the language data: brew install tesseract-lang)" if "Failed loading language" in r.stderr else ""
+        raise Fail(f"--ocr-command failed on {png.name}: {(r.stderr or r.stdout).strip()[-200:]}{hint}")
     text = "\n".join(l for l in r.stdout.splitlines() if l.strip())
     return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "external"}
 
@@ -1424,17 +1430,26 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr = ocr_tool()
-    if any(not Path(png).with_suffix(".texts.json").exists() for _, png in pngs): warm_up_ocr(ocr)
+    ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
+    use_vision = True
+    if any(not Path(png).with_suffix(".texts.json").exists() for _, png in pngs) and not warm_up_ocr(ocr):
+        if not ocr_command and not shutil.which("tesseract"):
+            raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy "
+                       "use); restarting the Mac fixes it. Or install Tesseract and shotfleet uses it automatically: "
+                       "brew install tesseract tesseract-lang")
+        print("macOS text recognition isn't answering (its ANECompilerService is stuck); using "
+              + ("your --ocr-command" if ocr_command else "Tesseract") + " instead")
+        use_vision, ocr_command = False, ocr_command or TESSERACT_COMMAND
     # ponytail: 4 at a time; 10 parallel first-use requests are the likely trigger of macOS's text-recognition
     # service wedging (seen twice); raise it if that turns out to be unrelated
     with ThreadPoolExecutor(max_workers=4) as ex:  # each OCR is its own process
-        ocrs = list(ex.map(lambda item: screen_text(item[1]) or read_text(ocr, item[1]), pngs))
-        ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
-        if ocr_command:  # scripts macOS can't read go to the user's OCR (e.g. Tesseract) instead
+        ocrs = list(ex.map(lambda item: screen_text(item[1]) or (read_text(ocr, item[1]) if use_vision else {}), pngs))
+        if ocr_command:  # scripts macOS can't read (or everything, when macOS's OCR is stuck) go to the other OCR
             def unreadable(label):
                 lang = canon(app_locale(label, tables) or label).split("-")[0]
                 return LEGACY.get(lang, lang) not in readable_languages() | {"zh"}
-            redo = [i for i, (label, _) in enumerate(pngs) if unreadable(label)]
+            redo = [i for i, (label, png) in enumerate(pngs)
+                    if not screen_text(png) and (not use_vision or unreadable(label))]
             for i, r in zip(redo, ex.map(lambda i: external_ocr(ocr_command, pngs[i][1], app_locale(pngs[i][0], tables) or pngs[i][0]), redo)):
                 ocrs[i] = {**ocrs[i], **r}
     rows, by_hash = [], {}

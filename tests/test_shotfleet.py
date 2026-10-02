@@ -1003,5 +1003,41 @@ class MultiDevice(unittest.TestCase):
                 self.assertEqual(sf.ipad_set_missing(out), 1)  # iPad app, iPhone set only
 
 
+class StuckOcrFallback(unittest.TestCase):
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp())
+        self.bin = self.d / "bin"; self.bin.mkdir()
+        self.log = self.d / "calls.txt"
+        (self.bin / "tesseract").write_text(f'#!/bin/sh\necho "$@" >> {self.log}\ncat "$1.txt"\n')
+        (self.bin / "tesseract").chmod(0o755)
+        for lp, words in (("de", ["Weiter", "Einstellungen", "Training starten"]), ("ja", ["Next", "Settings", "Start Training"])):
+            png = self.d / "shots" / lp / "1.png"; png.parent.mkdir(parents=True)
+            png.write_bytes(png_c(1320, 2868)); Path(f"{png}.txt").write_text("\n".join(words))
+        self.strings = {"en": {"a": "Next", "b": "Settings", "c": "Start Training"},
+                        "de": {"a": "Weiter", "b": "Einstellungen", "c": "Training starten"},
+                        "ja": {"a": "次へ", "b": "設定", "c": "トレーニング開始"}}
+
+    def check(self):
+        with mock.patch.object(sf, "warm_up_ocr", return_value=False), \
+             mock.patch.object(sf, "read_text", side_effect=AssertionError("macOS OCR must not be called")), \
+             mock.patch.dict(os.environ, {"PATH": f"{self.bin}:{os.environ['PATH']}"}), \
+             contextlib.redirect_stdout(io.StringIO()) as out:
+            code = sf.cmd_check(self.d / "shots", strings=self.strings, report_dir=self.d / "rep")
+        return code, out.getvalue(), json.loads((self.d / "rep/check.json").read_text())
+
+    def test_stuck_macos_ocr_falls_back_to_tesseract(self):
+        code, out, report = self.check()
+        self.assertIn("using Tesseract instead", out)
+        self.assertIn("-l eng+deu", self.log.read_text()); self.assertIn("-l eng+jpn", self.log.read_text())
+        self.assertTrue(any(p.startswith("ja/1.png: shows en") for p in report["problems"]))  # still catches English
+        self.assertFalse(any(p.startswith("de/") for p in report["problems"]))
+
+    def test_without_tesseract_it_says_how_to_fix(self):
+        (self.bin / "tesseract").unlink()
+        with mock.patch.object(sf.shutil, "which", return_value=None):
+            with self.assertRaisesRegex(sf.Fail, "brew install tesseract"):
+                self.check()
+
+
 if __name__ == "__main__":
     unittest.main()
