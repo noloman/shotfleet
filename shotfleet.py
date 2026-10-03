@@ -1138,6 +1138,22 @@ class Sim:
             raise RuntimeError(f"simctl {' '.join(args)}: {r.stderr.strip()}")
         return r.stdout
 
+def healthy_installs(pool, k, install):
+    """Install the app on the first k simulators of the pool that answer, shutting down any that don't (CoreSimulator
+    wedges under heavy load; one dead simulator must not end the run while others work). Returns the pool with the k
+    ready simulators first and the dead ones gone; raises when none answers."""
+    ready, dead = [], []
+    for sim in pool:
+        if len(ready) == k: break
+        try: install([sim]); ready.append(sim)
+        except RuntimeError as e:
+            print(f"simulator {sim.udid} stopped answering ({e}); carrying on without it", flush=True)
+            dead.append(sim); OUR_SIMS.discard(sim.udid)
+            try: sh(["xcrun", "simctl", "shutdown", sim.udid], timeout=60)
+            except (OSError, subprocess.TimeoutExpired): pass
+    if not ready: raise RuntimeError("no simulator answers any more; restart the Mac or run `xcrun simctl shutdown all` and run again")
+    return ready + [s for s in pool if s not in ready and s not in dead]
+
 def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
     or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
@@ -1457,7 +1473,8 @@ def ios_run_inner(cfg, path, only, parallel):
             sim.run("terminate", sim.udid, cfg["bundle_id"], check=False)
             sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
             sim.run("install", sim.udid, cfg["app"])
-    install(pool)
+    pool[:] = healthy_installs(pool, len(pool), install)
+    n = len(pool)
 
     expected = count_screenshots(flow)
 
@@ -1505,7 +1522,8 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
         # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
         # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
-        install(pool[:min(n, len(retry))])
+        pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
+        n = len(pool)
         final.update(batch(retry, 2))
     results = []
     for lp, r_ in final.items():
