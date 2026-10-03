@@ -94,7 +94,7 @@ If the button cannot be reached even by scrolling, that is a bug in the app's la
 ## launchApp
 
 - The first `launchApp` becomes shotfleet's fresh-state launch (clean install, language arguments added). Later `launchApp` steps also get the language arguments.
-- Write options as a **block**, never inline `{ ... }` (inline fails with `write launchApp options as a block`):
+- Options can be a block (below) or on one line, `- launchApp: { permissions: { all: allow } }`; shotfleet reads both. `- launchApp: com.example.app` sets the app id:
 
 ```yaml
 - launchApp:

@@ -175,3 +175,53 @@ class InitInAFlutterFolder(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnpackBuilds(unittest.TestCase):
+    """EAS hands iOS simulator builds over as .tar.gz; init unpacks them and writes the .app into the config."""
+    def make_app_tar(self, d, name="MyApp-sim.tar.gz", root="MyApp.app"):
+        import tarfile
+        src = tree({})
+        sim_app(src, root, "com.example.eas")
+        path = Path(d) / name
+        with tarfile.open(path, "w:gz") as t: t.add(src / root, arcname=root)
+        return path
+
+    def test_tar_gz_zip_and_a_nested_folder(self):
+        import zipfile
+        d = Path(tempfile.mkdtemp())
+        app = sf.unpack_build(self.make_app_tar(d), d / "out")
+        self.assertEqual((app.name, app.parent.name), ("MyApp.app", "MyApp-sim"))
+        z = d / "b.zip"
+        with zipfile.ZipFile(z, "w") as zf:
+            zf.writestr("build/MyApp.app/Info.plist", plistlib.dumps({"CFBundleExecutable": "A"}))
+        self.assertEqual(sf.unpack_build(z, d / "out2").name, "MyApp.app")
+
+    def test_unpacking_twice_replaces_the_old_copy(self):
+        d = Path(tempfile.mkdtemp()); arc = self.make_app_tar(d)
+        first = sf.unpack_build(arc, d / "out"); (first / "stale").write_text("x")
+        again = sf.unpack_build(arc, d / "out")
+        self.assertFalse((again / "stale").exists())
+
+    def test_an_archive_with_nothing_installable_or_with_escaping_paths_is_refused(self):
+        import tarfile, io as _io
+        d = Path(tempfile.mkdtemp())
+        empty = d / "e.tar.gz"
+        with tarfile.open(empty, "w:gz") as t:
+            info = tarfile.TarInfo("readme.txt"); info.size = 2; t.addfile(info, _io.BytesIO(b"hi"))
+        with self.assertRaisesRegex(sf.Fail, "holds no .app or .apk"): sf.unpack_build(empty, d / "o")
+        evil = d / "evil.tgz"
+        with tarfile.open(evil, "w:gz") as t:
+            info = tarfile.TarInfo("../outside.txt"); info.size = 2; t.addfile(info, _io.BytesIO(b"hi"))
+        with self.assertRaisesRegex(sf.Fail, "outside its folder"): sf.unpack_build(evil, d / "o2")
+        self.assertFalse((d / "outside.txt").exists())
+        notarchive = d / "bad.tar.gz"; notarchive.write_bytes(b"not a tar")
+        with self.assertRaisesRegex(sf.Fail, "can't unpack"): sf.unpack_build(notarchive, d / "o3")
+
+    def test_init_takes_the_archive_directly(self):
+        d = Path(tempfile.mkdtemp()); arc = self.make_app_tar(d)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out): sf.cmd_init([str(arc)], d / "cfg")
+        cfg = tomllib.loads((d / "cfg/shotfleet.toml").read_text())
+        self.assertTrue(cfg["ios"]["app"].endswith("MyApp.app"), cfg)
+        self.assertTrue((d / "cfg" / cfg["ios"]["app"]).is_dir())

@@ -9,9 +9,16 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
 
-# These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in test_portable.py
-sf.is_mac = lambda: True
-sf.ABI, sf.DEFAULT_IMAGE = "arm64-v8a", "system-images;android-36;google_apis;arm64-v8a"
+needs_mac = unittest.skipUnless(sys.platform == "darwin", "needs macOS tools (PlistBuddy, swiftc, xcrun, BSD sed)")
+
+# These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in
+# test_portable.py. The patches last for this module only.
+_MAC = [mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf, "SYSTEM_SDKS", ()),
+        mock.patch.object(sf, "ABI", "arm64-v8a"), mock.patch.object(sf, "DEFAULT_IMAGE", "system-images;android-36;google_apis;arm64-v8a")]
+def setUpModule():
+    for p in _MAC: p.start()
+def tearDownModule():
+    for p in reversed(_MAC): p.stop()
 MAC_READS = {"en", "de", "nl", "fr", "es", "it", "pt", "ru", "uk", "pl", "tr", "ja", "ko", "zh", "ar", "th", "hi"}  # a subset of what macOS reads
 
 EN = {"next": "Next", "common_next": "Next", "advanced": "Advanced", "start": "Start Training",
@@ -100,9 +107,27 @@ class LocalizeFlow(unittest.TestCase):
         no_clear = sf.localize_flow("appId: x\n---\n- launchApp:\n    clearState: false\n", "de", Path("/o"))
         self.assertNotIn("clearState: true", no_clear)
 
-    def test_inline_launch_app_options_are_rejected_clearly(self):
+    def test_inline_launch_app_options_are_expanded_and_merged(self):
+        flow = 'appId: x\n---\n- launchApp: { permissions: { all: allow }, arguments: { demo: "1" }, stopApp: false }  # one line\n'
+        out = sf.localize_flow(flow, "de", Path("/o"))
+        self.assertEqual(out.count("- launchApp"), 1)
+        for line in ("    clearState: true", "    permissions:", "      all: allow", '      demo: "1"', '      AppleLanguages: "(de)"', "    stopApp: false"):
+            self.assertIn(line + "\n", out)
+        self.assertEqual(out.count("    arguments:"), 1)
+        self.assertNotIn("{", out.split("\n---\n")[1])
+
+    def test_launch_app_with_just_an_app_id_and_inline_arguments_in_a_block(self):
+        out = sf.localize_flow("appId: x\n---\n- launchApp: com.example.app\n", "de", Path("/o"))
+        self.assertIn("    appId: com.example.app\n", out)
+        out = sf.localize_flow("appId: x\n---\n- launchApp:\n    arguments: { a: b, c: 'd e' }\n", "de", Path("/o"))
+        self.assertIn("      a: b\n      c: 'd e'\n", out); self.assertIn('AppleLanguages: "(de)"', out)
+
+    def test_inline_lists_and_broken_inline_options(self):
+        self.assertEqual(sf.flow_mapping_lines("{ a: [x, y], b: {} }"), ["    a:", "      - x", "      - y", "    b: {}"])
+        for bad in ("{ a: 1", "{ a 1 }", "{ a: 'open }", "{ a: 1 } trailing"):
+            with self.assertRaises(ValueError, msg=bad): sf.flow_mapping_lines(bad)
         with self.assertRaisesRegex(ValueError, "as a block"):
-            sf.localize_flow("appId: x\n---\n- launchApp: { clearState: true }\n", "de", Path("/o"))
+            sf.localize_flow("appId: x\n---\n- launchApp:\n    arguments: nope\n", "de", Path("/o"))
 
     def test_system_dialog_buttons_keep_their_english_text(self):  # iOS draws them in the device language
         out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Allow\n- tapOn: \"Don't Allow\"\n",
@@ -115,6 +140,13 @@ class LocalizeFlow(unittest.TestCase):
 
 
 class AndroidFlow(unittest.TestCase):
+    def test_inline_launch_app_options_lose_clear_state_but_keep_the_rest(self):
+        out = sf.android_flow("appId: x\n---\n- launchApp: { clearState: true, permissions: { all: allow } }\n- takeScreenshot: a\n",
+                              "r1", Path("/o"))
+        body = out.split("\n---\n")[1]
+        self.assertNotIn("clearState", body)
+        self.assertIn("- launchApp:\n    permissions:\n      all: allow\n", body)
+
     def test_adds_launch_strips_clear_state_and_moves_screenshots(self):
         flow = "appId: x\n---\n- tapOn:\n    text: 'Weiter'\n    clearState: true\n- takeScreenshot: 01_home\n"
         out = sf.android_flow(flow, "r1_f0", Path("/out/tmp/r1/f0"))
@@ -550,7 +582,7 @@ class FirstRun(unittest.TestCase):
         self.assertNotIn("Traceback", r.stderr)
 
     def test_wrong_build_types_say_what_to_pass(self):
-        for name, words in (("x.ipa", "simulator .app"), ("x.aab", "assembleDebug"), ("x.zip", "unzip")):
+        for name, words in (("x.ipa", "simulator .app"), ("x.aab", "assembleDebug"), ("x.zip", "no such file")):
             r = self.cli("init", name, tempfile.mkdtemp())
             self.assertEqual(r.returncode, 2); self.assertIn(words, r.stderr)
 
@@ -813,6 +845,7 @@ class StoreRules(unittest.TestCase):
 
 
 class ExternalOcr(unittest.TestCase):
+    @needs_mac
     def test_scripts_macos_cant_read_go_to_the_ocr_command(self):
         el = {"a": "Επόμενο", "b": "Ρυθμίσεις", "c": "Έναρξη προπόνησης"}
         en = {"a": "Next", "b": "Settings", "c": "Start Training"}
@@ -1063,6 +1096,8 @@ class MultiDevice(unittest.TestCase):
             (out / name / "check.json").write_text(json.dumps({"problems": []}))
         return out
 
+    @needs_mac
+
     def test_export_keeps_both_sizes_and_ipad_rule_spans_devices(self):
         with tempfile.TemporaryDirectory() as d:
             out = self.make(d, {"iphone-17-pro-max": (1320, 2868), "ipad-pro-13-inch-m5-12gb": (2064, 2752)}, [1, 2])
@@ -1075,6 +1110,8 @@ class MultiDevice(unittest.TestCase):
             out = self.make(d, {"iphone-17-pro-max": (1320, 2868)}, [1, 2])
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(sf.ipad_set_missing(out), 1)  # iPad app, iPhone set only
+
+    @needs_mac
 
     def test_checking_one_device_of_a_multi_device_run_leaves_the_ipad_rule_to_the_whole_run(self):
         class Stop(Exception): pass
@@ -1109,6 +1146,8 @@ class StuckOcrFallback(unittest.TestCase):
             code = sf.cmd_check(self.d / "shots", strings=self.strings, report_dir=self.d / "rep")
         return code, out.getvalue(), json.loads((self.d / "rep/check.json").read_text())
 
+    @needs_mac
+
     def test_stuck_macos_ocr_falls_back_to_tesseract(self):
         code, out, report = self.check()
         self.assertIn("using Tesseract instead", out)
@@ -1122,6 +1161,8 @@ class StuckOcrFallback(unittest.TestCase):
         ocr = {"chars": 60, "text": "All Exercises WODs\nNothing logged yet", "lang": None, "langs": {}, "ocr": "external"}
         got, problem = sf.judge_screen("de", ocr, t)
         self.assertEqual(got, "en"); self.assertIsNotNone(problem)
+
+    @needs_mac
 
     def test_without_tesseract_it_says_how_to_fix(self):
         (self.bin / "tesseract").unlink()
@@ -1146,6 +1187,8 @@ class SimpleConfig(unittest.TestCase):
         self.assertEqual(sf.with_app_id("---\n- launchApp\n", "com.x"), "appId: com.x\n---\n- launchApp\n")
         out = sf.localize_flow(sf.with_app_id(steps, "com.x"), "de", Path("/shots"))
         self.assertTrue(out.startswith("appId: com.x\nname: de\n---\n"))
+
+    @needs_mac
 
     def test_only_the_build_is_required_and_ids_come_from_it(self):
         with tempfile.TemporaryDirectory() as d:
@@ -1261,6 +1304,8 @@ class Extending(unittest.TestCase):
                                       [{"Next": "Weiter!"}, {"Next": "Sig."}])
         self.assertEqual(out, "- tapOn: '(Weiter!|Sig\\.)'\n")
 
+    @needs_mac
+
     def test_config_tables_are_validated(self):
         with tempfile.TemporaryDirectory() as d:
             for body, msg in (('[hooks]\nafter_exprt = "x"\n', "unknown event 'after_exprt'; did you mean 'after_export'"),
@@ -1280,6 +1325,8 @@ class Extending(unittest.TestCase):
             self.assertEqual(sf.run_hook({"before_run": ["exit 3", "echo never"]}, "before_run", str(Path(d) / "x.toml"), {}), (3, "exit 3"))
             self.assertEqual(sf.run_hook({}, "before_run", "x", {}), (0, None))  # nothing configured: nothing runs
 
+    @needs_mac
+
     def test_before_run_failure_aborts_after_run_failure_changes_the_exit_code(self):
         with tempfile.TemporaryDirectory() as d:
             cfg_path = self.config(d, '[hooks]\nbefore_run = "exit 5"\n')
@@ -1290,6 +1337,8 @@ class Extending(unittest.TestCase):
             with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform", return_value=0), \
                  contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(sf.run_platform(cfg_path, None, None, "ios"), 1)
+
+    @needs_mac
 
     def test_after_run_counts_problems_across_all_devices_of_a_multi_device_run(self):
         with tempfile.TemporaryDirectory() as d:
@@ -1441,8 +1490,12 @@ class AutoTesseract(unittest.TestCase):
             sf.cmd_check(d / "shots", strings=strings, report_dir=d / "rep")
         return json.loads((d / "rep/check.json").read_text())["screenshots"][0]["lang"]
 
+    @needs_mac
+
     def test_installed_tesseract_verifies_scripts_macos_cant_read(self):
         self.assertEqual(self.run_check({"eng", "ell"}), "el")   # read and verified
+
+    @needs_mac
 
     def test_missing_language_pack_leaves_it_unverified_not_broken(self):
         self.assertIsNone(self.run_check({"eng"}))               # no Greek data: "couldn't read", no crash
@@ -1558,6 +1611,8 @@ class Review20261003(unittest.TestCase):
             with self.assertRaises(sf.Fail): sf.ios_run({}, None)
         self.assertEqual(calls, [["xcrun", "simctl", "shutdown", "U1"]]); self.assertFalse(sf.OUR_SIMS)
 
+    @needs_mac
+
     def test_new_multi_device_run_hides_an_old_single_run_and_export_needs_the_ipad_set(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True)
@@ -1569,12 +1624,16 @@ class Review20261003(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(sf.Fail, "13\" iPad"):
                 sf.cmd_export(out, Path(d) / "fl")
 
+    @needs_mac
+
     def test_check_passes_report_dir_to_each_device(self):
         with tempfile.TemporaryDirectory() as d:
             out = MultiDevice().make(d, {"a": (1320, 2868), "b": (2064, 2752)}, [1])
             with mock.patch.object(sf, "cmd_check", return_value=0) as c, mock.patch.object(sf, "ipad_set_missing", return_value=0):
                 sf.check_any(out, report=Path(d) / "rep")
             self.assertEqual(sorted(k.kwargs["report_dir"].name for k in c.call_args_list), ["a", "b"])
+
+    @needs_mac
 
     def test_tablet_only_play_folder_is_checked_with_play_rules(self):
         with tempfile.TemporaryDirectory() as d:
@@ -1609,6 +1668,8 @@ class Review20261003(unittest.TestCase):
         with mock.patch.object(sf.shutil, "which", return_value="/x"), mock.patch.object(sf, "sh", return_value=r):
             self.assertEqual(sf.tesseract_languages(), {"eng", "deu"})
         sf.tesseract_languages.cache_clear()
+
+    @needs_mac
 
     def test_macos_ocr_hanging_mid_check_switches_to_tesseract(self):
         with tempfile.TemporaryDirectory() as d:
@@ -1702,6 +1763,8 @@ class FrameworkHints(unittest.TestCase):
             else: self.assertNotIn("hint:", err.getvalue())
             self.assertIn("languages", out.getvalue())
 
+    @needs_mac
+
     def test_run_and_check_show_the_hint_before_they_can_fail(self):
         flutter = self.flutter()
         (self.dir / "shotfleet.toml").write_text(f'[ios]\napp = "{flutter}"\n'); (self.dir / "flow.yaml").write_text("- launchApp\n")
@@ -1758,6 +1821,8 @@ class RetryOnSlowSimulator(unittest.TestCase):
              contextlib.redirect_stdout(io.StringIO()) as out:
             code = sf.cmd_run(str(self.d / "shotfleet.toml"))
         return code, out.getvalue()
+
+    @needs_mac
 
     def test_retry_reinstalls_the_app_first(self):
         code, out = self.run_it("1")
@@ -1926,6 +1991,8 @@ class ContentExpect(unittest.TestCase):
             f = Path(d) / "shotfleet.toml"; f.write_text('[ios]\napp = "x.app"\n')
             with self.assertRaisesRegex(sf.Fail, r"no \[expect.<screenshot>\] table"): sf.read_expect(f)
 
+    @needs_mac
+
     def test_check_content_cli_reads_the_config_and_keeps_the_json_keys(self):
         d = Path(tempfile.mkdtemp()); shots_with_texts(d, {lp: {"01_home": t} for lp, t in self.HOME.items()})
         for lp, words in self.STRINGS.items():
@@ -1942,6 +2009,8 @@ class ContentExpect(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()) as e2:
             self.assertEqual(sf.main(["check", str(d / "shots"), "--content", str(d / "missing.toml")]), 2)
         self.assertIn("no config at", e2.getvalue())
+
+    @needs_mac
 
     def test_run_passes_the_expect_tables_to_check(self):
         with tempfile.TemporaryDirectory() as d:
@@ -1987,6 +2056,8 @@ class SetupCommands(unittest.TestCase):
             self.assertEqual(mine[-2:], [(("shell", "setprop debug.remoti.demo 1"), True), (("shell", "settings put system font_scale 1.0"), True)])
             self.assertEqual(mine[len(sf.DEMO_MODE) - 1], (("shell", sf.DEMO_MODE[-1]), False))  # demo mode first, and it stays best-effort
             self.assertEqual(len(mine), len(sf.DEMO_MODE) + 2)
+
+    @needs_mac
 
     def test_a_failing_command_is_a_setup_error_that_prints_it(self):
         class Boom:
@@ -2213,6 +2284,8 @@ class G1CollisionWarningComesFirst(unittest.TestCase):
         self.assertLess(warn, boot, lines)
         self.assertIn("anchor that step (below:/above:)", lines[warn])
 
+    @needs_mac
+
     def test_ios(self):
         cfg = {**self.cfg, "app": "My.app", "bundle_id": "x.y", "device_type": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max",
                "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0"}
@@ -2229,6 +2302,7 @@ class G1CollisionWarningComesFirst(unittest.TestCase):
 
 class G1SetupCommandFailureStopsTheRun(unittest.TestCase):
     """C120: a failing [ios] simctl / [android] shell command stops the run before anything is installed or captured (exit 2, command printed)."""
+    @needs_mac
     def test_ios_stops_before_install_and_maestro(self):
         d = Path(tempfile.mkdtemp()); app = d / "My.app"
         (app / "en.lproj").mkdir(parents=True); (app / "en.lproj/Localizable.strings").write_text('"next" = "Next";\n')
@@ -2281,6 +2355,7 @@ class G1SetupCommandFailureStopsTheRun(unittest.TestCase):
 
 class G1ContentExpectInRun(unittest.TestCase):
     """C119: `run` hands the config's [expect.*] tables to the check that ends it (the check itself is ContentExpect)."""
+    @needs_mac
     def test_run_passes_expect_to_cmd_check(self):
         t = RetryOnSlowSimulator("run_it"); t.setUp()
         (t.d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nlocales = ["de"]\n[expect.01]\nany = ["Hi"]\n')
@@ -2438,6 +2513,8 @@ class G1HookVariables(unittest.TestCase):
     """C068: the environment each hook event really gets. (README.md says _BUNDLE_ID reaches every event and _LOCALES the run
     hooks; the export hooks get no _BUNDLE_ID: see the claim.)"""
     NAMES = ("EVENT", "VERSION", "CONFIG", "PLATFORM", "OUT", "BUNDLE_ID", "LOCALES", "EXIT", "PROBLEMS", "REPORT", "FASTLANE")
+
+    @needs_mac
 
     def test_each_event_gets_exactly_these_variables(self):
         d = Path(tempfile.mkdtemp()); app = d / "My.app"; app.mkdir()

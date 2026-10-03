@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one with: brew install python", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import plistlib, platform as host_platform, ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, platform as host_platform, ssl, subprocess, tarfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -424,7 +424,7 @@ def locale_from_path(path, codes=None):
         if d.name.startswith("values"):
             return android_locale(d.name[7:]) if d.name != "values" else "base"
         if d.suffix == ".lproj": return d.stem
-        if ok(d.name): return d.name.replace("_", "-")
+        if ok(d.name) and lang(d.name): return d.name.replace("_", "-")  # app/i18n/index.ts is not "app" (a folder, not a language)
     return None
 
 def icu_forms(key, text):
@@ -446,6 +446,12 @@ def icu_forms(key, text):
         out[f"{key}#{f.group(1)}"] = head + form_text + tail
     return out or {key: text}
 
+def icu_forms_all(flat):
+    """(key, text) pairs of a flattened i18next-style table: key_one/key_other become key#one/key#other, ICU plurals one entry per form."""
+    for k, v in flat.items():
+        k = re.sub(r"_(zero|one|two|few|many|other)$", r"#\1", k)
+        yield from icu_forms(k, v).items()
+
 def flatten(d, prefix=""):
     """Nested JSON (i18next, Lokalise) -> {'a.b.c': text}."""
     out = {}
@@ -453,6 +459,112 @@ def flatten(d, prefix=""):
         if isinstance(v, dict): out.update(flatten(v, f"{prefix}{k}."))
         elif isinstance(v, str): out[prefix + k] = v
     return out
+
+def strip_js_comments(src):
+    """`src` without // and /* */ comments; string and template literals are left alone."""
+    out, i, n = [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if c in "\"'`":
+            j = i + 1
+            while j < n and src[j] != c: j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 1]); i = j + 1
+        elif src.startswith("//", i):
+            j = src.find("\n", i); i = n if j < 0 else j
+        elif src.startswith("/*", i):
+            j = src.find("*/", i + 2); i = n if j < 0 else j + 2
+        else: out.append(c); i += 1
+    return "".join(out)
+
+JS_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "b": "\b", "f": "\f", "v": "\v", "0": "\0"}
+
+def parse_js_translations(src):
+    """({key: text or nested dict}, skipped) for the object literal that holds a translation file's texts, read as data and
+    never run: `export default {..}`, `const en = {..}`, `const de: Translations = {..}`, `module.exports = {..}`. Strings,
+    template literals without ${}, 'a' + 'b', nested objects and arrays of strings are read; anything that is code (calls,
+    variables, functions, spreads) is skipped and counted. Raises ValueError when no object literal is found."""
+    text = strip_js_comments(src)
+    m = re.search(r"(?:export\s+default\s*(?:\w+\s*\(\s*)?|module\.exports\s*=\s*|exports\.\w+\s*=\s*|\b(?:const|let|var)\s+[\w$]+\s*(?::[^=;{]+?)?=\s*)\(?\s*(?=\{)", text)
+    if not m: raise ValueError("no object literal with the translations found (export default { ... } or const en = { ... })")
+    pos, n, skipped = m.end(), len(text), []
+    def ws():
+        nonlocal pos
+        while pos < n and text[pos].isspace(): pos += 1
+    def string():
+        nonlocal pos
+        q = text[pos]; pos += 1; buf = []; dynamic = False
+        while pos < n and text[pos] != q:
+            c = text[pos]
+            if c == "\\" and pos + 1 < n:
+                e = text[pos + 1]
+                if e == "u" and re.match(r"[0-9a-fA-F]{4}", text[pos + 2:pos + 6]): buf.append(chr(int(text[pos + 2:pos + 6], 16))); pos += 6; continue
+                if e == "u" and text[pos + 2:pos + 3] == "{":
+                    end = text.find("}", pos); buf.append(chr(int(text[pos + 3:end], 16))); pos = end + 1; continue
+                if e == "x" and re.match(r"[0-9a-fA-F]{2}", text[pos + 2:pos + 4]): buf.append(chr(int(text[pos + 2:pos + 4], 16))); pos += 4; continue
+                if e == "\n": pos += 2; continue
+                buf.append(JS_ESCAPES.get(e, e)); pos += 2; continue
+            if q == "`" and c == "$" and text[pos + 1:pos + 2] == "{": dynamic = True
+            buf.append(c); pos += 1
+        pos += 1
+        return None if dynamic else "".join(buf)
+    def skip_expr():
+        nonlocal pos
+        depth = 0
+        while pos < n:
+            c = text[pos]
+            if c in "\"'`": string(); continue
+            if c in "([{": depth += 1
+            elif c in ")]}":
+                if depth == 0: return
+                depth -= 1
+            elif c == "," and depth == 0: return
+            pos += 1
+    def value(name):
+        nonlocal pos
+        ws()
+        if pos >= n: raise ValueError("the file ends inside the translations")
+        c = text[pos]
+        if c in "\"'`":
+            v = string(); ws()
+            while v is not None and text[pos:pos + 1] == "+":  # "a" + "b"
+                pos += 1; ws()
+                if pos < n and text[pos] in "\"'`": w = string(); v = None if w is None else v + w; ws()
+                else: v = None; skip_expr()
+            if v is None or text[pos:pos + 1] not in (",", "}", "]", ""): 
+                if text[pos:pos + 1] not in (",", "}", "]", ""): skip_expr()
+                skipped.append(name); return None
+            return v
+        if c == "{": return obj()
+        if c == "[":
+            pos += 1; items = []
+            while True:
+                ws()
+                if pos >= n: raise ValueError("missing ] in the translations")
+                if text[pos] == "]": pos += 1; return {str(i): v for i, v in enumerate(items) if v is not None}
+                items.append(value(f"{name}[{len(items)}]")); ws()
+                if text[pos:pos + 1] == ",": pos += 1
+        skip_expr(); skipped.append(name); return None  # a call, a variable, a function, a number...
+    def obj(prefix=""):
+        nonlocal pos
+        pos += 1; out = {}
+        while True:
+            ws()
+            if pos >= n: raise ValueError("missing } in the translations")
+            if text[pos] == "}": pos += 1; return out
+            if text.startswith("...", pos): skip_expr(); skipped.append("..."); pos += text[pos:pos + 1] == ","; continue
+            if text[pos] in "\"'": key = string()
+            elif text[pos] == "[": skip_expr(); skipped.append("[computed]"); pos += text[pos:pos + 1] == ","; continue
+            else:
+                km = re.compile(r"[\w$]+").match(text, pos)
+                if not km: raise ValueError(f"unexpected {text[pos]!r} in the translations")
+                key, pos = km.group(), km.end()
+            ws()
+            if text[pos:pos + 1] != ":": skip_expr(); skipped.append(key); pos += text[pos:pos + 1] == ","; continue  # shorthand or method
+            pos += 1
+            v = value(key); ws()
+            if v is not None and key is not None: out[key] = v
+            if text[pos:pos + 1] == ",": pos += 1
+    return obj(), skipped
 
 def read_translation_file(f, base):
     """{locale: {key: text}} from one source file, by format."""
@@ -467,11 +579,18 @@ def read_translation_file(f, base):
             if not k.startswith("@") and isinstance(v, str): out.update(icu_forms(k, v))
         return {lp: out}
     if ext == ".json":  # i18next / react-intl / Lokalise: nested keys, key_one/key_other plurals
-        out = {}
-        for k, v in flatten(json.loads(f.read_text())).items():
-            k = re.sub(r"_(zero|one|two|few|many|other)$", r"#\1", k)
-            out.update(icu_forms(k, v))
-        return {lp: out}
+        return {lp: dict(icu_forms_all(flatten(json.loads(f.read_text()))))}
+    if ext in (".ts", ".tsx", ".js", ".mjs", ".cjs"):  # Ignite, i18n-js, vue-i18n: translations written as an object in code
+        try: tree, skipped = parse_js_translations(f.read_text(encoding="utf-8"))
+        except (ValueError, UnicodeDecodeError) as e:
+            raise Fail(f"can't read {f.name} as a translation file: {e}")
+        if skipped: print(f"note: {f.name}: {len(skipped)} entr{'y is' if len(skipped) == 1 else 'ies are'} code, not text, and skipped "
+                          f"({', '.join(dict.fromkeys(skipped))[:80]})", file=sys.stderr)
+        langs = {k: v for k, v in tree.items() if isinstance(v, dict) and locale_from_path(Path(k + ".json")) is not None}
+        if tree and len(langs) == len(tree):  # { en: {...}, de: {...} }: one file, every language
+            return {k: dict(icu_forms_all(flatten(v))) for k, v in langs.items()}
+        if locale_from_path(f) in (None, "base"): return {}  # index.ts, i18n.ts and other code next to the language files
+        return {lp: dict(icu_forms_all(flatten(tree)))}
     if ext == ".xcstrings":  # String Catalog source: every language in one file
         d, out = json.loads(f.read_text()), {}
         src = d.get("sourceLanguage", base)
@@ -497,6 +616,8 @@ def read_translation_file(f, base):
             if e.tag == "string" and e.get("translatable") != "false": out[e.get("name")] = text(e)
             elif e.tag == "plurals":
                 for item in e.findall("item"): out[f"{e.get('name')}#{item.get('quantity')}"] = text(item)
+            elif e.tag == "string-array":  # spinner and picker entries: name[0], name[1]...
+                for n, item in enumerate(e.findall("item")): out[f"{e.get('name')}[{n}]"] = text(item)
         return {lp: out}
     if ext in (".xlf", ".xliff"):  # XLIFF 1.2/2.0 exports: source and target languages in one file
         root = ET.parse(f).getroot()
@@ -598,8 +719,14 @@ def load_strings_apk(apk, base="en"):
             line, pending = pending, None
         elif name and (m := re.match(r'\s*\(([^)]*)\) "', line)) and not re.search(r'(?<!\\)"\s*$', line[m.end():]):
             pending = line; continue
-        if m := re.match(r"\s*resource 0x[0-9a-f]+ (string|plurals)/(\S+)", line):
+        if m := re.match(r"\s*resource 0x[0-9a-f]+ (string|plurals|array)/(\S+)", line):
             name, kind, loc = m.group(2), m.group(1), None; continue
+        if name and kind == "array":  # (de) (array) size=2 / ["Klein", "Groß"]
+            if m := re.match(r"\s*\(([^)]*)\) \(array\)", line):
+                loc = base if m.group(1) == "" else android_locale(m.group(1)); continue
+            if loc and re.match(r"\s*\[", line):
+                for n, item in enumerate(re.findall(r'"((?:[^"\\]|\\.)*)"', line)): out.setdefault(loc, {})[f"{name}[{n}]"] = unescape_android(item)
+                continue
         if name and kind == "plurals":  # (de) (plurals) size=2 / one="..." / other="..."
             if m := re.match(r"\s*\(([^)]*)\) \(plurals\)", line):
                 loc = base if m.group(1) == "" else android_locale(m.group(1)); continue
@@ -866,6 +993,67 @@ def with_env(header, env):
             return "\n".join(lines[:i + 1] + new + lines[i + 1:])
     return "\n".join(lines + ["env:"] + new)
 
+def flow_mapping_lines(text, indent=4):
+    """The block-YAML lines for an inline `{ key: value, nested: { a: b }, list: [x, y] }` (launchApp options written on one
+    line). Scalars keep their quotes. Raises ValueError on anything that isn't a flow mapping."""
+    pos, n = 0, len(text)
+    def ws():
+        nonlocal pos
+        while pos < n and text[pos].isspace(): pos += 1
+    def scalar(stops):
+        nonlocal pos
+        ws(); start = pos
+        if pos < n and text[pos] in "\"'":
+            q = text[pos]; pos += 1
+            while pos < n and text[pos] != q:
+                pos += 2 if text[pos] == "\\" and q == '"' else 1
+            if pos >= n: raise ValueError("unterminated quote in the launchApp options")
+            pos += 1
+            return text[start:pos]
+        while pos < n and text[pos] not in stops: pos += 1
+        return text[start:pos].strip()
+    def value():
+        nonlocal pos
+        ws()
+        if pos < n and text[pos] == "{": return mapping()
+        if pos < n and text[pos] == "[": return seq()
+        return scalar(",}]")
+    def mapping():
+        nonlocal pos
+        pos += 1; out = []
+        while True:
+            ws()
+            if pos < n and text[pos] == "}": pos += 1; return out
+            key = scalar(":,}")
+            if not key or pos >= n or text[pos] != ":": raise ValueError("write the launchApp options as 'key: value' pairs")
+            pos += 1
+            out.append((key, value())); ws()
+            if pos < n and text[pos] == ",": pos += 1
+            elif pos < n and text[pos] != "}": raise ValueError("expected , or } in the launchApp options")
+            elif pos >= n: raise ValueError("missing } in the launchApp options")
+    def seq():
+        nonlocal pos
+        pos += 1; out = []
+        while True:
+            ws()
+            if pos < n and text[pos] == "]": pos += 1; return ("seq", out)
+            out.append(value()); ws()
+            if pos < n and text[pos] == ",": pos += 1
+            elif pos >= n: raise ValueError("missing ] in the launchApp options")
+    ws()
+    if not text.lstrip().startswith("{"): raise ValueError("the launchApp options are not a { ... } mapping")
+    tree = mapping(); ws()
+    if pos != n: raise ValueError("unexpected text after } in the launchApp options")
+    def emit(items, pad):
+        lines = []
+        for k, v in items:
+            if isinstance(v, list) and v: lines += [" " * pad + f"{k}:"] + emit(v, pad + 2)
+            elif isinstance(v, list): lines.append(" " * pad + f"{k}: {{}}")
+            elif isinstance(v, tuple): lines += [" " * pad + f"{k}:"] + [" " * (pad + 2) + f"- {x}" for x in v[1]]
+            else: lines.append(" " * pad + f"{k}: {v}")
+        return lines
+    return emit(tree, indent)
+
 def localize_flow(flow, lproj, shots_dir, env=None):
     """Make a translated flow self-contained for one locale.
 
@@ -885,7 +1073,10 @@ def localize_flow(flow, lproj, shots_dir, env=None):
         if clear and top(r"clearState:") is None: lines.append("    clearState: true")
         i = top(r"arguments:")
         if i is None: return lines + opts + ["    arguments:"] + args
-        if opts[i].split(":", 1)[1].strip(): raise ValueError("write launchApp arguments as a block, not inline")
+        rest = opts[i].split(":", 1)[1].strip()
+        if rest.startswith("{"):  # `arguments: { demo: "1" }` on one line: expand it, then add ours to the block
+            opts[i:i + 1] = ["    arguments:"] + flow_mapping_lines(rest, indent=6)
+        elif rest: raise ValueError("write launchApp arguments as a block, not inline")
         return lines + opts[:i + 1] + args + opts[i + 1:]
 
     header, sep, body = flow.partition("\n---\n")
@@ -896,12 +1087,14 @@ def localize_flow(flow, lproj, shots_dir, env=None):
     while i < len(lines):
         line = lines[i]; i += 1
         if m := re.match(r"^(\s*)- launchApp:?\s*(.*)$", line):
-            if m.group(2): raise ValueError("write launchApp options as a block under '- launchApp:', not inline")
             opts = []  # the indented block under it, re-indented to 4 spaces
             while i < len(lines) and (not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > len(m.group(1))):
                 opts.append(lines[i]); i += 1
             pad = min((len(l) - len(l.lstrip()) for l in opts if l.strip()), default=4)
             opts = ["    " + l[pad:] for l in opts if l.strip()]
+            inline = re.sub(r"\s+#.*$", "", m.group(2)).strip() if m.group(2) else ""
+            if inline.startswith("{"): opts = flow_mapping_lines(inline) + opts  # `launchApp: { permissions: { all: allow } }`
+            elif inline: opts = [f"    appId: {inline}"] + opts  # `launchApp: com.example.app`
             if not started: first = opts  # the user's first launch is shotfleet's fresh-state launch
             else: out += [m.group(1) + l for l in launch(clear=False, opts=opts)]  # keep a nested step's indent
             started = True
@@ -1517,6 +1710,10 @@ def android_flow(text, name, shots_dir, env=None, mapped=()):
     # tears down its port forwards, which hung the run (measured 2026-10-01); Android screenshots are checked with OCR
     for line in body.splitlines():
         if re.match(r"^\s*clearState:", line): continue
+        if m := re.match(r"^(\s*)- launchApp:\s*(\{.*\})\s*(?:#.*)?$", line):  # one-line options: expand, so clearState can be dropped
+            out.append(f"{m.group(1)}- launchApp:")
+            out += [m.group(1) + l for l in flow_mapping_lines(m.group(2)) if not re.match(r"^    clearState:", l)]
+            continue
         out.append(line); redirect_screenshot(out, shots_dir)
     return header + "\n---\n" + "\n".join(out) + "\n"
 
@@ -2338,7 +2535,39 @@ WRONG_BUILD = {
     ".aab": "an .aab can't be installed directly. Build an APK instead: ./gradlew assembleDebug",
     ".xcarchive": "pass the simulator .app, not an archive (archives are device builds)",
     ".zip": "unzip it first, then pass the .app or .apk inside",
+    ".gz": "unpack it first (tar -xzf), then pass the .app inside",
 }
+
+ARCHIVES = (".tar.gz", ".tgz", ".tar", ".zip")
+
+def unpack_build(archive, into):
+    """EAS (Expo), CI jobs and download pages hand over a simulator build as .tar.gz, .tgz or .zip: unpack it into `into` and
+    return the .app or .apk inside. Members that would land outside `into` are refused."""
+    archive, into = Path(archive).expanduser().resolve(), Path(into).resolve()
+    if not archive.is_file(): raise Fail(f"no such file: {archive}")
+    name = archive.name
+    for ext in ARCHIVES:
+        if name.lower().endswith(ext): name = name[:-len(ext)]; break
+    target = into / name
+    if target.exists(): shutil.rmtree(target)
+    target.mkdir(parents=True)
+    try:
+        if zipfile.is_zipfile(archive):
+            with zipfile.ZipFile(archive) as z:
+                for member in z.namelist():
+                    if not (target / member).resolve().is_relative_to(target): raise Fail(f"{archive.name} holds a file outside its folder: {member}")
+                z.extractall(target)
+        else:
+            with tarfile.open(archive) as t:
+                for member in t.getmembers():
+                    if not (target / member.name).resolve().is_relative_to(target) or member.issym() and not (target / member.name).parent.joinpath(member.linkname).resolve().is_relative_to(target):
+                        raise Fail(f"{archive.name} holds a file outside its folder: {member.name}")
+                t.extractall(target)
+    except (tarfile.TarError, zipfile.BadZipFile, EOFError, OSError) as e:
+        raise Fail(f"can't unpack {archive.name}: {e}")
+    found = [p for pat in ("*.app", "*/*.app", "*.apk", "*/*.apk") for p in sorted(target.glob(pat)) if p.is_dir() == (p.suffix == ".app")]
+    if not found: raise Fail(f"{archive.name} holds no .app or .apk (found: {', '.join(sorted(x.name for x in target.iterdir())) or 'nothing'})")
+    return found[0]
 
 def build_hint(app):
     return WRONG_BUILD.get(Path(app).suffix.lower(), "pass a simulator .app or an .apk")
@@ -2468,7 +2697,8 @@ def flutter_arb_glob(cwd):
 I18N_JSON = ["src/locales/*/translation.json", "src/translations/*.json", "src/locales/*.json", "src/i18n/locales/*.json",
              "src/i18n/*.json", "src/lang/*.json", "src/assets/i18n/*.json", "locales/*/translation.json", "locales/*/*.json",
              "locales/*.json", "public/locales/*/translation.json", "assets/locales/*.json", "assets/i18n/*.json",
-             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "translations/*.json"]
+             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "translations/*.json",
+             "app/i18n/*.ts", "src/i18n/*.ts", "src/i18n/locales/*.ts", "src/locales/*.ts", "src/translations/*.ts", "i18n/*.ts", "locales/*.ts"]  # .ts: Ignite and friends
 I18N_PO = ["src/locales/*/messages.po", "src/locale/locales/*/messages.po", "locales/*/messages.po", "locale/*/LC_MESSAGES/*.po"]
 
 def detect_project(cwd):
@@ -2572,6 +2802,7 @@ def cmd_init(builds, dest="."):
     project = detect_project(Path.cwd())  # a Flutter, React Native, ... source folder: its builds, translation files and commands
     builds = [builds] if isinstance(builds, (str, Path)) else builds or find_builds(Path.cwd(), project=project)
     dest = Path(dest)
+    builds = [unpack_build(b, dest / ".shotfleet/builds") if str(b).lower().endswith(ARCHIVES) else b for b in builds]
     sections, found, source_strings = [], [], None
     strings_line = ""
     if project and project.strings:  # these frameworks keep translations in source files, not in the build
