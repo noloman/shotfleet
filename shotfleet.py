@@ -1665,10 +1665,11 @@ def android_pool(n, cfg, pool):
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
             raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + "; ".join(sdkmanager_commands(["cmdline-tools;latest"])))
+        avd_home().mkdir(parents=True, exist_ok=True)  # avdmanager refuses a named folder that does not exist
         r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n",
                env={**os.environ, **java_env(), "ANDROID_AVD_HOME": str(avd_home())})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
-            raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
+            raise Fail(f"couldn't create the emulator {avd} from {image}: {" ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]}. "
                        f"Install the image with: {'; '.join(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
