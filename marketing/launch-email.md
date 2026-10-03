@@ -10,8 +10,9 @@ your app ships, in parallel, then checks each one against your app's own strings
 
 What it caught on my own apps while I built it:
 - an onboarding page whose Next button was unreachable in Japanese, Korean, Chinese and Arabic,
-- store listings with translated captions over an app that was still in English,
-- screenshot sizes App Store Connect would have refused.
+- store listings with translated captions over an app that was still in English.
+
+It also checks screenshot sizes against App Store Connect's rules.
 
 Buy: https://shotfleet.com/#price
 Install: curl -fsSL https://shotfleet.com/install.sh | sh

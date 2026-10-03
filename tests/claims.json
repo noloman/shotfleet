@@ -219,7 +219,7 @@
   ],
   "where_text": [
    "The first run found a button nobody could reach.",
-   "It also finds real localization bugs. On CrossfitTracker it found an onboarding page"
+   "A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next"
   ],
   "status": "partial",
   "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix.",
@@ -304,7 +304,7 @@
    "README.md"
   ],
   "where_text": [
-   "Setup is one command and a two-line config.",
+   "After install, setup is <code>shotfleet init</code> and a two-line config.",
    "The whole config can be this (`shotfleet init` writes it):"
   ],
   "status": "proven",
@@ -516,7 +516,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "Already have screenshots from fastlane snapshot/screengrab, StoreScreens or by hand? Check them without capturing anything:",
+   "Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:",
    "Check any screenshots, from fastlane or by hand"
   ],
   "status": "partial",
@@ -1672,7 +1672,7 @@
    "marketing/launch-posts-v2.md"
   ],
   "where_text": [
-   "**Proven on:** CrossfitTracker iOS/Android (18 languages, 9 min / 15 min), Kuokka Compose (iPhone + 13\" iPad)."
+   "**Proven on:** CrossfitTracker iOS/Android (18 languages, 9 min / 15 min), Remoti (iPhone + 13\" iPad)."
   ],
   "status": "evidence",
   "proof": "PLAN.md:43; research/pricing-2026-10.md section 1 (Kuokka iOS+iPad, HackerNewsKMP APK). ROADMAP.md:27 puts the iPad proof on remoti, not Kuokka: the two internal documents name different apps.",
@@ -1682,14 +1682,14 @@
  },
  {
   "id": "C100",
-  "claim": "shotfleet 'catches' store listings with translated captions over an English app, and screenshot sizes App Store Connect would have refused",
+  "claim": "shotfleet 'catches' store listings with translated captions over an English app; the email now says it also checks screenshot sizes against App Store Connect's rules (no refused-size case was recorded)",
   "where": [
    "marketing/launch-email.md",
    "marketing/launch-email.md"
   ],
   "where_text": [
-   "store listings with translated captions over an app that was still in English,",
-   "screenshot sizes App Store Connect would have refused."
+   "store listings with translated captions over an app that was still in English",
+   "It also checks screenshot sizes against App Store Connect's rules."
   ],
   "status": "partial",
   "proof": "Captions over English UI: evidence (research/real-apps.md remoti: 108 problems, viewed; PLAN.md zh-Hant). The size claim has no recorded instance: the only size findings in the repo are noise from 360 px thumbnails (cold-test-2.md header). Capability is unit-tested for both halves: G1CheckDetectors.test_a_translated_caption_over_an_english_ui_is_named_as_such and G1CheckDetectors.test_a_size_the_store_refuses_is_one_problem_per_file, StoreRules.test_app_store_sizes_alpha_counts_and_required_class. The email says it 'caught' sizes 'on my own apps while I built it': no such instance is recorded anywhere in the repo.",

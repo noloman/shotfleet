@@ -32,7 +32,7 @@ After capture, every screenshot's text is compared against your app's own string
 
 ### Check screenshots made by any tool
 
-Already have screenshots from fastlane snapshot/screengrab, StoreScreens or by hand? Check them without capturing anything:
+Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:
 
 ```bash
 shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/<locale>/
@@ -43,7 +43,7 @@ Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `n
 
 Screenshots made in other tools work too. `check` knows Apple's sizes for Apple Watch, Mac, Apple TV and Vision Pro (3840x2160 is both Apple TV and Vision Pro), takes at most 10 per size, and flags a language whose Watch screenshots differ in size from the others (Apple wants one Watch size in every language). `export` takes a plain `<locale>/*.png` folder of such a set once `shotfleet check <folder> --report <folder>` has written its `check.json` there, and copies it into `screenshots/<locale>/` next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.
 
-It also finds real localization bugs. On CrossfitTracker it found an onboarding page whose Next button was unreachable on small phones in Japanese, Korean, Chinese and Arabic.
+A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
 
 ## Free and paid
 
@@ -198,8 +198,8 @@ after_export  = 'fastlane deliver --skip_binary_upload --skip_metadata --overwri
 ```
 
 A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices.
-Variables: `SHOTFLEET_EVENT`, `_VERSION`, `_CONFIG`, `_PLATFORM`, `_OUT`, `_BUNDLE_ID`; `before_run` and `after_run` also get
-`_LOCALES`; `after_run` gets `_EXIT`, `_PROBLEMS`, `_REPORT` (`<out>/check.json`); the export hooks get `_FASTLANE`, `_REPORT`
+Variables on every event: `SHOTFLEET_EVENT`, `_VERSION`, `_CONFIG`, `_PLATFORM`, `_OUT`; `before_run` and `after_run` also get
+`_BUNDLE_ID` and `_LOCALES` (empty unless restricted); `after_run` gets `_EXIT`, `_PROBLEMS`, `_REPORT` (`<out>/check.json`); the export hooks get `_FASTLANE`, `_REPORT`
 (and `_EXIT` after the export). `--no-hooks` skips them for a dry run.
 
 **Overrides** replace what shotfleet would tap for one language, which is the fix for a collision warning (`'Next' ->
@@ -287,7 +287,7 @@ translation source.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - If macOS text recognition stops answering (its `ANECompilerService` occasionally gets stuck until a restart), `check` switches to Tesseract automatically when it's installed (`brew install tesseract tesseract-lang`), and otherwise tells you to restart. iOS runs mostly aren't affected: they read the app's own text, and only screens where that text proves little go to OCR.
 - With Tesseract installed (`brew install tesseract tesseract-lang`), `check` uses it automatically for those scripts: measured on 85 languages, 84 are then verified by reading instead of 66. Another OCR works too: `--ocr-command "<cmd> {image}"` (or `SHOTFLEET_OCR`); placeholders: `{image}`, `{lang}` (ISO code), `{tesseract}` (Tesseract's code), `{tesseract_with_english}` (e.g. `eng+ell`).
-- `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
+- `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check. With `--app`, a screen with only one or two of the app's strings is also judged by language detection.
 
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; it may still work, nothing is blocked.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing.
