@@ -6,6 +6,10 @@
 
 `check`, the Android readers, `doctor`, `doctor --fix` and `packaging/build-linux.sh` work on Linux (PR #8, #11, `docs/linux.md`). The emulator was never started: the development sandbox had no hardware virtualization. This is experiment E1 of `docs/linux.md` and `docs/handoff.md` item 2.
 
+## What is already known (2026-10-03, one hosted-runner attempt; read `docs/linux.md`, section "E1 result", once the E1 PR is merged)
+
+On a GitHub-hosted 2-vCPU runner everything up to the first flow step worked and 9 of 13 assertions passed; then Maestro could not find the localized "Next" button in any of the four languages. Open question: slow 2-vCPU runner or a real Linux difference. On your machine, compare: if it passes with 4+ cores it was the runner; if it fails the same way, look at the screenshot Maestro took before the failing step (`<work dir>/proj-android/out/.work/debug/`) and at `maestro.log`.
+
 ## Steps
 
 0. `ls -l /dev/kvm` and `egrep -c '(vmx|svm)' /proc/cpuinfo` (must be non-zero on x86_64).
