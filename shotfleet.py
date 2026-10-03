@@ -120,6 +120,13 @@ def check_section(cfg, platform, name):
             names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {name} should be a {names}, not {value!r}")
+    for key in ("parallel", "timeout_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
+        if key in cfg and cfg[key] < 1: raise Fail(f"[{platform}] {key} in {name} should be 1 or more, not {cfg[key]}")
+    for key in ("locales", "device_types", "devices", "strings"):
+        if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
+            raise Fail(f"[{platform}] {key} in {name} should be a list of strings, e.g. {key} = [\"de\", \"ja\"]")
+    if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
+        raise Fail(f"[{platform}] locales in {name} is empty. Remove the line to capture every language the app ships, or list some: locales = [\"de\", \"ja\"]")
     for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
         if not all(isinstance(c, str) for c in cfg.get(key, [])):
             raise Fail(f"[{platform}] {key} in {name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
@@ -151,6 +158,7 @@ def load_config(config_path, platform=None):
     if platform == "ios":
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
+            if app.exists() and app.suffix != ".app": raise Fail(f"{app} isn't a simulator app: {not_a_build(app, 'ios')}")
             raise Fail(f"no simulator app at {app}. Build it for the simulator (Debug-iphonesimulator) and point 'app' at the .app")
         real = plist_value(app / "Info.plist", "CFBundleIdentifier")
         if cfg.get("bundle_id") and real and real != cfg["bundle_id"]:
@@ -158,13 +166,12 @@ def load_config(config_path, platform=None):
         cfg["bundle_id"] = cfg.get("bundle_id") or real
         if not cfg["bundle_id"]: raise Fail(f"can't read the bundle id of {app.name}; set bundle_id in the config")
         if device_build(app):
-            raise Fail(f"{app.name} is a device build; simulators need a simulator build (Debug-iphonesimulator). "
-                       "Build with: xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build")
+            raise Fail(device_build_message(app))
         cfg["app"] = str(app)
     else:
         apk = path(cfg["apk"])
-        if not apk.is_file():
-            raise Fail(f"no APK at {apk}")
+        if not apk.is_file() or apk.suffix.lower() != ".apk":
+            raise Fail(f"{apk} isn't an APK: {not_a_build(apk, 'android')}" if apk.exists() else f"no APK at {apk}")
         m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(apk)]).stdout)
         if m and cfg.get("package") and m.group(1) != cfg["package"]:
             raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
@@ -1182,10 +1189,14 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
     pool = []
     for i in range(n):
         name = f"{prefix}-{i + 1}"
-        udid = by_name[name]["udid"] if name in by_name else \
-            sh(["xcrun", "simctl", "create", name, device_type, runtime]).stdout.strip()
-        if not udid:
-            raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})")
+        err = ""
+        if name in by_name: udid = by_name[name]["udid"]
+        else:
+            made = sh(["xcrun", "simctl", "create", name, device_type, runtime])
+            udid, err = made.stdout.strip(), made.stderr.strip()
+        if not udid:  # e.g. an older Xcode that has no iPhone 17 Pro Max: say why, and where the valid names are
+            raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})" + (f": {err}" if err else "") +
+                               ". Set device_type (valid ones: xcrun simctl list devicetypes) or runtime in the config")
         s = Sim(udid)
         s.run("boot", udid, check=False)  # already-booted is fine
         pool.append(s)
@@ -1284,10 +1295,18 @@ def run_guarded(cmd, timeout, env=None):
         done.set()
     return subprocess.CompletedProcess(cmd, proc.returncode, out, "")
 
+def memory_pressure():
+    """macOS's memory pressure level ("1" normal, "2" elevated, "4" critical), "" where it can't be read. A cron or CI
+    PATH has no /usr/sbin, and Linux may have no sysctl at all: that must not stop a run."""
+    for exe in ("sysctl", "/usr/sbin/sysctl"):
+        try: return sh([exe, "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
+        except OSError: pass
+    return ""
+
 def fit_parallel(n):
     """Halve parallelism under memory pressure; refuse when critical. A loaded Mac makes flows time out
     and retries pile on more load."""
-    level = sh(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
+    level = memory_pressure()
     if level == "4":
         raise Fail("macOS reports critical memory pressure. Close some apps and run again")
     if level == "2" and n > 1:
@@ -1297,7 +1316,7 @@ def fit_parallel(n):
 
 def overload_note(want, n):
     """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
-    level = sh(["sysctl", "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
+    level = memory_pressure()
     if n >= want and level not in ("2", "4"): return ""
     return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
             + ", and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer."
@@ -1329,7 +1348,9 @@ def junit_results(path):
 def device_type_id(name):
     """'iPad Pro 13-inch (M5)' or a full com.apple.CoreSimulator.SimDeviceType identifier -> the identifier."""
     if name.startswith("com.apple."): return name
-    types = json.loads(sh(["xcrun", "simctl", "list", "devicetypes", "-j"]).stdout or '{"devicetypes": []}')["devicetypes"]
+    try: listed = sh(["xcrun", "simctl", "list", "devicetypes", "-j"]).stdout
+    except OSError: raise Fail(NO_XCRUN)
+    types = json.loads(listed or '{"devicetypes": []}')["devicetypes"]
     match = next((t["identifier"] for t in types if t["name"].casefold() == name.casefold()), None)
     if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
     return match
@@ -1435,7 +1456,7 @@ def ios_run_inner(cfg, path, only, parallel):
     cfg = dict(cfg)
     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
     cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
-    cfg.setdefault("runtime", latest_ios_runtime())
+    if "runtime" not in cfg: cfg["runtime"] = latest_ios_runtime()  # setdefault would ask xcrun even when the config names one
     cfg["app"] = str(path(cfg["app"]))
     framework_hint(cfg["app"], "strings" in cfg, path("."))
     # default: the strings compiled into the app under test, so selectors always match the binary
@@ -1465,7 +1486,8 @@ def ios_run_inner(cfg, path, only, parallel):
     print_untranslated(report)
 
     if not report["locales"]:
-        raise Fail(f"none of those languages are in the app. It ships: {', '.join(sorted(strings))}")
+        raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings, base_locale))} "
+                   "(write them as listed; case and region matter)")
     want = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
     n = fit_parallel(want)
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
@@ -1618,6 +1640,12 @@ def sdkmanager_commands(packages, sdk=None):
     root = f"--sdk_root={shlex.quote(str(sdk))} " if known and sdk not in tool.parents else ""
     return cmds + [f"{java}{shlex.quote(str(tool))} {root}" + " ".join(shlex.quote(p) for p in packages)]
 
+def commands_text(cmds):
+    """sdkmanager_commands() inside a sentence: a '# ...' line is an instruction (Linux: where Google's zip goes), and pasted after
+    'with:' it would turn the whole line into a comment, so it is said first."""
+    notes = [c.lstrip("# ") for c in cmds if c.startswith("#")]
+    return ("; ".join(notes) + ", then run: " if notes else "") + "; ".join(c for c in cmds if not c.startswith("#"))
+
 def adb_cmd():
     """adb from the SDK we found, else whatever is on the PATH."""
     adb = SDK / "platform-tools/adb"
@@ -1716,11 +1744,11 @@ def android_pool(n, cfg, pool):
         image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
-            raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + "; ".join(sdkmanager_commands(["cmdline-tools;latest"])))
+            raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))
         r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n", env={**os.environ, **java_env()})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
             raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
-                       f"Install the image with: {'; '.join(sdkmanager_commands([image]))} (or set system_image in the config)")
+                       f"Install the image with: {commands_text(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
         ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
@@ -1818,7 +1846,8 @@ def android_run(cfg, path, out, only, parallel):
     print_untranslated(report)
     todo = list(report["locales"])
     if not todo:
-        raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings))}")
+        raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings))} "
+                   "(write them as listed; case and region matter)")
     n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo)))
     kind = ANDROID_DEVICES[cfg.get("device", "phone")]
     name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
@@ -2117,15 +2146,22 @@ def app_locale(label, available):
         if canon(a) == canon(label) or canon(a) == canon(label).split("-")[0]: return a
     return None
 
+OCR_NOTE_AFTER_S = 8  # a first recognition slower than this gets a line saying why the screen is quiet
+
 def warm_up_ocr(ocr, timeout=600):
     """One recognition on its own before the parallel ones, so macOS compiles its model once (minutes after a restart).
     False if it doesn't answer in time: macOS's recognition service (ANECompilerService) is stuck or still compiling.
     It is left running then, so a slow first compile still finishes for the next check."""
     p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+    note = threading.Timer(OCR_NOTE_AFTER_S, print, ["macOS is preparing its text recognition, a one-off wait of about 30 seconds "
+                                                    "(a few minutes on a busy Mac). Nothing is wrong if this stays quiet."], {"flush": True})
+    note.daemon = True; note.start()
     try:
         return bool(p.communicate(timeout=timeout)[0].strip())
     except subprocess.TimeoutExpired:
         return False
+    finally:
+        note.cancel()
 
 TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
 # Tesseract starts one OpenMP thread per core; four of them at once spin against each other (measured on 4 cores:
@@ -2305,7 +2341,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                               play_folder=play_folder)
     if not images:
         raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
-                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png")
+                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too)")
     if app is not None: android = Path(app).suffix == ".apk"  # the build says which store's rules apply
     elif run_json.exists(): android = json.loads(run_json.read_text()).get("platform") == "android"
     else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
@@ -2318,7 +2354,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
-    problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
+    problems = [f"{l}: the app has no {l} translation, so this listing shows another language; translate the app into it or remove the listing" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
     user_gave_command = bool(ocr_command)
@@ -2747,6 +2783,14 @@ def run_fix_plan(plan, yes=False, stdin_is_tty=None):
     print("done; run shotfleet doctor again to see where you stand")
     return 0
 
+def ios_runtimes():
+    """Names of the iOS Simulator runtimes Xcode has (['iOS 26.4']), [] when it has none, None when xcrun can't say."""
+    try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
+    except OSError: return None
+    try: rts = json.loads(listed.stdout)["runtimes"] if listed.returncode == 0 else None
+    except (ValueError, KeyError, TypeError): return None
+    return None if rts is None else [r.get("name") or r.get("identifier", "iOS") for r in rts if r.get("platform") == "iOS" and r.get("isAvailable")]
+
 def cmd_doctor(fix=False, yes=False):
     """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
     have = lambda c: shutil.which(c) is not None
@@ -2777,6 +2821,9 @@ def cmd_doctor(fix=False, yes=False):
         ("aapt2", has_aapt2, f"sdkmanager build-tools {later}", "Android"),
         (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager a system image of API 33 or newer for {ABI} {later}", "Android"),
     ]
+    if mac and next(ok for n, ok, _, _ in checks if n == "xcrun simctl") and (runtimes := ios_runtimes()) is not None:
+        checks.append((f"iOS Simulator runtime {runtimes[-1]}" if runtimes else "iOS Simulator runtime", bool(runtimes),
+                       "xcodebuild -downloadPlatform iOS  (or Xcode > Settings > Components)", "iOS"))
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
@@ -2835,7 +2882,7 @@ FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text
 # Tap and assert by the text the user sees, exactly as it appears in your English strings
 # ("Next", not "next"); take a screenshot for each store image you want. No appId needed:
 # shotfleet uses each build's own id, so this one flow serves iOS and Android.
-# Tips (dialogs, collisions, scrolling): see "Tips" in the README.
+# Tips (dialogs, collisions, scrolling): see "Tips" in the README. Maestro's commands: maestro.mobile.dev
 - launchApp
 - waitForAnimationToEnd:
     timeout: 5000
@@ -2851,7 +2898,8 @@ def device_build(app):
 WRONG_BUILD = {
     ".ipa": "an .ipa is a device build. Pass the simulator .app instead (Build/Products/Debug-iphonesimulator/<App>.app)",
     ".aab": "an .aab can't be installed directly. Build an APK instead: ./gradlew assembleDebug",
-    ".xcarchive": "pass the simulator .app, not an archive (archives are device builds)",
+    ".xcarchive": "pass the simulator .app, not an archive (archives are device builds): Build/Products/Debug-iphonesimulator/<App>.app, from "
+                  "xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build",
     ".zip": "unzip it first, then pass the .app or .apk inside",
     ".gz": "unpack it first (tar -xzf), then pass the .app inside",
 }
@@ -2884,13 +2932,29 @@ def unpack_build(archive, into):
                         raise Fail(f"{archive.name} holds a file outside its folder: {member.name}")
                 t.extractall(target, **TAR_SAFE)
     except (tarfile.TarError, zipfile.BadZipFile, EOFError, OSError) as e:
-        raise Fail(f"can't unpack {archive.name}: {e}")
+        raise Fail(f"can't unpack {archive.name}: " + ("it isn't a valid .zip or .tar.gz (download it again)"
+                                                         if isinstance(e, (tarfile.ReadError, zipfile.BadZipFile, EOFError)) else str(e)))
     found = [p for pat in ("*.app", "*/*.app", "*.apk", "*/*.apk") for p in sorted(target.glob(pat)) if p.is_dir() == (p.suffix == ".app")]
     if not found: raise Fail(f"{archive.name} holds no .app or .apk (found: {', '.join(sorted(x.name for x in target.iterdir())) or 'nothing'})")
     return found[0]
 
 def build_hint(app):
-    return WRONG_BUILD.get(Path(app).suffix.lower(), "pass a simulator .app or an .apk")
+    app = Path(app)
+    if app.suffix.lower() in WRONG_BUILD: return WRONG_BUILD[app.suffix.lower()]
+    inside = next((m for pat in ("*.app", "*/*.app", "*/*/*.app", "*/*/*/*.app") if app.is_dir() and (m := sorted(app.glob(pat)))), [])
+    if inside: return f"{app.name} is a folder, not an .app; did you mean {inside[0]}?"
+    return "pass a simulator .app or an .apk (Build/Products/Debug-iphonesimulator/<App>.app, or ./gradlew assembleDebug)"
+
+def device_build_message(app):
+    return (f"{app.name} is a device build; simulators need a simulator build (Debug-iphonesimulator). "
+            "Build with: xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build")
+
+def not_a_build(path, platform):
+    """Why a file or folder that exists is not what [ios] app / [android] apk wants, and what to point at instead."""
+    path = Path(path)
+    if path.suffix.lower() in ((".apk", ".aab") if platform == "ios" else (".app", ".ipa", ".xcarchive")):
+        return f"{path.name} is for the other platform; [{platform}] takes " + ("a simulator .app" if platform == "ios" else "an .apk")
+    return build_hint(path) if platform == "ios" or path.suffix.lower() == ".aab" else "build an APK with ./gradlew assembleDebug"
 
 def config_path(target, dest):
     """How the config should spell a path: relative when it's close (same project), else ~/..."""
@@ -3127,6 +3191,17 @@ def find_builds(cwd, derived=None, project=None):
         if not ok: print(f"note: no {what} yet; to make one: {cmd}")
     return builds
 
+def keep_note(config, dest, builds, text):
+    """What init says about a config that is already there: that it names the builds just given, or which it names instead."""
+    try: doc = tomllib.loads(Path(config).read_text())
+    except (OSError, tomllib.TOMLDecodeError): doc = {}
+    named = {str((Path(dest) / Path(sec[k]).expanduser()).resolve()) for s, k in (("ios", "app"), ("android", "apk"))
+             if isinstance(sec := doc.get(s), dict) and isinstance(sec.get(k), str)}
+    new = {str(Path(b).expanduser().resolve()) for b in builds}
+    if new <= named: return " (it already points at this build)"
+    return (f", which points at {', '.join(sorted(named)) or 'no build'}, not at {', '.join(sorted(new - named))}. "
+            f"Edit it, or delete it and run init again. To add the new build, put this in it:\n{text}")
+
 def cmd_init(builds, dest="."):
     """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android).
     No builds given: use the newest Debug ones found in the current folder (find_builds)."""
@@ -3161,7 +3236,7 @@ def cmd_init(builds, dest="."):
             found.append((m.group(1), shipped_locales(source_strings or load_strings_apk(app))))
         elif app.suffix == ".app":
             if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
-            if device_build(app): raise Fail(f"{app.name} is a device build: {WRONG_BUILD['.xcarchive']}")
+            if device_build(app): raise Fail(device_build_message(app))
             sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
                             '# locales = ["de", "ja"]   # default: every language the app ships')
@@ -3180,17 +3255,24 @@ def cmd_init(builds, dest="."):
                      f"# [hooks]\n# before_run = {json.dumps(cmd)}")
     for name, text in (("shotfleet.toml", "\n\n".join(sections) + hook_text + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
         if (dest / name).exists():
-            print(f"keeping existing {dest / name}" + (f"; add this to it yourself if it is missing:\n{text}" if name.endswith(".toml") else "")); continue
+            print(f"keeping existing {dest / name}" + (keep_note(dest / name, dest, builds, text) if name.endswith(".toml") else "")); continue
         (dest / name).write_text(text); print(f"wrote {dest / name}")
     for app_id, locales in found: print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
-    print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots simulators, takes a few minutes):\n"
+    devices = {(True, False): "simulators", (False, True): "emulators"}.get((".app" in suffixes, ".apk" in suffixes), "simulators and emulators")
+    print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots {devices}, takes a few minutes):\n"
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
 
+NO_XCRUN = "xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing"
+
 def latest_ios_runtime():
-    rts = json.loads(sh(["xcrun", "simctl", "list", "runtimes", "-j"]).stdout or '{"runtimes": []}')["runtimes"]
-    ios = [r for r in rts if r.get("platform") == "iOS" and r.get("isAvailable")]
-    return ios[-1]["identifier"] if ios else "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
+    try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
+    except OSError: raise Fail(NO_XCRUN)
+    if listed.returncode:
+        raise Fail(f"xcrun simctl doesn't work ({(listed.stderr.strip().splitlines() or ['no reason given'])[0]}). Install Xcode and open it once, then run shotfleet doctor")
+    ios = [r for r in json.loads(listed.stdout or '{"runtimes": []}')["runtimes"] if r.get("platform") == "iOS" and r.get("isAvailable")]
+    if not ios: raise Fail("no iOS Simulator runtime is installed. Install one with: xcodebuild -downloadPlatform iOS (or Xcode > Settings > Components)")
+    return ios[-1]["identifier"]
 
 # Android language tag -> Google Play listing locale (fastlane supply folder names)
 
@@ -3736,7 +3818,8 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
                            report_dir=Path(report) / d.name if report else None, expect=expect) for d in subs]
         return max(codes + [ipad_set_missing(folder)])
     if not app and not strings_files and not (Path(folder) / "run.json").exists():
-        print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
+        print("no --app given: checking by language detection only, which can misjudge short screens; treat a language problem as "
+              "a hint (pass --app to compare with your app's strings)")
     return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect)
 
 def main_dispatch(a):
