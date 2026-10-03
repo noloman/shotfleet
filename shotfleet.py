@@ -1606,9 +1606,12 @@ def string_tables(strings):
     for lp in strings:
         values = with_fallback(strings, lp).values()
         t = Table(norm(v) for v in values)
-        pats = [format_regex(v, lambda piece: re.escape(norm_piece(piece)), named=False) for v in values
-                if has_format(v) and len(re.sub(r"[\W\d_]", "", SPEC.sub("", v))) >= 3]  # "%d" alone matches anything
-        t.formats = re.compile("^(?:" + "|".join(f"(?:{p})" for p in pats) + ")$") if pats else None
+        pats = [format_regex(v, lambda piece: re.escape(norm_piece(piece)), named=False) for v in values if has_format(v)]
+        # "%d" alone matches anything, and "%@ atrás" (pt) matches Spanish "Cuenta atrás": text placeholders need
+        # more surrounding words than number placeholders before a match says anything about the language
+        pats = [(p, v) for p, v in zip(pats, (v for v in values if has_format(v)))
+                if len(re.sub(r"[\W\d_]", "", SPEC.sub("", v))) >= (8 if "(?:.+?)" in p else 3)]
+        t.formats = re.compile("^(?:" + "|".join(f"(?:{p})" for p, _ in pats) + ")$") if pats else None
         tables[lp] = t
     return tables
 

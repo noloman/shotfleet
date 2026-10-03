@@ -1445,6 +1445,12 @@ class PlayDeviceFolders(unittest.TestCase):
 
 
 class Review20261003(unittest.TestCase):
+    def test_a_text_placeholder_with_one_word_around_it_is_not_evidence(self):
+        # pt "%@ atrás" matched Spanish "Cuenta atrás", so a real Spanish screen was reported as Portuguese
+        t = sf.string_tables({"es": {"a": "Cuenta atrás", "b": "Progreso"}, "pt": {"a": "Contagem regressiva", "b": "%@ atrás", "c": "Último: %d dias atrás"}})
+        self.assertFalse(t["pt"].formats.match("una cuenta atras"))
+        self.assertTrue(t["pt"].formats.match("ultimo: 3 dias atras"))  # numbers keep the shorter rule
+
     def test_tesseract_value_inside_a_longer_word_is_not_a_match(self):
         t = sf.string_tables({"en": {"a": "Start", "b": "History", "c": "Settings"},
                               "de": {"a": "Starten", "b": "Verlauf", "c": "Einstellungen"}})
