@@ -10,3 +10,14 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
       - run: tools/check-claims.sh
+
+  # The same unit tests on Linux with the oldest Python the README promises. Mac-only tests skip themselves.
+  # Tesseract and aapt2 are installed so the Linux check path and the APK reader are tested for real, not skipped.
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-deu tesseract-ocr-jpn aapt
+      - run: python3 -m unittest discover -s tests

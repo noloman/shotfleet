@@ -225,3 +225,38 @@ class UnpackBuilds(unittest.TestCase):
         cfg = tomllib.loads((d / "cfg/shotfleet.toml").read_text())
         self.assertTrue(cfg["ios"]["app"].endswith("MyApp.app"), cfg)
         self.assertTrue((d / "cfg" / cfg["ios"]["app"]).is_dir())
+
+
+class BuildHookSuggestion(unittest.TestCase):
+    def init_in(self, d, dest="."):
+        old = os.getcwd(); os.chdir(d)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()): sf.cmd_init([], dest)
+        finally: os.chdir(old)
+        return (Path(d) / dest / "shotfleet.toml").read_text()
+
+    def test_a_flutter_folder_gets_a_commented_before_run_hook_that_is_valid_toml_and_off(self):
+        d = tree(FLUTTER); sim_app(d, "build/ios/iphonesimulator/Runner.app")
+        text = self.init_in(d)
+        self.assertIn('# before_run = "if [ \\"$SHOTFLEET_PLATFORM\\" = ios ]; then flutter build ios --simulator --debug; else flutter build apk --debug; fi"', text)
+        self.assertNotIn("hooks", tomllib.loads(text))  # a suggestion only: nothing runs unless the user uncomments it
+
+    def test_uncommented_it_is_accepted_by_the_config_reader(self):
+        d = tree(FLUTTER); sim_app(d, "build/ios/iphonesimulator/Runner.app")
+        text = self.init_in(d).replace("# [hooks]", "[hooks]").replace("# before_run", "before_run")
+        doc = tomllib.loads(text)
+        self.assertIn("before_run", doc["hooks"])
+        sf.check_tables(doc, "shotfleet.toml")  # the reader accepts it (raises Fail otherwise)
+
+    def test_no_hook_suggestion_for_a_native_app_or_when_the_config_is_elsewhere(self):
+        d = tree({"MyApp.xcodeproj/project.pbxproj": ""}); sim_app(d, "build/x/Debug-iphonesimulator/MyApp.app")
+        self.assertNotIn("before_run", self.init_in_with_app(d, "build/x/Debug-iphonesimulator/MyApp.app"))
+        f = tree(FLUTTER); sim_app(f, "build/ios/iphonesimulator/Runner.app")
+        self.assertNotIn("before_run", self.init_in(f, "cfg"))
+
+    def init_in_with_app(self, d, app):
+        old = os.getcwd(); os.chdir(d)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()): sf.cmd_init([app], ".")
+        finally: os.chdir(old)
+        return (Path(d) / "shotfleet.toml").read_text()

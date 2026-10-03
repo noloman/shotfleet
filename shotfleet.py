@@ -2852,7 +2852,15 @@ def cmd_init(builds, dest="."):
             raise Fail(build_hint(app))
     for build in builds: framework_hint(Path(build).expanduser().resolve(), bool(strings_line), dest)
     dest.mkdir(parents=True, exist_ok=True)
-    for name, text in (("shotfleet.toml", "\n\n".join(sections) + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
+    hook_text = ""
+    if project and dest.resolve() == Path.cwd().resolve() and (project.build_ios or project.build_android):  # hooks run in the config's folder
+        cmds = {"ios": project.build_ios, "android": project.build_android}
+        if cmds["ios"] and cmds["android"]:
+            cmd = f'if [ "$SHOTFLEET_PLATFORM" = ios ]; then {cmds["ios"]}; else {cmds["android"]}; fi'
+        else: cmd = cmds["ios"] or cmds["android"]
+        hook_text = ("\n\n# Build the app before every run, so `shotfleet run` goes from source to screenshots (uncomment):\n"
+                     f"# [hooks]\n# before_run = {json.dumps(cmd)}")
+    for name, text in (("shotfleet.toml", "\n\n".join(sections) + hook_text + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
         if (dest / name).exists():
             print(f"keeping existing {dest / name}" + (f"; add this to it yourself if it is missing:\n{text}" if name.endswith(".toml") else "")); continue
         (dest / name).write_text(text); print(f"wrote {dest / name}")

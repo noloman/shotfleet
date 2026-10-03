@@ -5,6 +5,7 @@
   the build where that framework puts it, writes the `strings` line for the translation files it finds and prints the
   framework's own build commands; EAS `.tar.gz` and `.zip` builds are unpacked by `init`. Translations written as objects
   in code (`.ts`, `.js`) and Android `<string-array>` are read.
+- **Build hook:** `init` in a framework project leaves a commented `[hooks] before_run` with that framework's build command.
 - **Flows:** `launchApp` options may be written on one line, `- launchApp: { permissions: { all: allow } }`.
 - **Linux:** `check` reads screenshots with Tesseract where macOS text recognition does not exist (and Tesseract now gets one
   thread per process: four screenshots took 73 s, now 0.5 s), `doctor` reports Tesseract and KVM, the Android SDK and image
