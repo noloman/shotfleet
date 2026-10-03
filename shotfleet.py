@@ -1209,7 +1209,8 @@ def ios_screen_texts(port, bundle_id):
 def capture_texts(stop, debug_dir, raw_dir, bundle_id):
     """While Maestro runs: when a screenshot appears in raw/<locale>/, read that screen's text from the driver of the
     simulator running that locale (Maestro's log says which device and port run which flow) and save it next to it
-    as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR."""
+    as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR.
+    raw_dir is where Maestro 2.0.x writes <locale>/<name>.png; newer Maestro writes it inside debug_dir (see collect_shots)."""
     port_of, done, sizes = {}, set(), {}  # done: (png, mtime): a re-taken screenshot is read again
     pat = re.compile(r"Selected device \S+ using port (\d+) with execution plan ExecutionPlan\(flowsToRun=\[([^\]]*)\]")
 
@@ -1233,7 +1234,7 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
                 for port, flows in found:
                     for f in flows.split(","): port_of[Path(f.strip()).stem] = port
             by_port = {}
-            for png in Path(raw_dir).glob("*/*.png"):
+            for png in [*Path(raw_dir).glob("*/*.png"), *Path(debug_dir).glob("**/takeScreenshot/*/*.png")]:
                 try: key = (png, png.stat().st_mtime_ns)
                 except OSError: continue
                 if key in done or png.parent.name not in port_of: continue
@@ -1241,11 +1242,21 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
             list(pool.map(read, by_port.values()))
             stop.wait(0.2)
 
-def run_guarded(cmd, timeout, env=None):
+def collect_shots(staging, debug_dir, name, dst):
+    """Move the screenshots (and screen texts) of the flow that took `<name>/<shot>` into dst, which is raw/<locale>.
+    Flows name a screenshot relative to Maestro's working directory. 2.0.x writes it there, so under staging/<name>/.
+    Maestro 2.11 refuses a path outside its own artifact folder ("resolves outside this run's takeScreenshot output
+    folder") and writes it under <debug>/.maestro/tests/<run>/<flow>/takeScreenshot/<name>/ instead."""
+    dst.mkdir(parents=True, exist_ok=True)
+    for src in [Path(staging) / name, *Path(debug_dir).glob(f"**/takeScreenshot/{name}")]:
+        if src.is_dir():
+            for f in src.iterdir(): shutil.move(str(f), str(dst / f.name))
+
+def run_guarded(cmd, timeout, env=None, cwd=None):
     """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
     Maestro dumps simulator diagnostics after every failed flow; several at once wedge CoreSimulator
     (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed."""
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env, cwd=cwd)
     done = threading.Event()
     def watch():
         while not done.wait(5):
@@ -1428,7 +1439,7 @@ def ios_run_inner(cfg, path, only, parallel):
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
     # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
-    for d in ("flows", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
+    for d in ("flows", "debug", "shots"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     (out / ".work" / "flows").mkdir(parents=True)
 
@@ -1440,7 +1451,7 @@ def ios_run_inner(cfg, path, only, parallel):
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
-        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp, inputs_for(cfg.get("_inputs"), lp)))
+        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -1465,19 +1476,21 @@ def ios_run_inner(cfg, path, only, parallel):
         """Run these locales in one sharded Maestro process; return {lproj: result}."""
         flows_dir = out / ".work" / "flows" / f"attempt{attempt}"
         flows_dir.mkdir(parents=True)
+        staging, debug = out / ".work" / "shots" / f"attempt{attempt}", out / ".work" / "debug" / f"attempt{attempt}"
+        staging.mkdir(parents=True)  # the flows' screenshot names are relative to this (Maestro's working directory)
         for lp in lps: shutil.copy(out / ".work" / "flows" / f"{lp}.yaml", flows_dir)
         k = min(n, len(lps))
         junit = out / f"junit{attempt}.xml"; junit.unlink(missing_ok=True)
         env = {**os.environ, **java_env(), "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
         stop = threading.Event()
         reader = threading.Thread(target=capture_texts, daemon=True,
-                                  args=(stop, out / ".work" / "debug" / f"attempt{attempt}", out / "raw", cfg["bundle_id"]))
+                                  args=(stop, debug, staging, cfg["bundle_id"]))
         reader.start()
         try:
             r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
-                             "--debug-output", str(out / ".work" / "debug" / f"attempt{attempt}")],
-                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
+                             "--debug-output", str(debug)],
+                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300, cwd=staging)
             (out / f"maestro{attempt}.log").write_text(r.stdout + r.stderr)
         except subprocess.TimeoutExpired as e:
             (out / f"maestro{attempt}.log").write_text(e.output or "")
@@ -1485,6 +1498,7 @@ def ios_run_inner(cfg, path, only, parallel):
         finally:
             stop.set(); reader.join(timeout=10)
             kill_stale_drivers()
+        for lp in lps: collect_shots(staging, debug, lp, out / "raw" / lp)
         res = junit_results(junit)
         out_ = {}
         for lp in lps:
@@ -1780,16 +1794,17 @@ def android_run(cfg, path, out, only, parallel):
                 lang[e.serial] = lp
             text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
+            staging = out / ".work" / "tmp" / tag; staging.mkdir(parents=True)  # the flows' screenshot names are relative to this
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
             if vars_js: (fdir / VARS_JS).write_text(vars_js)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}", inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
                 r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
-                                timeout=cfg.get("timeout_s", 600) + 300,
+                                timeout=cfg.get("timeout_s", 600) + 300, cwd=staging,
                                 env={**os.environ, **java_env(), **android_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
                                      "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
@@ -1802,9 +1817,7 @@ def android_run(cfg, path, out, only, parallel):
                 lp = lang[dev]
                 dst = out / "raw" / lp
                 shutil.rmtree(dst, ignore_errors=True)
-                src = out / ".work" / "tmp" / tag / f"f{j}"
-                if src.exists(): shutil.move(str(src), dst)
-                else: dst.mkdir(parents=True)
+                collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
                 results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev}
