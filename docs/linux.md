@@ -75,6 +75,25 @@ About 10 minutes plus the first image download.
    600 s (KVM not really in use: `emulator -accel-check`); a `could not verify` note on ja or ar (Tesseract data missing); `cmd locale
    set-app-locales` refused (the image is older than API 33).
 
+### E1 attempt 2026-10-03 on a GitHub-hosted runner: failed, nothing proven
+
+Run on `ubuntu-latest` (private repo, so the small runner): `Linux 6.17.0-1022-azure x86_64; 2 cores; 7 GB; KVM usable`, cpu `AMD EPYC 7763` (later runs `EPYC 9V45`).
+KVM was usable after the usual udev rule; `doctor --fix` fetched the image; the fixture built, `init` and `doctor` passed (`Android: ready`). The emulator **booted**
+and the app **showed the right language** (the German screenshot's button says "Weiter"), but every locale then failed on the second step with
+`Element not found` for the localized "Next": Android showed "Process system isn't responding" over the app in every first screenshot.
+
+| Attempt | Emulators | `android: shotfleet run` | Result |
+|---|---|---|---|
+| 1, 2 | 2 (default) | 1209 s, 754 s | 4 of 13 assertions failed; first run also had `Maestro Android driver did not start up in time` |
+| 3 | 1 (`SHOTFLEET_E2E_PARALLEL=1`) | 580 s | 4 of 13 assertions failed, same dialog |
+
+Not the final `PASS: all N assertions passed`, so **E1 is still open**. The machine is the likely limit (2 vCPU for the emulator, Maestro and a JVM), but that is a guess, not a finding:
+a machine with 4 or more cores (a larger runner or real hardware) would tell. Not tried: an 18-language run of a real Android app (there is none on this machine,
+and a 2-core runner's time would not be comparable to the Mac's 15 min 24 s).
+
+One real Linux bug came out of it and is fixed: GitHub's runners set `XDG_CONFIG_HOME`, so `avdmanager` created the emulator in `~/.config/.android/avd` and shotfleet looked only in
+`~/.android/avd`; shotfleet now names the folder (`ANDROID_AVD_HOME`) to `avdmanager` and the emulator (`tests/test_setup_discovery.py`). Its error text also no longer shows only progress bars.
+
 ## Android emulators on Linux (untried)
 
 `doctor` checks `/dev/kvm`, finds an SDK in `ANDROID_HOME`, `~/Android/Sdk` or `/usr/lib/android-sdk`, and picks the system image for your CPU
