@@ -33,7 +33,7 @@ folder. Restart Claude Code or start a new session; ask "check my fastlane scree
 
 To give Claude Code tools instead of instructions, the program also runs an MCP server:
 `claude mcp add shotfleet -- shotfleet mcp` (tools `check`, `run`, `doctor`). Its `check` writes the report into a
-`shotfleet-check` folder inside the folder it checks; the skills use the CLI with `--report` instead.
+`./shotfleet-check` folder in the server's working directory (never inside the folder it checks); the skills use the CLI with `--report` instead.
 
 ## Codex, Cursor, Gemini CLI and other agents
 

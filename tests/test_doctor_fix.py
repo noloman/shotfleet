@@ -295,7 +295,7 @@ if __name__ == "__main__":
 
 class LicenceCallsUseTheSameCaBundle(unittest.TestCase):
     """A buyer behind a proxy that re-signs HTTPS must be able to activate: the licence calls honour SSL_CERT_FILE like the downloads."""
-    def test_polar_and_gumroad_calls_ask_tls_context_at_call_time(self):
+    def test_licence_calls_ask_tls_context_at_call_time(self):
         seen = []
         class Resp:
             status = 200
@@ -306,9 +306,8 @@ class LicenceCallsUseTheSameCaBundle(unittest.TestCase):
         marker = object()
         with mock.patch.object(sf, "tls_context", lambda: marker), mock.patch.object(sf.urllib.request, "urlopen", fake_urlopen), \
                 mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "pid"):
-            sf.polar_post("validate", key="k")
             sf.gumroad_verify("k", False)
-        self.assertEqual(len(seen), 2)
+        self.assertEqual(len(seen), 1)
         self.assertTrue(all(c is marker for c in seen), seen)
 
 
@@ -326,3 +325,94 @@ class MaestroZipLayouts(FixTestCase):
         with mock.patch.object(sf, "MAESTRO_PIN", {**sf.MAESTRO_PIN, "sha256": sha256(odd)}), self.quiet(), self.assertRaisesRegex(sf.Fail, "no bin/maestro"):
             sf.install_maestro()
         self.assertFalse((self.home / "maestro").exists())
+
+
+class SdkPathsAreClean(FixTestCase):
+    """Google's Android CLI crashes on a destination like /work/app/../Android/Sdk (seen on a GitHub runner, 2026-10-03), so every SDK path shotfleet hands out is normalised."""
+    def test_dots_tilde_and_relative_paths_are_folded_away(self):
+        self.assertEqual(sf.clean_path("/work/app/../Android/Sdk"), Path("/work/Android/Sdk"))
+        self.assertEqual(sf.clean_path("/a/./b//c"), Path("/a/b/c"))
+        self.assertEqual(sf.clean_path("~/x/../y"), Path.home() / "y")
+        self.assertEqual(sf.clean_path("sdk"), Path.cwd() / "sdk")
+
+    def test_the_folder_doctor_fix_installs_into_has_no_dots(self):
+        with mock.patch.dict(os.environ, {"ANDROID_HOME": "/work/app/../Android/Sdk"}):
+            self.assertEqual(sf.fix_sdk_root(), Path("/work/Android/Sdk"))
+        with mock.patch.dict(os.environ, {"ANDROID_HOME": "", "ANDROID_SDK_ROOT": "/x/y/../z"}):
+            self.assertEqual(sf.fix_sdk_root(), Path("/x/z"))
+
+    def test_the_sdk_that_find_sdk_names_has_no_dots_even_when_it_is_missing(self):
+        home = Path(tempfile.mkdtemp())
+        with mock.patch.object(sf, "SYSTEM_SDKS", ()), mock.patch.object(sf, "BREW", Path("/nonexistent/brew")), \
+             mock.patch.object(Path, "home", classmethod(lambda cls: home)):  # not this machine's SDKs, Android Studio's or Homebrew's
+            env = {"ANDROID_HOME": "/nonexistent/app/../Android/Sdk", "PATH": ""}
+            self.assertEqual(sf.find_sdk(env), Path("/nonexistent/Android/Sdk"))
+            real = Path(tempfile.mkdtemp()); (real / "platform-tools").mkdir()
+            self.assertEqual(sf.find_sdk({"ANDROID_HOME": f"{real}/sub/../", "PATH": ""}), real)
+
+
+class SdkManagerInvocation(FixTestCase):
+    """Google's new sdkmanager is a shim for the Android CLI, which reports usage unless `--no-metrics`; installs use the CLI when it is there."""
+    def tool(self, with_android):
+        d = Path(tempfile.mkdtemp()) / "cmdline-tools/latest/bin"; d.mkdir(parents=True)
+        (d / "sdkmanager").write_text("#!/bin/sh\n")
+        if with_android: (d / "android").write_text("#!/bin/sh\n")
+        return d / "sdkmanager"
+
+    def test_package_installs_go_through_the_android_cli_with_metrics_off(self):
+        t = self.tool(True)
+        self.assertEqual(sf.sdkmanager_invocation(t, Path("/sdk"), ["platform-tools", "build-tools;36.0.0"]),
+                         [str(t.with_name("android")), "--no-metrics", "--sdk=/sdk", "sdk", "install", "platform-tools", "build-tools;36.0.0"])
+
+    def test_licences_and_older_tools_use_plain_sdkmanager(self):
+        t = self.tool(True)
+        self.assertEqual(sf.sdkmanager_invocation(t, Path("/sdk"), ["--licenses"]), [str(t), "--sdk_root=/sdk", "--licenses"])
+        old = self.tool(False)  # no android program next to it: an older command-line tools release
+        self.assertEqual(sf.sdkmanager_invocation(old, Path("/sdk"), ["emulator"]), [str(old), "--sdk_root=/sdk", "emulator"])
+
+
+class EmulatorBootFailures(unittest.TestCase):
+    """E1 on a GitHub runner (2026-10-03): 'emulators did not boot in time' after 600 s with no clue why, because the emulator's output went to DEVNULL."""
+    def emu(self, returncode=None, log="line one\n\nHW config error: no KVM\n"):
+        d = Path(tempfile.mkdtemp()); (d / "e.log").write_text(log)
+        proc = mock.Mock(returncode=returncode, log_path=d / "e.log"); proc.poll.return_value = returncode
+        e = sf.Emu(5702); e.proc = proc; e.booted = lambda: False
+        return e
+
+    def test_a_dead_emulator_fails_at_once_with_its_exit_code_and_output(self):
+        with mock.patch.object(sf.time, "sleep", side_effect=AssertionError("must not wait for a dead emulator")):
+            with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu(returncode=1)], timeout=600)
+        msg = str(cm.exception)
+        self.assertIn("emulator-5702", msg); self.assertIn("exited with code 1", msg); self.assertIn("HW config error: no KVM", msg)
+
+    def test_a_timeout_carries_the_log_tail_and_the_likely_cause(self):
+        with mock.patch.object(sf.time, "sleep", lambda s: None), mock.patch.object(sf, "boot_failure_hint", lambda output="": "HINT"):
+            with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu()], timeout=-1)
+        msg = str(cm.exception)
+        self.assertIn("emulators did not boot in time (-1 s)", msg); self.assertIn("HW config error: no KVM", msg); self.assertIn("HINT", msg)
+        self.assertNotIn("\n\n\n", msg)  # blank lines of the log are dropped
+
+    def test_the_hint_names_missing_kvm_on_linux_and_memory_otherwise(self):
+        with mock.patch.object(sf.sys, "platform", "linux"), mock.patch.object(sf.os, "access", lambda p, m: False):
+            self.assertIn("/dev/kvm", sf.boot_failure_hint())
+        with mock.patch.object(sf.sys, "platform", "darwin"):
+            self.assertIn("3 GB", sf.boot_failure_hint())
+
+    def test_a_full_disk_is_named_with_its_fix(self):
+        """The real FATAL line from a GitHub runner, 2026-10-03: the emulator died at once and shotfleet used to wait 600 s for it."""
+        fatal = ("INFO | Increasing RAM size to 2560MB\nFATAL        | Not enough space to create userdata partition. "
+                 "Available: 7322.37 MB at /home/runner/.android/avd/../avd/shotfleet_android.avd, need 12288.00 MB.\n")
+        with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu(returncode=1, log=fatal)], timeout=600)
+        msg = str(cm.exception)
+        self.assertIn("Not enough space to create userdata partition", msg); self.assertIn("12 GB free", msg); self.assertIn("disk.dataPartition.size", msg)
+        self.assertNotIn("KVM", msg)  # not blamed on virtualization
+
+    def test_start_emu_keeps_the_emulators_output(self):
+        d = Path(tempfile.mkdtemp())
+        with mock.patch.object(sf, "EMU_LOG_DIR", d), mock.patch.object(sf.subprocess, "Popen") as popen:
+            p = sf.start_emu("avd", 5702)
+        self.assertEqual(p.log_path, d / "emulator-5702.log"); self.assertTrue(p.log_path.exists())
+        self.assertIs(popen.call_args.kwargs["stderr"], sf.subprocess.STDOUT); self.assertNotEqual(popen.call_args.kwargs["stdout"], sf.subprocess.DEVNULL)
+
+    def test_the_tail_is_empty_without_a_log(self):
+        self.assertEqual(sf.emulator_log_tail(object()), ""); self.assertEqual(sf.emulator_log_tail(mock.Mock(log_path="/nonexistent/x.log")), "")

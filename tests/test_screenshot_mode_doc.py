@@ -22,10 +22,14 @@ class ScreenshotModeDoc(unittest.TestCase):
         self.assertIn('SCREENSHOT_MODE: "1"', DOC)
         self.assertNotIn("SCREENSHOT_MODE: true", re.sub(r"`SCREENSHOT_MODE: true`", "", DOC))
 
-    def test_unbuilt_features_are_marked_as_planned(self):
-        self.assertIn("planned", DOC)
-        self.assertNotIn("[expect]` table is available", DOC)
-        self.assertNotIn("[android] shell", re.sub(r"A setup command per emulator is planned.*", "", DOC))
+    def test_features_that_are_built_are_described_as_built_and_the_rest_as_planned(self):
+        # [android] shell and the [expect] tables exist (README "Device setup", "Expected content"): the document must say so
+        self.assertIn("[android] shell", DOC)
+        self.assertIn("[expect.<screenshot>]", DOC)
+        self.assertNotIn("cannot run a per-device", DOC)
+        self.assertNotIn("is planned and is not available yet", DOC)
+        self.assertIn("shell", sf.KEYS["android"]); self.assertIn("simctl", sf.KEYS["ios"]); self.assertIn("expect", sf.TABLES)
+        self.assertIn("have **not** been run through shotfleet on a device", DOC)   # the honesty caveat stays
 
     def test_no_em_dash(self):
         self.assertNotIn("—", DOC)

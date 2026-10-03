@@ -51,7 +51,7 @@ keep investing (CI, Flutter/RN, team license). Fewer than 15 means it stays a fr
 ## 4. Pricing
 
 - $49 once per developer, a year of updates, keeps working afterwards; optional renewal for updates later.
-- $29 founder price for the first 100 on the list.
+- $29 founder price for the first 100 buyers, whoever buys first (not a list perk).
 - Free tier: `check`, and `run` for up to 2 languages, so people see real results before paying.
 - ~$149 team/CI license once CI mode exists.
 - Why not $79: research/pricing-2026-10.md (ButterKit Pro is $99 and includes more; both direct competitors have a free tier; no demand data yet). Raise the price as proof arrives.
