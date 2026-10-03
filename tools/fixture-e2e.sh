@@ -217,8 +217,8 @@ APKLINE=$(grep '^apk = ' "$WORK/proj-android/shotfleet.toml" || true)
 { printf '[android]\n%s\n' "$APKLINE"; cat <<'TOML'
 devices = ["phone"]
 locales = ["de", "ja", "ar", "tr"]
-parallel = 2
 TOML
+printf 'parallel = %s\n' "${SHOTFLEET_E2E_PARALLEL:-2}"  # 1 for a 2-core machine: two emulators there hit "Process system isn't responding"
 hooks_toml; } > "$WORK/proj-android/shotfleet.toml.new" && mv "$WORK/proj-android/shotfleet.toml.new" "$WORK/proj-android/shotfleet.toml"
 flow_yaml "$WORK/proj-android"
 
