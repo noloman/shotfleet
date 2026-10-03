@@ -2558,6 +2558,16 @@ def read_maestro_version(timeout=120):
     except (OSError, subprocess.TimeoutExpired): return None
     return parse_maestro_version(r.stdout, r.stderr)
 
+MAESTRO_BROKEN_FROM = (2, 11, 0)  # 2.11.0 rejects every takeScreenshot path outside its own output folder (path handling changed in 2.8.0): no run captures anything
+
+def maestro_blocked(version):
+    """The message when this Maestro cannot capture screenshots with shotfleet (measured on 2.11.0), else None."""
+    try: v = tuple(int(x) for x in (version or "").split(".")[:3])
+    except ValueError: return None
+    if v < MAESTRO_BROKEN_FROM: return None
+    return (f"Maestro {version} only accepts screenshot paths inside its own output folder, and shotfleet writes them elsewhere, so no screenshot can be captured. "
+            f"Run `shotfleet doctor --fix`: it installs the tested Maestro {MAESTRO_PIN['version']} and shotfleet then uses it by itself (or point SHOTFLEET_MAESTRO at a {MAESTRO_PIN['version']} install)")
+
 def maestro_warning(version):
     """One line when this isn't a Maestro shotfleet was tested with; None when it is. Never a reason to stop."""
     tested = ", ".join(MAESTRO_TESTED)
@@ -2827,6 +2837,7 @@ def cmd_doctor(fix=False, yes=False):
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
+    if has_maestro and (blocked := maestro_blocked(maestro_v)): print(f"PROBLEM maestro: {blocked}")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -3833,7 +3844,10 @@ def main_dispatch(a):
         if a.cmd == "export": require_licence()
         if a.cmd == "run":
             apply_free_tier()
-            if maestro_cmd() and (w := maestro_warning(read_maestro_version(60))): print(f"note: {w}", file=sys.stderr)
+            if maestro_cmd():
+                ver = read_maestro_version(60)
+                if w := maestro_warning(ver): print(f"note: {w}", file=sys.stderr)
+                if blocked := maestro_blocked(ver): raise Fail(blocked)
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)

@@ -344,7 +344,8 @@ class SdkPathsAreClean(FixTestCase):
 
     def test_the_sdk_that_find_sdk_names_has_no_dots_even_when_it_is_missing(self):
         home = Path(tempfile.mkdtemp())
-        with mock.patch.object(sf, "SYSTEM_SDKS", ()), mock.patch.object(Path, "home", classmethod(lambda cls: home)):  # not this machine's SDKs
+        with mock.patch.object(sf, "SYSTEM_SDKS", ()), mock.patch.object(sf, "BREW", Path("/nonexistent/brew")), \
+             mock.patch.object(Path, "home", classmethod(lambda cls: home)):  # not this machine's SDKs, Android Studio's or Homebrew's
             env = {"ANDROID_HOME": "/nonexistent/app/../Android/Sdk", "PATH": ""}
             self.assertEqual(sf.find_sdk(env), Path("/nonexistent/Android/Sdk"))
             real = Path(tempfile.mkdtemp()); (real / "platform-tools").mkdir()

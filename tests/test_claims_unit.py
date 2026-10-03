@@ -23,6 +23,12 @@ def no_network(*a, **k):
     raise AssertionError("a licence server was contacted")
 
 
+def fake_sh(cmd, **kw):
+    """Every host command is a no-op here, except the two that read an Info.plist (plist_value and plist_to_json go through sh and the bundle id must be real)."""
+    if cmd and Path(str(cmd[0])).name in ("PlistBuddy", "plutil"): return subprocess.run(cmd, capture_output=True, text=True)
+    return subprocess.CompletedProcess(cmd, 0, "", "")
+
+
 class FleetCase(unittest.TestCase):
     """A project with an iOS app and an Android app (four languages each), a licence file location of its own, and stand-ins for every
     tool `run` starts: simulators, emulators and Maestro. `self.ios` and `self.android` record the languages each device set was run with."""
@@ -47,7 +53,7 @@ class FleetCase(unittest.TestCase):
                   mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"),
                   mock.patch.object(sf, "make_pool", side_effect=self.fake_make_pool), mock.patch.object(sf, "android_pool", side_effect=self.fake_android_pool),
                   mock.patch.object(sf, "run_guarded", side_effect=self.fake_maestro), mock.patch.object(sf, "cmd_check", return_value=0),
-                  mock.patch.object(sf, "aapt2", return_value="aapt2"), mock.patch.object(sf, "sh", return_value=subprocess.CompletedProcess([], 0, "", ""))):
+                  mock.patch.object(sf, "aapt2", return_value="aapt2"), mock.patch.object(sf, "sh", side_effect=fake_sh)):
             p.start(); self.addCleanup(p.stop)
 
     # --- stand-ins -------------------------------------------------------------------------------------------------
@@ -395,7 +401,8 @@ class HookEventsAndExitCodes(FleetCase):
             with self.subTest(event=ev):
                 self.assertEqual(set(self.seen(ev)), table[ev])
         run, exp = self.seen("after_run"), self.seen("after_export")
-        self.assertEqual((run["SHOTFLEET_EVENT"], run["SHOTFLEET_VERSION"], run["SHOTFLEET_PLATFORM"], run["SHOTFLEET_CONFIG"]), ("after_run", sf.VERSION, "ios", cfg))
+        self.assertEqual((run["SHOTFLEET_EVENT"], run["SHOTFLEET_VERSION"], run["SHOTFLEET_PLATFORM"], str(Path(run["SHOTFLEET_CONFIG"]).resolve())),
+                         ("after_run", sf.VERSION, "ios", str(Path(cfg).resolve())))  # /var is /private/var on macOS
         self.assertEqual((run["SHOTFLEET_OUT"], run["SHOTFLEET_REPORT"]), (str(self.out.resolve()), str(self.out.resolve() / "check.json")))
         self.assertEqual((run["SHOTFLEET_BUNDLE_ID"], run["SHOTFLEET_LOCALES"], run["SHOTFLEET_EXIT"], run["SHOTFLEET_PROBLEMS"]), ("com.example.my", "de", "0", "2"))
         self.assertEqual((exp["SHOTFLEET_EVENT"], exp["SHOTFLEET_EXIT"], exp["SHOTFLEET_FASTLANE"]), ("after_export", "0", str((self.d / "fl").resolve())))
