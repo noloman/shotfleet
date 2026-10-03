@@ -2714,6 +2714,18 @@ I18N_JSON = ["src/locales/*/translation.json", "src/translations/*.json", "src/l
              "app/i18n/*.ts", "src/i18n/*.ts", "src/i18n/locales/*.ts", "src/locales/*.ts", "src/translations/*.ts", "i18n/*.ts", "locales/*.ts"]  # .ts: Ignite and friends
 I18N_PO = ["src/locales/*/messages.po", "src/locale/locales/*/messages.po", "locales/*/messages.po", "locale/*/LC_MESSAGES/*.po"]
 
+def kotlin_multiplatform(cwd):
+    """True when a Gradle build under cwd applies the Kotlin Multiplatform plugin: `kotlin("multiplatform")`, the
+    `kotlinMultiplatform` alias of a version catalog, or `org.jetbrains.kotlin.multiplatform`. Looks at the Gradle files up to
+    three folders down (kotlinconf-app keeps them in app/shared/) and at gradle/libs.versions.toml."""
+    files = [f for pat in ("build.gradle.kts", "build.gradle") for f in source_files(cwd, pat, depth=4)]
+    files.append(Path(cwd) / "gradle/libs.versions.toml")
+    for f in files:
+        try:
+            if f.is_file() and f.stat().st_size < 1_000_000 and re.search(r"multiplatform", f.read_text(errors="replace"), re.I): return True
+        except OSError: continue
+    return False
+
 def detect_project(cwd):
     """The Project for the app whose source is in `cwd`, or None for a native Swift/Kotlin app and for anything unrecognised.
     Reads a few small files (pubspec.yaml, package.json, *.csproj, Gradle settings); never builds or runs anything.
@@ -2751,9 +2763,7 @@ def detect_project(cwd):
                        build_android="dotnet build -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true")
     if (cwd / "ProjectSettings/ProjectVersion.txt").is_file():
         return Project("Unity", None, notes=["Unity draws its own UI, so text selectors rarely work; shotfleet is not built for games"])
-    gradle = [cwd / n for n in ("settings.gradle.kts", "settings.gradle")]
-    if any(g.is_file() for g in gradle) and any("multiplatform" in f.read_text(errors="replace") for f in
-                                                 list(cwd.glob("*/build.gradle.kts")) + list(cwd.glob("build.gradle.kts")) if f.stat().st_size < 1_000_000):
+    if any((cwd / n).is_file() for n in ("settings.gradle.kts", "settings.gradle")) and kotlin_multiplatform(cwd):
         return Project("Kotlin Multiplatform", None)  # strings are compiled into native resources shotfleet reads from the build
     return None
 
@@ -2769,6 +2779,7 @@ def find_builds(cwd, derived=None, project=None):
     where that framework builds, ahead of Xcode's DerivedData and the Gradle folders. Reads folders only: never runs
     xcodebuild, gradle or the framework's tools. Nothing found: Fail with the exact build commands."""
     cwd = Path(cwd).resolve()
+    own = bool(project and (project.build_ios or project.build_android))  # the framework has its own build commands and wording
     apps, apks = derived_apps(cwd, derived, project.configs + ("Debug",) if project else ("Debug",)), gradle_apks(cwd)
     if project:
         own_apps, own_apks = project_builds(cwd, project)
@@ -2780,12 +2791,12 @@ def find_builds(cwd, derived=None, project=None):
     if apps:
         t, app, where = apps[0]
         print(f"iOS: using {app.name} ({app}): {app.parent.name}, built {age(t)}, the newest of {len(apps)} Xcode build(s) of {where}"
-              if not project else
+              if not own else
               f"iOS: using {app.name} ({app}): {app.parent.name}, built {age(t)}, the newest of {len(apps)} build(s) found in {where}")
         builds.append(str(app))
     if apks:
         t, apk = apks[0]
-        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} " + ("Gradle debug APK(s)" if not project else "APK(s)") + f" under {cwd}")
+        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} " + ("Gradle debug APK(s)" if not own else "APK(s)") + f" under {cwd}")
         builds.append(str(apk))
     ios_cmd = "xcodebuild -scheme <scheme> -sdk iphonesimulator -configuration Debug build"
     if projects:
@@ -2797,12 +2808,12 @@ def find_builds(cwd, derived=None, project=None):
         ios_cmd, android_cmd = project.build_ios or ios_cmd, project.build_android or android_cmd
     has_gradle = any((cwd / f).is_file() for f in ("gradlew", "android/gradlew"))
     # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
-    kind = f"{project.name} " if project else ""
-    ios_what, android_what = (f"{kind}simulator build", f"{kind}APK") if project else ("Debug simulator build", "Gradle debug APK")
+    kind = f"{project.name} " if own else ""
+    ios_what, android_what = (f"{kind}simulator build", f"{kind}APK") if own else ("Debug simulator build", "Gradle debug APK")
     here = [x for x, present in (((ios_cmd, ios_what, bool(apps)), bool(projects) or bool(project and project.build_ios)),
                                  ((android_cmd, android_what, bool(apks)), has_gradle or bool(project and project.build_android))) if present]
     if not builds:
-        what = f"no {ios_what} or {android_what} found for" if project else "no Debug simulator build or Gradle debug APK found for"
+        what = f"no {ios_what} or {android_what} found for" if own else "no Debug simulator build or Gradle debug APK found for"
         raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  "
                    + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]))
     for cmd, what, ok in here:

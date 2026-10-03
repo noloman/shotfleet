@@ -260,3 +260,19 @@ class BuildHookSuggestion(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()): sf.cmd_init([app], ".")
         finally: os.chdir(old)
         return (Path(d) / "shotfleet.toml").read_text()
+
+
+class KotlinMultiplatformLayouts(unittest.TestCase):
+    """kotlinconf-app (JetBrains) keeps the plugin as a version-catalog alias and its modules two folders down."""
+    def test_catalog_alias_and_nested_modules(self):
+        d = tree({"settings.gradle.kts": 'include(":app:shared")', "build.gradle.kts": "plugins { alias(libs.plugins.kotlinMultiplatform) apply false }",
+                  "app/shared/build.gradle.kts": "plugins { alias(libs.plugins.kotlinMultiplatform) }"})
+        self.assertEqual(sf.detect_project(d).name, "Kotlin Multiplatform")
+
+    def test_only_the_version_catalog_names_it(self):
+        d = tree({"settings.gradle": "", "gradle/libs.versions.toml": '[plugins]\nkotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform" }'})
+        self.assertEqual(sf.detect_project(d).name, "Kotlin Multiplatform")
+
+    def test_a_plain_android_gradle_project_is_not_multiplatform(self):
+        d = tree({"settings.gradle.kts": 'include(":app")', "app/build.gradle.kts": 'plugins { id("com.android.application") }'})
+        self.assertIsNone(sf.detect_project(d))
