@@ -26,12 +26,14 @@ export default {
       const ev = EVENTS.has(b.ev) ? b.ev : "view";
       const key = `hit:${new Date().toISOString().slice(0, 10)}|${src}|${lang}|${ev}`;
       pending.set(key, (pending.get(key) || 0) + 1);
-      // KV's free tier allows 1,000 writes a day and signups share them, so counts are batched per isolate and written every
-      // HIT_BATCH visits. A recycled isolate loses its unflushed counts: fine for "which link brings people", not for billing.
-      if ([...pending.values()].reduce((a, n) => a + n, 0) >= Number(env.HIT_BATCH || 20)) {
+      // KV's free tier allows 1,000 writes a day and signups share them, so counts are batched per isolate: written when
+      // HIT_BATCH visits are waiting, or 25 s after the first one (waitUntil keeps the isolate alive that long), so a quiet site still records every visit.
+      const flush = () => {
         const batch = [...pending]; pending.clear();
-        ctx.waitUntil(Promise.all(batch.map(async ([k, n]) => env.WAITLIST.put(k, String(Number(await env.WAITLIST.get(k) || 0) + n)))));
-      }
+        return Promise.all(batch.map(async ([k, n]) => env.WAITLIST.put(k, String(Number(await env.WAITLIST.get(k) || 0) + n))));
+      };
+      if (pending.size === 1 && pending.get(key) === 1) ctx.waitUntil(new Promise(r => setTimeout(r, Number(env.FLUSH_MS ?? 25000))  /* under the 30 s waitUntil allowance */).then(() => pending.size && flush()));
+      if ([...pending.values()].reduce((a, n) => a + n, 0) >= Number(env.HIT_BATCH || 20)) ctx.waitUntil(flush());
       return json({ ok: true });
     }
 

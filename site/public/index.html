@@ -221,7 +221,7 @@
   </div>
   <p class="wrap small fleet-note reveal">Seven of 72 screenshots from one run on my app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. Nothing in the app was changed to get them. shotfleet runs on your Mac, and your app and screenshots are never uploaded.</p>
 
-  <section class="wrap section numbers" aria-label="Numbers from real runs">
+  <section class="wrap section numbers" data-cmd="measured" aria-label="Numbers from real runs">
     <dl class="stats">
       <div class="cell reveal"><dt>18 &times; 4</dt><dd>languages times screens in one run: 72 screenshots, one English flow, one Mac</dd></div>
       <div class="cell reveal" style="--d:1"><dt>9 min &middot; 15 min</dt><dd>for that run on iOS and on Android</dd></div>
@@ -231,7 +231,7 @@
     <p class="small muted">Measured on my own apps. <a href="/alternatives">How it compares with other tools</a>.</p>
   </section>
 
-  <section class="wrap section" id="run" aria-labelledby="run-h">
+  <section class="wrap section" id="run" data-cmd="$ shotfleet run" aria-labelledby="run-h">
     <div class="split">
       <div class="copy reveal">
         <h2 id="run-h">Run it once. Read the result.</h2>
@@ -252,7 +252,7 @@ checked 72 screenshots in 18 languages: 0 problem(s)</span></pre>
     </div>
   </section>
 
-  <section class="wrap section" aria-labelledby="catch-h">
+  <section class="wrap section" data-cmd="found by that run" aria-labelledby="catch-h">
     <div class="split flip">
       <div class="copy reveal">
         <h2 id="catch-h">The first run found a button nobody could reach.</h2>
@@ -266,7 +266,7 @@ checked 72 screenshots in 18 languages: 0 problem(s)</span></pre>
     </div>
   </section>
 
-  <section class="wrap section" aria-labelledby="flow-h">
+  <section class="wrap section" data-cmd="your maestro flow" aria-labelledby="flow-h">
     <div class="stack reveal">
       <h2 id="flow-h">Your flow says Next. Each language gets its own word.</h2>
       <p>shotfleet reads the translations compiled into your build and rewrites every text selector. No copies of the flow, no changes to the app. When two words clash in a language, it warns you before anything runs.</p>
@@ -279,7 +279,7 @@ checked 72 screenshots in 18 languages: 0 problem(s)</span></pre>
     </dl>
   </section>
 
-  <section class="wrap section" aria-label="What it does">
+  <section class="wrap section" data-cmd="shotfleet.toml" aria-label="What it does">
     <div class="bento">
       <div class="cell a reveal">
         <div>
@@ -303,8 +303,8 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
-  <section class="section" id="apps" aria-labelledby="apps-h">
-    <div class="wrap reveal">
+  <section class="wrap section" id="apps" data-cmd="real store screenshots" aria-labelledby="apps-h">
+    <div class="reveal">
       <h2 id="apps-h">The same screen, in the languages of my other apps.</h2>
       <p class="muted lede-small">I ship two other apps. These are their real store screenshots, not shotfleet output: one screen, five languages.</p>
       <div class="tabs" role="tablist" aria-label="My apps">
@@ -372,7 +372,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
-  <section class="wrap section" aria-labelledby="not-h">
+  <section class="wrap section" data-cmd="limits" aria-labelledby="not-h">
     <div class="notfor reveal">
       <h2 id="not-h">Not for you if…</h2>
       <ul>
@@ -383,7 +383,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
-  <section class="wrap section" id="price" aria-labelledby="price-h">
+  <section class="wrap section" id="price" data-cmd="licence" aria-labelledby="price-h">
     <h2 id="price-h" class="reveal">Early access</h2>
     <!-- WAITLIST -->
     <p class="muted lede-small">shotfleet isn’t released yet. Join the list and I’ll email you once, when it’s ready. It needs an Apple silicon Mac, Maestro and Java 17+. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).</p>
