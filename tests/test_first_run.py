@@ -229,5 +229,44 @@ class OcrWait(Tree):
         self.assertEqual(out.getvalue(), "")
 
 
+class ConfigValues(Tree):
+    """The command line refuses --parallel 0 and an empty --locales; the same mistakes in shotfleet.toml used to start a run
+    ("booting 0 simulators", every language instead of none)."""
+    def load(self, body):
+        (self.d / "flow.yaml").write_text("- launchApp\n")
+        (self.d / "shotfleet.toml").write_text(f'[ios]\napp = "{self.app()}"\n{body}')
+        return sf.load_config(str(self.d / "shotfleet.toml"))
+
+    def test_zero_and_negative_counts_are_refused(self):
+        for line in ("parallel = 0", "parallel = -1", "timeout_s = 0"):
+            with self.subTest(line=line):
+                with mock.patch.object(sf, "maestro_cmd", return_value="maestro"):
+                    msg = self.fails(self.load, line)
+                self.assertIn("should be 1 or more", msg); self.assertIn(line.split(" = ")[0], msg)
+
+    def test_an_empty_locales_list_is_refused_and_a_list_of_numbers_too(self):
+        with mock.patch.object(sf, "maestro_cmd", return_value="maestro"):
+            self.assertIn("is empty. Remove the line", self.fails(self.load, "locales = []"))
+            self.assertIn("should be a list of strings", self.fails(self.load, "locales = [1]"))
+            self.assertEqual(self.load('locales = ["de"]\nparallel = 2')[1]["parallel"], 2)
+
+    def test_a_device_type_name_without_xcrun_is_a_sentence(self):
+        with mock.patch.object(sf, "sh", side_effect=FileNotFoundError(2, "No such file", "xcrun")):
+            self.assertIn("iOS simulators need a Mac with Xcode", self.fails(sf.device_type_id, "iPad Pro 13-inch (M5)"))
+
+
+class SdkCommandsInSentences(Tree):
+    """A '# download ...' line pasted after 'Install it with:' made the whole line a shell comment."""
+    def test_a_note_comes_first_and_is_not_a_comment(self):
+        self.assertEqual(sf.commands_text(["# download X", "yes | a", "b"]), "download X, then run: yes | a; b")
+        self.assertEqual(sf.commands_text(["brew install y", "b"]), "brew install y; b")
+
+    def test_missing_avdmanager_on_linux_gives_a_line_you_can_paste(self):
+        with mock.patch.object(sf, "is_mac", lambda: False), mock.patch.object(sf, "SDK", self.d / "sdk"), mock.patch.object(sf, "cmdline_tool", return_value=None), \
+             mock.patch.object(sf.Path, "home", return_value=self.d / "home"), mock.patch.object(sf, "java_env", return_value={}):
+            msg = self.fails(sf.android_pool, 1, {}, [])
+        self.assertIn("avdmanager not found", msg); self.assertNotIn("with: #", msg); self.assertIn(", then run: yes | ", msg)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -127,6 +127,13 @@ def load_config(config_path, platform=None):
             names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a {names}, not {value!r}")
+    for key in ("parallel", "timeout_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
+        if key in cfg and cfg[key] < 1: raise Fail(f"[{platform}] {key} in {cfg_path.name} should be 1 or more, not {cfg[key]}")
+    for key in ("locales", "device_types", "devices", "strings"):
+        if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
+            raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a list of strings, e.g. {key} = [\"de\", \"ja\"]")
+    if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
+        raise Fail(f"[{platform}] locales in {cfg_path.name} is empty. Remove the line to capture every language the app ships, or list some: locales = [\"de\", \"ja\"]")
     for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
         if not all(isinstance(c, str) for c in cfg.get(key, [])):
             raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
@@ -1337,7 +1344,9 @@ def junit_results(path):
 def device_type_id(name):
     """'iPad Pro 13-inch (M5)' or a full com.apple.CoreSimulator.SimDeviceType identifier -> the identifier."""
     if name.startswith("com.apple."): return name
-    types = json.loads(sh(["xcrun", "simctl", "list", "devicetypes", "-j"]).stdout or '{"devicetypes": []}')["devicetypes"]
+    try: listed = sh(["xcrun", "simctl", "list", "devicetypes", "-j"]).stdout
+    except OSError: raise Fail(NO_XCRUN)
+    types = json.loads(listed or '{"devicetypes": []}')["devicetypes"]
     match = next((t["identifier"] for t in types if t["name"].casefold() == name.casefold()), None)
     if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
     return match
@@ -1622,6 +1631,12 @@ def sdkmanager_commands(packages, sdk=None):
     root = f"--sdk_root={shlex.quote(str(sdk))} " if known and sdk not in tool.parents else ""
     return cmds + [f"{java}{shlex.quote(str(tool))} {root}" + " ".join(shlex.quote(p) for p in packages)]
 
+def commands_text(cmds):
+    """sdkmanager_commands() inside a sentence: a '# ...' line is an instruction (Linux: where Google's zip goes), and pasted after
+    'with:' it would turn the whole line into a comment, so it is said first."""
+    notes = [c.lstrip("# ") for c in cmds if c.startswith("#")]
+    return ("; ".join(notes) + ", then run: " if notes else "") + "; ".join(c for c in cmds if not c.startswith("#"))
+
 def adb_cmd():
     """adb from the SDK we found, else whatever is on the PATH."""
     adb = SDK / "platform-tools/adb"
@@ -1688,11 +1703,11 @@ def android_pool(n, cfg, pool):
         image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
-            raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + "; ".join(sdkmanager_commands(["cmdline-tools;latest"])))
+            raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))
         r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n", env={**os.environ, **java_env()})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
             raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
-                       f"Install the image with: {'; '.join(sdkmanager_commands([image]))} (or set system_image in the config)")
+                       f"Install the image with: {commands_text(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
         ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
@@ -3197,9 +3212,11 @@ def cmd_init(builds, dest="."):
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
 
+NO_XCRUN = "xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing"
+
 def latest_ios_runtime():
     try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
-    except OSError: raise Fail("xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing")
+    except OSError: raise Fail(NO_XCRUN)
     if listed.returncode:
         raise Fail(f"xcrun simctl doesn't work ({(listed.stderr.strip().splitlines() or ['no reason given'])[0]}). Install Xcode and open it once, then run shotfleet doctor")
     ios = [r for r in json.loads(listed.stdout or '{"runtimes": []}')["runtimes"] if r.get("platform") == "iOS" and r.get("isAvailable")]

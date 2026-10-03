@@ -33,6 +33,9 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `could not verify` | a note: `[expect]` text in a script macOS can't read, on a screen read by OCR | not a failure; give `--ocr-command` an OCR that reads it (Tesseract), or trust the iOS run, which uses the app's own text |
 | `has an unknown setting` | typo in a key; the message suggests the nearest or lists all | see config.md |
 | `should be a` | wrong type, e.g. `parallel = "4"` | use a whole number, string, list |
+| `should be 1 or more` | `parallel = 0` or `timeout_s = 0` in the config | use a positive whole number |
+| `is empty. Remove the line` | `locales = []` in the config | delete the line (every language the app ships) or list some |
+| `should be a list of strings` | `locales`, `device_types`, `devices` or `strings` holds something other than text | `locales = ["de", "ja"]` |
 | `is missing:` | `app` (iOS) or `apk` (Android) not set | set it |
 | `unknown event` | bad `[hooks]` key; events are before_run, after_run, before_export, after_export | rename |
 | `should be a command (a string) or a list of commands` | hook value is not text | use a string or a list of strings |
