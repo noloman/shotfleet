@@ -168,5 +168,15 @@ class DoctorUnderLoad(Fakes):
         self.assertIn("PROBLEM text recognition   can't start", out.getvalue())
 
 
+class Simctl(unittest.TestCase):
+    def test_a_simctl_that_hangs_is_not_ready_instead_of_blocking_doctor(self):
+        def hang(cmd, **kw): raise subprocess.TimeoutExpired(cmd, kw["timeout"])
+        with mock.patch.object(sf, "sh", hang): self.assertFalse(sf.simctl_works())
+        seen = {}
+        def ok(cmd, **kw): seen.update(kw); return subprocess.CompletedProcess(cmd, 0, "", "")
+        with mock.patch.object(sf, "sh", ok): self.assertTrue(sf.simctl_works())
+        self.assertLessEqual(seen["timeout"], 120)
+
+
 if __name__ == "__main__":
     unittest.main()

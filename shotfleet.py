@@ -2678,6 +2678,11 @@ def run_fix_plan(plan, yes=False, stdin_is_tty=None):
     print("done; run shotfleet doctor again to see where you stand")
     return 0
 
+def simctl_works():
+    """`xcrun simctl help` answers. It can hang for minutes while other sessions load CoreSimulator (seen 2026-10-03), so it is timed."""
+    try: return sh(["xcrun", "simctl", "help"], timeout=120).returncode == 0
+    except subprocess.TimeoutExpired: return False
+
 def cmd_doctor(fix=False, yes=False):
     """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
     have = lambda c: shutil.which(c) is not None
@@ -2697,7 +2702,7 @@ def cmd_doctor(fix=False, yes=False):
                                        if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
-        ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
+        ("xcrun simctl", simctl_works() if have("xcrun") else False,
          "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
         *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
             "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]

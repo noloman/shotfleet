@@ -4,14 +4,13 @@ Written 2026-10-03 at the end of a session that could not run anything on a devi
 done), **the steps**, **how you know it passed**, and **where to record it**. Evidence goes into `STATUS.md` (the row named) and, if a promise
 changes, into `tests/claims.json` and the README in the same commit. The rule of this repo stands: nothing is called "tested" without a run.
 
-Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, then the rest.
+Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3, 5 and 6, then the rest.
 
 | # | Item | Needs | Why not done here |
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` | no hardware virtualization here |
 | 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
-| 4 | `doctor --fix` on a Mac | your Mac, a clean user | untried on macOS |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
 | 6 | Real-app regression (CrossfitTracker, Remoti) | your Mac and the apps | not on this machine |
 | 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
@@ -98,22 +97,6 @@ write a 3-step English flow, `shotfleet run --locales de,ja`, open `out/index.ht
 `check`. **Record** in `STATUS.md` row C1 and, only for what passed, in the README ("Flutter and React Native work from your translation files"
 currently says "not yet run on a real Flutter or React Native app"; claims C035, C121).
 
-## 4. `doctor --fix` on a Mac
-
-**State:** the Linux path was run for real (Maestro, Google's tools, platform-tools, emulator, image; the Java download separately). On macOS:
-the Temurin JRE tarball unpacks to `jdk-21.x.y+z-jre/Contents/Home/...`; `install_jre` renames that folder to `~/.shotfleet/jre`, and
-`find_java` looks at `~/.shotfleet/jre/Contents/Home`. Unverified. So is the `brew install --cask android-commandlinetools` branch, and the
-Google archive pick for `mac_arm64`.
-
-**Steps:** a clean macOS user (or `SHOTFLEET_HOME=$(mktemp -d)` plus `ANDROID_HOME=$(mktemp -d)` and a `PATH` without Java and Maestro):
-
-```bash
-python3 shotfleet.py doctor --fix --yes && python3 shotfleet.py doctor
-```
-
-**Passed when** `doctor` reports Maestro and Java as ok afterwards. **Record** in claim C126 and `STATUS.md` row D1. This is also the real
-test of `STATUS.md` gate 7 (clean-Mac cold install) once the installer exists.
-
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
 **State:** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not), and shotfleet's script already uses it (`android_vars`). Unconfirmed: what
@@ -128,9 +111,16 @@ and the note printed by `shotfleet.py` (search for `doesn't define it`), and dro
 ## 6. Real-app regression
 
 `STATUS.md` plan A2: CrossfitTracker iOS (18 languages), Android phone and tablet, Remoti iPhone + iPad, on Maestro 2.0.10, after the config
-rewrite, `[inputs]`, the iOS retry and `init` discovery commits, and now after this session's changes (the `plutil`/`PlistBuddy` replacements
-only run when those tools are absent, so macOS behaviour should be unchanged, but a real run is the proof). Needs a quiet Mac and 30+ GB free.
-**Passed when** 0 problems and the timings are in the README.
+rewrite, `[inputs]`, the iOS retry and `init` discovery commits and the `plutil`/`PlistBuddy` replacements. Needs a quiet Mac (no other session with
+simulators or emulators booted) and 30+ GB free (93 GB were free on 2026-10-03).
+
+**Attempted 2026-10-03, not run:** the Mac was busy (4 iPad simulators booted and a `shotfleet.py run` from another session, a Remoti build, the
+Maestro 2.11.0 session queued for the Mac), so no timing would have been comparable. Do item 1 first, then this, so the two do not share the Mac.
+
+**How:** CrossfitTracker iOS: build Debug for the simulator, then `shotfleet run` with `examples/crossfittracker/shotfleet.toml` (the `app` path in it is
+the DerivedData folder of that build; `parallel = 4`). Android: `examples/crossfittracker/android.toml`. Remoti: its own repo under `~/Developer`
+(its README and `CLAUDE.md` say how to build the iOS app). Check the iOS run with `shotfleet check`. **Passed when** 0 problems and the timings are in the
+same range as the README (iOS 18 languages about 9 minutes, Android about 15); put the timings in `STATUS.md` rows 10 and 11 and the README only where they changed.
 
 ## 7. Android on-screen text from the UI tree (B2)
 
