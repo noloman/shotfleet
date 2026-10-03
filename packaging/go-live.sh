@@ -68,12 +68,14 @@ fi
 # The two edits below are the real run's own code; the dry run executes them on the copy.
 transform_site() {
 python3 - "$CHECKOUT" <<'PY'
-import re, sys
-p = "site/public/index.html"; s = open(p).read()
-s = re.sub(r"    <!-- WAITLIST -->.*?<!-- /WAITLIST -->\n", "", s, flags=re.S)
-s = re.sub(r"    <!-- SALE\n(.*?)\n    SALE -->", lambda m: m.group(1).replace("@CHECKOUT@", sys.argv[1]), s, flags=re.S)
-s = s.replace("Early access", "Buy shotfleet")
-open(p, "w").write(s)
+import os, re, sys
+for p in ("site/public/index.html", "site/public/alternatives.html", "site/public/terms.html"):  # the pages that carry waitlist copy
+    if not os.path.exists(p): continue
+    s = open(p).read()
+    s = re.sub(r"    <!-- WAITLIST -->.*?<!-- /WAITLIST -->\n", "", s, flags=re.S)
+    s = re.sub(r"    <!-- SALE\n(.*?)\n    SALE -->", lambda m: m.group(1).replace("@CHECKOUT@", sys.argv[1]), s, flags=re.S)
+    s = s.replace("Early access", "Buy shotfleet")
+    open(p, "w").write(s)
 PY
 }
 
@@ -85,13 +87,13 @@ if [ "$DRY" = 0 ]; then packaging/release.sh; fi
 transform_site
 if [ "$DRY" = 0 ]; then
   (cd site && npx --yes wrangler@latest deploy)
-  git add site/public/index.html && git commit -m "Site: sale open" && git push
+  git add site/public/index.html site/public/alternatives.html site/public/terms.html && git commit -m "Site: sale open" && git push
   echo; echo "Live. Waitlist to email (marketing/launch-email.md):"; site/signups.sh
   exit 0
 fi
 
 # ---- dry run only from here: check the copy, show what changed, list what the real run does ----
-git add site/public/index.html && git commit -q -m "Site: sale open"
+git add site/public/index.html site/public/alternatives.html site/public/terms.html && git commit -q -m "Site: sale open"
 echo "-- diff of the copy against today's tree"
 FIRST=$(git rev-list --max-parents=0 HEAD)
 git diff --stat "$FIRST" HEAD | sed 's/^/  /'
@@ -103,6 +105,9 @@ N=$(grep -cF "href=\"$CHECKOUT\"" "$H" || true)
 if [ "$N" -ge 3 ]; then ok "checkout link in $N places (nav, hero, price card)"; else fail "checkout link appears $N times, expected at least 3"; fi
 for m in "WAITLIST" "SALE" "@CHECKOUT@" "@GUMROAD@" "data-signup" 'id="signup' "Join the list" "Early access"; do
   if grep -qF -- "$m" "$H"; then fail "page still contains: $m"; else ok "no $m"; fi
+done
+for o in site/public/alternatives.html site/public/terms.html; do
+  if grep -qE "WAITLIST|SALE|@CHECKOUT@|not on sale yet|join the waitlist" "$o"; then fail "$o still has waitlist copy or markers"; else ok "$o: no waitlist copy, no markers"; fi
 done
 grep -qF "first 100 buyers" "$H" && ok 'founder price text is static: "first 100 buyers" (no counter number)' || fail "the page lost its 'first 100 buyers' text"
 if grep -Eiq '[0-9]+ (of 100|left|remaining)|spots? left' "$H"; then fail "page shows a counter number that nothing feeds"; else ok "no counter number on the page"; fi
