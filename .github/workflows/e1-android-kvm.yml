@@ -31,9 +31,9 @@ jobs:
         if: always()
         run: |
           T=$ANDROID_HOME/cmdline-tools/latest/bin
-          $T/sdkmanager --list_installed 2>&1 | grep -v '^\[' | tail -25 || true
-          echo no | $T/avdmanager create avd -n dbg -k 'system-images;android-36;google_apis;x86_64' -d pixel 2>&1 | grep -v '^\[' | tail -20 || true
-          java -version 2>&1 | head -2; ls "$ANDROID_HOME/cmdline-tools"
+          echo no | $T/avdmanager create avd -n dbg -k 'system-images;android-36;google_apis;x86_64' -d pixel_5 >dbg.out 2>dbg.err; echo "exit $?"
+          echo "--- stdout"; cat dbg.out; echo "--- stderr (no progress bars)"; grep -v '^\[' dbg.err | head
+          $T/avdmanager list device -c 2>/dev/null | grep -i pixel | head -20
       - name: Fixture e2e (android)
         run: |
           set -o pipefail
