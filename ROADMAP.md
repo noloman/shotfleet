@@ -29,9 +29,13 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 - MCP `check` on real screenshots: 72 screenshots, 18 languages, 0 problems, 29 s (after the Mac restart fixed OCR).
 - 1.5 on Android: not possible with Maestro 2.0.10 (`maestro hierarchy` breaks sharded runs); iOS reads app text exactly.
 
+- macOS text recognition: doctor and check warm it up once, check runs at most 4 in parallel, falls back to Tesseract
+  when it's stuck (72 real screenshots, 0 false problems) and uses installed Tesseract for scripts macOS can't read
+  (84/85 languages verified by reading, was 66).
+
 ## Still open
 - A clean 8-emulator benchmark round on an idle Mac.
-- After a restart, macOS text recognition needs ~4 min to recompile its model on first use (doctor could warm it up).
+- Confirm on a freshly restarted Mac that `check` works first time with the serial warm-up (needs Manu's restart).
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |
