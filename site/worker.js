@@ -103,18 +103,19 @@ export default {
 };
 
 // A push to my phone (ntfy.sh) when someone new joins: the number, country, source and stack answer, never the address.
-// Off unless the NTFY_TOPIC secret is set. A dead push service must never break a signup, so failures are only logged.
+// Off unless the NTFY_TOPIC secret is set; NTFY_TOKEN (optional) authenticates the post. A dead push service must never break a signup, so failures are only logged.
 async function notifyJoin(env, key, rec) {
   if (!env.NTFY_TOPIC) return;
   try {
     const { keys } = await env.WAITLIST.list({ prefix: "email:" });  // ponytail: counts the first 1,000 signups only
     const n = keys.some(k => k.name === key) ? keys.length : keys.length + 1;  // KV lists can lag a new key by up to a minute
     const source = rec.ref.replace(/[^\x20-\x7e]/g, "").slice(0, 80) || "direct";
-    const r = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, { method: "POST", headers: { Title: "New shotfleet signup" },
+    const r = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, { method: "POST",
+      headers: { Title: "New shotfleet signup", ...(env.NTFY_TOKEN && { Authorization: `Bearer ${env.NTFY_TOKEN}` }) },  // a free ntfy account's token: its quota is yours, not the shared Workers IP's
       body: `#${n} on the list. Country ${rec.country || "unknown"}, source ${source}, stack ${rec.stack || "not answered"}.` });
     if (!r.ok) throw new Error(`ntfy ${r.status}`);
-  } catch {
-    console.log(JSON.stringify({ event: "notify_failed" }));
+  } catch (e) {
+    console.log(JSON.stringify({ event: "notify_failed", why: String(e?.message || e).slice(0, 120) }));
   }
 }
 
