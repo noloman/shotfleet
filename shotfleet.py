@@ -33,7 +33,7 @@ class Fail(Exception):
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
-        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "system_image": str, "devices": list, "shell": list}}
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect")  # the optional tables [hooks], [overrides.<locale>], [inputs] and [expect.<screenshot>] are documented in the README
 EXPECT_KEYS = ("any", "all", "not")
@@ -1353,6 +1353,9 @@ ANDROID_DEVICES = {
     "phone": {"avd": "shotfleet_android", "profile": "pixel_5", "size": (1080, 1920, 420), "folder": "phoneScreenshots"},
     "tablet": {"avd": "shotfleet_android_tablet", "profile": "pixel_tablet", "size": (1440, 2560, 320),
                "folder": "tenInchScreenshots"},
+    # 1080 px at 280 dpi is 617 dp wide: sw600dp, the 7" layout bucket. Not the Nexus 7's 1200x1920 (10:16, not 9:16)
+    "tablet-7": {"avd": "shotfleet_android_tablet7", "profile": "7in WSVGA (Tablet)", "size": (1080, 1920, 280),
+                 "folder": "sevenInchScreenshots"},
 }
 
 def android_pool(n, cfg, pool):
@@ -1393,14 +1396,36 @@ def android_pool(n, cfg, pool):
         for c in DEMO_MODE: e.adb("shell", c, check=False)
         run_setup(e, "shell", cfg.get("shell", ()))  # after boot, every run: the snapshot boot discards properties
 
-def android_flow(text, name, shots_dir, env=None):
+VARS_JS = "shotfleet_vars.js"
+
+def android_vars(inputs, lang):
+    """(JS text, names) for the per-emulator typed values of one Android round, or ("", set()) when no [inputs.<locale>] exists.
+    `lang` is {emulator serial: language}. Maestro hands any flow to any emulator, so the flow asks the emulator who it is:
+    the script picks its row by MAESTRO_DEVICE_UDID. Without that variable (Maestro 2.0.10 has none) it types the
+    [inputs] defaults, the first language's value for a name that has no default."""
+    names = {k for v in (inputs or {}).values() if isinstance(v, dict) for k in v}
+    if not names: return "", set()
+    rows = {s: {k: v for k, v in inputs_for(inputs, lp).items() if k in names} for s, lp in lang.items()}
+    fallback = {**next(iter(rows.values())), **{k: v for k, v in inputs_for(inputs, "", defaults_only=True).items() if k in names}}
+    # ponytail: the map holds this round's emulators only (one row each), regenerated per round
+    return ("// written by shotfleet: [inputs.<locale>] per emulator\noutput.v = (function () {\n"
+            f"  var byDevice = {json.dumps(rows)};\n  var fallback = {json.dumps(fallback)};\n"
+            '  var udid = typeof MAESTRO_DEVICE_UDID === "undefined" ? "" : String(MAESTRO_DEVICE_UDID);\n'
+            '  if (!byDevice[udid] && typeof console !== "undefined") console.log("shotfleet: no row for device \'" + udid + "\'; typing the [inputs] defaults");\n'
+            "  return byDevice[udid] || fallback;\n})();\n"), names
+
+def android_flow(text, name, shots_dir, env=None, mapped=()):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
-    No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself."""
+    No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself.
+    `mapped` names (see android_vars) are read from the script's output.v, after a runScript step at the top."""
     header, sep, body = text.partition("\n---\n")
     if not sep: raise ValueError("flow needs an 'appId:' header followed by '---'")
     header = with_env(re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}", env)
+    if mapped:
+        body = re.sub(r"\$\{(%s)\}" % "|".join(map(re.escape, sorted(mapped))), r"${output.v.\1}", body)
     first = next((l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")), "")
-    out = [] if re.match(r"\s*- launchApp", first) else ["- launchApp"]
+    out = [f"- runScript: {VARS_JS}"] if mapped else []
+    if not re.match(r"\s*- launchApp", first): out.append("- launchApp")
     # ponytail: no screen-text reading on Android: `maestro hierarchy` can't reach the drivers of a sharded run and
     # tears down its port forwards, which hung the run (measured 2026-10-01); Android screenshots are checked with OCR
     for line in body.splitlines():
@@ -1428,7 +1453,8 @@ def android_run(cfg, path, out, only, parallel):
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
     if any(isinstance(v, dict) for v in cfg.get("_inputs", {}).values()):
-        print("note: [inputs.<locale>] values are used on iOS only; Android runs type the [inputs] defaults (Maestro hands any flow to any emulator)")
+        print("note: on Android [inputs.<locale>] values are found by MAESTRO_DEVICE_UDID (Maestro hands any flow to any emulator); "
+              "Maestro 2.0.10 doesn't define it, so there Android types the [inputs] defaults. Not run on a device yet")
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
@@ -1462,8 +1488,10 @@ def android_run(cfg, path, out, only, parallel):
                 lang[e.serial] = lp
             text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
+            vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
+            if vars_js: (fdir / VARS_JS).write_text(vars_js)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}", inputs_for(cfg.get("_inputs"), "", defaults_only=True)))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}", inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
@@ -1897,7 +1925,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if Path(folder).resolve() in (d.resolve() for d in device_runs(Path(folder).resolve().parent)):
         ipad_rule = False  # one device of a multi-device run: the iPad set lives next to it (ipad_set_missing checks that)
     ipad = ipad_rule and bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
-    store_problems, notes = store_rules(images, android, ipad)
+    device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
+    tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
+    store_problems, notes = store_rules(images, android, ipad, tablet)
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
@@ -2324,7 +2354,7 @@ APPLE_SIZES = {
     'iPad 13"': [(2064, 2752), (2048, 2732)], 'iPad 11"': [(1488, 2266), (1668, 2420), (1668, 2388), (1640, 2360)],
     'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024)],
     "Apple Watch": [(422, 514), (410, 502), (416, 496), (396, 484), (368, 448), (312, 390)],
-    "Mac": [(1280, 800), (1440, 900), (2560, 1600), (2880, 1800)], "Apple TV": [(1920, 1080), (3840, 2160)],
+    "Mac": [(1280, 800), (1440, 900), (2560, 1600), (2880, 1800)], "Apple TV / Vision Pro": [(1920, 1080), (3840, 2160)],  # 3840x2160 is also the Vision Pro size
 }
 
 def apple_class(size):
@@ -2350,10 +2380,11 @@ def image_info(path):
             i += 2 + length
     return None, False
 
-def store_rules(images, android, ipad=False):
+def store_rules(images, android, ipad=False, tablet=False):
     """(problems, notes) against the stores' published screenshot rules (research/store-specs.md).
-    Problems are what the store rejects; notes are worth knowing but don't block an upload."""
-    problems, notes, long_ones, not_eligible = [], [], {}, []
+    Problems are what the store rejects; notes are worth knowing but don't block an upload.
+    `tablet`: these are Play's 7" or 10" tablet screenshots, which Google wants at 1080 px or more."""
+    problems, notes, long_ones, not_eligible, small_tablet, watch = [], [], {}, [], [], []
     for label, pngs in sorted(images.items()):
         info = {p: image_info(p) for p in pngs}
         for p, (size, alpha) in info.items():
@@ -2365,8 +2396,10 @@ def store_rules(images, android, ipad=False):
                     problems.append(f"{name}: {size[0]}x{size[1]} is outside Google Play's 320-3840 px")
                 elif max(size) > 2 * min(size):
                     long_ones.setdefault(size, set()).add(label)
+                if tablet and min(size) < 1080: small_tablet.append(name)
             elif apple_class(size) is None:
                 problems.append(f"{name}: {size[0]}x{size[1]} isn't an App Store screenshot size")
+            elif apple_class(size) == "Apple Watch": watch.append((label, size))
         if android:
             phone = [p for p, (size, _) in info.items() if size]
             if len(phone) > 8: problems.append(f"{label}: {len(phone)} phone screenshots; Google Play takes at most 8")
@@ -2383,6 +2416,14 @@ def store_rules(images, android, ipad=False):
                 problems.append(f"{label}: iPhone screenshots need a 6.9\" or 6.5\" set (has {', '.join(sorted(iphone))})")
             if ipad and not any(c == 'iPad 13"' for c in classes):
                 problems.append(f"{label}: the app runs on iPad, so the App Store requires 13\" iPad screenshots")
+    if watch:  # Apple: "the same screenshot size for Apple Watch consistently across all localizations"
+        sizes = sorted(s for _, s in watch); usual = max(sizes, key=sizes.count)
+        for label in sorted({l for l, s in watch if s != usual}):
+            problems.append(f"{label}: Apple Watch screenshots aren't {usual[0]}x{usual[1]} like the rest; "
+                            "the App Store needs one Watch size in every language")
+    if small_tablet:
+        notes.append(f"{len(small_tablet)} tablet screenshot(s) ({', '.join(small_tablet[:3])}{', ...' if len(small_tablet) > 3 else ''}) "
+                     "are under 1080 px on the short side; Google asks tablet screenshots to be 1,080-7,680 px")
     for (w, h), labels in sorted(long_ones.items()):  # one line per size, not one per file
         notes.append(f"{w}x{h} screenshots in {len(labels)} listing(s) are longer than 2:1, which Google's rules say "
                      "isn't allowed (Play has accepted 20:9 phone screenshots in practice)")
@@ -2412,22 +2453,26 @@ def cmd_export(out, fastlane, name_prefix=""):
             raise Fail('the app runs on iPad, so the App Store requires 13" iPad screenshots; add "iPad Pro 13-inch (M5)" to device_types and run again')
         return max(cmd_export(d, fastlane, f"{d.name}_") for d in subs)  # same screen names on every device
     out, fastlane = Path(out), Path(fastlane)
-    if not (out / "run.json").is_file():
+    own = (out / "run.json").is_file()
+    if not own and not any(out.glob("*/*.png")):
         raise Fail(f"no shotfleet run in {out}. Run 'shotfleet run <config>' first")
-    run = json.loads((out / "run.json").read_text())
+    # ponytail: screenshots made elsewhere (<locale>/*.png: Watch, Mac, Apple TV, Vision Pro) go to the App Store layout
+    # only, as PNG; Play folders and JPEGs from other tools need a shotfleet run or a copy by hand
+    run = json.loads((out / "run.json").read_text()) if own else {"platform": "ios"}
+    shots = out / "raw" if own else out
     android = run.get("platform") == "android"
     if not (out / "check.json").is_file():
-        raise Fail(f"{out} hasn't been checked. Run 'shotfleet check {out}' first")
+        raise Fail(f"{out} hasn't been checked. Run 'shotfleet check {out}{'' if own else f' --report {out}'}' first")
     problems = json.loads((out / "check.json").read_text())["problems"]
     bad = {p.split(":")[0].split("/")[0] for p in problems if not p.startswith("identical")}
     for p in problems:
         if p.startswith("identical"): bad.update(f.strip().split("/")[0] for f in p.split(":", 1)[1].split(","))
     for lp, r in run.get("locales", {}).items():  # failed captures and empty folders never replace a listing
-        if not r.get("ok") or not any((out / "raw" / lp).glob("*.png")): bad.add(lp)
+        if not r.get("ok") or not any((shots / lp).glob("*.png")): bad.add(lp)
     store = PLAY if android else APP_STORE
     root = fastlane / "metadata/android" if android else fastlane / "screenshots"
     existing = sorted(d.name for d in root.iterdir() if d.is_dir()) if root.is_dir() else []
-    langs = sorted((d.name for d in (out / "raw").iterdir() if d.is_dir()), key=lambda l: -len(l))  # pt-PT before pt
+    langs = sorted((d.name for d in shots.iterdir() if d.is_dir() and not d.name.startswith(".")), key=lambda l: -len(l))  # pt-PT before pt
     targets = {}  # listing folder -> app locale whose screenshots it gets
     for lp in langs:
         code = store_code(lp, store)
@@ -2444,7 +2489,7 @@ def cmd_export(out, fastlane, name_prefix=""):
         if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
         dst = root / folder / "images" / ANDROID_DEVICES[run.get("device", "phone")]["folder"] if android else root / folder
         dst.mkdir(parents=True, exist_ok=True)
-        new = sorted((out / "raw" / lp).glob("*.png"))
+        new = sorted((shots / lp).glob("*.png"))
         sizes = {png_size(p) for p in new}
         for old in dst.glob("*.png"):  # replace this device's set; other sizes (iPad, 6.5") in the folder stay
             if png_size(old) in sizes: old.unlink()

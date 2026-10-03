@@ -51,10 +51,11 @@ Keys valid in `[ios]` and `[android]`:
 |---|---|---|
 | `apk` (required) | none | debug APK, API 33+ emulators |
 | `package` | read from the APK | refused if it differs |
-| `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots` |
+| `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots`; `"tablet-7"` adds a 7" tablet, 1080x1920 at 280 dpi, exported to `sevenInchScreenshots` |
 | `shell` | none | list of commands run as `adb -s <serial> shell <command>` once per emulator right after boot (after demo mode), e.g. `["setprop debug.myapp.demo 1"]`; not run on a real emulator yet |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the README) |
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the README) |
+| `avd_tablet-7` | `shotfleet_android_tablet7` | name of the 7" tablet emulator when `devices` includes `"tablet-7"` (same note) |
 | `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
 
 A language with under 50% of the app's own strings translated is skipped with a `note:`; list it in `locales` to
@@ -118,8 +119,10 @@ name = "田中"
 ```
 
 Values must be text and names letters, digits or `_`. iOS runs get the language's value as a Maestro `env:` entry in that
-language's flow; Android runs type the defaults only. Unit-tested as flow text, not yet run on a device: check the first
-screenshots in a script like Japanese or Arabic.
+language's flow. On Android a name with a per-language value is read from `shotfleet_vars.js`, which picks the emulator's
+row by `MAESTRO_DEVICE_UDID`; Maestro 2.0.10 doesn't define it (checked in its jars, no device run), so there Android
+runs type the defaults only. Unit-tested as flow text, not yet run on a device: check the first screenshots in a script
+like Japanese or Arabic.
 
 A failing `simctl` or `shell` command stops the run before capture (exit 2) and prints the command.
 

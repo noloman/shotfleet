@@ -1072,7 +1072,7 @@ class MultiDevice(unittest.TestCase):
         class Stop(Exception): pass
         with tempfile.TemporaryDirectory() as d:
             out = self.make(d, {"iphone-17-pro-max": (1320, 2868)}, [1, 2])
-            with mock.patch.object(sf, "store_rules", side_effect=lambda images, android, ipad: (_ for _ in ()).throw(Stop(ipad))), \
+            with mock.patch.object(sf, "store_rules", side_effect=lambda images, android, ipad, tablet=False: (_ for _ in ()).throw(Stop(ipad))), \
                  contextlib.redirect_stdout(io.StringIO()), self.assertRaises(Stop) as cm:
                 sf.cmd_check(out / "iphone-17-pro-max")
             self.assertEqual(cm.exception.args, (False,))

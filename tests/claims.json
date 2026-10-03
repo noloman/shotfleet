@@ -1907,16 +1907,16 @@
  },
  {
   "id": "C114",
-  "claim": "[inputs] sets the text a flow types per language on iOS (Maestro env entry in that language's flow); Android runs use the defaults only",
+  "claim": "[inputs] sets the text a flow types per language on iOS (Maestro env entry in that language's flow); on Android a per-language value is read from shotfleet_vars.js by MAESTRO_DEVICE_UDID, which Maestro 2.0.10 does not define, so Android runs there use the defaults only",
   "where": [
    "README.md"
   ],
   "where_text": [
    "The value goes into that language's flow as a Maestro `env:` entry.",
-   "Android runs type the\n`[inputs]` defaults only"
+   "so there Android runs type the `[inputs]` defaults only"
   ],
   "status": "partial",
-  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults). Not yet run on a simulator with CJK or Arabic typing (roadmap X5 kill criterion: iOS CJK/Arabic typing may fail on the simulator).",
+  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults); AndroidTypedValuesPerDevice.* (generated map, flow rewrite, JS run under node with a fake MAESTRO_DEVICE_UDID, fallback to the defaults). MAESTRO_DEVICE_UDID is absent from the Maestro 2.0.10 jars (scanned 2026-10-03). Not yet run on a simulator with CJK or Arabic typing (roadmap X5 kill criterion: iOS CJK/Arabic typing may fail on the simulator), nor on an emulator with a newer Maestro.",
   "layer": "unit",
   "assertion": "Fixture app with a text field: Japanese value shows in the PNG (read by OCR).",
   "fix": ""

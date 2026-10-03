@@ -41,6 +41,8 @@ shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/an
 
 Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`). The report (`check.json` and `index.html`) goes to `./shotfleet-check` (change it with `--report`), and your fastlane folders are never touched. On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform. It found one real problem: the Traditional Chinese listings have Chinese captions over an English app. When we planted English screenshots in the German folder and deleted a Japanese one, both were reported.
 
+Screenshots made in other tools work too. `check` knows Apple's sizes for Apple Watch, Mac, Apple TV and Vision Pro (3840x2160 is both Apple TV and Vision Pro), takes at most 10 per size, and flags a language whose Watch screenshots differ in size from the others (Apple wants one Watch size in every language). `export` takes a plain `<locale>/*.png` folder of such a set once `shotfleet check <folder> --report <folder>` has written its `check.json` there, and copies it into `screenshots/<locale>/` next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.
+
 It also finds real localization bugs. On CrossfitTracker it found an onboarding page whose Next button was unreachable on small phones in Japanese, Korean, Chinese and Arabic.
 
 ## Free and paid
@@ -157,6 +159,7 @@ device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes 
 [android]
 devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
                           # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
+                          # "tablet-7" adds a 7" tablet, 1080x1920 at 280 dpi, exported to sevenInchScreenshots
 ```
 
 ### Flutter, React Native, .NET MAUI, Unity and translation-platform exports
@@ -216,8 +219,10 @@ name = "Alex"
 name = "田中"
 ```
 
-The value goes into that language's flow as a Maestro `env:` entry. This works on iOS; Android runs type the
-`[inputs]` defaults only, because Maestro hands any flow to any emulator. The values are tested as flow text, not yet
+The value goes into that language's flow as a Maestro `env:` entry. This works on iOS. Maestro hands any flow to any
+emulator, so on Android a name that has a per-language value is read from a small script (`shotfleet_vars.js`) that picks
+the emulator's row by `MAESTRO_DEVICE_UDID`. Maestro 2.0.10 doesn't define that variable (we looked in its jars; no
+device run), so there Android runs type the `[inputs]` defaults only. The values are tested as flow text, not yet
 run on a device, so check the first screenshots in a script like Japanese or Arabic.
 
 **Device setup** runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:
@@ -285,4 +290,4 @@ translation source.
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; it may still work, nothing is blocked.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing.
 - `launchApp` options must be written as a block (as above), not inline `{ ... }`.
-- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS only, see above).
+- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, see above).
