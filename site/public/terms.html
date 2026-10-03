@@ -6,14 +6,28 @@
 <title>Licence and refunds · shotfleet</title>
 <meta name="description" content="What a shotfleet licence includes, how updates and refunds work.">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Licence and refunds · shotfleet">
+<meta property="og:description" content="What a shotfleet licence includes, how updates and refunds work.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:url" content="https://shotfleet.com/terms">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/terms">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
-<header class="top"><div class="wrap"><a class="brand" href="/">shotfleet</a></div></header>
-<main class="wrap">
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+  </nav>
+</header>
+<main class="wrap" id="main">
  <div class="page">
   <p class="label">Licence</p>
   <h1>What you get when you buy shotfleet.</h1>
@@ -23,18 +37,19 @@
   <ul>
     <li>One licence is for one developer. Use it on up to three of your own Macs and in your CI.</li>
     <li>Unlimited apps and projects, including client and commercial work.</li>
-    <li><code>shotfleet check</code> is free for everyone; the licence unlocks <code>run</code> and <code>export</code>.</li>
-    <li>Don't share your key or publish it. Moving to a new Mac: <code>shotfleet deactivate</code> on the old one.</li>
+    <li><code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. The licence unlocks every language and <code>export</code>.</li>
+    <li>shotfleet needs a Mac with Apple silicon for now. There is no Intel build yet.</li>
+    <li>Don't share your key or publish it. A key can be activated 3 times, and activating again on a Mac that already holds it counts nothing. <code>shotfleet deactivate</code> removes the key from a Mac, but Gumroad can't give the activation back from there: to use it on a fourth Mac, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> and I'll reset the count.</li>
   </ul>
 
   <h2>Updates</h2>
-  <p>A year of updates is included. After that, the version you have keeps working for as long as macOS, Xcode and Maestro let it; you can renew for another year of updates if you want them.</p>
+  <p>A year of updates is included. After that, the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run: it asks Gumroad about once a week, and works offline for up to 30 days. I plan to offer an optional renewal for further updates after the first year; it is not available yet.</p>
 
   <h2>Refunds</h2>
-  <p>If shotfleet doesn't work for your app, ask for a refund within 14 days of buying and you'll get it, no questions asked. Email <a href="mailto:manulorenzop@gmail.com">manulorenzop@gmail.com</a> with your order email.</p>
+  <p>If shotfleet doesn't work for your app, ask for a refund within 14 days of buying and you'll get it, no questions asked. Email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> with your order email.</p>
 
   <h2>Payment</h2>
-  <p>You can buy through Lemon Squeezy or Gumroad. Either one handles the payment and sends your receipt and licence key; sales tax or VAT is applied by the store under its own terms. I never see your card details. Keys from either store work the same way.</p>
+  <p>You buy through Gumroad, which sells shotfleet to you as the merchant of record. Gumroad handles the payment, collects and pays sales tax or VAT, and sends your receipt and licence key. Prices are before VAT where it applies, so a buyer in the EU pays the price plus VAT; a business with a VAT ID can enter it at checkout. I never see your card details. Refunds go through Gumroad too, which may also refund a purchase on its own in the first 90 days, and buyers in Brazil have a 7-day right of withdrawal.</p>
 
   <h2>No warranty</h2>
   <p>shotfleet is provided as it is. I fix bugs as fast as I can, but I can't promise it will work with every app, every Xcode or every emulator. If something goes wrong, my liability is limited to what you paid.</p>
@@ -42,5 +57,12 @@
   <p class="small">Manuel Lorenzo Parejo · <a href="/privacy">Privacy</a></p>
  </div>
 </main>
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+  </div>
+</footer>
+<script src="/ga.js" defer></script>
 </body>
 </html>

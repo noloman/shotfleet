@@ -1,0 +1,69 @@
+# shotfleet status
+
+Single source of truth for "what is left to have a sellable project". Evidence and commands behind every row: [research/sellable-audit.md](research/sellable-audit.md). Refresh the numbers with `tools/status.sh`.
+
+**As of 2026-10-03 (early, HEAD after the release-candidate run; site deploy ae0a9ffd). Sellable when:** a payment provider that accepts a person without a KvK (Gumroad, replacing Polar) has approved Manu, pays out and has a live product with a checkout link; one real key has been activated, refunded and refused on the notarized build; that build is published (`/download/VERSION` returns 200, `install.sh` works against it); and a clean Mac reaches a first screenshot in a measured time on a Maestro version we tested and pin. **Today: 0 of those 4 hold. Not sellable.** The program itself is in good shape (306 unit tests and 28 worker checks green at HEAD); what is missing is the money path, the published release and the outside proof.
+
+"In flux" = another agent is editing it right now (the Gumroad migration touches `shotfleet.py`, `packaging/go-live.sh`, `tools/golive/`, tests, and later the site, terms, privacy and LAUNCH.md). Strict rule: "done" needs evidence; anything only unit-tested against a fake API or only stated in a document is "partial".
+
+## Gates to first sale
+
+| Gate | State | Evidence | Owner | Next action |
+|---|---|---|---|---|
+| 1. Payment provider approved, payout set up | blocked (Manu) | Polar dropped (Stripe asks a KvK). Gumroad is the store in code, site, terms and tests (95bb191). No Gumroad product exists yet; Stripe's verdict after the first sales is unknown (Keysi has had no sales) | Manu only | Create the Gumroad product and payout (checklist: research/gumroad-setup.md section 6); stop and tell Claude if anything asks for a KvK |
+| 2. Product and price live | not started (Manu) | Planned: $49 list with offer code FOUNDER29 ($20 off, 100 uses, automatic). Polar product/links are obsolete | Manu (Claude can drive Chrome if allowed) | Create the product with the License key block on the Content page, 14-day refund, FOUNDER29; then `tools/golive/storefront.sh <url> <id> 49` |
+| 3. Checkout link | not started | Live page still the waitlist (by design); `packaging/go-live.sh --dry-run <url> <id>` is ready for the Gumroad URL and product ID | Both | After gate 2: dry run, then go live |
+| 4. Tax / KvK for sales income | not started | LAUNCH.md names the open question; nobody has asked the Belastingdienst or an accountant. Terms/privacy still describe Polar as merchant of record (repo: 2 and 1 mentions) | Manu only | Ask before the first payout; Claude then fixes terms, privacy and claims C055, C056, C086 to the real provider |
+| 5. Licence proven with a real key | partial | Frozen, signed, gate-ON build (test product id in a temp copy) against a local fake Gumroad API, 2026-10-02, 92 checks ok ([research/release-candidate.md](research/release-candidate.md)): free tier on the real binary (`run` prints the 2-of-3 cap and stops before any device, `export` refused, nothing written), activate (uses=1, re-activate burns nothing), refunded key refused for free, 4th Mac refused with the email message, deactivate, weekly re-check (no use counted), refund seen at re-check, 503 and a dead server do not lock a buyer out for 30 days, locked after 31, `SHOTFLEET_KEY` for CI, bundled certifi cacert.pem and a TLS handshake from the frozen program. Still unproven: any real Gumroad key (the fake is built from Gumroad's docs, so `uses` counting, the 404 text and the refund flags are assumptions), Polar and Lemon Squeezy only by unit tests. Bug found: a truncated `licence.json` breaks `export`, `run` and `deactivate` with a raw JSON error | Both | Manu does one real purchase and refund against the live product (the table in the report, section 6, is the rehearsal; `tools/release-candidate.sh` is the harness); Claude fixes the corrupt-`licence.json` case |
+| 6. Release build: signed, notarized, checksum, VERSION, install | partial | `SHOTFLEET_RC=1 tools/release-candidate.sh` (2026-10-02): `packaging/build.sh` builds in 75-148 s (22 MB folder, 9.2 MB tarball), signed with the Developer ID Application identity (hardened runtime, timestamp, 56 of 56 Mach-O files verify, `codesign --verify --deep --strict` ok, signature survives tar), not notarized by design; `spctl` says `rejected, source=Unnotarized Developer ID`. A quarantined unnotarized copy does not run from a shell (hangs, then SIGKILL): a notarized build is required for browser downloads; `curl \| sh` sets no flag. `install.sh` against a local server with the real tarball and its `.sha256`, temp HOME: installs, link on the PATH, `shotfleet --version` works, checksum mismatch refused, update over an installed copy works, real PATH untouched; `smoke.sh` release lines pass. Not proven: Apple accepting this build (0.1.0 was accepted 2026-10-01; no staple possible on a bare folder), a notarized quarantined run, the live URL (`/download/VERSION` still 404), a clean Mac | Claude builds, Manu approves publish | Run `packaging/build.sh` with `NOTARY_PROFILE=KeysiNotary` (notarizes, does not deploy), then `spctl` (expect accepted) and the quarantine step again, then a quarantined install on a clean user, then publish with go-live |
+| 7. Clean-Mac cold install, time to first screenshot | not started | Cold test 2 ran on this dev Mac with `env -i`, gate off, no Maestro run. "About 10 minutes" (README) is unverifiable (claim C019). No outside tester has tried | Both | Cold test 3 on a clean macOS user and 2-3 outside developers; write the measured median into README |
+| 8. Maestro version tested and shown by doctor | not started | This Mac has Maestro 2.0.10; latest is 2.11.0 (setup-friction.md). README says "Maestro 2.x"; doctor says "needs Maestro 2.x" (`shotfleet.py:1875`). Every real run used 2.0.10 | Claude | Run the fixture and CrossfitTracker on 2.0.10 and 2.11.x, pin one, make doctor print and warn outside it |
+| 9. Fixture end to end (iPhone, iPad, Android) | not started | `tools/fixture-app` (iPhone + iPad, 5 languages) committed in 01fa67d; no script runs it, no Android fixture exists (claims.json says so) | Claude | Write the one-script e2e with a planted wrong-language and a missing screen; add a tiny Android APK |
+| 10. Real app runs, iOS and Android | partial | CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01). Remoti iPhone+iPad (de, ja), CrossfitTracker tablet, Kuokka and HackerNewsKMP both platforms (ROADMAP.md, research). Not re-run since the config rewrite, `[inputs]`, iOS retry and `init` discovery commits. Flutter, React Native, MAUI, Unity: never run, only translation files read | Claude (Mac must be quiet) | Re-run CrossfitTracker iOS, Android and iPad on the release build after gate 8 |
+| 11. Claims register | partial | `tests/claims.json` 118 claims: proven 28, fixed 14, evidence 19, partial 47, unverifiable 6, untested 2, removed 2. Green (proven + fixed) 42; 74 not yet green. No claim is still "false" (test enforces it) | Claude (Manu for the 6 legal/unverifiable) | Turn partials into proven as gates 5-10 produce evidence; reword what cannot be proven |
+| 12. Website | partial | Deployed 2026-10-02 (version ae0a9ffd): `/`, `/docs`, `/alternatives`, `/ga.js`, `/privacy`, `/terms`, `/llms.txt`, `/sitemap.xml` all 200; CSP allows only the Google hosts GA needs; terms and privacy name Gumroad as merchant of record (no Polar text left); waitlist page by design | Both | Sale page switches on at go-live; run `tools/golive/smoke.sh` after |
+| 13. Support channel | done | `hello@shotfleet.com` forwarding verified (d1ec2a9); privacy page says mail goes through Cloudflare Email Routing. Not re-tested today | Manu only | Send himself a test mail once a month |
+| 14. Measurement | partial | First-party counter live (worker tests 28 ok). GA4 `G-6NY43DB3F4` live behind the consent banner (verified in Chrome on shotfleet.com: Accept/Decline equal weight, nothing loaded without consent); GA admin: signals off, retention within the 14 months the privacy page states | Both | Mark key events cta_click, pricing_view, signup in GA once events appear; read `site/signups.sh --visits` |
+| 15. Marketing assets | partial | Kit: 9 files in `marketing/kit/`, 3 article drafts + ideas, launch email, `site/draft/guides` (generator refuses unverified articles). Demo video: script only, not recorded. Articles' TO VERIFY lists not ticked (some need the live installer). Nothing posted, by design | Manu only posts | After gates 5-7: tick the TO VERIFY items; Manu records the video and posts |
+| 16. Disk and tooling health of the dev Mac | partial | `df`: Data volume 33 GiB free, 97% used (was 100%, 0.9 GB). Android SDK/AVDs 18 GB, DerivedData 2.1 GB, 10 AVDs. Maestro 2.0.10, adb present, iOS 27.0 runtime installed | Manu | Keep 30+ GB free before device runs; a Flutter run needs about 1.5 GB more |
+
+## Open risks
+
+| # | Risk | Evidence | Mitigation |
+|---|---|---|---|
+| R1 | No way to take money: provider switch in progress, tax/KvK question for sales income unanswered | Gates 1-4; LAUNCH.md | Manu starts Gumroad and the tax question today; nothing else on this list blocks sales as hard |
+| R2 | The licence has never met a real provider; a failed activation is the paying buyer's first screen | Gate 5; Gumroad behaviour (uses count, refunds refused) known only from a fake API | Rehearsal script, one real purchase and refund before announcing; keep the 30-day offline grace tested |
+| R3 | The release was never published or installed from the real URL; Gatekeeper behaviour of a bare folder tarball not re-proven | Gate 6; live `/download/VERSION` 404 | Release candidate, `spctl`, quarantined install on a clean user, then smoke script (`tools/golive/smoke.sh`) |
+| R4 | A buyer installs Maestro 2.11 while every run used 2.0.10 | Gate 8; setup-friction.md, limits-text.md | Pin and show the tested version; warn outside it |
+| R5 | First-run friction (Java 17+, Debug simulator build, API 33+ AVD, silent text-recognition compile) causes refunds; time to first screenshot unmeasured | Gate 7; cold-test-2.md, setup-friction.md | Cold test 3; `doctor` already checks Java and says what is next |
+| R6 | Words ahead of proof: 74 of 118 claims not green; Flutter/RN/MAUI never run; site, terms and privacy still say Polar | Gate 11; claims-audit.md | Keep the guard tests; reword or prove; update legal text with the migration |
+| R7 | Much code changed since the last real device run and there is no automated end-to-end run | Gates 9, 10; git log 10-02 | Fixture e2e script first, then re-run real apps |
+| R8 | No demand data, one person for support and tax, dev Mac nearly full again | pricing-2026-10.md; gate 16; waitlist last known 0 signups (not re-read today: needs the KV) | Decision gates G1-G5 in research/roadmap-2026-10.md after day 0; log support minutes; keep disk free |
+
+## What Manu must do
+
+1. Finish the Gumroad account: identity check, payout account, accept their terms, create the product ($49, $29 for the first 100, licence keys on), then send Claude the product URL and ID.
+2. Ask the Belastingdienst or an accountant whether software sales need a KvK or other registration, and what Gumroad's handling of sales tax does and does not cover.
+3. Make one real purchase with his own card and refund it (Claude cannot spend money), once Claude has the rehearsal script.
+4. Approve the go-live (deploy and push): the one-shot cannot be undone.
+5. Provide a clean macOS user (or second Mac) and 2-3 outside developers for the cold test.
+6. Set the Google Analytics admin items (retention 14 months, Google signals off, internal-traffic filter) in Google's own pages.
+7. Publish and post everything: articles, directories, launch email, Show HN, social; record the demo video. Claude posts nothing.
+8. Keep the Mac quiet and at least 30 GB free when device runs are scheduled.
+
+## What Claude does next (ordered)
+
+1. Land the Gumroad migration (another agent is on it): code, go-live, smoke test, site, terms, privacy, claims; tests must be green again (the working tree is red while it is half done).
+2. Fixture end-to-end script (iPhone, iPad, Android stub) with planted defects.
+3. Run the fixture and CrossfitTracker on Maestro 2.0.10 and 2.11.x; pin the tested version; doctor shows it.
+4. Licence rehearsal script for the real provider; free-tier checks on a gate-ON build.
+5. Release candidate built and notarized locally, `spctl`, quarantined install on a clean user; no publish until Manu says go.
+6. Re-run CrossfitTracker iOS, Android and iPad on that build; update README timings.
+7. Cold-test-3 kit for the outside testers; tick article TO VERIFY items that need no live installer; run the README CI recipe once.
+8. Screenshot-mode and content-control work from `research/content-control.md` (in flux).
+9. Refresh this file.
+
+## Changelog of this file
+
+- 2026-10-02: created from the repo at eeb5cff, the live site and the test runs listed in research/sellable-audit.md.
+- To refresh: run `tools/status.sh` (add `--quick` to skip the tests). It prints the test counts, claims by status, release state in the repo, live-site checks (status codes, redirects, CSP, live page against repo), the git summary with uncommitted work, and free disk. Then update the rows whose numbers changed and add a dated line here. Dependency-free: sh, python3, curl, git, node.

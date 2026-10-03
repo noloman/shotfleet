@@ -9,7 +9,7 @@ ok   ar       4/4 screenshots
 ok   de       4/4 screenshots
 ...
 captured 18/18 locales in 534s on 4 simulators
-checked 72 screenshots: 0 problem(s)
+checked 72 screenshots in 18 languages: 0 problem(s)
 ```
 
 ## Why
@@ -43,21 +43,27 @@ Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `n
 
 It also finds real localization bugs. On CrossfitTracker it found an onboarding page whose Next button was unreachable on small phones in Japanese, Korean, Chinese and Arabic.
 
-## Quickstart (about 10 minutes)
+## Free and paid
+
+`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
+
+## Quickstart (once Maestro and a simulator build exist)
 
 ```bash
-curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh   # signed, notarized; Apple silicon
-shotfleet activate <your key>                      # from your purchase email (`check` works without one)
-shotfleet doctor                                   # checks Maestro, Xcode, Android SDK
-shotfleet init path/to/MyApp.app   ios/            # simulator build (Debug-iphonesimulator)
-shotfleet init path/to/app-debug.apk android/      # or an APK
+curl -fsSL https://shotfleet.com/install.sh | sh   # signed, notarized; Apple silicon
+shotfleet activate <your key>                      # from your Gumroad receipt email (`check` works without one)
+shotfleet doctor                                   # checks Maestro, Java, Xcode, Android SDK
+shotfleet init                                     # in your project folder: uses the newest Debug simulator build and Gradle debug APK it finds
+shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
 
-1. Edit the generated `flow.yaml`. It's a normal [Maestro](https://maestro.mobile.dev) flow written in English. Navigate by the text users see and add a `takeScreenshot:` for each store image.
-2. Try one language: `shotfleet run ios/shotfleet.toml --locales en`.
-3. Run them all: `shotfleet run ios/shotfleet.toml`.
-4. Review `out/index.html`. It's a grid with a row per language and a column per screen, and problems are outlined in red.
-5. Export to fastlane: `shotfleet export ios/out --fastlane fastlane/`. That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
+`shotfleet init` without arguments only reads folders, never builds. For iOS it takes the newest `Debug-iphonesimulator` app in Xcode's default DerivedData folder (`~/Library/Developer/Xcode/DerivedData`) whose `info.plist` points at an Xcode project in this folder (or one folder below it, or above it). For Android it takes the newest APK under `app/build/outputs/apk/debug` (or `<module>/build/outputs/apk/debug`, one folder below). It prints which build it chose and how old it is. If it finds nothing it exits with the exact `xcodebuild` and `./gradlew assembleDebug` commands to run, then run `shotfleet init` again. If you build somewhere else (a custom DerivedData location), pass the path as above.
+
+1. Edit the generated `flow.yaml`: [Maestro](https://maestro.mobile.dev) steps in English. Navigate by the text users see and add a `takeScreenshot:` for each store image. No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android.
+2. Try one language: `shotfleet run --locales en`.
+3. Run them all: `shotfleet run` (finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one).
+4. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red.
+5. Export to fastlane: `shotfleet export out --fastlane fastlane/` (`out-ios` or `out-android` if the config has both). That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
 
 ## Uploading
 
@@ -76,9 +82,9 @@ also catches folders you edited by hand.
 
 ## In CI
 
-`run` and `check` take `--json`: the report goes to stdout as JSON (`exit`, `screenshots`, `problems`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
+`run`, `check` and `export` take `--json`: the result goes to stdout as JSON (`exit`, `screenshots`, `problems` for `run` and `check`; `exit`, `exported`, `skipped` for `export`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
 
-Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. (This recipe hasn't been run on GitHub yet; the command itself is the one tested above.)
+Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. `check` is free and needs no licence. (This recipe hasn't been run on GitHub yet; the command itself is the one tested above.)
 
 ```yaml
 # .github/workflows/screenshots.yml
@@ -89,7 +95,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug -derivedDataPath build build
-      - run: python3 shotfleet.py check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json
+      - run: curl -fsSL https://shotfleet.com/install.sh | sh   # Apple silicon runner
+      - run: shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -98,6 +105,8 @@ jobs:
             check.json
             shotfleet-check/
 ```
+
+To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations; if the licence server can't be reached the job isn't failed. With an invalid key, `export` refuses and `run` captures only 2 languages.
 
 ## With AI agents
 
@@ -119,28 +128,35 @@ Every selector is rewritten to match **any** translation of that English label. 
 
 ## Config
 
+The whole config can be this (`shotfleet init` writes it):
+
 ```toml
 [ios]
 app = "path/to/MyApp.app"
-bundle_id = "com.example.myapp"
-flow = "flow.yaml"
-device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
-runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
-parallel = 4            # simulators
-out = "out"
-# locales = ["de", "ja"]   # default: every language the app ships
-# base_locale = "de"        # the language your flow is written in (default en)
-# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes from one flow: out/<device>/;
-#                            # `check out` and `export out` handle both, and the App Store takes both in one folder
 
-[android]                 # in its own file
+[android]                 # optional: the same file and flow serve both platforms
 apk = "path/to/app-debug.apk"
-package = "com.example.myapp"
-flow = "flow.yaml"
-parallel = 4            # emulators
-out = "out"
-# devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
-#                                 # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
+```
+
+Everything else is read from the build or has a default; set it only to change it. A typo or a wrong type is refused
+with a one-line message before anything runs.
+
+```toml
+[ios]
+flow = "flow.yaml"        # default; shared by both platforms (an `appId:` header is set for you)
+out = "out"               # default "out", or "out-ios" / "out-android" when the file has both platforms
+parallel = 4              # simulators (emulators on Android); default 4
+locales = ["de", "ja"]    # default: every language the app ships
+base_locale = "de"        # the language your flow is written in (default en)
+bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
+device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # default: 6.9" iPhone
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-5"                    # default: newest installed
+device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes from one flow: out/<device>/;
+                          # `check out` and `export out` handle both, and the App Store takes both in one folder
+
+[android]
+devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
+                          # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
 ```
 
 ### Flutter, React Native, .NET MAUI, Unity and translation-platform exports
@@ -160,6 +176,79 @@ CSV with one column per language (Unity Localization, spreadsheets). ICU plurals
 and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The language comes from `@@locale`, the file name
 (`app_de.arb`, `Resources.de.resx`) or the folder (`locales/de/`, `values-de/`). `check` takes the same files:
 `shotfleet check fastlane/ --strings 'lib/l10n/*.arb'`.
+
+## Extending shotfleet
+
+Nothing here is on by default: a config without these tables behaves exactly as above. Go further when you want to.
+
+**Hooks** run your own commands (`/bin/sh`, in the config's folder, output on stderr) around a run and an export:
+
+```toml
+[hooks]
+before_run   = "make build-sim"                 # a string, or a list of commands run in order
+after_run    = 'curl -sS -X POST -H "Content-type: application/json" "$SLACK_WEBHOOK_URL" --data "{\"text\":\"shotfleet $SHOTFLEET_PLATFORM: $SHOTFLEET_PROBLEMS problem(s)\"}"'
+before_export = "git diff --quiet"              # a non-zero exit stops the export
+after_export  = 'fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --screenshots_path "$SHOTFLEET_FASTLANE/screenshots"'
+# hook_timeout_s = 1800                         # default 600 per command
+```
+
+A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices.
+Variables: `SHOTFLEET_EVENT`, `_VERSION`, `_CONFIG`, `_PLATFORM`, `_OUT`, `_BUNDLE_ID`; `before_run` and `after_run` also get
+`_LOCALES`; `after_run` gets `_EXIT`, `_PROBLEMS`, `_REPORT` (`<out>/check.json`); the export hooks get `_FASTLANE`, `_REPORT`
+(and `_EXIT` after the export). `--no-hooks` skips them for a dry run.
+
+**Overrides** replace what shotfleet would tap for one language, which is the fix for a collision warning (`'Next' ->
+'İleri' also means 'Advanced'`) and for labels that aren't in your app's strings:
+
+```toml
+[overrides.tr]                         # the language as shotfleet names it: tr, pt-BR, zh-Hans...
+"Next" = "İleri"                       # literal text
+"Advanced" = "re:Gelişmiş.*"           # "re:" = a regular expression
+"Search" = "Ara"
+```
+
+**Inputs** set the text a flow types, per language. Write `inputText: ${name}` in the flow and give the values in the config:
+
+```toml
+[inputs]                               # typed in every language that has no value of its own
+name = "Alex"
+[inputs.ja]                            # the language as shotfleet names it; pt covers pt-BR too
+name = "田中"
+```
+
+The value goes into that language's flow as a Maestro `env:` entry. This works on iOS; Android runs type the
+`[inputs]` defaults only, because Maestro hands any flow to any emulator. The values are tested as flow text, not yet
+run on a device, so check the first screenshots in a script like Japanese or Arabic.
+
+**Device setup** runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:
+
+```toml
+[ios]
+simctl = ["ui $UDID appearance dark", "location $UDID set 52.3676,4.9041"]   # xcrun simctl <args>; $UDID is the simulator's id
+[android]
+shell = ["setprop debug.myapp.demo 1", "settings put system font_scale 1.0"]  # adb -s <serial> shell <command>
+```
+
+A command that fails stops the run before anything is captured (exit 2) and prints the command. iOS commands apply to every language (a different command per language is not possible: one Maestro process serves all simulators). The Android commands are unit-tested as command lines; whether a given `setprop` or `settings` command takes effect on your emulator image has not been tried on a real one.
+
+**Expected content** checks that what you seeded is really on screen, per language. Name the screenshot as in the flow (`takeScreenshot: 01_home`):
+
+```toml
+[expect.01_home]
+any = ["Senior iOS Engineer"]          # at least one of these is on screen
+[expect.01_home.de]                    # only for the German screenshot (pt covers pt-BR)
+all = ["Steinmännchen"]                # every one of these is on screen
+[expect.03_log]
+not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show
+```
+
+`run` checks these automatically; for screenshots you already have, use `shotfleet check out/ --content shotfleet.toml` (free, no licence). A missing or forbidden text is a problem line (`de/01_home.png: expected "Steinmännchen" on screen`), and a table for a screenshot that doesn't exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, `could not verify`, never as a pass; `--ocr-command` helps there. This proves the strings you list are present, not that the data looks right.
+
+**Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH (like `git` and `gh`), when `foo` isn't a built-in command.
+
+**Anything else**: `run`, `check` and `export` take `--json` and use stable exit codes (0 ok, 1 problems, 2 setup error), so
+they script like any other tool; `SHOTFLEET_OCR` / `--ocr-command` swaps the text reader; `strings = "glob"` swaps the
+translation source.
 
 ## Tips
 
@@ -186,13 +275,14 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
 
 - The installed program brings its own Python. Running from source needs Python 3.11+ (macOS's own `python3` is 3.9; `brew install python`).
 - Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
-- Flutter and React Native support (via source files) is tested with sample files, not yet on a real Flutter/RN app.
+- Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).
+- If you pass `init`, `run` or `check` a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - If macOS text recognition stops answering (its `ANECompilerService` occasionally gets stuck until a restart), `check` switches to Tesseract automatically when it's installed (`brew install tesseract tesseract-lang`), and otherwise tells you to restart. iOS runs aren't affected: they read the app's own text.
 - With Tesseract installed (`brew install tesseract tesseract-lang`), `check` uses it automatically for those scripts: measured on 85 languages, 84 are then verified by reading instead of 66. Another OCR works too: `--ocr-command "<cmd> {image}"` (or `SHOTFLEET_OCR`).
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
-- macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.
-- Android needs API 33+ emulators for per-app languages.
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; it may still work, nothing is blocked.
+- Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing.
 - `launchApp` options must be written as a block (as above), not inline `{ ... }`.
-- Text you type into fields isn't translated, so demo data stays the same in every language.
+- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS only, see above).

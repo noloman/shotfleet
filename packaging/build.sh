@@ -11,8 +11,8 @@ ARCH=$(uname -m)
 rm -rf build dist && mkdir -p build
 swiftc -O ocr.swift -o build/ocr
 build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; python3 -m venv build/venv; }  # its Python may be gone (brew upgrade)
-build/venv/bin/pip install --quiet --upgrade pyinstaller
-set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." \
+build/venv/bin/pip install --quiet --upgrade pyinstaller certifi
+set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." --add-data "$PWD/skill:skill" \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
 if [ -n "${DEVELOPER_ID:-}" ]; then  # PyInstaller signs the bundled pieces too, with hardened-runtime entitlements
   codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" build/ocr
@@ -39,5 +39,13 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
     | tee build/notary.log
   grep -q "status: Accepted" build/notary.log || { echo "notarization failed: xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE" >&2; exit 1; }
+  # Don't trust the verdict alone: unpack the tarball we will ship, mark it as downloaded (quarantine) and ask Gatekeeper.
+  CHECK=$(mktemp -d); tar -C "$CHECK" -xzf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz"
+  xattr -w com.apple.quarantine "0081;00000000;Safari;" "$CHECK/shotfleet/shotfleet"
+  # spctl cannot assess a bare executable ("does not seem to be an app", no source line), so run it: a quarantined copy that
+  # is not notarized hangs and is killed, a notarized one prints its version (first run looks the ticket up online, ~10 s).
+  perl -e 'alarm 90; exec @ARGV' "$CHECK/shotfleet/shotfleet" --version 2>&1 | tee build/spctl.log
+  grep -q "^shotfleet $VERSION\$" build/spctl.log || { rm -rf "$CHECK"; echo "a quarantined copy of the shipped build does not run (build/spctl.log): do not publish" >&2; exit 1; }
+  rm -rf "$CHECK"
 fi
 shasum -a 256 dist/*.tar.gz

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Why your fastlane snapshot screenshots are all in English (and how to check every language)</title>
+<meta name="description" content="Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app&#x27;s own strings.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Why your fastlane snapshot screenshots are all in English (and how to check every language)">
+<meta property="og:description" content="Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app&#x27;s own strings.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:url" content="https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english">
+<link rel="icon" href="../../public/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/site.css">
+<style>
+.docs { max-width: 760px; }
+.docs h2 { scroll-margin-top: 96px; }
+.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
+.docs pre code { background: none; padding: 0; font: inherit; }
+.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.docs img { max-width: 100%; height: auto; border-radius: 12px; }
+.docs table { min-width: 0; }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Why your fastlane snapshot screenshots are all in English (and how to check every language)",
+  "description": "Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app's own strings.",
+  "author": {
+    "@type": "Person",
+    "name": "Manuel Lorenzo Parejo"
+  },
+  "datePublished": "BUILD_DATE",
+  "mainEntityOfPage": "https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english"
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+  </nav>
+</header>
+<main class="wrap" id="main">
+ <div class="page docs">
+  <p class="label">Guide</p>
+<h1>Why your fastlane snapshot screenshots are all in English (and how to check every language)</h1>
+<p>You set <code>languages(["en-US", "de-DE", "ja"])</code> in your Snapfile, ran <code>fastlane snapshot</code>, and opened the folders. German and Japanese are there, and every image is in English.</p>
+<p>I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The first four steps below need nothing from me.</p>
+<h2>How snapshot is supposed to set the language</h2>
+<p>fastlane's docs say the language reaches your UI tests "via a temporary file which is written by snapshot before running the tests". Your test target includes <code>SnapshotHelper.swift</code>, and the docs tell you to call <code>setupSnapshot(app)</code> before <code>app.launch()</code>. That helper reads the file and passes the language to your app as launch arguments. There is also an option, <code>localize_simulator</code>, that sets the Simulator's own system language.</p>
+<p>So there are several places where the chain can break. The GitHub issues are old but show the pattern. In #8895 the Simulator language "stays en-US" after an Xcode update. In #12917 the reporter got English from <code>fastlane snapshot</code> while a manual Xcode run with the generated language file switched correctly. In #11457 the reporter found that <code>localize_simulator true</code> worked but changed the status bar because the simulator was erased. I did not reproduce any of these; they are the documented symptom, from 2017 and 2018.</p>
+<h2>Five things to rule out, in order</h2>
+<p><strong>1. <code>setupSnapshot(app)</code> runs after <code>app.launch()</code>, or never.</strong> The docs say to call it before launch, in <code>setUp()</code>. If your test launches the app first, the language never reaches it.</p>
+<p><strong>2. You ran the test from Xcode.</strong> The docs say running tests in Xcode does not produce snapshots; only the <code>fastlane snapshot</code> command creates the language file and the folders.</p>
+<p><strong>3. The Simulator system language.</strong> Try <code>localize_simulator(true)</code> in your Snapfile. Per issue #11457 the cost is a status bar that looks different, because the simulator gets erased.</p>
+<p><strong>4. The app is not translated into that language.</strong> If <code>de</code> is in your Snapfile but your build has no German strings, iOS shows your base language and no setting will help. List what your build really ships:</p>
+<pre><code class="language-bash">ls path/to/MyApp.app | grep lproj</code></pre>
+<p>Compare that list with your Snapfile. A language that is in the Snapfile but not in the app can only ever produce English.</p>
+<p><strong>5. The app remembers something.</strong> If your app stores its own language choice or onboarding state, a reused install can show the old language. snapshot has <code>reinstall_app</code> and <code>erase_simulator</code> for this. This and the previous cause are my reasoning rather than documented cases, so test them on your app.</p>
+<h2>Step 1: stop guessing, look at every image</h2>
+<p>With 18 languages and 4 screens that is 72 images. Opening them by hand works until the day you skip one. A faster way is to compare each screenshot with the text your app really contains.</p>
+<h2>Step 2: check the folder you already have</h2>
+<p>shotfleet's <code>check</code> command does that, and it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders. It needs a Mac, because it uses the text recognition built into macOS, and it needs a simulator build of your app so it knows your real strings:</p>
+<pre><code class="language-bash">xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug \
+  -derivedDataPath build build
+
+shotfleet check fastlane/ \
+  --app build/Build/Products/Debug-iphonesimulator/MyApp.app</code></pre>
+<p>For an Android folder, pass the APK instead: <code>--app path/to/app-release.apk</code>.</p>
+<p>It reads each image and tells you:</p>
+<ul><li><strong>Wrong language:</strong> the <code>de-DE</code> folder shows English strings.</li><li><strong>Copies:</strong> the same image in two languages.</li><li><strong>Missing:</strong> a language that did not produce every screenshot.</li><li><strong>Store rules:</strong> sizes, counts and transparency that App Store Connect or Play would reject.</li><li><strong>A listing in a language the app does not have:</strong> for example Traditional Chinese screenshots when the app has no Traditional Chinese.</li></ul>
+<p>The report (<code>check.json</code> and an <code>index.html</code> grid with a row per language and a column per screen, problems outlined in red) goes to <code>./shotfleet-check</code>.</p>
+<p>On the committed fastlane screenshots of my own workout app (252 iOS images) it took about 25 seconds and found one real problem: Traditional Chinese listings with Chinese captions over an app that was still in English. When I planted English screenshots in a German folder and deleted a Japanese one, both were reported. The first check after a restart is slower, because macOS compiles its text-recognition model once; it can take minutes.</p>
+<p>Pass <code>--app</code>. Without it <code>check</code> falls back to language detection, which cannot judge short screens.</p>
+<h2>What this does not tell you</h2>
+<ul><li>It says the language is wrong. It does not say why. Go back to the five causes.</li><li>macOS text recognition reads 33 languages. For other scripts (Greek, Hebrew, most Indic scripts) <code>check</code> still catches other-language screens, copies and missing screens, and says which screens it could not read. You can plug in Tesseract for full coverage.</li><li>Copies are only reported on screens with enough text. Two near-empty screens that are identical can pass.</li><li>It is only as good as your simulator build matching the build that made the screenshots.</li></ul>
+<h2>When not to use shotfleet</h2>
+<p>If your screenshots are already right in every language, you do not need it. If you have only two or three languages, looking at the images yourself is fine. If you already have a maintained UI-test suite and snapshot works for you, keep snapshot; it is free and <code>check</code> can sit next to it. The tool only runs on an Apple silicon Mac (the installer refuses Intel), and capturing with <code>shotfleet run</code> is a separate step with its own requirements (Xcode, the Android SDK for Android, Maestro 2.x, Java 17+, and a Maestro flow you write). It does not make frames or captions and does not upload to the stores. I also have no data yet on how often modern fastlane versions hit the problem in this article; the issue threads are old.</p>
+<h2>Where to go from here</h2>
+<p>If <code>check</code> finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>: $29 for the first 100 buyers, then $49 once (14-day refund). Details at https://shotfleet.com/#price.</p>
+<p>The free part is the <code>check</code> command above. Install it, point it at your <code>fastlane/</code> folder and read the grid.</p>
+ </div>
+</main>
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+  </div>
+</footer>
+</body>
+</html>

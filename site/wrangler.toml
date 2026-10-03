@@ -2,6 +2,13 @@ name = "shotfleet"
 main = "worker.js"
 compatibility_date = "2026-10-01"
 
+workers_dev = true
+preview_urls = false
+routes = [
+  { pattern = "shotfleet.com", custom_domain = true },
+  { pattern = "www.shotfleet.com", custom_domain = true },  # same site; canonical points at the bare domain
+]
+
 [assets]
 directory = "public"
 not_found_handling = "404-page"   # serves public/404.html

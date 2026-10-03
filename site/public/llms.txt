@@ -1,0 +1,34 @@
+# shotfleet
+
+> shotfleet is a macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by any other tool (fastlane snapshot, screengrab, by hand) without capturing anything.
+
+## What it does
+
+- Reads the translations compiled into your iOS or Android build, rewrites the text selectors of your English Maestro flow for each language, and runs all languages in parallel on simulators or emulators.
+- Checks every screenshot against the app's own strings: wrong language, the same image in two languages, a language that is missing screens, and store rules (screenshot sizes, counts, transparency, the 13-inch iPad set).
+- Flags translation collisions before anything runs (for example Turkish "Next" and "Advanced" sharing one translation).
+- Exports the languages that passed into fastlane's folders. It stops there: fastlane does the upload, shotfleet never uploads to a store.
+- Commands: doctor, init, run, check, export, activate. `run`, `check` and `export` take `--json`; exit codes are 0 all good, 1 problems found, 2 setup error, 130 interrupted.
+- `shotfleet mcp` runs an MCP server with check, run and doctor tools for AI agents.
+
+## Requirements
+
+- An Apple silicon Mac. The installer refuses Intel Macs.
+- Maestro 2.x and Java 17+ (Maestro needs it).
+- Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
+- Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this has been tested on real translation files and not yet run on a real Flutter or React Native app.
+- Text typed into fields by the flow is not translated.
+
+## Price and licence
+
+- `check` is free for everyone. `run` is free for up to 2 languages.
+- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. It includes a year of updates and a 14-day refund. Prices are before VAT where it applies; checkout is on Gumroad, the merchant of record.
+- The home page says whether shotfleet is on sale yet or still on an early-access list.
+
+## Links
+
+- [Home](https://shotfleet.com/): what it does, sample results, price
+- [Docs](https://shotfleet.com/docs): install, quickstart, config keys, hooks, CI recipe, agent skills, requirements and limits
+- [Alternatives](https://shotfleet.com/alternatives): how it compares with other tools, and when not to buy it
+- [Terms](https://shotfleet.com/terms): licence and refunds
+- [Privacy](https://shotfleet.com/privacy): what the site stores and what is kept when you buy or join the list

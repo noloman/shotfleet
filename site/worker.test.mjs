@@ -1,0 +1,58 @@
+import w from "./worker.js";
+const kv = new Map(), meta = new Map();
+const env = { WAITLIST: { get: async k => kv.get(k) ?? null, put: async (k, v, o) => (kv.set(k, v), meta.set(k, o?.metadata)), delete: async k => kv.delete(k),
+                          list: async ({ prefix }) => ({ keys: [...kv.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name, metadata: meta.get(name) })) }) },
+              LIMITER: { limit: async () => ({ success: true }) }, HIT_BATCH: 3 };
+const ctx = { waitUntil: p => (pending.push(p)) }; const pending = [];
+const call = async (path, body, method = "POST") => (await w.fetch(new Request("https://x" + path, { method, body: method === "POST" ? JSON.stringify(body) : undefined, headers: { "content-length": "100" } }), env, ctx)).status;
+let ok = true; const check = (name, cond) => { console.log((cond ? "ok   " : "FAIL ") + name); ok &&= cond; };
+check("signup 200", await call("/api/signup", { email: "A@Example.com", ref: "x" }) === 200);
+let rec = JSON.parse(kv.get("email:a@example.com"));
+check("stored with unknown stack and platform", rec.stack === null && rec.platform === "unknown");
+check("follow-up 200", await call("/api/signup", { email: "a@example.com", stack: "flutter" }) === 200);
+rec = JSON.parse(kv.get("email:a@example.com"));
+check("follow-up adds the stack, keeps the date", rec.stack === "flutter" && !!rec.at && rec.platform === "unknown");
+await call("/api/signup", { email: "a@example.com", stack: "swift" });
+check("a second answer does not overwrite the first", JSON.parse(kv.get("email:a@example.com")).stack === "flutter");
+await call("/api/signup", { email: "b@example.com", stack: "swift" });
+check("swift implies ios", JSON.parse(kv.get("email:b@example.com")).platform === "ios");
+await call("/api/signup", { email: "c@example.com", stack: "<script>" });
+check("unknown stack is dropped", JSON.parse(kv.get("email:c@example.com")).stack === null);
+check("bad email 400", await call("/api/signup", { email: "nope" }) === 400);
+await call("/api/signup", { email: "bot@example.com", website: "http://spam" });
+check("honeypot is not stored", !kv.has("email:bot@example.com"));
+check("forget removes", (await call("/api/forget", { email: "a@example.com" }), !kv.has("email:a@example.com")));
+await call("/api/hit", { src: "Reddit.com" });
+await call("/api/hit", { src: "reddit.com" });
+await call("/api/hit", { src: "<script>" });
+await call("/api/hit", { src: "x", ev: "pricing" }); await call("/api/hit", { src: "x", ev: "<bad>" }); await call("/api/hit", { src: "x", ev: "cta" });
+await Promise.all(pending);
+const hits = [...kv].filter(([k]) => k.startsWith("hit:"));
+check("visits are counted per day, source and language", hits.some(([k, v]) => /^hit:\d{4}-\d\d-\d\d\|reddit.com\|xx\|view$/.test(k) && v === "2"));
+check("known events are kept, unknown ones count as a view", hits.some(([k]) => k.endsWith("|x|xx|pricing")) && hits.some(([k]) => k.endsWith("|x|xx|cta")) && hits.every(([k]) => /\|(view|runs|pricing|cta)$/.test(k)));
+check("source is sanitised", hits.every(([k]) => !/[<>]/.test(k)));
+check("a visit stores nothing about the visitor", hits.every(([k, v]) => /^\d+$/.test(v)));
+
+// contact form, forget, and the error paths
+const msgs = () => [...kv].filter(([k]) => k.startsWith("msg:")).map(([, v]) => JSON.parse(v));
+check("contact 200", await call("/api/contact", { message: "Hello there", email: "Reply@Example.com" }) === 200);
+check("message stored with a lower-cased reply address", msgs().some(m => m.message === "Hello there" && m.email === "reply@example.com"));
+check("contact without a reply address is fine", await call("/api/contact", { message: "No address" }) === 200 && msgs().some(m => m.email === null));
+check("contact too short 400", await call("/api/contact", { message: " x " }) === 400);
+check("contact too long 400", await call("/api/contact", { message: "x".repeat(2001) }) === 400);
+check("contact bad reply address 400", await call("/api/contact", { message: "Hello", email: "nope" }) === 400);
+const before = msgs().length;
+check("contact honeypot is not stored", await call("/api/contact", { message: "spam spam", website: "http://x" }) === 200 && msgs().length === before);
+await call("/api/contact", { message: "Another one", email: "other@example.com" });
+await call("/api/signup", { email: "reply@example.com" });
+await call("/api/forget", { email: "reply@example.com" });
+check("forget removes the address from the list", !kv.has("email:reply@example.com"));
+check("forget removes the messages left with that reply address", !msgs().some(m => m.email === "reply@example.com"));
+check("forget leaves other people's messages", msgs().some(m => m.email === "other@example.com") && msgs().some(m => m.email === null));
+check("GET on an api route 405", await call("/api/signup", null, "GET") === 405);
+check("unknown path 404", await call("/api/nope", {}) === 404);
+const limit = env.LIMITER.limit; env.LIMITER.limit = async () => ({ success: false });
+check("rate limited 429", await call("/api/signup", { email: "z@example.com" }) === 429 && !kv.has("email:z@example.com"));
+check("rate limit does not block visit counting", await call("/api/hit", { src: "x" }) === 200);
+env.LIMITER.limit = limit;
+process.exit(ok ? 0 : 1);

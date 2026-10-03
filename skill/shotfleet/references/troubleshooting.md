@@ -1,0 +1,136 @@
+# Troubleshooting shotfleet
+
+Find the message with `grep -n "<fragment>"` here. Errors that stop a command print `shotfleet: <message>` on stderr
+and exit 2. The first column holds the fixed part of the message (names and numbers vary); each fragment is a
+string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
+
+## Tools (doctor and every run)
+
+`shotfleet doctor` prints `ok` or `MISSING <tool> (<platform>)  -> <fix>` per tool, then `iOS: ready|not ready  Android: ready|not ready`.
+
+| Tool | Needed for | Fix |
+|---|---|---|
+| maestro (tested with 2.0.10) | run | `curl -Ls https://get.maestro.mobile.dev \| bash`. Maestro 1.x is refused by doctor. Another 2.x prints a one-line note in `doctor` and at the start of `run` (it may work; nothing is blocked). |
+| java 17+ | Maestro | `brew install openjdk@21`. shotfleet finds Homebrew's Java itself (it is keg-only, so `java` is not on PATH); do not edit the user's shell profile. |
+| swiftc | check (source checkout only) | `xcode-select --install` |
+| xcrun simctl | iOS | install Xcode and an iOS Simulator runtime |
+| adb, emulator, avdmanager, aapt2, system image | Android | run the `sdkmanager` commands that `doctor` prints under `Android: to install what is missing` (it uses the sdkmanager that exists, or installs Homebrew's `android-commandlinetools` first). The SDK is found in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or beside an `adb` on the PATH; `doctor` prints `Android SDK:` with the one it chose. Any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer counts; an existing `shotfleet_android` emulator needs none. |
+| text recognition | check | first use after a restart compiles macOS's model: about 30 s on a quiet Mac, 127 s measured on a loaded one, up to a few minutes. `doctor` prints `...  text recognition` first and the time after. Wait; do not kill it. |
+
+## Setup errors (exit 2)
+
+| Fragment | Cause | Fix |
+|---|---|---|
+| `shotfleet needs Python 3.11 or newer` | running from source with macOS's own python3 (3.9) | `brew install python`, or use the installed program, which brings its own Python |
+| `no config at` | wrong path or no `shotfleet.toml` | `shotfleet init` (or `shotfleet init <build>`); `run` looks for `./shotfleet.toml` |
+| `no Debug simulator build or Gradle debug APK found for` | `shotfleet init` with no build found none for this folder (it only reads folders: Xcode's default DerivedData for a project here, and `app/build/outputs/apk/debug`); the message lists the exact build commands | run the printed `xcodebuild` / `./gradlew assembleDebug` command, then `init` again; or pass the build path (needed when DerivedData is in a custom location) |
+| `isn't valid TOML` | syntax error in the config | fix the line the message names |
+| `needs an [ios] or an [android] section` | empty config | add `[ios]` with `app` or `[android]` with `apk` |
+| `has an unknown table` | typo such as `[hook]`; known: ios, android, hooks, overrides, inputs, expect | use the table it suggests |
+| `command failed, stopping before the run` | an `[ios] simctl` or `[android] shell` command exited non-zero; the message shows the command and its error | run that `xcrun simctl ...` / `adb shell ...` yourself on a booted device and fix it; `$UDID` is only replaced in `simctl` |
+| `matches no screenshot` | an `[expect.<name>]` table names a screenshot that isn't in the folder (typo, or the flow doesn't take it) | use the name from `takeScreenshot:` (the message suggests the nearest) |
+| `could not verify` | a note: `[expect]` text in a script macOS can't read, on a screen read by OCR | not a failure; give `--ocr-command` an OCR that reads it (Tesseract), or trust the iOS run, which uses the app's own text |
+| `has an unknown setting` | typo in a key; the message suggests the nearest or lists all | see config.md |
+| `should be a` | wrong type, e.g. `parallel = "4"` | use a whole number, string, list |
+| `is missing:` | `app` (iOS) or `apk` (Android) not set | set it |
+| `unknown event` | bad `[hooks]` key; events are before_run, after_run, before_export, after_export | rename |
+| `should be a command (a string) or a list of commands` | hook value is not text | use a string or a list of strings |
+| `should map English texts to text in that language` | `[overrides.<lang>]` values are not strings | `"Next" = "Weiter"` |
+| `flow file not found` | `flow` points nowhere | `shotfleet init` writes `flow.yaml` |
+| `no simulator app at` | `app` is not an `.app` folder with `Info.plist` | build for the simulator, point at the `.app` |
+| `is a device build` | an iphoneos build, `.ipa` or archive | `xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build`; use `Build/Products/Debug-iphonesimulator/<App>.app` |
+| `an .ipa is a device build` | `.ipa` passed to init/check | pass the simulator `.app` |
+| `an .aab can't be installed directly` | `.aab` passed | `./gradlew assembleDebug`, pass the `.apk` |
+| `pass the simulator .app, not an archive` | `.xcarchive` passed | same as above |
+| `unzip it first` | a `.zip` passed | pass the `.app` or `.apk` inside |
+| `pass a simulator .app or an .apk` | other file type | pass one of those |
+| `builds given; a config holds one app per platform` | two `.app` or two `.apk` to `init` | run `init` once per app |
+| `bundle_id is` | config `bundle_id` differs from the app's | delete the key (it is read from the app) |
+| `can't read the bundle id` | broken `Info.plist` | set `bundle_id` |
+| `no APK at` | wrong `apk` path | fix the path |
+| `package is` | config `package` differs from the APK | delete the key |
+| `can't read the package name` | aapt2 could not read the APK | set `package`, or rebuild the APK |
+| `doesn't look like a valid APK` | not an APK | rebuild |
+| `Maestro isn't installed` | no `maestro` on PATH | `curl -Ls https://get.maestro.mobile.dev \| bash` |
+| `aapt2 not found under` | SDK Build-Tools missing | `shotfleet doctor` prints the `sdkmanager "build-tools;36.0.0"` command, or set `ANDROID_HOME` |
+| `avdmanager not found under` | SDK command-line tools missing | run the `sdkmanager ... cmdline-tools;latest` command in the message |
+| `don't know how to read` | `strings` file type unsupported | supported: .arb .json .xcstrings .strings .stringsdict .xml .xlf .xliff .resx .po .properties .csv |
+| `no translation files match` | `strings` glob matches nothing (globs are relative to the config) | fix the glob |
+| `Set base_locale in the config` | the app has no `en` strings (the message names its development language) | `base_locale = "<code>"`, the language the flow is written in |
+| `none of those languages are in the app` | `--locales` or `locales` names languages the app does not ship; the message lists what it ships | use those codes |
+| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun |
+| `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
+| `unknown Android device` | `devices` entry other than phone, tablet | use `phone` or `tablet` |
+| `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |
+| `is already running. Stop it` | a leftover emulator on shotfleet's port | `adb -s emulator-<port> emu kill` |
+| `emulators did not boot in time` | slow boot (600 s limit) | close other apps, rerun |
+| `hook before_run failed` | the user's hook returned non-zero | fix the hook, or `--no-hooks` to skip |
+| `hook before_export failed` | same, before export | same |
+| `write launchApp options as a block` | inline `launchApp: { ... }` | block form, see flow-writing.md |
+| `write launchApp arguments as a block, not inline` | inline `arguments:` | block form |
+| `flow needs an 'appId:' header` | malformed flow header | start the flow with `- launchApp` or `appId:` then `---` |
+| `--locales is empty` | `--locales ,` | drop the flag for all languages |
+| `--parallel must be 1 or more` | `--parallel 0` | use 1 or more |
+
+## check errors (exit 2)
+
+| Fragment | Cause | Fix |
+|---|---|---|
+| `no folder at` | wrong path | fix it |
+| `no screenshots found in` | layout not recognised | use `screenshots/<locale>/*.png`, `metadata/android/<locale>/images/phoneScreenshots/*.png` or `<locale>/*.png` |
+| `has both iOS and Android screenshots` | a folder with both stores and no `--app` | pass `--app` with the build of the store to check |
+| `screenshots but --app is` | an iOS folder with an `.apk` or the reverse | pass the matching build |
+| `contains no translations shotfleet can read` | the build has no `.lproj`, String Catalog or resources (typical for Flutter, React Native, Unity, MAUI) | use `--strings '<glob>'` |
+| `the app this run used is gone` | a shotfleet output folder whose `.app` or `.apk` moved | pass `--app` |
+| `macOS text recognition isn't answering` | `ANECompilerService` stuck, usually after heavy use | restart the Mac, or `brew install tesseract tesseract-lang` (used automatically) |
+| `text recognition hung twice on` | same, or an overloaded Mac | restart the Mac if `ANECompilerService` is at full CPU, else rerun |
+| `--ocr-command failed on` | the custom OCR command failed; if it says language data: `brew install tesseract-lang` | fix the command |
+| `ocr build failed` | source checkout: `swiftc` could not build `ocr.swift` | `xcode-select --install` |
+
+## Export and licence errors
+
+| Fragment | Cause | Fix |
+|---|---|---|
+| `no shotfleet run in` | `export` pointed at a folder without `run.json` | pass the `run` output folder (`out`, `out-ios`, `out-android`) |
+| `hasn't been checked` | no `check.json` in it | `shotfleet check <out>` |
+| `need a licence` | `export`, or `run` past 2 languages, without a licence | the user runs `shotfleet activate <key>`; see licence.md |
+| `that key didn't activate` | wrong, revoked, refunded or charged-back key | the user checks the key in the Gumroad receipt email |
+| `activations. Email hello@shotfleet.com` | the key has used all 3 activations (Gumroad keys); `deactivate` does not give one back | the user emails hello@shotfleet.com to have the count reset |
+| `SHOTFLEET_KEY isn't a valid licence` | bad key in CI | fix the secret |
+| `this licence is no longer valid` | refunded or revoked | the user contacts support |
+| `couldn't reach the licence server for 30 days` | offline too long | connect once |
+
+## Warnings and notes (not errors)
+
+| Fragment | Meaning | Fix |
+|---|---|---|
+| `selectors not found in the app's strings` | the flow taps a label that is not in the app's strings, left as-is, may fail outside English | write the label exactly as the English string, use `id:`, or add `[overrides.<lang>]` |
+| `also means` | `warning <lang>: 'Next' -> 'İleri' also means 'Advanced'`: a tap could hit the wrong element | anchor with `below:`/`above:`, or override |
+| `translated in the app, so it is skipped` | `note: <lang> is only N% translated`; below 50% of the app's own strings it is not captured | add the code to `locales` to capture it anyway |
+| `free tier: capturing` | no licence: 2 languages captured | see licence.md |
+| `memory pressure is elevated` | shotfleet halved the simulators | close apps |
+| `this Mac was short of memory` | failures with `Unknown error` or `Unable to clear state` are usually a slow simulator | close other simulators, `shotfleet run --locales <failed codes>` |
+| `maestro timed out` | one round exceeded `timeout_s` (default 600) | raise `timeout_s`, shorten the flow, or fewer `parallel` |
+| `flow passed but took` | fewer screenshots than `takeScreenshot` steps (an optional step skipped?) | check the flow, the maestro log in the output folder |
+| `no result (see maestro log)` | Maestro crashed or produced no report | read `<out>/maestro1.log` |
+| `flow never ran (see maestro log)` | Android: Maestro did not start that language | read `<out>/maestro_r1.log` |
+| `no screenshots were captured, so there's nothing to check` | every flow failed | read the maestro logs; run one language |
+| `keeps its translations inside compiled code` | `hint:` a Flutter, React Native, MAUI or Unity build | add the `strings = "<glob>"` line it prints |
+| `Flutter debug build` | `hint:` the DEBUG banner will show | `debugShowCheckedModeBanner: false`; Android: `flutter build apk --release` |
+| `has no JavaScript bundle` | `hint:` React Native Debug build needs Metro | build Release |
+| `no --app given: checking by language detection only` | weaker check | pass `--app` or `--strings` |
+| `macOS can't read the script of` | those screens only got the weaker checks | optional Tesseract via `--ocr-command` |
+| `no text found (blank or still loading?)` | problem line: the screenshot is blank, or captured before the screen loaded | add `waitForAnimationToEnd` or an assert before `takeScreenshot` |
+| `has no listing in that language` | export skipped a language the store has no listing for | nothing to do |
+| `failed checks (see` | export skipped a language that failed | fix and recapture that language |
+| `so it gets the` | export copies `en` to an existing `en-GB` listing and similar | informational |
+| `add "iPad Pro 13-inch (M5)" to device_types` | the app runs on iPad and no 13" set exists (exit 1) | add that device type |
+| `hook after_run failed` | an after hook returned non-zero: exit becomes 1 | fix the hook |
+
+## Hardware and limits
+
+- Simulators: default 4 at once (`parallel`). Under elevated memory pressure shotfleet halves it; under critical it stops. On a smaller Mac use `--parallel 2`.
+- Many simulators plus Android emulators at once is heavy: run one platform at a time with `--platform ios` or `--platform android`.
+- iOS simulators only run Debug builds. Android needs API 33+ emulators (per-app languages).
+- One iOS language run: simulators are named `shotfleet-<n>` and reused; shotfleet only touches its own.
+- Real-run sizing (18 languages x 4 screens, one Mac): about 9 minutes on iOS and 15 on Android.

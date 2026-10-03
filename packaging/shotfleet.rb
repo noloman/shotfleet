@@ -1,7 +1,7 @@
 # Homebrew formula for noloman/homebrew-shotfleet (Formula/shotfleet.rb). release.sh fills in version and sha256.
 class Shotfleet < Formula
   desc "Localized App Store and Google Play screenshots from one Maestro flow, checked"
-  homepage "https://shotfleet.manulorenzop.workers.dev"
+  homepage "https://shotfleet.com"
   url "https://github.com/noloman/shotfleet-releases/releases/download/v@VERSION@/shotfleet-@VERSION@-macos-arm64.tar.gz"
   sha256 "@SHA256@"
   version "@VERSION@"

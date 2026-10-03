@@ -1,9 +1,9 @@
 #!/bin/sh
-# shotfleet installer: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh
+# shotfleet installer: curl -fsSL https://shotfleet.com/install.sh | sh
 set -eu
-BASE="${SHOTFLEET_BASE:-https://shotfleet.manulorenzop.workers.dev/download}"
+BASE="${SHOTFLEET_BASE:-https://shotfleet.com/download}"
 [ "$(uname -s)" = Darwin ] || { echo "shotfleet runs on macOS only" >&2; exit 1; }
-[ "$(uname -m)" = arm64 ] || { echo "shotfleet needs an Apple silicon Mac for now (Intel build coming)" >&2; exit 1; }
+[ "$(uname -m)" = arm64 ] || { echo "shotfleet needs an Apple silicon Mac (M1 or newer)" >&2; exit 1; }
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 curl -fsSL "$BASE/shotfleet-macos-arm64.tar.gz" -o "$TMP/shotfleet.tar.gz"
 curl -fsSL "$BASE/shotfleet-macos-arm64.tar.gz.sha256" -o "$TMP/sum"

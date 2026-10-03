@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest discover -s tests
 """
-import contextlib, io, json, os, subprocess, sys, tempfile, time, unittest
+import contextlib, io, json, os, subprocess, sys, tempfile, time, tomllib, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -363,8 +363,9 @@ class Config(unittest.TestCase):
             cases = [
                 (None, "no config at"),
                 ("not = [valid", "isn't valid TOML"),
-                ("[ios]\n[android]\n", "exactly one [ios] or [android]"),
-                ('[ios]\napp = "x.app"\n', "missing: bundle_id, flow"),
+                ("[hooks]\n", "needs an [ios] or an [android] section"),
+                ("[hook]\n", "unknown table [hook]; did you mean [hooks]"),
+                ("[ios]\n", "missing: app"),
                 ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "flow.yaml"\n', "no simulator app at"),
                 ('[ios]\napp = "nope.app"\nbundle_id = "a"\nflow = "missing.yaml"\n', "flow file not found"),
                 ('[android]\napk = "nope.apk"\npackage = "a"\nflow = "flow.yaml"\n', "no APK at"),
@@ -898,23 +899,25 @@ class Licence(unittest.TestCase):
 
 
 class GumroadLicence(unittest.TestCase):
-    """Against a fake Gumroad /v2/licenses/verify (shape from antiwork/gumroad licenses_controller.rb)."""
+    """Against a fake Gumroad /v2/licenses/verify (shape from Gumroad's licence-key help article and antiwork/gumroad licenses_controller.rb)."""
     GOOD, REFUNDED = "ABCDEF12-34567890-ABCDEF12-34567890", "11111111-22222222-33333333-44444444"
 
     def setUp(self):
         import http.server, threading, urllib.parse
-        self.uses, self.calls, test = {self.GOOD: 0, self.REFUNDED: 0}, [], self
+        self.uses, self.calls, self.flags, self.status, test = {self.GOOD: 0, self.REFUNDED: 0}, [], {self.REFUNDED: {"refunded": True}}, 200, self
         class H(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
                 b = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
                 test.calls.append(b)
                 key = b.get("license_key")
+                if test.status >= 500:
+                    self.send_response(test.status); self.end_headers(); self.wfile.write(b'{"success":false,"message":"boom"}'); return
                 if key not in test.uses or b.get("product_id") != "prod1":
                     self.send_response(404); self.end_headers()
                     self.wfile.write(b'{"success":false,"message":"That license does not exist for the provided product."}'); return
                 if b.get("increment_uses_count") != "false": test.uses[key] += 1
-                body = {"success": True, "uses": test.uses[key], "purchase": {"refunded": key == test.REFUNDED, "chargebacked": False}}
-                self.send_response(200); self.end_headers(); self.wfile.write(json.dumps(body).encode())
+                purchase = {"refunded": False, "chargebacked": False, "disputed": False, "dispute_won": False, **test.flags.get(key, {})}
+                self.send_response(200); self.end_headers(); self.wfile.write(json.dumps({"success": True, "uses": test.uses[key], "purchase": purchase}).encode())
             def log_message(self, *a): pass
         self.server = http.server.HTTPServer(("127.0.0.1", 0), H)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -932,27 +935,68 @@ class GumroadLicence(unittest.TestCase):
     def activate(self, key):
         with contextlib.redirect_stdout(io.StringIO()): return sf.cmd_activate(key)
 
-    def test_key_formats(self):
+    def stale(self):  # make the weekly re-check due
+        sf.LICENCE_FILE.write_text(json.dumps({**json.loads(sf.LICENCE_FILE.read_text()), "checked": time.time() - 8 * 86400}))
+
+    def test_key_formats_do_not_collide(self):
         self.assertTrue(sf.is_gumroad_key(self.GOOD))
         self.assertFalse(sf.is_gumroad_key("38b1460a-5104-4067-a91d-77b872934d51"))  # Lemon Squeezy UUID
+        self.assertFalse(sf.is_gumroad_key("SHOTFLEET-1C285B2D-6CE6"))  # Polar
+        self.assertFalse(sf.is_polar_key(self.GOOD))
 
-    def test_three_macs_then_refused(self):
-        for _ in range(3): self.activate(self.GOOD)
-        with self.assertRaisesRegex(sf.Fail, "3 Macs"): self.activate(self.GOOD)
+    def test_three_activations_then_refused_and_the_refusal_costs_nothing(self):
+        for _ in range(3): self.activate(self.GOOD); sf.LICENCE_FILE.unlink()  # three different Macs
+        with self.assertRaisesRegex(sf.Fail, "all 3 activations"): self.activate(self.GOOD)
+        with self.assertRaisesRegex(sf.Fail, "hello@shotfleet.com"): self.activate(self.GOOD)
+        self.assertEqual(self.uses[self.GOOD], 3)  # a refused attempt never burns a use
+        self.assertFalse(sf.LICENCE_FILE.exists())
 
-    def test_refunded_and_unknown_keys_are_refused(self):
+    def test_activating_again_on_the_same_mac_does_not_use_another(self):
+        for _ in range(5): self.activate(self.GOOD)
+        self.assertEqual(self.uses[self.GOOD], 1)
+
+    def test_deactivate_cant_give_the_activation_back_and_says_so(self):
+        self.activate(self.GOOD)
+        with contextlib.redirect_stdout(io.StringIO()) as out: sf.cmd_deactivate()
+        self.assertFalse(sf.LICENCE_FILE.exists()); self.assertIn("can't give the activation back", out.getvalue())
+        self.assertEqual(len(self.calls), 2)  # activate's look and count; deactivate made no request
+
+    def test_refunded_and_unknown_keys_are_refused_without_using_an_activation(self):
         with self.assertRaisesRegex(sf.Fail, "refunded"): self.activate(self.REFUNDED)
         with self.assertRaisesRegex(sf.Fail, "does not exist"): self.activate("99999999-99999999-99999999-99999999")
+        self.assertEqual(self.uses[self.REFUNDED], 0)
+        with self.assertRaisesRegex(sf.Fail, "Gumroad receipt"): self.activate(self.REFUNDED)
 
-    def test_weekly_recheck_doesnt_use_an_activation(self):
-        self.activate(self.GOOD)
-        lic = json.loads(sf.LICENCE_FILE.read_text())
-        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": 0}))
-        sf.require_licence()
-        self.assertEqual(self.uses[self.GOOD], 1)
-        self.assertEqual(self.calls[-1]["increment_uses_count"], "false")
+    def test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check(self):
+        for flags, why in (({"refunded": True}, "refunded"), ({"chargebacked": True}, "charged back"), ({"disputed": True}, "disputed")):
+            with self.subTest(flags=flags):
+                self.flags[self.GOOD] = {}; self.activate(self.GOOD); self.stale()
+                sf.require_licence()  # still fine
+                self.flags[self.GOOD] = flags; self.stale()
+                with self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
+                with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
+                sf.LICENCE_FILE.unlink()
+
+    def test_a_won_dispute_keeps_the_licence(self):
+        self.flags[self.GOOD] = {"disputed": True, "dispute_won": True}
+        self.activate(self.GOOD); self.stale(); sf.require_licence()
+
+    def test_nothing_counts_a_use_except_one_activation(self):
+        self.activate(self.GOOD); self.stale(); sf.require_licence()
         with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
-        self.assertEqual(self.uses[self.GOOD], 1)
+        self.assertTrue(all(set(c) == {"product_id", "license_key", "increment_uses_count"} for c in self.calls))  # nothing else is sent
+        counted = [c for c in self.calls if c["increment_uses_count"] != "false"]
+        self.assertEqual(len(counted), 1); self.assertEqual(self.uses[self.GOOD], 1)
+        self.assertEqual(self.calls[-1]["increment_uses_count"], "false")
+
+    def test_a_gumroad_outage_is_not_a_verdict(self):
+        self.activate(self.GOOD); self.stale(); self.status = 503
+        sf.require_licence()  # offline grace, the licence stays
+        self.assertTrue(sf.LICENCE_FILE.exists())
+        with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
+
+    def test_a_build_without_a_product_id_fails_loudly(self):
+        with mock.patch.object(sf, "GUMROAD_PRODUCT_ID", ""), self.assertRaisesRegex(sf.Fail, "no Gumroad product id"): self.activate(self.GOOD)
 
 
 class ScreenText(unittest.TestCase):
@@ -1046,6 +1090,301 @@ class StuckOcrFallback(unittest.TestCase):
                 self.check()
 
 
+class SimpleConfig(unittest.TestCase):
+    """One small config for both platforms: only the build is required; ids come from it."""
+    def build(self, d):
+        app = Path(d) / "My.app"; app.mkdir()
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.example.my", "DTPlatformName": "iphonesimulator"}))
+        (Path(d) / "flow.yaml").write_text("- launchApp\n")
+        return app
+
+    def test_bare_steps_and_one_flow_for_both_platforms(self):
+        steps = "- launchApp\n- takeScreenshot: 01\n"
+        self.assertEqual(sf.with_app_id(steps, "com.x"), "appId: com.x\n---\n" + steps)
+        full = "appId: ios.id\nname: Shots\n---\n" + steps
+        self.assertEqual(sf.with_app_id(full, "android.pkg"), "appId: android.pkg\nname: Shots\n---\n" + steps)
+        self.assertEqual(sf.with_app_id("---\n- launchApp\n", "com.x"), "appId: com.x\n---\n- launchApp\n")
+        out = sf.localize_flow(sf.with_app_id(steps, "com.x"), "de", Path("/shots"))
+        self.assertTrue(out.startswith("appId: com.x\nname: de\n---\n"))
+
+    def test_only_the_build_is_required_and_ids_come_from_it(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"):
+                platform, cfg, _ = sf.load_config(Path(d) / "shotfleet.toml")
+                self.assertEqual((platform, cfg["bundle_id"], cfg["flow"], cfg["out"]), ("ios", "com.example.my", "flow.yaml", "out"))
+                (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n[android]\napk = "a.apk"\n')
+                self.assertEqual(sf.platforms_in(Path(d) / "shotfleet.toml"), ["ios", "android"])
+                self.assertEqual(sf.load_config(Path(d) / "shotfleet.toml", "ios")[1]["out"], "out-ios")  # two platforms, two folders
+                (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nbundle_id = "wrong"\n')
+                with self.assertRaisesRegex(sf.Fail, "bundle_id is wrong but My.app is com.example.my"):
+                    sf.load_config(Path(d) / "shotfleet.toml")
+
+    def test_unknown_keys_and_wrong_types_are_one_line_errors(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.build(d)
+            for body, msg in (('ipd = true\n', "unknown setting 'ipd'"), ('device_type = 3\n', "device_type .* should be a string"),
+                              ('parallel = "four"\n', "parallel .* should be a whole number"), ('parallel = true\n', "parallel .* should be a whole number"),
+                              ('locales = "de"\n', "locales .* should be a list")):
+                (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n' + body)
+                with self.subTest(body=body), self.assertRaisesRegex(sf.Fail, msg):
+                    sf.load_config(Path(d) / "shotfleet.toml")
+
+    def test_run_goes_through_every_platform_in_the_file(self):
+        seen = []
+        with mock.patch.object(sf, "platforms_in", return_value=["ios", "android"]), \
+             mock.patch.object(sf, "run_platform", side_effect=lambda c, o, p, plat: seen.append(plat) or (1 if plat == "android" else 0)):
+            self.assertEqual(sf.cmd_run("x.toml"), 1)
+            self.assertEqual(sf.cmd_run("x.toml", platform="ios"), 0)
+        self.assertEqual(seen, ["ios", "android", "ios"])
+
+    def test_init_takes_several_builds_into_one_small_config(self):
+        with tempfile.TemporaryDirectory() as d:
+            ios = self.build(d)
+            with mock.patch.object(sf, "load_strings", return_value={"en": {"a": "A"}, "de": {"a": "B"}}):
+                sf.cmd_init([str(ios)], d)
+            toml = (Path(d) / "shotfleet.toml").read_text()
+            self.assertEqual(tomllib.loads(toml)["ios"], {"app": "My.app"}); self.assertNotIn("bundle_id", toml)
+            self.assertNotIn("appId:", (Path(d) / "flow.yaml").read_text().split("No appId needed")[0].replace("# ", ""))
+
+    def test_init_refuses_two_builds_of_one_platform_and_creates_nothing(self):
+        d = Path(tempfile.mkdtemp()) / "new"
+        with self.assertRaisesRegex(sf.Fail, "two .app builds"): sf.cmd_init(["a.app", "b.app"], d)
+        self.assertFalse(d.exists())
+
+
+class FastlaneBothStores(unittest.TestCase):
+    def test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores(self):
+        root = Path(tempfile.mkdtemp())
+        (root / "screenshots").mkdir(); (root / "metadata/android").mkdir(parents=True)
+        app = root / "My.app"; app.mkdir(); (app / "Info.plist").write_bytes(b"x")
+        seen = []
+        def stop(folder, **kw): seen.append(Path(folder)); raise StopIteration
+        with mock.patch.object(sf, "find_screenshots", side_effect=stop), mock.patch.object(sf, "load_strings", return_value={"en": {"a": "A"}, "de": {"a": "B"}}), \
+             mock.patch.object(sf, "device_build", return_value=False), contextlib.redirect_stdout(io.StringIO()) as out, self.assertRaises(StopIteration):
+            sf.cmd_check(root, app=app)
+        self.assertEqual(seen, [root / "screenshots"]); self.assertIn("checking the iOS ones", out.getvalue())
+
+class JavaForMaestro(unittest.TestCase):
+    def test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro(self):
+        sf.java_env.cache_clear()
+        home = "/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home"
+        majors = {home + "/bin/java": 21}
+        with mock.patch.dict(os.environ, {"PATH": "/usr/bin", "JAVA_HOME": ""}), \
+             mock.patch.object(sf.shutil, "which", return_value=None), \
+             mock.patch.object(sf, "java_major", side_effect=lambda j: majors.get(str(j), 0)), \
+             mock.patch.object(sf.Path, "exists", return_value=False), mock.patch.object(sf.glob, "glob", return_value=[]):
+            self.assertEqual(sf.find_java(), (True, home))
+            sf.java_env.cache_clear()
+            self.assertEqual(sf.java_env()["JAVA_HOME"], home); self.assertTrue(sf.java_env()["PATH"].startswith(home + "/bin:"))
+        sf.java_env.cache_clear()
+
+    def test_a_working_system_java_needs_nothing_set(self):
+        sf.java_env.cache_clear()
+        with mock.patch.dict(os.environ, {"JAVA_HOME": ""}), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/java"), \
+             mock.patch.object(sf, "java_major", return_value=17):
+            self.assertEqual(sf.find_java(), (True, None)); self.assertEqual(sf.java_env(), {})
+        sf.java_env.cache_clear()
+
+    def test_no_java_is_reported(self):
+        sf.java_env.cache_clear()
+        with mock.patch.dict(os.environ, {"JAVA_HOME": ""}), mock.patch.object(sf.shutil, "which", return_value=None), \
+             mock.patch.object(sf, "java_major", return_value=0), mock.patch.object(sf.Path, "exists", return_value=False), \
+             mock.patch.object(sf.glob, "glob", return_value=[]):
+            self.assertEqual(sf.find_java(), (False, None))
+        sf.java_env.cache_clear()
+
+
+class Extending(unittest.TestCase):
+    """The optional extension points: [hooks], [overrides.<locale>], plugins. Off unless the config asks."""
+    def config(self, d, extra):
+        app = Path(d) / "My.app"; app.mkdir(exist_ok=True)
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.x", "DTPlatformName": "iphonesimulator"}))
+        (Path(d) / "flow.yaml").write_text("- launchApp\n")
+        (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n' + extra)
+        return Path(d) / "shotfleet.toml"
+
+    def load(self, d, extra):
+        with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"):
+            return sf.load_config(self.config(d, extra))
+
+    def test_override_wins_over_the_apps_strings_and_re_prefix_is_a_regex(self):
+        flow = '- tapOn: "Next"\n- tapOn: "Advanced"\n- tapOn: "Search"\n'
+        out, missing, clash = sf.translate_flow(flow, {"n": "Next", "a": "Advanced"}, {"n": "İleri", "a": "İleri"},
+                                                [{"Next": "İleri", "Advanced": "re:Gelişmiş.*", "Search": "Ara"}])
+        self.assertEqual(out, "- tapOn: 'İleri'\n- tapOn: 'Gelişmiş.*'\n- tapOn: 'Ara'\n")
+        self.assertEqual((missing, clash), ([], []))  # no 'untranslated' or 'also means' warnings for overridden text
+
+    def test_overrides_of_several_languages_in_one_android_round_are_or_ed(self):
+        out, _, _ = sf.translate_flow('- tapOn: "Next"\n', {"n": "Next"}, [{"n": "Weiter"}, {"n": "Siguiente"}],
+                                      [{"Next": "Weiter!"}, {"Next": "Sig."}])
+        self.assertEqual(out, "- tapOn: '(Weiter!|Sig\\.)'\n")
+
+    def test_config_tables_are_validated(self):
+        with tempfile.TemporaryDirectory() as d:
+            for body, msg in (('[hooks]\nafter_exprt = "x"\n', "unknown event 'after_exprt'; did you mean 'after_export'"),
+                              ('[hooks]\nafter_run = 3\n', "after_run .* should be a command"),
+                              ('[overrides.tr]\n"Next" = 3\n', "overrides.tr"),
+                              ('[hook]\n', "did you mean \\[hooks\\]")):
+                with self.subTest(body=body), self.assertRaisesRegex(sf.Fail, msg): self.load(d, body)
+            platform, cfg, _ = self.load(d, '[hooks]\nafter_run = ["echo a", "echo b"]\n[overrides.tr]\n"Next" = "İleri"\n')
+            self.assertEqual(cfg["_hooks"]["after_run"], ["echo a", "echo b"]); self.assertEqual(cfg["_overrides"], {"tr": {"Next": "İleri"}})
+
+    def test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure(self):
+        with tempfile.TemporaryDirectory() as d:
+            log = Path(d) / "log"
+            hooks = {"after_run": [f'echo "$SHOTFLEET_EVENT $SHOTFLEET_PLATFORM $SHOTFLEET_EXIT" >> {log}', f"echo second >> {log}"]}
+            self.assertEqual(sf.run_hook(hooks, "after_run", str(Path(d) / "shotfleet.toml"), {"SHOTFLEET_PLATFORM": "ios", "SHOTFLEET_EXIT": "0"}), (0, None))
+            self.assertEqual(log.read_text(), "after_run ios 0\nsecond\n")
+            self.assertEqual(sf.run_hook({"before_run": ["exit 3", "echo never"]}, "before_run", str(Path(d) / "x.toml"), {}), (3, "exit 3"))
+            self.assertEqual(sf.run_hook({}, "before_run", "x", {}), (0, None))  # nothing configured: nothing runs
+
+    def test_before_run_failure_aborts_after_run_failure_changes_the_exit_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg_path = self.config(d, '[hooks]\nbefore_run = "exit 5"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform") as cap:
+                with self.assertRaisesRegex(sf.Fail, r"hook before_run failed \(exit 5\)"): sf.run_platform(cfg_path, None, None, "ios")
+                cap.assert_not_called()
+            cfg_path.write_text('[ios]\napp = "My.app"\n[hooks]\nafter_run = "exit 1"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform", return_value=0), \
+                 contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(sf.run_platform(cfg_path, None, None, "ios"), 1)
+
+    def test_after_run_counts_problems_across_all_devices_of_a_multi_device_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            for dev, n in (("phone", 2), ("tablet", 1)):
+                (Path(d) / "out" / dev).mkdir(parents=True)
+                (Path(d) / "out" / dev / "run.json").write_text("{}"); (Path(d) / "out" / dev / "check.json").write_text(json.dumps({"problems": ["p"] * n}))
+            log = Path(d) / "log"
+            cfg_path = self.config(d, f'[hooks]\nafter_run = "echo $SHOTFLEET_PROBLEMS > {log}"\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), mock.patch.object(sf, "capture_platform", return_value=0):
+                sf.run_platform(cfg_path, None, None, "ios")
+            self.assertEqual(log.read_text().strip(), "3")
+
+    def test_no_hooks_flag_and_export_hooks(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True); (out / "raw/de/01.png").write_bytes(png(1320, 2868))
+            marker = Path(d) / "marker"
+            cfg = Path(d) / "shotfleet.toml"; cfg.write_text(f'[hooks]\nafter_export = "echo $SHOTFLEET_FASTLANE >> {marker}"\nbefore_export = "exit 7"\n')
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "config": str(cfg), "locales": {"de": {"ok": True}}}))
+            (out / "check.json").write_text(json.dumps({"problems": []}))
+            with self.assertRaisesRegex(sf.Fail, r"before_export failed \(exit 7\)"): sf.export_with_hooks(out, Path(d) / "fl")
+            cfg.write_text(f'[hooks]\nafter_export = "echo $SHOTFLEET_FASTLANE >> {marker}"\n')
+            sf.export_with_hooks(out, Path(d) / "fl")
+            self.assertEqual(marker.read_text().strip(), str((Path(d) / "fl").resolve()))
+            marker.unlink()
+            with mock.patch.object(sf, "NO_HOOKS", True): sf.export_with_hooks(out, Path(d) / "fl")
+            self.assertFalse(marker.exists())
+
+    def test_unknown_command_runs_a_shotfleet_plugin_from_the_path(self):
+        with mock.patch.object(sf.shutil, "which", side_effect=lambda n: "/bin/shotfleet-foo" if n == "shotfleet-foo" else None), \
+             mock.patch.object(sf.os, "execv", side_effect=SystemExit(0)) as ex:
+            with self.assertRaises(SystemExit): sf.main(["foo", "--bar"])
+        ex.assert_called_once_with("/bin/shotfleet-foo", ["/bin/shotfleet-foo", "--bar"])
+        # built-in commands are never shadowed
+        with mock.patch.object(sf.os, "execv") as ex3, mock.patch.object(sf.shutil, "which", return_value="/bin/shotfleet-run"), \
+             mock.patch.object(sf, "main_cmd", return_value=0):
+            sf.main(["run", "x.toml"]); ex3.assert_not_called()
+
+
+class FrameworkFixes(unittest.TestCase):
+    """Bugs found by reading real Flutter, React Native and gettext projects (research/frameworks.md)."""
+    def files(self, spec):
+        root = Path(tempfile.mkdtemp())
+        for rel, text in spec.items():
+            (root / rel).parent.mkdir(parents=True, exist_ok=True); (root / rel).write_text(text)
+        return root
+
+    def test_empty_accessibility_tree_falls_back_to_ocr_but_a_short_real_screen_does_not(self):
+        d = Path(tempfile.mkdtemp()); png = d / "1.png"; png.write_bytes(png_c(10, 10))
+        png.with_suffix(".texts.json").write_text("[]"); self.assertIsNone(sf.screen_text(png))
+        png.with_suffix(".texts.json").write_text('["", "  "]'); self.assertIsNone(sf.screen_text(png))
+        png.with_suffix(".texts.json").write_text('["Επόμενο"]'); self.assertEqual(sf.screen_text(png)["text"], "Επόμενο")
+
+    def test_a_locale_folder_beats_a_short_namespace_file_name(self):
+        self.assertEqual(sf.locale_from_path("locales/en/app.json"), "en")
+        self.assertEqual(sf.locale_from_path("locales/pt-BR/ui.json"), "pt-BR")
+        self.assertEqual(sf.locale_from_path("locales/de/translation.json"), "de")
+        self.assertEqual(sf.locale_from_path("locales/de.json"), "de")          # unchanged: the stem is the language
+        self.assertEqual(sf.locale_from_path("app/de.json"), "de")              # a folder called app is not a language
+
+    def test_i18next_namespaces_that_share_a_key_both_survive(self):
+        root = self.files({"locales/en/common.json": '{"title": "Home"}', "locales/en/settings.json": '{"title": "Settings"}',
+                           "locales/de/common.json": '{"title": "Startseite"}', "locales/de/settings.json": '{"title": "Einstellungen"}'})
+        s = sf.load_strings_files(str(root / "locales/*/*.json"))
+        self.assertEqual(sorted(s), ["de", "en"])
+        self.assertEqual(sorted(s["en"].values()), ["Home", "Settings"]); self.assertEqual(sorted(s["de"].values()), ["Einstellungen", "Startseite"])
+        out, missing, _ = sf.translate_flow('- tapOn: "Settings"\n- tapOn: "Home"\n', s["en"], s["de"])
+        self.assertEqual((out, missing), ("- tapOn: 'Einstellungen'\n- tapOn: 'Startseite'\n", []))
+
+    PO = (b'msgid ""\nmsgstr ""\n"Language: de\\n"\n"Plural-Forms: nplurals=2; plural=(n != 1);\\n"\n\n'
+          b'msgid "Next"\nmsgstr "Weiter"\n\n'
+          b'msgid "%d item"\nmsgid_plural "%d items"\nmsgstr[0] "%d Eintrag"\nmsgstr[1] "%d Eintr\xc3\xa4ge"\n')
+
+    def test_po_uses_the_language_header_and_reads_plural_forms(self):
+        root = Path(tempfile.mkdtemp()); (root / "messages.po").write_bytes(self.PO)   # no language in the path
+        s = sf.read_translation_file(root / "messages.po", "en")
+        self.assertEqual(s["de"]["Next"], "Weiter"); self.assertEqual(s["en"]["Next"], "Next")   # not stored as the base language
+        self.assertEqual({s["de"]["%d item#0"], s["de"]["%d item#1"]}, {"%d Eintrag", "%d Einträge"})
+        out, missing, _ = sf.translate_flow('- tapOn: "3 items"\n', s["en"], s["de"])
+        self.assertEqual(missing, []); self.assertIn("3 Eintr", out)
+
+    def test_partly_translated_languages_are_reported_not_dropped_silently(self):
+        en = {f"k{i}": f"Text {i}" for i in range(10)}
+        ja = {f"k{i}": "x" for i in range(3)}      # 30%: skipped by the 50% rule
+        de = dict(en)
+        strings = {"en": en, "de": de, "ja": ja}
+        self.assertEqual(sf.partly_translated(strings, "en"), [("ja", 30)])
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en")
+        self.assertIn("ja is only 30% translated", buf.getvalue()); self.assertIn('locales = [..., "ja"]', buf.getvalue())
+        self.assertEqual(sf.partly_translated({"en": en, "de": de}, "en"), [])
+
+
+class PolarLicence(unittest.TestCase):
+    """Polar licence keys and the free tier (the other stores' tests are in the class above)."""
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp()); self.calls = []
+        self.patches = [mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
+                        mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LOCALE_CAP", None),
+                        mock.patch.object(sf, "polar_post", side_effect=self.fake)]
+        for p in self.patches: p.start(); self.addCleanup(p.stop)
+
+    def fake(self, action, **f):
+        self.calls.append((action, f))
+        if f["key"] == "SHOTFLEET-BAD": return 404, {"detail": "Resource not found"}
+        return 200, {"id": "act-1"} if action == "activate" else {"status": "granted"}
+
+    def test_polar_keys_are_told_apart_by_their_prefix(self):
+        self.assertTrue(sf.is_polar_key(" shotfleet-1C285B2D-6CE6 ")); self.assertFalse(sf.is_polar_key("ABCDEF12-ABCDEF12-ABCDEF12-ABCDEF12"))
+
+    def test_activate_validate_and_deactivate(self):
+        self.assertEqual(sf.cmd_activate("SHOTFLEET-GOOD"), 0)
+        self.assertEqual(json.loads(sf.LICENCE_FILE.read_text())["activation"], "act-1")
+        sf.require_licence(); self.assertEqual([c[0] for c in self.calls], ["activate"])  # fresh: no network
+        lic = json.loads(sf.LICENCE_FILE.read_text()); sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 8 * 86400}))
+        sf.require_licence(); self.assertEqual(self.calls[-1], ("validate", {"key": "SHOTFLEET-GOOD", "activation_id": "act-1"}))
+        sf.cmd_deactivate(); self.assertEqual(self.calls[-1][0], "deactivate"); self.assertFalse(sf.LICENCE_FILE.exists())
+
+    def test_bad_key_is_refused_with_polars_reason(self):
+        with self.assertRaisesRegex(sf.Fail, "didn't activate: Resource not found"): sf.cmd_activate("SHOTFLEET-BAD")
+
+    def test_ci_key_validates_without_taking_an_activation(self):
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-GOOD"}): sf.require_licence()
+        self.assertEqual([c[0] for c in self.calls], ["validate"]); self.assertFalse(sf.LICENCE_FILE.exists())
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-BAD"}), self.assertRaises(sf.NoLicence): sf.require_licence()
+
+    def test_run_without_a_licence_is_the_free_tier_export_is_not(self):
+        with mock.patch.object(sf, "cmd_run", return_value=0):
+            self.assertEqual(sf.main(["run", "x.toml"]), 0); self.assertEqual(sf.LOCALE_CAP, 2)
+        with mock.patch.object(sf, "LOCALE_CAP", None): self.assertEqual(sf.main(["export", "x", "--fastlane", "y"]), 2)
+        with mock.patch.object(sf, "LOCALE_CAP", 2):
+            self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja"]); self.assertEqual(sf.cap_locales(["de"]), ["de"])
+        sf.LOCALE_CAP = None  # (main() set it above; the setUp patch restores it afterwards)
+        self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja", "fr"])
+
+
 class AutoTesseract(unittest.TestCase):
     def run_check(self, packs):
         d = Path(tempfile.mkdtemp()); b = d / "bin"; b.mkdir()
@@ -1084,3 +1423,402 @@ class PlayDeviceFolders(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReviewGrid(unittest.TestCase):
+    def test_each_flagged_cell_names_its_problem_and_images_outside_the_report_keep_working(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); rep = d / "rep"; rep.mkdir(); (d / "shots" / "de").mkdir(parents=True)
+            (d / "shots" / "de" / "01.png").write_bytes(b"x")
+            rows = [{"file": "de/01.png", "src": "../shots/de/01.png"}, {"file": "fr/01.png", "src": "../shots/de/01.png"}]
+            sf.write_gallery(rep, rows, ["de/01.png: shows en (expected de)", "identical image in 2 languages: de/01.png, fr/01.png"])
+            page = (rep / "index.html").read_text()
+        self.assertIn("shows en (expected de)", page)
+        self.assertEqual(page.count("<small>"), 2)  # one visible note per flagged cell
+        self.assertIn("file://", page)              # the report can be moved; the screenshots stay where they are
+        self.assertNotIn('src="../shots', page)
+
+
+class FrameworkHints(unittest.TestCase):
+    """Flutter, React Native and the like keep their translations in compiled code: tell the user the `strings =` line to add."""
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp()); self.addCleanup(__import__("shutil").rmtree, self.dir, True)
+        p = mock.patch.object(sf, "HINTED", set()); p.start(); self.addCleanup(p.stop)
+
+    def app(self, name, files):
+        app = self.dir / name; app.mkdir()
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.example." + name[:-4], "DTPlatformName": "iphonesimulator"}))
+        for f in files: (app / f).parent.mkdir(parents=True, exist_ok=True); (app / f).write_bytes(b"x")
+        return app
+
+    def hints(self, build, strings_set=False):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err): sf.framework_hint(build, strings_set, self.dir)
+        return [l for l in err.getvalue().splitlines()]
+
+    def flutter(self): return self.app("flutter.app", ["Frameworks/App.framework/flutter_assets/kernel_blob.bin", "Frameworks/Flutter.framework/Flutter"])
+    def rn(self): return self.app("rn.app", ["Frameworks/hermes.framework/hermes", "RCTI18nStrings.bundle/en.lproj/x"])
+    def native(self): return self.app("native.app", ["en.lproj/Localizable.strings", "de.lproj/Localizable.strings"])
+
+    def test_flutter_build_gets_the_strings_line_and_the_debug_banner_warning(self):
+        got = self.hints(self.flutter())
+        self.assertEqual(len(got), 2); self.assertTrue(all(l.startswith("hint: ") for l in got))
+        self.assertIn('strings = "lib/l10n/*.arb"', got[0]); self.assertIn("DEBUG banner", got[1])
+
+    def test_flutter_apk_is_recognised_too_and_a_release_build_has_no_banner_warning(self):
+        import zipfile
+        apk = self.dir / "app.apk"
+        with zipfile.ZipFile(apk, "w") as z: z.writestr("lib/arm64-v8a/libflutter.so", "x"); z.writestr("assets/flutter_assets/AssetManifest.json", "{}")
+        got = self.hints(apk)
+        self.assertEqual(len(got), 1); self.assertIn('strings = "lib/l10n/*.arb"', got[0])
+
+    def test_react_native_debug_build_is_told_to_add_strings_and_to_build_release(self):
+        got = self.hints(self.rn())
+        self.assertIn('strings = "src/locales/*/translation.json"', got[0]); self.assertIn("Metro", got[1]); self.assertIn("Release", got[1])
+        self.assertEqual(self.hints(self.app("rel.app", ["main.jsbundle"]), strings_set=True), [])  # Release with strings set: nothing to say
+
+    def test_the_line_names_the_translation_files_found_in_the_project(self):
+        (self.dir / "src/translations").mkdir(parents=True); (self.dir / "src/translations/en.json").write_text("{}")
+        self.assertIn('strings = "src/translations/*.json"', self.hints(self.rn())[0])
+
+    def test_a_native_ios_build_gets_no_hint(self):
+        self.assertEqual(self.hints(self.native()), [])
+
+    def test_each_hint_is_shown_once_and_strings_in_the_config_silences_the_strings_hint(self):
+        flutter = self.flutter()
+        self.assertEqual(len(self.hints(flutter)), 2); self.assertEqual(self.hints(flutter), [])
+        sf.HINTED.clear(); got = self.hints(flutter, strings_set=True)
+        self.assertEqual(len(got), 1); self.assertIn("DEBUG banner", got[0])
+
+    def test_init_prints_the_strings_line_for_a_flutter_build_and_stays_quiet_for_a_native_one(self):
+        for build, expect in ((self.flutter(), 'strings = "lib/l10n/*.arb"'), (self.native(), None)):
+            sf.HINTED.clear(); err, out = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+                self.assertEqual(sf.cmd_init(str(build), self.dir / build.stem), 0)
+            if expect: self.assertIn(expect, err.getvalue()); self.assertIn("hint: ", err.getvalue())
+            else: self.assertNotIn("hint:", err.getvalue())
+            self.assertIn("languages", out.getvalue())
+
+    def test_run_and_check_show_the_hint_before_they_can_fail(self):
+        flutter = self.flutter()
+        (self.dir / "shotfleet.toml").write_text(f'[ios]\napp = "{flutter}"\n'); (self.dir / "flow.yaml").write_text("- launchApp\n")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err), mock.patch.object(sf, "latest_ios_runtime", return_value="rt"), \
+             mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
+             self.assertRaises(sf.Fail):  # no translations in the stub, so the run stops; the hint came first
+            sf.cmd_run(str(self.dir / "shotfleet.toml"))
+        self.assertIn('strings = "lib/l10n/*.arb"', err.getvalue())
+        sf.HINTED.clear(); err = io.StringIO()
+        with contextlib.redirect_stderr(err), self.assertRaisesRegex(sf.Fail, "no translations"):
+            sf.cmd_check(self.dir / "out", app=flutter)
+        self.assertIn('strings = "lib/l10n/*.arb"', err.getvalue())
+
+
+class RetryOnSlowSimulator(unittest.TestCase):
+    """iPad run on a loaded Mac: Maestro's clearState timed out between uninstall and reinstall, the app was gone,
+    and the retry failed in 2 s per language with 'Unknown error' because nothing reinstalled it."""
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp())
+        app = self.d / "My.app"
+        for lp, word in (("en", "Next"), ("de", "Weiter")):
+            (app / f"{lp}.lproj").mkdir(parents=True)
+            (app / f"{lp}.lproj" / "Localizable.strings").write_text(f'"next" = "{word}";\n')
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "x.y", "CFBundleLocalizations": ["en", "de"]}))
+        (self.d / "flow.yaml").write_text('- launchApp\n- takeScreenshot: 01\n')
+        (self.d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nlocales = ["de"]\n')
+        self.calls, self.runs = [], 0
+
+    def fake_sim(self):
+        calls = self.calls
+        class S:
+            udid = "U1"
+            def run(self, *a, check=True): calls.append(a[0]); return ""
+        return S()
+
+    def fake_maestro(self, cmd, env=None, timeout=None):
+        self.runs += 1
+        flows = Path(cmd[cmd.index("test") + 1]); out = flows.parent.parent.parent
+        ok = self.runs == 2 and self.calls[-1] == "install"  # the retry only works when the app was reinstalled just before
+        if ok: (out / "raw" / "de" / "01.png").write_bytes(b"x")
+        Path(cmd[cmd.index("--output") + 1]).write_text(
+            f'<testsuites><testsuite><testcase name="de" time="2">{"" if ok else "<failure>Unknown error</failure>"}</testcase></testsuite></testsuites>')
+        return subprocess.CompletedProcess(cmd, 0 if ok else 1, "", "")
+
+    def run_it(self, level):
+        real = sf.sh
+        def sh(cmd, **kw): return subprocess.CompletedProcess(cmd, 0, level, "") if cmd[0] == "sysctl" else real(cmd, **kw)
+        with mock.patch.object(sf, "make_pool", return_value=[self.fake_sim()]), mock.patch.object(sf, "run_guarded", self.fake_maestro), \
+             mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
+             mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"), \
+             mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "cmd_check", return_value=0), \
+             mock.patch.object(sf, "java_env", return_value={}), mock.patch.object(sf, "sh", sh), \
+             contextlib.redirect_stdout(io.StringIO()) as out:
+            code = sf.cmd_run(str(self.d / "shotfleet.toml"))
+        return code, out.getvalue()
+
+    def test_retry_reinstalls_the_app_first(self):
+        code, out = self.run_it("1")
+        self.assertEqual(self.calls.count("install"), 2)  # once before the run, once before the retry
+        self.assertEqual(code, 0, out)
+        self.assertIn("retrying 1: de", out)
+
+    def test_overload_note_only_when_the_mac_was_loaded(self):
+        with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "2", "")):
+            self.assertIn("used 1 simulators instead of 2", sf.overload_note(2, 1))
+            self.assertIn("short of memory", sf.overload_note(1, 1))
+        with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "1", "")):
+            self.assertEqual(sf.overload_note(2, 2), "")
+
+
+class TypedTextPerLanguage(unittest.TestCase):
+    FLOW = "appId: x\n---\n- launchApp\n- tapOn: Next\n- inputText: ${name}\n- takeScreenshot: 01\n"
+
+    def test_the_localized_flow_carries_that_languages_text_in_its_header(self):
+        inputs = {"name": "Alex", "ja": {"name": "田中"}, "pt": {"name": "Ana"}}
+        ja = sf.localize_flow(self.FLOW, "ja", Path("/o"), sf.inputs_for(inputs, "ja")).split("\n---\n")[0]
+        self.assertIn('env:\n  name: "田中"', ja)
+        de = sf.localize_flow(self.FLOW, "de", Path("/o"), sf.inputs_for(inputs, "de")).split("\n---\n")[0]
+        self.assertIn('name: "Alex"', de)                       # no German value: the default
+        self.assertEqual(sf.inputs_for(inputs, "pt-BR"), {"name": "Ana"})  # the language part matches a region
+
+    def test_an_env_block_the_user_wrote_is_extended_not_duplicated(self):
+        flow = "appId: x\nenv:\n  mode: fast\n---\n- launchApp\n"
+        header = sf.localize_flow(flow, "ja", Path("/o"), {"name": "田中"}).split("\n---\n")[0]
+        self.assertEqual(header.count("env:"), 1)
+        self.assertIn("mode: fast", header); self.assertIn('name: "田中"', header)
+
+    def test_quotes_and_colons_in_the_text_stay_one_yaml_string(self):
+        header = sf.with_env("appId: x", {"q": 'say "hi": #1'})
+        self.assertIn('q: "say \\"hi\\": #1"', header)
+
+    def test_a_flow_without_inputs_is_unchanged(self):
+        self.assertEqual(sf.localize_flow(self.FLOW, "de", Path("/o"), {}), sf.localize_flow(self.FLOW, "de", Path("/o")))
+
+    def test_the_config_checker_refuses_non_text_and_bad_names(self):
+        sf.check_tables({"ios": {}, "inputs": {"name": "a", "ja": {"name": "田中"}}}, "t.toml")
+        for bad in ({"inputs": {"name": 3}}, {"inputs": {"ja": {"na me": "x"}}}, {"inputs": {"ja": {"name": 1}}}):
+            with self.assertRaises(sf.Fail): sf.check_tables(bad, "t.toml")
+
+    def test_android_flows_get_the_defaults_only(self):
+        text = sf.android_flow(self.FLOW, "f0", Path("/o"), sf.inputs_for({"name": "Alex", "ja": {"name": "田中"}}, "", defaults_only=True))
+        self.assertIn('name: "Alex"', text); self.assertNotIn("田中", text)
+
+
+class CorruptLicenceFile(unittest.TestCase):
+    """A half-written licence.json (a crash, a full disk) must never crash a command or lock the user out of the free tier."""
+    BAD = ("", "{", '{"key": "ABC', "[]", '"text"', "null", "{}", '{"key": ""}')
+
+    def run_with(self, content):
+        d = Path(tempfile.mkdtemp()); f = d / "licence.json"; f.write_text(content)
+        return mock.patch.object(sf, "LICENCE_FILE", f), f
+
+    def test_every_command_survives_an_unreadable_file(self):
+        for content in self.BAD:
+            patch, f = self.run_with(content)
+            with patch, mock.patch.object(sys, "frozen", True, create=True), mock.patch.dict(os.environ, {}, clear=False):  # the gate only applies to released builds
+                os.environ.pop("SHOTFLEET_KEY", None)
+                self.assertIsNone(sf.read_licence(), content)
+                with self.assertRaises(sf.NoLicence) as cm: sf.require_licence()   # export is refused, with a way out
+                self.assertIn("activate again", str(cm.exception))
+                sf.LOCALE_CAP = None
+                with contextlib.redirect_stderr(io.StringIO()): sf.apply_free_tier()
+                self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES, content)         # run falls back to the free tier
+                sf.LOCALE_CAP = None
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out): self.assertEqual(sf.cmd_deactivate(), 0)
+                self.assertFalse(f.exists(), content)                                 # the broken file is removed
+                self.assertIn("unreadable", out.getvalue())
+
+    def test_a_good_file_still_reads(self):
+        patch, _ = self.run_with(json.dumps({"key": "K", "store": "gumroad", "checked": 1}))
+        with patch: self.assertEqual(sf.read_licence()["key"], "K")
+
+
+def shots_with_texts(d, spec, ocr=False):
+    """{label: {name: [lines]}} as screenshot folders: .texts.json (the app's own text, iOS) or <name>.png.txt (read by a fake OCR)."""
+    for label, screens in spec.items():
+        for name, lines in screens.items():
+            png = Path(d) / "shots" / label / f"{name}.png"; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(png_c(1320, 2868))
+            if ocr: Path(f"{png}.txt").write_text("\n".join(lines))
+            else: png.with_suffix(".texts.json").write_text(json.dumps(lines, ensure_ascii=False))
+
+
+class ContentExpect(unittest.TestCase):
+    """[expect.<screenshot>] any / all / not, per language: proves the seeded content is on screen. No device needed."""
+    STRINGS = {"en": {"a": "Next", "b": "Settings"}, "de": {"a": "Weiter", "b": "Einstellungen"}}
+    HOME = {"en": ["Next", "Settings", "Senior iOS Engineer"], "de": ["Weiter", "Einstellungen", "Senior iOS Engineer", "Steinmännchen"]}
+
+    def check(self, expect, spec, ocr=False, readable=("en", "de")):
+        d = tempfile.mkdtemp(); shots_with_texts(d, spec, ocr)
+        fake = lambda _ocr, png, timeout=120: (lambda t: {"text": t, "chars": len(t), "lang": "en", "langs": {"en": 0.9}})(Path(f"{png}.txt").read_text())
+        with mock.patch.object(sf, "warm_up_ocr", return_value=True), mock.patch.object(sf, "ocr_tool", return_value="ocr"), \
+             mock.patch.object(sf, "read_text", fake), mock.patch.object(sf, "readable_languages", return_value=set(readable)), \
+             contextlib.redirect_stdout(io.StringIO()):
+            code = sf.cmd_check(Path(d) / "shots", strings=self.STRINGS, report_dir=Path(d) / "rep", expect=expect)
+        report = json.loads((Path(d) / "rep/check.json").read_text())
+        return code, report
+
+    def test_the_apps_own_text_is_exact_and_matched_like_judge_screen(self):
+        expect = {"01_home": {"any": ["senior ios  ENGINEER"], "not": ["No workouts yet", "Keine Workouts"], "de": {"all": ["Steinmännchen"]}}}
+        code, report = self.check(expect, {lp: {"01_home": t} for lp, t in self.HOME.items()})
+        self.assertEqual((code, report["problems"], report["notes"]), (0, [], []))  # case and spacing are folded; the de rule only applies to de
+
+    def test_a_missing_string_and_an_empty_state_are_each_one_problem_line_with_the_screen(self):
+        expect = {"01_home": {"all": ["Steinmännchen"], "not": ["Settings"]}}
+        code, report = self.check(expect, {lp: {"01_home": t} for lp, t in self.HOME.items()})
+        self.assertEqual(code, 1)
+        self.assertEqual(sorted(report["problems"]), [
+            'en/01_home.png: "Settings" must not be on screen', 'en/01_home.png: expected "Steinmännchen" on screen'])
+
+    def test_any_needs_one_of_the_strings(self):
+        screens = {lp: {"01_home": t} for lp, t in self.HOME.items()}
+        self.assertEqual(self.check({"01_home": {"any": ["Nope", "Senior iOS Engineer"]}}, screens)[1]["problems"], [])
+        problems = self.check({"01_home": {"any": ["Nope", "Never"]}}, screens)[1]["problems"]
+        self.assertEqual(problems, ['de/01_home.png: expected one of "Nope", "Never" on screen', 'en/01_home.png: expected one of "Nope", "Never" on screen'])
+
+    def test_a_locale_table_covers_regional_variants_and_unused_ones_are_noted(self):
+        screens = {"de": {"01_home": self.HOME["de"]}}
+        self.assertEqual(self.check({"01_home": {"de": {"all": ["Nope"]}}}, screens)[1]["problems"], ['de/01_home.png: expected "Nope" on screen'])
+        notes = self.check({"01_home": {"all": ["Senior iOS Engineer"], "fr": {"all": ["x"]}}}, screens)[1]["notes"]
+        self.assertEqual(notes, ["[expect.01_home.fr] matches none of the languages checked"])
+
+    def test_a_table_for_a_screenshot_that_does_not_exist_is_a_problem_with_did_you_mean(self):
+        problems = self.check({"01_hom": {"any": ["x"]}}, {"de": {"01_home": self.HOME["de"]}})[1]["problems"]
+        self.assertEqual(problems, ["[expect.01_hom] matches no screenshot; did you mean [expect.01_home]?"])
+
+    def test_ocr_never_passes_or_fails_what_it_cannot_read(self):
+        # Android: no .texts.json, so OCR. Greek can't be read by this Mac's OCR (readable = en, de): not found proves nothing.
+        screens = {"en": {"01_home": ["Next", "Settings"]}}
+        expect = {"01_home": {"all": ["Επόμενο", "Missing text"], "not": ["Ρυθμίσεις", "Settings"], "any": ["Άλλο"]}}
+        code, report = self.check(expect, screens, ocr=True)
+        self.assertEqual(sorted(report["problems"]), ['en/01_home.png: "Settings" must not be on screen', 'en/01_home.png: expected "Missing text" on screen'])
+        self.assertEqual(len(report["notes"]), 3)
+        self.assertTrue(all("could not verify" in n for n in report["notes"]), report["notes"])
+        # found is found, in any script OCR happened to read; and a readable script checked by OCR still fails when absent
+        ok = self.check({"01_home": {"all": ["Next"], "any": ["Ρυθμίσεις", "Settings"]}}, screens, ocr=True)[1]
+        self.assertEqual((ok["problems"], ok["notes"]), ([], []))
+        # the same Greek strings on iOS (the app's own text) are exact: absent means absent
+        bad = self.check({"01_home": {"all": ["Επόμενο"]}}, {"en": {"01_home": ["Next", "Settings"]}})[1]
+        self.assertEqual(bad["problems"], ['en/01_home.png: expected "Επόμενο" on screen'])
+
+    def test_without_expect_nothing_changes(self):
+        code, report = self.check(None, {"en": {"01_home": self.HOME["en"]}})
+        self.assertEqual(report["problems"], [])
+
+    def test_the_tables_are_validated_like_every_other_setting(self):
+        for body, msg in (('[expect.01_home]\nanny = ["x"]\n', r"unknown setting 'anny'; did you mean 'any'\?"),
+                          ('[expect.01_home]\nany = "x"\n', r"any in shotfleet.toml should be a list of texts"),
+                          ('[expect.01_home]\nnot = []\n', r"not in shotfleet.toml should be a list of texts"),
+                          ('[expect.01_home.de]\nal = ["x"]\n', r"\[expect.01_home.de\].*unknown setting 'al'; did you mean 'all'\?"),
+                          ('[expect]\nany = ["x"]\n', r"'any' should be a table named after a screenshot"),
+                          ('[expect.01_home.any]\nx = ["x"]\n', r"unknown setting 'any'"),
+                          ('[expec.01_home]\n', r"did you mean \[expect\]")):
+            with self.subTest(body=body), tempfile.TemporaryDirectory() as d:
+                f = Path(d) / "shotfleet.toml"; f.write_text(body)
+                with self.assertRaisesRegex(sf.Fail, msg): sf.read_expect(f)
+            with tempfile.TemporaryDirectory() as d:
+                f = Path(d) / "shotfleet.toml"; f.write_text('[ios]\napp = "x.app"\n' + body)
+                with self.assertRaises(sf.Fail): sf.platforms_in(f)
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "shotfleet.toml"; f.write_text('[ios]\napp = "x.app"\n')
+            with self.assertRaisesRegex(sf.Fail, r"no \[expect.<screenshot>\] table"): sf.read_expect(f)
+
+    def test_check_content_cli_reads_the_config_and_keeps_the_json_keys(self):
+        d = Path(tempfile.mkdtemp()); shots_with_texts(d, {lp: {"01_home": t} for lp, t in self.HOME.items()})
+        for lp, words in self.STRINGS.items():
+            (d / "locales" / lp).mkdir(parents=True); (d / "locales" / lp / "translation.json").write_text(json.dumps(words))
+        cfg = d / "shotfleet.toml"; cfg.write_text('[expect.01_home]\nall = ["Steinmännchen"]\n')
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = sf.main(["check", str(d / "shots"), "--strings", str(d / "locales/*/translation.json"), "--content", str(cfg),
+                            "--report", str(d / "rep"), "--json"])
+        report = json.loads(out.getvalue())
+        self.assertEqual((code, set(report)), (1, {"exit", "screenshots", "problems", "notes"}))
+        self.assertEqual(report["problems"], ['en/01_home.png: expected "Steinmännchen" on screen'])
+        self.assertIn("content: [expect] checked on 2 screens", err.getvalue())
+        with contextlib.redirect_stderr(io.StringIO()) as e2:
+            self.assertEqual(sf.main(["check", str(d / "shots"), "--content", str(d / "missing.toml")]), 2)
+        self.assertIn("no config at", e2.getvalue())
+
+    def test_run_passes_the_expect_tables_to_check(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Path(d) / "My.app"; app.mkdir()
+            (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.x", "DTPlatformName": "iphonesimulator"}))
+            (Path(d) / "flow.yaml").write_text("- launchApp\n")
+            (Path(d) / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n[expect.01_home]\nany = ["Hi"]\n')
+            with mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"):
+                _, cfg, _ = sf.load_config(Path(d) / "shotfleet.toml")
+        self.assertEqual(cfg["_expect"], {"01_home": {"any": ["Hi"]}})
+
+
+class SetupCommands(unittest.TestCase):
+    """[ios] simctl and [android] shell: per-device commands after boot, built and substituted without a device."""
+    def test_simctl_commands_get_the_udid_and_run_in_order_after_the_status_bar(self):
+        calls = []
+        class FakeSim:
+            def __init__(self, udid): self.udid = udid
+            def run(self, *a, check=True): calls.append(a); return ""
+        listing = json.dumps({"devices": {"rt": []}})
+        with mock.patch.object(sf, "sh", side_effect=lambda cmd, **k: subprocess.CompletedProcess(cmd, 0, listing if "list" in cmd else "U1", "")), \
+             mock.patch.object(sf, "Sim", FakeSim), mock.patch.object(sf, "OUR_SIMS", set()):
+            pool = sf.make_pool(1, "dt", "rt", simctl=["ui $UDID appearance dark", "location ${UDID} set 52.3676,4.9041", 'privacy $UDID grant photos "com.x y"'])
+        udid = pool[0].udid
+        flat = [c for c in calls if c[0] in ("ui", "location", "privacy", "status_bar")]
+        self.assertEqual([c[0] for c in flat], ["status_bar", "ui", "location", "privacy"])
+        self.assertEqual(flat[1], ("ui", udid, "appearance", "dark"))
+        self.assertEqual(flat[2], ("location", udid, "set", "52.3676,4.9041"))
+        self.assertEqual(flat[3], ("privacy", udid, "grant", "photos", "com.x y"))  # quoting is shell-like, not a string split
+
+    def test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop(self):
+        calls = []
+        class FakeEmu:
+            def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
+            def adb(self, *a, check=True, timeout=180): calls.append((self.serial, a, check)); return ""
+            def booted(self): return False
+        home = Path(tempfile.mkdtemp()); (home / ".android/avd/shotfleet_android.avd/snapshots/shotfleet").mkdir(parents=True)
+        with mock.patch.object(sf, "Emu", FakeEmu), mock.patch.object(sf, "start_emu"), mock.patch.object(sf, "wait_booted"), \
+             mock.patch.object(sf.time, "sleep"), mock.patch.object(sf.Path, "home", return_value=home):
+            sf.android_pool(2, {"shell": ["setprop debug.remoti.demo 1", "settings put system font_scale 1.0"]}, [])
+        for serial in ("emulator-5702", "emulator-5704"):
+            mine = [(a, check) for s, a, check in calls if s == serial]
+            self.assertEqual(mine[-2:], [(("shell", "setprop debug.remoti.demo 1"), True), (("shell", "settings put system font_scale 1.0"), True)])
+            self.assertEqual(mine[len(sf.DEMO_MODE) - 1], (("shell", sf.DEMO_MODE[-1]), False))  # demo mode first, and it stays best-effort
+            self.assertEqual(len(mine), len(sf.DEMO_MODE) + 2)
+
+    def test_a_failing_command_is_a_setup_error_that_prints_it(self):
+        class Boom:
+            udid = "U9"
+            def run(self, *a, check=True): raise RuntimeError("simctl " + " ".join(a) + ": Unable to set")
+            def adb(self, *a, check=True): raise RuntimeError("adb " + " ".join(a) + ": Permission denied")
+        with self.assertRaisesRegex(sf.Fail, r"\[ios\] simctl command failed.*simctl ui U9 appearance dark: Unable to set"):
+            sf.run_setup(Boom(), "simctl", ["ui $UDID appearance dark"])
+        with self.assertRaisesRegex(sf.Fail, r"\[android\] shell command failed.*adb shell setprop a b: Permission denied"):
+            sf.run_setup(Boom(), "shell", ["setprop a b"])
+        # as the CLI sees it: exit 2, one line, no traceback
+        boom = sf.Fail("[ios] simctl command failed, stopping before the run: simctl ui U9 appearance dark: Unable to set")
+        with mock.patch.object(sf, "cmd_run", side_effect=boom), mock.patch.object(sf, "apply_free_tier"), \
+             mock.patch.object(sf.shutil, "which", return_value=None), contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(sf.main(["run"]), 2)
+        self.assertEqual(err.getvalue().strip(), f"shotfleet: {boom}")
+
+    def test_the_settings_are_validated_like_every_other_one(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Path(d) / "My.app"; app.mkdir()
+            (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.x", "DTPlatformName": "iphonesimulator"}))
+            (Path(d) / "flow.yaml").write_text("- launchApp\n")
+            cases = (('simctl = "ui"', "simctl in shotfleet.toml should be a list"),
+                     ('simctl = [1]', "simctl in shotfleet.toml should be a list of commands"),
+                     ('simctl = ["ui \\"x"]', "can't read"),
+                     ('simctl_ = []', r"unknown setting 'simctl_'; did you mean 'simctl'\?"),
+                     ('shell = ["x"]', "unknown setting 'shell'"))
+            for line, msg in cases:
+                (Path(d) / "shotfleet.toml").write_text(f'[ios]\napp = "My.app"\n{line}\n')
+                with self.subTest(line=line), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), self.assertRaisesRegex(sf.Fail, msg):
+                    sf.load_config(Path(d) / "shotfleet.toml")
+            apk = Path(d) / "a.apk"; apk.write_bytes(b"x")
+            for line, msg in (('shell = [3]', r"\[android\] shell in shotfleet.toml should be a list of commands"), ('simctl = []', "unknown setting 'simctl'")):
+                (Path(d) / "shotfleet.toml").write_text(f'[android]\napk = "a.apk"\npackage = "p"\n{line}\n')
+                with self.subTest(line=line), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
+                     mock.patch.object(sf, "aapt2", return_value="aapt2"), mock.patch.object(sf, "sh", return_value=subprocess.CompletedProcess([], 0, "", "")), \
+                     self.assertRaisesRegex(sf.Fail, msg):
+                    sf.load_config(Path(d) / "shotfleet.toml")

@@ -1,9 +1,9 @@
-Subject: shotfleet is out ($49 for you, first 100)
+Subject: shotfleet is out ($29 for the first 100 buyers)
 
 Hi,
 
-You joined the shotfleet list, so you get the founder price before anyone else: $49 instead of $79, for the first
-100 people.
+You joined the shotfleet list, so here is the news right away. The first 100 buyers pay $29 instead of $49, whoever
+buys first.
 
 shotfleet takes one English Maestro flow and captures your App Store and Google Play screenshots in every language
 your app ships, in parallel, then checks each one against your app's own strings before it reaches the stores.
@@ -13,8 +13,8 @@ What it caught on my own apps while I built it:
 - store listings with translated captions over an app that was still in English,
 - screenshot sizes App Store Connect would have refused.
 
-Buy (Lemon Squeezy or Gumroad): https://shotfleet.manulorenzop.workers.dev/#price
-Install: curl -fsSL https://shotfleet.manulorenzop.workers.dev/install.sh | sh
+Buy: https://shotfleet.com/#price
+Install: curl -fsSL https://shotfleet.com/install.sh | sh
 Then: shotfleet activate <your key>
 
 `shotfleet check` is free if you just want to see what it finds in the screenshots you already have.

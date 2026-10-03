@@ -1,0 +1,2024 @@
+[
+ {
+  "id": "C001",
+  "claim": "One English Maestro flow runs in every language the app ships, on iOS and Android",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "One English Maestro flow, every language, iOS and Android.",
+   "from **one English Maestro flow**"
+  ],
+  "status": "partial",
+  "proof": "Unit: TranslateFlow.*, LocalizeFlow.*, AndroidFlow.*, SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, Locales.test_shipped_locales_*. Real runs: PLAN.md Status 2026-10-01 (iOS 18/18, Android 18/18 on CrossfitTracker); research/pricing-2026-10.md (Kuokka+HackerNewsKMP both platforms). No automated end-to-end run exists.",
+  "layer": "fixture",
+  "assertion": "On tools/fixture-app (en,de,ja,ar,tr): `shotfleet run --locales de,ja,ar,tr` exits 0 with 2 screenshots per locale and every raw/<lp>/*.png exists; the German image's accessibility text contains 'Weiter' (.texts.json). Add a tiny Android fixture APK for the Android half.",
+  "fix": ""
+ },
+ {
+  "id": "C002",
+  "claim": "It is a command-line tool for macOS (Mac only)",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Mac command-line tool",
+   "you don’t have an Apple silicon Mac. iOS simulators need a Mac"
+  ],
+  "status": "partial",
+  "proof": "site/public/install.sh:5-6 refuses non-Darwin and non-arm64. DISTRIBUTION.md Status: 'Apple silicon only for now'. The landing page, terms and privacy never say Apple silicon only; README says it only in a shell comment (README.md:49).",
+  "layer": "site",
+  "assertion": "Assert index.html (and terms.html) contain 'Apple silicon' near the install/needs sentence, and that install.sh's uname -m guard exists. Intel Mac owners can buy and then cannot install.",
+  "fix": "Add 'Apple silicon Mac (M1 or newer)' to 'It needs a Mac, Maestro and Java 17+' and to terms.html; keep until an Intel build ships.",
+  "fixed_by": "wording",
+  "fixed": "Apple silicon is now said on the page (requirements sentence, price card, 'Not for you if'), in terms and in the README; install.sh refuses non-arm64 (not run here).",
+  "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides"
+ },
+ {
+  "id": "C003",
+  "claim": "shotfleet checks every screenshot",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "shotfleet captures them all and checks every screenshot"
+  ],
+  "status": "partial",
+  "proof": "JudgeScreen.*, CheckAnyFolder.*, ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command, StuckOcrFallback.*. Audit snippet 2026-10-02 (not committed): cmd_check on synthetic .texts.json flagged wrong language, identical image, missing screen and wrong size. Caveats: copies are only reported when the screen has >=40 characters (shotfleet.py:1620, verified: two identical 2-label screens are not reported as identical); scripts macOS cannot read (Greek, Hebrew, most Indic) are only checked for other-language, copies and missing (README.md:232).",
+  "layer": "unit",
+  "assertion": "One parametrised test over cmd_check with .texts.json fixtures: (a) wrong language, (b) byte-identical image in two languages, (c) missing screen, (d) off-size image each yield exactly one problem line and exit 1; a clean set yields exit 0.",
+  "fix": "Keep 'checks every screenshot' only if the page says what it checks: 'checks every screenshot for the wrong language, copies, missing screens and store size rules'."
+ },
+ {
+  "id": "C004",
+  "claim": "Your app and screenshots are never uploaded; shotfleet runs on your Mac",
+  "where": [
+   "site/public/index.html",
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "your app and screenshots are never uploaded",
+   "Your app and screenshots are never uploaded."
+  ],
+  "status": "partial",
+  "proof": "Code audit 2026-10-02: grep urlopen in shotfleet.py finds only Gumroad (the store; Polar and Lemon Squeezy code stays for old keys) licence calls, https://shotfleet.com/download/VERSION (doctor) and http://127.0.0.1 (Maestro driver). A test lists every host named in shotfleet.py (the site, Gumroad, Polar, Lemon Squeezy for licence checks, a local test server); no runtime traffic capture exists.",
+  "layer": "unit",
+  "assertion": "AST/grep test: every http(s) URL literal in shotfleet.py is in an allow-list {site /download/VERSION, api.polar.sh, api.lemonsqueezy.com, api.gumroad.com, 127.0.0.1}; no request body contains file bytes. Fixture: run `check` with the network blocked (sandbox-exec deny network*) and assert exit 0.",
+  "fix": "",
+  "test": "NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to"
+ },
+ {
+  "id": "C005",
+  "claim": "The hero grid shows seven of 72 screenshots from one run of WOD Tracker: 18 languages x 4 screens on an M1 Pro; 'checked' on each",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Seven of 72 screenshots from one run on my app, WOD Tracker: 18 languages × 4 screens on an M1 Pro.",
+   "+11"
+  ],
+  "status": "evidence",
+  "proof": "PLAN.md Status 2026-10-01 (iOS 18/18, 8m54s, 0 check problems); README.md:11-12; this Mac is an Apple M1 Pro 32 GB (sysctl, 2026-10-02); I viewed train_ar.jpg and train_es.jpg: genuinely localized, 09:41 status bar. 18 x 4 = 72 and 18 - 7 = 11 are consistent. The app is called 'WOD Tracker' on the site and 'CrossfitTracker' everywhere else (README, PLAN, posts).",
+  "layer": "site",
+  "assertion": "Static: count <figure class=ship> in .fleet == 7; the '+N' equals languages - 7; 72 == 18*4 in the note and terminal; every referenced img/ file exists and has the declared width/height.",
+  "fix": ""
+ },
+ {
+  "id": "C006",
+  "claim": "Nothing in the app was changed to get the screenshots / no changes to the app",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Nothing in the app was changed to get them.",
+   "No copies of the flow, no changes to the app."
+  ],
+  "status": "partial",
+  "proof": "LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages launch args), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots. research/frameworks.md cites AOSP source for per-app locales without app cooperation. Needs a Debug-iphonesimulator build and an API 33+ emulator (README.md:238), which is a build, not an app change. Apps with their own persisted in-app language picker are untested.",
+  "layer": "fixture",
+  "assertion": "tools/fixture-app contains no shotfleet code: `run` on it produces German 'Willkommen' (accessibility text) - proves iOS needs no change. Add an Android fixture for `cmd locale set-app-locales`.",
+  "fix": ""
+ },
+ {
+  "id": "C007",
+  "claim": "18 languages x 4 screens took 9 minutes on iOS and 15 on Android, on one Mac",
+  "where": [
+   "site/public/index.html",
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac",
+   "about 9 minutes on iOS and 15 on Android"
+  ],
+  "status": "evidence",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it.",
+  "layer": "fixture",
+  "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
+  "fix": ""
+ },
+ {
+  "id": "C008",
+  "claim": "The terminal sample prints 'checked 72 screenshots: 0 problem(s)'",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "checked 72 screenshots in 18 languages: 0 problem(s)",
+   "checked 72 screenshots in 18 languages: 0 problem(s)"
+  ],
+  "status": "fixed",
+  "proof": "shotfleet.py:1644 prints f\"checked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)\". Verified 2026-10-02 by running cmd_check on a fixture: 'checked 5 screenshots in 4 languages: 5 problem(s)'. The other lines (capturing ... on 4 simulators..., ok   ar       4/4 screenshots, captured 18/18 locales in 534s on 4 simulators) match shotfleet.py:690,1073,1090. Fixed 2026-10-02: the sample is now compared with cmd_check's real output and with the format strings in shotfleet.py on every test run.",
+  "layer": "site",
+  "assertion": "Test renders cmd_check on a 2-language fixture and asserts the final line matches the regex the site/README sample uses (derive the sample from the code, or compare after replacing numbers).",
+  "fix": "checked 72 screenshots in 18 languages: 0 problem(s)",
+  "fixed_by": "wording",
+  "fixed": "The sample said 'checked 72 screenshots: 0 problem(s)'; cmd_check prints 'checked N screenshots in M languages: P problem(s)'. Site and README now match, and the other sample lines were compared with the code (capturing/captured/ok lines) and were already right. Wording was the right route: the program output is the truth.",
+  "test": "TerminalSample.test_check_summary_line_matches_what_cmd_check_prints, TerminalSample.test_run_lines_match_the_format_strings_in_the_code, TerminalSample.test_sample_numbers_agree"
+ },
+ {
+  "id": "C009",
+  "claim": "Every image is read back and compared with your app's own strings",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Every image is read back and compared with your app’s own strings.",
+   "every screenshot's text is compared against your app's own strings"
+  ],
+  "status": "partial",
+  "proof": "JudgeScreen.*, ScreenText.test_check_prefers_the_apps_own_text, TolerantMatching.*, Evidence.*. On iOS runs the text comes from the accessibility tree during the run (README.md:23), on Android and for other tools' screenshots from macOS OCR. The capture side (ios_screen_texts/capture_texts, shotfleet.py:812-846) has no test without a simulator.",
+  "layer": "fixture",
+  "assertion": "After a fixture `run`, every raw/<lp>/*.texts.json exists and is non-empty (iOS), and `check` on the output reports 0 problems; replace the German PNG with the Japanese one and assert a 'shows ja strings' problem.",
+  "fix": ""
+ },
+ {
+  "id": "C010",
+  "claim": "The same fixed status bar on every screenshot: 9:41, full battery",
+  "where": [
+   "README.md",
+   "README.md"
+  ],
+  "where_text": [
+   "`simctl status_bar` override: 9:41, full battery",
+   "SystemUI demo mode: 9:41, full battery, no notifications"
+  ],
+  "status": "evidence",
+  "proof": "Code: shotfleet.py:794 (simctl status_bar override --time 9:41) and DEMO_MODE 1100-1107. Images: train_ar.jpg and bug_zh.jpg show 9:41 and full battery (viewed 2026-10-02). No test.",
+  "layer": "fixture",
+  "assertion": "After a fixture run, OCR the top 80 px of raw/de/01.png (tools/ocr) and assert it contains '9:41'.",
+  "fix": ""
+ },
+ {
+  "id": "C011",
+  "claim": "Then one command puts the passing screenshots into fastlane's folders",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Then one command puts the passing App Store and Google Play screenshots into fastlane’s folders.",
+   "Languages that failed a check are skipped, so a bad screenshot never reaches a listing."
+  ],
+  "status": "proven",
+  "proof": "Export.test_ios_export_skips_failed_locales_and_replaces_old_sets, Export.test_android_export_uses_play_folders, Export.test_identical_images_skip_both_locales, AuditFixes.test_export_never_wipes_a_listing_with_a_failed_or_empty_capture, AuditFixes.test_export_replaces_only_the_same_device_size, AuditFixes.test_export_needs_a_check_first (run 2026-10-02, 135 tests OK). Note: export also deletes same-size old PNGs in the target listing (shotfleet.py:1960) - intended, tested.",
+  "layer": "unit",
+  "assertion": "Already covered; add: export of a run with check problems exits 1 and writes nothing for the failing locale only.",
+  "fix": ""
+ },
+ {
+  "id": "C012",
+  "claim": "On Android, Japanese, Korean, Chinese and Arabic all got stuck on one onboarding page (taller text, no scrolling, Next below the bottom of a small phone)",
+  "where": [
+   "site/public/index.html",
+   "marketing/launch-posts-v2.md",
+   "marketing/launch-email.md"
+  ],
+  "where_text": [
+   "<b>Japanese, Korean, Chinese and Arabic</b> all got stuck on one onboarding page",
+   "Japanese, Korean, Chinese and Arabic all got stuck on the same onboarding page",
+   "an onboarding page whose Next button was unreachable in Japanese, Korean, Chinese and Arabic"
+  ],
+  "status": "evidence",
+  "proof": "site/public/img/bug_zh.jpg (viewed 2026-10-02: Chinese onboarding page, no Next button, small 360x640 screen). No run log, flow or commit is kept in the repo; research/cold-test-2.md says a buyer cannot reproduce it. Only zh has an image; ja, ko, ar are asserted.",
+  "layer": "device",
+  "assertion": "Keep the failing build as a fixture: an Android APK with a non-scrolling onboarding page and a long CJK/Arabic string on a 360x640 emulator; assert `run` reports the locale as failed (flow cannot tap Next) for ja,ko,zh,ar and passes for en.",
+  "fix": ""
+ },
+ {
+  "id": "C013",
+  "claim": "shotfleet found it / the first run found a button nobody could reach",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "The first run found a button nobody could reach.",
+   "It also finds real localization bugs. On CrossfitTracker it found an onboarding page"
+  ],
+  "status": "partial",
+  "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix.",
+  "layer": "unit",
+  "assertion": "Assert README wording: the sentence is in the 'run' section, or reads 'run failed on ...'. (Wording test only.)",
+  "fix": "Move README.md:44 out of the check section and say: 'While running my own app, the capture got stuck on an onboarding page ...'."
+ },
+ {
+  "id": "C014",
+  "claim": "It was a two-line fix in my app",
+  "where": [
+   "site/public/index.html",
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "It was a small fix in my app: I made two pages scroll.",
+   "A small fix in my app."
+  ],
+  "status": "fixed",
+  "proof": "Personal testimony; no commit or diff is referenced in the repo. Commit 687ffccd 'Android onboarding: let Experience and Goals pages scroll' in the CrossfitTracker repo.",
+  "layer": "legal",
+  "assertion": "None possible. Link the commit in the app's repo or drop the number.",
+  "fix": "A small fix in my app (make the page scroll).",
+  "fixed_by": "wording",
+  "fixed": "Looked at the real diff (CrossfitTracker commit 687ffccd, read only): 8 insertions and 2 deletions in OnboardingScreens.kt, one .verticalScroll(...) modifier added to each of two pages. 'Two-line fix' was a stretch, so the copy now says what was done: two pages made scrollable.",
+  "test": "Style.test_banned_phrases_are_absent"
+ },
+ {
+  "id": "C015",
+  "claim": "shotfleet reads the translations compiled into your build and rewrites every text selector",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "shotfleet reads the translations compiled into your build and rewrites every text selector.",
+   "Every selector is rewritten to match **any** translation of that English label."
+  ],
+  "status": "proven",
+  "proof": "TranslateFlow.test_single_translation_is_quoted_literal, test_label_with_two_keys_matches_either_translation, test_map_form_text_is_translated_and_id_selectors_pass_through, AuditFixes.test_inline_maps_relative_anchors_and_comments_are_translated, LoadStrings.*, LocalizationFormats.*, PluralsAndFormats.test_selectors_with_numbers_translate_into_every_plural_form (all pass). Labels that are not in the app's strings stay English and are reported (test_unknown_selector_is_reported_and_left_alone).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C016",
+  "claim": "If 'Next' has two keys, German matches (Nächste|Weiter); id: selectors pass through untouched",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "If \"Next\" has two keys, German matches `(Nächste|Weiter)`. Selectors that use `id:` pass through untouched."
+  ],
+  "status": "proven",
+  "proof": "TranslateFlow.test_label_with_two_keys_matches_either_translation; test_map_form_text_is_translated_and_id_selectors_pass_through (names the exact (Nächste|Weiter) case via EN/DE fixtures).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C017",
+  "claim": "When two words clash in a language, it warns you before anything runs (Turkish: Next also means Advanced)",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "When two words clash in a language, it warns you before anything runs.",
+   "Translation collisions, before anything runs"
+  ],
+  "status": "partial",
+  "proof": "TranslateFlow.test_turkish_next_advanced_collision_is_warned and test_no_collision_warning_when_words_differ (synthetic TR table). Warning is printed before any simulator boots (shotfleet.py:1008-1018). Not tested: the ordering, the Android path, and the real app; research/real-apps.md D6 measured ~3% of runs warn, mostly false positives (singular/plural, case).",
+  "layer": "unit",
+  "assertion": "Run ios_run with make_pool mocked to raise and assert the 'warning tr: ... also means' line was printed first; same for android_run.",
+  "fix": ""
+ },
+ {
+  "id": "C018",
+  "claim": "Setup is one command and a two-line config; the Maestro flow is the only thing you maintain",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Setup is one command and a two-line config.",
+   "The whole config can be this (`shotfleet init` writes it):"
+  ],
+  "status": "partial",
+  "proof": "SimpleConfig.test_only_the_build_is_required_and_ids_come_from_it and test_init_takes_several_builds_into_one_small_config prove the config is [ios]+app= (two lines; four with Android). The quickstart is four commands (install, activate, doctor, init; README.md:48-53) plus Maestro, Java 17+, a simulator build and writing the flow.",
+  "layer": "unit",
+  "assertion": "Assert `init` of one .app writes a config with <= 2 non-comment lines and a flow.yaml.",
+  "fix": "shotfleet init writes the two-line config; you write one English flow."
+ },
+ {
+  "id": "C019",
+  "claim": "Quickstart takes about 10 minutes",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "## Quickstart (once Maestro and a simulator build exist)"
+  ],
+  "status": "fixed",
+  "proof": "No timed cold install exists. research/cold-test-2.md lists unlisted prerequisites (Java, Debug simulator build, API 33 AVD) and never times the path.",
+  "layer": "legal",
+  "assertion": "Time a cold install on a clean Mac user account (install, doctor, init, first --locales en run) and publish the real number.",
+  "fix": "Quickstart (install and first single-language run, once Maestro and a simulator build exist)",
+  "fixed_by": "removed",
+  "fixed": "A cold install cannot be timed today: /download/VERSION is 404 before launch so install.sh fails, and research/cold-test-2.md found prerequisites the quickstart did not list. The number is removed; the heading says what the quickstart needs.",
+  "test": "Style.test_banned_phrases_are_absent"
+ },
+ {
+  "id": "C020",
+  "claim": "Both platforms from one config and one flow",
+  "where": [
+   "site/public/index.html",
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "Both platforms from one config and one flow",
+   "Both platforms from one flow."
+  ],
+  "status": "partial",
+  "proof": "SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, test_run_goes_through_every_platform_in_the_file, ReviewFixes.test_map_form_screenshots_are_redirected_on_both_platforms. Real: Kuokka + HackerNewsKMP both-platform run (research/pricing-2026-10.md, 2026-10-02).",
+  "layer": "fixture",
+  "assertion": "Fixture config with [ios] and [android]: one flow.yaml, `shotfleet run` produces out-ios/ and out-android/ each with N screenshots per locale.",
+  "fix": ""
+ },
+ {
+  "id": "C021",
+  "claim": "Both the 13-inch iPad set and the Android tablet set the stores ask for (iPad and tablets)",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "plus the sets the stores ask for.",
+   "iPad and tablets"
+  ],
+  "status": "evidence",
+  "proof": "iPad: MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices (unit) + ROADMAP.md:27 (remoti iPhone 6.9 + iPad 13 2064x2752, 2026-10-02). Android tablet: ROADMAP.md:27 (CrossfitTracker phone 1080x1920 + tablet 1440x2560 exported to phoneScreenshots/tenInchScreenshots, 2026-10-02) and ANDROID_DEVICES (shotfleet.py:1136); no unit test covers the tenInchScreenshots export (only a hook test names 'tablet'). 'Sets the stores ask for' is vague: no 7-inch tablet set (research/limits-platforms.md), and marketing/launch-posts-v2.md:119 still says 'Do NOT claim ... Android tablets'.",
+  "layer": "unit",
+  "assertion": "Export test for a run with device='tablet' writes metadata/android/<locale>/images/tenInchScreenshots; fixture: iPad Pro 13 run produces 2064x2752 PNGs and `check` passes the iPad rule.",
+  "fix": "Reword to 'a 13\" iPad set and a 10\" Android tablet set from the same flow'; fix the contradictory instruction in launch-posts-v2.md:119."
+ },
+ {
+  "id": "C022",
+  "claim": "The check includes the App Store/Play size, count, transparency and iPad rules",
+  "where": [
+   "README.md",
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "Store rules:",
+   "(wrong language, copies, missing, store size rules, iPad rule)"
+  ],
+  "status": "proven",
+  "proof": "StoreRules.test_app_store_sizes_alpha_counts_and_required_class, test_google_play_limits_and_notes, test_image_info_reads_jpeg_size, MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices. Limits checked: 10 (App Store) / 8 (Play) per listing, 320-3840 px, no alpha, 6.9\" or 6.5\" iPhone set, 13\" iPad when UIDeviceFamily has 2. Rule data is Apple/Google's as of 2026-10-01 (research/store-specs.md) and can go stale.",
+  "layer": "unit",
+  "assertion": "Already covered; add a drift check: a dated constant APPLE_SIZES_AS_OF and a test that fails after 180 days to force a re-read of Apple's spec.",
+  "fix": ""
+ },
+ {
+  "id": "C023",
+  "claim": "Store codes are mapped back to the app's languages (de-DE to de, no to nb, zh-CN to zh-Hans)",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`)"
+  ],
+  "status": "proven",
+  "proof": "CheckAnyFolder.test_store_codes_map_to_app_languages (includes de-DE->de, no->nb, zh-CN->zh-Hans), Locales.test_every_store_listing_code_maps_to_itself.",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C024",
+  "claim": "The check finds listings in a language the app does not have",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "**Languages your app doesn't have:**"
+  ],
+  "status": "partial",
+  "proof": "Implemented (shotfleet.py:1580-1583, 'the app has no X translation'); real evidence research/real-apps.md (remoti: 108 problems, true positives viewed) and PLAN.md (zh-Hant listing). No unit test asserts the message.",
+  "layer": "unit",
+  "assertion": "cmd_check on {en,de} strings and a fr-FR folder returns a problem starting 'fr-FR: the app has no fr-FR translation' (audit snippet 2026-10-02 produced it).",
+  "fix": ""
+ },
+ {
+  "id": "C025",
+  "claim": "Copies: the same image in two languages / Missing: a language that didn't produce every screenshot",
+  "where": [
+   "README.md",
+   "README.md"
+  ],
+  "where_text": [
+   "**Copies:** the same image in two languages.",
+   "**Missing:** a language that didn't produce every screenshot."
+  ],
+  "status": "partial",
+  "proof": "Audit snippet 2026-10-02 (not committed) on cmd_check: 'identical image in 2 languages: de-DE/01.png, ja/01.png' and 'en-US: missing 02.png' were reported. cold-test-2.md #18 (real run, 28 s). Only export tests mention the identical-image string; no unit test of the detection. Blind spot: copies need >=40 characters of text (shotfleet.py:1620); byte-identical only.",
+  "layer": "unit",
+  "assertion": "Commit the audit snippet as a test: two identical PNGs with >=40 chars of .texts.json -> 'identical image'; a locale lacking one file -> '<l>: missing <file>'.",
+  "fix": ""
+ },
+ {
+  "id": "C026",
+  "claim": "Wrong language: the German folder actually shows English or Japanese strings",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "**Wrong language:** the German folder actually shows English or Japanese strings."
+  ],
+  "status": "proven",
+  "proof": "ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command (el/2.png shows en), StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (ja shows en), JudgeScreen.test_screen_showing_another_locales_strings_fails.",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C027",
+  "claim": "On iOS the text is read straight from the app while each screenshot is on screen (exact, in every script)",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "On iOS, shotfleet reads the text straight from the app while each screenshot is on screen (exact, in every script)"
+  ],
+  "status": "partial",
+  "proof": "ScreenText.test_check_prefers_the_apps_own_text and test_flows_pause_after_each_screenshot (consumption and flow pause); FrameworkFixes.test_empty_accessibility_tree_falls_back_to_ocr_but_a_short_real_screen_does_not. The capture through the Maestro driver is unverified without a simulator; ROADMAP.md says 1.5 done on iOS.",
+  "layer": "fixture",
+  "assertion": "Fixture run on the Arabic and Japanese fixture languages: .texts.json contains the localized strings (no OCR involved).",
+  "fix": ""
+ },
+ {
+  "id": "C028",
+  "claim": "The report (check.json, index.html) goes to ./shotfleet-check and your fastlane folders are never touched",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "and your fastlane folders are never touched"
+  ],
+  "status": "proven",
+  "proof": "cmd_check only reads the screenshot folder (code read 2026-10-02); no test pins it. A ./shotfleet-check directory exists in this checkout from an earlier run. Proven 2026-10-02: report lands in ./shotfleet-check, the checked folder is byte-for-byte the same file list.",
+  "layer": "unit",
+  "assertion": "Hash the fixture fastlane tree before and after cmd_check and assert equality; assert check.json and index.html exist under the default report dir.",
+  "fix": "",
+  "test": "CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone"
+ },
+ {
+  "id": "C029",
+  "claim": "Index grid: a row per language, a column per screen, problems outlined in red",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "It's a grid with a row per language and a column per screen, and problems are outlined in red."
+  ],
+  "status": "proven",
+  "proof": "write_gallery (shotfleet.py:1653) reads that way; no test. cold-test-2.md #19: images are linked relative to the report so a moved report breaks. Proven 2026-10-02: one row per language, one column per screen name, bad images get the red outline class, missing screens a red cell.",
+  "layer": "unit",
+  "assertion": "Call write_gallery with 2 locales x 2 screens and one problem; parse the HTML: 2 data rows, 2 screen columns, exactly one cell with the 'bad' class.",
+  "fix": "",
+  "test": "CheckPromises.test_index_is_a_grid_with_a_row_per_language_a_column_per_screen_and_problems_outlined"
+ },
+ {
+  "id": "C030",
+  "claim": "On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) check took about 25 seconds per platform and found one real problem (Chinese captions over an English app); planted errors were reported",
+  "where": [
+   "README.md",
+   "README.md"
+  ],
+  "where_text": [
+   "On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform.",
+   "When we planted English screenshots in the German folder and deleted a Japanese one, both were reported."
+  ],
+  "status": "evidence",
+  "proof": "PLAN.md:23 (2026-10-01); research/first-run.md (252, ~30 s); research/cold-test-2.md #18 (28 s; planted copy and deleted file both reported). 126 Android screenshots and the exact 'English in German, deleted Japanese' scenario are not recorded. First `check` after a restart takes ~4 min while macOS compiles OCR (ROADMAP.md 'Still open').",
+  "layer": "fixture",
+  "assertion": "Plant errors in the fixture's output (copy de->ja, delete ar/02) and assert both reported; time `check` on the 10 fixture images (< 60 s warm).",
+  "fix": ""
+ },
+ {
+  "id": "C031",
+  "claim": "Check screenshots made by any tool (fastlane snapshot/screengrab, StoreScreens, by hand)",
+  "where": [
+   "README.md",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Already have screenshots from fastlane snapshot/screengrab, StoreScreens or by hand? Check them without capturing anything:",
+   "Check any screenshots, from fastlane or by hand"
+  ],
+  "status": "partial",
+  "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/.",
+  "layer": "unit",
+  "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
+  "fix": ""
+ },
+ {
+  "id": "C032",
+  "claim": "`check` is free: no licence, no account, in the released build",
+  "where": [
+   "site/public/index.html",
+   "site/public/terms.html",
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "Check any screenshots, from fastlane or by hand",
+   "<code>shotfleet check</code> is free for everyone",
+   "a free tier (`check` plus 2 languages in `run`)"
+  ],
+  "status": "proven",
+  "proof": "shotfleet.py:2267-2285: only `export` and `run` call the licence gate. test_run_without_a_licence_is_the_free_tier_export_is_not covers run/export with sys.frozen=True; no test runs `main(['check', ...])` or doctor/init with frozen=True and no licence. Proven 2026-10-02: with sys.frozen and no licence file, main() runs check, doctor and init without calling require_licence.",
+  "layer": "unit",
+  "assertion": "With sys.frozen patched True, no LICENCE_FILE and polar_post/licence_api patched to raise: main(['check', dir]), ['doctor'] and ['init', app] never call them and never return NoLicence.",
+  "fix": "",
+  "test": "CheckPromises.test_check_needs_no_licence_in_the_released_build"
+ },
+ {
+  "id": "C033",
+  "claim": "Needs a Mac, Maestro and Java 17+ (README Limits omit Java)",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "It needs an Apple silicon Mac, Maestro and Java 17+.",
+   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+"
+  ],
+  "status": "partial",
+  "proof": "JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro, test_no_java_is_reported; doctor checks it (shotfleet.py:1714-1752). README's own prerequisite line omits Java 17+ and the site omits Xcode/Android SDK.",
+  "layer": "site",
+  "assertion": "Assert the prerequisite sentences in index.html and README.md name the same set: Mac, Xcode (iOS), Android SDK (Android), Maestro 2.x, Java 17+.",
+  "fix": "README.md:237: 'Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+.'",
+  "fixed_by": "wording",
+  "fixed": "README Limits and the site now name Java 17+ (and Apple silicon).",
+  "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides"
+ },
+ {
+  "id": "C034",
+  "claim": "It reads native iOS and Android strings and Compose Multiplatform",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "It reads native iOS and Android strings and Compose Multiplatform;",
+   "Compose Multiplatform resources on both"
+  ],
+  "status": "proven",
+  "proof": "LocalizationFormats.test_compose_multiplatform_resources, test_strings_in_bundles_frameworks_and_watch_apps, LoadStrings.test_reads_every_table_and_skips_base, test_parses_aapt2_dump; real: Kuokka, remoti, Stressi, Cairn (research/real-apps.md).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C035",
+  "claim": "Flutter and React Native work from your translation files (tested on sample projects so far)",
+  "where": [
+   "site/public/index.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).",
+   "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app)."
+  ],
+  "status": "fixed",
+  "proof": "No sample project exists: examples/ holds only CrossfitTracker configs. What was tested are translation files: SourceFiles.* and FrameworkFixes.* (unit, synthetic) and research/frameworks.md (real ARB/PO/JSON files downloaded from wger, Bluesky, Rocket.Chat, 2026-10-02, loaded and translated). No Flutter/RN app was built or run. README.md:231 is accurate; the site is not. Fixed 2026-10-02: the site and README now say 'tested on real translation files; not yet run on a real Flutter or React Native app', and a banned-phrase test keeps 'tested on sample projects' out.",
+  "layer": "site",
+  "assertion": "Static: the site sentence must contain 'translation files' and 'not yet' (or 'real app') whenever it contains 'Flutter'. Device layer: run a real Flutter and a real Expo app once.",
+  "fix": "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).",
+  "fixed_by": "wording",
+  "fixed": "Not made true by running a real app: this Mac has no Flutter SDK or Expo project, and building both toolchains plus a simulator run is more than half a day. Reworded to what is proven: translation files in real ARB/i18next/PO formats, read by shotfleet (SourceFiles tests; research/frameworks.md).",
+  "test": "SourceFiles.test_flutter_arb_with_icu_plurals, SourceFiles.test_i18next_json"
+ },
+ {
+  "id": "C036",
+  "claim": "Supported translation formats: .arb, i18next/react-intl .json, .xcstrings, .strings, .stringsdict, strings.xml, XLIFF, .resx, .po, .properties, CSV; ICU plurals and placeholders; language from @@locale, file name or folder",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Supported: `.arb`, i18next/react-intl `.json`"
+  ],
+  "status": "partial",
+  "proof": "SourceFiles.test_flutter_arb_with_icu_plurals, test_i18next_json, test_xliff_resx_po_properties_csv_xcstrings, test_details_each_format_gets_right, test_language_from_file_and_folder_names, test_android_escapes; FrameworkFixes.*; PluralsAndFormats.*. 'react-intl' JSON is not tested by name; .xlf/.resx/.csv were never run on a real project.",
+  "layer": "unit",
+  "assertion": "Add one react-intl flat-JSON fixture (with ICU plural) to SourceFiles.",
+  "fix": ""
+ },
+ {
+  "id": "C037",
+  "claim": "Not for you if you want frames, captions or store upload / works alongside ButterKit, AppScreens, frameit",
+  "where": [
+   "site/public/index.html",
+   "site/draft/alternatives.html"
+  ],
+  "where_text": [
+   "you want frames, captions or store upload. Use ButterKit or AppScreens for those; shotfleet works alongside them.",
+   "Point ButterKit at those same folders"
+  ],
+  "status": "untested",
+  "proof": "Frames, captions and upload are indeed absent (research/pricing-2026-10.md 'Not offered'). Compatibility with ButterKit/AppScreens/frameit was never tried; fastlane deliver/supply flags in README.md:67-70 do exist (verified 2026-10-02 with `fastlane action deliver|supply`: skip_binary_upload, skip_metadata, overwrite_screenshots, force; skip_upload_apk/aab/metadata/changelogs/images exist).",
+  "layer": "device",
+  "assertion": "Manual: import raw/ screenshots into ButterKit, frame, export, then `shotfleet check` the framed folder (caption_problem path). Unit: if fastlane is installed, assert the option names used in the README recipes appear in `fastlane action deliver` / `supply`.",
+  "fix": ""
+ },
+ {
+  "id": "C038",
+  "claim": "fastlane snapshot is free and runs your UI tests in every language",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "fastlane snapshot is free and does that."
+  ],
+  "status": "unverifiable",
+  "proof": "Third-party fact; true to the best of public knowledge (research/pricing-2026-10.md lists it as free, tagged A).",
+  "layer": "legal",
+  "assertion": "None.",
+  "fix": "Keep; it is a fair pointer."
+ },
+ {
+  "id": "C039",
+  "claim": "The 'Made to work with the rest' claim: shotfleet makes the correct raw screenshots",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "shotfleet makes the correct raw screenshots."
+  ],
+  "status": "partial",
+  "proof": "Correctness is what check verifies (see 'checks every screenshot'); screenshots on the hero are right (viewed 2026-10-02) but the Remoti gallery shows the opposite (see next claim).",
+  "layer": "fixture",
+  "assertion": "Same as the fixture run + check assertions.",
+  "fix": ""
+ },
+ {
+  "id": "C040",
+  "claim": "The same screen in the languages of my other apps: their real store screenshots, one screen, five languages, 'the thing every listing has to get right'",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "These are their real store screenshots: one screen, five languages, the thing every listing has to get right."
+  ],
+  "status": "removed",
+  "proof": "Viewed 2026-10-02 (unchanged by commit 935500e, which replaced the Cairn raw capture with Cairn's own store screenshots): img/remoti_ja.jpg and img/remoti_hi.jpg show a Japanese / Hindi caption over an ENGLISH app UI ('Jobs', 'Newest first', 'Senior iOS Engineer', 'Posted just now'). research/real-apps.md: shotfleet check on remoti's committed fastlane screenshots found 108 of 120 problems, 'TRUE positives: localized captions over an English app'. The Remoti tab, which is the first and default tab, therefore shows the exact failure the product exists to catch, presented as a showcase. Stressi (viewed: ja, de) is localized; Cairn iPad (viewed after 935500e: ja) is a localized store screenshot, with 'Research' and the date line still English in the app chrome. Fixed 2026-10-02: Remoti tab and images removed; the text now reads 'I ship two other apps. These are their real store screenshots, not shotfleet output'.",
+  "layer": "device",
+  "assertion": "Run `shotfleet check` over each tab's five images (copy to <locale>/01.jpg) with --strings of that app: remoti must produce 0 'shows en' problems before the page may call them correct. Cheaper: a site test that fails if any gallery app is in a known-bad list.",
+  "fix": "Drop the Remoti tab, or retitle it honestly ('Remoti's listing before shotfleet check: English UI under Japanese captions') and replace with a shotfleet-captured set.",
+  "fixed_by": "removed",
+  "fixed": "The Remoti tab showed Japanese, Hindi and other captions over an English app UI, the exact failure shotfleet check catches (check flagged 108 of 120 Remoti listing images). Not convertible, so the tab and its 10 image files are deleted; Stressi and Cairn images were looked at (all five Stressi screens are fully localized; Cairn's captions and sidebar are localized, the right-hand pane is English web content and its bottom-left 'Research' tab label is English in all five, worth a look). The copy says they are the apps' real store screenshots, not shotfleet output.",
+  "test": "Structure.test_the_gallery_has_no_remoti_tab_and_defaults_to_the_first_tab, Structure.test_no_orphan_images"
+ },
+ {
+  "id": "C041",
+  "claim": "The gallery tabs are labelled Stressi Android and Cairn iPad",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Stressi <span>Android</span>",
+   "Cairn <span>iPad</span>"
+  ],
+  "status": "evidence",
+  "proof": "Images viewed 2026-10-02 match the labels (Remoti tab removed 2026-10-02, see C040; Stressi is an Android screen, Cairn is a landscape iPad store screenshot). img/ and img/full/ files exist for all 15 images (commit 935500e). Structure.test_the_gallery_has_no_remoti_tab_and_defaults_to_the_first_tab checks the tabs.",
+  "layer": "site",
+  "assertion": "Static: each tabpanel references 5 existing images (and each data-full original) with the declared dimensions; landscape iPad images are wider than tall.",
+  "fix": ""
+ },
+ {
+  "id": "C042",
+  "claim": "Price: $29 launch price for the first 100 people, then $49 once, per developer",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html",
+   "LAUNCH.md",
+   "marketing/launch-posts-v2.md",
+   "marketing/launch-email.md",
+   "site/draft/alternatives.html",
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "launch price, first 100 buyers",
+   "Then <b>$49</b> once, per developer.",
+   "Prices: **$49** once, **$29 for the",
+   "$49 one-time ($29 for the first 100 buyers)",
+   "The first 100 buyers pay $29 instead of $49",
+   "$49 once, $29 founder",
+   "`FOUNDER29` $20 off for the first 100"
+  ],
+  "status": "partial",
+  "proof": "Amounts agree everywhere ($49 / $29 / 100 / 14 days; checked 2026-10-02). Who gets $29 does not: index.html 'first 100 people', LAUNCH.md 'first 100' (code FOUNDER29, applied automatically on the Gumroad product: anyone), launch-posts-v2.md:44,113 and STRATEGY.md 'first 100 on the list', launch-email.md 'before anyone else'. 2026-10-02 (Gumroad): the plan is a $49 list price with FOUNDER29 = $20 off, limit 100 uses, applied automatically; Gumroad adds VAT on top of the price (cannot be inclusive), so the page says 'before VAT where it applies'. Unverified: what the page shows after the 100th use (research/gumroad-setup.md section 4).",
+  "layer": "site",
+  "assertion": "Script: collect every $N and 'first 100' phrase in index.html, README, LAUNCH.md, DISTRIBUTION.md, marketing/*.md; assert the set of amounts == {29, 49} and the who-gets-it wording is identical.",
+  "fix": "Say 'the first 100 buyers' everywhere, and delete 'on the list'."
+ },
+ {
+  "id": "C043",
+  "claim": "The founder price is only for the first 100 people on the list / you get it before anyone else",
+  "where": [
+   "marketing/launch-posts-v2.md",
+   "marketing/launch-email.md"
+  ],
+  "where_text": [
+   "The $29 founder price is for the first 100 buyers, whoever buys first",
+   "The first 100 buyers pay $29 instead of $49, whoever"
+  ],
+  "status": "fixed",
+  "proof": "packaging/go-live.sh deploys the Buy page (and the checkout link with FOUNDER29 applied automatically) before it prints the waitlist for the email (LAUNCH.md steps 3-4); the first 100 redemptions go to whoever buys first, list member or not. Posts and email contradict the mechanism.",
+  "layer": "legal",
+  "assertion": "Process check: send the email before go-live deploys the Buy page, or change the wording.",
+  "fix": "Email: 'The first 100 buyers pay $29 instead of $49.' Posts: drop 'on the list'.",
+  "fixed_by": "wording",
+  "fixed": "'Before anyone else' would only be true if the email went out before the Buy page is live; go-live.sh deploys the page first and the email is sent by hand afterwards, and reordering is a bigger promise than the founder price needs. So the promise is dropped: the first 100 buyers pay $29, whoever buys first. LAUNCH.md now says so.",
+  "test": "Offer.test_founder_price_is_for_the_first_100_buyers_everywhere, Style.test_banned_phrases_are_absent"
+ },
+ {
+  "id": "C044",
+  "claim": "Licence includes every language, both platforms, iPad and tablets and export to fastlane",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Every language, both platforms, iPad and tablets, and export to fastlane"
+  ],
+  "status": "partial",
+  "proof": "Gating: PolarLicence.test_run_without_a_licence_is_the_free_tier_export_is_not (free run capped at 2 languages, export refused); Licence.test_released_build_needs_a_licence_for_run. The cap reaches both platform runs (shotfleet.py:1004,1206) but no test follows it into ios_run/android_run. The free tier also includes iPad/tablet (only languages are capped).",
+  "layer": "unit",
+  "assertion": "With LOCALE_CAP=2 and a stub runner, ios_run and android_run receive exactly 2 locales; export raises NoLicence (exit 2).",
+  "fix": ""
+ },
+ {
+  "id": "C045",
+  "claim": "Up to 3 of your Macs and your CI, unlimited apps; one licence per developer",
+  "where": [
+   "site/public/index.html",
+   "site/public/terms.html",
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "Up to 3 of your Apple silicon Macs and your CI, unlimited apps",
+   "One licence is for one developer. Use it on up to three of your own Macs and in your CI.",
+   "Unlimited apps and projects, including client and commercial work."
+  ],
+  "status": "partial",
+  "proof": "Client: GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing (the 4th activation is refused and spends nothing), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, PolarLicence.test_ci_key_validates_without_taking_an_activation and GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Never run against the real Gumroad with this product (no product exists yet); the fake follows Gumroad's help article and Keysi's live measurements (a real purchase verified there 2026-09-11). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs.",
+  "layer": "device",
+  "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key from 4 different Macs (or by clearing licence.json): the 4th is refused with 'all 3 activations' and the Gumroad Uses row still reads 3; SHOTFLEET_KEY validates and the Uses row does not move.",
+  "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8)."
+ },
+ {
+  "id": "C046",
+  "claim": "The licence is checked online once and then about weekly, and works offline for 30 days",
+  "where": [
+   "site/public/index.html",
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "The licence is checked online once and then about weekly, and works offline for 30 days.",
+   "re-checks at most weekly, works offline for 30 days"
+  ],
+  "status": "proven",
+  "proof": "Licence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C047",
+  "claim": "Gumroad: a refunded, charged-back or disputed key stops working at the next weekly check (a won dispute keeps working)",
+  "where": [
+   "site/public/terms.html",
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "ask for a refund within 14 days of buying and you'll get it",
+   "refunds, chargebacks and disputes are\n  refused"
+  ],
+  "status": "partial",
+  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid.",
+  "layer": "device",
+  "assertion": "Real Gumroad product: buy with a test code, refund the sale in the dashboard, set licence.json 'checked' back 8 days and run `shotfleet export`: it must raise NoLicence ('refunded').",
+  "fix": "",
+  "fixed_by": "code",
+  "fixed": "Rewritten for Gumroad 2026-10-02. gumroad_verify checks refunded, chargebacked and disputed (a won dispute keeps the licence) and treats a 5xx as an outage, not a verdict. Not run against live Gumroad: no product exists yet.",
+  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation"
+ },
+ {
+  "id": "C048",
+  "claim": "Free at launch: capture 2 languages with run; no account",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html",
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "Capture up to 2 languages with <code>run</code>",
+   "<li>No account</li>",
+   "Free tier: capture 2 languages and check any screenshots."
+  ],
+  "status": "partial",
+  "proof": "PolarLicence.test_run_without_a_licence_is_the_free_tier_export_is_not (LOCALE_CAP == 2; cap_locales keeps the first two), Licence tests. No account: activation needs only a key; check/init/doctor/2-language run need no network. Not tested end to end on a frozen build (cold-test-2.md #25: 'gate OFF in that build, free tier could not be exercised'). The cap is per run, not per month: two runs of two languages give four.",
+  "layer": "fixture",
+  "assertion": "Frozen-style test: with no licence file and sys.frozen patched, `main(['run','x.toml','--locales','de,ja,fr'])` captures exactly de and ja and prints the 'free tier' line; MCP run does the same.",
+  "fix": ""
+ },
+ {
+  "id": "C049",
+  "claim": "The licence is for 'run' and 'export' only; check is free",
+  "where": [
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "<code>run</code> is free for up to 2 languages. The licence unlocks every language and <code>export</code>."
+  ],
+  "status": "fixed",
+  "proof": "Contradicts the page's own free tier: run works for 2 languages without a licence (index.html free plan, shotfleet.py:2250). Terms say the licence 'unlocks run'.",
+  "layer": "site",
+  "assertion": "Static: terms.html and index.html agree on what the free tier includes (grep for '2 languages' in both).",
+  "fix": "<code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages; the licence unlocks every language and <code>export</code>.",
+  "fixed_by": "wording",
+  "fixed": "terms.html said the licence unlocks run and export; run is free for 2 languages (apply_free_tier). Terms now say check is free, run is free for up to 2 languages, the licence unlocks every language and export; README and DISTRIBUTION say the same and the number is read from FREE_LANGUAGES in the code.",
+  "test": "Offer.test_free_tier_wording_matches_the_code_on_every_page"
+ },
+ {
+  "id": "C050",
+  "claim": "A key has 3 activations: deactivate removes it from a Mac but cannot give one back; a fourth Mac means an email and a manual reset; don't share your key",
+  "where": [
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "A key can be activated 3 times, and activating again on a Mac that already holds it counts nothing."
+  ],
+  "status": "proven",
+  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried.",
+  "layer": "unit",
+  "assertion": "Already covered; add: a human resets a Uses row once in the real dashboard.",
+  "fix": ""
+ },
+ {
+  "id": "C051",
+  "claim": "A year of updates is included",
+  "where": [
+   "site/public/index.html",
+   "site/public/terms.html",
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "A year of updates; after that your version keeps working while macOS and your tools allow",
+   "A year of updates is included.",
+   "A year of updates is part of the $49"
+  ],
+  "status": "partial",
+  "proof": "No mechanism enforces or even defines the year: installs are an open download (site/public/download is served without a key; install.sh), the licence key 'never expires' (LAUNCH.md:12) and the client never compares a release date with a purchase date. As a promise it holds trivially for the first year; it only matters at renewal.",
+  "layer": "legal",
+  "assertion": "Decide the rule (updates after 12 months need a renewal key) before the first buyer's anniversary: until then there is nothing to test.",
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "Reworded to what the code does: nothing enforces the year (the install is an open download, the key never expires). It is a promise to ship updates for a year; afterwards your version keeps working while macOS and your tools allow and the licence check can run. Not built: an 'updates until' date, because the product does not yet define what the year counts from.",
+  "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
+ },
+ {
+  "id": "C052",
+  "claim": "After the year, the version you have keeps working as long as macOS, Xcode and Maestro let it",
+  "where": [
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run"
+  ],
+  "status": "partial",
+  "proof": "The released build asks Gumroad's licence API about its key about weekly and stops after 30 offline days or when Gumroad says the key does not exist or the purchase was refunded, charged back or disputed. A 5xx or timeout never invalidates (GumroadLicence.test_a_gumroad_outage_is_not_a_verdict). So it still depends on Gumroad's API shape and on the product staying published: a promise of 'keeps working' is stronger than the code (third-party dependency, no kill-proof fallback).",
+  "layer": "unit",
+  "assertion": "Release gate that pins the Gumroad licence answer shape used (success, uses, purchase.refunded/chargebacked/disputed).",
+  "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Gumroad) is reachable at least once every 30 days.'",
+  "fixed_by": "wording",
+  "fixed": "Terms now say it exactly: the version keeps working as long as macOS, Xcode and Maestro let it and the licence check can run (about weekly, offline for up to 30 days). The weekly/30-day numbers are read from the code in a test.",
+  "test": "Offer.test_limits_match_the_code"
+ },
+ {
+  "id": "C053",
+  "claim": "You can renew for another year of updates",
+  "where": [
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "I plan to offer an optional renewal for further updates after the first year; it is not available yet."
+  ],
+  "status": "fixed",
+  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic.",
+  "layer": "legal",
+  "assertion": "A Gumroad product 'shotfleet renewal' exists and its key extends the update window.",
+  "fix": "After a year, I plan to offer an optional renewal for further updates (not available yet).",
+  "fixed_by": "wording",
+  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.'",
+  "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
+ },
+ {
+  "id": "C054",
+  "claim": "14-day refund, no questions asked",
+  "where": [
+   "site/public/index.html",
+   "site/public/terms.html",
+   "marketing/launch-email.md",
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "14-day refund.",
+   "If shotfleet doesn't work for your app, ask for a refund within 14 days of buying and you'll get it, no questions asked.",
+   "If it doesn't work for your app, reply within 14 days and I'll refund you.",
+   "14-day refunds"
+  ],
+  "status": "partial",
+  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
+  "layer": "legal",
+  "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
+  "fix": "Drop either 'if shotfleet doesn't work for your app' or 'no questions asked'."
+ },
+ {
+  "id": "C055",
+  "claim": "Payment goes through Gumroad as merchant of record, which handles VAT; I never see your card details",
+  "where": [
+   "site/public/terms.html",
+   "site/public/privacy.html",
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "You buy through Gumroad, which sells shotfleet to you as the merchant of record.",
+   "which sells shotfleet to you as the merchant of record",
+   "Payments are on **Gumroad** (merchant of record since 2025-01-01"
+  ],
+  "status": "evidence",
+  "proof": "Gumroad's own pages read 2026-10-02 say it is merchant of record for all sales since 2025-01-01 and collects and remits VAT and sales tax worldwide (gumroad.com/pricing; help 121 and 10; its terms). Prices are before VAT (Gumroad cannot make a digital price VAT-inclusive), which the page, terms and README now say. Not seen on a live shotfleet checkout: no product exists yet.",
+  "layer": "legal",
+  "assertion": "Human: open the live checkout from a Dutch IP or card country and see VAT added on top of $29; check the receipt.",
+  "fix": ""
+ },
+ {
+  "id": "C056",
+  "claim": "The founder price applies automatically for the first 100 (a code applied automatically on the Gumroad product)",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "the founder price applies automatically for the first 100 buyers."
+  ],
+  "status": "unverifiable",
+  "proof": "Depends on the Gumroad product having FOUNDER29 ($20 off, limit 100 uses) set to apply automatically (research/gumroad-setup.md checklist step 5), which does not exist yet. Unverified: what the page shows once the 100 uses are spent (Gumroad documents only a validity-period end as returning to the full price), and whether a test purchase uses one.",
+  "layer": "legal",
+  "assertion": "Human: open the product page in a private window and read $49 crossed out and $29 in the order summary; after a test of the limit (or at 100 uses) it must read $49.",
+  "fix": ""
+ },
+ {
+  "id": "C057",
+  "claim": "Install: curl -fsSL .../install.sh | sh, then shotfleet activate <key> (checksum-verified, on the PATH)",
+  "where": [
+   "site/public/index.html",
+   "README.md",
+   "marketing/launch-email.md"
+  ],
+  "where_text": [
+   "curl -fsSL https://shotfleet.com/install.sh | sh",
+   "curl -fsSL https://shotfleet.com/install.sh | sh",
+   "Install: curl -fsSL https://shotfleet.com/install.sh | sh"
+  ],
+  "status": "untested",
+  "proof": "install.sh is live (curl 2026-10-02: 200 text/plain) but https://shotfleet.com/download/VERSION is 404: no release is published, so the one-liner fails today (expected before launch; packaging/release.sh publishes it). DISTRIBUTION.md Status 2026-10-01: install tested incl. quarantine. install.sh honours SHOTFLEET_BASE for testing.",
+  "layer": "device",
+  "assertion": "Release gate: serve dist tarball + .sha256 locally, run `SHOTFLEET_BASE=http://127.0.0.1:8000 sh install.sh` under a throwaway HOME, assert `shotfleet --version` runs, a tampered checksum is refused, and Intel Macs get the message.",
+  "fix": ""
+ },
+ {
+  "id": "C058",
+  "claim": "The installed program is signed and notarized (Apple silicon), brings its own Python and needs no Gatekeeper prompt",
+  "where": [
+   "README.md",
+   "README.md"
+  ],
+  "where_text": [
+   "# signed, notarized; Apple silicon",
+   "The installed program brings its own Python."
+  ],
+  "status": "evidence",
+  "proof": "DISTRIBUTION.md Status 2026-10-01: Apple accepted the 0.1.0 build; quarantined copy ran without a prompt. But the only binary in this checkout (dist/shotfleet, one-file) is 'rejected, source=Unnotarized Developer ID' (spctl, 2026-10-02) and research/pricing-2026-10.md says 'never notarized' - stale or contradictory. A curl download carries no quarantine flag, so Gatekeeper is not consulted anyway; the claim matters for browser downloads only.",
+  "layer": "device",
+  "assertion": "After packaging/release.sh: extract the tarball, add the quarantine flag and run `shotfleet --version`: it must print the version within 90 s (an unnotarized quarantined copy hangs and is killed; `spctl -t exec` cannot assess a bare executable); `codesign --verify --deep --strict` passes; run it under `env -i` with python3 absent from PATH.",
+  "fix": ""
+ },
+ {
+  "id": "C059",
+  "claim": "doctor checks Maestro, Java, Xcode and the Android SDK and says how to fix what is missing",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "# checks Maestro, Java, Xcode, Android SDK"
+  ],
+  "status": "partial",
+  "proof": "JavaForMaestro.* (Java detection), FirstRun.* ; `python3 shotfleet.py doctor` output format read in code (shotfleet.py:1714-1752); research/cold-test-2.md #6 (clean-env run). No unit test of cmd_doctor's table.",
+  "layer": "unit",
+  "assertion": "Patch shutil.which/sh to simulate a Mac with nothing installed: doctor returns 2 and prints one MISSING line with a fix per tool; with all present returns 0.",
+  "fix": ""
+ },
+ {
+  "id": "C060",
+  "claim": "init writes a starter config and flow; no appId needed, one flow serves iOS and Android",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android."
+  ],
+  "status": "proven",
+  "proof": "SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, test_only_the_build_is_required_and_ids_come_from_it, test_init_takes_several_builds_into_one_small_config, test_init_refuses_two_builds_of_one_platform_and_creates_nothing; LocalizeFlow.test_flow_without_header_is_rejected_clearly.",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C061",
+  "claim": "shotfleet run finds ./shotfleet.toml and runs both platforms; --platform ios for one; --locales for some",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one"
+  ],
+  "status": "proven",
+  "proof": "SimpleConfig.test_run_goes_through_every_platform_in_the_file; `python3 shotfleet.py run --help` shows --platform {ios,android}, --locales, --parallel, --json, --no-hooks, config default ./shotfleet.toml (2026-10-02).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C062",
+  "claim": "A typo or a wrong type in the config is refused with a one-line message before anything runs",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "A typo or a wrong type is refused"
+  ],
+  "status": "proven",
+  "proof": "SimpleConfig.test_unknown_keys_and_wrong_types_are_one_line_errors, Config.test_mistakes_are_reported_as_one_line_with_the_fix, Config.test_cli_exits_2_with_a_message_instead_of_a_traceback, Extending.test_config_tables_are_validated. Config is validated before the Maestro check (shotfleet.py:73-135).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C063",
+  "claim": "Config keys documented in the README (flow, out, parallel, locales, base_locale, bundle_id, device_type, runtime, device_types, devices)",
+  "where": [
+   "README.md",
+   "README.md"
+  ],
+  "where_text": [
+   "device_types = [\"iPhone 17 Pro Max\", \"iPad Pro 13-inch (M5)\"]",
+   "devices = [\"phone\", \"tablet\"]"
+  ],
+  "status": "partial",
+  "proof": "Every README key is in KEYS (shotfleet.py:34-36). iPhone+iPad: MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices. Android devices: only the hook test uses 'tablet'. 'timeout_s' is accepted but undocumented.",
+  "layer": "unit",
+  "assertion": "Test that every key shown in the README config block is accepted by load_config (parse the README fenced blocks).",
+  "fix": ""
+ },
+ {
+  "id": "C064",
+  "claim": "Exit codes: 0 all good, 1 problems found, 2 setup error, 130 interrupted; run and check take --json",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted."
+  ],
+  "status": "partial",
+  "proof": "CheckAnyFolder.test_json_mode_keeps_stdout_machine_readable (exit 2 case only), Config.test_cli_exits_2..., PolarLicence (export exit 2). cold-test-2.md #4 verified 130 and #5 the JSON shape (stale: doctor exit code since changed to 2).",
+  "layer": "unit",
+  "assertion": "Subprocess matrix: check ok -> 0 with JSON keys exit/screenshots/problems/notes; check with a planted problem -> 1; missing folder -> 2; SIGINT -> 130.",
+  "fix": ""
+ },
+ {
+  "id": "C065",
+  "claim": "run, check and export all take --json",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`run`, `check` and `export` take `--json` and use stable exit codes"
+  ],
+  "status": "fixed",
+  "proof": "`python3 shotfleet.py export x --fastlane y --json` -> 'error: unrecognized arguments: --json' (run 2026-10-02); only run and check define --json (shotfleet.py:1989-2003; export --help).",
+  "layer": "unit",
+  "assertion": "For every sub-command named in the README sentence, argparse must accept --json.",
+  "fix": "`run` and `check` take `--json`; all three use stable exit codes.",
+  "fixed_by": "code",
+  "fixed": "export had no --json (argparse refused it). Added --json to export: stdout carries {exit, exported, skipped}, progress goes to stderr, same as run and check. README now documents all three.",
+  "test": "JsonReports.test_export_json_reports_what_was_written_and_skipped, DocumentedCommands.test_json_flag_is_on_run_check_and_export"
+ },
+ {
+  "id": "C066",
+  "claim": "CI recipe: GitHub Actions job running python3 shotfleet.py check ... --json",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json"
+  ],
+  "status": "fixed",
+  "proof": "A buyer installs the signed program, not shotfleet.py (README.md:229 'The installed program brings its own Python'; source is not shipped, DISTRIBUTION.md). The recipe cannot run as written; it is marked 'hasn't been run on GitHub yet' (honest) but is still the wrong command. Also needs install.sh on the runner and, for run, SHOTFLEET_KEY.",
+  "layer": "device",
+  "assertion": "Run the recipe on a macos-15 runner in a private repo with the released binary: exit 0 and the artifact contains check.json.",
+  "fix": "- run: curl -fsSL https://shotfleet.com/install.sh | sh  then  shotfleet check fastlane/ --app ... --json > check.json",
+  "fixed_by": "wording",
+  "fixed": "The recipe ran python3 shotfleet.py, which buyers do not have (they get the signed program). It now installs with install.sh and runs the installed shotfleet command; a test parses the recipe's command line with the real argument parser, and another runs check --json and parses its output (exit, screenshots, problems). SHOTFLEET_KEY, which the code does read, is documented under the recipe for run and export. 'Not run on GitHub yet' stays in the README because it is still true.",
+  "test": "DocumentedCommands.test_ci_recipe_uses_the_installed_command_and_a_json_flag_that_exists, JsonReports.test_check_json_is_valid_json_with_the_documented_keys_and_nothing_else_on_stdout"
+ },
+ {
+  "id": "C067",
+  "claim": "shotfleet mcp is an MCP server with check, run and doctor tools",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`shotfleet mcp` is an MCP server with `check`, `run` and `doctor` tools."
+  ],
+  "status": "proven",
+  "proof": "Mcp.test_protocol_handshake_tools_and_errors; MCP_TOOLS lists check, doctor, run (shotfleet.py:2012-2031). `claude mcp add shotfleet -- shotfleet mcp` and the skill folder skill/shotfleet/ exist (not run with Claude Code).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C068",
+  "claim": "Hooks (before/after run and export) and --no-hooks; failing before_* stops (exit 2), failing after_* makes exit 1; documented variables",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices."
+  ],
+  "status": "partial",
+  "proof": "Extending.test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure, test_before_run_failure_aborts_after_run_failure_changes_the_exit_code, test_after_run_counts_problems_across_all_devices_of_a_multi_device_run, test_no_hooks_flag_and_export_hooks. Mismatches with the documented variable list (README.md:186-188): SHOTFLEET_BUNDLE_ID is not set for export hooks, and SHOTFLEET_LOCALES is empty unless --locales or `locales` restricts the run (shotfleet.py:946-948, 2236-2238).",
+  "layer": "unit",
+  "assertion": "Hook test that dumps `env | grep SHOTFLEET_` for each of the four events and compares with a table generated from the README sentence.",
+  "fix": "Say which variables each event gets; fill SHOTFLEET_LOCALES with the languages actually run."
+ },
+ {
+  "id": "C069",
+  "claim": "Overrides ([overrides.tr]) and shotfleet-<name> plugins on the PATH",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "**Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH"
+  ],
+  "status": "proven",
+  "proof": "Extending.test_override_wins_over_the_apps_strings_and_re_prefix_is_a_regex, test_overrides_of_several_languages_in_one_android_round_are_or_ed, test_unknown_command_runs_a_shotfleet_plugin_from_the_path.",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C070",
+  "claim": "Permission prompts are drawn in the device language (English); write those taps in English, shotfleet keeps the English text matchable; Android installs with every permission granted",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Write those taps in English; shotfleet keeps the English text matchable."
+  ],
+  "status": "partial",
+  "proof": "LocalizeFlow.test_system_dialog_buttons_keep_their_english_text; one measurement on iOS with Maps (research/pricing-2026-10.md). marketing/launch-posts-v2.md:119 forbids claiming 'live permission-alert taps', i.e. never run end to end. Android side (install -g, shotfleet.py:1229) untested.",
+  "layer": "fixture",
+  "assertion": "Fixture app requests location permission: flow taps 'Allow While Using App' in de and asserts the screenshot after it.",
+  "fix": ""
+ },
+ {
+  "id": "C071",
+  "claim": "Text recognition reads 33 languages incl. Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese, Korean; others only get the weaker checks",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Text recognition is macOS's. It reads 33 languages"
+  ],
+  "status": "evidence",
+  "proof": ".build/ocr --langs printed 33 codes on this Mac (macOS 27, 2026-10-02); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer). Weaker-check behaviour: JudgeScreen tests and ExternalOcr test.",
+  "layer": "unit",
+  "assertion": "Test: judge_screen returns (None, None) for a Greek/Hebrew screen macOS cannot read and check prints 'macOS can't read the script of ...'. CI on the oldest supported macOS records len(--langs).",
+  "fix": ""
+ },
+ {
+  "id": "C072",
+  "claim": "If macOS text recognition gets stuck, check switches to Tesseract automatically when installed, otherwise says to restart",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`check` switches to Tesseract automatically when it's installed"
+  ],
+  "status": "proven",
+  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, test_without_tesseract_it_says_how_to_fix.",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C073",
+  "claim": "Android needs API 33+ emulators; macOS only; launchApp options must be a block; typed text isn't translated",
+  "where": [
+   "README.md",
+   "README.md"
+  ],
+  "where_text": [
+   "Android needs API 33+ emulators for per-app languages.",
+   "`launchApp` options must be written as a block"
+  ],
+  "status": "partial",
+  "proof": "LocalizeFlow.test_inline_launch_app_options_are_rejected_clearly. API 33 is a documented limit; research/limits-platforms.md argues it excludes almost nobody.",
+  "layer": "unit",
+  "assertion": "Android pool refuses an AVD older than API 33 with a one-line message (check it exists).",
+  "fix": ""
+ },
+ {
+  "id": "C074",
+  "claim": "Tips: dismiss late dialogs with a repeat/while loop; each language starts from a clean install (iOS clearState, Android app data cleared by shotfleet)",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "**Fresh state:** each language starts from a clean install."
+  ],
+  "status": "proven",
+  "proof": "LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first, test_later_launch_app_keeps_state_but_gets_language, AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; PLAN.md item 1 (late dialog fixed on iOS and Android).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C075",
+  "claim": "README upload recipes (fastlane deliver / supply flags) upload screenshots only and touch nothing else",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --force"
+  ],
+  "status": "evidence",
+  "proof": "Option names verified to exist with fastlane installed here on 2026-10-02 (deliver: skip_binary_upload, skip_metadata, force, overwrite_screenshots; supply: skip_upload_apk/aab/metadata/changelogs/images). The recipe was never run against App Store Connect or Play (README: 'Run shotfleet check right before uploading').",
+  "layer": "device",
+  "assertion": "Unit (when fastlane is installed): option names appear in `fastlane action deliver` / `supply`. Device: dry-run against a sandbox app (deliver --verify_only).",
+  "fix": ""
+ },
+ {
+  "id": "C076",
+  "claim": "By default this site sets no cookies and loads nothing from other servers; Google Analytics runs only after an explicit Accept analytics",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "By default this site sets no cookies and loads nothing from other servers. Google Analytics runs only if you press Accept analytics"
+  ],
+  "status": "evidence",
+  "proof": "Static: tests/test_consent.py (Consent.test_nothing_calls_gtag_before_consent, Consent.test_placeholder_id_loads_nothing, Consent.test_csp_lines_are_exactly_what_ga4_needs): ga.js returns before anything while GA_ID is the placeholder, every gtag call and the googletagmanager.com script injection sit in start(), which runs only on a stored or fresh 'granted'. Every other script, stylesheet and image is same-origin (Structure.test_no_resource_comes_from_another_server). The first-party counter sets no cookie. Not code-pinned: the Cloudflare dashboard (Web Analytics, Bot Fight Mode) can add beacons or cookies without a deploy; Cloudflare also adds `report-to`/`nel` headers and wrangler.toml enables Workers observability logs. Live check after deploy: curl -D- https://shotfleet.com/ shows no Set-Cookie, and a fresh browser profile makes no request to google domains before Accept.",
+  "layer": "site",
+  "assertion": "Static: only ga.js may inject a script from another origin, and only googletagmanager.com is in script-src; Live: no Set-Cookie and no request to a Google host before Accept.",
+  "fix": ""
+ },
+ {
+  "id": "C077",
+  "claim": "On the home page the site adds one to a running total per page view and per action (reaching the run or pricing section, a button click), split by day, source and browser language; the totals are not linked to you and your IP address is not stored (counted whether or not you accept analytics)",
+  "where": [
+   "site/public/privacy.html",
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.",
+   "Those totals are not linked to you and your IP address is not stored."
+  ],
+  "status": "partial",
+  "proof": "site/worker.test.mjs: 'visits are counted per day, source and language', 'known events are kept, unknown ones count as a view', 'source is sanitised', 'a visit stores nothing about the visitor'. Code: worker.js /api/hit keeps only key hit:<day>|<source>|<lang>|<event> -> integer; site/public/analytics.js sends only {src, ev}. Counts are batched per isolate and can be lost when an isolate is recycled, so totals can undercount. Whether Cloudflare's Workers Logs retain request IPs is unchecked.",
+  "layer": "site",
+  "assertion": "Worker test with HIT_BATCH=1: one /api/hit with cf-connecting-ip=1.2.3.4 and a User-Agent writes exactly one KV key, whose key and value contain neither; forms.js sends only {src}.",
+  "fix": ""
+ },
+ {
+  "id": "C078",
+  "claim": "Beyond the counter (and your analytics choice, kept in your own browser), the only thing stored is what you send when you join the waitlist or write to me",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me."
+  ],
+  "status": "partial",
+  "proof": "worker.test.mjs asserts stack/platform/at for signups, not the full set of stored fields. worker.js stores email, at, platform, stack, country, ref (and for messages: message, reply email, country). It also logs {event, country}; Cloudflare's rate limiter is keyed by IP. 'platform' (derived from stack) is not listed in privacy.html.",
+  "layer": "site",
+  "assertion": "worker.test.mjs: after signup and contact, the KV record's keys equal {at, platform, stack, country, ref} / {message, email, country}; no value equals the request IP or user agent.",
+  "fix": ""
+ },
+ {
+  "id": "C079",
+  "claim": "The waitlist stores your email, what you build with, your country and browser language, the referrer and utm_ tags, and the time; the IP address itself isn't stored",
+  "where": [
+   "site/public/privacy.html",
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Your country, which Cloudflare works out from your IP address, and your browser's language. The IP address itself isn't stored.",
+   "The site that linked you here and any <code>utm_</code> tags in the link"
+  ],
+  "status": "partial",
+  "proof": "worker.js:58-67 stores exactly those fields and the IP only as the rate-limit key (not persisted by the code). forms.js:6-9 sends only the referrer host and utm_* pairs. worker.test.mjs does not assert ref or country. Whether Cloudflare's Workers Logs keep the client IP (observability enabled in wrangler.toml) is not checked.",
+  "layer": "site",
+  "assertion": "worker test: signup with ref='news.ycombinator.com utm_source=x' stores ref verbatim (<=300 chars) and never the cf-connecting-ip value; check the Cloudflare log settings by hand.",
+  "fix": ""
+ },
+ {
+  "id": "C080",
+  "claim": "I send one email when shotfleet is available; I don't share, sell it or add you to any other list",
+  "where": [
+   "site/public/privacy.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "To send you one email when shotfleet is available to buy",
+   "I’ll email you once, when it’s ready."
+  ],
+  "status": "unverifiable",
+  "proof": "A commitment, not a fact. The waitlist exists (worker.test.mjs: signup 200, stored, honeypot not stored).",
+  "layer": "legal",
+  "assertion": "Process: the launch email goes only to email: keys; contact-form reply addresses (msg: keys) are never added.",
+  "fix": "Keep as a commitment."
+ },
+ {
+  "id": "C081",
+  "claim": "I delete the list 30 days after the launch email goes out, or sooner if you ask",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "I will delete the waitlist within 30 days after I send the launch email, or sooner if you ask."
+  ],
+  "status": "partial",
+  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence.",
+  "layer": "site",
+  "assertion": "Assert wrangler.toml has a scheduled purge or worker.js passes expirationTtl to put(); or a signups.sh --purge exists and the launch checklist (LAUNCH.md) lists it.",
+  "fix": "Add the 30-day purge to LAUNCH.md and implement it; extend the sentence to messages.",
+  "fixed_by": "code",
+  "fixed": "There was no mechanism. Added site/signups.sh --purge-waitlist (shows the count, asks for PURGE, bulk-deletes every email: record; messages and visit counts stay) and a step 5 in LAUNCH.md. The privacy page now says what I actually do by hand: 'I will delete the waitlist within 30 days after I send the launch email'. Still a manual step, no timer.",
+  "test": "WaitlistPurge.test_typing_purge_deletes_exactly_the_email_records, WaitlistPurge.test_anything_else_deletes_nothing"
+ },
+ {
+  "id": "C082",
+  "claim": "Enter the address you signed up with and it's deleted right away",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Enter the address you signed up with and it's deleted right away"
+  ],
+  "status": "partial",
+  "proof": "worker.test.mjs 'forget removes' (email:<address> deleted; bad address 400). The same address left in a contact message (msg: keys) is not removed; KV deletes are eventually consistent (up to ~60 s globally); the endpoint is unauthenticated (anyone can remove anyone).",
+  "layer": "site",
+  "assertion": "Worker test: forget removes email: and any msg: record whose email equals it (not implemented), and answers identically whether or not it existed.",
+  "fix": "Say 'removes your waitlist entry; email me to delete a message you sent'.",
+  "fixed_by": "code",
+  "fixed": "Contact messages are now stored with the reply address in the KV metadata, and /api/forget deletes the email: record and every msg: record whose reply address matches (first 1,000 messages). Tested in site/worker.test.mjs. The privacy page says so.",
+  "test": "worker.test.mjs: 'forget removes the messages left with that reply address'"
+ },
+ {
+  "id": "C083",
+  "claim": "The contact form sends a message to me",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Email me at <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a>, or write here."
+  ],
+  "status": "partial",
+  "proof": "worker.js:29-42 implements /api/contact; worker.test.mjs has no contact test (nor 404/405/413/429 paths or the 2,000-character limit). 2026-10-02 site/worker.test.mjs: contact 200, too short, too long, bad reply address, honeypot (all 400/200 as designed); not run against real KV.",
+  "layer": "site",
+  "assertion": "Worker tests: 200 and a stored msg: record; message < 2 chars 400; > 2000 chars 400; honeypot silently dropped; bad reply email 400; rate limiter false -> 429.",
+  "fix": ""
+ },
+ {
+  "id": "C084",
+  "claim": "Cloudflare Workers KV stores the list; Cloudflare also processes your IP to serve the page and to limit how often forms can be sent",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "In Cloudflare Workers KV, the storage for the small server behind this page."
+  ],
+  "status": "partial",
+  "proof": "wrangler.toml: [[kv_namespaces]] WAITLIST and [[ratelimits]] 5 per 60 s per IP. worker.test.mjs stubs LIMITER to always succeed, so the 429 branch is never run. 2026-10-02 site/worker.test.mjs: 429 when the limiter refuses (nothing stored, page-view counting unaffected), 405 on GET, 404 on unknown paths; the real limiter and KV are not exercised.",
+  "layer": "site",
+  "assertion": "Static check of wrangler.toml for the KV binding and ratelimits; worker test with LIMITER returning {success:false} -> 429 and no KV write.",
+  "fix": ""
+ },
+ {
+  "id": "C085",
+  "claim": "Licence key is checked with Gumroad on activation and about weekly: the key, the product ID and whether to count an activation; no Mac name",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "The installed program checks your licence key with Gumroad when you activate it and about once a week after. It sends Gumroad your key, the product ID, and whether the call should count as an activation (only the first call on a new Mac does); it sends no Mac name, no activation id and no program version, and the request carries your IP address and Python's standard user-agent string."
+  ],
+  "status": "proven",
+  "proof": "GumroadLicence.test_nothing_counts_a_use_except_one_activation records the raw form fields the fake server receives: exactly product_id, license_key and increment_uses_count (no label, no hostname, no activation id), and the request has no custom User-Agent (Python's default is sent). The CLI's `doctor` also asks this site for /download/VERSION (said on the page).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "Rewritten for Gumroad 2026-10-02: Gumroad's licence API takes only product_id, license_key and increment_uses_count, so the Mac name, activation id and program version the Polar path sent are gone from the text.",
+  "test": "PrivacyPage.test_privacy_says_what_the_program_and_the_site_really_do, GumroadLicence.test_nothing_counts_a_use_except_one_activation"
+ },
+ {
+  "id": "C086",
+  "claim": "I receive your name, email, country and order details from Gumroad so I can support you",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "I receive your name, email, country and order details so I can support you."
+  ],
+  "status": "unverifiable",
+  "proof": "Depends on Gumroad's seller dashboard and sales export (name, email, country are in the sale record); no sale exists yet.",
+  "layer": "legal",
+  "assertion": "Human: check what Gumroad's order export contains once the first sale lands.",
+  "fix": ""
+ },
+ {
+  "id": "C087",
+  "claim": "404 page: 'There's no page here' and unknown URLs get it",
+  "where": [
+   "site/public/404.html"
+  ],
+  "where_text": [
+   "There's no page here."
+  ],
+  "status": "partial",
+  "proof": "wrangler.toml not_found_handling = '404-page'; live 2026-10-02: /alternatives returned 404 text/html (the draft is not published). No test.",
+  "layer": "site",
+  "assertion": "Live: GET /no-such-page returns status 404 and body contains 'There's no page here'; the draft page is not reachable.",
+  "fix": ""
+ },
+ {
+  "id": "C088",
+  "claim": "Signup: 'You're on the list' then an optional question what you build with",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "You’re on the list.",
+   "One more thing, if you like: what do you build with?"
+  ],
+  "status": "partial",
+  "proof": "worker.test.mjs: signup 200, case-folded email, follow-up adds stack and keeps the date, second answer does not overwrite, swift implies ios, unknown stack dropped, bad email 400, honeypot not stored, forget removes (node site/worker.test.mjs, 2026-10-02, all ok). forms.js (front end, referrer, error text) has no test; rate limit, size limits, 404/405 untested.",
+  "layer": "site",
+  "assertion": "jsdom or Playwright-less script test of forms.js: submit success shows #signup-done, 429/500 show the error text, honeypot field is sent.",
+  "fix": ""
+ },
+ {
+  "id": "C089",
+  "claim": "go-live switches the page from the waitlist to Buy (both versions of the text are audited)",
+  "where": [
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "turns the page into \"Buy shotfleet\" with your product URL"
+  ],
+  "status": "evidence",
+  "proof": "Audit snippet 2026-10-02 applying packaging/go-live.sh's two regexes in memory to the current index.html: no 'waitlist', 'early access', 'isn’t released', '@CHECKOUT@' or signup form remains; three Buy links; heading becomes 'Buy shotfleet'. The WAITLIST/SALE markers sit on 4-space-indented lines in the header, hero and price card, which the regexes require. The page was being edited during the audit (reveal.js added): this must be re-run after the redesign settles.",
+  "layer": "site",
+  "assertion": "Commit the snippet as a test: run the go-live transform on index.html and assert the remnants list is empty and exactly one SALE install block and one 'checked online once and then about weekly' line remain.",
+  "fix": ""
+ },
+ {
+  "id": "C090",
+  "claim": "Free vs paid: check, doctor and init are free; run and export need a key",
+  "where": [
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "`check`, `doctor`, `init` free; `run` free up to 2 languages; every language and `export` need a key"
+  ],
+  "status": "fixed",
+  "proof": "Stale: run is free for up to 2 languages (shotfleet.py:2250, FREE_LANGUAGES = 2; CHANGELOG.md Unreleased).",
+  "layer": "unit",
+  "assertion": "DISTRIBUTION.md and README agree on the free tier (grep).",
+  "fix": "`check`, `doctor`, `init` free; `run` free up to 2 languages; every language and `export` need a key",
+  "fixed_by": "wording",
+  "fixed": "DISTRIBUTION.md still said run needs a key. Row now: check, doctor, init free; run free up to 2 languages; every language and export need a key.",
+  "test": "Offer.test_free_tier_wording_matches_the_code_on_every_page"
+ },
+ {
+  "id": "C091",
+  "claim": "Updates: shotfleet --version / doctor mention a newer release (GitHub releases API)",
+  "where": [
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "`shotfleet doctor` mentions a newer release (read from the site"
+  ],
+  "status": "fixed",
+  "proof": "--version only prints 'shotfleet 0.1.0' (argparse); only doctor asks the site's /download/VERSION (shotfleet.py:1682-1685), not GitHub.",
+  "layer": "unit",
+  "assertion": "`main(['--version'])` makes no network call; doctor calls latest_release() once.",
+  "fix": "`doctor` mentions a newer release (from the site's /download/VERSION)",
+  "fixed_by": "wording",
+  "fixed": "Not made true in code on purpose: --version stays offline (scripts parse its one line, and a network call there would add a second thing the privacy page must disclose). Only doctor asks the site's /download/VERSION. DISTRIBUTION.md now says that; the privacy page says it too.",
+  "test": "Versions.test_version_makes_no_network_call, Versions.test_doctor_announces_a_newer_release_from_the_sites_version_file"
+ },
+ {
+  "id": "C092",
+  "claim": "Package: universal (Apple silicon + Intel) executable; install with brew install noloman/shotfleet/shotfleet",
+  "where": [
+   "DISTRIBUTION.md",
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "Apple silicon only (arm64)",
+   "No Homebrew formula is published"
+  ],
+  "status": "fixed",
+  "proof": "DISTRIBUTION.md's own Status (line 61-65) says 'Apple silicon only for now', no public repos, curl install; install.sh:6 refuses x86_64. The table above it was never updated.",
+  "layer": "unit",
+  "assertion": "Doc test: DISTRIBUTION.md recommendation table equals its Status section (no 'universal', no brew line).",
+  "fix": "arm64 only; curl install.sh (Homebrew formula kept for later)",
+  "fixed_by": "wording",
+  "fixed": "Intel support is not being built (decided). DISTRIBUTION.md now says Apple silicon only (arm64), curl install, no Homebrew formula published; install.sh refuses non-arm64 and the site, terms and README say Apple silicon.",
+  "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides, Style.test_banned_phrases_are_absent"
+ },
+ {
+  "id": "C093",
+  "claim": "Licence: Gumroad keys are sold (3 activations, one count per key); Polar and Lemon Squeezy keys still work in code; refunded, charged-back and disputed Gumroad keys are refused",
+  "where": [
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "Gumroad is the store: its licence keys count activations (3 per key;"
+  ],
+  "status": "proven",
+  "proof": "GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.* (Lemon Squeezy); PolarLicence.* (mocked). Only Gumroad is sold (LAUNCH.md); Polar was dropped 2026-10-02 because Stripe asks a Dutch resident for a KvK.",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C094",
+  "claim": "fastlane runs one language at a time / is not parallel",
+  "where": [
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "it doesn't check the language of what it captured."
+  ],
+  "status": "fixed",
+  "proof": "Third-party. fastlane snapshot exposes a concurrent_simulators option (parallel across devices; I recall this from fastlane's docs and did not re-fetch it): so 'No' in the draft table is too absolute. research/market-2026.md rates fastlane free, UI-test code per platform. 2026-10-02 posts reworded to 'runs your languages one after another' (the claim that fastlane has no parallel mode stays in the draft table only).",
+  "layer": "legal",
+  "assertion": "Check fastlane's snapshot docs before the page goes live.",
+  "fix": "fastlane snapshot runs your languages one after another on each simulator.",
+  "fixed_by": "removed",
+  "fixed": "Removed the unverifiable 'runs one after another' claim from launch-posts*.md and the draft table; the posts now say fastlane needs UI-test code in the project and doesn't check the captured language (research/pricing-2026-10.md)."
+ },
+ {
+  "id": "C095",
+  "claim": "Design tools like AppScreens cost $99-180/yr; ButterKit Pro $99 once; simshot free, iOS only, 0 stars",
+  "where": [
+   "marketing/launch-posts-v2.md",
+   "site/draft/alternatives.html",
+   "site/draft/alternatives.html"
+  ],
+  "where_text": [
+   "Design tools like AppScreens cost $99–180/yr",
+   "Free (watermarked), $99 once (Pro)",
+   "Very new: 0 stars when checked."
+  ],
+  "status": "evidence",
+  "proof": "research/pricing-2026-10.md section 2 (V = read on the vendor page 2026-10-02 for ButterKit, AppScreens, simshot). Competitor prices change; stale within weeks.",
+  "layer": "legal",
+  "assertion": "Re-read vendor pages on the day the comparison page goes live and print 'checked <date>' on it.",
+  "fix": ""
+ },
+ {
+  "id": "C096",
+  "claim": "I couldn't find any tool that verifies the screenshots are actually in the right language",
+  "where": [
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "I couldn't find any tool that verifies the screenshots are actually in the right language."
+  ],
+  "status": "unverifiable",
+  "proof": "Absence claim; research/market-2026.md lists no such tool, honestly hedged ('I couldn't find').",
+  "layer": "legal",
+  "assertion": "None; keep the hedge.",
+  "fix": ""
+ },
+ {
+  "id": "C097",
+  "claim": "Fixing that properly took 630 lines of one-off script",
+  "where": [
+   "site/draft/alternatives.html"
+  ],
+  "where_text": [
+   "Fixing that properly took 630 lines of one-off script."
+  ],
+  "status": "removed",
+  "proof": "No script in the repo, no mention in any research file or git log (grep 2026-10-02). The page is a draft.",
+  "layer": "legal",
+  "assertion": "None; cite the file or delete.",
+  "fix": "Delete the number.",
+  "fixed_by": "removed",
+  "fixed": "The '630 lines' number had nothing behind it in the repo. The sentence now says 'a one-off script'. (Draft page only.)",
+  "test": "Style.test_banned_phrases_are_absent"
+ },
+ {
+  "id": "C098",
+  "claim": "Two Maestro facts: two maestro test processes share host port 7001 and can drive each other's device; sharded runs expose no shard index",
+  "where": [
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "share host port 7001 and can silently drive each other's device"
+  ],
+  "status": "evidence",
+  "proof": "Code comment shotfleet.py:885-889 (kill_stale_drivers), research/limits-text.md:206 (port 7001-7128 per shard in 2.0.10; random per shard in 2.11); MaestroOutput.test_flow_to_device_map_from_shard_log proves our log-based mapping. Version-dependent third-party behaviour.",
+  "layer": "device",
+  "assertion": "Re-verify on each Maestro 2.x release with two emulators.",
+  "fix": ""
+ },
+ {
+  "id": "C099",
+  "claim": "Proven on CrossfitTracker iOS/Android (18 languages, 9 min / 15 min) and Kuokka Compose (iPhone + 13\" iPad)",
+  "where": [
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "**Proven on:** CrossfitTracker iOS/Android (18 languages, 9 min / 15 min), Kuokka Compose (iPhone + 13\" iPad)."
+  ],
+  "status": "evidence",
+  "proof": "PLAN.md:43; research/pricing-2026-10.md section 1 (Kuokka iOS+iPad, HackerNewsKMP APK). ROADMAP.md:27 puts the iPad proof on remoti, not Kuokka: the two internal documents name different apps.",
+  "layer": "fixture",
+  "assertion": "None; keep dated evidence in a docs/evidence.md table (app, build, date, command, result).",
+  "fix": ""
+ },
+ {
+  "id": "C100",
+  "claim": "shotfleet 'catches' store listings with translated captions over an English app, and screenshot sizes App Store Connect would have refused",
+  "where": [
+   "marketing/launch-email.md",
+   "marketing/launch-email.md"
+  ],
+  "where_text": [
+   "store listings with translated captions over an app that was still in English,",
+   "screenshot sizes App Store Connect would have refused."
+  ],
+  "status": "partial",
+  "proof": "Captions over English UI: evidence (research/real-apps.md remoti: 108 problems, viewed; PLAN.md zh-Hant). The size claim has no recorded instance: the only size findings in the repo are noise from 360 px thumbnails (cold-test-2.md header).",
+  "layer": "unit",
+  "assertion": "Keep a golden sample: an English-UI image under a Japanese caption must produce 'the caption is in ja but the app UI shows en strings'. Drop or substantiate the size line.",
+  "fix": "Delete the third bullet unless a real rejected size is documented."
+ },
+ {
+  "id": "C101",
+  "claim": "Buy link https://shotfleet.com/#price points at the price section",
+  "where": [
+   "marketing/launch-email.md"
+  ],
+  "where_text": [
+   "Buy: https://shotfleet.com/#price"
+  ],
+  "status": "partial",
+  "proof": "index.html has id=\"price\" on the pricing section (line ~305). Live site returns 200.",
+  "layer": "site",
+  "assertion": "Static: every internal href/anchor in README, posts and email resolves to an id in index.html.",
+  "fix": ""
+ },
+ {
+  "id": "C102",
+  "claim": "Launch posts: a 'Do NOT claim' list (real Flutter/RN run, permission-alert taps, frames, captions, upload, Android tablets)",
+  "where": [
+   "marketing/launch-posts-v2.md"
+  ],
+  "where_text": [
+   "Do NOT claim: a real Flutter/React Native run, live permission-alert taps, frames, captions, upload to stores. iPad and Android tablet sets are real"
+  ],
+  "status": "fixed",
+  "proof": "Stale against the landing page, which now sells 'iPad and tablets' and Android tablet sets (index.html price card) and README documents devices = [\"phone\", \"tablet\"]; ROADMAP.md:27 verified it on 2026-10-02.",
+  "layer": "unit",
+  "assertion": "Doc test: every item in a 'Do NOT claim' list is absent from index.html and README.",
+  "fix": "Remove 'Android tablets' from the list (or from the page).",
+  "fixed_by": "wording",
+  "fixed": "The 'Do NOT claim' list denied Android tablets, which the page sells and ROADMAP.md verified (CrossfitTracker tablet 1440x2560, exported to tenInchScreenshots). List now says iPad and Android tablet sets are real.",
+  "test": "Style.test_banned_phrases_are_absent"
+ },
+ {
+  "id": "C103",
+  "claim": "Terminal/README sample output uses `shotfleet run shotfleet.toml` / config default",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "$ shotfleet run shotfleet.toml"
+  ],
+  "status": "proven",
+  "proof": "SimpleConfig.test_run_goes_through_every_platform_in_the_file; `run --help` (config optional, default ./shotfleet.toml).",
+  "layer": "unit",
+  "assertion": "Already covered.",
+  "fix": ""
+ },
+ {
+  "id": "C104",
+  "claim": "Comparison table: shotfleet Yes on captures the real app / every language in one flow / parallel / checks / Android",
+  "where": [
+   "site/draft/alternatives.html"
+  ],
+  "where_text": [
+   "<td><span class=\"yes\">Yes</span></td>"
+  ],
+  "status": "partial",
+  "proof": "Same evidence as the claims above; nothing is wrong, but a table of 'Yes' cells without footnotes cannot be tested. Draft only; /alternatives returns 404 live.",
+  "layer": "site",
+  "assertion": "Static: the draft cell values match a machine-readable features.json that the tests above feed.",
+  "fix": ""
+ },
+ {
+  "id": "C105",
+  "claim": "One run: 18 languages x 4 screens = 72 screenshots with one English flow on one Mac, 9 minutes on iOS and 15 on Android",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "languages times screens in one run: 72 screenshots, one English flow, one Mac",
+   "for that run on iOS and on Android"
+  ],
+  "status": "evidence",
+  "proof": "research/first-run.md and PLAN.md Status 2026-10-01 (CrossfitTracker iOS 18/18 in 534 s, Android 18/18 about 15 min); research/pricing-2026-10.md section 1 'Proven'.",
+  "layer": "device",
+  "assertion": "Re-run on the release build (roadmap N3/N4) and refresh the numbers if they change by more than 20%.",
+  "fix": ""
+ },
+ {
+  "id": "C106",
+  "claim": "Four languages (ja, ko, zh, ar) shared one unreachable Next button on Android that English hid",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "shared one unreachable Next button on Android. English hid it"
+  ],
+  "status": "evidence",
+  "proof": "research/first-run.md; fix in CrossfitTracker commit 687ffccd (verticalScroll added to two pages).",
+  "layer": "device",
+  "assertion": "Keep the commit reference; if the app changes, keep the screenshot site/public/img/bug_zh.jpg.",
+  "fix": ""
+ },
+ {
+  "id": "C107",
+  "claim": "shotfleet check found 108 problems in 120 store screenshots of another of the author's apps: translated captions over an English UI",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "found by <code>shotfleet check</code> in 120 store screenshots of another of my apps"
+  ],
+  "status": "evidence",
+  "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
+  "layer": "device",
+  "assertion": "Re-run `shotfleet check` on that folder before launch and update the count if it differs.",
+  "fix": ""
+ },
+ {
+  "id": "C108",
+  "claim": "Competitor facts on the alternatives page (ButterKit free tier and Pro $99 once; AppScreens Pro $99/yr and Scale $180/yr, mockups only; fastlane and simshot free; simshot iOS only)",
+  "where": [
+   "site/public/alternatives.html"
+  ],
+  "where_text": [
+   "Pro $99 once",
+   "Pro is $99 a year (10 languages) and Scale $180 a year (80+ locales)",
+   "Checked on 2026-10-02 from each tool"
+  ],
+  "status": "evidence",
+  "proof": "WebFetch of https://butterkit.app/pricing and https://appscreens.com/pricing on 2026-10-02 (prices, free tiers, 'does not capture from a running app'); fastlane and simshot from research/pricing-2026-10.md (vendor pages, tagged V/A).",
+  "layer": "site",
+  "assertion": "Re-check both pricing pages on the launch day and every month; the page says 'Not stated' where the vendor page is silent.",
+  "fix": ""
+ },
+ {
+  "id": "C109",
+  "claim": "With a Flutter, React Native, .NET MAUI or Unity build, init, run and check tell you what to add (the strings = line for your translation files) and warn about Flutter and React Native debug builds, without stopping the run",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files"
+  ],
+  "status": "proven",
+  "proof": "FrameworkHints.test_flutter_build_gets_the_strings_line_and_the_debug_banner_warning, FrameworkHints.test_react_native_debug_build_is_told_to_add_strings_and_to_build_release, FrameworkHints.test_a_native_ios_build_gets_no_hint, FrameworkHints.test_init_prints_the_strings_line_for_a_flutter_build_and_stays_quiet_for_a_native_one, FrameworkHints.test_run_and_check_show_the_hint_before_they_can_fail. Stub bundles only: file-name markers are not yet confirmed on real Flutter, React Native, MAUI or Unity builds (roadmap X4).",
+  "layer": "unit",
+  "assertion": "Stub bundles in a temp dir: Flutter and React Native stubs print the hint, a native iOS stub prints none, init prints the strings = line, hints are shown once.",
+  "fix": ""
+ },
+ {
+  "id": "C110",
+  "claim": "The founder price is plain text ('first 100 buyers') with no counter number; a live 'N of 100 left' counter does not exist yet",
+  "where": [
+   "site/public/index.html",
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "launch price, first 100 buyers",
+   "A live \"N of 100 left\" counter is not built."
+  ],
+  "status": "proven",
+  "proof": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text keeps the text and rejects any counter number after the go-live transform; Smoke.test_a_counter_number_that_nothing_feeds_fails makes the live smoke test fail on one. LAUNCH.md open item: Gumroad shows FOUNDER29's use count in the dashboard only, so no live counter is planned.",
+  "layer": "site",
+  "assertion": "After go-live, the live page says 'first 100 buyers' and shows no number of buyers left (tools/golive/smoke.sh checks this).",
+  "fix": "",
+  "test": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text"
+ },
+ {
+  "id": "C111",
+  "claim": "packaging/go-live.sh --dry-run rehearses the go-live on a copy: no build, notarization, deploy, push or change to the working tree",
+  "where": [
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "packaging/go-live.sh --dry-run"
+  ],
+  "status": "proven",
+  "proof": "DryRun.test_the_dry_run_passes_and_says_what_it_would_do, DryRun.test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed (fake npx, xcrun, codesign and swiftc record any call; HEAD and the two edited files are unchanged), DryRun.test_bad_inputs_fail_the_dry_run. The sed and the page transform are the real run's own code (test_site.go_live extracts the same heredoc).",
+  "layer": "site",
+  "assertion": "Run it with the real checkout link before the real go-live; it ends with 'dry run clean'. Not checked offline: the notarytool profile and the Cloudflare login (listed in LAUNCH.md step 3).",
+  "fix": "",
+  "test": "DryRun.test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed"
+ },
+ {
+  "id": "C112",
+  "claim": "tools/golive/smoke.sh checks the live site after the deploy (pages, install.sh, VERSION, archive and checksum, CSP, robots and sitemap, https redirect) without installing anything",
+  "where": [
+   "LAUNCH.md"
+  ],
+  "where_text": [
+   "tools/golive/smoke.sh https://shotfleet.com"
+  ],
+  "status": "proven",
+  "proof": "Smoke.test_a_good_site_passes_from_a_clean_environment (env -i, local fake server) and the failing cases: wrong checksum, missing CSP, waitlist left on the page, wrong checkout link, counter number, missing VERSION, program version differing from VERSION.",
+  "layer": "site",
+  "assertion": "Run `env -i sh tools/golive/smoke.sh https://shotfleet.com <checkout link>` right after go-live. The http to https redirect is only exercised against the real site (the fake server is http).",
+  "fix": "",
+  "test": "Smoke.test_a_good_site_passes_from_a_clean_environment"
+ },
+ {
+  "id": "C113",
+  "claim": "install.sh refuses a download whose checksum does not match, an Intel Mac and Linux, and installs nothing in those cases",
+  "where": [
+   "site/public/install.sh"
+  ],
+  "where_text": [
+   "checksum mismatch",
+   "needs an Apple silicon Mac"
+  ],
+  "status": "proven",
+  "proof": "InstallScript.test_install_sh_refuses_a_wrong_checksum_and_installs_nothing, InstallScript.test_install_sh_refuses_an_intel_mac, InstallScript.test_install_sh_refuses_linux (real install.sh against a fake server, fake uname, temp HOME).",
+  "layer": "site",
+  "assertion": "Smoke test after go-live runs install.sh's checksum lines on the served archive.",
+  "fix": "",
+  "test": "InstallScript.test_install_sh_refuses_a_wrong_checksum_and_installs_nothing"
+ },
+ {
+  "id": "C114",
+  "claim": "[inputs] sets the text a flow types per language on iOS (Maestro env entry in that language's flow); Android runs use the defaults only",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "The value goes into that language's flow as a Maestro `env:` entry.",
+   "Android runs type the\n`[inputs]` defaults only"
+  ],
+  "status": "partial",
+  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults). Not yet run on a simulator with CJK or Arabic typing (roadmap X5 kill criterion: iOS CJK/Arabic typing may fail on the simulator).",
+  "layer": "unit",
+  "assertion": "Fixture app with a text field: Japanese value shows in the PNG (read by OCR).",
+  "fix": ""
+ },
+ {
+  "id": "C115",
+  "claim": "`shotfleet init` with no arguments only reads folders: it never runs xcodebuild or gradle, creates nothing outside --dir, uses explicit builds exactly as before, and when it finds nothing exits with the exact build commands (never silently)",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`shotfleet init` without arguments only reads folders, never builds.",
+   "exits with the exact `xcodebuild` and `./gradlew assembleDebug` commands to run"
+  ],
+  "status": "proven",
+  "proof": "Unit: InitFindsBuilds.test_nothing_found_prints_the_exact_commands_with_names_read_from_the_files_and_runs_no_build_tool, InitFindsBuilds.test_init_with_nothing_to_find_creates_no_files, InitFindsBuilds.test_init_without_builds_writes_only_into_dir_and_reads_the_build_it_found, InitFindsBuilds.test_explicit_builds_never_look_around_and_no_argument_is_accepted_by_the_parser, InitFindsBuilds.test_an_unrecognised_folder_shows_both_generic_commands, InitFindsBuilds.test_a_workspace_is_preferred_and_a_project_without_a_shared_scheme_gets_a_placeholder.",
+  "layer": "unit",
+  "assertion": "",
+  "fix": "",
+  "test": "InitFindsBuilds.test_nothing_found_prints_the_exact_commands_with_names_read_from_the_files_and_runs_no_build_tool"
+ },
+ {
+  "id": "C116",
+  "claim": "`shotfleet init` with no arguments picks the newest Debug-iphonesimulator app in Xcode's default DerivedData whose info.plist points at an Xcode project in this folder, and the newest Gradle debug APK (not the Wear or androidTest one), and says in one line which and how old",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "For iOS it takes the newest `Debug-iphonesimulator` app in Xcode's default DerivedData folder",
+   "It prints which build it chose and how old it is."
+  ],
+  "status": "partial",
+  "proof": "Unit on fake DerivedData, Gradle and project trees (not a real Xcode or Gradle run): InitFindsBuilds.test_picks_the_newest_debug_build_of_this_projects_xcode_project_and_says_why, InitFindsBuilds.test_a_derived_data_folder_for_a_project_above_the_current_folder_matches_too, InitFindsBuilds.test_a_folder_without_a_workspace_path_matches_by_the_project_name_prefix, InitFindsBuilds.test_test_runners_device_builds_and_other_configurations_are_never_chosen, InitFindsBuilds.test_newest_gradle_debug_apk_wins_the_wear_app_and_android_test_apks_do_not, InitFindsBuilds.test_apks_of_a_product_flavor_and_of_a_module_folder_next_to_cwd_are_found, InitFindsBuilds.test_ios_and_android_builds_are_both_returned_for_one_config. Unproven: the info.plist layout is the one seen on the founder's Mac (research/setup-friction.md section 2), not re-checked on other Xcode versions; custom DerivedData locations are not read; real aapt2 badging of a Wear APK.",
+  "layer": "unit",
+  "assertion": "On CrossfitTracker, Kuokka, Remoti, Cairn: `shotfleet init` in the project folder after one Xcode build picks that build (roadmap X2).",
+  "fix": ""
+ },
+ {
+  "id": "C117",
+  "claim": "Android setup: the SDK is found in ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's android-commandlinetools or beside an adb on the PATH; any installed arm64 google_apis(_playstore) image of API 33+ is used; doctor prints the exact sdkmanager commands for what is missing",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`",
+   "`shotfleet doctor` prints the `sdkmanager` commands for whatever is missing."
+  ],
+  "status": "partial",
+  "proof": "Unit on fake SDK layouts, PATH and Homebrew prefix: AndroidSdkDiscovery.test_places_are_tried_in_order, AndroidSdkDiscovery.test_the_folder_above_an_adb_on_the_path_is_the_last_resort, AndroidSdkDiscovery.test_any_installed_api_33_plus_arm64_image_is_used_newest_first, AndroidSdkDiscovery.test_the_emulator_is_created_from_the_config_image_else_an_installed_one_else_the_default_with_the_install_command, AndroidSdkDiscovery.test_commands_install_homebrews_command_line_tools_first_when_there_is_no_sdkmanager, DoctorAndroid.test_missing_pieces_come_with_one_exact_sdkmanager_command, DoctorAndroid.test_with_no_android_sdk_at_all_doctor_prints_the_homebrew_route_and_every_package. Unproven: a real Mac with only `brew install --cask android-commandlinetools` (Caskroom layout and the printed commands were not run), real avdmanager on an image other than API 36.",
+  "layer": "unit",
+  "assertion": "Clean Mac with only the Homebrew command-line tools: doctor's printed commands, run in order, make Android ready (roadmap X3).",
+  "fix": ""
+ },
+ {
+  "id": "C118",
+  "claim": "The analytics banner offers Accept analytics and Decline as equal choices, nothing from Google loads and no _ga cookie is set before Accept, and the footer link Analytics settings reopens the choice",
+  "where": [
+   "site/public/ga.js",
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "Accept analytics",
+   "Accept analytics and Decline are equal choices. Until you accept, nothing is loaded from Google and no cookie is set."
+  ],
+  "status": "proven",
+  "proof": "Consent.test_nothing_calls_gtag_before_consent, Consent.test_the_banner_is_built_by_ga_js_with_two_equal_buttons, Consent.test_every_page_with_ga_has_the_settings_link_and_the_other_way_round, Consent.test_placeholder_id_loads_nothing. Static only: no browser run in CI. Withdrawing deletes the _ga cookies (stop() in ga.js); that part is not unit-tested.",
+  "layer": "site",
+  "assertion": "Browser: fresh profile on shotfleet.com shows the banner, no request to google hosts and no cookie; Decline keeps it so; Accept sets _ga and _ga_<id> and sends collect requests; Analytics settings then Decline deletes both.",
+  "fix": ""
+ },
+ {
+  "id": "C119",
+  "claim": "check --content / run verifies that the texts you list in [expect.<screenshot>] are on (or off) each screen, per language, and never passes a text OCR cannot read",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "could not verify",
+   "could not verify"
+  ],
+  "status": "partial",
+  "proof": "Unit: ContentExpect.test_the_apps_own_text_is_exact_and_matched_like_judge_screen, ContentExpect.test_ocr_never_passes_or_fails_what_it_cannot_read, ContentExpect.test_check_content_cli_reads_the_config_and_keeps_the_json_keys. Fixtures only (.texts.json and fake OCR); no simulator or emulator run.",
+  "layer": "unit",
+  "assertion": "cmd_check with .texts.json and fake-OCR fixtures: missing, forbidden and unreadable-script texts give a problem, a problem and a note.",
+  "fix": "Keep 'proves the strings you list are present, not that the data looks right'."
+ },
+ {
+  "id": "C120",
+  "claim": "[ios] simctl and [android] shell run your commands once per simulator or emulator after boot; a failing command stops the run with exit 2 and the command printed",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "A command that fails stops the run before anything is captured (exit 2)",
+   "A command that fails stops the run before anything is captured (exit 2)"
+  ],
+  "status": "partial",
+  "proof": "Unit: SetupCommands.test_simctl_commands_get_the_udid_and_run_in_order_after_the_status_bar, SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop, SetupCommands.test_a_failing_command_is_a_setup_error_that_prints_it. Command construction only; not run on a real emulator or simulator.",
+  "layer": "unit",
+  "assertion": "Fake Sim/Emu record the commands in order; a device run with setprop debug.* on an emulator image is still to do.",
+  "fix": "Say the Android commands are unit-tested as command lines only until run on an emulator."
+ }
+]
