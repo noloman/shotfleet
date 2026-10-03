@@ -1856,13 +1856,17 @@ def ocr_tool():
 TWINS = {"ms": ("id",), "id": ("ms",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
 LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
 
-@functools.cache
 def readable_languages():
-    """Base languages this Mac's text recognition reads (macOS 27: 33 codes, e.g. CJK, Cyrillic, Arabic, Thai, Hindi;
-    not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts)."""
-    if not vision_available():  # what the installed Tesseract data can read, as language codes
+    """Base languages the text recognition in use reads. On a Mac (macOS 27: 33 codes, e.g. CJK, Cyrillic, Arabic, Thai, Hindi;
+    not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts); elsewhere, what the installed
+    Tesseract data covers."""
+    if not vision_available():
         have = tesseract_languages()
         return {l for l, t in TESSERACT.items() if t in have} | ({"zh"} if have & {"chi_sim", "chi_tra"} else set())
+    return vision_languages()
+
+@functools.cache
+def vision_languages():
     return {c.split("-")[0] for c in json.loads(sh([ocr_tool(), "--langs"]).stdout or "[]")}
 
 # Only scripts no other language shares: Cyrillic/Arabic/Han/Devanagari would let Russian pass as Ukrainian
@@ -2059,7 +2063,8 @@ def warm_up_ocr(ocr, timeout=600):
 TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
 # Tesseract starts one OpenMP thread per core; four of them at once spin against each other (measured on 4 cores:
 # 73 s for 4 screenshots instead of 2 s), so each process gets one thread unless the user sets the limit.
-TESSERACT_ENV = {**os.environ, "OMP_THREAD_LIMIT": os.environ.get("OMP_THREAD_LIMIT", "1")}
+def tesseract_env():
+    return {**os.environ, "OMP_THREAD_LIMIT": os.environ.get("OMP_THREAD_LIMIT", "1")}  # read at call time: PATH may have changed
 
 @functools.cache
 def tesseract_languages():
@@ -2122,7 +2127,7 @@ def tesseract_script(png, lp):
     Only for ja, ko and th, and only when installed with its osd data; {} otherwise. Measured on 144 real screenshots: right
     on 142 (the 2 wrong, Korean read as Japanese, scored 0.2 and 0.06), so judge_screen only trusts confidence 1.0 and up."""
     if canon(lp).split("-")[0] not in OSD_SCRIPT or "osd" not in tesseract_languages(): return {}
-    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60, env=TESSERACT_ENV)
+    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60, env=tesseract_env())
     except (OSError, subprocess.TimeoutExpired): return {}
     m, c = re.search(r"Script: (\w+)", r.stdout + r.stderr), re.search(r"Script confidence: ([\d.]+)", r.stdout + r.stderr)
     return {"osd_script": m.group(1), "osd_conf": float(c.group(1))} if m and c else {}
@@ -2138,7 +2143,7 @@ def external_ocr(command, png, lp):
     except (KeyError, IndexError, ValueError) as e:
         raise Fail(f"unknown placeholder {e} in --ocr-command; use {{image}}, {{lang}}, {{tesseract}}, {{tesseract_with_english}}")
     try:
-        r = sh(args, timeout=180, env=TESSERACT_ENV)
+        r = sh(args, timeout=180, env=tesseract_env())
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Fail(f"--ocr-command failed on {png.name}: {e}")
     if r.returncode != 0:

@@ -112,12 +112,15 @@ class CheckWithoutMacOcr(unittest.TestCase):
         self.assertIn("Tesseract", str(e.exception))
 
     def test_readable_languages_are_the_installed_tesseract_data(self):
-        sf.readable_languages.cache_clear(); self.addCleanup(sf.readable_languages.cache_clear)
         with mock.patch.object(sf, "is_mac", lambda: False), mock.patch.object(sf, "tesseract_languages", lambda: frozenset({"eng", "deu", "chi_sim", "osd"})):
             self.assertEqual(sf.readable_languages(), {"en", "de", "zh"})
 
     def test_tesseract_gets_one_thread_so_parallel_runs_do_not_spin(self):
-        self.assertEqual(sf.TESSERACT_ENV["OMP_THREAD_LIMIT"], "1")
+        with mock.patch.dict(sf.os.environ, {}, clear=False):
+            sf.os.environ.pop("OMP_THREAD_LIMIT", None)
+            self.assertEqual(sf.tesseract_env()["OMP_THREAD_LIMIT"], "1")
+        with mock.patch.dict(sf.os.environ, {"OMP_THREAD_LIMIT": "3", "PATH": "/x"}):
+            self.assertEqual((sf.tesseract_env()["OMP_THREAD_LIMIT"], sf.tesseract_env()["PATH"]), ("3", "/x"))  # not a snapshot
 
 
 class AndroidOnLinux(unittest.TestCase):

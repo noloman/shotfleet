@@ -282,9 +282,11 @@ class JudgeScreen(unittest.TestCase):
         tables = sf.string_tables({"de": {"a": "Training", "b": "Log"}, "en": {"a": "Training", "b": "Log"}})
         self.assertEqual(sf.judge_screen("de", {"chars": 10, "text": "Training\nLog"}, tables), ("de", None))
 
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
     def test_blank_screen_fails(self):
         self.assertIn("no text", sf.judge_screen("de", {"chars": 0, "text": ""}, self.TABLES)[1])
 
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
     def test_falls_back_to_language_detection_when_no_string_matches(self):
         ok = sf.judge_screen("ja", {"chars": 30, "text": "ようこそ", "lang": "ja"}, self.TABLES)
         bad = sf.judge_screen("ja", {"chars": 30, "text": "Welcome", "lang": "en", "langs": {"en": 0.9}}, self.TABLES)
