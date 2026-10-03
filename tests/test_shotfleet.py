@@ -2165,6 +2165,12 @@ class G1CheckDetectors(unittest.TestCase):
         self.assertEqual((code, report["problems"]), (1, ["de/02.png: shows en strings (4 lines) more than de (0)"]))
         self.assertEqual(g1_check(self.CLEAN, ocr=True)[:2][0], 0)
 
+    def test_a_system_error_dialog_over_the_app_is_a_problem_even_with_the_right_language_underneath(self):
+        dialog = G1_SHOWS["de"] + ["Process system isn't responding", "Close app", "Wait"]  # the 2026-10-03 emulator run: "Weiter" under the dialog
+        code, report, _ = g1_check({**self.CLEAN, "de": {"01.png": dialog, "02.png": G1_SHOWS["de"]}}, ocr=True)
+        self.assertEqual((code, report["problems"]), (1, ['de/01.png: an Android system dialog covers the screen ("isn\'t responding")']))
+        self.assertEqual(sf.system_dialog({"text": "Training\nWOD results"}), None)
+
     def test_the_same_image_in_two_languages_is_reported_once_with_both_files(self):  # C025, C003
         same = g1_image("same")
         d = Path(tempfile.mkdtemp())

@@ -2018,6 +2018,14 @@ def judge_screen(lp, ocr, tables):
         return lp, None
     return got, None
 
+# An Android crash or ANR dialog over the app ("Process system isn't responding" on a slow emulator) is not a store screenshot, whatever
+# language the app text under it is in. English only (the emulator's system language), and only where text is read from the picture.
+SYSTEM_DIALOG = re.compile(r"isn.?t responding|keeps stopping|has stopped\b", re.I)
+
+def system_dialog(ocr):
+    m = SYSTEM_DIALOG.search(ocr.get("text", ""))
+    return f'an Android system dialog covers the screen ("{m.group(0)}")' if m else None
+
 def caption_problem(lp, ocr, tables, problem):
     """Framed screenshots carry a marketing caption above the device. Name the common failure plainly
     (a translated caption over an untranslated app)."""
@@ -2328,6 +2336,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
         if problem: problems.append(f"{label}/{png.name}: {problem}")
+        if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if png.stem in (expect or {}):
             rules, used = content_rules(expect[png.stem], label, lp)
             expected_used.update((png.stem, k) for k in used)
