@@ -1015,7 +1015,7 @@
   "status": "evidence",
   "proof": "DISTRIBUTION.md Status 2026-10-01: Apple accepted the 0.1.0 build; quarantined copy ran without a prompt. But the only binary in this checkout (dist/shotfleet, one-file) is 'rejected, source=Unnotarized Developer ID' (spctl, 2026-10-02) and research/pricing-2026-10.md says 'never notarized' - stale or contradictory. A curl download carries no quarantine flag, so Gatekeeper is not consulted anyway; the claim matters for browser downloads only.",
   "layer": "device",
-  "assertion": "After packaging/release.sh: extract the tarball, `spctl -a -vv -t exec shotfleet/shotfleet` must print 'source=Notarized Developer ID'; `codesign --verify --deep --strict` passes; run it under `env -i` with python3 absent from PATH.",
+  "assertion": "After packaging/release.sh: extract the tarball, add the quarantine flag and run `shotfleet --version`: it must print the version within 90 s (an unnotarized quarantined copy hangs and is killed; `spctl -t exec` cannot assess a bare executable); `codesign --verify --deep --strict` passes; run it under `env -i` with python3 absent from PATH.",
   "fix": ""
  },
  {

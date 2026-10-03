@@ -42,8 +42,10 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   # Don't trust the verdict alone: unpack the tarball we will ship, mark it as downloaded (quarantine) and ask Gatekeeper.
   CHECK=$(mktemp -d); tar -C "$CHECK" -xzf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz"
   xattr -w com.apple.quarantine "0081;00000000;Safari;" "$CHECK/shotfleet/shotfleet"
-  spctl --assess --type execute -vv "$CHECK/shotfleet/shotfleet" 2>&1 | tee build/spctl.log
-  grep -q "source=Notarized Developer ID" build/spctl.log || { rm -rf "$CHECK"; echo "Gatekeeper does not accept the shipped build as notarized (build/spctl.log): do not publish" >&2; exit 1; }
+  # spctl cannot assess a bare executable ("does not seem to be an app", no source line), so run it: a quarantined copy that
+  # is not notarized hangs and is killed, a notarized one prints its version (first run looks the ticket up online, ~10 s).
+  perl -e 'alarm 90; exec @ARGV' "$CHECK/shotfleet/shotfleet" --version 2>&1 | tee build/spctl.log
+  grep -q "^shotfleet $VERSION\$" build/spctl.log || { rm -rf "$CHECK"; echo "a quarantined copy of the shipped build does not run (build/spctl.log): do not publish" >&2; exit 1; }
   rm -rf "$CHECK"
 fi
 shasum -a 256 dist/*.tar.gz

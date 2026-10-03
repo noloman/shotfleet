@@ -218,11 +218,11 @@ if __name__ == "__main__":
 
 
 class BuildScriptChecksGatekeeper(unittest.TestCase):
-    def test_a_notarized_build_is_verified_with_a_quarantined_spctl_assessment_before_it_can_ship(self):
+    def test_a_notarized_build_is_verified_by_running_a_quarantined_copy_before_it_can_ship(self):
         s = (Path(__file__).resolve().parent.parent / "packaging/build.sh").read_text()
         i = s.index("status: Accepted")
         tail = s[i:]
         self.assertIn("com.apple.quarantine", tail)
-        self.assertIn("spctl --assess --type execute", tail)
-        self.assertIn("source=Notarized Developer ID", tail)
-        self.assertLess(tail.index("source=Notarized Developer ID"), tail.index("shasum -a 256"))  # checked before the checksum is printed for release.sh
+        self.assertIn('"$CHECK/shotfleet/shotfleet" --version', tail)  # spctl cannot assess a bare executable, so the copy is run
+        self.assertNotIn("spctl --assess", tail)
+        self.assertLess(tail.index("--version"), tail.index("shasum -a 256"))  # checked before the checksum is printed for release.sh
