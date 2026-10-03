@@ -57,6 +57,8 @@ shotfleet init                                     # in your project folder: use
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
 
+Prefer an installer you can double-click? Each release is also published as a signed, notarized package, `https://shotfleet.com/download/shotfleet-macos-arm64.pkg`. It puts the program in `/usr/local/lib/shotfleet` and links `shotfleet` into `/usr/local/bin`; macOS asks for your password. Use it if the `curl` line is not an option or a browser-downloaded copy shows "Apple could not verify ...".
+
 `shotfleet init` without arguments only reads folders, never builds. For iOS it takes the newest `Debug-iphonesimulator` app in Xcode's default DerivedData folder (`~/Library/Developer/Xcode/DerivedData`) whose `info.plist` points at an Xcode project in this folder (or one folder below it, or above it). For Android it takes the newest APK under `app/build/outputs/apk/debug` (or `<module>/build/outputs/apk/debug`, one folder below). It prints which build it chose and how old it is. If it finds nothing it exits with the exact `xcodebuild` and `./gradlew assembleDebug` commands to run, then run `shotfleet init` again. If you build somewhere else (a custom DerivedData location), pass the path as above.
 
 1. Edit the generated `flow.yaml`: [Maestro](https://maestro.mobile.dev) steps in English. Navigate by the text users see and add a `takeScreenshot:` for each store image. No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android.

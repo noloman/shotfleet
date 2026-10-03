@@ -81,6 +81,8 @@ shotfleet activate &lt;your key&gt;    # from your Gumroad receipt email (check 
 shotfleet doctor                 # checks Maestro, Java, Xcode, Android SDK</code></pre>
   <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. <code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; see <a href="/terms">licence and refunds</a>.</p>
 
+  <p>Prefer an installer you can double-click? Each release is also published as a signed, notarized package, <code>https://shotfleet.com/download/shotfleet-macos-arm64.pkg</code>. It puts the program in <code>/usr/local/lib/shotfleet</code> and links <code>shotfleet</code> into <code>/usr/local/bin</code>; macOS asks for your password. Use it if the <code>curl</code> line is not an option, or if a browser-downloaded copy shows "Apple could not verify ...".</p>
+
   <h2 id="quickstart">Quickstart</h2>
   <p>Once Maestro and a simulator build exist, in your project folder:</p>
 <pre><code>shotfleet init
