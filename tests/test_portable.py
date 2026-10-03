@@ -153,5 +153,24 @@ class AndroidOnLinux(unittest.TestCase):
             self.assertEqual(sf.aapt2(), "/usr/bin/aapt2")
 
 
+
+class UnreadableNeighbours(unittest.TestCase):
+    """`check <folder>` looks at the folder's parent for the other devices of a multi-device run; a parent that holds a
+    folder this user may not read (a CI runner's /tmp has systemd-private-*) must not crash it."""
+    def test_device_runs_skips_a_folder_it_cannot_read(self):
+        parent = Path(tempfile.mkdtemp()); (parent / "iphone").mkdir(); (parent / "iphone/run.json").write_text("{}")
+        (parent / "secret").mkdir()
+        real = Path.exists
+        def exists(self):
+            if self.parent.name == "secret": raise PermissionError(13, "Permission denied", str(self))
+            return real(self)
+        with mock.patch.object(Path, "exists", exists):
+            self.assertEqual([d.name for d in sf.device_runs(parent)], ["iphone"])
+
+    def test_an_unreadable_parent_is_no_multi_device_run(self):
+        with mock.patch.object(Path, "iterdir", side_effect=PermissionError(13, "denied")):
+            self.assertEqual(sf.device_runs(tempfile.mkdtemp()), [])
+
+
 if __name__ == "__main__":
     unittest.main()

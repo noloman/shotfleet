@@ -41,6 +41,30 @@ python3 shotfleet.py check fastlane/ --app app-release.apk
 - Without macOS text recognition there is no language detection for screens with fewer than two of your strings, and no marketing-caption
   check for framed screenshots. Pass `--app` (or `--strings`) for the full check.
 
+## Experiment E1: the Android fixture on a Linux machine with KVM
+
+This is the one missing proof for Linux. `tools/fixture-e2e.sh --platform-only android` builds the fixture app with the SDK tools,
+runs `init`, `doctor`, `run` (de, ja, ar, tr on two emulators), `check` and `export`, then plants a copied and a missing screenshot and
+asserts they are found. Everything before the emulator was run on the test machine without KVM; the emulator steps were not.
+About 10 minutes plus the first image download.
+
+1. **Machine:** x86_64 or ARM Linux with `/dev/kvm` usable by your user (`ls -l /dev/kvm`; `sudo usermod -aG kvm $USER` and log in again),
+   6 GB of free memory, 10 GB of disk. Not a cloud VM without nested virtualization.
+2. **Packages:** `sudo apt install tesseract-ocr tesseract-ocr-deu tesseract-ocr-jpn tesseract-ocr-ara tesseract-ocr-tur openjdk-21-jre-headless openjdk-21-jdk-headless unzip`
+   (the JDK for `javac` and `keytool`, which build the fixture).
+3. **Android SDK:** unzip Google's "Command line tools only" into `~/Android/Sdk/cmdline-tools/latest`, then
+   `yes | sdkmanager --licenses` and `sdkmanager platform-tools emulator "build-tools;36.0.0" "platforms;android-36" "system-images;android-36;google_apis;x86_64"`
+   (`python3 shotfleet.py doctor` prints the exact commands for what is missing; `export ANDROID_HOME=~/Android/Sdk`).
+4. **Maestro 2.0.10:** the tested version (`curl -Ls "https://get.maestro.mobile.dev" | bash`, then `maestro --version`).
+5. **Run:** `SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only android --keep`
+6. **Pass:** the last line is `PASS: all N assertions passed`. The script prints the machine (CPU, cores, memory, KVM) at the top and the
+   seconds each phase took.
+7. **Write down** in `STATUS.md` (E1 row): the machine line, the `android: shotfleet run` phase time (the Mac reference is 18 languages in 15 min 24 s on
+   CrossfitTracker, from PLAN.md; the e2e runs only 4), and any `FAIL` lines with their logs in the kept work dir.
+8. **If it fails** the usual suspects, in order: `doctor` not saying `Android: ready` (a missing SDK part); the emulator not booting in
+   600 s (KVM not really in use: `emulator -accel-check`); a `could not verify` note on ja or ar (Tesseract data missing); `cmd locale
+   set-app-locales` refused (the image is older than API 33).
+
 ## Android emulators on Linux (untried)
 
 `doctor` checks `/dev/kvm`, finds an SDK in `ANDROID_HOME`, `~/Android/Sdk` or `/usr/lib/android-sdk`, and picks the system image for your CPU
