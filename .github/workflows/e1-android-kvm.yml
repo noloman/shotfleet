@@ -5,12 +5,17 @@ name: e1-android-kvm
 # logs, the emulator logs and the run's out/ folder (screenshots and Maestro's debug output) for diagnosing a failure.
 on:
   workflow_dispatch:
+    inputs:
+      parallel:
+        description: "emulators run at once (1 or 2). A 2-vCPU hosted runner failed with 2 (docs/linux.md, E1); 1 tests whether CPU was the cause"
+        default: "1"
 
 permissions:
   contents: read
 
 env:
   SHOTFLEET_E2E: "1"
+  SHOTFLEET_E2E_PARALLEL: ${{ inputs.parallel }}
 
 jobs:
   e1:
