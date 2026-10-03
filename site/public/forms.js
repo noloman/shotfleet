@@ -16,8 +16,9 @@
     form.addEventListener("submit", async function (e) {
       e.preventDefault();
       err.hidden = true;
+      form.querySelectorAll("[aria-describedby]").forEach(function (el) { if (el.getAttribute("aria-describedby") === err.id) el.removeAttribute("aria-describedby"); });
       var problem = (validate || defaultValidate)(form, email);
-      if (problem) { err.textContent = problem.text; err.hidden = false; problem.field.focus(); return; }
+      if (problem) { err.textContent = problem.text; err.hidden = false; if (err.id) problem.field.setAttribute("aria-describedby", err.id); problem.field.focus(); return; }
       btn.disabled = true; btn.textContent = "Sending…";
       try {
         var r = await fetch(endpoint, { method: "POST", headers: { "content-type": "application/json" },

@@ -64,7 +64,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 | 2 | setup error: stderr says `shotfleet: <what to fix>` | fix it, see troubleshooting.md |
 | 130 | interrupted | rerun |
 
-`doctor` exits 2 only when neither iOS nor Android is ready.
+`doctor` exits 2 when neither iOS nor Android is ready and 0 when at least one is; `doctor --fix` exits 1 when a step it ran failed, and 0 after all its steps worked.
 
 ## Reading `--json`
 
@@ -97,5 +97,5 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 
 [references/troubleshooting.md](references/troubleshooting.md), [references/flow-writing.md](references/flow-writing.md),
 [references/config.md](references/config.md), [references/ci.md](references/ci.md), [references/licence.md](references/licence.md).
-The tool also ships an MCP server (`shotfleet mcp`) with `check`, `run` and `doctor`; its `check` writes the report into a
-`shotfleet-check` folder inside the folder it checks, so prefer the CLI with `--report` for a fastlane folder.
+The tool also ships an MCP server (`shotfleet mcp`) with `check`, `run` and `doctor`; its `check` writes the report into `./shotfleet-check` in the server's working directory (never into the folder it
+checks) and has no `--report`, so prefer the CLI with `--report` when the report should go somewhere you choose.

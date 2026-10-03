@@ -2,7 +2,7 @@
 
 shotfleet controls the language, the status bar, permissions and a fresh start. It does not know your app's data. If your screens need demo content (a logged-in user, a few jobs, a filled chart), the app has to provide it when it is launched for screenshots. This is the same pattern fastlane snapshot uses, and it is how real apps do it.
 
-Status: iOS launch arguments are used by real apps today; Android and the other patterns below are described from their source code and Maestro's docs and have **not** been run through shotfleet on a device yet.
+Status: iOS launch arguments are used by real apps today; Android and the other patterns below are described from their source code and Maestro's docs and have **not** been run through shotfleet on a device yet. The `[ios] simctl`, `[android] shell` and `[expect]` settings are tested without a device only.
 
 ## The contract, in five rules
 
@@ -51,7 +51,7 @@ Maestro's `arguments:` arrive as **intent extras** on Android. If your demo mode
 - Read the flag from an intent extra in the launcher Activity, when your setup allows it.
 - Read a system property set before the launch, for example `adb shell setprop debug.myapp.screenshot 1` (read it by reflection in debug builds).
 
-shotfleet cannot run a per-device `setprop` today. A setup command per emulator is planned (see `research/content-control.md`, feature F2). Until then, Android apps that need a property can only use the intent-extra route.
+shotfleet can run a `setprop` on every emulator right after it boots: put the command in `[android] shell` in `shotfleet.toml` (for example `shell = ["setprop debug.myapp.screenshot 1"]`, run as `adb -s <serial> shell <command>`; see the README, "Device setup"). The commands are unit-tested as command lines; whether your app sees the property on a real emulator has not been tried. The `[ios] simctl` list does the same for simulators.
 
 ## Typed text per language
 
@@ -67,4 +67,4 @@ It does not change what your backend returns, set the date, log in, or fake in-a
 
 ## Checking that the content is really there
 
-`shotfleet check` already compares each screenshot's text with your app's strings. A way to list strings that must appear in every language (an `[expect]` table) is planned and is not available yet.
+`shotfleet check` compares each screenshot's text with your app's strings, and an `[expect.<screenshot>]` table in `shotfleet.toml` lists texts that must (`any`, `all`) or must not (`not`) be on a screen, per language. `run` checks them automatically; `shotfleet check <out> --content shotfleet.toml` checks screenshots you already have. See the README, "Expected content". It proves the texts you list are present, not that the data looks right.

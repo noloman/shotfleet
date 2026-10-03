@@ -8,6 +8,9 @@
 <meta property="og:title" content="fastlane snapshot alternatives, and when not to buy shotfleet">
 <meta property="og:description" content="An honest comparison, with the free options first and a list of who should not buy shotfleet.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="https://shotfleet.com/alternatives">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
@@ -17,20 +20,9 @@
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/site.css">
-<style>
-.comparison { max-width: 680px; margin: 0 auto; padding-inline: 24px; }
-.comparison table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-.comparison th, .comparison td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
-.comparison th { background: var(--soft); font-weight: 600; font-size: 0.85rem; color: var(--muted); }
-.comparison td:first-child { font-weight: 500; }
-.yes { color: var(--pass); font-weight: 500; }
-.no { color: var(--muted); }
-.note { font-size: 0.85rem; color: var(--muted); }
-.when-not { background: var(--soft); border-radius: 12px; padding: 20px; margin-top: 28px; }
-.when-not h3 { margin-top: 0; }
-.when-not ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
-</style>
 </head>
 <body>
 
@@ -46,6 +38,9 @@
   <section class="page wide">
     <h1>fastlane snapshot alternatives, and when not to buy shotfleet</h1>
     <p class="lede">How shotfleet compares to the tools developers use for localized store screenshots.</p>
+    <!-- WAITLIST -->
+    <p class="small">shotfleet is not on sale yet. The prices below are the launch plan, and <a href="/#price">the home page</a> says what joining the waitlist does and does not reserve.</p>
+    <!-- /WAITLIST -->
 
     <h2>Feature comparison</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Feature comparison table, scrolls sideways on narrow screens">
@@ -63,27 +58,32 @@
       </tbody>
     </table>
     </div>
-    <p class="cta-row"><a class="btn" href="/#price">See the price and join the list<span class="ico" aria-hidden="true">↗</span></a></p>
+    <!-- WAITLIST -->
+    <p class="cta-row"><a class="btn" href="/#price">See the price and join the waitlist<span class="ico" aria-hidden="true">↗</span></a></p>
+    <!-- /WAITLIST -->
+    <!-- SALE
+    <p class="cta-row"><a class="btn" href="@CHECKOUT@">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a></p>
+    SALE -->
     <p class="note">Checked on 2026-10-02 from each tool's own pages and docs. "Not stated" means the page doesn't say, not that the answer is no. A mistake? Tell me and I'll fix it the same day.</p>
 
     <h2>What each tool does</h2>
 
-    <h3>shotfleet</h3>
+    <h3 id="shotfleet">shotfleet</h3>
     <p>Rewrites one English Maestro flow for every language your app ships using the app's own compiled strings, runs the flow in parallel on simulators and emulators, checks each screenshot (language, copies, missing, store size rules), and exports to fastlane's folders.</p>
     <p>Setup: one command, a two-line config, a Maestro flow in English. Measured on my own app: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
 
-    <h3>fastlane snapshot / screengrab</h3>
+    <h3 id="fastlane">fastlane snapshot / screengrab</h3>
     <p>The standard: UI-test code (XCUITest, Espresso) that taps buttons and takes screenshots, run once per language. You add a test target to your app, and iOS and Android need separate code. Free, a large community, works in CI.</p>
     <p>If you already have UI tests that run in every language, you may not need shotfleet. If you don't want test code in your app, or want one flow for both platforms and a check of the results, that is the gap shotfleet fills; fastlane still handles upload and framing.</p>
 
-    <h3>simshot</h3>
-    <p>Free, MIT-licensed, iOS only. It launches the app in each language with launch arguments and takes the screenshots. It needs a few lines added to your app. Very new: no stars when I looked.</p>
+    <h3 id="simshot">simshot</h3>
+    <p>Free, MIT-licensed, iOS only. It launches the app in each language with launch arguments and takes the screenshots. It needs a few lines added to your app. It is a very new project.</p>
 
-    <h3>ButterKit</h3>
+    <h3 id="butterkit">ButterKit</h3>
     <p>A Mac app that takes screenshots from the iOS Simulator, adds device frames and captions, translates the text with AI and uploads to App Store Connect. Its pricing page lists a free tier (watermarked exports, 50 languages, on-device translation) and Pro at $99 once, with free updates, 5 Macs and a 14-day refund. It doesn't say whether it re-captures your app in each language.</p>
     <p><b>Using it with shotfleet:</b> run shotfleet to get the raw localized screenshots in fastlane's folders, point ButterKit at them for frames and captions, and upload. shotfleet's check tells you whether the language inside the app matches the language on the listing.</p>
 
-    <h3>AppScreens</h3>
+    <h3 id="appscreens">AppScreens</h3>
     <p>A web editor: upload screenshots, add device frames, text and backgrounds, for iOS and Android. Free covers one project with no localizations; Pro is $99 a year (10 languages) and Scale $180 a year (80+ locales). It makes marketing images from what you upload and doesn't capture from your app.</p>
 
     <h2>When you should NOT buy shotfleet</h2>
@@ -102,13 +102,19 @@
     <p>I ship a workout app in 18 languages. A Maestro flow taps buttons by their label, so every flow I wrote only worked in English.</p>
     <p>So I wrote shotfleet: one English flow, every language, both platforms, checked. On the first full run, I found that the onboarding button was unreachable in Japanese, Korean, Chinese and Arabic on small phones: taller text, no scrolling. It took a small fix in my app: I made two pages scroll. Nobody had noticed because English screenshots fit fine.</p>
     <p>ButterKit, AppScreens and fastlane do different things: make framing, make mockups, run UI tests. shotfleet makes sure the raw screenshots inside your app are actually in the right language.</p>
+    <!-- WAITLIST -->
+    <p class="cta-row"><a class="btn" href="/#price">Join the waitlist, or see the price<span class="ico" aria-hidden="true">↗</span></a></p>
+    <!-- /WAITLIST -->
+    <!-- SALE
+    <p class="cta-row"><a class="btn" href="@CHECKOUT@">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a></p>
+    SALE -->
   </section>
 </main>
 
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 <script src="/ga.js" defer></script>

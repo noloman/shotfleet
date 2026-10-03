@@ -7,18 +7,18 @@ Success = a few thousand dollars a year. Anything less means it stays a free too
 1. [x] Reliability: dismiss late dialogs (the disclaimer that broke Hindi) with a wait-until loop, on iOS and Android.
 2. [x] `shotfleet doctor`: checks Maestro, Xcode/simctl, adb/emulator, aapt2 and swiftc, and says how to fix what's missing.
 3. [x] `shotfleet init <app.app|app.apk>`: writes a starter config (bundle id/package, shipped locales) and a starter flow.
-4. [x] `shotfleet export --fastlane <dir>`: copies screenshots into the folders fastlane `deliver`/`supply` upload from,
+4. [x] `shotfleet export <out> --fastlane <dir>`: copies screenshots into the folders fastlane `deliver`/`supply` upload from,
        mapping each locale to its App Store / Google Play code.
 5. [x] README: a 10-minute quickstart, how selectors get translated, what the checks catch, limits.
 6. [x] Verify end to end on CrossfitTracker: iOS 18/18, Android 18/18, export to a scratch folder.
 
 ## Phase 1b: product quality bar (before anything is sold)
-- [x] Test suite: 43 tests, standard library only (`python3 -m unittest discover -s tests`), mutation-checked.
+- [x] Test suite: standard library only (`python3 -m unittest discover -s tests`, or `tools/check-claims.sh`), mutation-checked.
 - [x] Every expected mistake gives a one-line cause and fix, no tracebacks (config, paths, bundle id, tools, locales).
 - [x] Code review: 10 findings fixed (stale results could mislabel languages; cleanup killed other projects' Maestro drivers; ...).
 - [~] Proven on apps other than CrossfitTracker: Remoti iOS strings (String Catalogs) load correctly; full runs pending
       (need the Mac free of the emulator benchmark).
-- [ ] Docs match behavior exactly; `--help` per command.
+- [x] Docs checked against the program by `tests/test_docs_vs_code.py` (examples, commands, flags, variables, paths, numbers); `--help` per command.
 - [x] `shotfleet check <folder> --app <build>` checks screenshots from any tool (fastlane deliver/supply, plain folders).
       On CrossfitTracker's fastlane screenshots: 1 real finding per platform (zh-Hant/zh-TW listing shows English app), planted errors all caught.
 
