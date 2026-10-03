@@ -847,8 +847,10 @@ class Licence(unittest.TestCase):
                 body = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
                 test.calls.append((self.path.rsplit("/", 1)[-1], body))
                 good = body.get("license_key") == "GOOD"
-                reply = {"activate": {"activated": good, "instance": {"id": "inst1"}, "error": None if good else "license_key not found"},
-                         "validate": {"valid": good, "error": None if good else "expired"},
+                meta = {"product_id": "other" if body.get("license_key") == "OTHERPRODUCT" else "p1"}
+                good = good or body.get("license_key") == "OTHERPRODUCT"
+                reply = {"activate": {"activated": good, "instance": {"id": "inst1"}, "meta": meta, "error": None if good else "license_key not found"},
+                         "validate": {"valid": good, "meta": meta, "error": None if good else "expired"},
                          "deactivate": {"deactivated": True}}[self.path.rsplit("/", 1)[-1]]
                 self.send_response(200 if good or "deactivate" in self.path else 400); self.end_headers()
                 self.wfile.write(json.dumps(reply).encode())
@@ -858,12 +860,26 @@ class Licence(unittest.TestCase):
         self.dir = Path(tempfile.mkdtemp())
         self.patches = [mock.patch.object(sf, "LICENCE_API", f"http://127.0.0.1:{self.server.server_port}/v1/licenses"),
                         mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
+                        mock.patch.object(sf, "LS_PRODUCT_ID", "p1"),
                         mock.patch.object(sf.sys, "frozen", True, create=True)]
         for p in self.patches: p.start()
 
     def tearDown(self):
         for p in self.patches: p.stop()
         self.server.shutdown()
+
+    def test_a_key_from_another_lemon_squeezy_product_unlocks_nothing(self):
+        with self.assertRaisesRegex(sf.Fail, "not a shotfleet licence"): self.quiet(sf.cmd_activate, "OTHERPRODUCT")
+        self.assertFalse(sf.LICENCE_FILE.exists())
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "OTHERPRODUCT"}), self.assertRaisesRegex(sf.Fail, "SHOTFLEET_KEY"): sf.require_licence()
+        with mock.patch.object(sf, "LS_PRODUCT_ID", ""), self.assertRaisesRegex(sf.Fail, "not a shotfleet licence"): self.quiet(sf.cmd_activate, "GOOD")  # none configured: nothing passes
+
+    def test_a_licence_file_with_a_future_or_non_numeric_date_is_refused(self):
+        for checked in (time.time() + 10 * 86400, 9999999999, "2099-01-01", None, True):
+            with self.subTest(checked=checked):
+                sf.LICENCE_FILE.write_text(json.dumps({"key": "GOOD", "instance": "x", "checked": checked}))
+                with self.assertRaisesRegex(sf.Fail, "future|unreadable"): sf.require_licence()
+        self.assertEqual(self.calls, [])  # refused locally, no network
 
     def quiet(self, f, *a):
         with contextlib.redirect_stdout(io.StringIO()): return f(*a)
