@@ -36,26 +36,25 @@ check("a visit stores nothing about the visitor", hits.every(([k, v]) => /^\d+$/
 pending.length = 0; await w.fetch(new Request("https://x/api/hit", { method: "POST", body: JSON.stringify({ src: "lonely" }) }), { ...env, HIT_BATCH: 99 }, ctx); await Promise.all(pending);
 check("a single visit below the batch size is still stored", [...kv].some(([k, v]) => k.includes("|lonely|") && v === "1"));
 
-// the join alert: one push per new signup, never the address, and a dead push service never breaks a signup
-const sent = [], realFetch = globalThis.fetch; let pushOk = true;
-globalThis.fetch = async (url, init) => { sent.push({ url, body: init?.body, auth: init?.headers?.Authorization }); if (!pushOk) throw new Error("down"); return { ok: true }; };
-const envN = { ...env, NTFY_TOPIC: "t0pic" };
+// the join alert: one email per new signup, never the address, and a failing send never breaks a signup
+const sent = []; let sendOk = true;
+const ALERT = { send: async m => { sent.push(m); if (!sendOk) throw Object.assign(new Error("down"), { code: "E_DOWN" }); return { messageId: "x" }; } };
+const envN = { ...env, ALERT, ALERT_TO: "me@example.org" };
 const join = async (body, e = envN) => (await w.fetch(new Request("https://x/api/signup", { method: "POST", body: JSON.stringify(body), headers: { "content-length": "100" } }), e, ctx)).status;
 pending.length = 0;
 await join({ email: "n1@example.com", stack: "swift", ref: "reddit.com" }); await Promise.all(pending);
-check("a new signup sends one push to the secret topic", sent.length === 1 && sent[0].url === "https://ntfy.sh/t0pic");
-check("the push has the number, source and stack but never the address", /#\d+ on the list/.test(sent[0].body) && sent[0].body.includes("reddit.com") && sent[0].body.includes("swift") && !sent[0].body.includes("n1@example.com") && !sent[0].body.includes("example.com/"));
+check("a new signup sends one email to the ALERT_TO address", sent.length === 1 && sent[0].to === "me@example.org" && sent[0].from === "alerts@shotfleet.com");
+check("the email has the number, source and stack but never the address", /#\d+/.test(sent[0].subject) && sent[0].text.includes("reddit.com") && sent[0].text.includes("swift") && !JSON.stringify(sent[0]).includes("n1@example.com"));
 pending.length = 0; await join({ email: "n1@example.com" }); await Promise.all(pending);
-check("a repeat signup sends no second push", sent.length === 1);
-pending.length = 0; await join({ email: "n4@example.com" }, { ...envN, NTFY_TOKEN: "tk_abc" }); await Promise.all(pending);
-check("an NTFY_TOKEN is sent as a bearer token, and only then", sent.length === 2 && sent[1].auth === "Bearer tk_abc" && sent[0].auth === undefined);
+check("a repeat signup sends no second email", sent.length === 1);
 pending.length = 0; await join({ email: "n2@example.com" }, env); await Promise.all(pending);
-check("without the NTFY_TOPIC secret nothing is sent", sent.length === 2);
-pushOk = false; pending.length = 0;
-check("a failing push service does not fail the signup", await join({ email: "n3@example.com" }) === 200);
+check("without the ALERT binding nothing is sent", sent.length === 1);
+pending.length = 0; await join({ email: "n5@example.com" }, { ...envN, ALERT_TO: "" }); await Promise.all(pending);
+check("without the ALERT_TO secret nothing is sent", sent.length === 1);
+sendOk = false; pending.length = 0;
+check("a failing send does not fail the signup", await join({ email: "n3@example.com" }) === 200);
 await Promise.all(pending);
-check("the signup is stored even when the push failed", kv.has("email:n3@example.com"));
-globalThis.fetch = realFetch;
+check("the signup is stored even when the email failed", kv.has("email:n3@example.com"));
 
 // contact form, forget, and the error paths
 const msgs = () => [...kv].filter(([k]) => k.startsWith("msg:")).map(([, v]) => JSON.parse(v));

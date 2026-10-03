@@ -29,3 +29,7 @@ enabled = true
 
 [observability.logs]
 enabled = true
+
+# the signup alert email (notifyJoin): sends only to addresses verified in Email Routing; the recipient is the ALERT_TO secret
+[[send_email]]
+name = "ALERT"
