@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Tests:** `tests/test_claims_unit.py` proves five more claims in the register (free-tier cap and licence reach both platform runs, the Gumroad and Polar licence answers, hook variables and exit codes, a translated caption over an English UI) and adds init checks for every framework and archive kind; no change to `shotfleet.py`.
 - **`check` knows the iPhone Duo screenshot sizes** (outer 1398x2034, inner 2007x2853; Apple opens uploads later this year). A Duo-only set still needs a 6.9" or 6.5" iPhone set.
 - **Maestro watch:** a weekly GitHub workflow (and `tools/latest-maestro.py`) fetches the newest stable Maestro release, checks it against what shotfleet relies on and goes red if something is gone; a compatible newer version is reported as "needs a real run", never as tested.
 - **Compatibility:** `tools/maestro-compat.py` checks any Maestro against what shotfleet relies on, without a device (2.0.10 and the newest, 2.11.0, both pass); tar extraction passes an explicit filter (Python 3.12 deprecates the default, 3.14 changes it); the Linux CI job also runs Python 3.13 with deprecation warnings as errors.
