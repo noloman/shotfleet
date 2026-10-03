@@ -1585,6 +1585,10 @@ def judge_screen(lp, ocr, tables):
     score = {o: len(lines & vals) + (sum(1 for l in lines - vals if vals.formats.match(l))
                                       if getattr(vals, "formats", None) else 0)
              for o, vals in tables.items()}
+    if ocr.get("ocr") == "external":  # Tesseract joins labels on one visual line ("Alle Übungen WODs"): find them inside
+        text = " | ".join(lines)
+        for o, vals in tables.items():
+            score[o] += sum(1 for v in vals - lines if len(v) >= 5 and v in text)
     best = max(score.values(), default=0)
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
