@@ -1648,7 +1648,12 @@ def emulator_log_tail(proc, lines=15):
     except (AttributeError, OSError): return ""
     return "\n".join([l for l in text.splitlines() if l.strip()][-lines:])
 
-def boot_failure_hint():
+def boot_failure_hint(output=""):
+    """The likely cause of an emulator that did not boot. `output` is the emulator's own last lines: some fatal messages name the fix exactly."""
+    if "Not enough space to create userdata partition" in output:
+        return ("the emulator wants about 12 GB free for its data partition (see the FATAL line above): free disk space, or set a smaller "
+                "disk.dataPartition.size in ~/.android/avd/<name>.avd/config.ini; GitHub's hosted Linux runners start with about 7 GB free, so clear "
+                "/usr/local/lib/android and /usr/share/dotnet first")
     if sys.platform.startswith("linux") and not (os.access("/dev/kvm", os.R_OK) and os.access("/dev/kvm", os.W_OK)):
         return "this machine has no usable /dev/kvm, so the emulator is far too slow (docs/linux.md); Android runs need hardware virtualization"
     return "each emulator wants about 3 GB of free memory and 2 CPU cores; lower `parallel` in the config, or free memory, and run again"
@@ -1662,10 +1667,10 @@ def wait_booted(emus, timeout=600):
             proc = getattr(e, "proc", None)
             if proc is not None and proc.poll() is not None:
                 raise RuntimeError(f"{e.serial}: the emulator exited with code {proc.returncode} before it booted.\n"
-                                   f"its output ({getattr(proc, 'log_path', 'not kept')}):\n{emulator_log_tail(proc)}\n{boot_failure_hint()}")
+                                   f"its output ({getattr(proc, 'log_path', 'not kept')}):\n{emulator_log_tail(proc)}\n{boot_failure_hint(emulator_log_tail(proc))}")
         if time.time() - t0 > timeout:
             tails = "\n".join(f"{e.serial} ({getattr(e.proc, 'log_path', 'no log')}):\n{emulator_log_tail(e.proc)}" for e in emus if getattr(e, "proc", None) is not None)
-            raise RuntimeError(f"emulators did not boot in time ({timeout} s).\n{tails}\n{boot_failure_hint()}")
+            raise RuntimeError(f"emulators did not boot in time ({timeout} s).\n{tails}\n{boot_failure_hint(tails)}")
         time.sleep(3)
 
 # Exactly 9:16 at 1080px+ so Google Play can recommend the listing (research/store-specs.md)

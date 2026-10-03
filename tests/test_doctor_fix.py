@@ -386,7 +386,7 @@ class EmulatorBootFailures(unittest.TestCase):
         self.assertIn("emulator-5702", msg); self.assertIn("exited with code 1", msg); self.assertIn("HW config error: no KVM", msg)
 
     def test_a_timeout_carries_the_log_tail_and_the_likely_cause(self):
-        with mock.patch.object(sf.time, "sleep", lambda s: None), mock.patch.object(sf, "boot_failure_hint", lambda: "HINT"):
+        with mock.patch.object(sf.time, "sleep", lambda s: None), mock.patch.object(sf, "boot_failure_hint", lambda output="": "HINT"):
             with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu()], timeout=-1)
         msg = str(cm.exception)
         self.assertIn("emulators did not boot in time (-1 s)", msg); self.assertIn("HW config error: no KVM", msg); self.assertIn("HINT", msg)
@@ -397,6 +397,15 @@ class EmulatorBootFailures(unittest.TestCase):
             self.assertIn("/dev/kvm", sf.boot_failure_hint())
         with mock.patch.object(sf.sys, "platform", "darwin"):
             self.assertIn("3 GB", sf.boot_failure_hint())
+
+    def test_a_full_disk_is_named_with_its_fix(self):
+        """The real FATAL line from a GitHub runner, 2026-10-03: the emulator died at once and shotfleet used to wait 600 s for it."""
+        fatal = ("INFO | Increasing RAM size to 2560MB\nFATAL        | Not enough space to create userdata partition. "
+                 "Available: 7322.37 MB at /home/runner/.android/avd/../avd/shotfleet_android.avd, need 12288.00 MB.\n")
+        with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu(returncode=1, log=fatal)], timeout=600)
+        msg = str(cm.exception)
+        self.assertIn("Not enough space to create userdata partition", msg); self.assertIn("12 GB free", msg); self.assertIn("disk.dataPartition.size", msg)
+        self.assertNotIn("KVM", msg)  # not blamed on virtualization
 
     def test_start_emu_keeps_the_emulators_output(self):
         d = Path(tempfile.mkdtemp())
