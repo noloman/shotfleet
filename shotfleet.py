@@ -2134,7 +2134,8 @@ def cmd_doctor():
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
-    if (latest := latest_release()) and latest != VERSION:
+    vt = lambda v: tuple(int(n) for n in re.findall(r"\d+", v))
+    if (latest := latest_release()) and vt(latest) > vt(VERSION):  # a dev build newer than the release says nothing
         print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.com/install.sh | sh")
     print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
           else "next: fix the MISSING lines above, then run shotfleet doctor again")
