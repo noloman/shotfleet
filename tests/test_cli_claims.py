@@ -259,7 +259,7 @@ class McpCheckDoesNotTouchTheFolder(unittest.TestCase):
             old = os.getcwd(); os.chdir(cwd)
             try:
                 real = sf.cmd_check  # the fake reader stands in for macOS OCR, which compiles a model on first use
-                with mock.patch.object(sf, "cmd_check", lambda *a, **k: real(*a, **k, ocr_command="cat {image}.txt")):
+                with mock.patch.object(sf, "cmd_check", lambda *a, **k: real(*a, **{**k, "ocr_command": "cat {image}.txt"})):
                     text, err = sf.mcp_call("check", {"folder": str(shots), "strings": str(d / "locales/*/translation.json")})
             finally:
                 os.chdir(old)

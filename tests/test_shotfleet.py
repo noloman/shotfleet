@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest discover -s tests
 """
-import contextlib, io, json, os, subprocess, sys, tempfile, time, tomllib, unittest
+import contextlib, io, json, os, subprocess, sys, tempfile, threading, time, tomllib, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -102,7 +102,7 @@ class LocalizeFlow(unittest.TestCase):
     def test_system_dialog_buttons_keep_their_english_text(self):  # iOS draws them in the device language
         out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Allow\n- tapOn: \"Don't Allow\"\n",
                                             {"a": "Allow"}, {"a": "Erlauben"})
-        self.assertIn("'(Allow|Erlauben)'", out); self.assertIn('"Don\'t Allow"', out); self.assertEqual(missing, [])
+        self.assertIn("'(Allow|Erlauben)'", out); self.assertIn("'Don\u2019t Allow'", out); self.assertEqual(missing, [])  # curly, as iOS spells it
 
     def test_flow_without_header_is_rejected_clearly(self):
         with self.assertRaisesRegex(ValueError, "appId"):
@@ -325,6 +325,12 @@ class ReviewFixes(unittest.TestCase):
             self.assertIn(f"    path: '{d}/01_home'", out)
             self.assertIn(f"- takeScreenshot: '{d}/02_log'", out)
         self.assertEqual(sf.count_screenshots(flow), 2)
+
+    def test_map_form_path_after_other_keys_is_redirected(self):
+        flow = "appId: x\n---\n- takeScreenshot:\n    cropOn: \"Card\"\n    path: 01_home\n- runFlow:\n    file: x.yaml\n    path: keep\n"
+        out = sf.localize_flow(flow, "de", Path("/o/raw/de"))
+        self.assertIn("    path: '/o/raw/de/01_home'", out)
+        self.assertIn("    path: keep", out)  # not a screenshot's path
 
     def test_driver_cleanup_only_touches_our_simulators(self):
         killed = []
@@ -1062,13 +1068,23 @@ class MultiDevice(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(sf.ipad_set_missing(out), 1)  # iPad app, iPhone set only
 
+    def test_checking_one_device_of_a_multi_device_run_leaves_the_ipad_rule_to_the_whole_run(self):
+        class Stop(Exception): pass
+        with tempfile.TemporaryDirectory() as d:
+            out = self.make(d, {"iphone-17-pro-max": (1320, 2868)}, [1, 2])
+            with mock.patch.object(sf, "store_rules", side_effect=lambda images, android, ipad: (_ for _ in ()).throw(Stop(ipad))), \
+                 contextlib.redirect_stdout(io.StringIO()), self.assertRaises(Stop) as cm:
+                sf.cmd_check(out / "iphone-17-pro-max")
+            self.assertEqual(cm.exception.args, (False,))
+
 
 class StuckOcrFallback(unittest.TestCase):
     def setUp(self):
         self.d = Path(tempfile.mkdtemp())
         self.bin = self.d / "bin"; self.bin.mkdir()
         self.log = self.d / "calls.txt"
-        (self.bin / "tesseract").write_text(f'#!/bin/sh\necho "$@" >> {self.log}\ncat "$1.txt"\n')
+        (self.bin / "tesseract").write_text('#!/bin/sh\nif [ "$1" = --list-langs ]; then echo "List of available languages (3):"; '
+                                            f'printf "eng\\ndeu\\njpn\\n"; exit 0; fi\necho "$@" >> {self.log}\ncat "$1.txt"\n')
         (self.bin / "tesseract").chmod(0o755)
         for lp, words in (("de", ["Weiter", "Einstellungen", "Training starten"]), ("ja", ["Next", "Settings", "Start Training"])):
             png = self.d / "shots" / lp / "1.png"; png.parent.mkdir(parents=True)
@@ -1435,6 +1451,144 @@ class PlayDeviceFolders(unittest.TestCase):
             tablet = sf.find_screenshots(d, play_folder="tenInchScreenshots")
             self.assertEqual(sf.image_info(phone["de-DE"][0])[0], (1080, 1920))
             self.assertEqual(sf.image_info(tablet["de-DE"][0])[0], (1440, 2560))
+
+
+class Review20261003(unittest.TestCase):
+    def test_a_text_placeholder_with_one_word_around_it_is_not_evidence(self):
+        # pt "%@ atrás" matched Spanish "Cuenta atrás", so a real Spanish screen was reported as Portuguese
+        t = sf.string_tables({"es": {"a": "Cuenta atrás", "b": "Progreso"}, "pt": {"a": "Contagem regressiva", "b": "%@ atrás", "c": "Último: %d dias atrás"}})
+        self.assertFalse(t["pt"].formats.match("una cuenta atras"))
+        self.assertTrue(t["pt"].formats.match("ultimo: 3 dias atras"))  # numbers keep the shorter rule
+
+    def test_tesseract_value_inside_a_longer_word_is_not_a_match(self):
+        t = sf.string_tables({"en": {"a": "Start", "b": "History", "c": "Settings"},
+                              "de": {"a": "Starten", "b": "Verlauf", "c": "Einstellungen"}})
+        r = {"text": "Starten\nVerlauf", "chars": 15, "lang": None, "langs": {}, "ocr": "external"}
+        with mock.patch.object(sf, "readable_languages", return_value={"en", "de"}):
+            self.assertEqual(sf.judge_screen("en", r, t)[0], "de")
+
+    def test_unusable_app_text_falls_back_to_ocr(self):
+        with tempfile.TemporaryDirectory() as d:
+            png = Path(d) / "1.png"; f = png.with_suffix(".texts.json")
+            f.write_text("[]"); self.assertIsNone(sf.screen_text(png))        # empty tree
+            f.write_text('["Welcome'); self.assertIsNone(sf.screen_text(png))  # half-written
+            t = sf.string_tables({"de": {"a": "Weiter", "b": "Zurück"}})
+            f.write_text(json.dumps(["Hi Sam", "Weiter"])); self.assertIsNone(sf.usable_text(png, t))  # 1 line proves nothing
+            f.write_text(json.dumps(["Hi Sam", "Weiter", "Zurück"])); self.assertIsNotNone(sf.usable_text(png, t))
+
+    def test_reader_survives_bad_trees_and_rereads_rewritten_screenshots(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "dbg").mkdir(); (d / "raw/de").mkdir(parents=True)
+            (d / "dbg/maestro.log").write_text("Selected device X using port 7001 with execution plan ExecutionPlan(flowsToRun=[/f/de.yaml]")
+            png = d / "raw/de/1.png"; png.write_bytes(b"x")
+            calls = []
+            def fake(port, bundle):
+                calls.append(port)
+                if len(calls) == 1: raise AttributeError("tree is a list")
+                return ["Weiter", f"read {len(calls)}"]
+            stop = threading.Event()
+            with mock.patch.object(sf, "ios_screen_texts", fake):
+                th = threading.Thread(target=sf.capture_texts, args=(stop, d / "dbg", d / "raw", "b")); th.start()
+                png2 = d / "raw/de/2.png"; time.sleep(0.5); png2.write_bytes(b"y")  # reader lived through the first error
+                for _ in range(50):
+                    if png2.with_suffix(".texts.json").exists(): break
+                    time.sleep(0.1)
+                self.assertTrue(png2.with_suffix(".texts.json").exists())
+                os.utime(png2, (1, 1))  # same path rewritten: read again
+                n = len(calls); time.sleep(0.6); stop.set(); th.join(5)
+            self.assertGreater(len(calls), n)
+            self.assertFalse(list((d / "raw/de").glob("*.tmp")))
+
+    def test_pause_goes_after_the_whole_map_form_screenshot_step(self):
+        flow = "appId: x\n---\n- takeScreenshot:\n    cropOn:\n      text: a\n    path: s\n- tapOn: Next\n"
+        out = sf.localize_flow(flow, "de", Path("/s")).splitlines()
+        i = out.index("    path: '/s/s'")
+        self.assertEqual(out[i + 1], "- extendedWaitUntil:")
+        self.assertEqual(sum("__shotfleet_reading_screen__" in l for l in out), 1)
+
+    def test_pool_cleanup_only_deletes_its_own_numbered_names(self):
+        sims = [{"name": n, "udid": n, "isAvailable": True, "deviceTypeIdentifier": "T"}
+                for n in ("shotfleet-iphone-17-pro-max-1", "shotfleet-iphone-17-2", "shotfleet-iphone-17-1")]
+        calls = []
+        def fake(cmd, **kw):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0, json.dumps({"devices": {"rt": sims}}) if "-j" in cmd else "NEW", "")
+        with mock.patch.object(sf, "sh", fake), mock.patch.object(sf.Sim, "run", return_value=""):
+            sf.make_pool(1, "T2", "rt", "shotfleet-iphone-17")
+        self.assertEqual([c[-1] for c in calls if "delete" in c], ["shotfleet-iphone-17-2", "shotfleet-iphone-17-1"])
+
+    def test_ios_run_shuts_its_simulators_down_even_when_it_fails(self):
+        calls = []
+        sf.OUR_SIMS.add("U1")
+        with mock.patch.object(sf, "ios_run_inner", side_effect=sf.Fail("x")), \
+             mock.patch.object(sf, "sh", lambda cmd, **kw: calls.append(cmd)):
+            with self.assertRaises(sf.Fail): sf.ios_run({}, None)
+        self.assertEqual(calls, [["xcrun", "simctl", "shutdown", "U1"]]); self.assertFalse(sf.OUR_SIMS)
+
+    def test_new_multi_device_run_hides_an_old_single_run_and_export_needs_the_ipad_set(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True)
+            (out / "run.json").write_text("{}"); (out / "check.json").write_text("{}")
+            sf.clear_single_run(out)
+            self.assertEqual([p.name for p in out.iterdir()], [])
+        with tempfile.TemporaryDirectory() as d:
+            out = MultiDevice().make(d, {"iphone-17-pro-max": (1320, 2868)}, [1, 2])
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(sf.Fail, "13\" iPad"):
+                sf.cmd_export(out, Path(d) / "fl")
+
+    def test_check_passes_report_dir_to_each_device(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = MultiDevice().make(d, {"a": (1320, 2868), "b": (2064, 2752)}, [1])
+            with mock.patch.object(sf, "cmd_check", return_value=0) as c, mock.patch.object(sf, "ipad_set_missing", return_value=0):
+                sf.check_any(out, report=Path(d) / "rep")
+            self.assertEqual(sorted(k.kwargs["report_dir"].name for k in c.call_args_list), ["a", "b"])
+
+    def test_tablet_only_play_folder_is_checked_with_play_rules(self):
+        with tempfile.TemporaryDirectory() as d:
+            f = Path(d) / "supply/de-DE/images/tenInchScreenshots"; f.mkdir(parents=True)
+            (f / "1.png").write_bytes(png_c(1440, 2560))
+            with mock.patch.object(sf, "warm_up_ocr", return_value=True), \
+                 mock.patch.object(sf, "read_text", return_value={"text": "Hallo", "chars": 5, "lang": "de", "langs": {"de": 1}}), \
+                 contextlib.redirect_stdout(io.StringIO()) as out:
+                sf.cmd_check(Path(d) / "supply", report_dir=Path(d) / "rep", play_folder="tenInchScreenshots")
+        self.assertNotIn("App Store", out.getvalue())
+
+    def test_nested_launch_app_keeps_its_indent(self):
+        flow = ("appId: a\n---\n- launchApp\n- runFlow:\n    commands:\n      - launchApp:\n          arguments:\n"
+                "            foo: bar\n      - tapOn: Y\n- tapOn: Z\n")
+        body = sf.localize_flow(flow, "de", Path("/s")).split("\n---\n")[1].splitlines()
+        i = body.index("      - launchApp:")
+        self.assertEqual(body[i - 2:i], ["- runFlow:", "    commands:"])
+        self.assertEqual(body[i + 1], "          arguments:")
+        self.assertTrue(all(l.startswith("          ") for l in body[i + 1:i + 5]))
+        self.assertEqual(body[i + 5:], ["      - tapOn: Y", "- tapOn: Z"])
+
+    def test_bad_mcp_call_returns_an_error_and_clears_the_last_report(self):
+        sf.LAST_REPORT = Path("/stale/check.json")
+        text, err = sf.mcp_call("check", {})
+        self.assertTrue(err); self.assertIn("KeyError", text); self.assertIsNone(sf.LAST_REPORT)
+
+    def test_ocr_command_errors_and_tesseract_listing(self):
+        with self.assertRaisesRegex(sf.Fail, r"unknown placeholder.*\{tesseract_with_english\}"):
+            sf.external_ocr("tool {imag}", Path("a.png"), "de")
+        r = subprocess.CompletedProcess([], 0, "", "List of available languages (2):\neng\ndeu\n")
+        sf.tesseract_languages.cache_clear()
+        with mock.patch.object(sf.shutil, "which", return_value="/x"), mock.patch.object(sf, "sh", return_value=r):
+            self.assertEqual(sf.tesseract_languages(), {"eng", "deu"})
+        sf.tesseract_languages.cache_clear()
+
+    def test_macos_ocr_hanging_mid_check_switches_to_tesseract(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); png = d / "shots/de/1.png"; png.parent.mkdir(parents=True); png.write_bytes(png_c(1320, 2868))
+            ext = {"text": "Weiter\nZurück", "chars": 13, "lang": None, "langs": {}, "ocr": "external"}
+            with mock.patch.object(sf, "warm_up_ocr", return_value=True), \
+                 mock.patch.object(sf, "read_text", side_effect=RuntimeError("hung twice")), \
+                 mock.patch.object(sf, "external_ocr", return_value=ext) as e, \
+                 mock.patch.object(sf, "tesseract_languages", return_value=frozenset({"eng", "deu"})), \
+                 mock.patch.object(sf.shutil, "which", return_value="/x"), contextlib.redirect_stdout(io.StringIO()):
+                sf.cmd_check(d / "shots", strings={"de": {"a": "Weiter", "b": "Zurück"}, "en": {"a": "Next", "b": "Back"}},
+                             report_dir=d / "rep")
+            self.assertEqual(e.call_count, 1)
 
 
 if __name__ == "__main__":
