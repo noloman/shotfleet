@@ -7,10 +7,11 @@
 #
 # It BOOTS iOS SIMULATORS (shotfleet creates and boots shotfleet-<device>-N and shuts them down again), and with --android also
 # EMULATORS (2 read-only copies of shotfleet_android on ports 5702 and 5704), so it refuses to run without SHOTFLEET_E2E=1.
-# Run it on a quiet Mac: not while another session or run uses them. About 10 minutes for iOS, a few more for Android.
+# Run it on a quiet Mac (or Linux box with KVM, Android only): not while another session or run uses them. About 10 minutes for iOS, a few more for Android.
 #   (no flag)             only iOS: the default is unchanged
 #   --android             iOS, then Android (also SHOTFLEET_E2E_ANDROID=1)
-#   --platform-only ios|android   only that platform (android needs no Xcode; ios is the default)
+#   --platform-only ios|android   only that platform (android needs no Xcode; ios is the default). On Linux only
+#                         `--platform-only android` runs: needs /dev/kvm, 6 GB free memory, Tesseract with deu, jpn, ara and tur data
 #   --skip-android        no Android, even with SHOTFLEET_E2E_ANDROID=1
 #   --keep                keep the temp work dir (it is also kept when anything fails)
 # SHOTFLEET_BIN=/path/to/shotfleet tests a built binary instead of ./shotfleet.py (a built binary needs a licence for the
@@ -35,23 +36,38 @@ if [ "${SHOTFLEET_E2E:-}" != 1 ]; then
   echo "emulators too, and must not run while another session uses them. Run it as: SHOTFLEET_E2E=1 $0" >&2
   exit 2
 fi
-[ "$(uname)" = Darwin ] || { echo "fixture-e2e: macOS only (simulators and the Mac's own text recognition)" >&2; exit 2; }
+OS=$(uname)
+if [ "$OS" != Darwin ]; then  # iOS simulators exist only on a Mac; the Android half also runs on Linux (docs/linux.md, experiment E1)
+  [ "$OS" = Linux ] && [ "$ANDROID" = 1 ] && [ "$IOS" = 0 ] || {
+    echo "fixture-e2e: on $OS only the Android half runs: $0 --platform-only android (iOS simulators need a Mac)" >&2; exit 2; }
+fi
 
 # ---- pre-flight: nothing is created or booted before these pass ----
 TMP=${TMPDIR:-/tmp}
 free_kb=$(df -Pk "$TMP" | awk 'NR==2{print $4}')
 [ "$free_kb" -ge 5242880 ] || { echo "fixture-e2e: only $((free_kb / 1048576)) GB free in $TMP, need 5 GB" >&2; exit 2; }
-free_pct=$(memory_pressure 2>/dev/null | sed -n 's/.*free percentage: *\([0-9]*\)%.*/\1/p' | tail -1)
-level=$(sysctl -n kern.memorystatus_vm_pressure_level 2>/dev/null || echo 1)
-if [ "$level" = 4 ] || [ "${free_pct:-100}" -lt 10 ]; then
-  echo "fixture-e2e: memory pressure is critical (level $level, ${free_pct:-?}% free); free memory first" >&2; exit 2
+if [ "$OS" = Darwin ]; then
+  free_pct=$(memory_pressure 2>/dev/null | sed -n 's/.*free percentage: *\([0-9]*\)%.*/\1/p' | tail -1)
+  level=$(sysctl -n kern.memorystatus_vm_pressure_level 2>/dev/null || echo 1)
+  if [ "$level" = 4 ] || [ "${free_pct:-100}" -lt 10 ]; then
+    echo "fixture-e2e: memory pressure is critical (level $level, ${free_pct:-?}% free); free memory first" >&2; exit 2
+  fi
+else  # Linux: two emulators want about 3 GB each, the emulator needs KVM, and check reads de/ja/ar/tr screenshots with Tesseract
+  avail_kb=$(awk '/^MemAvailable:/{print $2}' /proc/meminfo)
+  [ "${avail_kb:-0}" -ge 6291456 ] || { echo "fixture-e2e: only $((${avail_kb:-0} / 1048576)) GB of memory available, need 6 GB for two emulators" >&2; exit 2; }
+  [ -r /dev/kvm ] && [ -w /dev/kvm ] || { echo "fixture-e2e: /dev/kvm is not usable; without it the emulator is far too slow to mean anything (sudo usermod -aG kvm \$USER, log in again)" >&2; exit 2; }
+  command -v tesseract >/dev/null || { echo "fixture-e2e: Tesseract is not installed (apt install tesseract-ocr tesseract-ocr-deu tesseract-ocr-jpn tesseract-ocr-ara tesseract-ocr-tur)" >&2; exit 2; }
+  for l in deu jpn ara tur; do
+    tesseract --list-langs 2>&1 | grep -qx "$l" || { echo "fixture-e2e: Tesseract has no '$l' data (apt install tesseract-ocr-$l)" >&2; exit 2; }
+  done
 fi
 
 WORK=$(mktemp -d "$TMP/shotfleet-e2e.XXXXXX"); LOGS=$WORK/logs; PY=$WORK/e2e_assert.py
 mkdir -p "$LOGS" "$WORK/proj"
 sed -n '/^: <<.__PY__.$/,/^__PY__$/p' "$0" | sed '1d;$d' > "$PY"   # the assertion helper is the end of this file (tests/test_fixture_e2e.py loads it the same way)
 PASS=0; FAIL=0; LAST_RC=0; PH=""; PS=0; T0=$(date +%s); SIMS=0; EMUS=0
-ADB=${SHOTFLEET_E2E_ADB:-${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb}; [ -x "$ADB" ] || ADB=adb
+if [ "$OS" = Darwin ]; then DEFAULT_SDK=$HOME/Library/Android/sdk; else DEFAULT_SDK=$HOME/Android/Sdk; fi
+ADB=${SHOTFLEET_E2E_ADB:-${ANDROID_HOME:-$DEFAULT_SDK}/platform-tools/adb}; [ -x "$ADB" ] || ADB=adb
 
 # ponytail: the safety net only shuts down simulators named like our own device types' pools, and only once a run has been
 # started; shotfleet itself already shuts its pool down on exit. A second shotfleet run started at the same moment would be hit too.
@@ -122,6 +138,10 @@ TOML
 }
 
 say "work dir: $WORK"
+if [ "$OS" = Linux ]; then  # the record for experiment E1: what machine these timings come from
+  say "machine: $(uname -srm); $(nproc) cores; $(awk '/^MemTotal:/{printf "%d GB", $2/1048576}' /proc/meminfo); KVM $([ -w /dev/kvm ] && echo usable || echo missing)"
+  say "cpu: $(awk -F': ' '/^model name/{print $2; exit}' /proc/cpuinfo)"
+fi
 [ "$ANDROID" = 1 ] || say "SKIP android: not requested (pass --android or set SHOTFLEET_E2E_ANDROID=1; the fixture is tools/fixture-app-android)"
 if [ "$IOS" = 1 ] && [ -n "$(python3 "$PY" sims)" ]; then
   echo "fixture-e2e: a shotfleet simulator is already booted (another run?). Wait for it to finish." >&2; exit 2

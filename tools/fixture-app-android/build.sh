@@ -1,10 +1,11 @@
 #!/bin/sh
 # Build the Android fixture app with the SDK's own tools only (no Gradle, no downloads): tools/fixture-app-android/build.sh [output dir]
 # -> <dir>/FleetFixture.apk, package com.shotfleet.fixture, minSdk 33, en/de/ja/ar/tr. Signed with a throwaway debug key made in <dir>.
-# Needs: ANDROID_HOME (default ~/Library/Android/sdk) with build-tools (aapt2, d8, zipalign, apksigner) and a platform android.jar, and a JDK.
+# Needs: ANDROID_HOME (default ~/Library/Android/sdk on a Mac, ~/Android/Sdk on Linux) with build-tools (aapt2, d8, zipalign, apksigner) and a platform android.jar, and a JDK.
 set -eu
 cd "$(dirname "$0")"
-SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}
+if [ "$(uname)" = Darwin ]; then DEFAULT_SDK=$HOME/Library/Android/sdk; else DEFAULT_SDK=$HOME/Android/Sdk; fi
+SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$DEFAULT_SDK}}
 OUT=${1:-build}; mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd); W=$OUT/work; APK=$OUT/FleetFixture.apk
 # newest build-tools that has all four tools, newest numbered platform that has an android.jar
 BT=$(for d in "$SDK"/build-tools/*/; do [ -x "$d/aapt2" ] && [ -x "$d/d8" ] && [ -x "$d/zipalign" ] && [ -x "$d/apksigner" ] && echo "${d%/}"; done | sort -V | tail -1)

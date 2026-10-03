@@ -397,3 +397,14 @@ class WholeScriptWithFakes(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LinuxRefusals(unittest.TestCase):
+    """On Linux the script runs only the Android half, and says so instead of failing in the middle."""
+    @unittest.skipIf(sys.platform == "darwin", "the Linux messages")
+    def test_ios_on_linux_is_refused_with_the_android_command(self):
+        r = subprocess.run(["sh", str(Path(__file__).resolve().parent.parent / "tools/fixture-e2e.sh")], capture_output=True, text=True,
+                           env={**os.environ, "SHOTFLEET_E2E": "1"})
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("only the Android half runs", r.stderr)
+        self.assertIn("--platform-only android", r.stderr)
