@@ -1454,6 +1454,18 @@ class PlayDeviceFolders(unittest.TestCase):
 
 
 class Review20261003(unittest.TestCase):
+    def test_tesseract_script_detection_flags_another_script_only_when_confident(self):
+        # a Japanese screen in the Korean listing: Tesseract (-l eng+kor) reads Latin gibberish but its script detection says Japanese
+        tables = sf.string_tables({"ko": {"a": "다음"}, "ja": {"a": "次へ"}, "en": {"a": "Next"}})
+        scr = lambda s, c: {"text": "x ya", "chars": 4, "lang": None, "langs": {}, "ocr": "external", "lines": [], "osd_script": s, "osd_conf": c}
+        with mock.patch.object(sf, "readable_languages", return_value={"ko", "ja", "en"}):
+            lp, problem = sf.judge_screen("ko", scr("Japanese", 1.51), tables)
+            self.assertIn("Japanese script, expected 'ko'", problem)
+            self.assertEqual(sf.judge_screen("ko", scr("Japanese", 0.06), tables), ("ko", None))  # weak: Korean read as Japanese
+            self.assertEqual(sf.judge_screen("ko", scr("Korean", 3.0), tables), ("ko", None))
+            self.assertEqual(sf.judge_screen("ja", scr("Han", 2.0), tables), ("ja", None))  # kanji-heavy Japanese
+            self.assertEqual(sf.judge_screen("ja", scr("Korean", 2.0), tables)[0], None)
+        r = sf.tesseract_script("x.png", "de"); self.assertEqual(r, {})  # only ja, ko, th are asked
     def test_a_slow_warm_up_times_out_but_keeps_running_so_a_first_compile_can_finish(self):
         with tempfile.TemporaryDirectory() as d:
             done, ocr = Path(d) / "done", Path(d) / "ocr"
