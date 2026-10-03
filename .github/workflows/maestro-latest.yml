@@ -1,0 +1,23 @@
+name: maestro-latest
+# Weekly: does the newest Maestro release still have everything shotfleet relies on? Red means something shotfleet needs is gone from it.
+# Green means "worth a real run on a device", never "supported": MAESTRO_TESTED only changes after tools/fixture-e2e.sh passes (docs/handoff.md item 1).
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screen-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - run: python3 tools/latest-maestro.py
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
