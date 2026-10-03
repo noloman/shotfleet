@@ -1,10 +1,10 @@
 # Experiment E1 (docs/linux.md): the Android fixture on a Linux runner with KVM. One-off, approved by Manu 2026-10-03
-# (CI is otherwise not used for shotfleet). Runs only on pushes to this branch that touch this file, or by hand.
+# (CI is otherwise not used for shotfleet). Runs only on pushes to this branch that touch this file, shotfleet.py or the e2e script, or by hand.
 name: e1-android-kvm
 on:
   push:
     branches: [claude/e1-android-kvm]
-    paths: [.github/workflows/e1-android-kvm.yml]
+    paths: [.github/workflows/e1-android-kvm.yml, shotfleet.py, tools/fixture-e2e.sh]
   workflow_dispatch:
 jobs:
   e1:
