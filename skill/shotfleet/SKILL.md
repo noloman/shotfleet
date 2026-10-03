@@ -42,6 +42,7 @@ shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json --report <repo
 
 ```bash
 shotfleet doctor                                   # fix every MISSING line first
+shotfleet doctor --fix                             # or let it download Maestro, Java and the Android tools (asks once; never sudo)
 shotfleet init <MyApp.app> <app-debug.apk> --dir <dir>   # either build or both; writes shotfleet.toml and flow.yaml
 shotfleet run <dir>/shotfleet.toml --locales en    # ONE language first: boots simulators, takes minutes
 shotfleet run <dir>/shotfleet.toml --json          # all languages

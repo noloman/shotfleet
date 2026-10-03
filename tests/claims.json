@@ -2093,5 +2093,20 @@
   "layer": "unit",
   "assertion": "An 18-language run on a KVM emulator, then check, on a Linux machine.",
   "fix": ""
+ },
+ {
+  "id": "C126",
+  "claim": "doctor --fix downloads Maestro, a Java runtime and the Android tools after one question, with checksums, never using sudo",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first"
+  ],
+  "status": "partial",
+  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. Never run on a Mac.",
+  "layer": "unit",
+  "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok.",
+  "fix": ""
  }
 ]

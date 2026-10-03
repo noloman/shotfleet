@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- **`doctor --fix`:** downloads what `doctor` found missing after one question (`--yes` skips it): Maestro 2.0.10 pinned by SHA-256,
+  a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools plus the SDK pieces. Never `sudo`, no shell
+  files or PATH edits, no Xcode; `SSL_CERT_FILE` is honoured for proxies. Maestro from `~/.shotfleet` is used before the one on the PATH.
 - **Frameworks:** `init` in a Flutter, React Native, Expo, Capacitor, .NET MAUI or Kotlin Multiplatform project folder finds
   the build where that framework puts it, writes the `strings` line for the translation files it finds and prints the
   framework's own build commands; EAS `.tar.gz` and `.zip` builds are unpacked by `init`. Translations written as objects

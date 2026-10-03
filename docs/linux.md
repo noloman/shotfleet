@@ -57,7 +57,9 @@ asserts they are found. Everything before the emulator was run on the test machi
 About 10 minutes plus the first image download.
 
 1. **Machine:** x86_64 or ARM Linux with `/dev/kvm` usable by your user (`ls -l /dev/kvm`; `sudo usermod -aG kvm $USER` and log in again),
-   6 GB of free memory, 10 GB of disk. Not a cloud VM without nested virtualization.
+   6 GB of free memory, 10 GB of disk. Not a cloud VM without nested virtualization: the emulator
+   refuses x86_64 images when the CPU exposes no `vmx`/`svm`, and refuses an arm64 image on an x86_64 host ("System image must match the host
+   architecture"), so there is no software fallback. (Checked 2026-10-03 on a VM without virtualization, emulator 37.2.)
 2. **Packages:** `sudo apt install tesseract-ocr tesseract-ocr-deu tesseract-ocr-jpn tesseract-ocr-ara tesseract-ocr-tur openjdk-21-jre-headless openjdk-21-jdk-headless unzip`
    (the JDK for `javac` and `keytool`, which build the fixture).
 3. **Android SDK:** unzip Google's "Command line tools only" into `~/Android/Sdk/cmdline-tools/latest`, then
