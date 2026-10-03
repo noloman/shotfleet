@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`doctor --fix` and Google's new Android CLI:** Google's newest command-line tools turned `sdkmanager` into a shim for their Android CLI. Two consequences are handled. It refuses to unpack into an SDK folder whose path contains `..` ("Illegal entry path escaping destination directory"), so every SDK path is now normalised (found on a GitHub runner, where the workspace path has `..`). And it reports usage data to Google unless told `--no-metrics`, which `sdkmanager` itself rejects, so package installs now go through `android --no-metrics --sdk=ROOT sdk install` when that program is present, and through plain `sdkmanager` otherwise.
 - **`check` knows the iPhone Duo screenshot sizes** (outer 1398x2034, inner 2007x2853; Apple opens uploads later this year). A Duo-only set still needs a 6.9" or 6.5" iPhone set.
 - **Maestro watch:** a weekly GitHub workflow (and `tools/latest-maestro.py`) fetches the newest stable Maestro release, checks it against what shotfleet relies on and goes red if something is gone; a compatible newer version is reported as "needs a real run", never as tested.
 - **Compatibility:** `tools/maestro-compat.py` checks any Maestro against what shotfleet relies on, without a device (2.0.10 and the newest, 2.11.0, both pass); tar extraction passes an explicit filter (Python 3.12 deprecates the default, 3.14 changes it); the Linux CI job also runs Python 3.13 with deprecation warnings as errors.

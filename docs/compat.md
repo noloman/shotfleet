@@ -41,6 +41,7 @@ work on 2.11.0. Not run on a device; the value Maestro puts in it (the adb seria
 | Expo / React Native | `create-expo-app` as of 2026-10-03 (SDK number not recorded) | built a release APK with i18next + expo-localization; `init` found it | works up to the build; no device run |
 | Kotlin Multiplatform | JetBrains/kotlinconf-app (clone only) | detection | works after a fix |
 | Licence calls through an HTTPS-re-signing proxy | this sandbox's | real handshake, aimed at a harmless URL, no key | fails without `SSL_CERT_FILE`, works with it |
+| Google Android command-line tools | 23.0 (`sdkmanager` prints "deprecated, Android CLI will be used instead"), Android CLI 1.0.16500706 | `doctor --fix` on a bare Linux machine and on a GitHub runner; `android --no-metrics sdk install` checked against the real tool | works after two fixes (dotted SDK path; usage reporting). **Risk:** `sdkmanager` is a deprecated shim; if Google removes it, `doctor --fix` and the printed `sdkmanager` commands in `doctor` need to move to `android sdk install` |
 | Tesseract | 5.3.4 | `check` on rendered screenshots on Linux (de, ja, en data) | works |
 | Xcode, iOS Simulator runtimes, macOS | not checked in this environment | | see `docs/handoff.md` |
 
