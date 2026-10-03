@@ -103,10 +103,13 @@ currently says "not yet run on a real Flutter or React Native app"; claims C035,
 
 ## 4. `doctor --fix` on a Mac
 
-**State:** the Linux path was run for real (Maestro, Google's tools, platform-tools, emulator, image; the Java download separately). On macOS:
-the Temurin JRE tarball unpacks to `jdk-21.x.y+z-jre/Contents/Home/...`; `install_jre` renames that folder to `~/.shotfleet/jre`, and
-`find_java` looks at `~/.shotfleet/jre/Contents/Home`. Unverified. So is the `brew install --cask android-commandlinetools` branch, and the
-Google archive pick for `mac_arm64`.
+**State:** the Linux path was run for real. On an Apple-silicon Mac (2026-10-03; scratch `SHOTFLEET_HOME`, `ANDROID_HOME` and `HOME`;
+`PATH=/usr/bin:/bin:/usr/sbin:/sbin`) `doctor --fix --yes` installed Maestro 2.0.10 (SHA-256 checked), Temurin 21.0.12.1 (the tarball is
+`jdk-21.0.12+1-jre/Contents/Home/...`; `find_java` finds `jre/Contents/Home`; Maestro ran with it) and Google's `mac_arm64` command-line tools
+23.0 (SHA-1 checked), and `doctor` then reported Maestro and Java ok. **Left:** the licence step and the sdkmanager install of platform-tools,
+emulator, build-tools and the arm64 system image (a person has to accept Google's terms), and the `brew install --cask
+android-commandlinetools` branch (system-wide; with a stub `brew` the plan chose it as step 1, nothing more was verified). This Mac has
+Homebrew's openjdk, so `doctor` reported Java ok from the start; the JRE step was exercised with other Javas hidden from `find_java`.
 
 **Steps:** a clean macOS user (or `SHOTFLEET_HOME=$(mktemp -d)` plus `ANDROID_HOME=$(mktemp -d)` and a `PATH` without Java and Maestro):
 
