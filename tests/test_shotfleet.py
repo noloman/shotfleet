@@ -1408,6 +1408,19 @@ class AutoTesseract(unittest.TestCase):
         self.assertIsNone(self.run_check({"eng"}))               # no Greek data: "couldn't read", no crash
 
 
+class PlayDeviceFolders(unittest.TestCase):
+    def test_phone_and_tablet_sets_are_found_separately(self):
+        with tempfile.TemporaryDirectory() as d:
+            for kind, size in (("phoneScreenshots", (1080, 1920)), ("tenInchScreenshots", (1440, 2560))):
+                f = Path(d) / "metadata/android/de-DE/images" / kind; f.mkdir(parents=True)
+                (f / "1.png").write_bytes(png_c(*size))
+            self.assertEqual(sf.play_folders(d), ["phoneScreenshots", "tenInchScreenshots"])
+            phone = sf.find_screenshots(d)
+            tablet = sf.find_screenshots(d, play_folder="tenInchScreenshots")
+            self.assertEqual(sf.image_info(phone["de-DE"][0])[0], (1080, 1920))
+            self.assertEqual(sf.image_info(tablet["de-DE"][0])[0], (1440, 2560))
+
+
 if __name__ == "__main__":
     unittest.main()
 
