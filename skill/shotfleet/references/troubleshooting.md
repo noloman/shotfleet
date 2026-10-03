@@ -10,7 +10,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 
 | Tool | Needed for | Fix |
 |---|---|---|
-| maestro (tested with 2.0.10) | run | `curl -Ls https://get.maestro.mobile.dev \| bash`. Maestro 1.x is refused by doctor. Another 2.x prints a one-line note in `doctor` and at the start of `run` (it may work; nothing is blocked). |
+| maestro (tested with 2.0.10) | run | `curl -Ls https://get.maestro.mobile.dev \| bash`. Maestro 1.x is refused by doctor. Another 2.x prints a one-line note in `doctor` and at the start of `run` (it may work). `run` refuses Maestro 2.11 and newer, which reject shotfleet's screenshot paths: `shotfleet doctor --fix` installs the tested one. |
 | java 17+ | Maestro | `brew install openjdk@21`. shotfleet finds Homebrew's Java itself (it is keg-only, so `java` is not on PATH); do not edit the user's shell profile. |
 | swiftc | check (source checkout only) | `xcode-select --install` |
 | xcrun simctl | iOS | install Xcode and an iOS Simulator runtime |
