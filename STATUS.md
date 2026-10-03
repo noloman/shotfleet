@@ -1,5 +1,7 @@
 # shotfleet status
 
+> End-of-session handoff for agents: [docs/session-handoff-2026-10-03.md](docs/session-handoff-2026-10-03.md).
+
 Single source of truth for "what is left to have a sellable project". Evidence and commands behind every row: [research/sellable-audit.md](research/sellable-audit.md). Refresh the numbers with `tools/status.sh`.
 
 **As of 2026-10-03 (early, HEAD after the release-candidate run; site deploy ae0a9ffd). Sellable when:** a payment provider that accepts a person without a KvK (Gumroad, replacing Polar) has approved Manu, pays out and has a live product with a checkout link; one real key has been activated, refunded and refused on the notarized build; that build is published (`/download/VERSION` returns 200, `install.sh` works against it); and a clean Mac reaches a first screenshot in a measured time on a Maestro version we tested and pin. **Today: 0 of those 4 hold. Not sellable.** The program itself is in good shape (306 unit tests and 28 worker checks green at HEAD); what is missing is the money path, the published release and the outside proof.

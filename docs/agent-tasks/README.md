@@ -1,5 +1,7 @@
 # Agent tasks: what could not be done in the cloud sandbox
 
+For the full state of the project at the end of the 2026-10-03 session, read `docs/session-handoff-2026-10-03.md` first.
+
 Each file is a self-contained prompt for a local agent session (Claude Code on your Mac, or a Linux machine for E1) and a record of why the work is still open. Written 2026-10-03.
 The cloud session that wrote them had no Mac, no simulator, no hardware virtualization and no way to spend money. Start one with: *read `docs/agent-tasks/<file>` on `main` and do it*.
 
@@ -20,9 +22,9 @@ The cloud session that wrote them had no Mac, no simulator, no hardware virtuali
 - **Decisions** listed at the end of `research/profit-plan-2026-10-03.md` section 9.
 - **Team and CI interest block on the site.** Proposed, not added, because the site has WAITLIST/SALE markup that `packaging/go-live.sh` rewrites and the wording is a pricing decision. Proposed copy for the pricing section, to go in after the licence card: *Running shotfleet in CI for a team? A per-repository plan (about $149 a year) is an idea, not a product. Tell me what you would check there: hello@shotfleet.com.* Measure replies and count them against the thresholds in the profit plan section 7.
 
-## Needs a decision before anyone runs it
+## E1 state
 
-- **E1 without owning a Linux box:** GitHub-hosted Ubuntu runners can expose KVM, so a manual workflow could run the Android fixture there. That uses Actions minutes, and `STATUS.md` records a rule of no GitHub Actions and local checks as the gate. Not built; say if you want it.
+- E1 ran six times on a GitHub-hosted runner (Actions allowed once, now used up). It did not pass: Maestro cannot find the localized "Next" button after the first screenshot, with one emulator as with two. The artifact of run 37138279362 holds the screenshot and Maestro logs; only Manu can download it. See `docs/linux.md` and `docs/session-handoff-2026-10-03.md`.
 
 ## How to start one
 
