@@ -9,6 +9,11 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
 
+# These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in test_portable.py
+sf.is_mac = lambda: True
+sf.ABI, sf.DEFAULT_IMAGE = "arm64-v8a", "system-images;android-36;google_apis;arm64-v8a"
+MAC_READS = {"en", "de", "nl", "fr", "es", "it", "pt", "ru", "uk", "pl", "tr", "ja", "ko", "zh", "ar", "th", "hi"}  # a subset of what macOS reads
+
 EN = {"next": "Next", "common_next": "Next", "advanced": "Advanced", "start": "Start Training",
       "goals": "3+ years of training", "settings": "Settings"}
 DE = {"next": "Weiter", "common_next": "Nächste", "advanced": "Fortgeschritten", "start": "Training starten",
@@ -352,7 +357,7 @@ class ReviewFixes(unittest.TestCase):
         fake.assert_not_called()
 
     def test_missing_aapt2_is_a_friendly_failure(self):
-        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "SDK", Path(d)):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "SDK", Path(d)), mock.patch.object(sf.shutil, "which", lambda *a, **k: None):
             with self.assertRaisesRegex(sf.Fail, "aapt2 not found"):
                 sf.load_strings_apk("app.apk")
             with self.assertRaisesRegex(sf.Fail, "aapt2 not found"):
@@ -412,12 +417,14 @@ class CheckAnyFolder(unittest.TestCase):
         for store, want in cases.items():
             self.assertEqual(sf.app_locale(store, app), want, store)
 
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
     def test_script_rescues_cjk_screens_detection_misreads(self):
         ocr = {"chars": 80, "text": "EMOM AMRAP\nTabataタイマー\n9:41\nワーク", "lang": "hr", "langs": {"hr": 0.2}}
         self.assertEqual(sf.judge_screen("ja", ocr, {"en": {"Start"}}), ("ja", None))
         ocr = {"chars": 80, "text": "Timer\nRounds\nWork", "lang": "en", "langs": {"en": 0.9}}
         self.assertIsNotNone(sf.judge_screen("ja", ocr, {"en": {"Start"}})[1])
 
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
     def test_one_shared_label_is_not_evidence_of_wrong_language(self):  # "Training starten" is German and Dutch
         tables = sf.string_tables({"de": {"s": "Training starten"}, "nl": {"b": "Begin"}})
         ocr = {"chars": 21, "text": "9:41\nTraining starten", "lang": "nl", "langs": {"nl": 0.6}}
@@ -476,6 +483,7 @@ class AuditFixes(unittest.TestCase):
         self.assertIn("- tapOn: 'Weiter' # the big button", out)
         self.assertEqual(missing, [])
 
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
     def test_shared_script_is_not_proof_of_language(self):  # Russian in the Ukrainian folder
         ocr = {"chars": 60, "text": "Настройки\nДалее\nГотово", "lang": "ru", "langs": {"ru": 0.95}}
         self.assertIsNotNone(sf.judge_screen("uk", ocr, {})[1])

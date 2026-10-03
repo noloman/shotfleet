@@ -12,6 +12,10 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
 
+# These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in test_portable.py
+sf.is_mac = lambda: True
+sf.ABI, sf.DEFAULT_IMAGE = "arm64-v8a", "system-images;android-36;google_apis;arm64-v8a"
+
 
 def script(path, body):
     path.write_text("#!/bin/sh\n" + body + "\n"); path.chmod(0o755)

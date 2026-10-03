@@ -10,6 +10,10 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
 
+# These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in test_portable.py
+sf.is_mac = lambda: True
+sf.ABI, sf.DEFAULT_IMAGE = "arm64-v8a", "system-images;android-36;google_apis;arm64-v8a"
+
 
 def png_c(w, h, color_type=2):  # PNG header with a color type: 2 = RGB, 6 = RGBA (as in test_shotfleet.py)
     return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big") + bytes([8, color_type]) + b"\0" * 8 + b"IDAT"

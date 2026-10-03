@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one with: brew install python", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import plistlib, ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, platform as host_platform, ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -227,6 +227,7 @@ def sh(cmd, **kw):
 def aapt2():
     """Newest aapt2 in the Android SDK; Fail with the fix if there is none."""
     found = sorted((SDK / "build-tools").glob("*/aapt2"))
+    if not found and shutil.which("aapt2"): return shutil.which("aapt2")  # Linux: the distribution's aapt2 package
     if not found:
         raise Fail(f"aapt2 not found under {SDK}/build-tools. Install Build-Tools in Android Studio's SDK Manager (or set ANDROID_HOME)")
     return str(found[-1])
@@ -1326,7 +1327,15 @@ def ios_run_inner(cfg, path, only, parallel):
 
 BREW = Path("/opt/homebrew")
 SDK_PARTS = ("platform-tools", "emulator", "cmdline-tools", "build-tools", "system-images")
-DEFAULT_IMAGE = "system-images;android-36;google_apis;arm64-v8a"
+
+def host_abi(machine=None):
+    """The emulator image architecture that runs at full speed here: arm64 on Apple silicon and ARM Linux, x86_64 elsewhere."""
+    return "arm64-v8a" if (machine or host_platform.machine()).lower() in ("arm64", "aarch64") else "x86_64"
+
+ABI = host_abi()
+DEFAULT_IMAGE = f"system-images;android-36;google_apis;{ABI}"
+
+SYSTEM_SDKS = (Path("/usr/lib/android-sdk"),)  # where Debian and Ubuntu packages put an SDK
 
 def find_sdk(env=None):
     """The Android SDK, first match of: ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's
@@ -1334,6 +1343,7 @@ def find_sdk(env=None):
     Nothing found: ANDROID_HOME (or the Android Studio default), so messages still name a place."""
     env = os.environ if env is None else env
     cands = [env.get("ANDROID_HOME"), env.get("ANDROID_SDK_ROOT"), Path.home() / "Library/Android/sdk",
+             Path.home() / "Android/Sdk", Path.home() / "Android/sdk", *SYSTEM_SDKS,  # Android Studio and Debian on Linux
              BREW / "share/android-commandlinetools",
              *sorted((BREW / "Caskroom/android-commandlinetools").glob("*"), reverse=True)]
     if adb := shutil.which("adb", path=env.get("PATH", "")):
@@ -1341,7 +1351,7 @@ def find_sdk(env=None):
         if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
     for c in filter(None, cands):
         if any((Path(c) / part).is_dir() for part in SDK_PARTS): return Path(c)
-    return Path(env.get("ANDROID_HOME") or Path.home() / "Library/Android/sdk")
+    return Path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
 
 SDK = find_sdk()
 
@@ -1352,14 +1362,14 @@ def cmdline_tool(name, sdk=None):
               Path(shutil.which(name) or "/nonexistent"), BREW / "bin" / name):
         if p.is_file(): return p
 
-def find_image(sdk=None):
-    """Package id of the best installed arm64 image of API 33+ (per-app languages need 33), or None: newest API first,
-    google_apis before google_apis_playstore."""
+def find_image(sdk=None, abi=None):
+    """Package id of the best installed image of API 33+ for this machine's architecture (per-app languages need 33), or
+    None: newest API first, google_apis before google_apis_playstore."""
     sdk, best = sdk or SDK, []
-    for d in (sdk / "system-images").glob("android-*/google_apis*/arm64-v8a"):
+    for d in (sdk / "system-images").glob(f"android-*/google_apis*/{abi or ABI}"):
         api = re.fullmatch(r"android-(\d+)(?:\.(\d+))?", d.parent.parent.name)
         if api and int(api[1]) >= 33 and any((d / f).is_file() for f in ("package.xml", "source.properties")):
-            best.append(((int(api[1]), int(api[2] or 0), d.parent.name == "google_apis"), f"system-images;{d.parent.parent.name};{d.parent.name};arm64-v8a"))
+            best.append(((int(api[1]), int(api[2] or 0), d.parent.name == "google_apis"), f"system-images;{d.parent.parent.name};{d.parent.name};{abi or ABI}"))
     return max(best)[1] if best else None
 
 def sdkmanager_commands(packages, sdk=None):
@@ -1368,7 +1378,12 @@ def sdkmanager_commands(packages, sdk=None):
     sdk = sdk or SDK
     tool, cmds = cmdline_tool("sdkmanager", sdk), []
     java = f"JAVA_HOME={shlex.quote(java_env()['JAVA_HOME'])} " if java_env().get("JAVA_HOME") else ""
-    if not tool:
+    if not tool and not is_mac():  # no Homebrew cask: Google's zip goes to <sdk>/cmdline-tools/latest
+        tool = sdk / "cmdline-tools/latest/bin/sdkmanager"
+        cmds += [f"# download 'Command line tools only' from https://developer.android.com/studio#command-line-tools-only and unzip it "
+                 f"so that {tool} exists",
+                 f"yes | {java}{shlex.quote(str(tool))} --sdk_root={shlex.quote(str(sdk))} --licenses"]
+    elif not tool:
         tool = BREW / "share/android-commandlinetools/cmdline-tools/latest/bin/sdkmanager"
         cmds += ["brew install --cask android-commandlinetools", f"yes | {java}{shlex.quote(str(tool))} --licenses"]
     known = any((sdk / part).is_dir() for part in SDK_PARTS)
@@ -1618,7 +1633,19 @@ def android_run(cfg, path, out, only, parallel):
 
 # ---------- check ----------
 
+def is_mac():
+    return sys.platform == "darwin"
+
+def vision_available():
+    """macOS text recognition (Vision) exists only on a Mac; elsewhere `check` reads screenshots with Tesseract."""
+    return is_mac()
+
+def install_hint(what="tesseract tesseract-lang"):
+    return f"brew install {what}" if is_mac() else \
+        "apt install tesseract-ocr tesseract-ocr-all (or your distribution's Tesseract packages)"
+
 def ocr_tool():
+    if not vision_available(): raise RuntimeError("macOS text recognition is not available on this system")
     if getattr(sys, "frozen", False):  # released build: the helper ships prebuilt inside it
         return str(Path(sys._MEIPASS) / "ocr")
     exe = HERE / ".build" / "ocr"
@@ -1636,6 +1663,9 @@ LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Androi
 def readable_languages():
     """Base languages this Mac's text recognition reads (macOS 27: 33 codes, e.g. CJK, Cyrillic, Arabic, Thai, Hindi;
     not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts)."""
+    if not vision_available():  # what the installed Tesseract data can read, as language codes
+        have = tesseract_languages()
+        return {l for l, t in TESSERACT.items() if t in have} | ({"zh"} if have & {"chi_sim", "chi_tra"} else set())
     return {c.split("-")[0] for c in json.loads(sh([ocr_tool(), "--langs"]).stdout or "[]")}
 
 # Only scripts no other language shares: Cyrillic/Arabic/Han/Devanagari would let Russian pass as Ukrainian
@@ -1830,6 +1860,9 @@ def warm_up_ocr(ocr, timeout=600):
         return False
 
 TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
+# Tesseract starts one OpenMP thread per core; four of them at once spin against each other (measured on 4 cores:
+# 73 s for 4 screenshots instead of 2 s), so each process gets one thread unless the user sets the limit.
+TESSERACT_ENV = {**os.environ, "OMP_THREAD_LIMIT": os.environ.get("OMP_THREAD_LIMIT", "1")}
 
 @functools.cache
 def tesseract_languages():
@@ -1892,7 +1925,7 @@ def tesseract_script(png, lp):
     Only for ja, ko and th, and only when installed with its osd data; {} otherwise. Measured on 144 real screenshots: right
     on 142 (the 2 wrong, Korean read as Japanese, scored 0.2 and 0.06), so judge_screen only trusts confidence 1.0 and up."""
     if canon(lp).split("-")[0] not in OSD_SCRIPT or "osd" not in tesseract_languages(): return {}
-    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60)
+    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60, env=TESSERACT_ENV)
     except (OSError, subprocess.TimeoutExpired): return {}
     m, c = re.search(r"Script: (\w+)", r.stdout + r.stderr), re.search(r"Script confidence: ([\d.]+)", r.stdout + r.stderr)
     return {"osd_script": m.group(1), "osd_conf": float(c.group(1))} if m and c else {}
@@ -1908,11 +1941,11 @@ def external_ocr(command, png, lp):
     except (KeyError, IndexError, ValueError) as e:
         raise Fail(f"unknown placeholder {e} in --ocr-command; use {{image}}, {{lang}}, {{tesseract}}, {{tesseract_with_english}}")
     try:
-        r = sh(args, timeout=180)
+        r = sh(args, timeout=180, env=TESSERACT_ENV)
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Fail(f"--ocr-command failed on {png.name}: {e}")
     if r.returncode != 0:
-        hint = " (install the language data: brew install tesseract-lang)" if "Failed loading language" in r.stderr else ""
+        hint = f" (install the language data: {install_hint('tesseract-lang') if is_mac() else install_hint()})" if "Failed loading language" in r.stderr else ""
         raise Fail(f"--ocr-command failed on {png.name}: {(r.stderr or r.stdout).strip()[-200:]}{hint}")
     text = "\n".join(l for l in r.stdout.splitlines() if l.strip())
     return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "external"}
@@ -2018,13 +2051,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
-    ocr = ocr_tool()
     ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
     user_gave_command = bool(ocr_command)
-    use_vision = True
+    use_vision = vision_available()
+    ocr = ocr_tool() if use_vision else None
     texts = [usable_text(png, tables) for _, png in pngs]
     fallback = bool(ocr_command or shutil.which("tesseract"))
-    if not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600):  # no need to wait long with another OCR at hand
+    if not use_vision and not all(texts):  # Linux and other systems: Tesseract (or --ocr-command) reads every screenshot
+        if not fallback:
+            raise Fail("reading screenshots needs Tesseract on this system (macOS text recognition is Mac-only): " + install_hint())
+        ocr_command = ocr_command or TESSERACT_COMMAND
+    elif not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600):  # no need to wait long with another OCR at hand
         if not fallback:
             raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy "
                        "use); restarting the Mac fixes it. Or install Tesseract and shotfleet uses it automatically: "
@@ -2079,7 +2116,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                      "chars": r.get("chars", 0)})
     unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None})
     if unread:
-        print(f"macOS can't read the script of {', '.join(unread)}: those screens were only checked for showing another "
+        who = "macOS can't read the script of" if vision_available() else "Tesseract can't read the script of"
+        print(f"{who} {', '.join(unread)}: those screens were only checked for showing another "
               "language, copies and missing screens")
     for h, hits in by_hash.items():
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
@@ -2171,6 +2209,7 @@ def find_java():
     homes = [sh(["/usr/libexec/java_home", "-v", "17+"], timeout=30).stdout.strip() if Path("/usr/libexec/java_home").exists() else ""]
     homes += [f"/opt/homebrew/opt/openjdk{v}/libexec/openjdk.jdk/Contents/Home" for v in ("", "@21", "@17")]
     homes += [str(Path.home() / ".sdkman/candidates/java/current")] + sorted(glob.glob("/Library/Java/JavaVirtualMachines/*/Contents/Home"))
+    homes += sorted(glob.glob("/usr/lib/jvm/*"), reverse=True)  # Linux
     for h in homes:
         if h and java_major(Path(h) / "bin/java") >= 17: return True, h
     return False, None
@@ -2208,7 +2247,8 @@ def maestro_warning(version):
 def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
-    has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
+    mac = is_mac()
+    has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
     has_adb, has_emulator, has_avdmanager = adb_cmd() != "adb" or have("adb"), (SDK / "emulator/emulator").exists(), bool(cmdline_tool("avdmanager"))
     has_image = bool(image) or (Path.home() / ".android/avd/shotfleet_android.avd").exists()  # an existing AVD needs no image
@@ -2218,15 +2258,20 @@ def cmd_doctor():
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if have("maestro") else "maestro", maestro_ok,
          "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
-        ("java 17+", find_java()[0], "brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)", "both"),
-        ("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both"),
+        ("java 17+", find_java()[0], ("brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
+                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
+        *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
+          [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
-         "install Xcode and an iOS Simulator runtime", "iOS"),
+         "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
+        *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
+            "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]
+          if sys.platform.startswith("linux") and not mac else []),
         ("adb", has_adb, f"sdkmanager platform-tools {later}", "Android"),
         ("emulator", has_emulator, f"sdkmanager emulator {later}", "Android"),
         ("avdmanager", has_avdmanager, f"sdkmanager command-line tools {later}", "Android"),
         ("aapt2", has_aapt2, f"sdkmanager build-tools {later}", "Android"),
-        (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager an arm64 image of API 33 or newer {later}", "Android"),
+        (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager a system image of API 33 or newer for {ABI} {later}", "Android"),
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
@@ -2238,24 +2283,29 @@ def cmd_doctor():
     if pkgs or not has_avdmanager:  # without sdkmanager, Homebrew's command-line tools (installed first) bring avdmanager too
         cmds = sdkmanager_commands(pkgs) if pkgs else sdkmanager_commands([])[:-1]
         print("Android: to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
-    print(f"...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most {DOCTOR_OCR_TIMEOUT_S} s)", flush=True)
-    try:  # a timeout or an empty answer is a busy Mac or the one-time model compile (17 to 188 s measured), not a broken setup
-        t0 = time.time(); r = sh([ocr_tool(), "--warmup"], timeout=DOCTOR_OCR_TIMEOUT_S); read = r.stdout.strip()
-    except subprocess.TimeoutExpired:
-        read, r = None, None
-    except (OSError, RuntimeError) as e:
-        read, r = None, e
-    if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
-        print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
-              f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it")
-    elif isinstance(r, Exception):
-        print(f"PROBLEM text recognition   can't start ({r}); restarting the Mac usually fixes it")
-    elif r.returncode != 0:
-        print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; restarting the Mac usually fixes it")
-    elif read == "Ready":
-        print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
-    else:
-        print(f"note: text recognition read {read!r} instead of 'Ready'; screenshot checks may be unreliable")
+    if not mac:
+        langs = sorted(l for l in tesseract_languages() if l != "osd")
+        print(f"{'ok  ' if len(langs) > 1 else 'note:'} text recognition   Tesseract with {len(langs)} language(s)"
+              + ("" if len(langs) > 1 else f"; install more language data to verify other languages ({install_hint()})"))
+    if mac:
+        print(f"...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most {DOCTOR_OCR_TIMEOUT_S} s)", flush=True)
+        try:  # a timeout or an empty answer is a busy Mac or the one-time model compile (17 to 188 s measured), not a broken setup
+            t0 = time.time(); r = sh([ocr_tool(), "--warmup"], timeout=DOCTOR_OCR_TIMEOUT_S); read = r.stdout.strip()
+        except subprocess.TimeoutExpired:
+            read, r = None, None
+        except (OSError, RuntimeError) as e:
+            read, r = None, e
+        if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
+            print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
+                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it")
+        elif isinstance(r, Exception):
+            print(f"PROBLEM text recognition   can't start ({r}); restarting the Mac usually fixes it")
+        elif r.returncode != 0:
+            print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; restarting the Mac usually fixes it")
+        elif read == "Ready":
+            print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
+        else:
+            print(f"note: text recognition read {read!r} instead of 'Ready'; screenshot checks may be unreliable")
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")

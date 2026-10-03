@@ -126,7 +126,8 @@ def open_items(text):
 
 
 def page(title, description, path, body, og_type="website", ld=None, assets="/"):
-    ld_tag = f'\n<script type="application/ld+json">\n{json.dumps(ld, indent=2, ensure_ascii=False).replace('</', '<\\/')}\n</script>' if ld else ""
+    ld_json = json.dumps(ld, indent=2, ensure_ascii=False).replace("</", "<\\/") if ld else ""  # no "</script>" inside the tag
+    ld_tag = f'\n<script type="application/ld+json">\n{ld_json}\n</script>' if ld else ""
     e = lambda s: html.escape(s, quote=True)
     return f'''<!doctype html>
 <html lang="en">
