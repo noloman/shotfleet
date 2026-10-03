@@ -1718,9 +1718,11 @@ def app_locale(label, available):
 
 def warm_up_ocr(ocr, timeout=600):
     """One recognition on its own before the parallel ones, so macOS compiles its model once (minutes after a restart).
-    False if even that doesn't answer: macOS's recognition service (ANECompilerService) is stuck."""
+    False if it doesn't answer in time: macOS's recognition service (ANECompilerService) is stuck or still compiling.
+    It is left running then, so a slow first compile still finishes for the next check."""
+    p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
     try:
-        return bool(sh([ocr, "--warmup"], timeout=timeout).stdout.strip())
+        return bool(p.communicate(timeout=timeout)[0].strip())
     except subprocess.TimeoutExpired:
         return False
 
@@ -1904,8 +1906,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     user_gave_command = bool(ocr_command)
     use_vision = True
     texts = [usable_text(png, tables) for _, png in pngs]
-    if not all(texts) and not warm_up_ocr(ocr):
-        if not ocr_command and not shutil.which("tesseract"):
+    fallback = bool(ocr_command or shutil.which("tesseract"))
+    if not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600):  # no need to wait long with another OCR at hand
+        if not fallback:
             raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy "
                        "use); restarting the Mac fixes it. Or install Tesseract and shotfleet uses it automatically: "
                        "brew install tesseract tesseract-lang")

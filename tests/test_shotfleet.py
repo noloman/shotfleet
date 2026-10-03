@@ -1454,6 +1454,19 @@ class PlayDeviceFolders(unittest.TestCase):
 
 
 class Review20261003(unittest.TestCase):
+    def test_a_slow_warm_up_times_out_but_keeps_running_so_a_first_compile_can_finish(self):
+        with tempfile.TemporaryDirectory() as d:
+            done, ocr = Path(d) / "done", Path(d) / "ocr"
+            ocr.write_text(f'#!/bin/sh\nsleep 2; touch {done}; echo Ready\n'); ocr.chmod(0o755)
+            t = time.time()
+            self.assertFalse(sf.warm_up_ocr(str(ocr), timeout=0.5))
+            self.assertLess(time.time() - t, 1.5)
+            for _ in range(50):
+                if done.exists(): break
+                time.sleep(0.1)
+            self.assertTrue(done.exists())  # not killed
+            self.assertTrue(sf.warm_up_ocr(str(ocr), timeout=10))
+
     def test_a_text_placeholder_with_one_word_around_it_is_not_evidence(self):
         # pt "%@ atrás" matched Spanish "Cuenta atrás", so a real Spanish screen was reported as Portuguese
         t = sf.string_tables({"es": {"a": "Cuenta atrás", "b": "Progreso"}, "pt": {"a": "Contagem regressiva", "b": "%@ atrás", "c": "Último: %d dias atrás"}})
