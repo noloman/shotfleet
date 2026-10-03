@@ -153,9 +153,6 @@ class AndroidOnLinux(unittest.TestCase):
             self.assertEqual(sf.aapt2(), "/usr/bin/aapt2")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class UnreadableNeighbours(unittest.TestCase):
     """`check <folder>` looks at the folder's parent for the other devices of a multi-device run; a parent that holds a
@@ -173,3 +170,7 @@ class UnreadableNeighbours(unittest.TestCase):
     def test_an_unreadable_parent_is_no_multi_device_run(self):
         with mock.patch.object(Path, "iterdir", side_effect=PermissionError(13, "denied")):
             self.assertEqual(sf.device_runs(tempfile.mkdtemp()), [])
+
+
+if __name__ == "__main__":
+    unittest.main()
