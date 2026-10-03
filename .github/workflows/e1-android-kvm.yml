@@ -33,7 +33,9 @@ jobs:
           T=$ANDROID_HOME/cmdline-tools/latest/bin
           echo no | $T/avdmanager create avd -n dbg -k 'system-images;android-36;google_apis;x86_64' -d pixel_5 >dbg.out 2>dbg.err; echo "exit $?"
           echo "--- stdout"; cat dbg.out; echo "--- stderr (no progress bars)"; grep -v '^\[' dbg.err | head
-          $T/avdmanager list device -c 2>/dev/null | grep -i pixel | head -20
+          ls -la ~/.android ~/.android/avd 2>&1 | head -20
+          find / -name 'dbg.*' -path '*avd*' -not -path '/proc/*' 2>/dev/null | head
+          env | grep -iE 'ANDROID|XDG|^HOME' | sort
       - name: Fixture e2e (android)
         run: |
           set -o pipefail
