@@ -14,6 +14,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | java 17+ | Maestro | `brew install openjdk@21`. shotfleet finds Homebrew's Java itself (it is keg-only, so `java` is not on PATH); do not edit the user's shell profile. |
 | swiftc | check (source checkout only) | `xcode-select --install` |
 | xcrun simctl | iOS | install Xcode and an iOS Simulator runtime |
+| iOS Simulator runtime | iOS | `xcodebuild -downloadPlatform iOS` (or Xcode > Settings > Components); `doctor` shows the newest one it found |
 | adb, emulator, avdmanager, aapt2, system image | Android | run the `sdkmanager` commands that `doctor` prints under `Android: to install what is missing` (it uses the sdkmanager that exists, or installs Homebrew's `android-commandlinetools` first). The SDK is found in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or beside an `adb` on the PATH; `doctor` prints `Android SDK:` with the one it chose. Any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer counts; an existing `shotfleet_android` emulator needs none. |
 | text recognition | check | first use after a restart compiles macOS's model: about 30 s on a quiet Mac, 127 s measured on a loaded one, up to a few minutes. `doctor` prints `...  text recognition` first and the time after. Wait; do not kill it. |
 
@@ -32,6 +33,9 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `could not verify` | a note: `[expect]` text in a script macOS can't read, on a screen read by OCR | not a failure; give `--ocr-command` an OCR that reads it (Tesseract), or trust the iOS run, which uses the app's own text |
 | `has an unknown setting` | typo in a key; the message suggests the nearest or lists all | see config.md |
 | `should be a` | wrong type, e.g. `parallel = "4"` | use a whole number, string, list |
+| `should be 1 or more` | `parallel = 0` or `timeout_s = 0` in the config | use a positive whole number |
+| `is empty. Remove the line` | `locales = []` in the config | delete the line (every language the app ships) or list some |
+| `should be a list of strings` | `locales`, `device_types`, `devices` or `strings` holds something other than text | `locales = ["de", "ja"]` |
 | `is missing:` | `app` (iOS) or `apk` (Android) not set | set it |
 | `unknown event` | bad `[hooks]` key; events are before_run, after_run, before_export, after_export | rename |
 | `should be a command (a string) or a list of commands` | hook value is not text | use a string or a list of strings |
@@ -42,8 +46,14 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `an .ipa is a device build` | `.ipa` passed to init/check | pass the simulator `.app` |
 | `an .aab can't be installed directly` | `.aab` passed | `./gradlew assembleDebug`, pass the `.apk` |
 | `pass the simulator .app, not an archive` | `.xcarchive` passed | same as above |
-| `unzip it first` | a `.zip` passed | pass the `.app` or `.apk` inside |
+| `unzip it first` | a `.zip` passed to `check --app` (`init` unpacks a `.zip`, `.tar.gz`, `.tgz` or `.tar` itself, e.g. an EAS build) | pass the `.app` or `.apk` inside |
+| `unpack it first` | a `.gz` file passed to `check --app` | `tar -xzf` it, pass the `.app` inside |
 | `pass a simulator .app or an .apk` | other file type | pass one of those |
+| `is a folder, not an .app; did you mean` | a folder holding the `.app` was passed | pass the `.app` it names |
+| `isn't a simulator app:` / `isn't an APK:` | the config's `app` or `apk` names a file or folder of the wrong kind (an `.ipa`, `.aab`, archive, the other platform's build) | follow the hint after the colon |
+| `xcrun isn't available` | no Xcode (iOS runs need a Mac with Xcode) | install Xcode, or run Android only (`--platform android`) |
+| `no iOS Simulator runtime is installed` | Xcode has no iOS runtime | `xcodebuild -downloadPlatform iOS` |
+| `could not create simulator` | Xcode does not know the default device type or the runtime (an older Xcode has no iPhone 17 Pro Max); the message carries Xcode's reason | set `device_type` or `runtime` in the config; `xcrun simctl list devicetypes` lists the valid names |
 | `builds given; a config holds one app per platform` | two `.app` or two `.apk` to `init` | run `init` once per app |
 | `bundle_id is` | config `bundle_id` differs from the app's | delete the key (it is read from the app) |
 | `can't read the bundle id` | broken `Info.plist` | set `bundle_id` |
@@ -60,7 +70,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `none of those languages are in the app` | `--locales` or `locales` names languages the app does not ship; the message lists what it ships | use those codes |
 | `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun |
 | `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
-| `unknown Android device` | `devices` entry other than phone, tablet | use `phone` or `tablet` |
+| `unknown Android device` | `devices` entry other than phone, tablet, tablet-7 | use `phone`, `tablet` or `tablet-7` |
 | `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |
 | `is already running. Stop it` | a leftover emulator on shotfleet's port | `adb -s emulator-<port> emu kill` |
 | `emulators did not boot in time` | slow boot (600 s limit), or on Linux no usable `/dev/kvm`; the message ends with the emulator's last log lines (kept in `<tmp>/shotfleet-emulator-logs/`) and the likely cause. `the emulator exited with code N before it booted` means it crashed: read those lines | close other apps and rerun; on Linux check `ls -l /dev/kvm` |
@@ -123,7 +133,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `has no listing in that language` | export skipped a language the store has no listing for | nothing to do |
 | `failed checks (see` | export skipped a language that failed | fix and recapture that language |
 | `so it gets the` | export copies `en` to an existing `en-GB` listing and similar | informational |
-| `add "iPad Pro 13-inch (M5)" to device_types` | the app runs on iPad and no 13" set exists (exit 1) | add that device type |
+| `add "iPad Pro 13-inch (M5)" to device_types` | the app runs on iPad and no 13" set exists: `run` and `check` print it and exit 1, `export` refuses (exit 2) | add that device type and run again |
 | `hook after_run failed` | an after hook returned non-zero: exit becomes 1 | fix the hook |
 
 ## Hardware and limits
