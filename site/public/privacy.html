@@ -17,6 +17,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/privacy">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -66,29 +68,29 @@
 
   <h2>Remove your email</h2>
   <p>Enter the address you signed up with and it's deleted right away, together with any contact messages you sent with that address as the reply address.</p>
-  <form id="forget" novalidate>
+  <form id="forget" method="post" action="/api/forget" novalidate>
     <label for="forget-email">Email</label>
     <div class="inline">
       <input id="forget-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
       <button class="btn" type="submit">Delete my email</button>
     </div>
-    <p class="form-error" role="alert" hidden></p>
+    <p class="form-error" id="forget-error" role="alert" hidden></p>
   </form>
   <p id="forget-done" class="done" role="status" tabindex="-1" hidden><b>Done.</b> If that address was on the list, it's gone.</p>
 
   <h2>Questions</h2>
   <p>I'm Manuel Lorenzo Parejo, and I run this on my own. Email me at <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>, or write here. Mail to that address is forwarded by Cloudflare Email Routing to my own inbox.</p>
-  <form id="contact" novalidate>
+  <form id="contact" method="post" action="/api/contact" novalidate>
     <div class="field"><label for="contact-message">Message</label><textarea id="contact-message" name="message" maxlength="2000" required></textarea></div>
     <div class="field"><label for="contact-email">Your email, if you want a reply</label>
       <div class="inline"><input id="contact-email" name="email" type="email" placeholder="you@example.com" autocomplete="email"><button class="btn" type="submit">Send</button></div></div>
     <input name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-    <p class="form-error" role="alert" hidden></p>
+    <p class="form-error" id="contact-error" role="alert" hidden></p>
   </form>
   <p id="contact-done" class="done" role="status" tabindex="-1" hidden><b>Sent.</b> If you left an email, I'll reply there.</p>
  </div>
 </main>
-<footer><div class="wrap"><span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span><span><a href="/">Home</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span></div></footer>
+<footer><div class="wrap"><span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span><span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span></div></footer>
 <script src="/forms.js" defer></script>
 <script src="/ga.js" defer></script>
 </body>
