@@ -55,7 +55,7 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 | 2.1 | Localized system dialogs: permission alerts, notifications prompt, ATT, in every language | Maestro's permission helper is English-only (maestro#2654, open) | M | yes, core |
 | 2.2 | Store-rule linter in `check`: sizes/counts per device class, no alpha, Play phone 2–8 / tablet 4+, promo eligibility, locales without a set | Developers trip on these; only dimension checks exist elsewhere | S–M | free funnel |
 | 2.3 | Caption vs UI language check for framed images (ButterKit, AppScreens, AI localizers) | Translated caption over English UI is the classic failure; nobody checks it | M | yes |
-| 2.4 | iPad / tablet from the same flow (`devices = ["iphone-6.9", "ipad-13"]`) | iPad 13" required if the app runs on iPad; Play tablets need 4+ | L | yes |
+| 2.4 | iPad / tablet from the same flow (shipped as `device_types` for iOS and `devices` for Android, see Done 2026-10-02) | iPad 13" required if the app runs on iPad; Play tablets need 4+ | L | yes |
 | 2.5 | MCP server next to the Claude Code skill | ButterKit and StoreScreens ship MCP | S–M | indirect |
 | 2.6 | Hand-off recipes: `asc screenshots upload`, fastlane deliver/supply | Removes the last manual step | S | no |
 | 2.7 | Variant sets for custom product pages / Play experiments | Unproven demand; AppScreens sells it | M | maybe |
