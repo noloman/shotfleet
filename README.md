@@ -189,7 +189,7 @@ and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The langua
 - Flutter and React Native support (via source files) is tested with sample files, not yet on a real Flutter/RN app.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - If macOS text recognition stops answering (its `ANECompilerService` occasionally gets stuck until a restart), `check` switches to Tesseract automatically when it's installed (`brew install tesseract tesseract-lang`), and otherwise tells you to restart. iOS runs aren't affected: they read the app's own text.
-- For full verification of those scripts, give `check` an OCR that reads them, e.g. Tesseract (`brew install tesseract tesseract-lang`, about 700 MB): `--ocr-command "tesseract {image} stdout -l {tesseract}"` (or set `SHOTFLEET_OCR`). It's used only for languages macOS can't read; `{lang}` is the language code if your tool wants that instead.
+- With Tesseract installed (`brew install tesseract tesseract-lang`), `check` uses it automatically for those scripts: measured on 85 languages, 84 are then verified by reading instead of 66. Another OCR works too: `--ocr-command "<cmd> {image}"` (or `SHOTFLEET_OCR`).
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check.
 
 - macOS only. Needs Xcode for iOS, the Android SDK for Android, and Maestro 2.x.

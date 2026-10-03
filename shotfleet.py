@@ -1338,6 +1338,17 @@ def warm_up_ocr(ocr, timeout=600):
 
 TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
 
+@functools.cache
+def tesseract_languages():
+    """Language data Tesseract has installed ({'eng', 'ell', ...}); empty if Tesseract isn't installed."""
+    if not shutil.which("tesseract"): return frozenset()
+    r = sh(["tesseract", "--list-langs"])
+    return frozenset(l.strip() for l in (r.stdout + r.stderr).splitlines()[1:] if l.strip())
+
+def tesseract_code(lp):
+    c = canon(lp); lang = c.split("-")[0]
+    return ("chi_tra" if "Hant" in c else "chi_sim") if lang == "zh" else TESSERACT.get(lang, lang)
+
 def screen_text(png):
     """The screen's text as the app reported it during the run (exact, any script), in OCR's result shape; or None."""
     f = Path(png).with_suffix(".texts.json")
@@ -1373,8 +1384,8 @@ TESSERACT = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "it": "ita", "p
 def external_ocr(command, png, lp):
     """Run the user's OCR command for a language macOS can't read; {image}, {lang} and {tesseract} are filled in.
     e.g. --ocr-command 'tesseract {image} stdout -l {tesseract}'"""
-    c = canon(lp); lang = c.split("-")[0]
-    tess = ("chi_tra" if "Hant" in c else "chi_sim") if lang == "zh" else TESSERACT.get(lang, lang)
+    lang = canon(lp).split("-")[0]
+    tess = tesseract_code(lp)
     args = [a.format(image=str(png), lang=lang, tesseract=tess,
                      tesseract_with_english=tess if tess == "eng" else f"eng+{tess}") for a in shlex.split(command)]
     try:
@@ -1448,12 +1459,15 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     # service wedging (seen twice); raise it if that turns out to be unrelated
     with ThreadPoolExecutor(max_workers=4) as ex:  # each OCR is its own process
         ocrs = list(ex.map(lambda item: screen_text(item[1]) or (read_text(ocr, item[1]) if use_vision else {}), pngs))
+        auto = not ocr_command and bool(tesseract_languages())  # installed Tesseract reads what macOS can't (84/85 verified)
+        if auto: ocr_command = TESSERACT_COMMAND
         if ocr_command:  # scripts macOS can't read (or everything, when macOS's OCR is stuck) go to the other OCR
             def unreadable(label):
                 lang = canon(app_locale(label, tables) or label).split("-")[0]
                 return LEGACY.get(lang, lang) not in readable_languages() | {"zh"}
             redo = [i for i, (label, png) in enumerate(pngs)
-                    if not screen_text(png) and (not use_vision or unreadable(label))]
+                    if not screen_text(png) and (not use_vision or unreadable(label))
+                    and (not auto or tesseract_code(app_locale(label, tables) or label) in tesseract_languages())]
             for i, r in zip(redo, ex.map(lambda i: external_ocr(ocr_command, pngs[i][1], app_locale(pngs[i][0], tables) or pngs[i][0]), redo)):
                 ocrs[i] = {**ocrs[i], **r}
     rows, by_hash = [], {}
