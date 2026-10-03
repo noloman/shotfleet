@@ -33,6 +33,7 @@ JRE_TAR = tar_bytes({"jdk-21.0.1+1-jre/bin/java": b"#!/bin/sh\necho 'openjdk ver
                     executable=("jdk-21.0.1+1-jre/bin/java",))
 CMDLINE_ZIP = zip_bytes({"cmdline-tools/bin/sdkmanager": b"#!/bin/sh\nexit 0\n", "cmdline-tools/source.properties": b"x"},
                         {"cmdline-tools/bin/sdkmanager": 0o755})
+REAL_WHICH = __import__("shutil").which
 sha256 = lambda b: hashlib.sha256(b).hexdigest()
 sha1 = lambda b: hashlib.sha1(b).hexdigest()
 
@@ -67,9 +68,14 @@ class FixTestCase(unittest.TestCase):
                   mock.patch.object(sf, "ANDROID_REPOSITORY", self.server.url + "/repo/"),
                   mock.patch.object(sf, "SDK", self.sdk), mock.patch.dict(os.environ, {"ANDROID_HOME": "", "ANDROID_SDK_ROOT": ""}),
                   mock.patch.object(sf, "certifi_path", lambda: None),
+                  mock.patch.object(sf.shutil, "which", self.which_without_brew),  # a Mac with Homebrew takes the brew branch: tested below
                   mock.patch.object(sf, "latest_release", lambda: None)):  # doctor's version lookup is a network call too
             p.start(); self.addCleanup(p.stop)
         sf.java_env.cache_clear(); self.addCleanup(sf.java_env.cache_clear)
+
+    @staticmethod
+    def which_without_brew(cmd, *a, **k):
+        return None if cmd == "brew" else REAL_WHICH(cmd, *a, **k)
 
     def set_files(self, **override):
         host = "macosx" if sys.platform == "darwin" else "linux"
@@ -184,6 +190,14 @@ class Where(FixTestCase):
 
 
 class Plan(FixTestCase):
+    def test_a_mac_with_homebrew_installs_the_android_tools_with_brew_a_mac_without_downloads_them(self):
+        with mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf.shutil, "which", lambda c, *a, **k: "/opt/homebrew/bin/brew" if c == "brew" else REAL_WHICH(c)):
+            titles = [t for t, _ in sf.fix_plan(True, True, ["emulator"], False)]
+        self.assertEqual(titles[0], "brew install --cask android-commandlinetools")
+        with mock.patch.object(sf, "is_mac", lambda: True):  # which_without_brew is still in force: no brew
+            titles = [t for t, _ in sf.fix_plan(True, True, ["emulator"], False)]
+        self.assertTrue(titles[0].startswith("download Google's Android command-line tools"), titles)
+
     def test_nothing_missing_means_no_steps(self):
         self.assertEqual(sf.fix_plan(True, True, [], True), [])
 
