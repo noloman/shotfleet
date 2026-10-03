@@ -1018,8 +1018,6 @@ class GumroadLicence(unittest.TestCase):
     def test_key_formats_do_not_collide(self):
         self.assertTrue(sf.is_gumroad_key(self.GOOD))
         self.assertFalse(sf.is_gumroad_key("38b1460a-5104-4067-a91d-77b872934d51"))  # Lemon Squeezy UUID
-        self.assertFalse(sf.is_gumroad_key("SHOTFLEET-1C285B2D-6CE6"))  # Polar
-        self.assertFalse(sf.is_polar_key(self.GOOD))
 
     def test_three_activations_then_refused_and_the_refusal_costs_nothing(self):
         for _ in range(3): self.activate(self.GOOD); sf.LICENCE_FILE.unlink()  # three different Macs
@@ -1445,38 +1443,13 @@ class FrameworkFixes(unittest.TestCase):
         self.assertEqual(sf.partly_translated({"en": en, "de": de}, "en"), [])
 
 
-class PolarLicence(unittest.TestCase):
-    """Polar licence keys and the free tier (the other stores' tests are in the class above)."""
+class FreeTier(unittest.TestCase):
+    """`run` without a licence is the free tier; `export` is not."""
     def setUp(self):
-        self.dir = Path(tempfile.mkdtemp()); self.calls = []
+        self.dir = Path(tempfile.mkdtemp())
         self.patches = [mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
-                        mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LOCALE_CAP", None),
-                        mock.patch.object(sf, "polar_post", side_effect=self.fake)]
+                        mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LOCALE_CAP", None)]
         for p in self.patches: p.start(); self.addCleanup(p.stop)
-
-    def fake(self, action, **f):
-        self.calls.append((action, f))
-        if f["key"] == "SHOTFLEET-BAD": return 404, {"detail": "Resource not found"}
-        return 200, {"id": "act-1"} if action == "activate" else {"status": "granted"}
-
-    def test_polar_keys_are_told_apart_by_their_prefix(self):
-        self.assertTrue(sf.is_polar_key(" shotfleet-1C285B2D-6CE6 ")); self.assertFalse(sf.is_polar_key("ABCDEF12-ABCDEF12-ABCDEF12-ABCDEF12"))
-
-    def test_activate_validate_and_deactivate(self):
-        self.assertEqual(sf.cmd_activate("SHOTFLEET-GOOD"), 0)
-        self.assertEqual(json.loads(sf.LICENCE_FILE.read_text())["activation"], "act-1")
-        sf.require_licence(); self.assertEqual([c[0] for c in self.calls], ["activate"])  # fresh: no network
-        lic = json.loads(sf.LICENCE_FILE.read_text()); sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 8 * 86400}))
-        sf.require_licence(); self.assertEqual(self.calls[-1], ("validate", {"key": "SHOTFLEET-GOOD", "activation_id": "act-1"}))
-        sf.cmd_deactivate(); self.assertEqual(self.calls[-1][0], "deactivate"); self.assertFalse(sf.LICENCE_FILE.exists())
-
-    def test_bad_key_is_refused_with_polars_reason(self):
-        with self.assertRaisesRegex(sf.Fail, "didn't activate: Resource not found"): sf.cmd_activate("SHOTFLEET-BAD")
-
-    def test_ci_key_validates_without_taking_an_activation(self):
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-GOOD"}): sf.require_licence()
-        self.assertEqual([c[0] for c in self.calls], ["validate"]); self.assertFalse(sf.LICENCE_FILE.exists())
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-BAD"}), self.assertRaises(sf.NoLicence): sf.require_licence()
 
     def test_run_without_a_licence_is_the_free_tier_export_is_not(self):
         with mock.patch.object(sf, "cmd_run", return_value=0):
@@ -1529,6 +1502,21 @@ class PlayDeviceFolders(unittest.TestCase):
 
 
 class Review20261003(unittest.TestCase):
+    def test_a_simulator_that_stops_answering_is_dropped_and_the_run_carries_on(self):
+        sims = [sf.Sim(f"U{i}") for i in range(4)]
+        sf.OUR_SIMS.update(s.udid for s in sims); self.addCleanup(sf.OUR_SIMS.clear)
+        def install(group):
+            if group[0].udid == "U0": raise RuntimeError("simctl terminate did not answer within 300 s")
+        calls = []
+        with mock.patch.object(sf, "sh", side_effect=lambda cmd, **k: calls.append(cmd) or subprocess.CompletedProcess(cmd, 0, "", "")), \
+             contextlib.redirect_stdout(io.StringIO()) as out:
+            pool = sf.healthy_installs(sims, 2, install)
+        self.assertEqual([s.udid for s in pool], ["U1", "U2", "U3"])  # the two ready ones first, U3 untouched, U0 gone
+        self.assertEqual(calls, [["xcrun", "simctl", "shutdown", "U0"]])
+        self.assertIn("U0 stopped answering", out.getvalue()); self.assertNotIn("U0", sf.OUR_SIMS)
+        with mock.patch.object(sf, "sh"), contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(RuntimeError, "no simulator answers"):
+            sf.healthy_installs(sims[:1], 1, install)
+
     def test_tesseract_script_detection_flags_another_script_only_when_confident(self):
         # a Japanese screen in the Korean listing: Tesseract (-l eng+kor) reads Latin gibberish but its script detection says Japanese
         tables = sf.string_tables({"ko": {"a": "다음"}, "ja": {"a": "次へ"}, "en": {"a": "Next"}})
@@ -2203,7 +2191,7 @@ class G1CheckDetectors(unittest.TestCase):
         spec = {**self.CLEAN, "fr-FR": {"01.png": G1_SHOWS["en"], "02.png": G1_SHOWS["en"]}}
         code, report, _ = g1_check(spec)
         self.assertEqual(code, 1)
-        self.assertEqual(report["problems"], ["fr-FR: the app has no fr-FR translation, so this listing shows another language"])
+        self.assertEqual(report["problems"], ["fr-FR: the app has no fr-FR translation, so this listing shows another language; translate the app into it or remove the listing"])
 
     def test_a_size_the_store_refuses_is_one_problem_per_file(self):  # C003, C100 (the size half)
         spec = {**self.CLEAN, "de": {"01.png": (G1_SHOWS["de"], (1000, 2000)), "02.png": G1_SHOWS["de"]}}
@@ -2585,7 +2573,7 @@ class G1NothingLeavesTheMac(unittest.TestCase):
         owners = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
                   and any(isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "urlopen" for n in ast.walk(fn))}
         # download and fetch_text are only for `doctor --fix` (test_downloads_are_only_reachable_from_doctor_fix)
-        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "polar_post", "gumroad_verify", "licence_api", "download", "fetch_text"})
+        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "gumroad_verify", "licence_api", "download", "fetch_text"})
 
     def test_downloads_are_only_reachable_from_doctor_fix(self):
         tree = ast.parse((Path(sf.__file__).resolve()).read_text())

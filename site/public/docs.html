@@ -17,20 +17,9 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/docs">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/site.css">
-<style>
-.docs { max-width: 760px; }
-.docs h2 { scroll-margin-top: 96px; }
-.docs h3 { margin-top: 8px; scroll-margin-top: 96px; }
-.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
-.docs pre code { background: none; padding: 0; font: inherit; }
-.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
-.docs .toc { background: color-mix(in srgb, var(--ink) 4%, transparent); border-radius: 12px; padding: 16px 20px; }
-.docs .toc ol { columns: 2; column-gap: 32px; }
-@media (max-width: 560px) { .docs .toc ol { columns: 1; } }
-.docs table { min-width: 0; }
-.docs td:first-child { white-space: nowrap; }
-</style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -45,7 +34,7 @@
   <p class="label">Docs</p>
   <h1>shotfleet documentation</h1>
   <p class="lede">Localized App Store and Google Play screenshots from one English Maestro flow: capture, check, export to fastlane.</p>
-  <p class="small">Last checked against version 0.1.0 on 2026-10-02.</p>
+  <p class="small">Last checked against version 0.1.0 on 2026-10-03.</p>
 
   <nav class="toc" aria-label="On this page">
     <ol>
@@ -72,7 +61,7 @@
     <li>Maestro 2.x and Java 17+ (Maestro needs it).</li>
     <li>Xcode for iOS, the Android SDK for Android.</li>
     <li><code>shotfleet doctor --fix</code> downloads what <code>doctor</code> found missing (Maestro 2.0.10, a Java 21 runtime, the Android command-line tools) after showing the plan and asking once; it never uses <code>sudo</code> and does not touch Xcode.</li>
-    <li>Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in <code>ANDROID_HOME</code>, <code>ANDROID_SDK_ROOT</code>, <code>~/Library/Android/sdk</code>, Homebrew's <code>android-commandlinetools</code>, or next to an <code>adb</code> on your PATH, and uses any installed arm64 <code>google_apis</code> or <code>google_apis_playstore</code> image of API 33 or newer (or the <code>system_image</code> from the config). <code>shotfleet doctor</code> prints the <code>sdkmanager</code> commands for whatever is missing.</li>
+    <li>Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in <code>ANDROID_HOME</code>, <code>ANDROID_SDK_ROOT</code>, <code>~/Library/Android/sdk</code>, Homebrew's <code>android-commandlinetools</code>, or next to an <code>adb</code> on your PATH, and uses any installed arm64 <code>google_apis</code> or <code>google_apis_playstore</code> image of API 33 or newer (or the <code>system_image</code> from the config). <code>shotfleet doctor</code> prints the <code>sdkmanager</code> commands for whatever is missing. The first Android run creates its own emulator, <code>shotfleet_android</code>, from that image; your other emulators are not touched.</li>
     <li>The installed program brings its own Python. Running from source needs Python 3.11+.</li>
   </ul>
 
@@ -88,7 +77,7 @@ shotfleet doctor                 # checks Maestro, Java, Xcode, Android SDK</cod
   <p>Once Maestro and a simulator build exist, in your project folder:</p>
 <pre><code>shotfleet init
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself</code></pre>
-  <p><code>shotfleet init</code> without arguments only reads folders, never builds. For iOS it takes the newest <code>Debug-iphonesimulator</code> app in Xcode's default DerivedData folder (<code>~/Library/Developer/Xcode/DerivedData</code>) whose <code>info.plist</code> points at an Xcode project in this folder (or one folder below it, or above it). For Android it takes the newest APK under <code>app/build/outputs/apk/debug</code> (or <code>&lt;module&gt;/build/outputs/apk/debug</code>, one folder below). It prints which build it chose and how old it is. If it finds nothing it exits with the exact <code>xcodebuild</code> and <code>./gradlew assembleDebug</code> commands to run; then run <code>shotfleet init</code> again.</p>
+  <p><code>shotfleet init</code> without arguments only reads folders, never builds. For iOS it takes the newest <code>Debug-iphonesimulator</code> app in Xcode's default DerivedData folder (<code>~/Library/Developer/Xcode/DerivedData</code>) whose <code>info.plist</code> points at an Xcode project in this folder, up to two folders below it, or above it. For Android it takes the newest debug APK under <code>build/outputs/apk/debug</code> in this folder or up to two folders below it (<code>app/build/outputs/apk/debug</code>, <code>&lt;module&gt;/build/outputs/apk/debug</code>, <code>android/app/build/outputs/apk/debug</code>; a flavour folder such as <code>apk/free/debug</code> counts too). It prints which build it chose and how old it is. If it finds nothing it exits with the exact <code>xcodebuild</code> and <code>./gradlew assembleDebug</code> commands to run; then run <code>shotfleet init</code> again.</p>
   <ol>
     <li>Edit the generated <code>flow.yaml</code>: <a href="https://maestro.mobile.dev">Maestro</a> steps in English. Navigate by the text users see and add a <code>takeScreenshot:</code> for each store image. No <code>appId</code> is needed: shotfleet uses each build's own id, so one flow serves iOS and Android.</li>
     <li>Try one language: <code>shotfleet run --locales en</code></li>
