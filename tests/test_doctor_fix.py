@@ -277,3 +277,22 @@ class DoctorCommand(FixTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LicenceCallsUseTheSameCaBundle(unittest.TestCase):
+    """A buyer behind a proxy that re-signs HTTPS must be able to activate: the licence calls honour SSL_CERT_FILE like the downloads."""
+    def test_polar_and_gumroad_calls_ask_tls_context_at_call_time(self):
+        seen = []
+        class Resp:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return b"{}"
+        def fake_urlopen(req, timeout=None, context=None): seen.append(context); return Resp()
+        marker = object()
+        with mock.patch.object(sf, "tls_context", lambda: marker), mock.patch.object(sf.urllib.request, "urlopen", fake_urlopen), \
+                mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "pid"):
+            sf.polar_post("validate", key="k")
+            sf.gumroad_verify("k", False)
+        self.assertEqual(len(seen), 2)
+        self.assertTrue(all(c is marker for c in seen), seen)

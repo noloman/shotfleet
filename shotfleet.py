@@ -3428,11 +3428,8 @@ def cap_locales(locales):
 def is_polar_key(key):
     return key.strip().upper().startswith("SHOTFLEET-")
 
-try:  # the released build can't count on the Mac's CA bundle (no Homebrew OpenSSL): use certifi's when it is there
-    import certifi
-    _TLS = ssl.create_default_context(cafile=certifi.where())
-except ImportError:
-    _TLS = None
+# The licence calls use tls_context(): certifi's CA bundle (the released build can't count on the Mac's), unless the environment names
+# one (SSL_CERT_FILE...), as a corporate proxy that re-signs HTTPS needs.
 
 def polar_post(action, **fields):
     """POST to Polar's licence-key API (no secret needed) -> (status, JSON). 403/404/422 mean the key isn't valid;
@@ -3441,7 +3438,7 @@ def polar_post(action, **fields):
                                  headers={"Content-Type": "application/json", "Accept": "application/json",
                                           "User-Agent": f"shotfleet/{VERSION}"})
     try:
-        with urllib.request.urlopen(req, timeout=15, context=_TLS) as r: return r.status, json.loads(r.read() or b"{}")
+        with urllib.request.urlopen(req, timeout=15, context=tls_context()) as r: return r.status, json.loads(r.read() or b"{}")
     except urllib.error.HTTPError as e:
         with e:
             if e.code in (403, 404, 422):
@@ -3471,7 +3468,7 @@ def gumroad_verify(key, count_use):
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
     try:
-        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15, context=_TLS) as r:
+        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15, context=tls_context()) as r:
             body = json.loads(r.read() or b"{}")
     except urllib.error.HTTPError as e:  # an unknown key is a 404 with a JSON message
         with e:
