@@ -1,7 +1,7 @@
 # shotfleet on Linux
 
 What works, what is untried, and what cannot work. Status 2026-10-03, from source (`python3 shotfleet.py ...`, Python 3.11+).
-There is no Linux installer or release build yet.
+`packaging/build-linux.sh` builds a 20 MB folder (PyInstaller, unsigned, 13 s on x86_64); that folder ran `check` and `doctor` on the test machine. There is no Linux installer or published release build yet (`install.sh` still refuses non-Macs).
 
 | | Linux | Evidence |
 |---|---|---|
