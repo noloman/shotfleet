@@ -85,6 +85,14 @@ class ScreenshotsMadeElsewhere(unittest.TestCase):
         for one in (sizes["Mac"][0], sizes["Apple TV / Vision Pro"][1]):
             self.assertEqual(sf.store_rules(self.images({"de-DE": {"a.png": one}}), android=False), ([], []))
 
+    def test_iphone_duo_sizes_are_known_but_do_not_replace_the_required_iphone_set(self):
+        # Apple's specification page of 2026-10-03 lists the foldable's outer (1398x2034) and inner (2007x2853) displays
+        self.assertEqual(sf.apple_class((1398, 2034)), "iPhone Duo (outer display)")
+        self.assertEqual(sf.apple_class((2853, 2007)), "iPhone Duo (inner display)")  # landscape is accepted too
+        self.assertEqual(sf.store_rules(self.images({"de-DE": {"a.png": (1398, 2034), "b.png": (1320, 2868)}}), android=False), ([], []))
+        problems, _ = sf.store_rules(self.images({"de-DE": {"a.png": (1398, 2034)}}), android=False)
+        self.assertEqual(len(problems), 1); self.assertIn('iPhone screenshots need a 6.9" or 6.5" set', problems[0])
+
     def test_each_class_takes_at_most_ten(self):
         problems, _ = sf.store_rules(self.images({"de-DE": {f"{i}.png": (2880, 1800) for i in range(11)}}), android=False)
         self.assertEqual(problems, ["de-DE: 11 Mac screenshots; the App Store takes at most 10"])
