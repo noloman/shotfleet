@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import plistlib, platform as host_platform, ssl, subprocess, tarfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -1556,6 +1556,11 @@ DEFAULT_IMAGE = f"system-images;android-36;google_apis;{ABI}"
 
 SYSTEM_SDKS = (Path("/usr/lib/android-sdk"),)  # where Debian and Ubuntu packages put an SDK
 
+def clean_path(p):
+    """An absolute path with ~ expanded and any `..` or `.` folded away. Google's Android CLI (the new sdkmanager) refuses to unpack into a folder named
+    like /work/app/../Android/Sdk ("Illegal entry path escaping destination directory"), found on a GitHub runner on 2026-10-03."""
+    return Path(os.path.abspath(os.path.expanduser(str(p))))
+
 def find_sdk(env=None):
     """The Android SDK, first match of: ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's
     android-commandlinetools, the folder above an `adb` on the PATH. A match has at least one SDK folder in it.
@@ -1569,8 +1574,8 @@ def find_sdk(env=None):
         adb = Path(adb).resolve()
         if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
     for c in filter(None, cands):
-        if any((Path(c) / part).is_dir() for part in SDK_PARTS): return Path(c)
-    return Path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
+        if any((Path(c) / part).is_dir() for part in SDK_PARTS): return clean_path(c)
+    return clean_path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
 
 SDK = find_sdk()
 
@@ -1630,7 +1635,7 @@ DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no no
 ]
 
 class Emu:
-    def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
+    def __init__(self, port): self.port, self.serial, self.proc = port, f"emulator-{port}", None  # proc: the emulator process shotfleet started
     def adb(self, *args, check=True, timeout=180):
         r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
         if check and r.returncode != 0:
@@ -1644,14 +1649,46 @@ SNAPSHOT = "shotfleet"
 def start_emu(avd, port, read_only=True, snapshot=False):
     """Headless emulator. Read-only copies boot from the saved snapshot (4-5 s instead of ~22 s cold, measured)."""
     boot = ["-snapshot", SNAPSHOT, "-no-snapshot-save"] if snapshot else ["-no-snapshot"]
-    return subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
-                             "-no-boot-anim"] + boot + (["-read-only"] if read_only else []),
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    EMU_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log = EMU_LOG_DIR / f"emulator-{port}.log"
+    with log.open("wb") as f:  # the child keeps its own copy of the handle
+        p = subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
+                              "-no-boot-anim"] + boot + (["-read-only"] if read_only else []),
+                             stdout=f, stderr=subprocess.STDOUT)
+    p.log_path = log
+    return p
+
+EMU_LOG_DIR = Path(tempfile.gettempdir()) / "shotfleet-emulator-logs"
+
+def emulator_log_tail(proc, lines=15):
+    """The last lines of an emulator's own output, for a failure message ('' when there is none)."""
+    try: text = Path(proc.log_path).read_text(errors="replace")
+    except (AttributeError, OSError): return ""
+    return "\n".join([l for l in text.splitlines() if l.strip()][-lines:])
+
+def boot_failure_hint(output=""):
+    """The likely cause of an emulator that did not boot. `output` is the emulator's own last lines: some fatal messages name the fix exactly."""
+    if "Not enough space to create userdata partition" in output:
+        return ("the emulator wants about 12 GB free for its data partition (see the FATAL line above): free disk space, or set a smaller "
+                "disk.dataPartition.size in ~/.android/avd/<name>.avd/config.ini; GitHub's hosted Linux runners start with about 7 GB free, so clear "
+                "/usr/local/lib/android and /usr/share/dotnet first")
+    if sys.platform.startswith("linux") and not (os.access("/dev/kvm", os.R_OK) and os.access("/dev/kvm", os.W_OK)):
+        return "this machine has no usable /dev/kvm, so the emulator is far too slow (docs/linux.md); Android runs need hardware virtualization"
+    return "each emulator wants about 3 GB of free memory and 2 CPU cores; lower `parallel` in the config, or free memory, and run again"
 
 def wait_booted(emus, timeout=600):
+    """Wait until every emulator reports sys.boot_completed. Fails at once, with the emulator's own output, when its process exits;
+    on a timeout the message carries the last lines of each emulator's log and the likely cause."""
     t0 = time.time()
     while not all(e.booted() for e in emus):
-        if time.time() - t0 > timeout: raise RuntimeError("emulators did not boot in time")
+        for e in emus:
+            proc = getattr(e, "proc", None)
+            if proc is not None and proc.poll() is not None:
+                raise RuntimeError(f"{e.serial}: the emulator exited with code {proc.returncode} before it booted.\n"
+                                   f"its output ({getattr(proc, 'log_path', 'not kept')}):\n{emulator_log_tail(proc)}\n{boot_failure_hint(emulator_log_tail(proc))}")
+        if time.time() - t0 > timeout:
+            tails = "\n".join(f"{e.serial} ({getattr(e.proc, 'log_path', 'no log')}):\n{emulator_log_tail(e.proc)}" for e in emus if getattr(e, "proc", None) is not None)
+            raise RuntimeError(f"emulators did not boot in time ({timeout} s).\n{tails}\n{boot_failure_hint(tails)}")
         time.sleep(3)
 
 # Exactly 9:16 at 1080px+ so Google Play can recommend the listing (research/store-specs.md)
@@ -1686,7 +1723,7 @@ def android_pool(n, cfg, pool):
                        re.sub(r"(?m)^hw\.lcd\.height=.*", f"hw.lcd.height={h}",
                        re.sub(r"(?m)^hw\.lcd\.density=.*", f"hw.lcd.density={dpi}", ini.read_text()))))
     if not (avd_dir / "snapshots" / SNAPSHOT).exists():  # one-time: boot writable, save a snapshot copies start from
-        e = Emu(5700); p = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
+        e = Emu(5700); p = e.proc = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
         wait_booted([e]); time.sleep(20)
         e.adb("emu", "avd", "snapshot", "save", SNAPSHOT, check=False)
         e.adb("emu", "kill", check=False); p.wait(timeout=120)
@@ -1695,7 +1732,7 @@ def android_pool(n, cfg, pool):
     for i in range(n):
         e = Emu(5702 + 2 * i)
         if e.booted(): raise Fail(f"{e.serial} is already running. Stop it (adb -s {e.serial} emu kill) and run again")
-        start_emu(avd, e.port, snapshot=snap); pool.append(e)
+        e.proc = start_emu(avd, e.port, snapshot=snap); pool.append(e)
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:
@@ -2638,7 +2675,7 @@ def fix_sdk_root():
     """Where `doctor --fix` puts Android tools: the folder the user named in ANDROID_HOME / ANDROID_SDK_ROOT, else the SDK found,
     else the Android Studio default for this system."""
     for var in ("ANDROID_HOME", "ANDROID_SDK_ROOT"):
-        if os.environ.get(var): return Path(os.environ[var]).expanduser()
+        if os.environ.get(var): return clean_path(os.environ[var])
     return SDK
 
 def install_cmdline_tools(sdk=None):
@@ -2658,8 +2695,18 @@ def run_sdkmanager(args, stdin=None, timeout=3600, sdk=None):
     sdk = Path(sdk or fix_sdk_root())
     tool = cmdline_tool("sdkmanager", sdk)
     if not tool: raise Fail("sdkmanager is not installed")
-    r = subprocess.run([str(tool), f"--sdk_root={sdk}", *args], input=stdin, text=True, env={**os.environ, **java_env()}, timeout=timeout)
+    cmd = sdkmanager_invocation(tool, sdk, args)
+    r = subprocess.run(cmd, input=stdin, text=True, env={**os.environ, **java_env()}, timeout=timeout)
     if r.returncode: raise Fail(f"sdkmanager {' '.join(args[:2])} failed (exit {r.returncode})")
+
+def sdkmanager_invocation(tool, sdk, args):
+    """The command line for sdkmanager arguments. Google's newer command-line tools turned sdkmanager into a shim for their Android CLI, which reports
+    usage data to Google unless told `--no-metrics` (sdkmanager itself does not accept that flag, 2026-10-03). shotfleet promises nothing leaves your
+    machine except what you ask for, so when the `android` program sits next to sdkmanager, package installs go through `android --no-metrics sdk install`."""
+    android = Path(tool).with_name("android")
+    if android.is_file() and args and not args[0].startswith("-"):
+        return [str(android), "--no-metrics", f"--sdk={sdk}", "sdk", "install", *args]
+    return [str(tool), f"--sdk_root={sdk}", *args]
 
 def fix_plan(have_maestro, have_java, android_pkgs, have_sdkmanager, want_android=True):
     """[(what it does, function)] for what is missing. Nothing here runs sudo, edits a shell file or touches Xcode."""
@@ -3159,11 +3206,11 @@ def latest_ios_runtime():
 APPLE_SIZES = {
     'iPhone 6.9"': [(1260, 2736), (1290, 2796), (1320, 2868)], 'iPhone 6.5"': [(1284, 2778), (1242, 2688)],
     'iPhone 6.3"': [(1179, 2556), (1206, 2622)], 'iPhone 6.1"': [(1170, 2532), (1125, 2436), (1080, 2340)],
-    'iPhone 5.5"': [(1242, 2208)], 'iPhone 4.7"': [(750, 1334)], 'iPhone 4"': [(640, 1096), (640, 1136)],
-    'iPhone 3.5"': [(640, 920), (640, 960)],
+    'iPhone 5.5"': [(1242, 2208)], 'iPhone 4.7"': [(750, 1334)], 'iPhone 4"': [(640, 1096), (640, 1136), (1136, 600)],
+    'iPhone 3.5"': [(640, 920), (640, 960), (960, 600)],  # the (1136, 600) and (960, 600) landscape sizes of the old iPhones are not plain rotations; Apple lists them as written
     'iPhone Duo (outer display)': [(1398, 2034)], 'iPhone Duo (inner display)': [(2007, 2853)],  # listed 2026-10-03; ASC upload "later this year"
     'iPad 13"': [(2064, 2752), (2048, 2732)], 'iPad 11"': [(1488, 2266), (1668, 2420), (1668, 2388), (1640, 2360)],
-    'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024)],
+    'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024), (2048, 1496), (1024, 748)],
     "Apple Watch": [(422, 514), (410, 502), (416, 496), (396, 484), (368, 448), (312, 390)],
     "Mac": [(1280, 800), (1440, 900), (2560, 1600), (2880, 1800)], "Apple TV / Vision Pro": [(1920, 1080), (3840, 2160)],  # 3840x2160 is also the Vision Pro size
 }

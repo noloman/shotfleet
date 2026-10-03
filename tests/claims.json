@@ -27,14 +27,14 @@
    "Mac command-line tool",
    "you don’t have an Apple silicon Mac. iOS simulators need a Mac"
   ],
-  "status": "partial",
-  "proof": "site/public/install.sh:5-6 refuses non-Darwin and non-arm64. DISTRIBUTION.md Status: 'Apple silicon only for now'. The landing page, terms and privacy never say Apple silicon only; README says it only in a shell comment (README.md:49).",
+  "status": "fixed",
+  "proof": "2026-10-03: PlatformAndRequirements.test_install_sh_refuses_linux_and_intel_macs_and_lets_apple_silicon_through runs site/public/install.sh with a stubbed uname: Linux x86_64, Linux aarch64 and Darwin x86_64 exit 1 with the message before any download; Darwin arm64 reaches the download. PlatformAndRequirements.test_the_site_terms_and_readme_say_apple_silicon_where_a_buyer_decides reads 'Apple silicon' in the index requirements sentence, the 'Not for you if' line, terms, README Limits and the comparison page. Earlier: Offer.test_apple_silicon_is_said_where_a_buyer_decides. Not run here: the installer on a real Mac.",
   "layer": "site",
   "assertion": "Assert index.html (and terms.html) contain 'Apple silicon' near the install/needs sentence, and that install.sh's uname -m guard exists. Intel Mac owners can buy and then cannot install.",
   "fix": "Add 'Apple silicon Mac (M1 or newer)' to 'It needs a Mac, Maestro and Java 17+' and to terms.html; keep until an Intel build ships.",
   "fixed_by": "wording",
   "fixed": "Apple silicon is now said on the page (requirements sentence, price card, 'Not for you if'), in terms and in the README; install.sh refuses non-arm64 (not run here).",
-  "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides"
+  "test": "PlatformAndRequirements.test_install_sh_refuses_linux_and_intel_macs_and_lets_apple_silicon_through, PlatformAndRequirements.test_the_site_terms_and_readme_say_apple_silicon_where_a_buyer_decides, Offer.test_apple_silicon_is_said_where_a_buyer_decides"
  },
  {
   "id": "C003",
@@ -222,7 +222,7 @@
    "A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next"
   ],
   "status": "partial",
-  "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix.",
+  "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix. 2026-10-03 review (claims-unit): left partial. The sentence is history about one real run on CrossfitTracker, which no local test can prove, and README.md:46 still sits under 'Check screenshots made by any tool' (it says 'A run also surfaces', not that check does). A wording test would only prove where the sentence is; the fix above (move it) is a docs change.",
   "layer": "unit",
   "assertion": "Assert README wording: the sentence is in the 'run' section, or reads 'run failed on ...'. (Wording test only.)",
   "fix": "Move README.md:44 out of the check section and say: 'While running my own app, the capture got stuck on an onboarding page ...'."
@@ -520,7 +520,7 @@
    "Check any screenshots, from fastlane or by hand"
   ],
   "status": "partial",
-  "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes.",
+  "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names.",
   "layer": "unit",
   "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
   "fix": ""
@@ -556,14 +556,14 @@
    "It needs an Apple silicon Mac, Maestro and Java 17+.",
    "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+"
   ],
-  "status": "partial",
-  "proof": "JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro, test_no_java_is_reported; doctor checks it (shotfleet.py:1714-1752). README's own prerequisite line omits Java 17+ and the site omits Xcode/Android SDK.",
+  "status": "fixed",
+  "proof": "2026-10-03: PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things checks that README Limits, the index requirements data and llms.txt all name Apple silicon, Maestro (2.x; 'tested with 2.0.10' = sf.MAESTRO_TESTED), Java 17, Xcode for iOS and the Android SDK, and that no page names another Java floor. PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program: find_java() refuses Java 16 and accepts 17. The visible one-line sentence on the page (Apple silicon Mac, Maestro and Java 17+) is a subset of that set: it leaves out Xcode and the Android SDK, which the page's data block and README give. Earlier: JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro.",
   "layer": "site",
   "assertion": "Assert the prerequisite sentences in index.html and README.md name the same set: Mac, Xcode (iOS), Android SDK (Android), Maestro 2.x, Java 17+.",
   "fix": "README.md:237: 'Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+.'",
   "fixed_by": "wording",
   "fixed": "README Limits and the site now name Java 17+ (and Apple silicon).",
-  "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides"
+  "test": "PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things, PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program, Offer.test_apple_silicon_is_said_where_a_buyer_decides"
  },
  {
   "id": "C034",
@@ -625,7 +625,7 @@
    "site/draft/alternatives.html"
   ],
   "where_text": [
-   "you want frames, captions or store upload. Use ButterKit or AppScreens for those; shotfleet works alongside them.",
+   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet works alongside them.",
    "Point ButterKit at those same folders"
   ],
   "status": "untested",
@@ -641,7 +641,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "fastlane snapshot is free and does that."
+   "<a href=\"/alternatives#fastlane\">fastlane snapshot</a> is free and does that."
   ],
   "status": "unverifiable",
   "proof": "Third-party fact; true to the best of public knowledge (research/pricing-2026-10.md lists it as free, tagged A).",
@@ -720,8 +720,8 @@
    "$49 once, $29 founder",
    "`FOUNDER29` $20 off for the first 100"
   ],
-  "status": "partial",
-  "proof": "Amounts agree everywhere ($49 / $29 / 100 / 14 days; checked 2026-10-02). Who gets $29 does not: index.html 'first 100 people', LAUNCH.md 'first 100' (code FOUNDER29, applied automatically on the Gumroad product: anyone), launch-posts-v2.md:44,113 and STRATEGY.md 'first 100 on the list', launch-email.md 'before anyone else'. 2026-10-02 (Gumroad): the plan is a $49 list price with FOUNDER29 = $20 off, limit 100 uses, applied automatically; Gumroad adds VAT on top of the price (cannot be inclusive), so the page says 'before VAT where it applies'. Unverified: what the page shows after the 100th use (research/gumroad-setup.md section 4).",
+  "status": "proven",
+  "proof": "2026-10-03: PriceAgreement.test_the_only_shotfleet_prices_are_29_and_49 (every $N in the page, terms, README, llms.txt, launch email, launch-posts-v2, the comparison pages' shotfleet row is 29 or 49; LAUNCH.md and DISTRIBUTION.md state $49 with FOUNDER29 = $20 off for 100 uses), PriceAgreement.test_every_first_n_is_100_and_says_buyers_never_the_list (all 'first N buyers/people/on the list' phrases in the site, README, launch texts, LAUNCH, DISTRIBUTION, STRATEGY and the marketing kit say 100; none says 'on the list', 'people' or 'before anyone else'), PriceAgreement.test_wherever_the_29_is_offered_the_49_follows_in_the_same_breath, PriceAgreement.test_structured_data_on_the_page_has_the_same_two_prices_and_a_free_tier (waitlist and go-live versions). STRATEGY.md still said 'first 100 on the list' and was fixed. Scope: the published texts agree with each other. What Gumroad charges (list price $49, FOUNDER29, 100 uses, the page after the 100th use) is a live setting no test here can read (research/gumroad-setup.md section 4). Stale and outside the test: marketing/launch-posts.md and marketing/competitors.md still carry the old $79 plan.",
   "layer": "site",
   "assertion": "Script: collect every $N and 'first 100' phrase in index.html, README, LAUNCH.md, DISTRIBUTION.md, marketing/*.md; assert the set of amounts == {29, 49} and the who-gets-it wording is identical.",
   "fix": "Say 'the first 100 buyers' everywhere, and delete 'on the list'."
@@ -755,8 +755,8 @@
   "where_text": [
    "Every language, both platforms, iPad and tablets, and export to fastlane"
   ],
-  "status": "partial",
-  "proof": "Gating: PolarLicence.test_run_without_a_licence_is_the_free_tier_export_is_not (free run capped at 2 languages, export refused); Licence.test_released_build_needs_a_licence_for_run. The cap reaches both platform runs (shotfleet.py:1004,1206) but no test follows it into ios_run/android_run. The free tier also includes iPad/tablet (only languages are capped).",
+  "status": "proven",
+  "proof": "TierReachesBothPlatformRuns.test_a_licensed_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_capped_state_gives_exactly_two_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers, TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy_when_licensed (tests/test_claims_unit.py). `main(['run'])` on a frozen build goes through the real ios_run_inner and android_run with stand-ins only below them (simulator pool, emulator pool, Maestro): with a fresh licence file each platform gets all 4 shipped languages, in every iPhone, iPad, phone, tablet and 7-inch set; without one each gets the first 2 and prints the free-tier line (the cap sits inside ios_run_inner/android_run, so a stub of ios_run itself would not show it). `export` without a licence exits 2 with the activate message and with one writes the fastlane folder. Also PolarLicence.test_run_without_a_licence_is_the_free_tier_export_is_not, Licence.test_released_build_needs_a_licence_for_run. Not covered: a real purchase or a real licence server (the licence is a file the test writes); sys.frozen is patched, the released binary was not run.",
   "layer": "unit",
   "assertion": "With LOCALE_CAP=2 and a stub runner, ios_run and android_run receive exactly 2 locales; export raises NoLicence (exit 2).",
   "fix": ""
@@ -830,8 +830,8 @@
    "<li>No account</li>",
    "Free tier: capture 2 languages and check any screenshots."
   ],
-  "status": "partial",
-  "proof": "PolarLicence.test_run_without_a_licence_is_the_free_tier_export_is_not (LOCALE_CAP == 2; cap_locales keeps the first two), Licence tests. No account: activation needs only a key; check/init/doctor/2-language run need no network. Not tested end to end on a frozen build (cold-test-2.md #25: 'gate OFF in that build, free tier could not be exercised'). The cap is per run, not per month: two runs of two languages give four.",
+  "status": "proven",
+  "proof": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so, FreeTierOnAFrozenBuild.test_without_a_locale_list_it_is_the_first_two_of_what_the_app_ships, FreeTierOnAFrozenBuild.test_the_mcp_run_tool_is_capped_the_same_way, FreeTierOnAFrozenBuild.test_no_licence_server_is_contacted_and_no_licence_file_is_written, FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence, FreeTierOnAFrozenBuild.test_the_cap_is_per_run_two_runs_of_two_languages_give_four, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash (tests/test_claims_unit.py). With sys.frozen patched and no licence file, `main(['run', cfg, '--locales', 'de,ja,fr'])` captures exactly de and ja on iOS and on Android, prints 'free tier: capturing 2 of 3 languages (de, ja)', and so does the MCP run tool; any call to a licence server fails the test, and no licence file is written (no account). check, init and doctor never reach require_licence. The cap is per run, not per month (two runs of two languages give four): pinned by a test, and the claim says 'capture 2 languages with run', which stays true per run. Also PolarLicence.test_run_without_a_licence_is_the_free_tier_export_is_not. Not covered: the released binary itself (cold-test-2.md #25 had the gate off in that build); sys.frozen is patched.",
   "layer": "fixture",
   "assertion": "Frozen-style test: with no licence file and sys.frozen patched, `main(['run','x.toml','--locales','de,ja,fr'])` captures exactly de and ja and prints the 'free tier' line; MCP run does the same.",
   "fix": ""
@@ -900,8 +900,8 @@
   "where_text": [
    "the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run"
   ],
-  "status": "partial",
-  "proof": "The released build asks Gumroad's licence API about its key about weekly and stops after 30 offline days or when Gumroad says the key does not exist or the purchase was refunded, charged back or disputed. A 5xx or timeout never invalidates (GumroadLicence.test_a_gumroad_outage_is_not_a_verdict). So it still depends on Gumroad's API shape and on the product staying published: a promise of 'keeps working' is stronger than the code (third-party dependency, no kill-proof fallback).",
+  "status": "proven",
+  "proof": "GumroadLicenceShape.test_a_success_answer_is_valid_and_its_use_count_is_read, GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag, GumroadLicenceShape.test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not, GumroadLicenceShape.test_an_unknown_key_is_a_404_with_a_message_and_is_invalid, GumroadLicenceShape.test_an_outage_is_not_a_verdict, GumroadLicenceShape.test_the_age_of_the_purchase_decides_nothing, GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check, GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicenceShape.test_the_terms_say_what_the_code_does, PolarLicenceShape.test_a_granted_answer_is_valid_and_anything_else_is_not, PolarLicenceShape.test_the_activation_id_is_read_from_the_top_of_the_activate_answer, PolarLicenceShape.test_refused_keys_come_back_as_a_status_and_a_detail_not_as_a_crash (tests/test_claims_unit.py). Pins the answers the code reads (Gumroad: success, uses, message, purchase.refunded/chargebacked/disputed/dispute_won; Polar: status, detail, id) as fixtures and the decision made from each; a purchase of any age stays valid, the check runs about weekly, an outage never invalidates, 30 days offline stops it, and the Terms sentence matches (Offer.test_limits_match_the_code). The fixtures follow Gumroad's licence-key documentation and are not captured from the live API: if Gumroad changes the shape, or unpublishes the product, the promise as worded in the Terms ('as long as the licence check can run') is the disclosed limit. Earlier: GumroadLicence.test_a_gumroad_outage_is_not_a_verdict.",
   "layer": "unit",
   "assertion": "Release gate that pins the Gumroad licence answer shape used (success, uses, purchase.refunded/chargebacked/disputed).",
   "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Gumroad) is reachable at least once every 30 days.'",
@@ -1170,8 +1170,8 @@
   "where_text": [
    "A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices."
   ],
-  "status": "partial",
-  "proof": "Extending.test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure, test_before_run_failure_aborts_after_run_failure_changes_the_exit_code, test_after_run_counts_problems_across_all_devices_of_a_multi_device_run, test_no_hooks_flag_and_export_hooks. Mismatches with the documented variable list (README.md:186-188): SHOTFLEET_BUNDLE_ID is not set for export hooks, and SHOTFLEET_LOCALES is empty unless --locales or `locales` restricts the run (shotfleet.py:946-948, 2236-2238). G1HookVariables.test_each_event_gets_exactly_these_variables now records the real variables per event: before_run EVENT VERSION CONFIG PLATFORM OUT BUNDLE_ID LOCALES; after_run adds EXIT PROBLEMS REPORT; before_export EVENT VERSION CONFIG PLATFORM OUT FASTLANE REPORT (no BUNDLE_ID); after_export adds EXIT. README.md says _BUNDLE_ID reaches every event, so that sentence is wrong for the export hooks: reword it, or set BUNDLE_ID in export_with_hooks.",
+  "status": "proven",
+  "proof": "HookEventsAndExitCodes.test_each_event_gets_exactly_the_variables_the_readme_lists, HookEventsAndExitCodes.test_locales_is_empty_unless_the_run_is_restricted_and_bundle_id_is_the_android_package, HookEventsAndExitCodes.test_a_failing_before_run_stops_the_command_with_exit_2_and_a_one_line_message, HookEventsAndExitCodes.test_a_failing_after_run_makes_the_exit_code_1_even_when_the_run_was_clean, HookEventsAndExitCodes.test_a_failing_before_export_stops_before_anything_is_copied_and_a_failing_after_export_gives_exit_1, HookEventsAndExitCodes.test_a_hook_that_hangs_is_stopped_at_hook_timeout_s_and_counts_as_a_failure, HookEventsAndExitCodes.test_no_hooks_runs_none_of_the_four_events_whatever_they_would_do (tests/test_claims_unit.py). Each of the four events runs a recording command through `main`, and the SHOTFLEET_* names it saw equal the table read from the README sentence (every event: EVENT VERSION CONFIG PLATFORM OUT; run hooks: BUNDLE_ID LOCALES; after_run: EXIT PROBLEMS REPORT; export hooks: FASTLANE REPORT, after_export: EXIT). The earlier mismatch (BUNDLE_ID on export hooks) was fixed in the README. These run on Linux too (G1HookVariables is Mac-only). Also Extending.test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure, Extending.test_no_hooks_flag_and_export_hooks, G1HookVariables.test_each_event_gets_exactly_these_variables.",
   "layer": "unit",
   "assertion": "Hook test that dumps `env | grep SHOTFLEET_` for each of the four events and compares with a table generated from the README sentence.",
   "fix": "Say which variables each event gets; fill SHOTFLEET_LOCALES with the languages actually run."
@@ -1246,7 +1246,7 @@
    "Android needs API 33+ emulators for per-app languages."
   ],
   "status": "partial",
-  "proof": "API 33 is a documented limit; research/limits-platforms.md argues it excludes almost nobody. (The inline launchApp limit was removed: LocalizeFlow.test_inline_launch_app_options_are_expanded_and_merged.)",
+  "proof": "API 33 is a documented limit; research/limits-platforms.md argues it excludes almost nobody. (The inline launchApp limit was removed: LocalizeFlow.test_inline_launch_app_options_are_expanded_and_merged.) 2026-10-03 review (claims-unit): left partial. The refusal the assertion asks for does not exist: android_pool never reads the API level of an existing AVD or of a `system_image` from the config; only find_image (the automatic choice) and doctor insist on 33+. An older AVD would fail at the `cmd locale set-app-locales` call with whatever adb prints (not tested). Adding a one-line refusal is a feature, not a bug fix, so it was not done here.",
   "layer": "unit",
   "assertion": "Android pool refuses an AVD older than API 33 with a one-line message (check it exists).",
   "fix": ""
@@ -1308,7 +1308,7 @@
    "Those totals are not linked to you and your IP address is not stored."
   ],
   "status": "partial",
-  "proof": "site/worker.test.mjs: 'visits are counted per day, source and language', 'known events are kept, unknown ones count as a view', 'source is sanitised', 'a visit stores nothing about the visitor'. Code: worker.js /api/hit keeps only key hit:<day>|<source>|<lang>|<event> -> integer; site/public/analytics.js sends only {src, ev}. Counts are batched per isolate and can be lost when an isolate is recycled, so totals can undercount. Whether Cloudflare's Workers Logs retain request IPs is unchecked.",
+  "proof": "site/worker.test.mjs: 'visits are counted per day, source and language', 'known events are kept, unknown ones count as a view', 'source is sanitised', 'a visit stores nothing about the visitor'. Code: worker.js /api/hit keeps only key hit:<day>|<source>|<lang>|<event> -> integer; site/public/analytics.js sends only {src, ev}. Counts are batched per isolate and can be lost when an isolate is recycled, so totals can undercount. Whether Cloudflare's Workers Logs retain request IPs is unchecked. 2026-10-03: WorkerBehaviour.test_c077_a_visit_adds_to_a_total_per_day_source_language_and_event_and_stores_nothing_else (one visit with a cf-connecting-ip and a user agent writes exactly one hit: key whose key and value hold neither), PrivacyPageListsWhatIsStored.test_c077_the_counter_is_described_as_the_code_does_it (analytics.js sends only src and ev, uses no cookie or storage, does not read the consent choice, is on the home page only), BrowserBehaviour.test_c077_the_counter_sends_only_src_and_ev_sets_no_cookie_and_runs_whatever_the_analytics_choice (Chromium: view, runs, pricing and cta events, no cookie, no other server, with analytics declined and undecided). Still missing: whether Cloudflare's Workers Logs (observability is enabled in wrangler.toml) keep request IPs, which only the Cloudflare dashboard shows, so 'your IP address is not stored' stays partial.",
   "layer": "site",
   "assertion": "Worker test with HIT_BATCH=1: one /api/hit with cf-connecting-ip=1.2.3.4 and a User-Agent writes exactly one KV key, whose key and value contain neither; forms.js sends only {src}.",
   "fix": ""
@@ -1322,11 +1322,14 @@
   "where_text": [
    "Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me."
   ],
-  "status": "partial",
-  "proof": "worker.test.mjs asserts stack/platform/at for signups, not the full set of stored fields. worker.js stores email, at, platform, stack, country, ref (and for messages: message, reply email, country). It also logs {event, country}; Cloudflare's rate limiter is keyed by IP. 'platform' (derived from stack) is not listed in privacy.html.",
+  "status": "fixed",
+  "proof": "2026-10-03: WorkerBehaviour.test_c078_only_three_kinds_of_record_exist_and_none_holds_the_ip_or_user_agent (a signup record has exactly at, platform, stack, country, lang, ref; a message exactly message, email, country; only email:, msg: and hit: keys are ever written; the log lines hold the event and country only), PrivacyPageListsWhatIsStored.test_c078_the_contact_message_fields_are_named_on_the_page, PrivacyPageListsWhatIsStored.test_c079_each_field_of_the_waitlist_record_is_named_on_the_page. 'platform' is derived from the stack answer (what you build with). Still not checkable here: the platform's own request logs.",
   "layer": "site",
   "assertion": "worker.test.mjs: after signup and contact, the KV record's keys equal {at, platform, stack, country, ref} / {message, email, country}; no value equals the request IP or user agent.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "Contact messages also store the sender's country (worked out by Cloudflare from the IP address), which the privacy page did not list. It now says messages are kept with the reply address and the country. Tests show the stored fields match the page. Not checked: what Cloudflare's own Workers Logs keep.",
+  "test": "WorkerBehaviour.test_c078_only_three_kinds_of_record_exist_and_none_holds_the_ip_or_user_agent, PrivacyPageListsWhatIsStored.test_c078_the_contact_message_fields_are_named_on_the_page"
  },
  {
   "id": "C079",
@@ -1340,7 +1343,7 @@
    "The site that linked you here and any <code>utm_</code> tags in the link"
   ],
   "status": "partial",
-  "proof": "worker.js:58-67 stores exactly those fields and the IP only as the rate-limit key (not persisted by the code). forms.js:6-9 sends only the referrer host and utm_* pairs. worker.test.mjs does not assert ref or country. Whether Cloudflare's Workers Logs keep the client IP (observability enabled in wrangler.toml) is not checked.",
+  "proof": "worker.js:58-67 stores exactly those fields and the IP only as the rate-limit key (not persisted by the code). forms.js:6-9 sends only the referrer host and utm_* pairs. worker.test.mjs does not assert ref or country. Whether Cloudflare's Workers Logs keep the client IP (observability enabled in wrangler.toml) is not checked. 2026-10-03: WorkerBehaviour.test_c079_the_waitlist_record_has_the_listed_fields_and_never_the_ip (country, language, referrer verbatim up to 300 characters, stack, date; no IP or user agent anywhere in the record or key), BrowserBehaviour.test_c079_the_page_sends_only_the_address_the_honeypot_and_the_referrer_host_with_utm_tags, PrivacyPageListsWhatIsStored.test_c079_each_field_of_the_waitlist_record_is_named_on_the_page. Still missing: the Cloudflare Workers Logs setting (does it retain client IPs?), checked by hand in the dashboard, so 'the IP address itself isn't stored' stays partial.",
   "layer": "site",
   "assertion": "worker test: signup with ref='news.ycombinator.com utm_source=x' stores ref verbatim (<=300 chars) and never the cf-connecting-ip value; check the Cloudflare log settings by hand.",
   "fix": ""
@@ -1372,7 +1375,7 @@
    "I will delete the waitlist within 30 days after I send the launch email, or sooner if you ask."
   ],
   "status": "partial",
-  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence.",
+  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence. 2026-10-03: WorkerBehaviour.test_c081_the_purge_step_exists_and_the_privacy_page_and_launch_checklist_agree checks the sentence, signups.sh --purge-waitlist and the LAUNCH.md step, and that worker.js sets no expiry. Still missing: the promise is a manual step 30 days after the launch email; nothing here can test that it is done on time, and msg: records are covered by the separate 'kept until answered' sentence.",
   "layer": "site",
   "assertion": "Assert wrangler.toml has a scheduled purge or worker.js passes expirationTtl to put(); or a signups.sh --purge exists and the launch checklist (LAUNCH.md) lists it.",
   "fix": "Add the 30-day purge to LAUNCH.md and implement it; extend the sentence to messages.",
@@ -1389,14 +1392,14 @@
   "where_text": [
    "Enter the address you signed up with and it's deleted right away"
   ],
-  "status": "partial",
-  "proof": "worker.test.mjs 'forget removes' (email:<address> deleted; bad address 400). The same address left in a contact message (msg: keys) is not removed; KV deletes are eventually consistent (up to ~60 s globally); the endpoint is unauthenticated (anyone can remove anyone).",
+  "status": "proven",
+  "proof": "2026-10-03: WorkerBehaviour.test_c082_forget_removes_the_signup_and_the_messages_and_answers_the_same_either_way (the email: record and every msg: record with that reply address go; other people's messages stay; the answer is identical whether or not the address was on the list; a bad address is a 400), BrowserBehaviour.test_c082_c083_the_privacy_page_forms_send_what_the_worker_expects (the page sends only the address and shows Done). KV deletes can take about a minute to reach every location, so the privacy page now says so next to 'right away'. By design anyone can request a removal for any address (nothing to authenticate with); only the first 1,000 messages are searched. Real KV is not run here.",
   "layer": "site",
   "assertion": "Worker test: forget removes email: and any msg: record whose email equals it (not implemented), and answers identically whether or not it existed.",
   "fix": "Say 'removes your waitlist entry; email me to delete a message you sent'.",
   "fixed_by": "code",
-  "fixed": "Contact messages are now stored with the reply address in the KV metadata, and /api/forget deletes the email: record and every msg: record whose reply address matches (first 1,000 messages). Tested in site/worker.test.mjs. The privacy page says so.",
-  "test": "worker.test.mjs: 'forget removes the messages left with that reply address'"
+  "fixed": "Contact messages are now stored with the reply address in the KV metadata, and /api/forget deletes the email: record and every msg: record whose reply address matches (first 1,000 messages). Tested in site/worker.test.mjs. The privacy page says so. 2026-10-03: the page also says Cloudflare can take up to a minute to clear its copies everywhere.",
+  "test": "WorkerBehaviour.test_c082_forget_removes_the_signup_and_the_messages_and_answers_the_same_either_way, worker.test.mjs: 'forget removes the messages left with that reply address'"
  },
  {
   "id": "C083",
@@ -1407,8 +1410,8 @@
   "where_text": [
    "Email me at <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a>, or write here."
   ],
-  "status": "partial",
-  "proof": "worker.js:29-42 implements /api/contact; worker.test.mjs has no contact test (nor 404/405/413/429 paths or the 2,000-character limit). 2026-10-02 site/worker.test.mjs: contact 200, too short, too long, bad reply address, honeypot (all 400/200 as designed); not run against real KV.",
+  "status": "proven",
+  "proof": "2026-10-03: WorkerBehaviour.test_c083_the_contact_form_stores_a_message_and_refuses_what_it_should (200 and a stored msg: record with the reply address lower-cased; under 2 and over 2,000 characters 400, exactly 2,000 accepted; bad reply address 400; honeypot silently dropped; body over 4,096 bytes 413; not JSON 400; rate limited 429 with nothing stored), WorkerBehaviour.test_c083_messages_can_be_read_with_signups_sh, BrowserBehaviour.test_c082_c083_the_privacy_page_forms_send_what_the_worker_expects (the form sends message, reply address and honeypot and shows Sent). 'Sends a message to me' means it is stored in KV and read with site/signups.sh; there is no notification, and real KV is not run here.",
   "layer": "site",
   "assertion": "Worker tests: 200 and a stored msg: record; message < 2 chars 400; > 2000 chars 400; honeypot silently dropped; bad reply email 400; rate limiter false -> 429.",
   "fix": ""
@@ -1422,8 +1425,8 @@
   "where_text": [
    "In Cloudflare Workers KV, the storage for the small server behind this page."
   ],
-  "status": "partial",
-  "proof": "wrangler.toml: [[kv_namespaces]] WAITLIST and [[ratelimits]] 5 per 60 s per IP. worker.test.mjs stubs LIMITER to always succeed, so the 429 branch is never run. 2026-10-02 site/worker.test.mjs: 429 when the limiter refuses (nothing stored, page-view counting unaffected), 405 on GET, 404 on unknown paths; the real limiter and KV are not exercised.",
+  "status": "proven",
+  "proof": "2026-10-03: WranglerConfig.test_c084_the_list_lives_in_workers_kv_under_the_binding_the_worker_uses (one KV namespace bound as WAITLIST, the only storage the worker touches), WranglerConfig.test_c084_the_rate_limit_is_five_a_minute_per_ip_through_the_limiter_binding (5 per 60 s, keyed by cf-connecting-ip), WorkerBehaviour.test_c084_the_limiter_is_keyed_by_ip_refuses_with_429_and_leaves_page_views_alone (a refusal is a 429 on signup, forget and contact, writes nothing, and the limiter is asked about the client IP once per request), WranglerConfig.test_c084_privacy_says_the_same_about_the_ip. The deployed namespace and limiter are not queried here.",
   "layer": "site",
   "assertion": "Static check of wrangler.toml for the KV binding and ratelimits; worker test with LIMITER returning {success:false} -> 429 and no KV write.",
   "fix": ""
@@ -1470,8 +1473,8 @@
   "where_text": [
    "There's no page here."
   ],
-  "status": "partial",
-  "proof": "wrangler.toml not_found_handling = '404-page'; live 2026-10-02: /alternatives returned 404 text/html (the draft is not published). No test.",
+  "status": "proven",
+  "proof": "2026-10-03: WranglerConfig.test_c087_unknown_urls_get_the_404_page_and_only_the_api_reaches_the_worker (not_found_handling = '404-page', run_worker_first = ['/api/*'], site/public/404.html exists), WranglerConfig.test_c087_the_404_page_says_there_is_no_page_here_and_drafts_are_outside_what_is_served (h1 'There's no page here.', noindex, site/draft is outside the served folder). Proved statically from the config Cloudflare reads; the live status code of an unknown URL was seen on 2026-10-02 (/alternatives, 404 text/html while it was only a draft) and is not re-checked here.",
   "layer": "site",
   "assertion": "Live: GET /no-such-page returns status 404 and body contains 'There's no page here'; the draft page is not reachable.",
   "fix": ""
@@ -1487,8 +1490,8 @@
    "You’re on the list.",
    "One more thing, if you like: what do you build with?"
   ],
-  "status": "partial",
-  "proof": "worker.test.mjs: signup 200, case-folded email, follow-up adds stack and keeps the date, second answer does not overwrite, swift implies ios, unknown stack dropped, bad email 400, honeypot not stored, forget removes (node site/worker.test.mjs, 2026-10-02, all ok). forms.js (front end, referrer, error text) has no test; rate limit, size limits, 404/405 untested.",
+  "status": "proven",
+  "proof": "2026-10-03: BrowserBehaviour.test_c088_signup_shows_you_are_on_the_list_then_the_optional_question and BrowserBehaviour.test_c088_errors_validation_and_the_honeypot drive index.html in Chromium with /api stubbed: success hides the form and shows 'You're on the list.' then the optional 'what do you build with?' question (a second request with the stack only when answered); 429, 400, 500 and a network failure show the server's text or the generic text; an empty or malformed address stops in the page without a request; the honeypot is sent as website. Worker side: worker.test.mjs signup checks. StackAnswers.test_every_option_of_the_what_do_you_build_with_question_is_a_stack_the_worker_keeps. Needs Node with Playwright and Chromium; the browser tests skip where they are missing. Not run: the live site.",
   "layer": "site",
   "assertion": "jsdom or Playwright-less script test of forms.js: submit success shows #signup-done, 429/500 show the error text, honeypot field is sent.",
   "fix": ""
@@ -1689,8 +1692,8 @@
    "store listings with translated captions over an app that was still in English",
    "It also checks screenshot sizes against App Store Connect's rules."
   ],
-  "status": "partial",
-  "proof": "Captions over English UI: evidence (research/real-apps.md remoti: 108 problems, viewed; PLAN.md zh-Hant). The size claim has no recorded instance: the only size findings in the repo are noise from 360 px thumbnails (cold-test-2.md header). Capability is unit-tested for both halves: G1CheckDetectors.test_a_translated_caption_over_an_english_ui_is_named_as_such and G1CheckDetectors.test_a_size_the_store_refuses_is_one_problem_per_file, StoreRules.test_app_store_sizes_alpha_counts_and_required_class. The email says it 'caught' sizes 'on my own apps while I built it': no such instance is recorded anywhere in the repo.",
+  "status": "proven",
+  "proof": "CaptionOverAnEnglishUi.test_a_japanese_caption_over_an_english_ui_is_named_with_both_languages, CaptionOverAnEnglishUi.test_the_same_framing_with_the_ui_translated_is_clean, CaptionOverAnEnglishUi.test_an_english_caption_over_an_english_ui_in_the_japanese_folder_is_the_plain_wrong_language_problem, CaptionOverAnEnglishUi.test_the_pixels_of_the_golden_sample_are_enough_off_the_mac, CaptionOverAnEnglishUi.test_ocr_swift_prints_the_keys_the_check_reads, CaptionOverAnEnglishUi.test_the_same_check_refuses_a_size_the_app_store_does_not_take, CaptionOverAnEnglishUi.test_the_launch_email_says_this_and_no_more (tests/test_claims_unit.py). A framed 1320x2868 screenshot generated with PIL (Japanese caption above English UI lines) in a ja folder: `check` reports 'the caption is in ja but the app UI shows en strings (4 lines) more than ja (0)' and exits 1; a translated UI is clean; an English caption gives the plain wrong-language problem. The macOS Vision answer is a fixture of the shape ocr.swift prints (ocr.swift's caption box itself only runs on a Mac and is not run here); on Linux with Tesseract and a Japanese font the real pixels are read too and give the plain problem. The email now only says it 'also checks' sizes, which the size test shows (StoreRules and G1CheckDetectors.test_a_size_the_store_refuses_is_one_problem_per_file also). That it caught this on real apps stays evidence: research/real-apps.md remoti (108 problems, viewed), PLAN.md zh-Hant.",
   "layer": "unit",
   "assertion": "Keep a golden sample: an English-UI image under a Japanese caption must produce 'the caption is in ja but the app UI shows en strings'. Drop or substantiate the size line.",
   "fix": "Delete the third bullet unless a real rejected size is documented."
@@ -1704,8 +1707,8 @@
   "where_text": [
    "Buy: https://shotfleet.com/#price"
   ],
-  "status": "partial",
-  "proof": "index.html has id=\"price\" on the pricing section (line ~305). Live site returns 200.",
+  "status": "proven",
+  "proof": "2026-10-03: LinksResolve.test_the_buy_link_in_the_launch_email_lands_on_the_price_section (id=\"price\" is the pricing section, in the waitlist page and the page after go-live.sh), LinksResolve.test_every_address_in_the_texts_resolves_to_a_published_file_and_anchor (every https://shotfleet.com address in README, LAUNCH, DISTRIBUTION, the launch email, launch-posts-v2 and llms.txt is a page or file of the site, its #anchor an id on that page; /download/ names are the release files), LinksResolve.test_relative_links_in_the_readme_exist, LinksResolve.test_kit_addresses_point_at_the_site_or_at_a_guide_that_is_drafted_or_planned. Marketing kit links to the three guides still point at unpublished drafts (they 404 until the guides are published) and one planned article. The live site was not requested.",
   "layer": "site",
   "assertion": "Static: every internal href/anchor in README, posts and email resolves to an id in index.html.",
   "fix": ""
@@ -1753,7 +1756,7 @@
    "<td><span class=\"yes\">Yes</span></td>"
   ],
   "status": "partial",
-  "proof": "Same evidence as the claims above; nothing is wrong, but a table of 'Yes' cells without footnotes cannot be tested. Draft only; /alternatives returns 404 live.",
+  "proof": "Same evidence as the claims above; nothing is wrong, but a table of 'Yes' cells without footnotes cannot be tested. Draft only; /alternatives returns 404 live. 2026-10-03: ComparisonTable.test_the_shotfleet_row_of_the_published_table_reads_yes_yes_yes_both_and_the_real_price, ComparisonTable.test_the_draft_table_says_yes_to_five_things_and_each_is_a_command_or_option_the_program_has, ComparisonTable.test_one_english_flow_becomes_a_flow_in_each_language_from_the_apps_own_strings, ComparisonTable.test_check_finds_a_screenshot_in_the_wrong_language (checks, one flow per language, --parallel, --platform android and the price cell are shown to exist in the program). Still missing: 'captures the real app' and 'parallel' need simulators or emulators on a Mac, and every cell about the other tools rests on their pages read by hand on 2026-10-02. The published table (site/public/alternatives.html) has since replaced this draft's columns.",
   "layer": "site",
   "assertion": "Static: the draft cell values match a machine-readable features.json that the tests above feed.",
   "fix": ""
@@ -1791,12 +1794,12 @@
  },
  {
   "id": "C107",
-  "claim": "shotfleet check found 108 problems in 120 store screenshots of another of the author's apps: translated captions over an English UI",
+  "claim": "shotfleet check flagged 108 of 120 store screenshots of another of the author's apps: translated captions over an English UI (site wording since 2026-10-03; the old \"108 problems\" did not say whether that counted screenshots or issues, and research/real-apps.md has one problem per file)",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "found by <code>shotfleet check</code> in 120 store screenshots of another of my apps"
+   "store screenshots of another of my apps flagged by <code>shotfleet check</code>"
   ],
   "status": "evidence",
   "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
@@ -1914,7 +1917,7 @@
    "so there Android runs type the `[inputs]` defaults only"
   ],
   "status": "partial",
-  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults); AndroidTypedValuesPerDevice.* (generated map, flow rewrite, JS run under node with a fake MAESTRO_DEVICE_UDID, fallback to the defaults). MAESTRO_DEVICE_UDID is absent from the Maestro 2.0.10 jars (scanned 2026-10-03). Not yet run on a simulator with CJK or Arabic typing (roadmap X5 kill criterion: iOS CJK/Arabic typing may fail on the simulator), nor on an emulator with a newer Maestro.",
+  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults); AndroidTypedValuesPerDevice.* (generated map, flow rewrite, JS run under node with a fake MAESTRO_DEVICE_UDID, fallback to the defaults). MAESTRO_DEVICE_UDID is absent from the Maestro 2.0.10 jars (scanned 2026-10-03). Not yet run on a simulator with CJK or Arabic typing (roadmap X5 kill criterion: iOS CJK/Arabic typing may fail on the simulator), nor on an emulator with a newer Maestro. 2026-10-03 review (claims-unit): left partial. Every part a local test can prove already has a test (above); what is open is typed Japanese/Arabic text showing in a simulator PNG, which needs a device.",
   "layer": "unit",
   "assertion": "Fixture app with a text field: Japanese value shows in the PNG (read by OCR).",
   "fix": ""
@@ -1947,7 +1950,7 @@
    "It prints which build it chose and how old it is."
   ],
   "status": "partial",
-  "proof": "Unit on fake DerivedData, Gradle and project trees (not a real Xcode or Gradle run): InitFindsBuilds.test_picks_the_newest_debug_build_of_this_projects_xcode_project_and_says_why, InitFindsBuilds.test_a_derived_data_folder_for_a_project_above_the_current_folder_matches_too, InitFindsBuilds.test_a_folder_without_a_workspace_path_matches_by_the_project_name_prefix, InitFindsBuilds.test_test_runners_device_builds_and_other_configurations_are_never_chosen, InitFindsBuilds.test_newest_gradle_debug_apk_wins_the_wear_app_and_android_test_apks_do_not, InitFindsBuilds.test_apks_of_a_product_flavor_and_of_a_module_folder_next_to_cwd_are_found, InitFindsBuilds.test_ios_and_android_builds_are_both_returned_for_one_config. Unproven: the info.plist layout is the one seen on the founder's Mac (research/setup-friction.md section 2), not re-checked on other Xcode versions; custom DerivedData locations are not read; real aapt2 badging of a Wear APK.",
+  "proof": "Unit on fake DerivedData, Gradle and project trees (not a real Xcode or Gradle run): InitFindsBuilds.test_picks_the_newest_debug_build_of_this_projects_xcode_project_and_says_why, InitFindsBuilds.test_a_derived_data_folder_for_a_project_above_the_current_folder_matches_too, InitFindsBuilds.test_a_folder_without_a_workspace_path_matches_by_the_project_name_prefix, InitFindsBuilds.test_test_runners_device_builds_and_other_configurations_are_never_chosen, InitFindsBuilds.test_newest_gradle_debug_apk_wins_the_wear_app_and_android_test_apks_do_not, InitFindsBuilds.test_apks_of_a_product_flavor_and_of_a_module_folder_next_to_cwd_are_found, InitFindsBuilds.test_ios_and_android_builds_are_both_returned_for_one_config. Unproven: the info.plist layout is the one seen on the founder's Mac (research/setup-friction.md section 2), not re-checked on other Xcode versions; custom DerivedData locations are not read; real aapt2 badging of a Wear APK. 2026-10-03 review (claims-unit): left partial. The code paths are covered by the tests above on fake DerivedData and Gradle trees; what stays open is the real layout on other Xcode versions and the CrossfitTracker/Kuokka/Remoti/Cairn runs the assertion names, which a fake tree cannot show.",
   "layer": "unit",
   "assertion": "On CrossfitTracker, Kuokka, Remoti, Cairn: `shotfleet init` in the project folder after one Xcode build picks that build (roadmap X2).",
   "fix": ""
@@ -1963,7 +1966,7 @@
    "`shotfleet doctor` prints the `sdkmanager` commands for whatever is missing."
   ],
   "status": "partial",
-  "proof": "Unit on fake SDK layouts, PATH and Homebrew prefix: AndroidSdkDiscovery.test_places_are_tried_in_order, AndroidSdkDiscovery.test_the_folder_above_an_adb_on_the_path_is_the_last_resort, AndroidSdkDiscovery.test_any_installed_api_33_plus_arm64_image_is_used_newest_first, AndroidSdkDiscovery.test_the_emulator_is_created_from_the_config_image_else_an_installed_one_else_the_default_with_the_install_command, AndroidSdkDiscovery.test_commands_install_homebrews_command_line_tools_first_when_there_is_no_sdkmanager, DoctorAndroid.test_missing_pieces_come_with_one_exact_sdkmanager_command, DoctorAndroid.test_with_no_android_sdk_at_all_doctor_prints_the_homebrew_route_and_every_package. Unproven: a real Mac with only `brew install --cask android-commandlinetools` (Caskroom layout and the printed commands were not run), real avdmanager on an image other than API 36.",
+  "proof": "Unit on fake SDK layouts, PATH and Homebrew prefix: AndroidSdkDiscovery.test_places_are_tried_in_order, AndroidSdkDiscovery.test_the_folder_above_an_adb_on_the_path_is_the_last_resort, AndroidSdkDiscovery.test_any_installed_api_33_plus_arm64_image_is_used_newest_first, AndroidSdkDiscovery.test_the_emulator_is_created_from_the_config_image_else_an_installed_one_else_the_default_with_the_install_command, AndroidSdkDiscovery.test_commands_install_homebrews_command_line_tools_first_when_there_is_no_sdkmanager, DoctorAndroid.test_missing_pieces_come_with_one_exact_sdkmanager_command, DoctorAndroid.test_with_no_android_sdk_at_all_doctor_prints_the_homebrew_route_and_every_package. Unproven: a real Mac with only `brew install --cask android-commandlinetools` (Caskroom layout and the printed commands were not run), real avdmanager on an image other than API 36. 2026-10-03 review (claims-unit): left partial. The discovery order and the printed commands are covered above on fake SDK trees; the assertion is a clean Mac with only Homebrew's command-line tools, which needs that Mac.",
   "layer": "unit",
   "assertion": "Clean Mac with only the Homebrew command-line tools: doctor's printed commands, run in order, make Android ready (roadmap X3).",
   "fix": ""
@@ -2029,7 +2032,7 @@
    "**Run `shotfleet init` in the project folder** and it does the finding for you."
   ],
   "status": "partial",
-  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so). Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages.",
+  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so). Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages. 2026-10-03 (claims-unit, tests/test_claims_unit.py): InitInEveryFramework.test_the_simulator_build_is_found_and_the_strings_line_is_written, InitInEveryFramework.test_the_apk_is_found_where_the_framework_builds_it and InitInEveryFramework.test_nothing_built_prints_the_frameworks_own_commands_for_both_platforms now cover Flutter, React Native, Expo, Capacitor and .NET MAUI (build found, strings line written, own build commands printed). InitInEveryFramework.test_kotlin_multiplatform_is_recognised_and_its_gradle_apk_found_but_it_has_no_strings_line shows that for Kotlin Multiplatform init writes no strings line (its strings are read from the build), so 'writes the strings line' holds for five of the six. Left partial: still folders made by the test; the assertion asks for a real Flutter and a real Expo project.",
   "layer": "unit",
   "assertion": "On a real Flutter and a real Expo project init picks the build and the strings line without arguments.",
   "fix": ""
@@ -2044,7 +2047,7 @@
    "Give it an EAS `.tar.gz` or a `.zip` build and it unpacks it next to the config."
   ],
   "status": "partial",
-  "proof": "UnpackBuilds.test_tar_gz_zip_and_a_nested_folder, UnpackBuilds.test_an_archive_with_nothing_installable_or_with_escaping_paths_is_refused, UnpackBuilds.test_init_takes_the_archive_directly: archives made in the test; not a real EAS artifact.",
+  "proof": "UnpackBuilds.test_tar_gz_zip_and_a_nested_folder, UnpackBuilds.test_an_archive_with_nothing_installable_or_with_escaping_paths_is_refused, UnpackBuilds.test_init_takes_the_archive_directly: archives made in the test; not a real EAS artifact. 2026-10-03 (claims-unit, tests/test_claims_unit.py): InitUnpacksArchives.test_each_archive_kind_is_unpacked_under_the_config_folder_and_the_config_points_into_it (.tar.gz, .tgz and .zip through `main(['init', ...])`) and InitUnpacksArchives.test_the_unpacked_app_passes_the_config_reader_as_a_simulator_build. Left partial: the archives are made in the layout research/frameworks.md only infers for EAS ([I], not verified), and the assertion asks for a real `eas build` archive.",
   "layer": "unit",
   "assertion": "A real `eas build --profile preview` simulator archive gives a .app that init writes into the config.",
   "fix": ""

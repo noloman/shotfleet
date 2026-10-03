@@ -21,7 +21,7 @@ Full source list: see the analysis in the session; key findings, with links:
 - Next features buyers will ask for: CI mode (exit codes + JSON), Flutter / React Native strings.
 
 ## Pricing
-$79 once per developer with a year of updates (optional renewal later); $49 founder price for the first 100 on the list.
+$49 once per developer (a year of updates, keeps working afterwards, 14-day refund); $29 for the first 100 buyers, whoever buys first. (The earlier $79 / $49-for-the-list plan is dropped.)
 A team/CI license (~$199) once CI mode exists.
 
 ## Channels ($0)

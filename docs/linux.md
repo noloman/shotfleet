@@ -75,6 +75,28 @@ About 10 minutes plus the first image download.
    600 s (KVM not really in use: `emulator -accel-check`); a `could not verify` note on ja or ar (Tesseract data missing); `cmd locale
    set-app-locales` refused (the image is older than API 33).
 
+### E1 result, 2026-10-03: GitHub-hosted runner (2 vCPU, 7 GB, KVM usable), five attempts
+
+The owner allowed GitHub Actions once for this (`.github/workflows/e1-android-kvm.yml`, manual only). What happened, in order, and what each attempt fixed:
+
+| Attempt | Outcome | Cause and fix |
+|---|---|---|
+| 1 | `doctor --fix` failed | Google's Android CLI (the new `sdkmanager`) refuses an SDK folder whose path contains `..` ("Illegal entry path escaping destination directory"); the runner's workspace path has one. `find_sdk` and `fix_sdk_root` now return clean paths |
+| 2 | fixture build failed | the workflow's own extra `sdkmanager` call still had the dotted path (workflow fixed) |
+| 3 | `shotfleet run` waited 600 s: "emulators did not boot in time" | **the emulator had died at once** and its output went to `DEVNULL`, so nothing explained it. Emulator output is now kept, shotfleet fails immediately when the process exits, and a timeout shows the log tail and the likely cause |
+| 4 | the emulator log said `FATAL: Not enough space to create userdata partition. Available: 7322 MB, need 12288 MB` | the hosted runner starts with about 7 GB free; the emulator wants 12 GB. The failure message now names this fix. The workflow clears the preinstalled Android SDK, .NET and similar first |
+| 5 | emulators booted; the fixture **failed on the first tap** | see below |
+
+**What attempt 5 proved on Linux with KVM:** `/dev/kvm` is usable on a hosted runner (`emulator -accel-check`: "KVM (version 12) is installed and usable"); `doctor --fix` installs Maestro, Google's tools, platform-tools, emulator, build-tools and the x86_64 API 36 image and `doctor` then says `Android: ready`; the fixture app builds; `init` and `doctor` pass; the snapshot emulator boots, saves its snapshot, and both read-only copies load it in about 15 s each; the per-app language reaches the app (`check` read the four screenshots it got, in de, ja, ar and tr, and found 0 problems). 9 of 13 assertions passed.
+
+**What failed:** in all four languages the flow took screenshot 1, then Maestro could not find the localized "Next" button (`Element not found: Text matching regex: (Weiter|次へ)`, `(İleri|التالي)`). `captured 0/4 locales in 534 s`; the whole run phase took 829 s. The same fixture passed 29 of 29 on the Mac.
+
+**Not established:** whether this is the runner (two software-rendered emulators, Maestro and the JVMs on 2 vCPUs, where a screen can be too slow to show the button within Maestro's wait) or a real Linux difference. The workflow did not keep the screenshots or Maestro's debug output, so the screen at the failure was not seen. It now does (`out/` is uploaded). To separate the two: run the same fixture on a machine with 4+ cores, or with `parallel = 1`, and look at the screenshot Maestro took before the failing step.
+
+**Run 6 (one emulator, `parallel = 1`, 2026-10-03):** same failure. One emulator booted from the snapshot, every language captured `01_welcome.png`, then Maestro reported `Element not found: Text matching regex: Weiter` (ja `次へ`, ar `التالي`, tr `İleri`) after 587 s of capture; `check` read the four welcome screens with 0 problems, so the app was in the right language. So the theory "two emulators starve a 2-vCPU runner" is **not** what breaks it (one emulator fails the same way); a slow software-rendered screen on 2 vCPUs, or a Linux difference in how Maestro finds the button, are both still open. The screenshot Maestro took at the failing step and `maestro_r*.log` are in the run's artifact (`e1-android-kvm`, ID 11279947777, 14 days) but this environment cannot download artifacts: Manu can, from the run page of run 37138279362. **Do not run E1 again** until those are read.
+
+Do not claim Linux `run` support from this. What is solid: setup, `doctor --fix`, building, booting and the per-app language on Linux/KVM; what is not: a complete run.
+
 ## Android emulators on Linux (untried)
 
 `doctor` checks `/dev/kvm`, finds an SDK in `ANDROID_HOME`, `~/Android/Sdk` or `/usr/lib/android-sdk`, and picks the system image for your CPU
