@@ -51,6 +51,8 @@ Single source of truth for "what is left to have a sellable project". Evidence a
 7. Publish and post everything: articles, directories, launch email, Show HN, social; record the demo video. Claude posts nothing.
 8. Keep the Mac quiet and at least 30 GB free when device runs are scheduled.
 
+> **Left to do and how: [docs/handoff.md](docs/handoff.md). What was checked against which tool version: [docs/compat.md](docs/compat.md).**
+
 ## Plan (2026-10-03): from here to a product that can be sold and defended
 
 Rules: local checks are the gate (no GitHub Actions: memory `run-checks-locally-not-gh-actions`; `[skip ci]` in every commit and merge message). Every download needs Manu's OK (file, source, size). Each item is done only with evidence written in the row above or in `research/`. Order is by dependency, then by buyer reach.
@@ -59,12 +61,12 @@ Rules: local checks are the gate (no GitHub Actions: memory `run-checks-locally-
 |---|---|---|---|
 | A. Truth | A1 STATUS.md matches reality (this edit) | nothing | rows 2, 6, 8, 9 updated |
 | A. Truth | A2 Real-app regression on Maestro 2.0.10: CrossfitTracker iOS (18 languages), Android phone and tablet, Remoti iPhone+iPad | quiet Mac, 30+ GB free, about 40 min | 0 problems, timings in README |
-| B. Compatibility | B1 Maestro 2.11.x next to 2.0.10: fixture e2e and CrossfitTracker on both, then pin or widen the tested range | download Maestro 2.11 (about 315 MB) | e2e 36/36 on both; doctor message matches |
+| B. Compatibility | B1 Maestro 2.11.x next to 2.0.10: fixture e2e and CrossfitTracker on both, then pin or widen the tested range | download Maestro 2.11 (about 315 MB) | e2e 36/36 on both; doctor message matches UPDATE 2026-10-03: 2.11.0 is the newest Maestro and passes `tools/maestro-compat.py` 28/28 (as does 2.0.10); the device runs are still to do, step by step in docs/handoff.md item 1 |
 | B. Compatibility | B2 Android text from the UI tree: the 10-minute marker experiment on 2.11 (research/limits-text.md 1b) | B1, one emulator | one text file per screenshot, or "not possible" written down |
 | C. Reach | C1 Flutter on a real app (wger), then React Native with Expo (obytes), then Compose (kotlinconf-app), then MAUI | downloads per app (Flutter about 1.5 GB) | per app 0 untranslated selectors and 0 problems; README names only what passed UPDATE 2026-10-03: `init` found the Android build and wrote the strings line for a Flutter 3.47 demo app and an Expo demo app, both built on Linux (docs/linux.md); no device run yet, so the row stays open |
 | C. Reach | C2 7" Android tablet slot (`sevenInchScreenshots`), and `check`/`export` for Watch, Mac, TV, Vision screenshots made elsewhere | nothing (small) | unit tests plus one real export folder |
 | C. Reach | C3 Per-device values so Android `[inputs]` works (research/content-control.md F4) | B1 | fixture shows a different typed value per device |
-| D. Setup | D1 `doctor --fix`: fetch the tested Maestro and a JRE, SHA-checked (research/setup-friction.md section 1) | downloads at run time, design approval | doctor on a Mac without Java or Maestro ends ready |
+| D. Setup | D1 `doctor --fix`: fetch the tested Maestro and a JRE, SHA-checked (research/setup-friction.md section 1) | downloads at run time, design approval | doctor on a Mac without Java or Maestro ends ready UPDATE 2026-10-03: built and tried on Linux with nothing installed (Maestro 2.0.10, Android tools, emulator and image fetched; `doctor` then reports Maestro 2.0.10 and the toolchain ok); the Mac half (JRE tarball layout, `brew` path) is untried and needs your Mac |
 | E. Linux | E1 Android `run` and `check` on Linux: experiments E1 (emulator speed under KVM) and E2 (Tesseract parity) | a Linux machine or VM (Manu) | numbers written; build only if they pass UPDATE 2026-10-03: `check`, the Android readers, `doctor` and `packaging/build-linux.sh` work on Linux (PR #8, docs/linux.md) and a Linux job runs the tests in CI; only E1, an 18-language run on a KVM emulator, is untried |
 | F. Sell | F1 Gumroad test purchase, then publish | Manu | receipt carries a key |
 | F. Sell | F2 One real key: activate, refund, refused, on the notarized build | F1 | row 5 proven |
@@ -89,6 +91,7 @@ Build order for code (shared `shotfleet.py` with the core-product session, who o
 
 ## Changelog of this file
 
+- 2026-10-03 (end of session): docs/handoff.md (everything not done, with steps) and docs/compat.md (tool versions checked); B1 annotated.
 - 2026-10-03 (later): PR #8 merged (framework-aware `init`, Linux `check`, inline `launchApp`, `.ts` and string-array readers); C1 and E1 rows annotated.
 - 2026-10-03: rows 2, 6, 8, 9 updated and the plan above added.
 - 2026-10-02: created from the repo at eeb5cff, the live site and the test runs listed in research/sellable-audit.md.

@@ -46,10 +46,18 @@ No code change is needed.
 
 - Doctor already treats a newer Maestro 2.x as installed, shows the version, and adds a one-line "not the version shotfleet was tested with; may work" note. That is accurate today, because 2.0.10 is the only version a real run used. Changing `MAESTRO_TESTED` now would claim something that has not been shown; `tests/test_doctor_versions.py` also pins it to `("2.0.10",)`.
 - After the iOS e2e passes (and ideally the Android one), the small edit is: `MAESTRO_TESTED = ("2.0.10", "2.11.0")` in `shotfleet.py` (line 2066), update the assertion in `tests/test_doctor_versions.py` line 48, the README line 287 ("Maestro (tested with 2.0.10)") to "tested with 2.0.10 and 2.11.0", and the matching assertion in `tests/test_agent_skills.py` line 236.
-- Related: `research/setup-friction.md` proposes a Homebrew formula that pins `cli-2.11.0/maestro.zip`. That pin should wait for the e2e result below. The zip unpacks to `bin/` and `lib/` directly (no `maestro/` wrapper folder), which matches the formula's `Dir["*"]` install.
+- Related: `research/setup-friction.md` proposes a Homebrew formula that pins `cli-2.11.0/maestro.zip`. That pin should wait for the e2e result below. (Corrected 2026-10-03: the 2.11.0 zip, like 2.0.10's, has a single top folder `maestro/` holding `bin/` and `lib/`; `doctor --fix` handles that layout and the one without it.)
 
 ## Still to do
 
 1. When no other session is using simulators: `PATH=$HOME/.maestro-tests/2.11.0/bin:$PATH SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios` (about 17 minutes). Watch for: flows failing with an explicit `launchApp`/`clearState` error, the `Selected device ... using port` line missing from the debug `maestro.log` (then `capture_texts` finds no ports and `check` falls back to OCR), and run time per flow versus 2.0.10.
 2. Same for `--platform-only android` if the Android side is to be claimed too.
 3. Then make the edit above in one commit.
+
+## Addendum 2026-10-03: a repeatable static check
+
+`tools/maestro-compat.py <maestro folder>` now runs the device-free part of this analysis against any Maestro, from the list in
+`shotfleet.MAESTRO_INTERFACE`. Results on real downloads, on Linux: **2.0.10: 28 passed, 0 failed; 2.11.0: 28 passed, 0 failed.** 2.11.1,
+2.12.0 and 3.0.0 do not exist yet (release URLs return 404). One difference between the two that matters: **2.11.0 defines
+`MAESTRO_DEVICE_UDID`**, 2.0.10 does not (see `docs/handoff.md` item 5). The device runs under "Still to do" above are unchanged and are
+item 1 of `docs/handoff.md`, which also lists the exact edits to promote 2.11.0 to tested.

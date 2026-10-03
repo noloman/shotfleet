@@ -2572,7 +2572,20 @@ class G1NothingLeavesTheMac(unittest.TestCase):
         tree = ast.parse((Path(sf.__file__).resolve()).read_text())
         owners = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
                   and any(isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "urlopen" for n in ast.walk(fn))}
-        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "polar_post", "gumroad_verify", "licence_api"})
+        # download and fetch_text are only for `doctor --fix` (test_downloads_are_only_reachable_from_doctor_fix)
+        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "polar_post", "gumroad_verify", "licence_api", "download", "fetch_text"})
+
+    def test_downloads_are_only_reachable_from_doctor_fix(self):
+        tree = ast.parse((Path(sf.__file__).resolve()).read_text())
+        fetchers = {"download", "fetch_text"}
+        callers = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef) and fn.name not in fetchers
+                   and any(isinstance(n, ast.Call) and getattr(n.func, "id", "") in fetchers for n in ast.walk(fn))}
+        self.assertEqual(callers, {"install_maestro", "install_jre", "install_cmdline_tools"})
+        # ...and those are called from nowhere but the fix plan
+        installers = callers
+        users = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef) and fn.name not in installers
+                 and any(isinstance(n, ast.Name) and n.id in installers for n in ast.walk(fn))}
+        self.assertEqual(users, {"fix_plan"})
 
     def test_check_and_export_run_with_the_network_cut_off(self):
         def no_net(*a, **k): raise AssertionError("network used")
