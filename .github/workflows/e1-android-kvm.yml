@@ -30,12 +30,10 @@ jobs:
       - name: SDK state
         if: always()
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-} ANDROID_USER_HOME=${ANDROID_USER_HOME:-} HOME=$HOME"
-          ls -la "$ANDROID_HOME" "$ANDROID_HOME/system-images" 2>&1 | head -30
-          find "$ANDROID_HOME/system-images" -maxdepth 4 2>&1 | head -20
-          find / -maxdepth 6 -type d -path '*system-images*' -not -path '/proc/*' 2>/dev/null | head
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list_installed 2>&1 | tail -25
-          "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" list target 2>&1 | head -20
+          T=$ANDROID_HOME/cmdline-tools/latest/bin
+          $T/sdkmanager --list_installed 2>&1 | grep -v '^\[' | tail -25 || true
+          echo no | $T/avdmanager create avd -n dbg -k 'system-images;android-36;google_apis;x86_64' -d pixel 2>&1 | grep -v '^\[' | tail -20 || true
+          java -version 2>&1 | head -2; ls "$ANDROID_HOME/cmdline-tools"
       - name: Fixture e2e (android)
         run: |
           set -o pipefail
