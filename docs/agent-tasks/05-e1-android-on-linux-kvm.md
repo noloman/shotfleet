@@ -8,7 +8,7 @@
 
 ## What is already known (2026-10-03, one hosted-runner attempt; read `docs/linux.md`, section "E1 result", once the E1 PR is merged)
 
-On a GitHub-hosted 2-vCPU runner everything up to the first flow step worked and 9 of 13 assertions passed; then Maestro could not find the localized "Next" button in any of the four languages. Open question: slow 2-vCPU runner or a real Linux difference. On your machine, compare: if it passes with 4+ cores it was the runner; if it fails the same way, look at the screenshot Maestro took before the failing step (`<work dir>/proj-android/out/.work/debug/`) and at `maestro.log`.
+On a GitHub-hosted 2-vCPU runner everything up to the first flow step worked and 9 of 13 assertions passed; then Maestro could not find the localized "Next" button in any of the four languages. A sixth run with one emulator (`parallel = 1`) failed the same way, so it is not two emulators sharing 2 vCPUs. Open question: slow 2-vCPU runner or a real Linux difference (artifact of run 37138279362 holds the failing screenshot and `maestro_r*.log`; read those first). On your machine, compare: if it passes with 4+ cores it was the runner; if it fails the same way, look at the screenshot Maestro took before the failing step (`<work dir>/proj-android/out/.work/debug/`) and at `maestro.log`.
 
 ## Steps
 
