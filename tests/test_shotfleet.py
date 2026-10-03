@@ -519,6 +519,45 @@ def png(w, h):  # just enough of a PNG for png_size
     return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big")
 
 
+def real_png(w, h, pixel, ctype=2, interlace=0):
+    """A decodable PNG (filter 0 on every row) whose pixel at (x, y) is pixel(x, y), a tuple of channel bytes."""
+    import struct, zlib
+    raw = b"".join(b"\0" + b"".join(bytes(pixel(x, y)) for x in range(w)) for y in range(h))
+    chunk = lambda k, d: struct.pack(">I", len(d)) + k + d + b"\0\0\0\0"  # the checksum is not read
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, ctype, 0, 0, interlace))
+            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+
+class BlankScreenshots(unittest.TestCase):
+    """A Flutter or Compose app has its text in the accessibility tree before it paints (seen on wger and kotlinconf-app), so a flow's
+    wait passes and the screenshot is a white frame with a status bar."""
+    def write(self, data):
+        path = Path(tempfile.mkdtemp()) / "x.png"; path.write_bytes(data); return path
+
+    def test_a_flat_frame_with_a_status_bar_is_blank(self):
+        white = lambda x, y: (255, 255, 255) if y > 20 or x < 10 or x > 30 else (30, 30, 30)  # a few dark pixels at the top: the clock
+        self.assertTrue(sf.blank_screenshot(self.write(real_png(60, 300, white))))
+
+    def test_a_screen_with_content_is_not_blank(self):
+        text = lambda x, y: (0, 0, 0) if (y // 6) % 3 == 0 and x % (5 + y % 7) < 3 and 40 < y < 260 else (255, 255, 255)  # glyphs differ row to row
+        self.assertFalse(sf.blank_screenshot(self.write(real_png(60, 300, text))))
+
+    def test_what_it_cannot_read_is_not_called_blank(self):
+        self.assertFalse(sf.blank_screenshot(self.write(png(1080, 1920))))  # a header and no pixels
+        self.assertFalse(sf.blank_screenshot(self.write(real_png(60, 300, lambda x, y: (1, 1, 1), interlace=1))))
+        self.assertFalse(sf.blank_screenshot(self.write(b"not a png")))
+        self.assertFalse(sf.blank_screenshot("/no/such/file.png"))
+
+    def test_a_language_with_a_blank_frame_is_named_so_it_is_captured_again(self):
+        folder = Path(tempfile.mkdtemp())
+        (folder / "01_login.png").write_bytes(real_png(60, 300, lambda x, y: (255, 255, 255)))
+        (folder / "02_next.png").write_bytes(real_png(60, 300, lambda x, y: (x * 4 % 256, y % 256, 0)))
+        note = sf.blank_note(folder)
+        self.assertIn("01_login.png", note); self.assertNotIn("02_next.png", note)
+        (folder / "01_login.png").unlink()
+        self.assertIsNone(sf.blank_note(folder))
+
+
 class AuditFixes(unittest.TestCase):
     def test_inline_maps_relative_anchors_and_comments_are_translated(self):
         flow = ("appId: x\n---\n- tapOn: { text: \"Next\", optional: true }\n- tapOn:\n    text: Next\n"
@@ -875,6 +914,26 @@ class ExternalOcr(unittest.TestCase):
         langs = {r["file"]: r["lang"] for r in report["screenshots"]}
         self.assertEqual(langs["el/1.png"], "el")  # read and verified, not "couldn't read"
         self.assertTrue(any(p.startswith("el/2.png: shows en") for p in report["problems"]), report["problems"])
+        self.assertEqual(code, 1)
+
+    def test_check_of_a_run_folder_reads_the_translation_files_the_run_used(self):
+        # a Flutter run: the build holds no strings, run.json names the .arb files; `check <out>` on its own used to fail or check nothing
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "l10n").mkdir()
+            en = {"a": "Log in to your account", "b": "Register a new account", "c": "Advanced server options"}
+            de = {"a": "Bei deinem Konto anmelden", "b": "Ein neues Konto registrieren", "c": "Erweiterte Serveroptionen"}
+            for lp, t in (("en", en), ("de", de)): (d / "l10n" / f"app_{lp}.arb").write_text(json.dumps({"@@locale": lp, **t}))
+            out = d / "out"
+            for lp, words in (("en", en), ("de", en)):  # the German screenshot shows English
+                (out / "raw" / lp).mkdir(parents=True)
+                (out / "raw" / lp / "1.png").write_bytes(png_c(1320, 2868))
+                (out / "raw" / lp / "1.texts.json").write_text(json.dumps(list(words.values())))  # what an iOS run reads from the accessibility tree
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "app": str(d / "gone.app"), "strings": [str(d / "l10n/*.arb")],
+                                                      "locales": {"en": {"ok": True}, "de": {"ok": True}}}))
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = sf.cmd_check(out, ocr_command="cat {image}.txt")
+            report = json.loads((out / "check.json").read_text())
+        self.assertTrue(any(p.startswith("de/1.png: shows en") for p in report["problems"]), report["problems"])
         self.assertEqual(code, 1)
 
     def test_tesseract_language_names(self):
@@ -1441,6 +1500,16 @@ class FrameworkFixes(unittest.TestCase):
         with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en")
         self.assertIn("ja is only 30% translated", buf.getvalue()); self.assertIn('locales = [..., "ja"]', buf.getvalue())
         self.assertEqual(sf.partly_translated({"en": en, "de": de}, "en"), [])
+
+    def test_asking_for_a_partly_translated_language_by_name_warns_before_the_run(self):
+        en = {f"k{i}": f"Text {i}" for i in range(10)}
+        strings = {"en": en, "de": dict(en), "ja": {f"k{i}": "x" for i in range(3)}}
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en", ["de", "ja"])
+        self.assertIn("warning ja: only 30%", buf.getvalue()); self.assertIn("mostly show en", buf.getvalue()); self.assertNotIn("skipped", buf.getvalue())
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en", ["de"])
+        self.assertEqual(buf.getvalue(), "")
 
 
 class FreeTier(unittest.TestCase):

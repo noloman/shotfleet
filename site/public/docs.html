@@ -115,6 +115,7 @@ shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/an
   <ul>
     <li><strong>Wrong language:</strong> the German folder actually shows English or Japanese strings.</li>
     <li><strong>Copies:</strong> the same image in two languages.</li>
+    <li><strong>Blank:</strong> a screenshot with nothing drawn but the status bar: an app that paints its first frame after the flow's wait passed (Flutter debug builds and Compose do). <code>run</code> captures that language again once, then reports it; wait for text on the screen before <code>takeScreenshot</code>.</li>
     <li><strong>Missing:</strong> a language that did not produce every screenshot.</li>
     <li><strong>Translation collisions, before anything runs:</strong> for example <code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>. A tap could hit the wrong button there, so you anchor that step with <code>below:</code> or use an override.</li>
     <li><strong>Store rules:</strong> sizes each store accepts (every App Store display class, Play's 320 to 3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Screenshots made in other tools work too: Apple Watch, Mac, Apple TV and Vision Pro sizes are known (3840x2160 is both Apple TV and Vision Pro), and one Watch size is required in every language.</li>

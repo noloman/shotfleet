@@ -116,6 +116,10 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `selectors not found in the app's strings` | the flow taps a label that is not in the app's strings, left as-is, may fail outside English | write the label exactly as the English string, use `id:`, or add `[overrides.<lang>]` |
 | `also means` | `warning <lang>: 'Next' -> 'İleri' also means 'Advanced'`: a tap could hit the wrong element | anchor with `below:`/`above:`, or override |
 | `translated in the app, so it is skipped` | `note: <lang> is only N% translated`; below 50% of the app's own strings it is not captured | add the code to `locales` to capture it anyway |
+| `of the app's own strings are translated` | `warning <lang>: only N% ...`: you asked for a language the app only half translates, so the missing strings show the base language | translate it, or drop it from `locales`; check reports the screenshots that came out in the base language |
+| `blank screenshot(s)` | a screenshot with only a status bar: Flutter debug builds and Compose paint after the text is readable; `run` captures the language again once, and prints this if it is still blank | before `takeScreenshot` add `extendedWaitUntil: {visible: "<text on the screen>", timeout: 60000}` |
+| `blank: nothing is drawn on it yet` | the same, found by `check` on a folder | the same wait |
+| Maestro: `Element not found: Text matching regex` on a Flutter row | Flutter joins a row's title and detail into one label (`Title\nDetail`) | tap it as `"Title.*"` |
 | `free tier: capturing` | no licence: 2 languages captured | see licence.md |
 | `memory pressure is elevated` | shotfleet halved the simulators | close apps |
 | `this Mac was short of memory` | failures with `Unknown error` or `Unable to clear state` are usually a slow simulator | close other simulators, `shotfleet run --locales <failed codes>` |

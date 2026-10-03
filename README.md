@@ -24,6 +24,7 @@ After capture, every screenshot's text is compared against your app's own string
 
 - **Wrong language:** the German folder actually shows English or Japanese strings.
 - **Copies:** the same image in two languages.
+- **Blank:** a screenshot with nothing drawn but the status bar: an app that paints its first frame after the flow's wait passed (Flutter debug builds and Compose do). `run` captures that language again once, then reports it; wait for text on the screen before `takeScreenshot` (see Tips).
 - **Missing:** a language that didn't produce every screenshot.
 - **Translation collisions, before anything runs:** for example, `tr: 'Next' -> 'İleri' also means 'Advanced'`. A tap could hit the wrong button there, so you anchor that step with `below:`.
 
@@ -280,6 +281,9 @@ translation source.
         all: allow
   ```
   (shotfleet adds its language arguments to your options). On Android shotfleet installs with every permission granted.
+- **A first screenshot that comes out blank** (Flutter debug builds and Compose put their text in the accessibility tree before they paint): start with `extendedWaitUntil: {visible: "<a text on that screen>", timeout: 60000}`, and if it still happens add a short pause (`extendedWaitUntil: {notVisible: {id: "none"}, timeout: 3000}`). A Flutter debug build can take 30 s to draw on a fresh emulator.
+- **Flutter rows and cards are one label:** Flutter joins a row's title and detail line into one label with a newline (`Self-hosted\nConnect to your own instance`), so tap it as `"Self-hosted.*"`; shotfleet translates the part before the `.*` (`.*Register` works too). A line like `New to wger? Register` is one label as well.
+- **A language the app only half translates** (wger's Japanese is 30%): the app shows its base language for every missing string. `run` warns when you ask for such a language by name, and `check` reports the screenshots that came out in the base language.
 - **Fresh state:** each language starts from a clean install. On iOS that's `clearState`; on Android shotfleet clears the app data itself, because `clearState` would also erase the app language.
 
 ## Limits

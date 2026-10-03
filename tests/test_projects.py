@@ -276,3 +276,23 @@ class KotlinMultiplatformLayouts(unittest.TestCase):
     def test_a_plain_android_gradle_project_is_not_multiplatform(self):
         d = tree({"settings.gradle.kts": 'include(":app")', "app/build.gradle.kts": 'plugins { id("com.android.application") }'})
         self.assertIsNone(sf.detect_project(d))
+
+
+class RealAppLessons(unittest.TestCase):
+    """What running wger (Flutter) and kotlinconf-app (Compose) on a Mac taught `init` to say (research/frameworks.md section 15)."""
+    def test_flutter_says_how_to_tap_a_row_and_to_wait_for_text(self):
+        notes = " ".join(sf.detect_project(tree(FLUTTER)).notes)
+        self.assertIn('"Title.*"', notes); self.assertIn("extendedWaitUntil", notes)
+
+    def test_compose_says_to_wait_and_the_xcodebuild_it_prints_names_arm64(self):
+        d = tree({"settings.gradle.kts": 'include(":app")', "app/build.gradle.kts": 'plugins { kotlin("multiplatform") }',
+                  "iosApp/App.xcodeproj/project.pbxproj": ""})
+        project = sf.detect_project(d)
+        self.assertIn("extendedWaitUntil", " ".join(project.notes))
+        with self.assertRaises(sf.Fail) as e, contextlib.redirect_stdout(io.StringIO()):
+            sf.find_builds(d, derived=d / "no-derived-data", project=project)
+        self.assertIn("ARCHS=arm64", str(e.exception))  # Xcode 27 asks for x86_64 as well, which the Gradle build lacks
+
+    def test_the_starter_flow_waits_for_text_before_the_first_screenshot(self):
+        flow = sf.FLOW_TEMPLATE
+        self.assertLess(flow.index("extendedWaitUntil"), flow.index("takeScreenshot: 01_home"))

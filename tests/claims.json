@@ -2108,5 +2108,54 @@
   "layer": "unit",
   "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok.",
   "fix": ""
+ },
+ {
+  "id": "C127",
+  "claim": "check flags a screenshot with nothing drawn on it but the status bar, and run captures that language again once",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "**Blank:** a screenshot with nothing drawn but the status bar",
+   "<strong>Blank:</strong> a screenshot with nothing drawn but the status bar"
+  ],
+  "status": "partial",
+  "proof": "BlankScreenshots.test_a_flat_frame_with_a_status_bar_is_blank, BlankScreenshots.test_a_screen_with_content_is_not_blank, BlankScreenshots.test_what_it_cannot_read_is_not_called_blank, BlankScreenshots.test_a_language_with_a_blank_frame_is_named_so_it_is_captured_again. Real blank frames seen 2026-10-03 on wger (Android, first launch) and kotlinconf-app (iOS); the detector flagged the real kotlinconf image and none of the 36 other real screenshots. Left partial: the capture-again step in run is not yet shown on a device (device queue).",
+  "layer": "unit",
+  "assertion": "On a device: a flow without a wait gives a blank first frame, run says 'retrying', and the second capture is not blank.",
+  "fix": ""
+ },
+ {
+  "id": "C128",
+  "claim": "A selector written as Title.* or .*Title has the title translated, which is how a Flutter row (one label of title and detail) is tapped",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "so tap it as `\"Self-hosted.*\"`; shotfleet translates the part before the `.*`"
+  ],
+  "status": "proven",
+  "proof": "TranslateFlow.test_wildcard_around_a_known_label_is_kept_and_the_label_translated. On a device: wger iOS and Android, tapOn \"Self-hosted.*\" in German and English (research/frameworks.md section 15).",
+  "layer": "unit",
+  "assertion": "Self-hosted.* becomes Selbst gehostet.* in German and matches the merged label.",
+  "fix": "",
+  "test": "TranslateFlow.test_wildcard_around_a_known_label_is_kept_and_the_label_translated"
+ },
+ {
+  "id": "C129",
+  "claim": "run warns before capturing when you ask for a language the app only half translates; a standalone check of a run folder reads the same translation files as the run",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`run` warns when you ask for such a language by name"
+  ],
+  "status": "proven",
+  "proof": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run, ExternalOcr.test_check_of_a_run_folder_reads_the_translation_files_the_run_used.",
+  "layer": "unit",
+  "assertion": "The warning names the language and its percentage; check on run.json finds the .arb files.",
+  "fix": "",
+  "test": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run"
  }
 ]
