@@ -27,18 +27,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-deu tesseract-ocr-jpn tesseract-ocr-ara tesseract-ocr-tur aapt unzip
       - name: doctor --fix
         run: python3 shotfleet.py doctor --fix --yes 2>&1 | tee doctor.log
-      - name: SDK state
-        if: always()
-        continue-on-error: true
-        shell: bash {0}
-        run: |
-          T=$ANDROID_HOME/cmdline-tools/latest/bin
-          echo no | $T/avdmanager --verbose create avd -n dbg -k 'system-images;android-36;google_apis;x86_64' -d pixel_5 >dbg.out 2>dbg.err; echo "exit $?"
-          echo "--- stdout"; grep -v '^\[' dbg.out; echo "--- stderr"; grep -v '^\[' dbg.err | head -30
-          ls -la ~/.android ~/.android/avd
-          find / -name 'dbg.*' -path '*avd*' -not -path '/proc/*' 2>/dev/null | head
-          env | grep -iE 'ANDROID|XDG|^HOME' | sort
-          $T/avdmanager list avd | head -20
       - name: Fixture e2e (android)
         run: |
           set -o pipefail
