@@ -96,7 +96,7 @@ On the first full Android run, the onboarding page was unreachable in Japanese, 
 
 **How it works:** Reads the translations compiled into your .app/APK, rewrites selectors (`tapOn: "Next"` becomes the regex for all German translations of "Next"), shards languages across simulators and emulators.
 
-**Proven on:** CrossfitTracker iOS/Android (18 languages, 9 min / 15 min), Kuokka Compose (iPhone + 13" iPad). Checked fastlane screenshots from any tool (fastlane snapshot/screengrab, etc).
+**Proven on:** CrossfitTracker iOS/Android (18 languages, 9 min / 15 min), Remoti (iPhone + 13" iPad). Checked fastlane screenshots from any tool (fastlane snapshot/screengrab, etc).
 
 **Not yet:** Flutter/React Native apps (via source files, untested on a real app).
 

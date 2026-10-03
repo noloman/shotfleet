@@ -91,7 +91,7 @@ after_export  = 'fastlane deliver --skip_binary_upload --skip_metadata --overwri
 ```
 
 - A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1.
-- Variables: `SHOTFLEET_EVENT`, `SHOTFLEET_VERSION`, `SHOTFLEET_CONFIG`, `SHOTFLEET_PLATFORM`, `SHOTFLEET_OUT`, `SHOTFLEET_BUNDLE_ID`. `before_run` and `after_run` also get `SHOTFLEET_LOCALES`; `after_run` gets `SHOTFLEET_EXIT`, `SHOTFLEET_PROBLEMS`, `SHOTFLEET_REPORT` (`<out>/check.json`); the export hooks get `SHOTFLEET_FASTLANE`, `SHOTFLEET_REPORT`, and `SHOTFLEET_EXIT` after the export.
+- Variables on every event: `SHOTFLEET_EVENT`, `SHOTFLEET_VERSION`, `SHOTFLEET_CONFIG`, `SHOTFLEET_PLATFORM`, `SHOTFLEET_OUT`. `before_run` and `after_run` also get `SHOTFLEET_BUNDLE_ID` and `SHOTFLEET_LOCALES` (empty unless restricted); `after_run` gets `SHOTFLEET_EXIT`, `SHOTFLEET_PROBLEMS`, `SHOTFLEET_REPORT` (`<out>/check.json`); the export hooks get `SHOTFLEET_FASTLANE`, `SHOTFLEET_REPORT`, and `SHOTFLEET_EXIT` after the export.
 - Never add a hook that uploads to a store on the user's behalf without them asking for it. The `after_export` example above does; it is theirs to choose.
 
 ## Overrides
