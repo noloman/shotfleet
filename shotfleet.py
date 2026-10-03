@@ -682,7 +682,8 @@ def translate_flow(flow, base, target, overrides=None):
         if (pat := override_pattern(overrides, text)) is not None: return yaml_single_quote(pat)
         keys = by_text.get(text) or by_text.get(text.replace("'", "\u2019"))
         system = text.replace("'", "\u2019") in SYSTEM_BUTTONS
-        if not keys and system: return None  # the OS's own dialog: stays English
+        if not keys and system:  # the OS's own dialog: stays English (iOS spells it with a curly apostrophe)
+            return yaml_single_quote(text.replace("'", "\u2019")) if "'" in text else None
         if not keys:
             forms = tr_format(text)
             if forms is None:
@@ -744,9 +745,13 @@ def redirect_screenshot(lines, shots_dir):
     line = lines[-1]
     if m := re.match(r"^(\s*- takeScreenshot:\s*)['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line):
         lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
-    elif (m := re.match(r"^(\s*path:\s*)['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line)) and len(lines) > 1 \
-            and re.match(r"^\s*- takeScreenshot:\s*$", lines[-2]):
-        lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
+    elif m := re.match(r"^(\s*path:\s*)['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line):
+        ind = lambda l: len(l) - len(l.lstrip())
+        for prev in reversed(lines[:-1]):  # the step this key belongs to (other keys like cropOn may come first)
+            if not prev.strip() or ind(prev) >= ind(line): continue
+            if re.match(r"^\s*- takeScreenshot:\s*$", prev):
+                lines[-1] = f"{m.group(1)}{yaml_single_quote(str(shots_dir / m.group(2)))}"
+            break
 
 def print_untranslated(report):
     miss = sorted({m for v in report["locales"].values() for m in v["untranslated_selectors"]})
@@ -825,21 +830,24 @@ def localize_flow(flow, lproj, shots_dir, env=None):
             pad = min((len(l) - len(l.lstrip()) for l in opts if l.strip()), default=4)
             opts = ["    " + l[pad:] for l in opts if l.strip()]
             if not started: first = opts  # the user's first launch is shotfleet's fresh-state launch
-            else: out += launch(clear=False, opts=opts)
+            else: out += [m.group(1) + l for l in launch(clear=False, opts=opts)]  # keep a nested step's indent
             started = True
         else:
             started = started or bool(re.match(r"^\s*-", line))
             out.append(line); redirect_screenshot(out, shots_dir)
-            nxt = lines[i] if i < len(lines) else ""
+            nxt = next((l for l in lines[i:] if l.strip()), "")
             if screenshot_ends(out, nxt): out += pause_after_screenshot(out)
     return header + "\n---\n" + "\n".join(launch(clear=True, opts=first or ()) + out) + "\n"
 
 def screenshot_ends(out, nxt):
-    """True when `out` just finished a takeScreenshot step (scalar form, or the map form's path line)."""
-    last = out[-1]
-    scalar = re.match(r"^\s*- takeScreenshot:\s*\S", last)
-    map_path = len(out) > 1 and re.match(r"^\s*path:", last) and re.match(r"^\s*- takeScreenshot:\s*$", out[-2])
-    return bool(scalar or map_path) and not re.match(r"^\s+\w+:", nxt or "")
+    """True when `out` just finished a takeScreenshot step (scalar or map form, any keys): the next step isn't deeper."""
+    j = next((k for k in range(len(out) - 1, -1, -1) if re.match(r"^\s*- takeScreenshot:", out[k])), None)
+    if j is None: return False
+    ind = lambda l: len(l) - len(l.lstrip())
+    pad = ind(out[j])
+    if any(l.strip() and ind(l) <= pad for l in out[j + 1:]): return False  # something else came after it (or the pause)
+    if re.match(r"^\s*- takeScreenshot:\s*$", out[j]) and j == len(out) - 1: return False  # map form: keys follow
+    return not nxt.strip() or ind(nxt) <= pad
 
 def pause_after_screenshot(out, ms=1500):
     """A pause while shotfleet reads the screen's text from the app (exact, any script; see capture_texts)."""
@@ -877,7 +885,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
     existing = json.loads(sh(["xcrun", "simctl", "list", "devices", "-j"]).stdout)["devices"].get(runtime, [])
     by_name = {d["name"]: d for d in existing if d.get("isAvailable") and d.get("deviceTypeIdentifier", device_type) == device_type}
     for d in existing:  # same name, other device type (config changed): replace it, or screenshots get the wrong size
-        if d["name"].startswith(prefix + "-") and d["name"] not in by_name:
+        if re.fullmatch(re.escape(prefix) + r"-\d+", d["name"]) and d["name"] not in by_name:
             sh(["xcrun", "simctl", "delete", d["udid"]])
     pool = []
     for i in range(n):
@@ -930,21 +938,34 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
     """While Maestro runs: when a screenshot appears in raw/<locale>/, read that screen's text from the driver of the
     simulator running that locale (Maestro's log says which device and port run which flow) and save it next to it
     as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR."""
-    port_of, done = {}, set()
+    port_of, done = {}, set()  # done: (png, mtime): a re-taken screenshot is read again
     pat = re.compile(r"Selected device \S+ using port (\d+) with execution plan ExecutionPlan\(flowsToRun=\[([^\]]*)\]")
-    while not stop.is_set():
-        for log in Path(debug_dir).rglob("maestro.log"):
-            for port, flows in pat.findall(log.read_text(errors="replace")):
-                for f in flows.split(","): port_of[Path(f.strip()).stem] = port
-        for png in Path(raw_dir).glob("*/*.png"):
-            if png in done or png.parent.name not in port_of: continue
-            done.add(png)
+
+    def read(pngs):  # one port: its screenshots in order, so each gets the screen it shows
+        for png in pngs:
             try:
                 texts = ios_screen_texts(port_of[png.parent.name], bundle_id)
-                png.with_suffix(".texts.json").write_text(json.dumps(texts, ensure_ascii=False))
-            except (OSError, ValueError):
+                tmp = png.with_suffix(".texts.tmp")
+                tmp.write_text(json.dumps(texts, ensure_ascii=False))
+                os.replace(tmp, png.with_suffix(".texts.json"))
+            except Exception:
                 pass  # no tree: check falls back to OCR for this screenshot
-        stop.wait(0.2)
+
+    with ThreadPoolExecutor(8) as pool:  # a slow driver must not hold up the other simulators' reads
+        while not stop.is_set():
+            for log in Path(debug_dir).rglob("maestro.log"):
+                try: found = pat.findall(log.read_text(errors="replace"))
+                except OSError: continue
+                for port, flows in found:
+                    for f in flows.split(","): port_of[Path(f.strip()).stem] = port
+            by_port = {}
+            for png in Path(raw_dir).glob("*/*.png"):
+                try: key = (png, png.stat().st_mtime_ns)
+                except OSError: continue
+                if key in done or png.parent.name not in port_of: continue
+                done.add(key); by_port.setdefault(port_of[png.parent.name], []).append(png)
+            list(pool.map(read, by_port.values()))
+            stop.wait(0.2)
 
 def run_guarded(cmd, timeout, env=None):
     """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
@@ -1023,6 +1044,11 @@ def device_slug(device_type):
     """com.apple...iPad-Pro-13-inch-M5-12GB -> ipad-pro-13-inch-m5-12gb (a folder and simulator-name prefix)."""
     return device_type.rsplit(".", 1)[-1].lower()
 
+def clear_single_run(out):
+    """A multi-device run writes out/<device>/; an old single-device run in out/ itself would hide it from device_runs."""
+    for f in ("run.json", "check.json"): (out / f).unlink(missing_ok=True)
+    shutil.rmtree(out / "raw", ignore_errors=True)
+
 def cmd_run(config_path, only=None, parallel=None, platform=None):
     plats = [platform] if platform else platforms_in(config_path)
     codes = []
@@ -1074,6 +1100,7 @@ def capture_platform(platform, cfg, path, only, parallel):
             unknown = [d for d in devices if d not in ANDROID_DEVICES]
             if unknown: raise Fail(f"unknown Android device {', '.join(unknown)}; use {', '.join(ANDROID_DEVICES)}")
             codes = []
+            clear_single_run(out)
             for d in devices:
                 print(f"\n== {d}")
                 (out / d).mkdir(exist_ok=True)
@@ -1082,6 +1109,7 @@ def capture_platform(platform, cfg, path, only, parallel):
         return android_run(cfg, path, out, only, parallel)
     if devices := cfg.get("device_types"):  # iPhone and iPad sets from one flow: out/<device>/ each
         codes = []
+        clear_single_run(path(cfg.get("out", "out")).resolve())
         for d in devices:
             dt = device_type_id(d)
             print(f"\n== {d}")
@@ -1099,7 +1127,15 @@ def ipad_set_missing(parent):
     print('the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types')
     return 1
 
+def shutdown_sims():
+    for udid in OUR_SIMS: sh(["xcrun", "simctl", "shutdown", udid])  # also clears the status bar override
+    OUR_SIMS.clear()
+
 def ios_run(cfg, path, only=None, parallel=None):
+    try: return ios_run_inner(cfg, path, only, parallel)
+    finally: shutdown_sims()  # a 2nd device's pool must not boot on top of the 1st's
+
+def ios_run_inner(cfg, path, only, parallel):
     cfg = dict(cfg)
     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
     cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
@@ -1588,7 +1624,7 @@ def judge_screen(lp, ocr, tables):
     if ocr.get("ocr") == "external":  # Tesseract joins labels on one visual line ("Alle Übungen WODs"): find them inside
         text = " | ".join(lines)
         for o, vals in tables.items():
-            score[o] += sum(1 for v in vals - lines if len(v) >= 5 and v in text)
+            score[o] += sum(1 for v in vals - lines if len(v) >= 5 and re.search(rf"(?<!\w){re.escape(v)}(?!\w)", text))
     best = max(score.values(), default=0)
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):
@@ -1690,7 +1726,8 @@ def tesseract_languages():
     """Language data Tesseract has installed ({'eng', 'ell', ...}); empty if Tesseract isn't installed."""
     if not shutil.which("tesseract"): return frozenset()
     r = sh(["tesseract", "--list-langs"])
-    return frozenset(l.strip() for l in (r.stdout + r.stderr).splitlines()[1:] if l.strip())
+    return frozenset(l.strip() for l in (r.stdout + r.stderr).splitlines()
+                     if l.strip() and not l.startswith("List of available languages"))  # the header is on stderr in 4.x
 
 def tesseract_code(lp):
     c = canon(lp); lang = c.split("-")[0]
@@ -1699,11 +1736,20 @@ def tesseract_code(lp):
 def screen_text(png):
     """The screen's text as the app reported it during the run (exact, any script), in OCR's result shape; or None."""
     f = Path(png).with_suffix(".texts.json")
-    if not f.exists(): return None
-    texts = [" ".join(t.split()) for t in json.loads(f.read_text())]  # one element per line, as tables are normalized
+    try: texts = [" ".join(t.split()) for t in json.loads(f.read_text())]  # one element per line, as tables are normalized
+    except (OSError, ValueError, TypeError, AttributeError): return None  # missing, half-written or not a list
     if not any(texts): return None  # games, canvases and unlabelled UI report nothing at all: OCR the pixels instead
     text = "\n".join(texts)
     return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "app", "lines": []}
+
+def usable_text(png, tables):
+    """screen_text, but only when it proves something: fewer than 2 lines of any language's strings (mostly user content)
+    can't tell a wrong-language screen, so those are read by OCR too."""
+    t = screen_text(png)
+    if t and tables:
+        lines = {n for l in t["text"].splitlines() if len(n := norm(l)) > 1}
+        if not any(len(lines & vals) >= 2 for vals in tables.values()): return None
+    return t
 
 def read_text(ocr, png, timeout=120):
     """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever."""
@@ -1734,8 +1780,11 @@ def external_ocr(command, png, lp):
     e.g. --ocr-command 'tesseract {image} stdout -l {tesseract}'"""
     lang = canon(lp).split("-")[0]
     tess = tesseract_code(lp)
-    args = [a.format(image=str(png), lang=lang, tesseract=tess,
-                     tesseract_with_english=tess if tess == "eng" else f"eng+{tess}") for a in shlex.split(command)]
+    try:
+        args = [a.format(image=str(png), lang=lang, tesseract=tess,
+                         tesseract_with_english=tess if tess == "eng" else f"eng+{tess}") for a in shlex.split(command)]
+    except (KeyError, IndexError, ValueError) as e:
+        raise Fail(f"unknown placeholder {e} in --ocr-command; use {{image}}, {{lang}}, {{tesseract}}, {{tesseract_with_english}}")
     try:
         r = sh(args, timeout=180)
     except (OSError, subprocess.TimeoutExpired) as e:
@@ -1807,7 +1856,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             print(f"{was} holds iOS and Android screenshots; checking the {'Android' if app.suffix == '.apk' else 'iOS'} ones "
                   f"in {folder}. Run check again with the other build for the rest")
             run_json = folder / "run.json"
-        layout_android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
+        layout_android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
         layout_ios = (folder / "screenshots").is_dir() or folder.name == "screenshots"
         if (layout_android and not layout_ios and app.suffix == ".app") or (layout_ios and not layout_android and app.suffix == ".apk"):
             raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
@@ -1835,7 +1884,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                    "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png")
     if app is not None: android = Path(app).suffix == ".apk"  # the build says which store's rules apply
     elif run_json.exists(): android = json.loads(run_json.read_text()).get("platform") == "android"
-    else: android = any(folder.glob("metadata/android")) or any(folder.glob("*/images/phoneScreenshots"))
+    else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
     ipad = ipad_rule and bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
@@ -1845,8 +1894,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr = ocr_tool()
     ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
+    user_gave_command = bool(ocr_command)
     use_vision = True
-    if any(not Path(png).with_suffix(".texts.json").exists() for _, png in pngs) and not warm_up_ocr(ocr):
+    texts = [usable_text(png, tables) for _, png in pngs]
+    if not all(texts) and not warm_up_ocr(ocr):
         if not ocr_command and not shutil.which("tesseract"):
             raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy "
                        "use); restarting the Mac fixes it. Or install Tesseract and shotfleet uses it automatically: "
@@ -1857,15 +1908,24 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     # ponytail: 4 at a time; 10 parallel first-use requests are the likely trigger of macOS's text-recognition
     # service wedging (seen twice); raise it if that turns out to be unrelated
     with ThreadPoolExecutor(max_workers=4) as ex:  # each OCR is its own process
-        ocrs = list(ex.map(lambda item: screen_text(item[1]) or (read_text(ocr, item[1]) if use_vision else {}), pngs))
-        auto = not ocr_command and bool(tesseract_languages())  # installed Tesseract reads what macOS can't (84/85 verified)
+        def read(t, png):
+            nonlocal use_vision
+            if t or not use_vision: return t or {}
+            try: return read_text(ocr, png)
+            except RuntimeError:  # macOS's OCR hung mid-check: the rest goes to Tesseract
+                if not ocr_command and not shutil.which("tesseract"): raise
+                print("macOS text recognition stopped answering; using " + ("your --ocr-command" if ocr_command else "Tesseract") + " for the rest")
+                use_vision = False
+                return {}
+        ocrs = list(ex.map(lambda i: read(texts[i], pngs[i][1]), range(len(pngs))))
+        auto = not user_gave_command and bool(tesseract_languages())  # installed Tesseract reads what macOS can't (84/85 verified)
         if auto: ocr_command = TESSERACT_COMMAND
         if ocr_command:  # scripts macOS can't read (or everything, when macOS's OCR is stuck) go to the other OCR
             def unreadable(label):
                 lang = canon(app_locale(label, tables) or label).split("-")[0]
                 return LEGACY.get(lang, lang) not in readable_languages() | {"zh"}
             redo = [i for i, (label, png) in enumerate(pngs)
-                    if not screen_text(png) and (not use_vision or unreadable(label))
+                    if not texts[i] and (not use_vision or unreadable(label))
                     and (not auto or tesseract_code(app_locale(label, tables) or label) in tesseract_languages())]
             for i, r in zip(redo, ex.map(lambda i: external_ocr(ocr_command, pngs[i][1], app_locale(pngs[i][0], tables) or pngs[i][0]), redo)):
                 ocrs[i] = {**ocrs[i], **r}
@@ -2337,6 +2397,8 @@ def cmd_export(out, fastlane, name_prefix=""):
     """Copy verified screenshots into fastlane's upload folders (deliver for iOS, supply for Android).
     Locales with a failed check are skipped, so a bad screenshot can't reach a store listing."""
     if subs := device_runs(out):  # iPhone + iPad: both sets go into the same language folders (sizes differ)
+        if ipad_set_missing(out):
+            raise Fail('the app runs on iPad, so the App Store requires 13" iPad screenshots; add "iPad Pro 13-inch (M5)" to device_types and run again')
         return max(cmd_export(d, fastlane, f"{d.name}_") for d in subs)  # same screen names on every device
     out, fastlane = Path(out), Path(fastlane)
     if not (out / "run.json").is_file():
@@ -2470,17 +2532,20 @@ MCP_TOOLS = [
 
 def mcp_call(name, args):
     """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
+    global LAST_REPORT
+    LAST_REPORT = None  # a run that never reached `check` must not return the previous check's report
     log = io.StringIO()
     try:
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             if name == "doctor": code = cmd_doctor()
             elif name == "check":
-                if not Path(args["folder"]).expanduser().is_dir(): raise Fail(f"no folder at {args['folder']}")
-                code = cmd_check(Path(args["folder"]).expanduser(), app=args.get("app"), strings_files=args.get("strings"))  # report goes to ./shotfleet-check, never into the checked folder
+                folder = Path(args["folder"]).expanduser()
+                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"))  # report goes to ./shotfleet-check, never into the checked folder
             elif name == "run": apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
             else: return f"unknown tool {name}", True
-    except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:
-        return f"{e}\n\n{log.getvalue()[-2000:]}", True
+    except Exception as e:  # one bad call must not kill the server
+        msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
+        return f"{msg}\n\n{log.getvalue()[-2000:]}", True
     report = json.loads(LAST_REPORT.read_text()) if name in ("check", "run") and LAST_REPORT else None
     text = json.dumps({"exit": code, **report}, ensure_ascii=False) if report else log.getvalue()
     return text, False
@@ -2742,7 +2807,25 @@ def main_cmd(a):
     try:
         return main_dispatch(a)
     finally:
-        for udid in OUR_SIMS: sh(["xcrun", "simctl", "shutdown", udid])  # also clears the status bar override
+        shutdown_sims()
+
+def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None):
+    """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own)."""
+    if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
+    if len(kinds := play_folders(folder)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
+        base, codes = Path(report) if report else Path("shotfleet-check"), []
+        for k in kinds:
+            print(f"\n== {k}")
+            codes.append(cmd_check(folder, app=app, strings_files=strings_files, ocr_command=ocr_command,
+                                   report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect))
+        return max(codes)
+    if subs := device_runs(folder):
+        codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=False,
+                           report_dir=Path(report) / d.name if report else None, expect=expect) for d in subs]
+        return max(codes + [ipad_set_missing(folder)])
+    if not app and not strings_files and not (Path(folder) / "run.json").exists():
+        print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
+    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect)
 
 def main_dispatch(a):
     try:
@@ -2759,23 +2842,7 @@ def main_dispatch(a):
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
-        if a.cmd == "check":
-            if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
-            expect = read_expect(a.content) if a.content else None
-            if len(kinds := play_folders(a.out)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
-                # phone and tablet sets are separate listings: check each on its own
-                base, codes = Path(a.report) if a.report else Path("shotfleet-check"), []
-                for k in kinds:
-                    print(f"\n== {k}")
-                    codes.append(cmd_check(a.out, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command,
-                                           report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect))
-                return max(codes)
-            if subs := device_runs(a.out):
-                codes = [cmd_check(d, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command, ipad_rule=False, expect=expect) for d in subs]
-                return max(codes + [ipad_set_missing(a.out)])
-            if not a.app and not a.strings and not (Path(a.out) / "run.json").exists():
-                print("no --app given: checking by language detection only (pass --app to compare with your app's strings)")
-            return cmd_check(a.out, app=a.app, report_dir=a.report, strings_files=a.strings, ocr_command=a.ocr_command, expect=expect)
+        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None)
         if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2
