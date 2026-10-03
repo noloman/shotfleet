@@ -1296,23 +1296,30 @@ def caption_problem(lp, ocr, tables, problem):
     # ("A WOD timer on your wrist" as Polish); the app's strings are the evidence, the caption only explains it
     return problem
 
-def find_screenshots(folder, platform=None):
+PLAY_FOLDERS = ("phoneScreenshots", "sevenInchScreenshots", "tenInchScreenshots")
+
+def play_folders(folder):
+    """Which of Google Play's device folders a supply layout uses (phone, 7" and 10" tablets)."""
+    folder = Path(folder)
+    return [k for k in PLAY_FOLDERS if any(folder.glob(f"metadata/android/*/images/{k}/*")) or any(folder.glob(f"*/images/{k}/*"))]
+
+def find_screenshots(folder, platform=None, play_folder="phoneScreenshots"):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
     or plain <locale>/ folders."""
     folder = Path(folder)
     if (folder / "screenshots").is_dir() and (folder / "metadata/android").is_dir():
         if platform == "ios": return find_screenshots(folder / "screenshots")
-        if platform == "android": return find_screenshots(folder / "metadata" / "android")
+        if platform == "android": return find_screenshots(folder / "metadata" / "android", play_folder=play_folder)
         raise Fail(f"{folder} has both iOS and Android screenshots; check {folder / 'screenshots'} and "
                    f"{folder / 'metadata/android'} separately (each with its own --app)")
-    for pattern in ("raw/*/*", "metadata/android/*/images/phoneScreenshots/*",
-                    "*/images/phoneScreenshots/*", "screenshots/*/*", "*/*"):
+    for pattern in ("raw/*/*", f"metadata/android/*/images/{play_folder}/*",
+                    f"*/images/{play_folder}/*", "screenshots/*/*", "*/*"):
         found = sorted(p for p in folder.glob(pattern) if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
         if found:
             out = {}
             for png in found:
-                label = png.parent.parent.parent.name if png.parent.name == "phoneScreenshots" else png.parent.name
+                label = png.parent.parent.parent.name if png.parent.name == play_folder else png.parent.name
                 if re.fullmatch(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*", label) or label in CANON:
                     out.setdefault(label, []).append(png)  # not ipad_only/, default/, appleTV/
             return out
@@ -1400,7 +1407,8 @@ def external_ocr(command, png, lp):
 
 LAST_REPORT = None  # check.json of the last check, for --json
 
-def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True):
+def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
+              play_folder="phoneScreenshots"):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder."""
     folder = Path(folder)
@@ -1430,7 +1438,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     tables = string_tables(strings or {})
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
-    images = find_screenshots(folder, platform={".app": "ios", ".apk": "android"}.get(Path(app).suffix) if app else None)
+    images = find_screenshots(folder, platform={".app": "ios", ".apk": "android"}.get(Path(app).suffix) if app else None,
+                              play_folder=play_folder)
     if not images:
         raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
                    "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png")
@@ -2009,6 +2018,14 @@ def main_dispatch(a):
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel)
         if a.cmd == "check":
             if not Path(a.out).is_dir(): raise Fail(f"no folder at {a.out}")
+            if len(kinds := play_folders(a.out)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
+                # phone and tablet sets are separate listings: check each on its own
+                base, codes = Path(a.report) if a.report else Path("shotfleet-check"), []
+                for k in kinds:
+                    print(f"\n== {k}")
+                    codes.append(cmd_check(a.out, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command,
+                                           report_dir=base / k if len(kinds) > 1 else base, play_folder=k))
+                return max(codes)
             if subs := device_runs(a.out):
                 codes = [cmd_check(d, app=a.app, strings_files=a.strings, ocr_command=a.ocr_command, ipad_rule=False) for d in subs]
                 return max(codes + [ipad_set_missing(a.out)])
