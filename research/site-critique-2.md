@@ -1,5 +1,41 @@
 # shotfleet.com live site critique, round 2
 
+## Status 2026-10-03
+
+Branch `site-fixes`. Most of round 2 was fixed by the redesign (59857ba) before this pass; every row was re-checked against the current files and in Chromium at 375 and 1280 px, light and dark. Counts: 25 fixed, 2 still open, 2 need the owner.
+
+| Finding | Status | Commit and notes |
+|---|---|---|
+| P0-1 | fixed | 59857ba (redesign: every page has the same pill header, no pointer-events:none, terms has a footer). Verified in Chromium; test added in c9b26c0 |
+| P0-2 | fixed | c9b26c0: button is "Join the waitlist", hero line already said "Not released yet" (59857ba), price card says joining does not reserve the launch price, "not on sale yet" notes on /alternatives and /terms (WAITLIST blocks; go-live.sh now rewrites those two pages). Meta description left as an imperative (it states no availability) |
+| P1-1 | fixed | 59857ba (no card uses --ink as a background any more; measured 0 failures in light and dark). c9b26c0 fixes a new dark-theme failure found while re-measuring: pennant 2.79:1 to 6.84:1, check-mark stamp 1.96:1 to 9.76:1 |
+| P1-2 | fixed | 59857ba put "Not released yet" and the price under the hero form; c9b26c0 adds Apple silicon to the tag, App Store and Google Play to the sub, and links Maestro |
+| P1-3 | fixed | 59857ba (hero shows three screens, the strip fits at 1280: scrollWidth equals clientWidth; thin scrollbar on) |
+| P1-4 | fixed | A join button sits under the comparison table (59857ba); c9b26c0 adds one at the end and a buy link for go-live. No header button on /alternatives |
+| P1-5 | fixed | Caption, scope, focusable region (59857ba); c9b26c0 adds scroll shadows and a sticky first column under 820 px |
+| P1-6 | fixed | Header, tabs and buttons were 44 px after 59857ba. c9b26c0: footer links 41 to 44 px, docs contents links 19 to 44 px, zoom Close 34 to 44 px, small text raised to 14 px or more. Links inside sentences stay 17-19 px tall (WCAG 2.2 inline exception) |
+| P1-7 | fixed | 59857ba (pre-wrap under 520 px; pre scrollWidth equals clientWidth at 375) |
+| P1-8 | fixed | c9b26c0: Flutter/React Native and Apple silicon caveat under the hero strip, gallery retitled and says it is not what shotfleet can do. Zoomable hero images: needs owner (full-size captures do not exist in the repo) |
+| P2-1 | fixed | 59857ba |
+| P2-2 | fixed | 59857ba (no min-height; card is as tall as its content) |
+| P2-3 | fixed | 59857ba; test added in c9b26c0 |
+| P2-4 | fixed | c9b26c0 (aria-describedby set on error, removed on the next submit) |
+| P2-5 | fixed | Signup forms 59857ba; privacy forms c9b26c0 (method=post, action) |
+| P2-6 | fixed | 59857ba (skip link on every page) |
+| P2-7 | fixed | c9b26c0 (@media print) |
+| P2-8 | fixed | c9b26c0 (::placeholder uses --muted) |
+| P2-9 | still open | Previous/next in the zoom viewer is a feature, not a defect; Close is now 44 px |
+| P2-10 | fixed | c9b26c0: "108 of 120" (research/real-apps.md: 108 flagged, the 12 others are en-*). Register row C107 updated. Owner may want to re-run the check before launch, as C107 says |
+| P2-11 | fixed | c9b26c0: "so the run could not tap it" (register C013: the run, not check, surfaced it) |
+| P2-12 | fixed | c9b26c0: "It is a very new project." |
+| P2-13 | needs owner | Canonical and og tags on all pages: 59857ba and c9b26c0. The www to apex 301 is a Cloudflare Redirect Rule (seo-audit.md section 2) |
+| P2-14 | fixed | hello@shotfleet.com since d1ec2a9 |
+| P2-15 | fixed | fa10721 updates llms.txt to match README and docs. Whether the deployed file equals the repo: needs the live site |
+| P2-16 | needs owner | Licence vs license is a wording decision; tests and the register quote "Licence" |
+| P2-17 | fixed | c9b26c0: no unsafe-inline in style-src (style attributes and the two style elements moved into site.css; no CSP violation in Chromium with the real header), Cross-Origin-Opener-Policy added. HSTS is a Cloudflare setting: needs owner |
+| P2-18 | still open | Fingerprinted file names for immutable caching: not urgent, not done |
+| P2-19 | fixed | No change was required |
+
 Reviewed 2026-10-02 on the live site: `/`, `/alternatives`, `/terms`, `/privacy` (and the 404). No form was submitted, no Buy link was clicked, nothing was edited or deployed. Forms were tested client-side only, with `x` and `notanemail` and with an empty message. Tools were Claude in Chrome (own tab, closed afterwards) plus curl.
 
 ## How this was measured, and the limits
