@@ -1,35 +1,41 @@
 #!/bin/sh
-# End-to-end test on real simulators: build the fixture app, then init, doctor, run (iPhone + iPad, de/ja/ar/tr), check and
-# export it, and prove the detectors work by planting a copied screenshot and a missing one. Roadmap N7, gate 9.
+# End-to-end test on real simulators and emulators: build the fixture app, then init, doctor, run (iPhone + iPad, de/ja/ar/tr),
+# check and export it, and prove the detectors work by planting a copied screenshot and a missing one. Roadmap N7, gate 9.
+# The Android half does the same with tools/fixture-app-android on the phone emulator (AVD shotfleet_android), de/ja/ar/tr.
 #
-#   SHOTFLEET_E2E=1 tools/fixture-e2e.sh [--platform-only ios] [--skip-android] [--keep]
+#   SHOTFLEET_E2E=1 tools/fixture-e2e.sh [--android] [--platform-only ios|android] [--skip-android] [--keep]
 #
-# It BOOTS iOS SIMULATORS (shotfleet creates and boots shotfleet-<device>-N and shuts them down again), so it refuses to run
-# without SHOTFLEET_E2E=1. Run it on a quiet Mac: not while another session or run uses the simulators. About 10 minutes.
-#   --platform-only ios   only iOS (the default: there is no Android fixture yet)
-#   --skip-android        same; Android is reported as skipped either way
+# It BOOTS iOS SIMULATORS (shotfleet creates and boots shotfleet-<device>-N and shuts them down again), and with --android also
+# EMULATORS (2 read-only copies of shotfleet_android on ports 5702 and 5704), so it refuses to run without SHOTFLEET_E2E=1.
+# Run it on a quiet Mac: not while another session or run uses them. About 10 minutes for iOS, a few more for Android.
+#   (no flag)             only iOS: the default is unchanged
+#   --android             iOS, then Android (also SHOTFLEET_E2E_ANDROID=1)
+#   --platform-only ios|android   only that platform (android needs no Xcode; ios is the default)
+#   --skip-android        no Android, even with SHOTFLEET_E2E_ANDROID=1
 #   --keep                keep the temp work dir (it is also kept when anything fails)
 # SHOTFLEET_BIN=/path/to/shotfleet tests a built binary instead of ./shotfleet.py (a built binary needs a licence for the
 # export step: activate it, or set SHOTFLEET_KEY). Exit 0 only if every assertion passed.
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-KEEP=0
+KEEP=0; IOS=1; ANDROID=0; [ "${SHOTFLEET_E2E_ANDROID:-}" = 1 ] && ANDROID=1
 while [ $# -gt 0 ]; do
   case $1 in
     --keep) KEEP=1 ;;
-    --skip-android) ;;
-    --platform-only) shift; [ "${1:-}" = ios ] || { echo "fixture-e2e: --platform-only takes 'ios' (there is no Android fixture yet)" >&2; exit 2; } ;;
-    -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --android) ANDROID=1 ;;
+    --skip-android) ANDROID=0 ;;
+    --platform-only) shift
+      case "${1:-}" in ios) IOS=1; ANDROID=0 ;; android) IOS=0; ANDROID=1 ;; *) echo "fixture-e2e: --platform-only takes 'ios' or 'android'" >&2; exit 2 ;; esac ;;
+    -h|--help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "fixture-e2e: unknown option $1 (try --help)" >&2; exit 2 ;;
   esac
   shift
 done
 if [ "${SHOTFLEET_E2E:-}" != 1 ]; then
-  echo "fixture-e2e: refusing to run. This test boots iOS simulators (4 per device type, for about 10 minutes) and must not" >&2
-  echo "run while another session uses them. Run it as: SHOTFLEET_E2E=1 $0" >&2
+  echo "fixture-e2e: refusing to run. This test boots iOS simulators (4 per device type, for about 10 minutes), and with --android" >&2
+  echo "emulators too, and must not run while another session uses them. Run it as: SHOTFLEET_E2E=1 $0" >&2
   exit 2
 fi
-[ "$(uname)" = Darwin ] || { echo "fixture-e2e: macOS only (simulators)" >&2; exit 2; }
+[ "$(uname)" = Darwin ] || { echo "fixture-e2e: macOS only (simulators and the Mac's own text recognition)" >&2; exit 2; }
 
 # ---- pre-flight: nothing is created or booted before these pass ----
 TMP=${TMPDIR:-/tmp}
@@ -44,13 +50,19 @@ fi
 WORK=$(mktemp -d "$TMP/shotfleet-e2e.XXXXXX"); LOGS=$WORK/logs; PY=$WORK/e2e_assert.py
 mkdir -p "$LOGS" "$WORK/proj"
 sed -n '/^: <<.__PY__.$/,/^__PY__$/p' "$0" | sed '1d;$d' > "$PY"   # the assertion helper is the end of this file (tests/test_fixture_e2e.py loads it the same way)
-PASS=0; FAIL=0; LAST_RC=0; PH=""; PS=0; T0=$(date +%s); SIMS=0
+PASS=0; FAIL=0; LAST_RC=0; PH=""; PS=0; T0=$(date +%s); SIMS=0; EMUS=0
+ADB=${SHOTFLEET_E2E_ADB:-${ANDROID_HOME:-$HOME/Library/Android/sdk}/platform-tools/adb}; [ -x "$ADB" ] || ADB=adb
 
 # ponytail: the safety net only shuts down simulators named like our own device types' pools, and only once a run has been
 # started; shotfleet itself already shuts its pool down on exit. A second shotfleet run started at the same moment would be hit too.
 cleanup() {
   if [ "$SIMS" = 1 ]; then
     for u in $(python3 "$PY" sims 2>/dev/null || true); do xcrun simctl shutdown "$u" >/dev/null 2>&1 || true; done
+  fi
+  # ponytail: shotfleet kills its emulators itself; this only catches an interrupted run. Pre-flight proved no emulator was on
+  # ports 5700-5799 when we started, so whatever is there now is shotfleet's (it uses 5700, 5702, 5704...)
+  if [ "$EMUS" = 1 ]; then
+    for u in $("$ADB" devices 2>/dev/null | awk '/^emulator-57[0-9][0-9][ \t]/{print $1}'); do "$ADB" -s "$u" emu kill >/dev/null 2>&1 || true; done
   fi
   if [ "$KEEP" = 1 ] || [ "$FAIL" -gt 0 ]; then echo "work dir kept: $WORK"; else rm -rf "$WORK"; fi
 }
@@ -86,12 +98,39 @@ finish() {
   say "FAIL: $FAIL of $((PASS + FAIL)) assertions failed"; exit 1
 }
 
+flow_yaml() {  # the one English flow both platforms run: welcome, tap Next, settings
+  cat > "$1/flow.yaml" <<'FLOW'
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 01_welcome
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 02_settings
+FLOW
+}
+hooks_toml() {  # the [hooks] table of both configs: each event appends a line to hooks.log next to the config
+  cat <<'TOML'
+
+[hooks]
+before_run = 'echo "before_run locales=$SHOTFLEET_LOCALES" >> hooks.log'
+after_run = 'echo "after_run exit=$SHOTFLEET_EXIT problems=$SHOTFLEET_PROBLEMS" >> hooks.log'
+before_export = 'echo "before_export" >> hooks.log'
+after_export = 'echo "after_export exit=$SHOTFLEET_EXIT" >> hooks.log'
+TOML
+}
+
 say "work dir: $WORK"
-say "SKIP android: no Android fixture exists yet (tools/fixture-app is iOS only); Android is not tested here"
-if [ -n "$(python3 "$PY" sims)" ]; then
+[ "$ANDROID" = 1 ] || say "SKIP android: not requested (pass --android or set SHOTFLEET_E2E_ANDROID=1; the fixture is tools/fixture-app-android)"
+if [ "$IOS" = 1 ] && [ -n "$(python3 "$PY" sims)" ]; then
   echo "fixture-e2e: a shotfleet simulator is already booted (another run?). Wait for it to finish." >&2; exit 2
 fi
+if [ "$ANDROID" = 1 ] && "$ADB" devices 2>/dev/null | grep -q '^emulator-57[0-9][0-9][[:space:]]'; then
+  echo "fixture-e2e: an emulator is already running on a port shotfleet uses (5700-5799: another run?). Wait for it to finish." >&2; exit 2
+fi
 
+if [ "$IOS" = 1 ]; then
 phase "build the fixture app"
 APP=$WORK/build/FleetFixture.app
 step build 0 sh "$ROOT/tools/fixture-app/build.sh" "$WORK/build"
@@ -108,24 +147,9 @@ APPLINE=$(grep '^app = ' "$WORK/proj/shotfleet.toml" || true)
 { printf '[ios]\n%s\n' "$APPLINE"; cat <<'TOML'
 device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]
 locales = ["de", "ja", "ar", "tr"]
-
-[hooks]
-before_run = 'echo "before_run locales=$SHOTFLEET_LOCALES" >> hooks.log'
-after_run = 'echo "after_run exit=$SHOTFLEET_EXIT problems=$SHOTFLEET_PROBLEMS" >> hooks.log'
-before_export = 'echo "before_export" >> hooks.log'
-after_export = 'echo "after_export exit=$SHOTFLEET_EXIT" >> hooks.log'
 TOML
-} > "$WORK/proj/shotfleet.toml.new" && mv "$WORK/proj/shotfleet.toml.new" "$WORK/proj/shotfleet.toml"
-cat > "$WORK/proj/flow.yaml" <<'FLOW'
-- launchApp
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: 01_welcome
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: 02_settings
-FLOW
+hooks_toml; } > "$WORK/proj/shotfleet.toml.new" && mv "$WORK/proj/shotfleet.toml.new" "$WORK/proj/shotfleet.toml"
+flow_yaml "$WORK/proj"
 
 phase "shotfleet doctor"
 step doctor 0 sf doctor
@@ -143,7 +167,7 @@ phase "shotfleet export --fastlane"
 step export 0 sf export "$OUT" --fastlane "$WORK/fastlane"
 
 phase "assertions on the output"
-py tree --out "$OUT" --fastlane "$WORK/fastlane" --hooks "$WORK/proj/hooks.log" --locales de,ja,ar,tr --repo "$ROOT"
+py tree --platform ios --out "$OUT" --fastlane "$WORK/fastlane" --hooks "$WORK/proj/hooks.log" --locales de,ja,ar,tr --repo "$ROOT"
 
 phase "planted failures (copies of the output, the real output is untouched)"
 for what in copy delete; do
@@ -153,12 +177,64 @@ for what in copy delete; do
 done
 py expect "$LOGS/check-copy.log" ja 'shows de|identical image'
 py expect "$LOGS/check-delete.log" tr 'missing'
+fi
+
+if [ "$ANDROID" = 1 ]; then
+phase "android: build the fixture app"
+mkdir -p "$WORK/proj-android"
+APK=$WORK/build-android/FleetFixture.apk
+step android-build 0 sh "$ROOT/tools/fixture-app-android/build.sh" "$WORK/build-android"
+[ "$LAST_RC" = 0 ] || finish
+[ -s "$APK" ] && ok "android build: $APK exists" || { bad "android build: no $APK"; finish; }
+
+phase "android: shotfleet init"
+step android-init 0 sf init "$APK" --dir "$WORK/proj-android"
+[ "$LAST_RC" = 0 ] || finish
+[ -f "$WORK/proj-android/shotfleet.toml" ] && [ -f "$WORK/proj-android/flow.yaml" ] && ok "android init wrote shotfleet.toml and flow.yaml" || { bad "android init wrote no config or flow"; finish; }
+APKLINE=$(grep '^apk = ' "$WORK/proj-android/shotfleet.toml" || true)
+[ -n "$APKLINE" ] || { bad "android init's config has no apk line"; finish; }
+# parallel = 2: two emulators, two rounds; a busy Mac boots two much more reliably than four
+{ printf '[android]\n%s\n' "$APKLINE"; cat <<'TOML'
+devices = ["phone"]
+locales = ["de", "ja", "ar", "tr"]
+parallel = 2
+TOML
+hooks_toml; } > "$WORK/proj-android/shotfleet.toml.new" && mv "$WORK/proj-android/shotfleet.toml.new" "$WORK/proj-android/shotfleet.toml"
+flow_yaml "$WORK/proj-android"
+
+phase "android: shotfleet doctor"
+step android-doctor 0 sf doctor
+grep -q 'Android: ready' "$LOGS/android-doctor.log" && ok "doctor says Android: ready" || bad "doctor says Android: ready" "see $LOGS/android-doctor.log"
+
+phase "android: shotfleet run (phone emulators)"
+EMUS=1
+step android-run 0 sf run "$WORK/proj-android/shotfleet.toml" --locales de,ja,ar,tr
+AOUT=$WORK/proj-android/out
+
+phase "android: shotfleet check"
+step android-check 0 sf check "$AOUT"
+
+phase "android: shotfleet export --fastlane"
+step android-export 0 sf export "$AOUT" --fastlane "$WORK/fastlane-android"
+
+phase "android: assertions on the output"
+py tree --platform android --out "$AOUT" --fastlane "$WORK/fastlane-android" --hooks "$WORK/proj-android/hooks.log" --locales de,ja,ar,tr --repo "$ROOT"
+
+phase "android: planted failures (copies of the output, the real output is untouched)"
+for what in copy delete; do
+  mkdir -p "$WORK/plant-android-$what"; cp -R "$AOUT" "$WORK/plant-android-$what/out"; rm -rf "$WORK/plant-android-$what/out/.work" "$WORK/plant-android-$what/out/phone/.work"
+  py "plant-$what" "$WORK/plant-android-$what/out"
+  step "android-check-$what" 1 sf check "$WORK/plant-android-$what/out"
+done
+py expect "$LOGS/android-check-copy.log" ja 'shows de|identical image'
+py expect "$LOGS/android-check-delete.log" tr 'missing'
+fi
 finish
 
 : <<'__PY__'
 """Assertions for tools/fixture-e2e.sh. Every check prints one line, 'PASS <what>' or 'FAIL <what>: <why>'; exit 1 if any failed.
 
-    e2e_assert.py tree --out OUT --fastlane DIR --hooks FILE --locales de,ja --repo REPO
+    e2e_assert.py tree [--platform ios|android] --out OUT --fastlane DIR --hooks FILE --locales de,ja --repo REPO
     e2e_assert.py plant-copy OUT | plant-delete OUT | expect FILE LOCALE REGEX | sims
 """
 import argparse, json, re, subprocess, sys
@@ -167,6 +243,7 @@ from pathlib import Path
 SHOTS = ("01_welcome", "02_settings")
 WORDS = {"de": ("Weiter", "Fertig")}  # German for the fixture's 'Next' and 'Done' buttons, one per screenshot
 LISTING = {"de": "de-DE", "ja": "ja", "ar": "ar-SA", "tr": "tr"}  # the App Store listing folder fastlane deliver uses
+PLAY_LISTING = {"de": "de-DE", "ja": "ja-JP", "ar": "ar", "tr": "tr-TR"}  # the Google Play one fastlane supply uses
 MIN_BYTES = 5000  # a real simulator screenshot is hundreds of KB; this only rejects empty and truncated files
 POOLS = ("shotfleet-iphone-", "shotfleet-ipad-")  # the simulators the script's own device types create
 
@@ -208,11 +285,12 @@ def has_copies(d, locales, shot):
     return len(set(imgs)) < len(imgs)
 
 
-def tree(out, fastlane, hooks, locales, ocr):
+def tree(out, fastlane, hooks, locales, ocr, platform="ios"):
     """[(what, ok, why)] for a finished run, check and export."""
     res, devs = [], device_dirs(out)
     names = [d.name for d in devs]
-    res.append(("an iPhone and an iPad set in the output", any("iphone" in n for n in names) and any("ipad" in n for n in names), names or "no device folders"))
+    if platform == "android": res.append(("a phone set in the output", names == ["phone"], names or "no device folders"))
+    else: res.append(("an iPhone and an iPad set in the output", any("iphone" in n for n in names) and any("ipad" in n for n in names), names or "no device folders"))
     want = {f"{s}.png" for s in SHOTS}
     for d in devs:
         have = {lp: sorted(p.name for p in (d / "raw" / lp).glob("*.png")) for lp in locales}
@@ -234,10 +312,12 @@ def tree(out, fastlane, hooks, locales, ocr):
         notok = [lp for lp in locales if not ran.get(lp, {}).get("ok")]
         res.append((f"{d.name}: run.json has every language captured ok", not notok, f"not ok: {notok}"))
     for lp in locales:
-        folder = Path(fastlane) / "screenshots" / LISTING.get(lp, lp)
+        listing = PLAY_LISTING.get(lp, lp) if platform == "android" else LISTING.get(lp, lp)
+        folder = Path(fastlane) / ("metadata/android" if platform == "android" else "screenshots") / listing
+        if platform == "android": folder = folder / "images/phoneScreenshots"
         need = sorted(f"{n}_{s}.png" for n in names for s in SHOTS)
         absent = [f for f in need if png_ok(folder / f)]
-        res.append((f"export: {LISTING.get(lp, lp)} has {len(need)} screenshots (one set per device)", not absent, f"missing or empty: {absent}"))
+        res.append((f"export: {listing} has {len(need)} screenshots (one set per device)", not absent, f"missing or empty: {absent}"))
     log = Path(hooks).read_text() if Path(hooks).is_file() else ""
     for ev, pat in (("before_run", r"^before_run locales="), ("after_run", r"^after_run exit=0 problems=0$"),
                     ("before_export", r"^before_export$"), ("after_export", r"^after_export exit=0$")):
@@ -281,12 +361,13 @@ def main(argv):
     sub = ap.add_subparsers(dest="cmd", required=True)
     t = sub.add_parser("tree")
     for k in ("out", "fastlane", "hooks", "locales", "repo"): t.add_argument("--" + k, required=True)
+    t.add_argument("--platform", choices=("ios", "android"), default="ios")
     for k in ("plant-copy", "plant-delete"): sub.add_parser(k).add_argument("out")
     e = sub.add_parser("expect"); [e.add_argument(k) for k in ("file", "locale", "pattern")]
     sub.add_parser("sims")
     a = ap.parse_args(argv)
     if a.cmd == "tree":
-        return report(tree(a.out, a.fastlane, a.hooks, a.locales.split(","), lambda p: default_ocr(p, a.repo)))
+        return report(tree(a.out, a.fastlane, a.hooks, a.locales.split(","), lambda p: default_ocr(p, a.repo), a.platform))
     if a.cmd.startswith("plant-"):
         print(plant(a.out, a.cmd[6:])); return 0
     if a.cmd == "expect":

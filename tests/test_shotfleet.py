@@ -2,7 +2,7 @@
 
 Run: python3 -m unittest discover -s tests
 """
-import contextlib, io, json, os, subprocess, sys, tempfile, threading, time, tomllib, unittest
+import ast, contextlib, io, json, os, re, subprocess, sys, tempfile, threading, time, tomllib, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -1727,13 +1727,13 @@ class RetryOnSlowSimulator(unittest.TestCase):
             f'<testsuites><testsuite><testcase name="de" time="2">{"" if ok else "<failure>Unknown error</failure>"}</testcase></testsuite></testsuites>')
         return subprocess.CompletedProcess(cmd, 0 if ok else 1, "", "")
 
-    def run_it(self, level):
+    def run_it(self, level, check=None):
         real = sf.sh
         def sh(cmd, **kw): return subprocess.CompletedProcess(cmd, 0, level, "") if cmd[0] == "sysctl" else real(cmd, **kw)
         with mock.patch.object(sf, "make_pool", return_value=[self.fake_sim()]), mock.patch.object(sf, "run_guarded", self.fake_maestro), \
              mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
              mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"), \
-             mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "cmd_check", return_value=0), \
+             mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "cmd_check", side_effect=check or (lambda *a, **k: 0)), \
              mock.patch.object(sf, "java_env", return_value={}), mock.patch.object(sf, "sh", sh), \
              contextlib.redirect_stdout(io.StringIO()) as out:
             code = sf.cmd_run(str(self.d / "shotfleet.toml"))
@@ -2005,3 +2005,482 @@ class SetupCommands(unittest.TestCase):
                      mock.patch.object(sf, "aapt2", return_value="aapt2"), mock.patch.object(sf, "sh", return_value=subprocess.CompletedProcess([], 0, "", "")), \
                      self.assertRaisesRegex(sf.Fail, msg):
                     sf.load_config(Path(d) / "shotfleet.toml")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Claims G1 (2026-10-03): behaviour claims that a deterministic test can prove. No simulator, emulator, network or Maestro.
+# Each class names the claim ids (tests/claims.json) it backs.
+# ---------------------------------------------------------------------------------------------------------------------
+G1_STRINGS = {"en": {"a": "Next", "b": "Settings", "c": "Start Training", "d": "Training log"},
+              "de": {"a": "Weiter", "b": "Einstellungen", "c": "Training starten", "d": "Trainingsprotokoll"},
+              "ja": {"a": "次へ", "b": "設定", "c": "トレーニング開始", "d": "記録"}}
+G1_SHOWS = {lp: list(t.values()) for lp, t in G1_STRINGS.items()}  # what a screen in that language shows
+
+
+def g1_image(salt, size=(1320, 2868)):
+    """A PNG header of that size; the salt makes every image different bytes (identical bytes are what `check` calls a copy)."""
+    return png_c(*size) + salt.encode()
+
+
+def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, **kw):
+    """Run cmd_check on {label: {name: lines | (lines, size) | (lines, size, salt)}}. Lines are the app's own text (.texts.json, as an iOS
+    run saves them) unless `ocr` is True: then a fake text recognition reads them from <name>.png.txt. -> (code, report, stdout)."""
+    d = Path(tempfile.mkdtemp())
+    for label, screens in spec.items():
+        for name, shot in screens.items():
+            lines, size, salt = (shot, (1320, 2868), f"{label}/{name}") if isinstance(shot, list) else (shot + (f"{label}/{name}",))[:3]
+            png = d / "shots" / label / name; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(g1_image(salt, size))
+            if ocr: Path(f"{png}.txt").write_text("\n".join(lines))
+            else: png.with_suffix(".texts.json").write_text(json.dumps(lines, ensure_ascii=False))
+    def fake_ocr(_ocr, png, timeout=120):
+        text = Path(f"{png}.txt").read_text()
+        return {"text": text, "chars": len(text), "lang": "en" if "Next" in text else None, "langs": {"en": 0.9} if "Next" in text else {}}
+    with mock.patch.object(sf, "warm_up_ocr", return_value=True), mock.patch.object(sf, "ocr_tool", return_value="ocr"), \
+         mock.patch.object(sf, "readable_languages", return_value=set(readable)), mock.patch.object(sf, "read_text", fake_ocr), \
+         mock.patch.object(sf, "tesseract_languages", return_value=set()), contextlib.redirect_stdout(io.StringIO()) as out:
+        code = sf.cmd_check(d / "shots", strings=strings, report_dir=d / "rep", **kw)
+    return code, json.loads((d / "rep/check.json").read_text()), out.getvalue()
+
+
+class G1CheckDetectors(unittest.TestCase):
+    """C003, C009, C024, C025: every screenshot goes through the checks, and each mistake is reported as one named problem."""
+    CLEAN = {"de": {"01.png": G1_SHOWS["de"], "02.png": G1_SHOWS["de"]}, "en": {"01.png": G1_SHOWS["en"], "02.png": G1_SHOWS["en"]},
+             "ja": {"01.png": G1_SHOWS["ja"], "02.png": G1_SHOWS["ja"]}}
+
+    def test_a_clean_set_passes_and_every_screenshot_is_judged(self):  # C003
+        code, report, out = g1_check(self.CLEAN)
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(sorted(r["file"] for r in report["screenshots"]), sorted(f"{l}/{n}" for l, s in self.CLEAN.items() for n in s))
+        self.assertEqual({r["file"]: r["lang"] for r in report["screenshots"]}["de/02.png"], "de")  # each one judged, with the language it shows
+        self.assertIn("checked 6 screenshots in 3 languages: 0 problem(s)", out)
+
+    def test_wrong_language_is_one_problem_naming_the_file_and_the_language_it_shows(self):  # C003, C009
+        spec = {**self.CLEAN, "de": {"01.png": G1_SHOWS["de"], "02.png": G1_SHOWS["en"]}}
+        code, report, _ = g1_check(spec)
+        self.assertEqual(code, 1)
+        self.assertEqual(report["problems"], ["de/02.png: shows en strings (4 lines) more than de (0)"])
+
+    def test_the_app_text_is_compared_with_the_apps_strings_not_with_a_language_guess(self):  # C009
+        # Japanese strings on a German screen: no language detection runs for an iOS run's own text (lang is None)
+        spec = {**self.CLEAN, "de": {"01.png": G1_SHOWS["ja"] + ["Weiter"], "02.png": G1_SHOWS["de"]}}
+        code, report, _ = g1_check(spec)
+        self.assertEqual(report["problems"], ["de/01.png: shows ja strings (4 lines) more than de (1)"])
+
+    def test_the_same_comparison_runs_on_text_read_by_ocr_the_android_and_other_tools_path(self):  # C009
+        spec = {**self.CLEAN, "de": {"01.png": G1_SHOWS["de"], "02.png": G1_SHOWS["en"]}}
+        code, report, _ = g1_check(spec, ocr=True)
+        self.assertEqual((code, report["problems"]), (1, ["de/02.png: shows en strings (4 lines) more than de (0)"]))
+        self.assertEqual(g1_check(self.CLEAN, ocr=True)[:2][0], 0)
+
+    def test_the_same_image_in_two_languages_is_reported_once_with_both_files(self):  # C025, C003
+        same = g1_image("same")
+        d = Path(tempfile.mkdtemp())
+        for lp in ("de", "en"):
+            png = d / "shots" / lp / "01.png"; png.parent.mkdir(parents=True); png.write_bytes(same)
+            png.with_suffix(".texts.json").write_text(json.dumps(G1_SHOWS["en"]))  # 41 characters: enough text to count as a copy
+        with mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "readable_languages", return_value={"en", "de"}), \
+             contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(sf.cmd_check(d / "shots", strings=G1_STRINGS, report_dir=d / "rep"), 1)
+        problems = json.loads((d / "rep/check.json").read_text())["problems"]
+        self.assertEqual([p for p in problems if p.startswith("identical")], ["identical image in 2 languages: de/01.png, en/01.png"])
+
+    def test_known_blind_spot_two_short_screens_in_two_languages_are_not_called_copies(self):  # C025, C003 (the 40-character floor)
+        short = ["OK", "Go"]  # a watch screen: identical in every language, and fine
+        code, report, _ = g1_check({"de": {"01.png": short}, "en": {"01.png": short}}, strings={"en": {"a": "OK", "b": "Go"}, "de": {"a": "OK", "b": "Go"}})
+        self.assertEqual([p for p in report["problems"] if p.startswith("identical")], [])
+
+    def test_a_language_that_did_not_produce_every_screen_is_reported_as_missing(self):  # C025, C003
+        spec = {**self.CLEAN, "ja": {"01.png": G1_SHOWS["ja"]}}
+        code, report, _ = g1_check(spec)
+        self.assertEqual((code, report["problems"]), (1, ["ja: missing 02.png"]))
+
+    def test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language(self):  # C024
+        spec = {**self.CLEAN, "fr-FR": {"01.png": G1_SHOWS["en"], "02.png": G1_SHOWS["en"]}}
+        code, report, _ = g1_check(spec)
+        self.assertEqual(code, 1)
+        self.assertEqual(report["problems"], ["fr-FR: the app has no fr-FR translation, so this listing shows another language"])
+
+    def test_a_size_the_store_refuses_is_one_problem_per_file(self):  # C003, C100 (the size half)
+        spec = {**self.CLEAN, "de": {"01.png": (G1_SHOWS["de"], (1000, 2000)), "02.png": G1_SHOWS["de"]}}
+        code, report, _ = g1_check(spec)
+        self.assertEqual((code, report["problems"]), (1, ["de/01.png: 1000x2000 isn't an App Store screenshot size"]))
+
+    def test_a_translated_caption_over_an_english_ui_is_named_as_such(self):  # C100 (the caption half)
+        tables = sf.string_tables(G1_STRINGS)
+        ocr = {"text": "\n".join(G1_SHOWS["en"]), "chars": 60, "caption": "トレーニングを記録", "caption_lang": "ja"}
+        got, problem = sf.judge_screen("ja", ocr, tables)
+        self.assertEqual(got, "en")
+        self.assertEqual(sf.caption_problem("ja", ocr, tables, problem),
+                         "the caption is in ja but the app UI shows en strings (4 lines) more than ja (0)")
+        self.assertEqual(sf.caption_problem("ja", {**ocr, "caption_lang": "de"}, tables, problem), problem)  # not the language's caption: plain problem
+
+
+class G1ScriptsMacosCannotRead(unittest.TestCase):
+    """C071: for a script macOS text recognition cannot read, `check` still checks other-language screens, copies and missing
+    screens, and says that it did only that. (The '33 languages' number is a measurement on one Mac: see the claim.)"""
+    STRINGS = {"en": G1_STRINGS["en"], "el": {"a": "Επόμενο", "b": "Ρυθμίσεις", "c": "Έναρξη προπόνησης", "d": "Αρχείο προπόνησης"}}
+
+    def test_a_blank_read_of_an_unreadable_script_proves_nothing_either_way(self):
+        tables = sf.string_tables(self.STRINGS)
+        with mock.patch.object(sf, "readable_languages", return_value={"en", "de"}):
+            self.assertEqual(sf.judge_screen("el", {"chars": 0, "text": ""}, tables), (None, None))
+            got, problem = sf.judge_screen("el", {"chars": 60, "text": "\n".join(G1_SHOWS["en"])}, tables)
+            self.assertEqual(got, "en"); self.assertIn("shows en strings", problem)  # another language's strings are still caught
+            self.assertIn("no text found", sf.judge_screen("en", {"chars": 0, "text": ""}, tables)[1])  # a readable one is not excused
+
+    def test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language(self):
+        english = {"01.png": G1_SHOWS["en"], "02.png": G1_SHOWS["en"], "03.png": G1_SHOWS["en"]}
+        d = Path(tempfile.mkdtemp())
+        shots = {"en": english, "el": {"01.png": [], "02.png": G1_SHOWS["en"]}}
+        for label, screens in shots.items():
+            for name, lines in screens.items():
+                png = d / "shots" / label / name; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(g1_image(f"{label}/{name}"))
+                Path(f"{png}.txt").write_text("\n".join(lines))
+        fake = lambda _o, png, timeout=120: (lambda t: {"text": t, "chars": len(t), "lang": "en" if t else None, "langs": {"en": 0.9} if t else {}})(Path(f"{png}.txt").read_text())
+        with mock.patch.object(sf, "warm_up_ocr", return_value=True), mock.patch.object(sf, "ocr_tool", return_value="ocr"), \
+             mock.patch.object(sf, "readable_languages", return_value={"en", "de"}), mock.patch.object(sf, "read_text", fake), \
+             mock.patch.object(sf, "tesseract_languages", return_value=set()), contextlib.redirect_stdout(io.StringIO()) as out:
+            code = sf.cmd_check(d / "shots", strings=self.STRINGS, report_dir=d / "rep")
+        problems = json.loads((d / "rep/check.json").read_text())["problems"]
+        self.assertEqual(code, 1)
+        self.assertIn("macOS can't read the script of el: those screens were only checked for showing another language, copies and missing screens", out.getvalue())
+        self.assertEqual(sorted(problems), ["el/02.png: shows en strings (4 lines) more than el (0)", "el: missing 03.png"])  # nothing said about el/01.png
+
+
+class G1MultiDeviceExport(unittest.TestCase):
+    """C021: the Android 10-inch tablet set is exported next to the phone set (the 7-inch and iPad 13-inch sets are covered by
+    SevenInchTablet and MultiDevice)."""
+    def test_phone_and_tablet_runs_export_to_their_own_play_folders(self):
+        with tempfile.TemporaryDirectory() as d:
+            for dev, size in (("phone", (1080, 1920)), ("tablet", (1440, 2560))):
+                out = Path(d) / "out" / dev; (out / "raw/de").mkdir(parents=True)
+                (out / "raw/de/01.png").write_bytes(png_c(*size))
+                (out / "run.json").write_text(json.dumps({"platform": "android", "device": dev, "locales": {"de": {"ok": True}}}))
+                (out / "check.json").write_text(json.dumps({"problems": []}))
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(sf.cmd_export(Path(d) / "out", Path(d) / "fl"), 0)
+            images = Path(d) / "fl/metadata/android/de-DE/images"
+            self.assertEqual(sorted(p.name for p in images.iterdir()), ["phoneScreenshots", "tenInchScreenshots"])
+            self.assertEqual(sf.png_size(images / "phoneScreenshots/phone_01.png"), (1080, 1920))
+            self.assertEqual(sf.png_size(images / "tenInchScreenshots/tablet_01.png"), (1440, 2560))
+
+    def test_the_tablet_device_matches_what_google_play_wants_and_the_ipad_size_is_the_13_inch_class(self):
+        w, h, _ = sf.ANDROID_DEVICES["tablet"]["size"]
+        self.assertEqual((w, h, h * 9 == w * 16), (1440, 2560, True))  # 9:16 at 1080 px or more: eligible for Play's recommendations
+        d = Path(tempfile.mkdtemp()); pngs = [d / f"{i}.png" for i in range(4)]
+        for p in pngs: p.write_bytes(png_c(w, h))
+        self.assertEqual(sf.store_rules({"de": pngs}, android=True, tablet=True), ([], []))
+        self.assertEqual(sf.apple_class((2064, 2752)), 'iPad 13"'); self.assertEqual(sf.apple_class((2048, 2732)), 'iPad 13"')
+
+
+class G1CollisionWarningComesFirst(unittest.TestCase):
+    """C017: a clash between two words is printed before any simulator or emulator boots, on iOS and on Android."""
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp())
+        for lp, words in (("en", {"next": "Next", "advanced": "Advanced"}), ("tr", {"next": "İleri", "advanced": "İleri"})):
+            (self.d / "locales" / lp).mkdir(parents=True); (self.d / "locales" / lp / "translation.json").write_text(json.dumps(words, ensure_ascii=False))
+        (self.d / "flow.yaml").write_text('- launchApp\n- tapOn: "Next"\n- takeScreenshot: 01\n')
+        self.path = lambda p: self.d / p
+        self.cfg = {"_inputs": {}, "flow": "flow.yaml", "out": "out", "strings": "locales/*/translation.json", "locales": ["tr"]}
+
+    def run_until_boot(self, call):
+        class Stop(Exception): pass
+        with mock.patch.object(sf, "fit_parallel", return_value=1), contextlib.redirect_stdout(io.StringIO()) as out, self.assertRaises(Stop):
+            call(Stop)
+        lines = out.getvalue().splitlines()
+        warn = next(i for i, l in enumerate(lines) if l.startswith("warning tr: ") and "'Next' -> 'İleri' also means 'Advanced'" in l)
+        boot = next(i for i, l in enumerate(lines) if l.startswith("booting "))
+        self.assertLess(warn, boot, lines)
+        self.assertIn("anchor that step (below:/above:)", lines[warn])
+
+    def test_ios(self):
+        cfg = {**self.cfg, "app": "My.app", "bundle_id": "x.y", "device_type": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max",
+               "runtime": "com.apple.CoreSimulator.SimRuntime.iOS-27-0"}
+        def call(Stop):
+            with mock.patch.object(sf, "make_pool", side_effect=Stop): sf.ios_run(cfg, self.path)
+        self.run_until_boot(call)
+
+    def test_android(self):
+        cfg = {**self.cfg, "apk": "a.apk", "package": "p.q"}
+        def call(Stop):
+            with mock.patch.object(sf, "android_pool", side_effect=Stop): sf.android_run(cfg, self.path, self.path("out"), None, None)
+        self.run_until_boot(call)
+
+
+class G1SetupCommandFailureStopsTheRun(unittest.TestCase):
+    """C120: a failing [ios] simctl / [android] shell command stops the run before anything is installed or captured (exit 2, command printed)."""
+    def test_ios_stops_before_install_and_maestro(self):
+        d = Path(tempfile.mkdtemp()); app = d / "My.app"
+        (app / "en.lproj").mkdir(parents=True); (app / "en.lproj/Localizable.strings").write_text('"next" = "Next";\n')
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "x.y", "CFBundleLocalizations": ["en"], "DTPlatformName": "iphonesimulator"}))
+        (d / "flow.yaml").write_text("- launchApp\n- takeScreenshot: 01\n")
+        (d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nsimctl = ["ui $UDID appearance dark"]\n')
+        calls = []
+        class Sim:
+            def __init__(self, udid): self.udid = udid
+            def run(self, *a, check=True):
+                calls.append(a[0])
+                if a[0] == "ui": raise RuntimeError("simctl ui U1 appearance dark: Unable to set")
+                return ""
+        real = sf.sh
+        def sh(cmd, **kw):
+            if cmd[:3] == ["xcrun", "simctl", "list"]: return subprocess.CompletedProcess(cmd, 0, json.dumps({"devices": {"rt": []}}), "")
+            if cmd[0] == "sysctl": return subprocess.CompletedProcess(cmd, 0, "1", "")
+            if cmd[:2] == ["xcrun", "simctl"]: return subprocess.CompletedProcess(cmd, 0, "U1\n", "")
+            return real(cmd, **kw)
+        with mock.patch.object(sf, "Sim", Sim), mock.patch.object(sf, "sh", sh), mock.patch.object(sf, "OUR_SIMS", set()), \
+             mock.patch.object(sf, "run_guarded", side_effect=AssertionError("Maestro must not start")), mock.patch.object(sf, "kill_stale_drivers"), \
+             mock.patch.object(sf, "latest_ios_runtime", return_value="rt"), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
+             mock.patch.object(sf, "java_env", return_value={}), contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(sf.Fail, r"\[ios\] simctl command failed, stopping before the run: .*Unable to set"):
+                sf.cmd_run(str(d / "shotfleet.toml"))
+        self.assertNotIn("install", calls)
+        self.assertEqual(calls[-1], "ui")  # nothing was run after the failing command
+
+    def test_android_stops_before_install_and_maestro(self):
+        d = Path(tempfile.mkdtemp()); home = d / "home"; (home / ".android/avd/shotfleet_android.avd/snapshots/shotfleet").mkdir(parents=True)
+        for lp, w in (("en", "Next"), ("de", "Weiter")):
+            (d / "locales" / lp).mkdir(parents=True); (d / "locales" / lp / "translation.json").write_text(json.dumps({"a": w}))
+        (d / "flow.yaml").write_text("- launchApp\n- takeScreenshot: 01\n")
+        calls = []
+        class Emu:
+            def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
+            def booted(self): return False
+            def adb(self, *a, check=True, timeout=180):
+                calls.append(a)
+                if a[:1] == ("shell",) and a[1].startswith("setprop") and check: raise RuntimeError("adb shell setprop a b: Permission denied")
+                return ""
+        cfg = {"flow": "flow.yaml", "apk": "a.apk", "package": "p.q", "strings": "locales/*/translation.json", "locales": ["de"], "shell": ["setprop a b"]}
+        with mock.patch.object(sf, "Emu", Emu), mock.patch.object(sf, "start_emu"), mock.patch.object(sf, "wait_booted"), mock.patch.object(sf.time, "sleep"), \
+             mock.patch.object(sf.Path, "home", return_value=home), mock.patch.object(sf, "fit_parallel", return_value=1), \
+             mock.patch.object(sf, "run_guarded", side_effect=AssertionError("Maestro must not start")), contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(sf.Fail, r"\[android\] shell command failed, stopping before the run: .*Permission denied"):
+                sf.android_run(cfg, lambda p: d / p, d / "out", None, None)
+        self.assertFalse([c for c in calls if c[0] == "install"])
+
+
+class G1ContentExpectInRun(unittest.TestCase):
+    """C119: `run` hands the config's [expect.*] tables to the check that ends it (the check itself is ContentExpect)."""
+    def test_run_passes_expect_to_cmd_check(self):
+        t = RetryOnSlowSimulator("run_it"); t.setUp()
+        (t.d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nlocales = ["de"]\n[expect.01]\nany = ["Hi"]\n')
+        seen = []
+        code, out = t.run_it("1", check=lambda *a, **k: seen.append(k) or 0)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(seen[-1]["expect"], {"01": {"any": ["Hi"]}})
+
+
+class G1ExitCodes(unittest.TestCase):
+    """C064: 0 all good, 1 problems found, 2 setup error, 130 interrupted; `check --json` keeps its documented keys."""
+    def run_check(self, spec, *extra):
+        d = Path(tempfile.mkdtemp())
+        for label, screens in spec.items():
+            for name, lines in screens.items():
+                png = d / "shots" / label / name; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(g1_image(f"{label}/{name}"))
+                png.with_suffix(".texts.json").write_text(json.dumps(lines, ensure_ascii=False))
+        for lp, words in G1_STRINGS.items():
+            (d / "locales" / lp).mkdir(parents=True); (d / "locales" / lp / "translation.json").write_text(json.dumps(words, ensure_ascii=False))
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "readable_languages", return_value={"en", "de", "ja"}), \
+             mock.patch.object(sf, "warm_up_ocr", return_value=True), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = sf.main(["check", str(d / "shots"), "--strings", str(d / "locales/*/translation.json"), "--report", str(d / "rep"), *extra])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_zero_for_a_clean_set_one_for_a_problem(self):
+        clean = {"de": {"01.png": G1_SHOWS["de"]}, "en": {"01.png": G1_SHOWS["en"]}}
+        self.assertEqual(self.run_check(clean)[0], 0)
+        code, out, err = self.run_check({**clean, "de": {"01.png": G1_SHOWS["en"]}}, "--json")
+        self.assertEqual(code, 1)
+        report = json.loads(out)
+        self.assertEqual({k: report[k] for k in ("exit", "problems")}, {"exit": 1, "problems": ["de/01.png: shows en strings (4 lines) more than de (0)"]})
+        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes"})
+
+    def test_two_for_a_setup_error_with_one_line_on_stderr(self):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err): self.assertEqual(sf.main(["check", "/no/such/folder"]), 2)
+        self.assertEqual(err.getvalue().strip(), "shotfleet: no folder at /no/such/folder")
+        with contextlib.redirect_stderr(io.StringIO()): self.assertEqual(sf.main(["run", "/no/such/shotfleet.toml"]), 2)
+
+    def test_130_when_interrupted_and_stale_drivers_are_cleaned_up(self):
+        with mock.patch.object(sf, "check_any", side_effect=KeyboardInterrupt), mock.patch.object(sf, "kill_stale_drivers") as kill, \
+             contextlib.redirect_stderr(io.StringIO()) as err:
+            self.assertEqual(sf.main(["check", "x"]), 130)
+        kill.assert_called_once(); self.assertIn("stopped", err.getvalue())
+
+    def test_doctor_is_two_when_nothing_is_ready(self):  # also C059
+        self.assertEqual(G1Doctor().nothing_installed()[0], 2)
+
+
+class G1Doctor(unittest.TestCase):
+    """C059: doctor checks Maestro, Java, Xcode and the Android SDK and puts a fix on every line that is missing."""
+    def doctor(self, present):
+        d = Path(tempfile.mkdtemp()); sdk = d / "sdk"; sdk.mkdir()
+        if present:
+            for rel in ("platform-tools/adb", "emulator/emulator", "cmdline-tools/latest/bin/avdmanager", "cmdline-tools/latest/bin/sdkmanager",
+                        "build-tools/36.0.0/aapt2", "system-images/android-36/google_apis/arm64-v8a/package.xml"):
+                (sdk / rel).parent.mkdir(parents=True, exist_ok=True); (sdk / rel).write_text("x")
+        ok = lambda cmd, **k: subprocess.CompletedProcess(cmd, 0 if present else 1, "Ready\n" if present else "", "")
+        out = io.StringIO()
+        with mock.patch.object(sf, "SDK", sdk), mock.patch.object(sf, "BREW", d / "brew"), mock.patch.object(sf.Path, "home", return_value=d / "home"), \
+             mock.patch.object(sf.shutil, "which", side_effect=(lambda c, **k: f"/usr/bin/{c}") if present else (lambda c, **k: None)), \
+             mock.patch.object(sf, "find_java", return_value=(present, None)), mock.patch.object(sf, "java_env", return_value={}), \
+             mock.patch.object(sf, "sh", ok), mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "latest_release", return_value=None), \
+             mock.patch.object(sf, "read_maestro_version", return_value="2.0.10"), contextlib.redirect_stdout(out):
+            code = sf.cmd_doctor()
+        return code, out.getvalue()
+
+    def nothing_installed(self): return self.doctor(False)
+
+    def test_a_mac_with_nothing_installed_gets_one_fix_per_missing_tool_and_exit_2(self):
+        code, out = self.doctor(False)
+        self.assertEqual(code, 2)
+        missing = [l for l in out.splitlines() if l.startswith("MISSING")]
+        for tool in ("maestro", "java 17+", "swiftc", "xcrun simctl", "adb", "emulator", "avdmanager", "aapt2", "system image"):
+            line = next((l for l in missing if l.startswith(f"MISSING {tool}")), None)
+            self.assertIsNotNone(line, f"{tool} not reported: {out}")
+            self.assertIn("  -> ", line, f"{tool} has no fix")
+        self.assertIn("get.maestro.mobile.dev", out); self.assertIn("brew install openjdk", out); self.assertIn("xcode-select --install", out)
+        self.assertIn("sdkmanager", out)
+        self.assertIn("iOS: not ready   Android: not ready", out); self.assertIn("next: fix the MISSING lines above", out)
+
+    def test_a_complete_mac_is_ready_for_both_and_exit_0(self):
+        code, out = self.doctor(True)
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("MISSING", out)
+        self.assertIn("iOS: ready   Android: ready", out)
+
+
+class G1ReadmeConfigBlocks(unittest.TestCase):
+    """C063: every config key the README shows is accepted by the program's own validation, and the keys the claim lists are all shown."""
+    README = (Path(sf.__file__).resolve().parent / "README.md").read_text()
+    CLAIMED = {"flow", "out", "parallel", "locales", "base_locale", "bundle_id", "device_type", "runtime", "device_types", "devices"}
+
+    def blocks(self):
+        for block in re.findall(r"```toml\n(.*?)```", self.README, flags=re.S):
+            try: yield tomllib.loads(block)
+            except tomllib.TOMLDecodeError:  # a block that lists alternatives (strings = ... three times): each line on its own
+                for line in block.splitlines():
+                    if line.strip() and not line.lstrip().startswith("#"): yield tomllib.loads(line)
+
+    def test_every_documented_table_and_key_passes_the_programs_validation(self):
+        seen = set()
+        for doc in self.blocks():
+            sf.check_tables({k: v for k, v in doc.items() if isinstance(v, dict)}, "README")  # unknown tables, hook events, overrides, inputs, expect
+            for platform in ("ios", "android"):
+                known = {**sf.KEYS["common"], **sf.KEYS[platform]}
+                for key, value in doc.get(platform, {}).items():
+                    self.assertIn(key, known, f"[{platform}] {key} is in the README but not accepted")
+                    self.assertTrue(isinstance(value, known[key]) and not (known[key] is int and isinstance(value, bool)), f"{key} has the wrong type")
+                    seen.add(key)
+            for key, value in doc.items():  # top-level `strings = ...` lines
+                if not isinstance(value, dict): self.assertIn(key, sf.KEYS["common"]); seen.add(key)
+        self.assertLessEqual(self.CLAIMED, seen)
+        self.assertIn("strings", seen)
+
+    def test_the_documented_android_devices_exist(self):
+        doc = next(d for d in self.blocks() if "devices" in d.get("android", {}))
+        self.assertLessEqual(set(doc["android"]["devices"]), set(sf.ANDROID_DEVICES))
+
+
+class G1ReactIntlAndFormats(unittest.TestCase):
+    """C036: react-intl's flat JSON with ICU plurals and {name} placeholders is read like i18next's."""
+    def test_react_intl_flat_json_with_icu_plural(self):
+        d = Path(tempfile.mkdtemp()); (d / "messages").mkdir()
+        (d / "messages/en.json").write_text(json.dumps({"home.next": "Next", "jobs": "{count, plural, one {# job} other {# jobs}}", "hello": "Hello, {name}!"}))
+        (d / "messages/de.json").write_text(json.dumps({"home.next": "Weiter", "jobs": "{count, plural, one {# Job} other {# Jobs}}", "hello": "Hallo, {name}!"}))
+        got = sf.load_strings_files([str(d / "messages/*.json")])
+        self.assertEqual(got["de"], {"home.next": "Weiter", "jobs#one": "{count} Job", "jobs#other": "{count} Jobs", "hello": "Hallo, {name}!"})
+        out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Next\n- assertVisible: 3 jobs\n- assertVisible: Hello, Anna!\n", got["en"], got["de"])
+        self.assertEqual((out, missing), ("appId: x\n---\n- tapOn: 'Weiter'\n- assertVisible: '(3 Job|3 Jobs)'\n- assertVisible: 'Hallo, Anna!'\n", []))
+
+
+class G1InitIsTwoLines(unittest.TestCase):
+    """C018: `shotfleet init` writes a config with two lines that are not comments (four with both platforms) and a starter flow."""
+    def test_one_build_two_lines_two_builds_four_lines(self):
+        with tempfile.TemporaryDirectory() as d:
+            app = Path(d) / "My.app"; app.mkdir()
+            (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.example.my", "DTPlatformName": "iphonesimulator"}))
+            apk = Path(d) / "a.apk"; apk.write_bytes(b"x")
+            body = lambda: [l for l in (Path(d) / "dest/shotfleet.toml").read_text().splitlines() if l.strip() and not l.lstrip().startswith("#")]
+            with mock.patch.object(sf, "load_strings", return_value={"en": {"a": "A"}, "de": {"a": "B"}}), \
+                 mock.patch.object(sf, "load_strings_apk", return_value={"en": {"a": "A"}, "de": {"a": "B"}}), \
+                 mock.patch.object(sf, "aapt2", return_value="aapt2"), contextlib.redirect_stdout(io.StringIO()) as out, \
+                 mock.patch.object(sf, "sh", side_effect=lambda cmd, **k: subprocess.CompletedProcess(cmd, 0, "package: name='p.q'\n" if "badging" in cmd else "com.example.my", "")):
+                sf.cmd_init([str(app)], Path(d) / "dest")
+                self.assertEqual(body(), ["[ios]", f'app = "{sf.config_path(app, Path(d) / "dest")}"'])
+                self.assertTrue((Path(d) / "dest/flow.yaml").read_text().count("- launchApp") == 1)
+                (Path(d) / "dest/shotfleet.toml").unlink()
+                sf.cmd_init([str(app), str(apk)], Path(d) / "dest")
+                self.assertEqual([l.split(" =")[0] for l in body()], ["[ios]", "app", "[android]", "apk"])
+
+
+class G1HookVariables(unittest.TestCase):
+    """C068: the environment each hook event really gets. (README.md says _BUNDLE_ID reaches every event and _LOCALES the run
+    hooks; the export hooks get no _BUNDLE_ID: see the claim.)"""
+    NAMES = ("EVENT", "VERSION", "CONFIG", "PLATFORM", "OUT", "BUNDLE_ID", "LOCALES", "EXIT", "PROBLEMS", "REPORT", "FASTLANE")
+
+    def test_each_event_gets_exactly_these_variables(self):
+        d = Path(tempfile.mkdtemp()); app = d / "My.app"; app.mkdir()
+        (app / "Info.plist").write_bytes(__import__("plistlib").dumps({"CFBundleIdentifier": "com.example.my", "DTPlatformName": "iphonesimulator"}))
+        (d / "flow.yaml").write_text("- launchApp\n")
+        dump = lambda ev: f"env | grep '^SHOTFLEET_' | sort > {ev}.env"
+        (d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n[hooks]\n' + "".join(f"{ev} = \"{dump(ev)}\"\n" for ev in sf.HOOK_EVENTS))
+        out = d / "out"; (out / "raw/de").mkdir(parents=True); (out / "raw/de/01.png").write_bytes(b"x")
+        (out / "check.json").write_text(json.dumps({"problems": ["a", "b"]}))
+        (out / "run.json").write_text(json.dumps({"config": str(d / "shotfleet.toml"), "platform": "ios", "locales": {"de": {"ok": True}}}))
+        with mock.patch.object(sf, "NO_HOOKS", False), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
+             mock.patch.object(sf, "capture_platform", return_value=0), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(sf.run_platform(d / "shotfleet.toml", ["de"], None, "ios"), 0)
+            (out / "check.json").write_text(json.dumps({"problems": []}))
+            self.assertEqual(sf.export_with_hooks(out, d / "fl"), 0)
+        def seen(ev):
+            got = {l.split("=", 1)[0].removeprefix("SHOTFLEET_"): l.split("=", 1)[1] for l in (d / f"{ev}.env").read_text().splitlines()}
+            return {k: v for k, v in got.items() if k in self.NAMES}
+        self.assertEqual(set(seen("before_run")), {"EVENT", "VERSION", "CONFIG", "PLATFORM", "OUT", "BUNDLE_ID", "LOCALES"})
+        self.assertEqual(set(seen("after_run")), {"EVENT", "VERSION", "CONFIG", "PLATFORM", "OUT", "BUNDLE_ID", "LOCALES", "EXIT", "PROBLEMS", "REPORT"})
+        self.assertEqual(set(seen("before_export")), {"EVENT", "VERSION", "CONFIG", "PLATFORM", "OUT", "FASTLANE", "REPORT"})
+        self.assertEqual(set(seen("after_export")), {"EVENT", "VERSION", "CONFIG", "PLATFORM", "OUT", "FASTLANE", "REPORT", "EXIT"})
+        self.assertEqual((seen("before_run")["LOCALES"], seen("before_run")["BUNDLE_ID"]), ("de", "com.example.my"))
+        self.assertEqual((seen("after_run")["EXIT"], seen("after_run")["PROBLEMS"]), ("0", "2"))
+
+
+class G1StatusBar(unittest.TestCase):
+    """C010: the commands that fix the status bar to 9:41 and a full battery are sent to every simulator and emulator
+    (what the pictures show is the evidence in the claim)."""
+    def test_ios_status_bar_override_on_every_simulator(self):
+        calls = []
+        class FakeSim:
+            def __init__(self, udid): self.udid = udid
+            def run(self, *a, check=True): calls.append(a); return ""
+        with mock.patch.object(sf, "sh", side_effect=lambda cmd, **k: subprocess.CompletedProcess(cmd, 0, json.dumps({"devices": {"rt": []}}) if "list" in cmd else "U1", "")), \
+             mock.patch.object(sf, "Sim", FakeSim), mock.patch.object(sf, "OUR_SIMS", set()):
+            sf.make_pool(1, "dt", "rt")
+        bar = next(c for c in calls if c[0] == "status_bar")
+        self.assertEqual(bar[2], "override")
+        for flag, value in (("--time", "9:41"), ("--batteryState", "charged"), ("--batteryLevel", "100")):
+            self.assertEqual(bar[bar.index(flag) + 1], value)
+
+    def test_android_demo_mode_fixes_the_clock_and_battery(self):
+        joined = "\n".join(sf.DEMO_MODE)
+        self.assertIn("clock -e hhmm 0941", joined); self.assertIn("battery -e level 100 -e plugged false", joined)
+        self.assertIn("notifications -e visible false", joined)
+
+
+class G1NothingLeavesTheMac(unittest.TestCase):
+    """C004: the only network calls in the program are a local driver call, one version lookup and the licence calls; `check` and `export`
+    work with the network cut off (so no screenshot or app file is sent anywhere)."""
+    def test_every_network_call_site_is_a_known_one(self):
+        tree = ast.parse((Path(sf.__file__).resolve()).read_text())
+        owners = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
+                  and any(isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "urlopen" for n in ast.walk(fn))}
+        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "polar_post", "gumroad_verify", "licence_api"})
+
+    def test_check_and_export_run_with_the_network_cut_off(self):
+        def no_net(*a, **k): raise AssertionError("network used")
+        with mock.patch.object(sf.urllib.request, "urlopen", no_net), mock.patch("socket.socket.connect", no_net), mock.patch("socket.create_connection", no_net):
+            code, report, _ = g1_check(G1CheckDetectors.CLEAN)
+            self.assertEqual(code, 0)
+            with tempfile.TemporaryDirectory() as d:
+                out = Path(d) / "out"; (out / "raw/de").mkdir(parents=True); (out / "raw/de/01.png").write_bytes(png_c(1320, 2868))
+                (out / "run.json").write_text(json.dumps({"platform": "ios", "locales": {"de": {"ok": True}}})); (out / "check.json").write_text(json.dumps({"problems": []}))
+                with contextlib.redirect_stdout(io.StringIO()): self.assertEqual(sf.cmd_export(out, Path(d) / "fl"), 0)

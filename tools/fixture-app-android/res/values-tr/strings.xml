@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fleet Fixture</string>
+    <string name="welcome">Hoş geldiniz</string>
+    <string name="settings">Ayarlar</string>
+    <string name="next">İleri</string>
+    <string name="done">Bitti</string>
+    <string name="tagline">Ekran görüntüleriniz, her dilde.</string>
+    <string name="settings_hint">Uygulamanın görünümünü ve sesini seçin.</string>
+</resources>

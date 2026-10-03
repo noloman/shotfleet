@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fleet Fixture</string>
+    <string name="welcome">ようこそ</string>
+    <string name="settings">設定</string>
+    <string name="next">次へ</string>
+    <string name="done">完了</string>
+    <string name="tagline">あなたのスクリーンショットを、すべての言語で。</string>
+    <string name="settings_hint">アプリの見た目と音を選びます。</string>
+</resources>
