@@ -3,7 +3,7 @@ import re, unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DOCS = ("docs/handoff.md", "docs/compat.md", "docs/linux.md")
+DOCS = ("docs/handoff.md", "docs/compat.md", "docs/linux.md", "docs/agent-tasks/README.md", *sorted(str(p.relative_to(ROOT)) for p in (ROOT / "docs/agent-tasks").glob("0*.md")))
 PATH = re.compile(r"`((?:tools|docs|research|packaging|tests|skill|site|\.github)/[\w./-]+\.(?:py|sh|md|yml|html|toml|json))`")
 
 
