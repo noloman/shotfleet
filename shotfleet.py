@@ -1601,7 +1601,11 @@ def android_env():
     path = {**os.environ, **java_env()}.get("PATH", "")
     return {"ANDROID_HOME": str(SDK), "PATH": f"{SDK / 'platform-tools'}:{path}" if adb_cmd() != "adb" else path}
 
-DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no notification icons
+DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a slow machine shows "Process system isn't responding" otherwise); then SystemUI demo mode: fixed clock, full battery and signal, no notification icons
+    "settings put global hide_error_dialogs 1",
+    "settings put global window_animation_scale 0",
+    "settings put global transition_animation_scale 0",
+    "settings put global animator_duration_scale 0",
     "settings put global sysui_demo_allowed 1",
     "am broadcast -a com.android.systemui.demo -e command enter",
     "am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941",
