@@ -1,5 +1,29 @@
 # SEO and AI-search audit of shotfleet.com
 
+## Status 2026-10-03
+
+Branch `site-fixes`. Numbers are the prioritized list in section 9. Counts: 6 fixed, 7 still open, 4 need the owner.
+
+| Fix (section 9 number) | Status | Commit and notes |
+|---|---|---|
+| 1 | needs owner | www to apex 301 is a Cloudflare Redirect Rule, not in the repo |
+| 2 | fixed | Title, description, og tags and JSON-LD were in place before this branch; c9b26c0 tests lengths, uniqueness and that the JSON-LD parses before and after go-live, says PreOrder then InStock, and carries no rating, version or download URL |
+| 3 | fixed | c9b26c0: hero sub names App Store and Google Play (they were already in the run section) and links Maestro |
+| 4 | fixed | Title, description, canonical, og were in place; c9b26c0 adds og:image size and alt |
+| 5 | fixed | Canonical and og on /terms and /privacy were in place; c9b26c0 tests every page |
+| 6 | fixed | Disallow: /api/ was in place; c9b26c0 adds lastmod (2026-10-03) and tests that the sitemap lists exactly the indexable pages. The named AI-crawler group is optional and a training-opt-out decision: needs owner |
+| 7 | needs owner | Search Console and Bing Webmaster need the owner's DNS |
+| 8 | still open | /guides and the articles stay drafts until their TO VERIFY items are ticked (MARKETING.md: Claude prepares, the owner publishes) |
+| 9 | still open | The comparison page has the new title and h1; the extra rows and dated prices need the sources read again on the day |
+| 10 | still open | /docs exists and every footer links it (c9b26c0); /llms-full.txt is not built (the audit itself says no assistant is confirmed to read it) |
+| 11 | fixed | c9b26c0: favicon.ico (48 px) and apple-touch-icon.png (180 px), linked on every page, tested |
+| 12 | needs owner | HSTS is an SSL/TLS setting in Cloudflare |
+| 13 | needs owner | Measured locally in Chromium at 375 and 1280 px: the largest contentful paint is the hero paragraph at about 65 ms, so the delayed-image hypothesis is not borne out here. PageSpeed Insights on the live site is still the real test |
+| 14 | still open | WebP not done (measure first). The inline style in alternatives.html and docs.html moved into site.css (c9b26c0) |
+| 15 | still open | Link preload header not added; the font is already preloaded in the home page head |
+| 16 | still open | Per-article og images: no articles yet |
+| 17 | still open | hreflang: no Japanese or Korean pages yet |
+
 Audited 2026-10-02. Live site fetched with curl (headers, rendered HTML, redirects, crawler user agents), compared byte for byte with `site/public/` (index, alternatives, robots, sitemap, llms.txt are identical to the repo). Read: README.md, MARKETING.md, `research/marketing-research.md` section 3, `marketing/articles/` (01 to 03 drafts, 04-ideas.md), `site/public/*`, `site/wrangler.toml`, `site/worker.js`, `packaging/go-live.sh`.
 
 ## How to read the numbers in this file

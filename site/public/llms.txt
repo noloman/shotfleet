@@ -17,7 +17,7 @@
 - Maestro 2.x and Java 17+ (Maestro needs it).
 - Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this has been tested on real translation files and not yet run on a real Flutter or React Native app.
-- Text typed into fields by the flow is not translated.
+- Text typed into fields by the flow is not translated by itself: it stays the same in every language unless you set per-language `[inputs]` (iOS; on Android that needs a Maestro that sets MAESTRO_DEVICE_UDID).
 
 ## Price and licence
 

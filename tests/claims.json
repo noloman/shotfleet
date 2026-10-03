@@ -625,7 +625,7 @@
    "site/draft/alternatives.html"
   ],
   "where_text": [
-   "you want frames, captions or store upload. Use ButterKit or AppScreens for those; shotfleet works alongside them.",
+   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet works alongside them.",
    "Point ButterKit at those same folders"
   ],
   "status": "untested",
@@ -641,7 +641,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "fastlane snapshot is free and does that."
+   "<a href=\"/alternatives#fastlane\">fastlane snapshot</a> is free and does that."
   ],
   "status": "unverifiable",
   "proof": "Third-party fact; true to the best of public knowledge (research/pricing-2026-10.md lists it as free, tagged A).",
@@ -1794,12 +1794,12 @@
  },
  {
   "id": "C107",
-  "claim": "shotfleet check found 108 problems in 120 store screenshots of another of the author's apps: translated captions over an English UI",
+  "claim": "shotfleet check flagged 108 of 120 store screenshots of another of the author's apps: translated captions over an English UI (site wording since 2026-10-03; the old \"108 problems\" did not say whether that counted screenshots or issues, and research/real-apps.md has one problem per file)",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "found by <code>shotfleet check</code> in 120 store screenshots of another of my apps"
+   "store screenshots of another of my apps flagged by <code>shotfleet check</code>"
   ],
   "status": "evidence",
   "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
