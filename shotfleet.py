@@ -858,10 +858,16 @@ def pause_after_screenshot(out, ms=1500):
 
 # ---------- simulators ----------
 
+SIM_TIMEOUT_S, SIM_BOOT_TIMEOUT_S = 300, 900  # a wedged simulator (CoreSimulator stops answering on a Mac under heavy load) must end the run with a fix, not hang it
+
 class Sim:
     def __init__(self, udid): self.udid = udid
     def run(self, *args, check=True):
-        r = sh(["xcrun", "simctl", *args])
+        t = SIM_BOOT_TIMEOUT_S if args[:1] == ("bootstatus",) else SIM_TIMEOUT_S  # a first boot on a loaded Mac can take minutes
+        try: r = sh(["xcrun", "simctl", *args], timeout=t)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"simctl {args[0]} did not answer within {t} s: simulator {self.udid} is not responding. "
+                               f"Shut it down with `xcrun simctl shutdown {self.udid}` and run again; if it stays stuck, restart the Mac")
         if check and r.returncode != 0:
             raise RuntimeError(f"simctl {' '.join(args)}: {r.stderr.strip()}")
         return r.stdout
@@ -1130,7 +1136,9 @@ def ipad_set_missing(parent):
     return 1
 
 def shutdown_sims():
-    for udid in OUR_SIMS: sh(["xcrun", "simctl", "shutdown", udid])  # also clears the status bar override
+    for udid in OUR_SIMS:  # shutting down also clears the status bar override
+        try: sh(["xcrun", "simctl", "shutdown", udid], timeout=60)
+        except subprocess.TimeoutExpired: print(f"note: simulator {udid} did not shut down within 60 s; run `xcrun simctl shutdown {udid}`", file=sys.stderr)
     OUR_SIMS.clear()
 
 def ios_run(cfg, path, only=None, parallel=None):
