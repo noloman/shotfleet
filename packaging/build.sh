@@ -48,4 +48,6 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   grep -q "^shotfleet $VERSION\$" build/spctl.log || { rm -rf "$CHECK"; echo "a quarantined copy of the shipped build does not run (build/spctl.log): do not publish" >&2; exit 1; }
   rm -rf "$CHECK"
 fi
+# The installer package (no quarantine flag, so no Gatekeeper check at run time): needs the Developer ID Installer certificate.
+if [ -n "${INSTALLER_ID:-}" ]; then packaging/pkg.sh; fi
 shasum -a 256 dist/*.tar.gz

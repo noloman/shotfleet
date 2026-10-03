@@ -226,3 +226,16 @@ class BuildScriptChecksGatekeeper(unittest.TestCase):
         self.assertIn('"$CHECK/shotfleet/shotfleet" --version', tail)  # spctl cannot assess a bare executable, so the copy is run
         self.assertNotIn("spctl --assess", tail)
         self.assertLess(tail.index("--version"), tail.index("shasum -a 256"))  # checked before the checksum is printed for release.sh
+
+
+class InstallerPackage(unittest.TestCase):
+    """The package is what runs on a Mac without a Gatekeeper check: it must be signed, notarized, stapled and verified, and the release builds it."""
+    def test_pkg_script_signs_notarizes_staples_and_verifies(self):
+        root = Path(__file__).resolve().parent.parent
+        s = (root / "packaging/pkg.sh").read_text()
+        for needle in ("pkgbuild", "--sign \"$INSTALLER_ID\"", "notarytool submit", "status: Accepted", "stapler staple", "source=Notarized Developer ID"):
+            self.assertIn(needle, s)
+        self.assertLess(s.index("stapler staple"), s.index("source=Notarized Developer ID"))
+        self.assertIn("packaging/pkg.sh", (root / "packaging/build.sh").read_text())
+        self.assertIn("macos-arm64.pkg", (root / "packaging/release.sh").read_text())
+
