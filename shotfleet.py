@@ -1538,6 +1538,11 @@ DEFAULT_IMAGE = f"system-images;android-36;google_apis;{ABI}"
 
 SYSTEM_SDKS = (Path("/usr/lib/android-sdk"),)  # where Debian and Ubuntu packages put an SDK
 
+def clean_path(p):
+    """An absolute path with ~ expanded and any `..` or `.` folded away. Google's Android CLI (the new sdkmanager) refuses to unpack into a folder named
+    like /work/app/../Android/Sdk ("Illegal entry path escaping destination directory"), found on a GitHub runner on 2026-10-03."""
+    return Path(os.path.abspath(os.path.expanduser(str(p))))
+
 def find_sdk(env=None):
     """The Android SDK, first match of: ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's
     android-commandlinetools, the folder above an `adb` on the PATH. A match has at least one SDK folder in it.
@@ -1551,8 +1556,8 @@ def find_sdk(env=None):
         adb = Path(adb).resolve()
         if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
     for c in filter(None, cands):
-        if any((Path(c) / part).is_dir() for part in SDK_PARTS): return Path(c)
-    return Path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
+        if any((Path(c) / part).is_dir() for part in SDK_PARTS): return clean_path(c)
+    return clean_path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
 
 SDK = find_sdk()
 
@@ -2610,7 +2615,7 @@ def fix_sdk_root():
     """Where `doctor --fix` puts Android tools: the folder the user named in ANDROID_HOME / ANDROID_SDK_ROOT, else the SDK found,
     else the Android Studio default for this system."""
     for var in ("ANDROID_HOME", "ANDROID_SDK_ROOT"):
-        if os.environ.get(var): return Path(os.environ[var]).expanduser()
+        if os.environ.get(var): return clean_path(os.environ[var])
     return SDK
 
 def install_cmdline_tools(sdk=None):

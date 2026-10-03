@@ -326,3 +326,26 @@ class MaestroZipLayouts(FixTestCase):
         with mock.patch.object(sf, "MAESTRO_PIN", {**sf.MAESTRO_PIN, "sha256": sha256(odd)}), self.quiet(), self.assertRaisesRegex(sf.Fail, "no bin/maestro"):
             sf.install_maestro()
         self.assertFalse((self.home / "maestro").exists())
+
+
+class SdkPathsAreClean(FixTestCase):
+    """Google's Android CLI crashes on a destination like /work/app/../Android/Sdk (seen on a GitHub runner, 2026-10-03), so every SDK path shotfleet hands out is normalised."""
+    def test_dots_tilde_and_relative_paths_are_folded_away(self):
+        self.assertEqual(sf.clean_path("/work/app/../Android/Sdk"), Path("/work/Android/Sdk"))
+        self.assertEqual(sf.clean_path("/a/./b//c"), Path("/a/b/c"))
+        self.assertEqual(sf.clean_path("~/x/../y"), Path.home() / "y")
+        self.assertEqual(sf.clean_path("sdk"), Path.cwd() / "sdk")
+
+    def test_the_folder_doctor_fix_installs_into_has_no_dots(self):
+        with mock.patch.dict(os.environ, {"ANDROID_HOME": "/work/app/../Android/Sdk"}):
+            self.assertEqual(sf.fix_sdk_root(), Path("/work/Android/Sdk"))
+        with mock.patch.dict(os.environ, {"ANDROID_HOME": "", "ANDROID_SDK_ROOT": "/x/y/../z"}):
+            self.assertEqual(sf.fix_sdk_root(), Path("/x/z"))
+
+    def test_the_sdk_that_find_sdk_names_has_no_dots_even_when_it_is_missing(self):
+        home = Path(tempfile.mkdtemp())
+        with mock.patch.object(sf, "SYSTEM_SDKS", ()), mock.patch.object(Path, "home", classmethod(lambda cls: home)):  # not this machine's SDKs
+            env = {"ANDROID_HOME": "/nonexistent/app/../Android/Sdk", "PATH": ""}
+            self.assertEqual(sf.find_sdk(env), Path("/nonexistent/Android/Sdk"))
+            real = Path(tempfile.mkdtemp()); (real / "platform-tools").mkdir()
+            self.assertEqual(sf.find_sdk({"ANDROID_HOME": f"{real}/sub/../", "PATH": ""}), real)
