@@ -1665,7 +1665,7 @@ def wait_booted(emus, timeout=600):
                                    f"its output ({getattr(proc, 'log_path', 'not kept')}):\n{emulator_log_tail(proc)}\n{boot_failure_hint()}")
         if time.time() - t0 > timeout:
             tails = "\n".join(f"{e.serial} ({getattr(e.proc, 'log_path', 'no log')}):\n{emulator_log_tail(e.proc)}" for e in emus if getattr(e, "proc", None) is not None)
-            raise RuntimeError(f"emulators did not boot within {timeout} s.\n{tails}\n{boot_failure_hint()}")
+            raise RuntimeError(f"emulators did not boot in time ({timeout} s).\n{tails}\n{boot_failure_hint()}")
         time.sleep(3)
 
 # Exactly 9:16 at 1080px+ so Google Play can recommend the listing (research/store-specs.md)

@@ -389,7 +389,7 @@ class EmulatorBootFailures(unittest.TestCase):
         with mock.patch.object(sf.time, "sleep", lambda s: None), mock.patch.object(sf, "boot_failure_hint", lambda: "HINT"):
             with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu()], timeout=-1)
         msg = str(cm.exception)
-        self.assertIn("did not boot within -1 s", msg); self.assertIn("HW config error: no KVM", msg); self.assertIn("HINT", msg)
+        self.assertIn("emulators did not boot in time (-1 s)", msg); self.assertIn("HW config error: no KVM", msg); self.assertIn("HINT", msg)
         self.assertNotIn("\n\n\n", msg)  # blank lines of the log are dropped
 
     def test_the_hint_names_missing_kvm_on_linux_and_memory_otherwise(self):

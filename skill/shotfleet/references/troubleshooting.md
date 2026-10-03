@@ -63,7 +63,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `unknown Android device` | `devices` entry other than phone, tablet | use `phone` or `tablet` |
 | `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |
 | `is already running. Stop it` | a leftover emulator on shotfleet's port | `adb -s emulator-<port> emu kill` |
-| `emulators did not boot in time` | slow boot (600 s limit) | close other apps, rerun |
+| `emulators did not boot in time` | slow boot (600 s limit), or on Linux no usable `/dev/kvm`; the message ends with the emulator's last log lines (kept in `<tmp>/shotfleet-emulator-logs/`) and the likely cause. `the emulator exited with code N before it booted` means it crashed: read those lines | close other apps and rerun; on Linux check `ls -l /dev/kvm` |
 | `hook before_run failed` | the user's hook returned non-zero | fix the hook, or `--no-hooks` to skip |
 | `hook before_export failed` | same, before export | same |
 | `write launchApp arguments as a block, not inline` | `arguments:` given as a plain value, not a mapping | a block of `name: value` lines, or an inline `{ name: value }` |
