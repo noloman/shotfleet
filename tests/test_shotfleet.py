@@ -1385,6 +1385,29 @@ class PolarLicence(unittest.TestCase):
         self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja", "fr"])
 
 
+class AutoTesseract(unittest.TestCase):
+    def run_check(self, packs):
+        d = Path(tempfile.mkdtemp()); b = d / "bin"; b.mkdir()
+        (b / "tesseract").write_text('#!/bin/sh\ncat "$1.txt"\n'); (b / "tesseract").chmod(0o755)
+        png = d / "shots" / "el" / "1.png"; png.parent.mkdir(parents=True); png.write_bytes(png_c(1320, 2868))
+        Path(f"{png}.txt").write_text("Επόμενο\nΡυθμίσεις\nΈναρξη προπόνησης")
+        strings = {"en": {"a": "Next", "b": "Settings", "c": "Start Training"},
+                   "el": {"a": "Επόμενο", "b": "Ρυθμίσεις", "c": "Έναρξη προπόνησης"}}
+        garbage = {"text": "Enouevo\nPuoniceic", "chars": 20, "lang": "hu", "langs": {"hu": 0.4}}  # macOS can't read Greek
+        sf.tesseract_languages.cache_clear()
+        with mock.patch.object(sf, "warm_up_ocr", return_value=True), mock.patch.object(sf, "read_text", return_value=garbage), \
+             mock.patch.object(sf, "tesseract_languages", return_value=frozenset(packs)), \
+             mock.patch.dict(os.environ, {"PATH": f"{b}:{os.environ['PATH']}"}), contextlib.redirect_stdout(io.StringIO()):
+            sf.cmd_check(d / "shots", strings=strings, report_dir=d / "rep")
+        return json.loads((d / "rep/check.json").read_text())["screenshots"][0]["lang"]
+
+    def test_installed_tesseract_verifies_scripts_macos_cant_read(self):
+        self.assertEqual(self.run_check({"eng", "ell"}), "el")   # read and verified
+
+    def test_missing_language_pack_leaves_it_unverified_not_broken(self):
+        self.assertIsNone(self.run_check({"eng"}))               # no Greek data: "couldn't read", no crash
+
+
 if __name__ == "__main__":
     unittest.main()
 
