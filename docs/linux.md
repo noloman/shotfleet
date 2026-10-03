@@ -86,10 +86,12 @@ KVM was usable after the usual udev rule; `doctor --fix` fetched the image; the 
 | 2, 3 | 2 (default) | 1209 s, 754 s | 4 of 13 assertions failed: "Process system isn't responding" over every first screenshot; once also `Maestro Android driver did not start up in time` |
 | 4 | 1 (`SHOTFLEET_E2E_PARALLEL=1`) | 580 s | same dialog, 4 of 13 failed |
 | 5 | 1, ANR dialogs hidden and animations off at boot, `MAESTRO_DRIVER_STARTUP_TIMEOUT=180000` | **466 s** | **`PASS: all 13 assertions passed`**, total 8 min 13 s |
+| 6 | 2, same quieter settings | 248 s | `adb install` said `Can't find service: package` (a race, fixed: an emulator counts as booted only when that service answers) |
+| 7 | 2, same, with the fix | 687 s | 4 of 13 failed: the system dialog is back on every first screenshot (`hide_error_dialogs` does not hide it); `check` now reported all four as problems |
 
 What the pass proves: on Linux with KVM the emulator boots from a freshly downloaded x86_64 API 36 image, the app's language switches per locale (de, ja, ar, tr; the Arabic screen is right to left),
 Maestro taps the localized button, `check` finds a planted copy and a planted missing screenshot, `export --fastlane` writes the listings. I looked at the screenshots: real, correct language, no dialog.
-What it does not prove: the default two-emulator run on this machine (it failed twice, with the dialog, before the quieter settings; it was not retried with them), runs on a machine with more cores,
+What it does not prove: the default two-emulator run, which does not work on 2 cores (four failed runs with the dialog or the race, the last with every fix in place; two emulators plus Maestro need more than 2 cores), runs on a machine with more cores,
 an 18-language run of a real app (none here; a 2-core runner's time would not be comparable to the Mac's 15 min 24 s), arm64 Linux. One screenshot (de, second screen) shows 8:36 and a window icon instead of the 9:41 demo clock: demo mode was dropped on that screen under load.
 
 Two real Linux problems came out of it, both fixed:
