@@ -407,7 +407,7 @@
    "**Languages your app doesn't have:**"
   ],
   "status": "proven",
-  "proof": "G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language (a fr-FR listing for an app with en, de, ja gives exactly 'fr-FR: the app has no fr-FR translation, so this listing shows another language'). Real: remoti 108 true positives and the zh-Hant listing of CrossfitTracker (research/real-apps.md, PLAN.md).",
+  "proof": "G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language (a fr-FR listing for an app with en, de, ja gives exactly 'fr-FR: the app has no fr-FR translation, so this listing shows another language; translate the app into it or remove the listing'). Real: remoti 108 true positives and the zh-Hant listing of CrossfitTracker (research/real-apps.md, PLAN.md).",
   "layer": "unit",
   "assertion": "cmd_check on {en,de} strings and a fr-FR folder returns a problem starting 'fr-FR: the app has no fr-FR translation' (audit snippet 2026-10-02 produced it).",
   "fix": ""

@@ -26,7 +26,7 @@ fastlane folder. `check.json` is `{"screenshots": [{"file", "src", "sha", "lang"
 | `the caption is in <x> but the app UI shows ...` | a translated marketing caption over an untranslated app | app: translate the UI, or the listing has no honest screenshots in that language |
 | `identical image in N languages: a, b, ...` | the same picture in several languages: a copy, or a screen with no text that changes | usually the same root cause as a wrong-language line; if the screen is legitimately language-neutral it is not a bug |
 | `<locale>: missing a.png, b.png` | that locale lacks screens the others have | capture: the flow failed or skipped them; recapture, read the maestro log |
-| `<locale>: the app has no <locale> translation, so this listing shows another language` | a store listing exists for a language the app does not ship | product: translate the app into it, or remove that listing's screenshots; recapturing cannot fix it |
+| `<locale>: the app has no <locale> translation, so this listing shows another language; translate the app into it or remove the listing` | a store listing exists for a language the app does not ship | product: translate the app into it, or remove that listing's screenshots; recapturing cannot fix it |
 | `no text found (blank or still loading?)` | blank or half-loaded screen | flow: wait before `takeScreenshot` |
 | `has transparency (an alpha channel); both stores reject it` | store rule | the images: flatten the PNG (no alpha channel) |
 | `isn't an App Store screenshot size`, `is outside Google Play's 320-3840 px` | store rule | capture at a store size |
