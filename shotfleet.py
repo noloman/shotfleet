@@ -148,7 +148,7 @@ def load_config(config_path, platform=None):
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
             raise Fail(f"no simulator app at {app}. Build it for the simulator (Debug-iphonesimulator) and point 'app' at the .app")
-        real = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
+        real = plist_value(app / "Info.plist", "CFBundleIdentifier")
         if cfg.get("bundle_id") and real and real != cfg["bundle_id"]:
             raise Fail(f"bundle_id is {cfg['bundle_id']} but {app.name} is {real}")
         cfg["bundle_id"] = cfg.get("bundle_id") or real
@@ -234,10 +234,84 @@ def aapt2():
 # ---------- strings ----------
 
 def plist_value(plist, key):
-    """A top-level Info.plist value, or "" (PlistBuddy prints its errors on stdout)."""
+    """A top-level Info.plist value, or "" (PlistBuddy prints its errors on stdout). Without PlistBuddy (Linux) the
+    value is read in Python and printed the way PlistBuddy would: arrays as "Array {", one item per line, "}"."""
     if not Path(plist).is_file(): return ""
+    if not shutil.which("/usr/libexec/PlistBuddy"):
+        v = read_plist(plist).get(key)
+        if v is None: return ""
+        if isinstance(v, list): return "Array {\n" + "".join(f"    {x}\n" for x in v) + "}"
+        return str(v).lower() if isinstance(v, bool) else str(v)
     r = sh(["/usr/libexec/PlistBuddy", "-c", f"Print {key}", str(plist)])
     return r.stdout.strip() if r.returncode == 0 else ""
+
+_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "0": "\0", "a": "\a", "b": "\b", "f": "\f", "v": "\v", '"': '"', "'": "'", "\\": "\\"}
+
+def parse_strings_text(text):
+    """A .strings file (`"key" = "value";` with /* */ and // comments, \\n \\" \\UXXXX escapes) as {key: value}.
+    The old-style plist plutil reads; Linux has no plutil. Raises ValueError on anything else."""
+    pos, n, out = 0, len(text), {}
+    def skip():
+        nonlocal pos
+        while pos < n:
+            if text[pos].isspace() or text[pos] == "﻿": pos += 1
+            elif text.startswith("/*", pos):
+                end = text.find("*/", pos + 2)
+                if end < 0: raise ValueError("unterminated comment")
+                pos = end + 2
+            elif text.startswith("//", pos):
+                end = text.find("\n", pos)
+                pos = n if end < 0 else end
+            else: break
+    def token():
+        nonlocal pos
+        skip()
+        if pos >= n: raise ValueError("unexpected end")
+        if text[pos] in "\"'":
+            q, pos, buf = text[pos], pos + 1, []
+            while pos < n and text[pos] != q:
+                c = text[pos]
+                if c == "\\" and pos + 1 < n:
+                    e = text[pos + 1]
+                    if e in "uU" and re.match(r"[0-9a-fA-F]{4}", text[pos + 2:pos + 6]): buf.append(chr(int(text[pos + 2:pos + 6], 16))); pos += 6; continue
+                    if e in "01234567" and re.match(r"[0-7]{3}", text[pos + 1:pos + 4]): buf.append(chr(int(text[pos + 1:pos + 4], 8))); pos += 4; continue
+                    buf.append(_ESCAPES.get(e, e)); pos += 2; continue
+                buf.append(c); pos += 1
+            if pos >= n: raise ValueError("unterminated string")
+            pos += 1
+            return "".join(buf)
+        m = re.compile(r"[\w.$/:+-]+").match(text, pos)  # unquoted key or value
+        if not m: raise ValueError(f"unexpected {text[pos]!r}")
+        pos = m.end()
+        return m.group()
+    skip()
+    if pos < n and text[pos] == "{": pos += 1  # the same table wrapped in { } is a plist dictionary
+    while True:
+        skip()
+        if pos >= n or text[pos] == "}": return out
+        key = token(); skip()
+        if pos < n and text[pos] == ";": pos += 1; out[key] = key; continue  # `key;` means key = key
+        if pos >= n or text[pos] != "=": raise ValueError(f"expected = after {key!r}")
+        pos += 1
+        out[key] = token(); skip()
+        if pos >= n or text[pos] != ";": raise ValueError(f"expected ; after the value of {key!r}")
+        pos += 1
+
+def plist_to_json(path):
+    """A property list as plain data (dict/list/str), or None when unreadable. plutil where macOS has it (it also reads
+    binary and old-style plists); otherwise XML and binary plists through plistlib and .strings text in Python."""
+    path = Path(path)
+    if shutil.which("plutil"):
+        r = sh(["plutil", "-convert", "json", "-o", "-", str(path)])
+        return json.loads(r.stdout) if r.returncode == 0 else None
+    try: raw = path.read_bytes()
+    except OSError: return None
+    try: return json.loads(json.dumps(plistlib.loads(raw), default=lambda o: o.hex() if isinstance(o, bytes) else str(o)))
+    except Exception: pass
+    for enc in (("utf-16",) if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else ("utf-8-sig", "utf-16-le" if b"\0" in raw[:20] else "latin-1")):
+        try: return parse_strings_text(raw.decode(enc))
+        except (UnicodeDecodeError, ValueError): continue
+    return None
 
 def load_strings(res_dir):
     """{lproj: {key: value}} from every *.strings table in the app: its own *.lproj folders, plus those inside
@@ -248,15 +322,14 @@ def load_strings(res_dir):
         if lproj.stem == "Base": continue  # Base.lproj is layout/fallback storage, not a language
         where = lproj.parent.relative_to(res_dir).as_posix()
         for f in sorted(lproj.glob("*.stringsdict")):
-            r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
-            if r.returncode == 0:
-                table = stringsdict_forms(json.loads(r.stdout))
+            data = plist_to_json(f)
+            if data is not None:
+                table = stringsdict_forms(data)
                 if where != ".": table = {f"{where}/{f.stem}:{k}": v for k, v in table.items()}
                 out.setdefault(canon_lproj(lproj.stem), {}).update(table)
         for f in sorted(lproj.glob("*.strings")):
-            r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
-            if r.returncode == 0:
-                table = json.loads(r.stdout)
+            table = plist_to_json(f)
+            if isinstance(table, dict):
                 if where != ".": table = {f"{where}/{f.stem}:{k}": v for k, v in table.items()}
                 out.setdefault(canon_lproj(lproj.stem), {}).update(table)
     for f in sorted(res_dir.rglob("*.cvr")):
@@ -411,9 +484,8 @@ def read_translation_file(f, base):
                         if "stringUnit" in v: out.setdefault(loc, {})[f"{key}#{form}"] = v["stringUnit"].get("value", "")
         return out
     if ext in (".strings", ".stringsdict"):
-        r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
-        if r.returncode: return {}
-        d = json.loads(r.stdout)
+        d = plist_to_json(f)
+        if d is None: return {}
         return {lp: stringsdict_forms(d) if ext == ".stringsdict" else d}
     if ext == ".xml":  # Android strings.xml / Compose Multiplatform composeResources
         root, out = ET.parse(f).getroot(), {}
@@ -1939,7 +2011,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
     if Path(folder).resolve() in (d.resolve() for d in device_runs(Path(folder).resolve().parent)):
         ipad_rule = False  # one device of a multi-device run: the iPad set lives next to it (ipad_set_missing checks that)
-    ipad = ipad_rule and bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
+    ipad = ipad_rule and bool(ios_app) and "2" in plist_value(Path(ios_app) / "Info.plist", "UIDeviceFamily")
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
