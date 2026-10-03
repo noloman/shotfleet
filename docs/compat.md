@@ -41,16 +41,15 @@ work on 2.11.0. Not run on a device; the value Maestro puts in it (the adb seria
 | Expo / React Native | `create-expo-app` as of 2026-10-03 (SDK number not recorded) | built a release APK with i18next + expo-localization; `init` found it | works up to the build; no device run |
 | Kotlin Multiplatform | JetBrains/kotlinconf-app (clone only) | detection | works after a fix |
 | Licence calls through an HTTPS-re-signing proxy | this sandbox's | real handshake, aimed at a harmless URL, no key | fails without `SSL_CERT_FILE`, works with it |
-| Apple App Store screenshot sizes | Apple's specification page, read 2026-10-03 | `tools/apple-specs-watch.py` on the real page: 45 distinct sizes; table matches after adding iPhone Duo and four old-device landscape sizes | match; monthly workflow `apple-specs` |
-| Xcode 27 final (Device Hub replaces Simulator.app) | read in code, no run | shotfleet itself only calls `xcrun simctl` (list, create, delete, boot, shutdown, help) and never `open -a Simulator`. Maestro 2.0.10 and 2.11.0 both contain `open -a .../Simulator.app --args -CurrentDeviceUDID` in `LocalSimulatorUtils.launchSimulator`, reachable only from `DeviceService.startDevice` (`maestro start-device` and the interactive device picker); shotfleet boots its own simulators and gives Maestro their ids, so that path should not run | **inference, not proved**; other tools broke on exactly this call (expo/expo#46671, callstackincubator/rock#731, anthropics/claude-code#95085). Needs the fixture e2e on a Mac with Xcode 27 |
+| Apple App Store screenshot sizes | Apple's specification page, read 2026-10-03 | `tools/apple-specs-watch.py` on the real page: 45 distinct sizes; table matches after adding iPhone Duo and four old-device landscape sizes | match; re-run monthly with `tools/watch-upstream.sh` |
+| Xcode 27 final (Device Hub replaces Simulator.app) | read in code, no run | shotfleet itself only calls `xcrun simctl` (list, create, delete, boot, bootstatus, status_bar, install, shutdown, help, plus the user's own `[ios] simctl` commands) and never `open -a Simulator`. Maestro 2.0.10 and 2.11.0 both contain `open -a .../Simulator.app --args -CurrentDeviceUDID` in `LocalSimulatorUtils.launchSimulator`, reachable only from `DeviceService.startDevice` (`maestro start-device` and the interactive device picker); shotfleet boots its own simulators and gives Maestro their ids, so that path should not run | **inference, not proved**; other tools broke on exactly this call (expo/expo#46671, callstackincubator/rock#731, anthropics/claude-code#95085). Needs the fixture e2e on a Mac with Xcode 27 |
 | Tesseract | 5.3.4 | `check` on rendered screenshots on Linux (de, ja, en data) | works |
 | Xcode, iOS Simulator runtimes, macOS | not checked in this environment | | see `docs/handoff.md` |
 
 ## When a new version of a tool appears
 
-1. **Maestro:** nothing to remember: the `maestro-latest` workflow (`.github/workflows/maestro-latest.yml`, Mondays and on demand) runs `tools/latest-maestro.py`,
-   which fetches the newest stable release and screens it; a red run means something shotfleet needs is gone from it. By hand: `python3 tools/latest-maestro.py`,
-   or `python3 tools/maestro-compat.py <folder>` for a copy you already have. All green means "worth a real run", not "supported".
+1. **Maestro:** `tools/watch-upstream.sh` (about monthly, and before a release) fetches the newest stable release and screens it, together with Apple's size table. By hand:
+   `python3 tools/latest-maestro.py`, or `python3 tools/maestro-compat.py <folder>` for a copy you already have. All green means "worth a real run", not "supported".
 2. **Python:** add it to the `linux` matrix in `.github/workflows/ci.yml` as soon as `actions/setup-python` has it.
 3. **Android SDK / Java / Flutter / Expo:** `shotfleet doctor --fix` in a fresh `SHOTFLEET_HOME` and `ANDROID_HOME` fetches the current Android
    tools; `init` in a freshly built sample project shows whether the build still lands where `detect_project` looks.

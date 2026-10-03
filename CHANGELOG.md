@@ -1,9 +1,10 @@
 # Changelog
 
 ## Unreleased
-- **Apple size watch:** `tools/apple-specs-watch.py` and a monthly workflow compare every screenshot size on Apple's specification page with the table `check` uses. First run found four landscape sizes of old devices (960x600, 1136x600 for the 3.5" and 4" iPhones, 2048x1496 and 1024x748 for the 9.7" iPad) that `check` would have called wrong; they are now accepted.
+- **Agent tasks:** `docs/agent-tasks/` holds seven self-contained prompts for what needs a Mac or a KVM Linux machine, and why each is open. `tools/watch-upstream.sh` runs the Maestro and Apple-size watchers locally.
+- **Apple size watch:** `tools/apple-specs-watch.py` compares every screenshot size on Apple's specification page with the table `check` uses. First run found four landscape sizes of old devices (960x600, 1136x600 for the 3.5" and 4" iPhones, 2048x1496 and 1024x748 for the 9.7" iPad) that `check` would have called wrong; they are now accepted.
 - **`check` knows the iPhone Duo screenshot sizes** (outer 1398x2034, inner 2007x2853; Apple opens uploads later this year). A Duo-only set still needs a 6.9" or 6.5" iPhone set.
-- **Maestro watch:** a weekly GitHub workflow (and `tools/latest-maestro.py`) fetches the newest stable Maestro release, checks it against what shotfleet relies on and goes red if something is gone; a compatible newer version is reported as "needs a real run", never as tested.
+- **Maestro watch:** `tools/latest-maestro.py` fetches the newest stable Maestro release and checks it against what shotfleet relies on, failing if something is gone; a compatible newer version is reported as "needs a real run", never as tested. `tools/watch-upstream.sh` runs this and the Apple size check together on your machine; the two GitHub workflows for them are manual-only (this repo runs its checks locally).
 - **Compatibility:** `tools/maestro-compat.py` checks any Maestro against what shotfleet relies on, without a device (2.0.10 and the newest, 2.11.0, both pass); tar extraction passes an explicit filter (Python 3.12 deprecates the default, 3.14 changes it); the Linux CI job also runs Python 3.13 with deprecation warnings as errors.
 - **`doctor --fix`:** downloads what `doctor` found missing after one question (`--yes` skips it): Maestro 2.0.10 pinned by SHA-256,
   a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools plus the SDK pieces. Never `sudo`, no shell

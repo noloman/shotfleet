@@ -51,7 +51,7 @@ Single source of truth for "what is left to have a sellable project". Evidence a
 7. Publish and post everything: articles, directories, launch email, Show HN, social; record the demo video. Claude posts nothing.
 8. Keep the Mac quiet and at least 30 GB free when device runs are scheduled.
 
-> **Strategy and profit options: [research/profit-plan-2026-10-03.md](research/profit-plan-2026-10-03.md). Left to do and how: [docs/handoff.md](docs/handoff.md). What was checked against which tool version: [docs/compat.md](docs/compat.md).**
+> **Strategy and profit options: [research/profit-plan-2026-10-03.md](research/profit-plan-2026-10-03.md). Left to do and how: [docs/handoff.md](docs/handoff.md); ready-to-run prompts for local agents: [docs/agent-tasks/](docs/agent-tasks/README.md). What was checked against which tool version: [docs/compat.md](docs/compat.md).**
 
 ## Plan (2026-10-03): from here to a product that can be sold and defended
 

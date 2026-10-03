@@ -4,6 +4,8 @@ Written 2026-10-03 at the end of a session that could not run anything on a devi
 done), **the steps**, **how you know it passed**, and **where to record it**. Evidence goes into `STATUS.md` (the row named) and, if a promise
 changes, into `tests/claims.json` and the README in the same commit. The rule of this repo stands: nothing is called "tested" without a run.
 
+**Each open item that a local agent can do now has its own prompt in [docs/agent-tasks/](agent-tasks/README.md)** (start a session on your Mac and say: read the file and do it).
+
 Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, then the rest.
 
 | # | Item | Needs | Why not done here |
@@ -173,10 +175,10 @@ Polar organisation id nor the Gumroad product id is set in the source tree, so n
 - **Xcode 27 final replaced Simulator.app with Device Hub** (static analysis in `docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to; unproved). Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
   runtime, and record the Xcode build and iOS version in `STATUS.md` row 9 (no record says which Xcode the real runs used). Passed when 36 of 36 assertions hold; if `simctl` behaves
   differently, `shotfleet.py`'s simulator functions are where to look.
-- **Apple's screenshot specifications change often** (8 Jul, 19 Aug, 9 Sep). The sizes are now watched by `tools/apple-specs-watch.py` (monthly workflow `apple-specs`, or by hand): it
+- **Apple's screenshot specifications change often** (8 Jul, 19 Aug, 9 Sep). The sizes are now watched by `tools/apple-specs-watch.py` (run it monthly with `tools/watch-upstream.sh`): it
   compares every size on Apple's page with `APPLE_SIZES` and was run on the real page on 2026-10-03 (45 distinct sizes, table matches; it also found four old-device landscape sizes
   that were missing, now added). The prose rules (count, alpha, which set is required) are not machine-read: read the page once a month. iPhone Duo sizes are known; Apple opens
-  uploads for it "later this year", so `export` for Duo is untested. The first run of the `apple-specs` and `maestro-latest` workflows happens on GitHub: use "Run workflow" once on each.
+  uploads for it "later this year", so `export` for Duo is untested. `tools/watch-upstream.sh` runs this and the Maestro check together. The two GitHub workflows for them are manual-only; nothing is scheduled.
 - **Team / CI demand test and the layout check** are decided by the experiments in section 7 of the strategy note, after launch; do not build them before.
 
 ## Known small things, not blocking
