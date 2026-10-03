@@ -167,8 +167,8 @@ def load_config(config_path, platform=None):
         cfg["package"] = cfg.get("package") or (m and m.group(1))
         if not cfg["package"]: raise Fail(f"can't read the package name of {apk.name}; set package in the config")
         cfg["apk"] = str(apk)
-    if not shutil.which("maestro"):
-        raise Fail("Maestro isn't installed. Install it with: curl -Ls https://get.maestro.mobile.dev | bash")
+    if not maestro_cmd():
+        raise Fail("Maestro isn't installed. Run shotfleet doctor --fix, or install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
 # lproj code -> App Store Connect / fastlane locale
 # Store listing codes, exactly as fastlane deliver/supply folder names (sources: marketing/store-locales.md, 2026-10-01)
@@ -1474,7 +1474,7 @@ def ios_run_inner(cfg, path, only, parallel):
                                   args=(stop, out / ".work" / "debug" / f"attempt{attempt}", out / "raw", cfg["bundle_id"]))
         reader.start()
         try:
-            r = run_guarded(["maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
+            r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
                              "--debug-output", str(out / ".work" / "debug" / f"attempt{attempt}")],
                             env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
@@ -1787,7 +1787,7 @@ def android_run(cfg, path, out, only, parallel):
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
-                r = run_guarded(["maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
+                r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
                                 timeout=cfg.get("timeout_s", 600) + 300,
                                 env={**os.environ, **java_env(), **android_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
@@ -2416,7 +2416,8 @@ def find_java():
     never puts `java` on the PATH: look in the places a JDK really lives instead of telling people to edit their shell."""
     if (cur := os.environ.get("JAVA_HOME")) and java_major(Path(cur) / "bin/java") >= 17: return True, None
     if shutil.which("java") and java_major(shutil.which("java")) >= 17: return True, None
-    homes = [sh(["/usr/libexec/java_home", "-v", "17+"], timeout=30).stdout.strip() if Path("/usr/libexec/java_home").exists() else ""]
+    homes = [str(tools_home() / "jre"), str(tools_home() / "jre/Contents/Home")]  # what `doctor --fix` installs (Linux, macOS layout)
+    homes += [sh(["/usr/libexec/java_home", "-v", "17+"], timeout=30).stdout.strip() if Path("/usr/libexec/java_home").exists() else ""]
     homes += [f"/opt/homebrew/opt/openjdk{v}/libexec/openjdk.jdk/Contents/Home" for v in ("", "@21", "@17")]
     homes += [str(Path.home() / ".sdkman/candidates/java/current")] + sorted(glob.glob("/Library/Java/JavaVirtualMachines/*/Contents/Home"))
     homes += sorted(glob.glob("/usr/lib/jvm/*"), reverse=True)  # Linux
@@ -2443,7 +2444,7 @@ def parse_maestro_version(*outputs):
 
 def read_maestro_version(timeout=120):
     """Installed Maestro's version, or None when it can't be read (garbage output, a timeout: it is a JVM app, slow on a busy Mac)."""
-    try: r = sh(["maestro", "--version"], timeout=timeout, env={**os.environ, **java_env()})
+    try: r = sh([maestro_cmd() or "maestro", "--version"], timeout=timeout, env={**os.environ, **java_env()})
     except (OSError, subprocess.TimeoutExpired): return None
     return parse_maestro_version(r.stdout, r.stderr)
 
@@ -2454,20 +2455,229 @@ def maestro_warning(version):
     if version is None: return f"could not read Maestro's version; shotfleet was tested with Maestro {tested} and it may work with yours"
     return f"Maestro {version} is not the version shotfleet was tested with ({tested}); it may work"
 
-def cmd_doctor():
-    """Check the tools shotfleet drives; print how to fix what's missing."""
+# ---------- doctor --fix: tools shotfleet can fetch itself ----------
+# Rules (research/setup-friction.md): never sudo, never edit PATH or shell rc files, never install Xcode. Everything fetched goes into
+# one folder (~/.shotfleet, or $SHOTFLEET_HOME), over HTTPS, and is checked against a SHA-256 (Maestro: pinned here; the JRE:
+# Adoptium's API) or SHA-1 (Google's own repository manifest for the Android command-line tools) before it is unpacked.
+
+MAESTRO_PIN = {"version": "2.0.10", "size": 211669134,
+               "url": "https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.0.10/maestro.zip",
+               "sha256": "dbdcfbe2b673e1a6f40c65664f1ed5becad0b0a40e35d0e203dff511d05032f6"}  # the only Maestro every real run used
+ADOPTIUM_ASSETS = "https://api.adoptium.net/v3/assets/latest/21/hotspot"  # Temurin 21 (LTS); Maestro needs Java 17 or newer
+ANDROID_REPOSITORY = "https://dl.google.com/android/repository/"
+
+def tools_home():
+    return Path(os.environ.get("SHOTFLEET_HOME") or Path.home() / ".shotfleet")
+
+def maestro_cmd():
+    """The Maestro to run: $SHOTFLEET_MAESTRO (a path), the one `doctor --fix` installed (a path), else "maestro" from the PATH.
+    None when there is none."""
+    for c in (os.environ.get("SHOTFLEET_MAESTRO"), tools_home() / "maestro/bin/maestro"):
+        if c and os.access(c, os.X_OK): return str(c)
+    return "maestro" if shutil.which("maestro") else None  # the PATH one stays a bare name, as before
+
+def download(url, dest, sha256=None, sha1=None, label=None):
+    """Fetch `url` to `dest` over HTTPS, printing progress, and refuse it unless it matches the checksum. Written to dest.part first,
+    so a half download or a wrong file never sits where the real one belongs."""
+    dest = Path(dest); dest.parent.mkdir(parents=True, exist_ok=True)
+    part = dest.with_name(dest.name + ".part")
+    h = hashlib.sha256() if sha256 else hashlib.sha1()
+    ctx = tls_context()
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": f"shotfleet/{VERSION}"}), timeout=60, context=ctx) as r, part.open("wb") as f:
+            total, got, shown = int(r.headers.get("Content-Length") or 0), 0, -1
+            while chunk := r.read(1 << 20):
+                f.write(chunk); h.update(chunk); got += len(chunk)
+                if total and got * 10 // total != shown:
+                    shown = got * 10 // total
+                    print(f"  {label or dest.name}: {shown * 10}% of {total // (1 << 20)} MB", file=sys.stderr, flush=True)
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        part.unlink(missing_ok=True)
+        raise Fail(f"can't download {url}: {getattr(e, 'reason', e)}")
+    want = (sha256 or sha1 or "").lower()
+    if want and h.hexdigest() != want:
+        part.unlink(missing_ok=True)
+        raise Fail(f"{label or dest.name} does not match its checksum (got {h.hexdigest()[:16]}..., expected {want[:16]}...); nothing was installed")
+    part.replace(dest)
+    return dest
+
+def certifi_path():
+    try:
+        import certifi
+        return certifi.where()
+    except ImportError: return None
+
+def tls_context():
+    """The CA bundle for downloads: the one the user's environment names (SSL_CERT_FILE and friends: corporate proxies re-sign HTTPS
+    with their own CA), else certifi's, else the system's."""
+    for var in ("SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
+        f = os.environ.get(var)
+        if f and Path(f).is_file(): return ssl.create_default_context(cafile=f)
+    return ssl.create_default_context(cafile=certifi_path()) if certifi_path() else None
+
+def fetch_text(url):
+    ctx = tls_context()
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": f"shotfleet/{VERSION}"}), timeout=60, context=ctx) as r:
+            return r.read().decode("utf-8", "replace")
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        raise Fail(f"can't reach {url}: {getattr(e, 'reason', e)}")
+
+def extract_zip_safely(archive, target):
+    """Unzip into `target`, refusing members that would land outside it, and keep the unix permissions the zip stores (zipfile drops them)."""
+    target = Path(target).resolve(); target.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive) as z:
+        for info in z.infolist():
+            out = (target / info.filename).resolve()
+            if not out.is_relative_to(target): raise Fail(f"{Path(archive).name} holds a file outside its folder: {info.filename}")
+        for info in z.infolist():
+            z.extract(info, target)
+            mode = info.external_attr >> 16
+            if mode and not info.is_dir(): (target / info.filename).chmod(mode & 0o777 | 0o600)
+
+def install_maestro():
+    """Maestro, the pinned version, into <tools home>/maestro. Replaces a copy `doctor --fix` installed earlier."""
+    home = tools_home(); pin = MAESTRO_PIN
+    tmp = home / "downloads"
+    zpath = download(pin["url"], tmp / f"maestro-{pin['version']}.zip", sha256=pin["sha256"], label=f"Maestro {pin['version']}")
+    stage = home / "maestro.new"; shutil.rmtree(stage, ignore_errors=True)
+    extract_zip_safely(zpath, stage)
+    top = stage / "maestro"
+    if not (top / "bin/maestro").is_file(): shutil.rmtree(stage, ignore_errors=True); raise Fail("the Maestro download has no maestro/bin/maestro")
+    shutil.rmtree(home / "maestro", ignore_errors=True); top.rename(home / "maestro"); shutil.rmtree(stage, ignore_errors=True)
+    zpath.unlink(missing_ok=True)
+    return home / "maestro/bin/maestro"
+
+def adoptium_target(system=None, machine=None):
+    system, machine = (system or sys.platform), (machine or host_platform.machine()).lower()
+    os_name = "mac" if system == "darwin" else "linux" if system.startswith("linux") else None
+    arch = "aarch64" if machine in ("arm64", "aarch64") else "x64" if machine in ("x86_64", "amd64") else None
+    if not os_name or not arch: raise Fail(f"no Java download for {system} on {machine}; install Java 17 or newer yourself")
+    return os_name, arch
+
+def install_jre():
+    """A Temurin 21 JRE into <tools home>/jre (found by find_java). The download link and SHA-256 come from Adoptium's API."""
+    os_name, arch = adoptium_target()
+    assets = json.loads(fetch_text(f"{ADOPTIUM_ASSETS}?architecture={arch}&image_type=jre&os={os_name}"))
+    pkg = next((a["binary"]["package"] for a in assets if a.get("binary", {}).get("image_type") == "jre"), None)
+    if not pkg or not pkg.get("link") or not pkg.get("checksum"): raise Fail("Adoptium's API listed no Java 21 JRE for this system")
+    home = tools_home()
+    archive = download(pkg["link"], home / "downloads" / pkg["name"], sha256=pkg["checksum"], label="Java 21 (Temurin JRE)")
+    stage = home / "jre.new"; shutil.rmtree(stage, ignore_errors=True); stage.mkdir(parents=True)
+    try:
+        with tarfile.open(archive) as t:
+            for m in t.getmembers():
+                if not (stage / m.name).resolve().is_relative_to(stage.resolve()): raise Fail(f"{archive.name} holds a file outside its folder: {m.name}")
+            t.extractall(stage)
+    except (tarfile.TarError, EOFError, OSError) as e:
+        shutil.rmtree(stage, ignore_errors=True); raise Fail(f"can't unpack {archive.name}: {e}")
+    root = next((d for d in sorted(stage.iterdir()) if d.is_dir()), None)
+    if not root: raise Fail(f"{archive.name} is empty")
+    shutil.rmtree(home / "jre", ignore_errors=True); root.rename(home / "jre"); shutil.rmtree(stage, ignore_errors=True)
+    archive.unlink(missing_ok=True)
+    java_env.cache_clear()  # the next lookup sees the new JRE
+    return home / "jre"
+
+def android_cmdline_archive(xml_text, system=None, machine=None):
+    """(url, sha1, size) of Google's 'cmdline-tools;latest' archive for this system, from the repository manifest."""
+    system, machine = (system or sys.platform), (machine or host_platform.machine()).lower()
+    host = "macosx" if system == "darwin" else "linux" if system.startswith("linux") else None
+    arch = "aarch64" if machine in ("arm64", "aarch64") else "x64"
+    m = re.search(r'<remotePackage path="cmdline-tools;latest">(.*?)</remotePackage>', xml_text, re.S)
+    if not host or not m: raise Fail("Google's repository manifest has no command-line tools for this system")
+    for a in re.findall(r"<archive>(.*?)</archive>", m.group(1), re.S):
+        if f"<host-os>{host}</host-os>" in a and (host == "linux" or f"<host-arch>{arch}</host-arch>" in a):
+            u, c, z = (re.search(rf"<{t}[^>]*>([^<]*)</{t}>", a) for t in ("url", "checksum", "size"))
+            if u and c: return ANDROID_REPOSITORY + u.group(1).strip(), c.group(1).strip(), int(z.group(1)) if z else 0
+    raise Fail("Google's repository manifest has no command-line tools for this system")
+
+def fix_sdk_root():
+    """Where `doctor --fix` puts Android tools: the folder the user named in ANDROID_HOME / ANDROID_SDK_ROOT, else the SDK found,
+    else the Android Studio default for this system."""
+    for var in ("ANDROID_HOME", "ANDROID_SDK_ROOT"):
+        if os.environ.get(var): return Path(os.environ[var]).expanduser()
+    return SDK
+
+def install_cmdline_tools(sdk=None):
+    """Google's Android command-line tools into <sdk>/cmdline-tools/latest (sdkmanager, avdmanager)."""
+    sdk = Path(sdk or fix_sdk_root())
+    url, sha1, _ = android_cmdline_archive(fetch_text(ANDROID_REPOSITORY + "repository2-3.xml"))
+    archive = download(url, tools_home() / "downloads" / Path(url).name, sha1=sha1, label="Android command-line tools")
+    stage = tools_home() / "cmdline.new"; shutil.rmtree(stage, ignore_errors=True)
+    extract_zip_safely(archive, stage)
+    if not (stage / "cmdline-tools/bin/sdkmanager").is_file(): shutil.rmtree(stage, ignore_errors=True); raise Fail("the download has no cmdline-tools/bin/sdkmanager")
+    dest = sdk / "cmdline-tools/latest"; shutil.rmtree(dest, ignore_errors=True); dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(stage / "cmdline-tools"), str(dest)); shutil.rmtree(stage, ignore_errors=True)
+    archive.unlink(missing_ok=True)
+    return dest / "bin/sdkmanager"
+
+def run_sdkmanager(args, stdin=None, timeout=3600, sdk=None):
+    sdk = Path(sdk or fix_sdk_root())
+    tool = cmdline_tool("sdkmanager", sdk)
+    if not tool: raise Fail("sdkmanager is not installed")
+    r = subprocess.run([str(tool), f"--sdk_root={sdk}", *args], input=stdin, text=True, env={**os.environ, **java_env()}, timeout=timeout)
+    if r.returncode: raise Fail(f"sdkmanager {' '.join(args[:2])} failed (exit {r.returncode})")
+
+def fix_plan(have_maestro, have_java, android_pkgs, have_sdkmanager, want_android=True):
+    """[(what it does, function)] for what is missing. Nothing here runs sudo, edits a shell file or touches Xcode."""
+    plan, root = [], fix_sdk_root()
+    if not have_maestro:
+        plan.append((f"download Maestro {MAESTRO_PIN['version']} ({MAESTRO_PIN['size'] // (1 << 20)} MB, SHA-256 checked) from github.com into {tools_home()}/maestro", install_maestro))
+    if not have_java:
+        plan.append((f"download a Java 21 runtime (about 50 MB, SHA-256 from Adoptium) from adoptium.net into {tools_home()}/jre", install_jre))
+    if want_android and (android_pkgs or not have_sdkmanager):
+        if not have_sdkmanager:
+            if is_mac() and shutil.which("brew"):
+                plan.append(("brew install --cask android-commandlinetools", lambda: run_cmd(["brew", "install", "--cask", "android-commandlinetools"])))
+            else:
+                plan.append((f"download Google's Android command-line tools (about 170 MB, SHA-1 from Google's manifest) into {root}/cmdline-tools/latest", lambda: install_cmdline_tools(root)))
+        plan.append(("accept the Android SDK licences (https://developer.android.com/studio/terms) with sdkmanager --licenses",
+                     lambda: run_sdkmanager(["--licenses"], stdin="y\n" * 50, sdk=root)))
+        if android_pkgs:
+            plan.append((f"sdkmanager {' '.join(android_pkgs)} (the system image is a large download)", lambda: run_sdkmanager(list(android_pkgs), stdin="y\n" * 10, sdk=root)))
+    return plan
+
+def run_cmd(cmd):
+    if subprocess.run(cmd).returncode: raise Fail(f"{' '.join(cmd)} failed")
+
+def run_fix_plan(plan, yes=False, stdin_is_tty=None):
+    """Print the numbered plan, ask once (or take --yes), run the steps in order and stop at the first failure. 0 ok, 1 a step failed,
+    2 nothing was run because nobody agreed."""
+    if not plan:
+        print("nothing to fix that shotfleet can fetch itself"); return 0
+    print(f"doctor --fix would do {len(plan)} thing(s), in this order (never sudo; no shell files or PATH touched):")
+    for i, (what, _) in enumerate(plan, 1): print(f"  {i}. {what}")
+    if not yes:
+        tty = sys.stdin.isatty() if stdin_is_tty is None else stdin_is_tty
+        if not tty:
+            print("not a terminal, so nothing was run; add --yes to run these"); return 2
+        if input(f"Run these {len(plan)}? [y/N] ").strip().lower() not in ("y", "yes"):
+            print("nothing was run"); return 2
+    for i, (what, fn) in enumerate(plan, 1):
+        print(f"[{i}/{len(plan)}] {what}", flush=True)
+        try: fn()
+        except Fail as e:
+            print(f"stopped at step {i}: {e}", file=sys.stderr)
+            for j, (rest, _) in enumerate(plan[i:], i + 1): print(f"  not done: {j}. {rest}", file=sys.stderr)
+            return 1
+    print("done; run shotfleet doctor again to see where you stand")
+    return 0
+
+def cmd_doctor(fix=False, yes=False):
+    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
     have = lambda c: shutil.which(c) is not None
     mac = is_mac()
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
     has_adb, has_emulator, has_avdmanager = adb_cmd() != "adb" or have("adb"), (SDK / "emulator/emulator").exists(), bool(cmdline_tool("avdmanager"))
     has_image = bool(image) or (Path.home() / ".android/avd/shotfleet_android.avd").exists()  # an existing AVD needs no image
-    maestro_v = read_maestro_version() if have("maestro") else None  # a JVM app: --version can take long on a busy Mac
-    maestro_ok = have("maestro") and (maestro_v is None or int(maestro_v.split(".")[0]) >= 2)  # unreadable: installed, warned about below
+    has_maestro = maestro_cmd() is not None
+    maestro_v = read_maestro_version() if has_maestro else None  # a JVM app: --version can take long on a busy Mac
+    maestro_ok = has_maestro and (maestro_v is None or int(maestro_v.split(".")[0]) >= 2)  # unreadable: installed, warned about below
     tested = ", ".join(MAESTRO_TESTED)
     checks = [
-        (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if have("maestro") else "maestro", maestro_ok,
-         "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
+        (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if has_maestro else "maestro", maestro_ok,
+         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", "both"),
         ("java 17+", find_java()[0], ("brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
                                        if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
@@ -2485,7 +2695,7 @@ def cmd_doctor():
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
-    if have("maestro") and (w := maestro_warning(maestro_v)): print(f"note: {w}")
+    if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -2524,6 +2734,17 @@ def cmd_doctor():
         print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.com/install.sh | sh")
     print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
           else "next: fix the MISSING lines above, then run shotfleet doctor again")
+    if fix:
+        print()
+        fix_pkgs = [pk for pk in pkgs if not (pk == "cmdline-tools;latest" and not sdkmanager)]  # sdkmanager can't install itself
+        plan = fix_plan(maestro_ok, find_java()[0], fix_pkgs, bool(sdkmanager))
+        if mac and not any(ok for n, ok, _, _ in checks if n == "xcrun simctl"):
+            print("not fixable here: iOS needs Xcode and an iOS Simulator runtime (App Store, then Xcode > Settings > Components)")
+        if not mac and not have("tesseract"):
+            print(f"not run (needs sudo): {install_hint()}")
+        code = run_fix_plan(plan, yes)
+        if code == 1: return 1
+        if plan and code == 0: return 0
     return 0 if ok_ios or ok_android else 2
 
 FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text selector for each language.
@@ -3071,7 +3292,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="shotfleet", description="Localized App Store and Google Play screenshots from one English Maestro flow.")
     ap.add_argument("--version", action="version", version=f"shotfleet {VERSION}")
     sub = ap.add_subparsers(dest="cmd", required=True, metavar="command")
-    sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
+    p = sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
+    p.add_argument("--fix", action="store_true", help="offer to download what is missing (Maestro, Java, the Android tools); never uses sudo")
+    p.add_argument("--yes", action="store_true", help="with --fix: don't ask before running the steps")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
     p = sub.add_parser("skill", help="install the Claude Code skills for shotfleet")
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills instead of ~/.claude/skills")
@@ -3434,7 +3657,7 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
 
 def main_dispatch(a):
     try:
-        if a.cmd == "doctor": return cmd_doctor()
+        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes)
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "skill": return cmd_skill(a.dir, a.project, a.force)
         if a.cmd == "init": return cmd_init(a.builds, a.dir)
@@ -3443,7 +3666,7 @@ def main_dispatch(a):
         if a.cmd == "export": require_licence()
         if a.cmd == "run":
             apply_free_tier()
-            if shutil.which("maestro") and (w := maestro_warning(read_maestro_version(60))): print(f"note: {w}", file=sys.stderr)
+            if maestro_cmd() and (w := maestro_warning(read_maestro_version(60))): print(f"note: {w}", file=sys.stderr)
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)

@@ -244,7 +244,11 @@ class NothingIsUploaded(unittest.TestCase):
                    "api.polar.sh", "api.gumroad.com", "api.lemonsqueezy.com",  # licence checks
                    "127.0.0.1",  # local test servers
                    "get.maestro.mobile.dev",  # text of an install hint
-                   "developer.android.com"}  # text of an install hint (Linux: where the Android command-line tools come from)
+                   "developer.android.com",  # text of an install hint (Linux: where the Android command-line tools come from)
+                   # `doctor --fix` only, after the user agreed to the plan (test_downloads_are_only_reachable_from_doctor_fix):
+                   "github.com",  # the pinned Maestro release
+                   "api.adoptium.net", "adoptium.net",  # the Java runtime and its checksum
+                   "dl.google.com"}  # Google's Android command-line tools and their manifest
         self.assertEqual(hosts - allowed, set())
 
 
