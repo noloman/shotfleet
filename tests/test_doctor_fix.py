@@ -349,3 +349,23 @@ class SdkPathsAreClean(FixTestCase):
             self.assertEqual(sf.find_sdk(env), Path("/nonexistent/Android/Sdk"))
             real = Path(tempfile.mkdtemp()); (real / "platform-tools").mkdir()
             self.assertEqual(sf.find_sdk({"ANDROID_HOME": f"{real}/sub/../", "PATH": ""}), real)
+
+
+class SdkManagerInvocation(FixTestCase):
+    """Google's new sdkmanager is a shim for the Android CLI, which reports usage unless `--no-metrics`; installs use the CLI when it is there."""
+    def tool(self, with_android):
+        d = Path(tempfile.mkdtemp()) / "cmdline-tools/latest/bin"; d.mkdir(parents=True)
+        (d / "sdkmanager").write_text("#!/bin/sh\n")
+        if with_android: (d / "android").write_text("#!/bin/sh\n")
+        return d / "sdkmanager"
+
+    def test_package_installs_go_through_the_android_cli_with_metrics_off(self):
+        t = self.tool(True)
+        self.assertEqual(sf.sdkmanager_invocation(t, Path("/sdk"), ["platform-tools", "build-tools;36.0.0"]),
+                         [str(t.with_name("android")), "--no-metrics", "--sdk=/sdk", "sdk", "install", "platform-tools", "build-tools;36.0.0"])
+
+    def test_licences_and_older_tools_use_plain_sdkmanager(self):
+        t = self.tool(True)
+        self.assertEqual(sf.sdkmanager_invocation(t, Path("/sdk"), ["--licenses"]), [str(t), "--sdk_root=/sdk", "--licenses"])
+        old = self.tool(False)  # no android program next to it: an older command-line tools release
+        self.assertEqual(sf.sdkmanager_invocation(old, Path("/sdk"), ["emulator"]), [str(old), "--sdk_root=/sdk", "emulator"])

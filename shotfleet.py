@@ -2635,8 +2635,18 @@ def run_sdkmanager(args, stdin=None, timeout=3600, sdk=None):
     sdk = Path(sdk or fix_sdk_root())
     tool = cmdline_tool("sdkmanager", sdk)
     if not tool: raise Fail("sdkmanager is not installed")
-    r = subprocess.run([str(tool), f"--sdk_root={sdk}", *args], input=stdin, text=True, env={**os.environ, **java_env()}, timeout=timeout)
+    cmd = sdkmanager_invocation(tool, sdk, args)
+    r = subprocess.run(cmd, input=stdin, text=True, env={**os.environ, **java_env()}, timeout=timeout)
     if r.returncode: raise Fail(f"sdkmanager {' '.join(args[:2])} failed (exit {r.returncode})")
+
+def sdkmanager_invocation(tool, sdk, args):
+    """The command line for sdkmanager arguments. Google's newer command-line tools turned sdkmanager into a shim for their Android CLI, which reports
+    usage data to Google unless told `--no-metrics` (sdkmanager itself does not accept that flag, 2026-10-03). shotfleet promises nothing leaves your
+    machine except what you ask for, so when the `android` program sits next to sdkmanager, package installs go through `android --no-metrics sdk install`."""
+    android = Path(tool).with_name("android")
+    if android.is_file() and args and not args[0].startswith("-"):
+        return [str(android), "--no-metrics", f"--sdk={sdk}", "sdk", "install", *args]
+    return [str(tool), f"--sdk_root={sdk}", *args]
 
 def fix_plan(have_maestro, have_java, android_pkgs, have_sdkmanager, want_android=True):
     """[(what it does, function)] for what is missing. Nothing here runs sudo, edits a shell file or touches Xcode."""
