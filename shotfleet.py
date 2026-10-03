@@ -1656,7 +1656,11 @@ def android_env():
     path = {**os.environ, **java_env()}.get("PATH", "")
     return {"ANDROID_HOME": str(SDK), "PATH": f"{SDK / 'platform-tools'}:{path}" if adb_cmd() != "adb" else path}
 
-DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no notification icons
+DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a slow machine shows "Process system isn't responding" otherwise); then SystemUI demo mode: fixed clock, full battery and signal, no notification icons
+    "settings put global hide_error_dialogs 1",
+    "settings put global window_animation_scale 0",
+    "settings put global transition_animation_scale 0",
+    "settings put global animator_duration_scale 0",
     "settings put global sysui_demo_allowed 1",
     "am broadcast -a com.android.systemui.demo -e command enter",
     "am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941",
@@ -1674,7 +1678,10 @@ class Emu:
             raise RuntimeError(f"adb {' '.join(args)}: {(r.stderr or r.stdout).strip()}")
         return r.stdout
     def booted(self):
-        return sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() == "1"
+        """sys.boot_completed is 1 AND the package service answers: on a busy machine the first can be true while `adb install`
+        still says "Can't find service: package" (seen with two emulators on 2 cores)."""
+        if sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() != "1": return False
+        return "Service package: found" in sh([adb_cmd(), "-s", self.serial, "shell", "service", "check", "package"], timeout=15).stdout
 
 SNAPSHOT = "shotfleet"
 
@@ -1686,7 +1693,7 @@ def start_emu(avd, port, read_only=True, snapshot=False):
     with log.open("wb") as f:  # the child keeps its own copy of the handle
         p = subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
                               "-no-boot-anim"] + boot + (["-read-only"] if read_only else []),
-                             stdout=f, stderr=subprocess.STDOUT)
+                             stdout=f, stderr=subprocess.STDOUT, env={**os.environ, "ANDROID_AVD_HOME": str(avd_home())})
     p.log_path = log
     return p
 
@@ -1733,21 +1740,30 @@ ANDROID_DEVICES = {
                  "folder": "sevenInchScreenshots"},
 }
 
+def avd_home():
+    """Where shotfleet keeps its emulators: ANDROID_AVD_HOME, ANDROID_USER_HOME/avd, else ~/.android/avd. Named explicitly to avdmanager
+    and the emulator, because on a Linux box that sets XDG_CONFIG_HOME (GitHub's runners do) they would otherwise use ~/.config/.android."""
+    env = os.environ
+    if env.get("ANDROID_AVD_HOME"): return Path(env["ANDROID_AVD_HOME"])
+    return (Path(env["ANDROID_USER_HOME"]) if env.get("ANDROID_USER_HOME") else Path.home() / ".android") / "avd"
+
 def android_pool(n, cfg, pool):
     """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
     The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
     device = cfg.get("device", "phone")
     kind = ANDROID_DEVICES[device]
     avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
-    avd_dir = Path.home() / ".android/avd" / f"{avd}.avd"
+    avd_dir = avd_home() / f"{avd}.avd"
     if not avd_dir.exists():
         image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
             raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))
-        r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n", env={**os.environ, **java_env()})
+        avd_home().mkdir(parents=True, exist_ok=True)  # avdmanager refuses a named folder that does not exist
+        r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n",
+               env={**os.environ, **java_env(), "ANDROID_AVD_HOME": str(avd_home())})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
-            raise Fail(f"couldn't create the emulator {avd} from {image}: {(r.stderr or r.stdout).strip()[-300:]}. "
+            raise Fail(f"couldn't create the emulator {avd} from {image}: {" ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]}. "
                        f"Install the image with: {commands_text(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
@@ -2093,6 +2109,14 @@ def judge_screen(lp, ocr, tables):
         return lp, None
     return got, None
 
+# An Android crash or ANR dialog over the app ("Process system isn't responding" on a slow emulator) is not a store screenshot, whatever
+# language the app text under it is in. English only (the emulator's system language), and only where text is read from the picture.
+SYSTEM_DIALOG = re.compile(r"isn.?t responding|keeps stopping|has stopped\b", re.I)
+
+def system_dialog(ocr):
+    m = SYSTEM_DIALOG.search(ocr.get("text", ""))
+    return f'an Android system dialog covers the screen ("{m.group(0)}")' if m else None
+
 def caption_problem(lp, ocr, tables, problem):
     """Framed screenshots carry a marketing caption above the device. Name the common failure plainly
     (a translated caption over an untranslated app)."""
@@ -2410,6 +2434,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
         if problem: problems.append(f"{label}/{png.name}: {problem}")
+        if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if png.stem in (expect or {}):
             rules, used = content_rules(expect[png.stem], label, lp)
             expected_used.update((png.stem, k) for k in used)
@@ -2808,7 +2833,7 @@ def cmd_doctor(fix=False, yes=False):
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
     has_adb, has_emulator, has_avdmanager = adb_cmd() != "adb" or have("adb"), (SDK / "emulator/emulator").exists(), bool(cmdline_tool("avdmanager"))
-    has_image = bool(image) or (Path.home() / ".android/avd/shotfleet_android.avd").exists()  # an existing AVD needs no image
+    has_image = bool(image) or (avd_home() / "shotfleet_android.avd").exists()  # an existing AVD needs no image
     has_maestro = maestro_cmd() is not None
     maestro_v = read_maestro_version() if has_maestro else None  # a JVM app: --version can take long on a busy Mac
     maestro_ok = has_maestro and (maestro_v is None or int(maestro_v.split(".")[0]) >= 2)  # unreadable: installed, warned about below

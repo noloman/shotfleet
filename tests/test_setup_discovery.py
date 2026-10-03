@@ -335,6 +335,26 @@ class DoctorAndroid(Tree):
         self.assertIn(f"  {tool} platform-tools emulator 'build-tools;36.0.0' 'system-images;android-36;google_apis;arm64-v8a'\n", out)
         self.assertIn("large download", out)
 
+    def test_emulators_go_where_shotfleet_says_even_when_xdg_config_home_is_set(self):
+        """GitHub's Linux runners set XDG_CONFIG_HOME; avdmanager then used ~/.config/.android and shotfleet never found the new emulator."""
+        seen = []
+        def fake_sh(cmd, **kw): seen.append(kw["env"]); return subprocess.CompletedProcess(cmd, 1, "", "x")
+        with mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": str(self.home / ".config")}), mock.patch.object(sf, "SDK", self.full_sdk()), \
+             mock.patch.object(sf, "sh", fake_sh), mock.patch.object(sf, "java_env", return_value={}):
+            with self.assertRaises(sf.Fail): sf.android_pool(1, {}, [])
+        self.assertEqual(seen[0]["ANDROID_AVD_HOME"], str(self.home / ".android/avd"))
+        with mock.patch.dict(os.environ, {"ANDROID_AVD_HOME": "/x/avd"}): self.assertEqual(sf.avd_home(), Path("/x/avd"))
+
+    def test_an_emulator_is_booted_only_when_the_package_service_answers_too(self):
+        """Two emulators on 2 cores: boot_completed was 1 but `adb install` said "Can't find service: package"."""
+        def answers(package):
+            def fake_sh(cmd, **kw):
+                out = "1\n" if "getprop" in cmd else f"Service package: {'found' if package else 'not found'}\n"
+                return subprocess.CompletedProcess(cmd, 0, out, "")
+            return fake_sh
+        with mock.patch.object(sf, "sh", answers(False)): self.assertFalse(sf.Emu(5554).booted())
+        with mock.patch.object(sf, "sh", answers(True)): self.assertTrue(sf.Emu(5554).booted())
+
     def test_an_existing_shotfleet_emulator_needs_no_image(self):
         sdk = self.full_sdk(); import shutil; shutil.rmtree(sdk / "system-images")
         (self.home / ".android/avd/shotfleet_android.avd").mkdir(parents=True)

@@ -11,7 +11,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 | # | Item | Needs | Why not done here |
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
-| 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` | no hardware virtualization here |
+| 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
 | 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
 | 4 | `doctor --fix` on a Mac | your Mac, a clean user | untried on macOS |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
@@ -65,7 +65,7 @@ flow versus 2.0.10. Then the same on CrossfitTracker (item 6).
 
 ## 2. E1: the Android fixture on Linux
 
-**State:** everything up to the emulator was run (build, `init`, `doctor`, the Linux `check` path); the emulator was not. The checklist is in
+**State (2026-10-03):** passed with one emulator (`SHOTFLEET_E2E_PARALLEL=1`) on a 2-core GitHub runner with KVM, 466 s run phase (PR #33, `docs/linux.md`). The default two emulators failed on 2 cores in every run (Android's "Process system isn't responding"); **what is left** is the same script with the default two emulators on a machine with 4 or more cores (real hardware, a larger runner, or a nested-virtualization cloud VM), and the 18-language real-app timing below (build CrossFit Tracker's Android debug app from current `origin/main` for it: older debug builds send Firebase events to the production property). The checklist is in
 `docs/linux.md` ("Experiment E1"). Short form, on a Linux machine with `/dev/kvm`:
 
 ```bash
