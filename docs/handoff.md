@@ -15,8 +15,8 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
 | 6 | Real-app regression (CrossfitTracker, Remoti) | your Mac and the apps | not on this machine |
 | 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
-| 8 | Python 3.14 | the final release | only a release candidate existed |
-| 9 | Licence calls behind a re-signing proxy | a proxy, a test key | no proxy, no key |
+| 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
+| 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
 | 10 | Capacitor, MAUI, Unity | per-framework toolchains and devices | not attempted |
 | 11 | Decisions that are not engineering | you | see the end |
 
@@ -140,16 +140,16 @@ Android screenshots are checked with OCR only.
 
 ## 8. Python 3.14
 
-Add `"3.14"` to the `linux` matrix in `.github/workflows/ci.yml` once `actions/setup-python` offers a final 3.14, and run
-`python3.14 -W error::DeprecationWarning -m unittest discover -s tests`. The tar-extraction change that 3.14 makes is already handled
-(`TAR_SAFE` in `shotfleet.py`).
+Run on 3.14.0rc2 (2026-10-03, `uv python install 3.14`): all 595 tests pass with `-W error::DeprecationWarning`. Left: add `"3.14"` to the `linux`
+matrix in `.github/workflows/ci.yml` once `actions/setup-python` offers a final 3.14, and re-run on the final release. The tar-extraction change
+3.14 makes is already handled (`TAR_SAFE` in `shotfleet.py`).
 
 ## 9. Licence calls behind a proxy
 
-The Polar and Gumroad calls now honour `SSL_CERT_FILE` like the downloads (unit-tested that both get the context). Not tried through a real
-re-signing proxy, and not with a real key (`STATUS.md` gate 5 is still open for the same reason). With a test key and
-`mitmproxy --listen-port 8080` plus `HTTPS_PROXY=http://127.0.0.1:8080 SSL_CERT_FILE=~/.mitmproxy/mitmproxy-ca-cert.pem shotfleet activate <key>`,
-activation should succeed; without the variable it should fail with a certificate error.
+Done for the TLS part (2026-10-03), in this sandbox, which sits behind a real HTTPS-re-signing proxy: `polar_post` aimed at a harmless public URL
+fails with `CERTIFICATE_VERIFY_FAILED (self-signed certificate)` without `SSL_CERT_FILE` and reaches the server with it. Left: a real activation
+with a real test key once Gumroad is live (`STATUS.md` gate 5): `HTTPS_PROXY=... SSL_CERT_FILE=<proxy CA> shotfleet activate <key>`. Neither the
+Polar organisation id nor the Gumroad product id is set in the source tree, so no real licence server could be called from here.
 
 ## 10. Other frameworks
 
@@ -172,4 +172,3 @@ activation should succeed; without the variable it should fail with a certificat
 - `tools/pretend-mac.py <test module>` runs a test module as if on an Apple-silicon Mac (platform and CPU only). It reproduced both macOS-only failures of the
   `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
-- `tools/status.sh` and `STATUS.md` counts of claims were not refreshed after the rows added this session (C121 to C126).
