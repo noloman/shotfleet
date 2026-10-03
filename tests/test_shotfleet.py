@@ -2206,7 +2206,7 @@ class G1CheckDetectors(unittest.TestCase):
         spec = {**self.CLEAN, "fr-FR": {"01.png": G1_SHOWS["en"], "02.png": G1_SHOWS["en"]}}
         code, report, _ = g1_check(spec)
         self.assertEqual(code, 1)
-        self.assertEqual(report["problems"], ["fr-FR: the app has no fr-FR translation, so this listing shows another language"])
+        self.assertEqual(report["problems"], ["fr-FR: the app has no fr-FR translation, so this listing shows another language; translate the app into it or remove the listing"])
 
     def test_a_size_the_store_refuses_is_one_problem_per_file(self):  # C003, C100 (the size half)
         spec = {**self.CLEAN, "de": {"01.png": (G1_SHOWS["de"], (1000, 2000)), "02.png": G1_SHOWS["de"]}}
