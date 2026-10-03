@@ -67,6 +67,7 @@ capture it anyway.
 strings = "lib/l10n/*.arb"                      # Flutter
 strings = "src/locales/*/translation.json"      # React Native / Expo with i18next
 strings = ["Resources/Strings/*.resx"]          # .NET MAUI
+strings = "app/i18n/*.ts"                       # Ignite, i18n-js, vue-i18n: texts written as an object in code (read as data, never run)
 ```
 
 Put it under `[ios]` and/or `[android]`. Formats: `.arb`, i18next/react-intl `.json`, `.xcstrings`, `.strings`,
