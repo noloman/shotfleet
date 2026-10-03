@@ -3,7 +3,7 @@
 //   POST /api/forget  {email}                           -> remove an address from the waitlist, and the contact messages left with it as the reply address
 //   POST /api/hit    {src, ev}                          -> count one page event (view, runs, pricing, cta): KV key "hit:<day>|<source>|<language>|<event>" holds a total, nothing about the visitor
 //   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>", the reply address also in its metadata so forget can find it)
-// Read signups: ./signups.sh
+// Read signups: ./signups.sh. New signups also push a notification when the NTFY_TOPIC secret is set (see notifyJoin).
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
 const MAX_BODY = 4096;
 const STACKS = new Set(["native", "swift", "kotlin", "react-native", "flutter", "kmp", "maui", "unity", "other"]);
@@ -83,14 +83,16 @@ export default {
     const stack = STACKS.has(body.stack) ? body.stack : null;  // optional follow-up question on the page
     const existing = await env.WAITLIST.get(key);
     if (!existing) {
-      await env.WAITLIST.put(key, JSON.stringify({
+      const rec = {
         at: new Date().toISOString(),
         platform: ["ios", "android", "both"].includes(body.platform) ? body.platform : (PLATFORM_OF[stack] || "unknown"),
         stack,
         country: request.cf?.country || null,
         lang: String(request.headers.get("accept-language") || "").split(/[-,;]/)[0].toLowerCase().replace(/[^a-z]/g, "").slice(0, 3) || null,
         ref: String(body.ref || "").slice(0, 300),   // external referrer + utm_* tags, sent by the page
-      }));
+      };
+      await env.WAITLIST.put(key, JSON.stringify(rec));
+      ctx.waitUntil(notifyJoin(env, key, rec));
       console.log(JSON.stringify({ event: "signup", country: request.cf?.country || null }));
     } else if (stack) {  // the follow-up answer for someone already on the list
       const prev = JSON.parse(existing);
@@ -99,6 +101,22 @@ export default {
     return json({ ok: true });
   },
 };
+
+// A push to my phone (ntfy.sh) when someone new joins: the number, country, source and stack answer, never the address.
+// Off unless the NTFY_TOPIC secret is set. A dead push service must never break a signup, so failures are only logged.
+async function notifyJoin(env, key, rec) {
+  if (!env.NTFY_TOPIC) return;
+  try {
+    const { keys } = await env.WAITLIST.list({ prefix: "email:" });  // ponytail: counts the first 1,000 signups only
+    const n = keys.some(k => k.name === key) ? keys.length : keys.length + 1;  // KV lists can lag a new key by up to a minute
+    const source = rec.ref.replace(/[^\x20-\x7e]/g, "").slice(0, 80) || "direct";
+    const r = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, { method: "POST", headers: { Title: "New shotfleet signup" },
+      body: `#${n} on the list. Country ${rec.country || "unknown"}, source ${source}, stack ${rec.stack || "not answered"}.` });
+    if (!r.ok) throw new Error(`ntfy ${r.status}`);
+  } catch {
+    console.log(JSON.stringify({ event: "notify_failed" }));
+  }
+}
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
