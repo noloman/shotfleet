@@ -408,3 +408,17 @@ class LinuxRefusals(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertIn("only the Android half runs", r.stderr)
         self.assertIn("--platform-only android", r.stderr)
+
+
+class ParallelKnob(unittest.TestCase):
+    """SHOTFLEET_E2E_PARALLEL (1 or 2, default 2) sets the Android config's `parallel`: 2 vCPU hosted runners cannot run two emulators (docs/linux.md, E1)."""
+    text = (Path(__file__).resolve().parent.parent / "tools/fixture-e2e.sh").read_text()
+
+    def test_the_default_stays_two_and_the_value_is_written_to_the_config(self):
+        self.assertIn("PAR=${SHOTFLEET_E2E_PARALLEL:-2}", self.text)
+        self.assertIn("printf 'parallel = %s\\n' \"$PAR\"", self.text)
+        self.assertNotRegex(self.text, r"(?m)^parallel = 2$")  # no hard-coded line left in the Android heredoc
+
+    def test_anything_but_one_or_two_is_refused_in_the_script(self):
+        self.assertIn('case "$PAR" in 1|2) ;; *) echo "fixture-e2e: SHOTFLEET_E2E_PARALLEL must be 1 or 2"', self.text)
+
