@@ -149,10 +149,10 @@ matrix in `.github/workflows/ci.yml` once `actions/setup-python` offers a final 
 
 ## 9. Licence calls behind a proxy
 
-Done for the TLS part (2026-10-03), in this sandbox, which sits behind a real HTTPS-re-signing proxy: `polar_post` aimed at a harmless public URL
+Done for the TLS part (2026-10-03), in this sandbox, which sits behind a real HTTPS-re-signing proxy: `gumroad_verify` aimed at a harmless public URL
 fails with `CERTIFICATE_VERIFY_FAILED (self-signed certificate)` without `SSL_CERT_FILE` and reaches the server with it. Left: a real activation
-with a real test key once Gumroad is live (`STATUS.md` gate 5): `HTTPS_PROXY=... SSL_CERT_FILE=<proxy CA> shotfleet activate <key>`. Neither the
-Polar organisation id nor the Gumroad product id is set in the source tree, so no real licence server could be called from here.
+with a real test key once Gumroad is live (`STATUS.md` gate 5): `HTTPS_PROXY=... SSL_CERT_FILE=<proxy CA> shotfleet activate <key>`. The
+Gumroad product id is not set in the source tree, so no real licence server could be called from here.
 
 ## 10. Other frameworks
 

@@ -185,8 +185,8 @@ class FreeTierOnAFrozenBuild(FleetCase):
         self.assertIn("free tier: capturing 2 of 3 languages (de, ja)", text)
 
     def test_no_licence_server_is_contacted_and_no_licence_file_is_written(self):
-        # self.main() makes every network call an AssertionError; polar and Lemon Squeezy go through urlopen too
-        for fn in ("polar_post", "licence_api"):
+        # self.main() makes every network call an AssertionError; Gumroad and Lemon Squeezy go through urlopen too
+        for fn in ("gumroad_verify", "licence_api"):
             with mock.patch.object(sf, fn, side_effect=no_network):
                 self.assertEqual(self.main("run", self.config(), "--locales", "de,ja,fr")[0], 0)
         self.assertFalse(self.licence.exists())
@@ -212,7 +212,7 @@ class FreeTierOnAFrozenBuild(FleetCase):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# C052: what the licence check needs from Gumroad and Polar, and what it decides with it
+# C052: what the licence check needs from Gumroad, and what it decides with it
 # ---------------------------------------------------------------------------------------------------------------------
 def gumroad_answer(**purchase):
     """The success answer of POST /v2/licenses/verify as Gumroad's licence-key documentation shows it (written from that
@@ -311,32 +311,6 @@ class GumroadLicenceShape(unittest.TestCase):
         self.assertIn("the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run: "
                       "it asks Gumroad about once a week, and works offline for up to 30 days", terms)
         self.assertEqual((sf.LICENCE_RECHECK_DAYS, sf.LICENCE_OFFLINE_DAYS), (7, 30))
-
-
-class PolarLicenceShape(unittest.TestCase):
-    """C052 (the Polar half, for keys that already exist): the validate and activate answers the code reads."""
-    VALIDATE = {"id": "lk1", "organization_id": "org1", "customer_id": "c1", "benefit_id": "b1", "key": "SHOTFLEET-1C285B2D-6CE6", "display_key": "****-6CE6",
-                "status": "granted", "limit_activations": 3, "usage": 0, "limit_usage": None, "validations": 4, "last_validated_at": "2026-09-30T08:00:00Z",
-                "expires_at": None, "activation": {"id": "act-1", "license_key_id": "lk1", "label": "my-mac"}}
-    ACTIVATE = {"id": "act-1", "license_key_id": "lk1", "label": "my-mac", "meta": {}, "license_key": {"id": "lk1", "status": "granted", "usage": 0}}
-
-    def test_a_granted_answer_is_valid_and_anything_else_is_not(self):
-        self.assertEqual(sf.polar_valid(200, self.VALIDATE), (True, None))
-        for status in ("revoked", "disabled"):
-            self.assertEqual(sf.polar_valid(200, {**self.VALIDATE, "status": status}), (False, f"status {status}"))
-        self.assertEqual(sf.polar_valid(404, {"detail": "Resource not found"}), (False, "Resource not found"))
-
-    def test_the_activation_id_is_read_from_the_top_of_the_activate_answer(self):
-        with mock.patch.object(sf, "POLAR_ORG_ID", "org1"), mock.patch.object(sf.urllib.request, "urlopen", lambda *a, **k: type("R", (Reply,), {"status": 200})(self.ACTIVATE)):
-            status, body = sf.polar_post("activate", key="SHOTFLEET-1C285B2D-6CE6", label="my-mac")
-        self.assertEqual((status, body["id"]), (200, "act-1"))
-
-    def test_refused_keys_come_back_as_a_status_and_a_detail_not_as_a_crash(self):
-        for code in (403, 404, 422):
-            with mock.patch.object(sf.urllib.request, "urlopen", side_effect=http_error(code, {"detail": "Resource not found"})):
-                self.assertEqual(sf.polar_post("validate", key="SHOTFLEET-X"), (code, {"detail": "Resource not found"}))
-        with mock.patch.object(sf.urllib.request, "urlopen", side_effect=http_error(500, {})), self.assertRaises(OSError):
-            sf.polar_post("validate", key="SHOTFLEET-X")
 
 
 # ---------------------------------------------------------------------------------------------------------------------

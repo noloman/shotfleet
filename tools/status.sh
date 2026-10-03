@@ -30,7 +30,7 @@ print(f"green (proven+fixed) {green}, needs work (everything else except removed
 E
 
 echo "== release state in the repo"
-for k in POLAR_ORG_ID GUMROAD_PRODUCT_ID; do
+for k in GUMROAD_PRODUCT_ID; do
   v=$(sed -n "s/^$k = \"\\([^\"]*\\)\".*/\\1/p" shotfleet.py | head -1)
   echo "$k in shotfleet.py: ${v:+set}${v:-EMPTY (go-live.sh sets it)}"
 done
@@ -47,7 +47,7 @@ printf '%-40s %s\n' "www -> apex" "$(curl -s -o /dev/null -w '%{http_code} %{red
 printf '%-40s %s\n' "CSP header" "$(curl -sI --max-time 15 "$SITE/" | grep -ic '^content-security-policy')"
 live=$(mktemp); curl -s --max-time 15 "$SITE/" -o "$live"
 if cmp -s "$live" site/public/index.html; then echo "live index.html == repo"; else echo "live index.html DIFFERS from repo (undeployed changes, or the page is in flux)"; fi
-echo "live page mentions: waitlist $(grep -ci waitlist "$live"), polar $(grep -ci polar "$live"), gumroad $(grep -ci gumroad "$live"), buy link $(grep -c 'buy.polar.sh\|gumroad.com/l/' "$live")"
+echo "live page mentions: waitlist $(grep -ci waitlist "$live"), polar $(grep -ci polar "$live") (should be 0), gumroad $(grep -ci gumroad "$live"), buy link $(grep -c 'gumroad.com/l/' "$live")"
 rm -f "$live"
 
 echo "== git"

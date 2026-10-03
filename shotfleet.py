@@ -3578,9 +3578,6 @@ BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
 LS_PRODUCT_ID = ""  # Lemon Squeezy is no longer sold through: no id is set, so no Lemon Squeezy key unlocks anything (any LS product's key would otherwise)
 GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh: the product ID from the License key block on the product's Content page
-# Polar is no longer sold through (Polar's payout provider Stripe asks for a KvK, 2026-10-02); its code stays, tested, for keys that already exist.
-POLAR_API = os.environ.get("SHOTFLEET_POLAR_API", "https://api.polar.sh/v1/customer-portal/license-keys")
-POLAR_ORG_ID = ""  # the Polar organization (a UUID); Polar keys start with SHOTFLEET-. No longer set by go-live.sh
 MAX_MACS = 3
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
@@ -3594,36 +3591,8 @@ def cap_locales(locales):
           f"`shotfleet activate <key>` unlocks every language ({BUY_URL})")
     return locales[:LOCALE_CAP]
 
-def is_polar_key(key):
-    return key.strip().upper().startswith("SHOTFLEET-")
-
 # The licence calls use tls_context(): certifi's CA bundle (the released build can't count on the Mac's), unless the environment names
 # one (SSL_CERT_FILE...), as a corporate proxy that re-signs HTTPS needs.
-
-def polar_post(action, **fields):
-    """POST to Polar's licence-key API (no secret needed) -> (status, JSON). 403/404/422 mean the key isn't valid;
-    network problems raise OSError. Polar's edge blocks Python's default User-Agent, so send our own."""
-    req = urllib.request.Request(f"{POLAR_API}/{action}", data=json.dumps({"organization_id": POLAR_ORG_ID, **fields}).encode(),
-                                 headers={"Content-Type": "application/json", "Accept": "application/json",
-                                          "User-Agent": f"shotfleet/{VERSION}"})
-    try:
-        with urllib.request.urlopen(req, timeout=15, context=tls_context()) as r: return r.status, json.loads(r.read() or b"{}")
-    except urllib.error.HTTPError as e:
-        with e:
-            if e.code in (403, 404, 422):
-                try: detail = json.loads(e.read() or b"{}").get("detail")
-                except ValueError: detail = None
-                return e.code, {"detail": detail if isinstance(detail, str) else "key not found, or revoked or expired"}
-        raise OSError(f"Polar answered {e.code}")
-    except (urllib.error.URLError, TimeoutError) as e:
-        raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
-
-def polar_valid(status, body):
-    """(valid, reason) for a Polar `validate` answer. Polar answers 404 for a key that is revoked, disabled or expired, and its
-    200 body carries status "granted"; if a body ever says anything else, don't trust it. A body without a status is accepted."""
-    if status != 200: return False, body.get("detail")
-    st = body.get("status", "granted")
-    return st == "granted", None if st == "granted" else f"status {st}"
 
 def is_gumroad_key(key):
     """Gumroad keys are four groups of 8 (ABCDEF12-...); Lemon Squeezy keys are UUIDs (8-4-4-4-12)."""
@@ -3670,13 +3639,6 @@ def ls_ours(r):
     return bool(LS_PRODUCT_ID) and (r.get("meta") or {}).get("product_id") == LS_PRODUCT_ID
 
 def cmd_activate(key):
-    if is_polar_key(key):
-        status, body = polar_post("activate", key=key.strip(), label=socket.gethostname())
-        if status != 200: raise Fail(f"that key didn't activate: {str(body.get('detail')).rstrip('.')}. Your key is in the Gumroad receipt email: {BUY_URL}")
-        LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "polar", "activation": body["id"], "checked": time.time()}))
-        print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
-        return 0
     if is_gumroad_key(key):
         # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
         ok, uses, why = gumroad_verify(key, count_use=False)
@@ -3715,11 +3677,6 @@ def cmd_deactivate():
     lic = read_licence()
     if lic is None:
         LICENCE_FILE.unlink(); print("the saved licence on this Mac was unreadable, so I removed it. Activate again with: shotfleet activate <key>"); return 0
-    if lic.get("store") == "polar":
-        try: polar_post("deactivate", key=lic["key"], activation_id=lic["activation"])
-        except OSError: pass  # offline: forget it locally anyway
-        LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
-        return 0
     if lic.get("store") == "gumroad":  # freeing an activation takes a Gumroad access token, which can't ship in the program
         LICENCE_FILE.unlink(); print(f"removed from this Mac. Gumroad can't give the activation back from here: "
                                      f"if all {MAX_MACS} are used, email hello@shotfleet.com and I'll reset the count")
@@ -3735,9 +3692,7 @@ def require_licence():
     if not getattr(sys, "frozen", False): return  # running from source
     if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
         try:
-            if is_polar_key(key):
-                valid, why = polar_valid(*polar_post("validate", key=key.strip()))
-            elif is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
+            if is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
             else: r = licence_api("validate", license_key=key); valid, why = r.get("valid") and ls_ours(r), r.get("error") or "not a shotfleet key"
         except OSError: return  # don't fail a build because the licence server is unreachable
         if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
@@ -3755,9 +3710,7 @@ def require_licence():
                         "`check` is free, and `run` captures up to 2 languages without one.")
     if age < LICENCE_RECHECK_DAYS: return
     try:
-        if lic.get("store") == "polar":
-            valid, why = polar_valid(*polar_post("validate", key=lic["key"], activation_id=lic["activation"]))
-        elif lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
+        if lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
         else:
             r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
             valid, why = r.get("valid") and ls_ours(r), r.get("error") or r.get("license_key", {}).get("status") or "not a shotfleet key"
