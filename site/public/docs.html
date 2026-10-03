@@ -127,10 +127,11 @@ shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/an
     <li><strong>Copies:</strong> the same image in two languages.</li>
     <li><strong>Missing:</strong> a language that did not produce every screenshot.</li>
     <li><strong>Translation collisions, before anything runs:</strong> for example <code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>. A tap could hit the wrong button there, so you anchor that step with <code>below:</code> or use an override.</li>
-    <li><strong>Store rules:</strong> sizes each store accepts (every App Store display class, Play's 320 to 3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad.</li>
+    <li><strong>Store rules:</strong> sizes each store accepts (every App Store display class, Play's 320 to 3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Screenshots made in other tools work too: Apple Watch, Mac, Apple TV and Vision Pro sizes are known (3840x2160 is both Apple TV and Vision Pro), and one Watch size is required in every language.</li>
     <li><strong>Languages your app does not have:</strong> a store listing (say Traditional Chinese) whose screenshots cannot be in that language because the app is not translated into it.</li>
   </ul>
   <p><code>check</code> without <code>--app</code> relies on language detection, which cannot judge short screens; pass <code>--app</code> for the full check.</p>
+  <p><code>export</code> also takes a plain <code>&lt;locale&gt;/*.png</code> folder of such a set (Apple Watch, Mac, Apple TV, Vision Pro) once <code>shotfleet check &lt;folder&gt; --report &lt;folder&gt;</code> has written its <code>check.json</code> there; it copies the set into <code>screenshots/&lt;locale&gt;/</code> next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.</p>
 
   <h2 id="config">Config</h2>
   <p>The whole config can be this (<code>shotfleet init</code> writes it):</p>
@@ -157,7 +158,7 @@ apk = "path/to/app-debug.apk"</code></pre>
       <tr><td><code>device_type</code></td><td>ios</td><td>the 6.9" iPhone (<code>com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max</code>)</td><td>The simulator device type.</td></tr>
       <tr><td><code>runtime</code></td><td>ios</td><td>newest installed</td><td>The simulator runtime, for example <code>com.apple.CoreSimulator.SimRuntime.iOS-26-5</code>.</td></tr>
       <tr><td><code>device_types</code></td><td>ios</td><td>none</td><td>Several sizes from one flow, for example <code>["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]</code>; output goes to <code>out/&lt;device&gt;/</code>, <code>check out</code> and <code>export out</code> handle both, and the App Store takes both in one folder.</td></tr>
-      <tr><td><code>devices</code></td><td>android</td><td>phone</td><td><code>["phone", "tablet"]</code>: phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the listing); output goes to <code>out/&lt;device&gt;/</code>, exported to <code>phoneScreenshots</code> and <code>tenInchScreenshots</code>.</td></tr>
+      <tr><td><code>devices</code></td><td>android</td><td>phone</td><td><code>["phone", "tablet"]</code>: phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the listing); output goes to <code>out/&lt;device&gt;/</code>, exported to <code>phoneScreenshots</code> and <code>tenInchScreenshots</code>. <code>"tablet-7"</code> adds a 7" tablet, 1080x1920 at 280 dpi, exported to <code>sevenInchScreenshots</code>.</td></tr>
     </tbody>
   </table>
   </div>
@@ -203,7 +204,7 @@ after_export  = 'fastlane deliver --skip_binary_upload --skip_metadata --overwri
 name = "Alex"
 [inputs.ja]                            # the language as shotfleet names it; pt covers pt-BR too
 name = "田中"</code></pre>
-  <p>The value goes into that language's flow as a Maestro <code>env:</code> entry. This works on iOS; Android runs type the <code>[inputs]</code> defaults only, because Maestro hands any flow to any emulator. The values are tested as flow text, not yet run on a device, so check the first screenshots in a script like Japanese or Arabic. Text you type is not translated by itself: it stays the same in every language unless you set <code>[inputs]</code> (iOS only).</p>
+  <p>The value goes into that language's flow as a Maestro <code>env:</code> entry. This works on iOS. Maestro hands any flow to any emulator, so on Android a name that has a per-language value is read from a small script (<code>shotfleet_vars.js</code>) that picks the emulator's row by <code>MAESTRO_DEVICE_UDID</code>. Maestro 2.0.10 does not define that variable (we looked in its jars; no device run), so there Android runs type the <code>[inputs]</code> defaults only. The values are tested as flow text, not yet run on a device, so check the first screenshots in a script like Japanese or Arabic. Text you type is not translated by itself: it stays the same in every language unless you set <code>[inputs]</code> (iOS; on Android it needs a Maestro that sets <code>MAESTRO_DEVICE_UDID</code>).</p>
 
   <h2 id="device-setup">Device setup</h2>
   <p>Device setup runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:</p>
