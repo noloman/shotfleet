@@ -34,7 +34,7 @@
   <p class="label">Docs</p>
   <h1>shotfleet documentation</h1>
   <p class="lede">Localized App Store and Google Play screenshots from one English Maestro flow: capture, check, export to fastlane.</p>
-  <p class="small">Last checked against version 0.1.0 on 2026-10-02.</p>
+  <p class="small">Last checked against version 0.1.0 on 2026-10-03.</p>
 
   <nav class="toc" aria-label="On this page">
     <ol>
@@ -77,7 +77,7 @@ shotfleet doctor                 # checks Maestro, Java, Xcode, Android SDK</cod
   <p>Once Maestro and a simulator build exist, in your project folder:</p>
 <pre><code>shotfleet init
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself</code></pre>
-  <p><code>shotfleet init</code> without arguments only reads folders, never builds. For iOS it takes the newest <code>Debug-iphonesimulator</code> app in Xcode's default DerivedData folder (<code>~/Library/Developer/Xcode/DerivedData</code>) whose <code>info.plist</code> points at an Xcode project in this folder (or one folder below it, or above it). For Android it takes the newest APK under <code>app/build/outputs/apk/debug</code> (or <code>&lt;module&gt;/build/outputs/apk/debug</code>, one folder below). It prints which build it chose and how old it is. If it finds nothing it exits with the exact <code>xcodebuild</code> and <code>./gradlew assembleDebug</code> commands to run; then run <code>shotfleet init</code> again.</p>
+  <p><code>shotfleet init</code> without arguments only reads folders, never builds. For iOS it takes the newest <code>Debug-iphonesimulator</code> app in Xcode's default DerivedData folder (<code>~/Library/Developer/Xcode/DerivedData</code>) whose <code>info.plist</code> points at an Xcode project in this folder, up to two folders below it, or above it. For Android it takes the newest debug APK under <code>build/outputs/apk/debug</code> in this folder or up to two folders below it (<code>app/build/outputs/apk/debug</code>, <code>&lt;module&gt;/build/outputs/apk/debug</code>, <code>android/app/build/outputs/apk/debug</code>; a flavour folder such as <code>apk/free/debug</code> counts too). It prints which build it chose and how old it is. If it finds nothing it exits with the exact <code>xcodebuild</code> and <code>./gradlew assembleDebug</code> commands to run; then run <code>shotfleet init</code> again.</p>
   <ol>
     <li>Edit the generated <code>flow.yaml</code>: <a href="https://maestro.mobile.dev">Maestro</a> steps in English. Navigate by the text users see and add a <code>takeScreenshot:</code> for each store image. No <code>appId</code> is needed: shotfleet uses each build's own id, so one flow serves iOS and Android.</li>
     <li>Try one language: <code>shotfleet run --locales en</code></li>
