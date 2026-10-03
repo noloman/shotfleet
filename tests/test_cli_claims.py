@@ -217,7 +217,7 @@ class NothingIsUploaded(unittest.TestCase):
     def test_the_program_only_names_the_servers_it_talks_to(self):
         hosts = set(re.findall(r"https?://([A-Za-z0-9.-]+)", SOURCE))
         allowed = {"shotfleet.com",  # install hint, /download/VERSION
-                   "api.gumroad.com", "api.lemonsqueezy.com",  # licence checks
+                   "api.gumroad.com",  # licence checks
                    "127.0.0.1",  # local test servers
                    "get.maestro.mobile.dev",  # text of an install hint
                    "developer.android.com",  # text of an install hint (Linux: where the Android command-line tools come from)

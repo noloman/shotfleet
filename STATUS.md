@@ -93,6 +93,7 @@ Build order for code (shared `shotfleet.py` with the core-product session, who o
 
 ## Changelog of this file
 
+- 2026-10-03 (night): PR #33 merged (E1 passed with one emulator on a 2-core GitHub runner; two emulators and the 18-language timing stay for the next session). Polar and Lemon Squeezy licence code removed: only Gumroad keys work, a key or saved licence from another store is refused (CHANGELOG, claim C093).
 - 2026-10-03 (end of session): docs/handoff.md (everything not done, with steps) and docs/compat.md (tool versions checked); B1 annotated.
 - 2026-10-03 (later): PR #8 merged (framework-aware `init`, Linux `check`, inline `launchApp`, `.ts` and string-array readers); C1 and E1 rows annotated.
 - 2026-10-03: rows 2, 6, 8, 9 updated and the plan above added.

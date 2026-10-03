@@ -3607,12 +3607,10 @@ def cmd_mcp():
 
 # ---------- licence (released builds only; a source checkout is the developer's own) ----------
 
-LICENCE_API = os.environ.get("SHOTFLEET_LICENCE_API", "https://api.lemonsqueezy.com/v1/licenses")
 LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json"
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
-LS_PRODUCT_ID = ""  # Lemon Squeezy is no longer sold through: no id is set, so no Lemon Squeezy key unlocks anything (any LS product's key would otherwise)
 GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh: the product ID from the License key block on the product's Content page
 MAX_MACS = 3
 FREE_LANGUAGES = 2
@@ -3631,7 +3629,7 @@ def cap_locales(locales):
 # one (SSL_CERT_FILE...), as a corporate proxy that re-signs HTTPS needs.
 
 def is_gumroad_key(key):
-    """Gumroad keys are four groups of 8 (ABCDEF12-...); Lemon Squeezy keys are UUIDs (8-4-4-4-12)."""
+    """Gumroad keys are four groups of 8 (ABCDEF12-34567890-...)."""
     return bool(re.fullmatch(r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{8}){3}", key.strip()))
 
 def gumroad_verify(key, count_use):
@@ -3659,44 +3657,21 @@ def gumroad_verify(key, count_use):
     if p.get("disputed") and not p.get("dispute_won"): return False, uses, "the purchase is disputed"  # a won dispute keeps the licence
     return True, uses, None
 
-def licence_api(action, **fields):
-    """POST to Lemon Squeezy's licence API -> JSON. Network problems raise OSError."""
-    req = urllib.request.Request(f"{LICENCE_API}/{action}", data=urllib.parse.urlencode(fields).encode(),
-                                 headers={"Accept": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=15) as r: return json.loads(r.read() or b"{}")
-    except urllib.error.HTTPError as e:  # 4xx carries a JSON error body
-        try:
-            with e: return json.loads(e.read() or b"{}")
-        except ValueError: raise OSError(f"licence server answered {e.code}")
-
-def ls_ours(r):
-    """A Lemon Squeezy answer counts only for our own product: its keys are valid for every other seller's product too."""
-    return bool(LS_PRODUCT_ID) and (r.get("meta") or {}).get("product_id") == LS_PRODUCT_ID
-
 def cmd_activate(key):
-    if is_gumroad_key(key):
-        # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
-        ok, uses, why = gumroad_verify(key, count_use=False)
-        if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
-        known = (read_licence() or {}).get("key") == key.strip()  # this Mac already holds it: no new activation
-        if not known:
-            if uses >= MAX_MACS:
-                raise Fail(f"this key has used all {MAX_MACS} activations. Email hello@shotfleet.com and I'll reset the count")
-            ok, uses, why = gumroad_verify(key, count_use=True)  # ponytail: two people activating at once can pass 3; I reset by hand
-            if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
-        LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
-        print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
-        return 0
-    r = licence_api("activate", license_key=key.strip(), instance_name=socket.gethostname())
-    if r.get("activated") and not ls_ours(r):
-        raise Fail(f"that key is not a shotfleet licence. Your key is in the Gumroad receipt email: {BUY_URL}")
-    if not r.get("activated"):
-        raise Fail(f"that key didn't activate: {(r.get('error') or 'unknown error').rstrip('.')}. "
+    if not is_gumroad_key(key):
+        raise Fail("that doesn't look like a shotfleet key (four groups of 8 letters and digits, like ABCDEF12-34567890-ABCDEF12-34567890). "
                    f"Your key is in the Gumroad receipt email: {BUY_URL}")
+    # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
+    ok, uses, why = gumroad_verify(key, count_use=False)
+    if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
+    known = (read_licence() or {}).get("key") == key.strip()  # this Mac already holds it: no new activation
+    if not known:
+        if uses >= MAX_MACS:
+            raise Fail(f"this key has used all {MAX_MACS} activations. Email hello@shotfleet.com and I'll reset the count")
+        ok, uses, why = gumroad_verify(key, count_use=True)  # ponytail: two people activating at once can pass 3; I reset by hand
+        if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
     LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "instance": r["instance"]["id"], "checked": time.time()}))
+    LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
     print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
     return 0
 
@@ -3713,13 +3688,12 @@ def cmd_deactivate():
     lic = read_licence()
     if lic is None:
         LICENCE_FILE.unlink(); print("the saved licence on this Mac was unreadable, so I removed it. Activate again with: shotfleet activate <key>"); return 0
+    LICENCE_FILE.unlink()
     if lic.get("store") == "gumroad":  # freeing an activation takes a Gumroad access token, which can't ship in the program
-        LICENCE_FILE.unlink(); print(f"removed from this Mac. Gumroad can't give the activation back from here: "
-                                     f"if all {MAX_MACS} are used, email hello@shotfleet.com and I'll reset the count")
-        return 0
-    try: licence_api("deactivate", license_key=lic["key"], instance_id=lic["instance"])
-    except OSError: pass  # offline: forget it locally anyway
-    LICENCE_FILE.unlink(); print("deactivated; you can activate the key on another Mac")
+        print(f"removed from this Mac. Gumroad can't give the activation back from here: "
+              f"if all {MAX_MACS} are used, email hello@shotfleet.com and I'll reset the count")
+    else:
+        print("removed from this Mac (it was a licence from a store shotfleet no longer uses)")
     return 0
 
 def require_licence():
@@ -3728,8 +3702,7 @@ def require_licence():
     if not getattr(sys, "frozen", False): return  # running from source
     if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
         try:
-            if is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
-            else: r = licence_api("validate", license_key=key); valid, why = r.get("valid") and ls_ours(r), r.get("error") or "not a shotfleet key"
+            valid, why = gumroad_verify(key, count_use=False)[::2] if is_gumroad_key(key) else (False, "not a shotfleet key")
         except OSError: return  # don't fail a build because the licence server is unreachable
         if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
         return
@@ -3740,16 +3713,16 @@ def require_licence():
     if lic is None:
         raise NoLicence("the saved licence on this Mac is unreadable: activate again with `shotfleet activate <key>` (the key is in your purchase email). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
+    if lic.get("store") != "gumroad":  # a file from a store shotfleet no longer uses (shotfleet is sold through Gumroad only)
+        raise NoLicence("the saved licence on this Mac is from a store shotfleet no longer uses: activate your Gumroad key with `shotfleet activate <key>` "
+                        "(it is in your purchase email). `check` is free, and `run` captures up to 2 languages without one.")
     age = (time.time() - lic.get("checked", 0)) / 86400
     if age < -1:  # dated in the future: a hand-edited file would otherwise never be rechecked
         raise NoLicence("the saved licence on this Mac has a date in the future: activate again with `shotfleet activate <key>`. "
                         "`check` is free, and `run` captures up to 2 languages without one.")
     if age < LICENCE_RECHECK_DAYS: return
     try:
-        if lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
-        else:
-            r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
-            valid, why = r.get("valid") and ls_ours(r), r.get("error") or r.get("license_key", {}).get("status") or "not a shotfleet key"
+        valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
     except OSError:
         if age < LICENCE_OFFLINE_DAYS: return
         raise NoLicence("couldn't reach the licence server for 30 days; connect once to keep using every language in `run`")
