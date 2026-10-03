@@ -14,9 +14,9 @@ The files that ship are tested, not their predecessors: the release is built fro
 | G6 | Licence on the signed hardened-runtime binary against the real Gumroad API | free tier refuses `export`; `activate` with the real key counts one use; again counts none; `SHOTFLEET_KEY` validates; a made-up key is refused | pass on the signed hardened-runtime binary: no licence, `export` refused (exit 2, nothing written); activate in a new home counts a use (real API uses 1 to 2), activating again in the same home counts none (stays 2); `SHOTFLEET_KEY` with the real key passes the gate (the next error is the missing run); a made-up key is refused for `SHOTFLEET_KEY` and for `activate`, both with "That license does not exist for the provided product". The test key now holds 2 of 3 slots. |
 | G7 | Install paths | `install.sh` against a local server serving the real tarball and checksum (temp HOME, PATH untouched); the package expands and its post-install script is correct | pass: real `install.sh` (copy limited to a temp folder) against a local server serving the real tarball and checksum: installs, link works, `--version` 0.1.0, no quarantine flag on the installed binary; a wrong checksum is refused and installs nothing; the real PATH folders were not touched. Package payload: 185 files under /usr/local/lib/shotfleet plus the post-install link. |
 | G8 | Real apps with the release binary | CrossfitTracker iOS (18 languages) and Android, 0 problems | |
-| G9 | Site rehearsal off the production domain | transformed page deployed to a throwaway worker; `tools/golive/smoke.sh` against it; downloads, checksum, VERSION, links, CSP | |
+| G9 | Site rehearsal off the production domain | transformed page deployed to a throwaway worker; `tools/golive/smoke.sh` against it; downloads, checksum, VERSION, links, CSP | pass: transformed page plus the real tarball, checksum, VERSION and package deployed to the throwaway worker `shotfleet-staging` (no routes, no KV); `tools/golive/smoke.sh` 35 of 36 ok, the one failure is the http to https redirect, which `workers.dev` does not do; on the real domains `curl -I` shows http://shotfleet.com and http://www.shotfleet.com answer 301 to https. The package served from the staging site has the same SHA-256 as the build and `spctl -t install` accepts it with a quarantine flag (a browser-style download). |
 | G10 | Production smoke right after the deploy | `tools/golive/smoke.sh https://shotfleet.com <product url>`, a real `install.sh` from the live URL into a temp HOME, `--version` equals `/download/VERSION` | |
-| G11 | Rollback is written and rehearsed | waitlist page redeploy from the previous commit; Gumroad product unpublish; which commands, in which order | |
+| G11 | Rollback is written and rehearsed | waitlist page redeploy from the previous commit; Gumroad product unpublish; which commands, in which order | written below; production Cloudflare version before go-live: 5716b430-26b9-4765-9933-292007154379 (11:19:51Z); production today is the waitlist and /download/VERSION answers 404. |
 
 ## Not tested, and why (accepted risk)
 
@@ -26,3 +26,14 @@ The files that ship are tested, not their predecessors: the release is built fro
 - The installer package installed by Installer.app with an administrator password: needs the owner's password.
 - Android on a fixture app: none exists; CrossfitTracker Android is the substitute (G8).
 - Seller-side legal and tax steps (KvK registration): the owner's.
+
+## Rollback (G11)
+
+Before go-live: `cd site && npx wrangler deployments list` and note the newest version id (today: 5716b430-26b9-4765-9933-292007154379). Other sessions also deploy the site, so read it again right before the go-live.
+
+If the sale page or a download is wrong after the deploy:
+1. Site back to the waitlist: `cd site && npx wrangler rollback <version id noted above> --name shotfleet` (Cloudflare restores that version, assets included). Then `tools/golive/smoke.sh` is expected to show the waitlist again.
+2. Stop sales at the source: Gumroad product page, Product tab, Unpublish (the product stays, nothing is deleted).
+3. Repo: `git revert` the commit "Site: sale open" and the "Gumroad product ID" commit if the program build is at fault, then rebuild with `packaging/release.sh`.
+4. Buyers already holding keys keep working: the licence check only needs the product ID, which does not change.
+Irreversible parts: emails and posts the owner sends, and sales that already happened (refund from the Gumroad Sales page, 14-day policy).
