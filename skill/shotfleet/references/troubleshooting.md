@@ -42,7 +42,8 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `an .ipa is a device build` | `.ipa` passed to init/check | pass the simulator `.app` |
 | `an .aab can't be installed directly` | `.aab` passed | `./gradlew assembleDebug`, pass the `.apk` |
 | `pass the simulator .app, not an archive` | `.xcarchive` passed | same as above |
-| `unzip it first` | a `.zip` passed | pass the `.app` or `.apk` inside |
+| `unzip it first` | a `.zip` passed to `check --app` (`init` unpacks a `.zip`, `.tar.gz`, `.tgz` or `.tar` itself, e.g. an EAS build) | pass the `.app` or `.apk` inside |
+| `unpack it first` | a `.gz` file passed to `check --app` | `tar -xzf` it, pass the `.app` inside |
 | `pass a simulator .app or an .apk` | other file type | pass one of those |
 | `builds given; a config holds one app per platform` | two `.app` or two `.apk` to `init` | run `init` once per app |
 | `bundle_id is` | config `bundle_id` differs from the app's | delete the key (it is read from the app) |
@@ -60,7 +61,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `none of those languages are in the app` | `--locales` or `locales` names languages the app does not ship; the message lists what it ships | use those codes |
 | `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun |
 | `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
-| `unknown Android device` | `devices` entry other than phone, tablet | use `phone` or `tablet` |
+| `unknown Android device` | `devices` entry other than phone, tablet, tablet-7 | use `phone`, `tablet` or `tablet-7` |
 | `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |
 | `is already running. Stop it` | a leftover emulator on shotfleet's port | `adb -s emulator-<port> emu kill` |
 | `emulators did not boot in time` | slow boot (600 s limit), or on Linux no usable `/dev/kvm`; the message ends with the emulator's last log lines (kept in `<tmp>/shotfleet-emulator-logs/`) and the likely cause. `the emulator exited with code N before it booted` means it crashed: read those lines | close other apps and rerun; on Linux check `ls -l /dev/kvm` |
@@ -123,7 +124,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `has no listing in that language` | export skipped a language the store has no listing for | nothing to do |
 | `failed checks (see` | export skipped a language that failed | fix and recapture that language |
 | `so it gets the` | export copies `en` to an existing `en-GB` listing and similar | informational |
-| `add "iPad Pro 13-inch (M5)" to device_types` | the app runs on iPad and no 13" set exists (exit 1) | add that device type |
+| `add "iPad Pro 13-inch (M5)" to device_types` | the app runs on iPad and no 13" set exists: `run` and `check` print it and exit 1, `export` refuses (exit 2) | add that device type and run again |
 | `hook after_run failed` | an after hook returned non-zero: exit becomes 1 | fix the hook |
 
 ## Hardware and limits

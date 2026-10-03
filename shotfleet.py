@@ -106,6 +106,27 @@ def platforms_in(config_path):
     if not found: raise Fail(f"{cfg_path.name} needs an [ios] or an [android] section")
     return found
 
+def check_section(cfg, platform, name):
+    """Refuse an unknown key or a wrong type in [ios] / [android] (no files are read; load_config adds the checks that need the build)."""
+    known = {**KEYS["common"], **KEYS[platform]}
+    for key, value in cfg.items():
+        if key not in known:
+            import difflib
+            near = difflib.get_close_matches(key, known, n=1)
+            raise Fail(f"[{platform}] in {name} has an unknown setting '{key}'" +
+                       (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(sorted(known))}"))
+        want = known[key]
+        if not isinstance(value, want) or (want is int and isinstance(value, bool)):  # bool is an int in Python
+            names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
+            names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
+            raise Fail(f"[{platform}] {key} in {name} should be a {names}, not {value!r}")
+    for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
+        if not all(isinstance(c, str) for c in cfg.get(key, [])):
+            raise Fail(f"[{platform}] {key} in {name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
+        for c in cfg.get(key, []):
+            try: shlex.split(c)
+            except ValueError as e: raise Fail(f"[{platform}] {key} in {name}: can't read '{c}': {e}")
+
 def load_config(config_path, platform=None):
     """(platform, cfg, path resolver) for one section, with every mistake reported as a Fail that says how to fix it."""
     cfg_path, doc = read_doc(config_path)
@@ -115,24 +136,7 @@ def load_config(config_path, platform=None):
     platform = platform or platforms[0]
     if platform not in doc: raise Fail(f"{cfg_path.name} has no [{platform}] section")
     cfg = doc[platform]
-    known = {**KEYS["common"], **KEYS[platform]}
-    for key, value in cfg.items():
-        if key not in known:
-            import difflib
-            near = difflib.get_close_matches(key, known, n=1)
-            raise Fail(f"[{platform}] in {cfg_path.name} has an unknown setting '{key}'" +
-                       (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(sorted(known))}"))
-        want = known[key]
-        if not isinstance(value, want) or (want is int and isinstance(value, bool)):  # bool is an int in Python
-            names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
-            names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
-            raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a {names}, not {value!r}")
-    for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
-        if not all(isinstance(c, str) for c in cfg.get(key, [])):
-            raise Fail(f"[{platform}] {key} in {cfg_path.name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
-        for c in cfg.get(key, []):
-            try: shlex.split(c)
-            except ValueError as e: raise Fail(f"[{platform}] {key} in {cfg_path.name}: can't read '{c}': {e}")
+    check_section(cfg, platform, cfg_path.name)
     cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
     cfg["_inputs"], cfg["_expect"] = doc.get("inputs", {}), doc.get("expect", {})
     cfg.setdefault("flow", "flow.yaml")
@@ -3383,7 +3387,7 @@ def main(argv=None):
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills instead of ~/.claude/skills")
     p.add_argument("--dir", help="install into this skills folder (for other agents)"); p.add_argument("--force", action="store_true", help="replace skills that are already installed")
     p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
-    sub.add_parser("deactivate", help="free this Mac's activation (to move the licence)")
+    sub.add_parser("deactivate", help="remove the licence from this Mac (a Gumroad activation is not given back: email hello@shotfleet.com)")
     p = sub.add_parser("init", help="write a starter config and flow for your app")
     p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
                    "none: use the newest Debug build found for the project in this folder")

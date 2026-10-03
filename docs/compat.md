@@ -32,7 +32,7 @@ work on 2.11.0. Not run on a device; the value Maestro puts in it (the adb seria
 
 | Tool | Versions | How | Result |
 |---|---|---|---|
-| Python | 3.11, 3.12, 3.13 | suite (591 tests, 41 skipped as Mac-only) with deprecation warnings as errors; CI runs 3.11 and 3.13 on Linux, 3.12 on macOS | pass |
+| Python | 3.11, 3.12, 3.13 | suite (658 tests on 2026-10-03, 41 skipped as Mac-only) with deprecation warnings as errors, run on each of 3.11, 3.12 and 3.13 after the docs audit; CI runs 3.11 and 3.13 on Linux, 3.12 on macOS | pass |
 | Python | 3.10 | run | refuses with "shotfleet needs Python 3.11 or newer" |
 | Python | 3.14.0rc2 | suite (595 tests) with deprecation warnings as errors | pass; the final 3.14 release is not out, so not in CI yet |
 | Java | Temurin 21.0.12.1 (from `doctor --fix`), openjdk 21.0.11 | ran Maestro 2.0.10 and 2.11.0 and Google's sdkmanager | works |
