@@ -78,11 +78,11 @@ class FixTestCase(unittest.TestCase):
         return None if cmd == "brew" else REAL_WHICH(cmd, *a, **k)
 
     def set_files(self, **override):
-        host = "macosx" if sys.platform == "darwin" else "linux"
-        manifest = (f'<remotePackage path="cmdline-tools;latest"><archives><archive><complete><size>{len(CMDLINE_ZIP)}</size>'
-                    f'<checksum type="sha1">{sha1(CMDLINE_ZIP)}</checksum><url>cmdline.zip</url></complete><host-os>{host}</host-os>'
-                    + ('<host-arch>aarch64</host-arch>' if host == "macosx" and sf.host_abi() == "arm64-v8a" else '<host-arch>x64</host-arch>' if host == "macosx" else "")
-                    + '</archive></archives></remotePackage>')
+        entry = lambda host, arch: (f'<archive><complete><size>{len(CMDLINE_ZIP)}</size><checksum type="sha1">{sha1(CMDLINE_ZIP)}</checksum>'
+                                    f'<url>cmdline.zip</url></complete><host-os>{host}</host-os>' + (f'<host-arch>{arch}</host-arch>' if arch else "") + '</archive>')
+        # every platform, so a test that pretends to be Linux (or a Mac) on the other kind of machine still finds its archive
+        manifest = ('<remotePackage path="cmdline-tools;latest"><archives>' + entry("linux", None) + entry("macosx", "x64") + entry("macosx", "aarch64")
+                    + '</archives></remotePackage>')
         assets = [{"binary": {"image_type": "jre", "package": {"name": "jre.tar.gz", "link": self.server.url + "/jre.tar.gz",
                                                                    "checksum": sha256(JRE_TAR), "size": len(JRE_TAR)}}}]
         self.server.files.update({"/maestro.zip": MAESTRO_ZIP, "/jre.tar.gz": JRE_TAR, "/assets": json.dumps(assets).encode(),

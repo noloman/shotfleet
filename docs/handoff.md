@@ -169,5 +169,7 @@ activation should succeed; without the variable it should fail with a certificat
 
 ## Known small things, not blocking
 
+- `tools/pretend-mac.py <test module>` runs a test module as if on an Apple-silicon Mac (platform and CPU only). It reproduced both macOS-only failures of the
+  `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
 - `tools/status.sh` and `STATUS.md` counts of claims were not refreshed after the rows added this session (C121 to C126).
