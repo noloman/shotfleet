@@ -3,7 +3,7 @@
 //   POST /api/forget  {email}                           -> remove an address from the waitlist, and the contact messages left with it as the reply address
 //   POST /api/hit    {src, ev}                          -> count one page event (view, runs, pricing, cta): KV key "hit:<day>|<source>|<language>|<event>" holds a total, nothing about the visitor
 //   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>", the reply address also in its metadata so forget can find it)
-// Read signups: ./signups.sh. New signups also push a notification when the NTFY_TOPIC secret is set (see notifyJoin).
+// Read signups: ./signups.sh. New signups also send me an email when the ALERT binding and ALERT_TO secret exist (see notifyJoin).
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
 const MAX_BODY = 4096;
 const STACKS = new Set(["native", "swift", "kotlin", "react-native", "flutter", "kmp", "maui", "unity", "other"]);
@@ -102,20 +102,19 @@ export default {
   },
 };
 
-// A push to my phone (ntfy.sh) when someone new joins: the number, country, source and stack answer, never the address.
-// Off unless the NTFY_TOPIC secret is set; NTFY_TOKEN (optional) authenticates the post. A dead push service must never break a signup, so failures are only logged.
+// An email to me when someone new joins: the number, country, source and stack answer, never the address. It goes through
+// Cloudflare's send_email binding to my verified Email Routing address (the ALERT_TO secret), so nothing leaves Cloudflare.
+// Off unless ALERT and ALERT_TO exist. A failed send must never break a signup, so failures are only logged.
 async function notifyJoin(env, key, rec) {
-  if (!env.NTFY_TOPIC) return;
+  if (!env.ALERT || !env.ALERT_TO) return;
   try {
     const { keys } = await env.WAITLIST.list({ prefix: "email:" });  // ponytail: counts the first 1,000 signups only
     const n = keys.some(k => k.name === key) ? keys.length : keys.length + 1;  // KV lists can lag a new key by up to a minute
     const source = rec.ref.replace(/[^\x20-\x7e]/g, "").slice(0, 80) || "direct";
-    const r = await fetch(`https://ntfy.sh/${encodeURIComponent(env.NTFY_TOPIC)}`, { method: "POST",
-      headers: { Title: "New shotfleet signup", ...(env.NTFY_TOKEN && { Authorization: `Bearer ${env.NTFY_TOKEN}` }) },  // a free ntfy account's token: its quota is yours, not the shared Workers IP's
-      body: `#${n} on the list. Country ${rec.country || "unknown"}, source ${source}, stack ${rec.stack || "not answered"}.` });
-    if (!r.ok) throw new Error(`ntfy ${r.status}`);
+    await env.ALERT.send({ to: env.ALERT_TO, from: "alerts@shotfleet.com", subject: `shotfleet signup #${n}`,
+      text: `#${n} on the list.\nCountry: ${rec.country || "unknown"}\nSource: ${source}\nStack: ${rec.stack || "not answered"}\n\nThe address is not in this email. Read it with site/signups.sh.\n` });
   } catch (e) {
-    console.log(JSON.stringify({ event: "notify_failed", why: String(e?.message || e).slice(0, 120) }));
+    console.log(JSON.stringify({ event: "notify_failed", why: String(e?.code || e?.message || e).slice(0, 120) }));
   }
 }
 
