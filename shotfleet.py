@@ -2973,7 +2973,13 @@ def png_size(path):
 def device_runs(out):
     """Sub-folders of a multi-device run (out/<device>/run.json), or [] for a single run."""
     out = Path(out)
-    return [] if (out / "run.json").exists() else sorted(d for d in out.iterdir() if (d / "run.json").exists()) if out.is_dir() else []
+    def has_run(d):
+        try: return (d / "run.json").exists()
+        except OSError: return False  # a folder this user may not read (/tmp/systemd-private-*) is not a run
+    try:
+        if has_run(out) or not out.is_dir(): return []
+        return sorted(d for d in out.iterdir() if has_run(d))
+    except OSError: return []
 
 EXPORT_RESULT = {}  # what `export --json` prints: the listings written and the languages skipped
 
