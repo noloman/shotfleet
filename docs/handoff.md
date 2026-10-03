@@ -19,6 +19,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
 | 10 | Capacitor, MAUI, Unity | per-framework toolchains and devices | not attempted |
 | 11 | Decisions that are not engineering | you | see the end |
+| 12 | Xcode 27 check, monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
 
 ---
 
@@ -166,6 +167,15 @@ Polar organisation id nor the Gumroad product id is set in the source tree, so n
 - **A GitHub Action for `check`:** needs the Linux release above (or the macOS one) to download.
 - **Everything in `STATUS.md` "What Manu must do"** (payment provider, tax question, test purchase, go-live, outside testers, posting) is
   unchanged by this session.
+
+## 12. New from the strategy research (2026-10-03, see research/profit-plan-2026-10-03.md)
+
+- **Xcode 27 final (14 Sep) replaced Simulator.app with Device Hub.** Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
+  runtime, and record the Xcode build and iOS version in `STATUS.md` row 9 (no record says which Xcode the real runs used). Passed when 36 of 36 assertions hold; if `simctl` behaves
+  differently, `shotfleet.py`'s simulator functions are where to look.
+- **Re-read Apple's screenshot specifications monthly** (it changed 8 Jul, 19 Aug, 9 Sep). Compare https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
+  with `APPLE_SIZES` in `shotfleet.py`. The iPhone Duo sizes were added on 2026-10-03; Apple opens uploads for it "later this year", so `export` for Duo is untested.
+- **Team / CI demand test and the layout check** are decided by the experiments in section 7 of the strategy note, after launch; do not build them before.
 
 ## Known small things, not blocking
 

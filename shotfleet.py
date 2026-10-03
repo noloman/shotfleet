@@ -3125,13 +3125,14 @@ def latest_ios_runtime():
 
 # Android language tag -> Google Play listing locale (fastlane supply folder names)
 
-# App Store screenshot sizes per display class (Apple's Screenshot specifications, 2026-10-01; research/store-specs.md).
+# App Store screenshot sizes per display class (Apple's Screenshot specifications, 2026-10-01, Duo added 2026-10-03; research/store-specs.md).
 # iPhone and iPad sizes are portrait; landscape (swapped) is accepted too.
 APPLE_SIZES = {
     'iPhone 6.9"': [(1260, 2736), (1290, 2796), (1320, 2868)], 'iPhone 6.5"': [(1284, 2778), (1242, 2688)],
     'iPhone 6.3"': [(1179, 2556), (1206, 2622)], 'iPhone 6.1"': [(1170, 2532), (1125, 2436), (1080, 2340)],
     'iPhone 5.5"': [(1242, 2208)], 'iPhone 4.7"': [(750, 1334)], 'iPhone 4"': [(640, 1096), (640, 1136)],
     'iPhone 3.5"': [(640, 920), (640, 960)],
+    'iPhone Duo (outer display)': [(1398, 2034)], 'iPhone Duo (inner display)': [(2007, 2853)],  # listed 2026-10-03; ASC upload "later this year"
     'iPad 13"': [(2064, 2752), (2048, 2732)], 'iPad 11"': [(1488, 2266), (1668, 2420), (1668, 2388), (1640, 2360)],
     'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024)],
     "Apple Watch": [(422, 514), (410, 502), (416, 496), (396, 484), (368, 448), (312, 390)],
