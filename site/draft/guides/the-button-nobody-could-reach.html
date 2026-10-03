@@ -54,12 +54,12 @@
  <div class="page docs">
   <p class="label">Guide</p>
 <h1>The button nobody could reach: how translated text broke my Android onboarding</h1>
-<p>My workout app is in 18 languages. Its onboarding has three intro pages, then experience level, training goals, equipment and a summary. Every page has a Next button at the bottom.</p>
+<p>WOD Tracker, my workout app, is in 18 languages. Its onboarding has three intro pages, then experience level, training goals, equipment and a summary. Every page has a Next button at the bottom.</p>
 <p>On a small Android phone, in Japanese, Korean, Chinese and Arabic, the Next button on the Training Goals page was below the bottom of the screen. The page did not scroll. English fit, so nobody had noticed, including me.</p>
 <p><img src="/img/bug_zh.jpg" alt="Chinese onboarding page with four goal cards and no Next button" loading="lazy"></p>
 <p>The screenshot above is the Chinese page on a 1080 by 1920 emulator. Four goal cards, a Skip link top right, and no way forward. The text in those four languages runs taller than English in the same font size, and the cards pushed the button off the bottom.</p>
 <h2>How I found it</h2>
-<p>I was running my onboarding in every language the app ships, on a store-size emulator, to capture Play Store screenshots. The tool I built for that is shotfleet: it takes one English Maestro flow, rewrites the taps for each language and runs them in parallel. On the Android run, the capture for those four languages got stuck on the same page, because the flow could not tap Next. The tool's output lists any language that did not produce every screenshot, so the four languages stood out.</p>
+<p>I was running my onboarding in every language WOD Tracker ships, on a store-size emulator, to capture Play Store screenshots. The tool I built for that is shotfleet: it takes one English Maestro flow, rewrites the taps for each language and runs them in parallel. On the Android run, the capture for those four languages got stuck on the same page, because the flow could not tap Next. The tool's output lists any language that did not produce every screenshot, so the four languages stood out.</p>
 <p>I want to be exact about this: the tool did not detect "a button is off screen". The capture got stuck, and I looked at why. Its <code>check</code> command, which reads finished screenshots, would not have found this either, because a screenshot of a page with a missing button is not wrong in any way it can see. What found the bug was running the real app, in every language, on a phone-sized screen, and looking at where it stopped.</p>
 <h2>The fix</h2>
 <p>It was a small fix: the Training Goals and Experience Level pages got a vertical scroll, like the Equipment page already had. The change is 8 added lines and 2 removed in one file:</p>

@@ -219,7 +219,7 @@
   ],
   "where_text": [
    "The first run found a button nobody could reach.",
-   "A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next"
+   "A run also surfaces real localization bugs: on WOD Tracker the flow could not tap Next"
   ],
   "status": "partial",
   "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix.",
@@ -493,13 +493,13 @@
  },
  {
   "id": "C030",
-  "claim": "On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) check took about 25 seconds per platform and found one real problem (Chinese captions over an English app); planted errors were reported",
+  "claim": "On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) check took about 25 seconds per platform and found one real problem (Chinese captions over an English app); planted errors were reported",
   "where": [
    "README.md",
    "README.md"
   ],
   "where_text": [
-   "On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform.",
+   "On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform.",
    "When we planted English screenshots in the German folder and deleted a Japanese one, both were reported."
   ],
   "status": "evidence",

@@ -20,7 +20,7 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 ## TO VERIFY BEFORE PUBLISHING
 
-1. App name. The site and flow say "WOD Tracker", the repo and README say CrossfitTracker, the package is `me.manulorenzo.crossfittracker.android.debug`. The draft says "my workout app". Pick one public name and use it everywhere (research/marketing-research.md 4.1 flags this). OPEN, Manu's decision (options listed 2026-10-03, none chosen). A: "WOD Tracker" (the name in the site's screenshot captions in `site/public/index.html`; the screenshots on the site already show it). B: "CrossfitTracker" (the name in README lines 42 and 46 and the repo; matches the package `me.manulorenzo.crossfittracker.android.debug`). C: keep "my workout app", as the draft does now, and name no app. Counts of files mentioning each name under `site`, `README.md`, `examples`, `marketing`: WOD Tracker 4, CrossfitTracker 7. Whichever you pick, README and site must say the same.
+1. App name. TICKED 2026-10-03 (a decision, nothing run): Manu chose option A, "WOD Tracker" (the alternatives were B "CrossfitTracker" and C keep "my workout app"). Applied: the article names WOD Tracker; README lines 42 and 46 changed from CrossfitTracker to WOD Tracker; the site already used WOD Tracker. Left as they are because they are identifiers, not the public name: the package `me.manulorenzo.crossfittracker.android.debug`, the repo name, commit 687ffccd and the `examples/crossfittracker/` folder.
 2. Which languages were observed. Only the Chinese image is kept (claims C012). The commit message of 687ffccd in the CrossfitTracker repo (2026-10-01) names Japanese, Korean, Chinese and Arabic. Manu should confirm he saw all four stuck, or reword to "Chinese, and by the same layout Japanese, Korean and Arabic".
 3. "1080x1920 phone": from the commit message and shotfleet's default emulator size (README line 120 and 155: phone 1080x1920). TICKED for the 1080x1920 figure (README). Still open: the density. The image is 360x640 as stored. Confirm density (dp) before you write "360 by 640 dp".
 4. The code diff in the article is the real one from commit 687ffccd (8 insertions, 2 deletions in `OnboardingScreens.kt`, two `Column`s). Check that the repo owner is fine with showing the file path and snippet; strip the package path if not.
@@ -36,7 +36,7 @@ Sources: commit 687ffccd (read-only, CrossfitTracker repo, read 2026-10-02); `ex
 
 # The button nobody could reach: how translated text broke my Android onboarding
 
-My workout app is in 18 languages. Its onboarding has three intro pages, then experience level, training goals, equipment and a summary. Every page has a Next button at the bottom.
+WOD Tracker, my workout app, is in 18 languages. Its onboarding has three intro pages, then experience level, training goals, equipment and a summary. Every page has a Next button at the bottom.
 
 On a small Android phone, in Japanese, Korean, Chinese and Arabic, the Next button on the Training Goals page was below the bottom of the screen. The page did not scroll. English fit, so nobody had noticed, including me.
 
@@ -46,7 +46,7 @@ The screenshot above is the Chinese page on a 1080 by 1920 emulator. Four goal c
 
 ## How I found it
 
-I was running my onboarding in every language the app ships, on a store-size emulator, to capture Play Store screenshots. The tool I built for that is shotfleet: it takes one English Maestro flow, rewrites the taps for each language and runs them in parallel. On the Android run, the capture for those four languages got stuck on the same page, because the flow could not tap Next. The tool's output lists any language that did not produce every screenshot, so the four languages stood out.
+I was running my onboarding in every language WOD Tracker ships, on a store-size emulator, to capture Play Store screenshots. The tool I built for that is shotfleet: it takes one English Maestro flow, rewrites the taps for each language and runs them in parallel. On the Android run, the capture for those four languages got stuck on the same page, because the flow could not tap Next. The tool's output lists any language that did not produce every screenshot, so the four languages stood out.
 
 I want to be exact about this: the tool did not detect "a button is off screen". The capture got stuck, and I looked at why. Its `check` command, which reads finished screenshots, would not have found this either, because a screenshot of a page with a missing button is not wrong in any way it can see. What found the bug was running the real app, in every language, on a phone-sized screen, and looking at where it stopped.
 
