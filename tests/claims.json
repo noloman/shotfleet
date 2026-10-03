@@ -63,9 +63,9 @@
    "Your app and screenshots are never uploaded."
   ],
   "status": "proven",
-  "proof": "G1NothingLeavesTheMac.test_every_network_call_site_is_a_known_one (AST: urlopen is called only in ios_screen_texts, a local 127.0.0.1 driver call, latest_release, a body-less GET of /download/VERSION, and the three licence functions), G1NothingLeavesTheMac.test_check_and_export_run_with_the_network_cut_off (urlopen and socket connect raise; check and export finish), NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to. No runtime traffic capture, and none is needed for the code path: nothing reads an image or app file into a request body.",
+  "proof": "G1NothingLeavesTheMac.test_every_network_call_site_is_a_known_one (AST: urlopen is called only in ios_screen_texts, a local 127.0.0.1 driver call, latest_release, a body-less GET of /download/VERSION, and the Gumroad licence function), G1NothingLeavesTheMac.test_check_and_export_run_with_the_network_cut_off (urlopen and socket connect raise; check and export finish), NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to. No runtime traffic capture, and none is needed for the code path: nothing reads an image or app file into a request body.",
   "layer": "unit",
-  "assertion": "AST/grep test: every http(s) URL literal in shotfleet.py is in an allow-list {site /download/VERSION, api.lemonsqueezy.com, api.gumroad.com, 127.0.0.1}; no request body contains file bytes. Fixture: run `check` with the network blocked (sandbox-exec deny network*) and assert exit 0.",
+  "assertion": "AST/grep test: every http(s) URL literal in shotfleet.py is in an allow-list {site /download/VERSION, api.gumroad.com, 127.0.0.1}; no request body contains file bytes. Fixture: run `check` with the network blocked (sandbox-exec deny network*) and assert exit 0.",
   "fix": "",
   "test": "NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to"
  },
@@ -541,7 +541,7 @@
   "status": "proven",
   "proof": "shotfleet.py:2267-2285: only `export` and `run` call the licence gate. test_run_without_a_licence_is_the_free_tier_export_is_not covers run/export with sys.frozen=True; no test runs `main(['check', ...])` or doctor/init with frozen=True and no licence. Proven 2026-10-02: with sys.frozen and no licence file, main() runs check, doctor and init without calling require_licence.",
   "layer": "unit",
-  "assertion": "With sys.frozen patched True, no LICENCE_FILE and gumroad_verify/licence_api patched to raise: main(['check', dir]), ['doctor'] and ['init', app] never call them and never return NoLicence.",
+  "assertion": "With sys.frozen patched True, no LICENCE_FILE and gumroad_verify patched to raise: main(['check', dir]), ['doctor'] and ['init', app] never call them and never return NoLicence.",
   "fix": "",
   "test": "CheckPromises.test_check_needs_no_licence_in_the_released_build"
  },
@@ -756,7 +756,7 @@
    "Every language, both platforms, iPad and tablets, and export to fastlane"
   ],
   "status": "proven",
-  "proof": "TierReachesBothPlatformRuns.test_a_licensed_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_capped_state_gives_exactly_two_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers, TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy_when_licensed (tests/test_claims_unit.py). `main(['run'])` on a frozen build goes through the real ios_run_inner and android_run with stand-ins only below them (simulator pool, emulator pool, Maestro): with a fresh licence file each platform gets all 4 shipped languages, in every iPhone, iPad, phone, tablet and 7-inch set; without one each gets the first 2 and prints the free-tier line (the cap sits inside ios_run_inner/android_run, so a stub of ios_run itself would not show it). `export` without a licence exits 2 with the activate message and with one writes the fastlane folder. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not, Licence.test_released_build_needs_a_licence_for_run. Not covered: a real purchase or a real licence server (the licence is a file the test writes); sys.frozen is patched, the released binary was not run.",
+  "proof": "TierReachesBothPlatformRuns.test_a_licensed_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_capped_state_gives_exactly_two_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers, TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy_when_licensed (tests/test_claims_unit.py). `main(['run'])` on a frozen build goes through the real ios_run_inner and android_run with stand-ins only below them (simulator pool, emulator pool, Maestro): with a fresh licence file each platform gets all 4 shipped languages, in every iPhone, iPad, phone, tablet and 7-inch set; without one each gets the first 2 and prints the free-tier line (the cap sits inside ios_run_inner/android_run, so a stub of ios_run itself would not show it). `export` without a licence exits 2 with the activate message and with one writes the fastlane folder. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not, GumroadLicence.test_released_build_needs_a_licence_for_run. Not covered: a real purchase or a real licence server (the licence is a file the test writes); sys.frozen is patched, the released binary was not run.",
   "layer": "unit",
   "assertion": "With LOCALE_CAP=2 and a stub runner, ios_run and android_run receive exactly 2 locales; export raises NoLicence (exit 2).",
   "fix": ""
@@ -792,7 +792,7 @@
    "re-checks at most weekly, works offline for 30 days"
   ],
   "status": "proven",
-  "proof": "Licence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence).",
+  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence).",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -1569,7 +1569,7 @@
  },
  {
   "id": "C093",
-  "claim": "Licence: Gumroad keys are sold (3 activations, one count per key); Lemon Squeezy keys still work in code; refunded, charged-back and disputed Gumroad keys are refused",
+  "claim": "Licence: only Gumroad keys work (3 activations, one count per key); a key from any other store, and a saved licence from one, are refused; refunded, charged-back and disputed Gumroad keys are refused",
   "where": [
    "DISTRIBUTION.md"
   ],
@@ -1577,7 +1577,7 @@
    "Gumroad is the store: its licence keys count activations (3 per key;"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.* (Lemon Squeezy). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK.",
+  "proof": "GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call and Licence.test_a_saved_licence_from_another_store_is_refused_and_can_be_removed (no network call in either). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK; the Lemon Squeezy code was removed 2026-10-03.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""

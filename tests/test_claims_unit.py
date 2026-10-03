@@ -191,10 +191,9 @@ class FreeTierOnAFrozenBuild(FleetCase):
         self.assertIn("free tier: capturing 2 of 3 languages (de, ja)", text)
 
     def test_no_licence_server_is_contacted_and_no_licence_file_is_written(self):
-        # self.main() makes every network call an AssertionError; Gumroad and Lemon Squeezy go through urlopen too
-        for fn in ("gumroad_verify", "licence_api"):
-            with mock.patch.object(sf, fn, side_effect=no_network):
-                self.assertEqual(self.main("run", self.config(), "--locales", "de,ja,fr")[0], 0)
+        # self.main() makes every network call an AssertionError; Gumroad goes through urlopen too
+        with mock.patch.object(sf, "gumroad_verify", side_effect=no_network):
+            self.assertEqual(self.main("run", self.config(), "--locales", "de,ja,fr")[0], 0)
         self.assertFalse(self.licence.exists())
 
     def test_the_cap_is_per_run_two_runs_of_two_languages_give_four(self):  # the limit the claim does not state: pinned, not hidden
