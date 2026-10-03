@@ -2514,6 +2514,7 @@ LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
+LS_PRODUCT_ID = ""  # Lemon Squeezy is no longer sold through: no id is set, so no Lemon Squeezy key unlocks anything (any LS product's key would otherwise)
 GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh: the product ID from the License key block on the product's Content page
 # Polar is no longer sold through (Polar's payout provider Stripe asks for a KvK, 2026-10-02); its code stays, tested, for keys that already exist.
 POLAR_API = os.environ.get("SHOTFLEET_POLAR_API", "https://api.polar.sh/v1/customer-portal/license-keys")
@@ -2605,6 +2606,10 @@ def licence_api(action, **fields):
             with e: return json.loads(e.read() or b"{}")
         except ValueError: raise OSError(f"licence server answered {e.code}")
 
+def ls_ours(r):
+    """A Lemon Squeezy answer counts only for our own product: its keys are valid for every other seller's product too."""
+    return bool(LS_PRODUCT_ID) and (r.get("meta") or {}).get("product_id") == LS_PRODUCT_ID
+
 def cmd_activate(key):
     if is_polar_key(key):
         status, body = polar_post("activate", key=key.strip(), label=socket.gethostname())
@@ -2628,6 +2633,8 @@ def cmd_activate(key):
         print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
         return 0
     r = licence_api("activate", license_key=key.strip(), instance_name=socket.gethostname())
+    if r.get("activated") and not ls_ours(r):
+        raise Fail(f"that key is not a shotfleet licence. Your key is in the Gumroad receipt email: {BUY_URL}")
     if not r.get("activated"):
         raise Fail(f"that key didn't activate: {(r.get('error') or 'unknown error').rstrip('.')}. "
                    f"Your key is in the Gumroad receipt email: {BUY_URL}")
@@ -2640,7 +2647,9 @@ def read_licence():
     """The stored licence as a dict, or None when the file is missing or unreadable (a half-written file must never crash a command)."""
     try: lic = json.loads(LICENCE_FILE.read_text())
     except (OSError, ValueError): return None
-    return lic if isinstance(lic, dict) and lic.get("key") else None
+    if not isinstance(lic, dict) or not lic.get("key"): return None
+    checked = lic.get("checked", 0)
+    return lic if isinstance(checked, (int, float)) and not isinstance(checked, bool) else None  # a text or null date is as good as a corrupt file
 
 def cmd_deactivate():
     if not LICENCE_FILE.exists(): print("no licence on this Mac"); return 0
@@ -2670,7 +2679,7 @@ def require_licence():
             if is_polar_key(key):
                 valid, why = polar_valid(*polar_post("validate", key=key.strip()))
             elif is_gumroad_key(key): valid, why = gumroad_verify(key, count_use=False)[::2]
-            else: r = licence_api("validate", license_key=key); valid, why = r.get("valid"), r.get("error")
+            else: r = licence_api("validate", license_key=key); valid, why = r.get("valid") and ls_ours(r), r.get("error") or "not a shotfleet key"
         except OSError: return  # don't fail a build because the licence server is unreachable
         if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
         return
@@ -2682,6 +2691,9 @@ def require_licence():
         raise NoLicence("the saved licence on this Mac is unreadable: activate again with `shotfleet activate <key>` (the key is in your purchase email). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
     age = (time.time() - lic.get("checked", 0)) / 86400
+    if age < -1:  # dated in the future: a hand-edited file would otherwise never be rechecked
+        raise NoLicence("the saved licence on this Mac has a date in the future: activate again with `shotfleet activate <key>`. "
+                        "`check` is free, and `run` captures up to 2 languages without one.")
     if age < LICENCE_RECHECK_DAYS: return
     try:
         if lic.get("store") == "polar":
@@ -2689,7 +2701,7 @@ def require_licence():
         elif lic.get("store") == "gumroad": valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
         else:
             r = licence_api("validate", license_key=lic["key"], instance_id=lic["instance"])
-            valid, why = r.get("valid"), r.get("error") or r.get("license_key", {}).get("status")
+            valid, why = r.get("valid") and ls_ours(r), r.get("error") or r.get("license_key", {}).get("status") or "not a shotfleet key"
     except OSError:
         if age < LICENCE_OFFLINE_DAYS: return
         raise NoLicence("couldn't reach the licence server for 30 days; connect once to keep using every language in `run`")
