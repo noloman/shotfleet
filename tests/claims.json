@@ -10,8 +10,8 @@
    "One English Maestro flow, every language, iOS and Android.",
    "from **one English Maestro flow**"
   ],
-  "status": "partial",
-  "proof": "Unit: TranslateFlow.*, LocalizeFlow.*, AndroidFlow.*, SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, Locales.test_shipped_locales_*. Real runs: PLAN.md Status 2026-10-01 (iOS 18/18, Android 18/18 on CrossfitTracker); research/pricing-2026-10.md (Kuokka+HackerNewsKMP both platforms). No automated end-to-end run exists.",
+  "status": "evidence",
+  "proof": "Unit: TranslateFlow.*, LocalizeFlow.*, AndroidFlow.*, SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, Locales.test_shipped_locales_*, G1CollisionWarningComesFirst.*. Real runs: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01); research/pricing-2026-10.md (Kuokka iOS+iPad, HackerNewsKMP Android). Real run: the 2026-10-03 fixture end to end on iOS (SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios, 36 of 36 assertions, STATUS.md gate 9): iPhone 17 Pro Max and iPad 13\", de/ja/ar/tr, 2 screenshots per language, planted copy and missing screen caught, export 4 per language. Android half, 2026-10-03: SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only android on the shotfleet_android phone emulator, 29 of 29 assertions (tools/fixture-app-android; de/ja/ar/tr, 2 screenshots per language, German OCR shows Weiter and Fertig, check 0 problems, export to Play folders, planted copy and missing screen caught). Not run: Maestro 2.11.x, an app other than the author's.",
   "layer": "fixture",
   "assertion": "On tools/fixture-app (en,de,ja,ar,tr): `shotfleet run --locales de,ja,ar,tr` exits 0 with 2 screenshots per locale and every raw/<lp>/*.png exists; the German image's accessibility text contains 'Weiter' (.texts.json). Add a tiny Android fixture APK for the Android half.",
   "fix": ""
@@ -45,8 +45,8 @@
   "where_text": [
    "shotfleet captures them all and checks every screenshot"
   ],
-  "status": "partial",
-  "proof": "JudgeScreen.*, CheckAnyFolder.*, ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command, StuckOcrFallback.*. Audit snippet 2026-10-02 (not committed): cmd_check on synthetic .texts.json flagged wrong language, identical image, missing screen and wrong size. Caveats: copies are only reported when the screen has >=40 characters (shotfleet.py:1620, verified: two identical 2-label screens are not reported as identical); scripts macOS cannot read (Greek, Hebrew, most Indic) are only checked for other-language, copies and missing (README.md:232).",
+  "status": "proven",
+  "proof": "G1CheckDetectors.test_a_clean_set_passes_and_every_screenshot_is_judged (one row and one language verdict per screenshot, exit 0), G1CheckDetectors.test_wrong_language_is_one_problem_naming_the_file_and_the_language_it_shows, G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files, G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing, G1CheckDetectors.test_a_size_the_store_refuses_is_one_problem_per_file, G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language, G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language; plus the older JudgeScreen.*, ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command, StuckOcrFallback.*. Real: CrossfitTracker 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes (ROADMAP.md, 2026-10-03). Limits that stay true and are documented (README.md Limits): copies are only reported for screens with 40 or more characters of text (G1CheckDetectors.test_known_blind_spot_two_short_screens_in_two_languages_are_not_called_copies), and for scripts macOS cannot read only other-language, copies and missing are checked (Tesseract fills in when installed).",
   "layer": "unit",
   "assertion": "One parametrised test over cmd_check with .texts.json fixtures: (a) wrong language, (b) byte-identical image in two languages, (c) missing screen, (d) off-size image each yield exactly one problem line and exit 1; a clean set yields exit 0.",
   "fix": "Keep 'checks every screenshot' only if the page says what it checks: 'checks every screenshot for the wrong language, copies, missing screens and store size rules'."
@@ -62,8 +62,8 @@
    "your app and screenshots are never uploaded",
    "Your app and screenshots are never uploaded."
   ],
-  "status": "partial",
-  "proof": "Code audit 2026-10-02: grep urlopen in shotfleet.py finds only Gumroad (the store; Polar and Lemon Squeezy code stays for old keys) licence calls, https://shotfleet.com/download/VERSION (doctor) and http://127.0.0.1 (Maestro driver). A test lists every host named in shotfleet.py (the site, Gumroad, Polar, Lemon Squeezy for licence checks, a local test server); no runtime traffic capture exists.",
+  "status": "proven",
+  "proof": "G1NothingLeavesTheMac.test_every_network_call_site_is_a_known_one (AST: urlopen is called only in ios_screen_texts, a local 127.0.0.1 driver call, latest_release, a body-less GET of /download/VERSION, and the three licence functions), G1NothingLeavesTheMac.test_check_and_export_run_with_the_network_cut_off (urlopen and socket connect raise; check and export finish), NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to. No runtime traffic capture, and none is needed for the code path: nothing reads an image or app file into a request body.",
   "layer": "unit",
   "assertion": "AST/grep test: every http(s) URL literal in shotfleet.py is in an allow-list {site /download/VERSION, api.polar.sh, api.lemonsqueezy.com, api.gumroad.com, 127.0.0.1}; no request body contains file bytes. Fixture: run `check` with the network blocked (sandbox-exec deny network*) and assert exit 0.",
   "fix": "",
@@ -97,8 +97,8 @@
    "Nothing in the app was changed to get them.",
    "No copies of the flow, no changes to the app."
   ],
-  "status": "partial",
-  "proof": "LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages launch args), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots. research/frameworks.md cites AOSP source for per-app locales without app cooperation. Needs a Debug-iphonesimulator build and an API 33+ emulator (README.md:238), which is a build, not an app change. Apps with their own persisted in-app language picker are untested.",
+  "status": "evidence",
+  "proof": "Mechanism: LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages / -AppleLocale launch arguments), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; research/frameworks.md cites AOSP for per-app locales without the app's cooperation. Real: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01) and the 2026-10-03 fixture e2e (the fixture app has no shotfleet code; STATUS.md gate 9). It needs a Debug-iphonesimulator build and an API 33+ emulator (README.md Limits), which is a build, not a change to the app. Untested: apps that keep their own persisted in-app language picker.",
   "layer": "fixture",
   "assertion": "tools/fixture-app contains no shotfleet code: `run` on it produces German 'Willkommen' (accessibility text) - proves iOS needs no change. Add an Android fixture for `cmd locale set-app-locales`.",
   "fix": ""
@@ -151,8 +151,8 @@
    "Every image is read back and compared with your app’s own strings.",
    "every screenshot's text is compared against your app's own strings"
   ],
-  "status": "partial",
-  "proof": "JudgeScreen.*, ScreenText.test_check_prefers_the_apps_own_text, TolerantMatching.*, Evidence.*. On iOS runs the text comes from the accessibility tree during the run (README.md:23), on Android and for other tools' screenshots from macOS OCR. The capture side (ios_screen_texts/capture_texts, shotfleet.py:812-846) has no test without a simulator.",
+  "status": "proven",
+  "proof": "G1CheckDetectors.test_the_app_text_is_compared_with_the_apps_strings_not_with_a_language_guess (the app's own text of an iOS run, compared with the strings: Japanese strings on the German screen are 'shows ja strings'), G1CheckDetectors.test_the_same_comparison_runs_on_text_read_by_ocr_the_android_and_other_tools_path, G1CheckDetectors.test_wrong_language_is_one_problem_naming_the_file_and_the_language_it_shows, ScreenText.test_check_prefers_the_apps_own_text, TolerantMatching.*, Evidence.*. Capture side: iOS saves the accessibility text during the run (ios_screen_texts/capture_texts); no unit test without a simulator, but the fixture e2e and CrossfitTracker runs used it. Real run: the 2026-10-03 fixture end to end on iOS (SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios, 36 of 36 assertions, STATUS.md gate 9): iPhone 17 Pro Max and iPad 13\", de/ja/ar/tr, 2 screenshots per language, planted copy and missing screen caught, export 4 per language. Caveat that stays: a screen with fewer than 2 of the app's strings (a short label screen) is judged by language detection instead (judge_screen best < 2).",
   "layer": "fixture",
   "assertion": "After a fixture `run`, every raw/<lp>/*.texts.json exists and is non-empty (iOS), and `check` on the output reports 0 problems; replace the German PNG with the Japanese one and assert a 'shows ja strings' problem.",
   "fix": ""
@@ -169,7 +169,7 @@
    "SystemUI demo mode: 9:41, full battery, no notifications"
   ],
   "status": "evidence",
-  "proof": "Code: shotfleet.py:794 (simctl status_bar override --time 9:41) and DEMO_MODE 1100-1107. Images: train_ar.jpg and bug_zh.jpg show 9:41 and full battery (viewed 2026-10-02). No test.",
+  "proof": "Code: shotfleet.py make_pool (simctl status_bar override --time 9:41, charged, level 100) and DEMO_MODE. Unit: G1StatusBar.test_ios_status_bar_override_on_every_simulator and G1StatusBar.test_android_demo_mode_fixes_the_clock_and_battery prove the commands are sent to every device. Images: train_ar.jpg and bug_zh.jpg show 9:41 and full battery (viewed 2026-10-02). Not asserted by any run: that the pixels of every screenshot show it.",
   "layer": "fixture",
   "assertion": "After a fixture run, OCR the top 80 px of raw/de/01.png (tools/ocr) and assert it contains '9:41'.",
   "fix": ""
@@ -290,8 +290,8 @@
    "When two words clash in a language, it warns you before anything runs.",
    "Translation collisions, before anything runs"
   ],
-  "status": "partial",
-  "proof": "TranslateFlow.test_turkish_next_advanced_collision_is_warned and test_no_collision_warning_when_words_differ (synthetic TR table). Warning is printed before any simulator boots (shotfleet.py:1008-1018). Not tested: the ordering, the Android path, and the real app; research/real-apps.md D6 measured ~3% of runs warn, mostly false positives (singular/plural, case).",
+  "status": "proven",
+  "proof": "TranslateFlow.test_turkish_next_advanced_collision_is_warned, TranslateFlow.test_no_collision_warning_when_words_differ, G1CollisionWarningComesFirst.test_ios and G1CollisionWarningComesFirst.test_android (the 'warning tr: ... also means ...' line is printed before the 'booting ...' line, i.e. before a simulator or emulator is started). Caveat in the claim stays honest: research/real-apps.md D6 measured about 3% of runs warning, mostly false positives (singular/plural, case); the warning names the fix (anchor the step, or [overrides]).",
   "layer": "unit",
   "assertion": "Run ios_run with make_pool mocked to raise and assert the 'warning tr: ... also means' line was printed first; same for android_run.",
   "fix": ""
@@ -307,8 +307,8 @@
    "Setup is one command and a two-line config.",
    "The whole config can be this (`shotfleet init` writes it):"
   ],
-  "status": "partial",
-  "proof": "SimpleConfig.test_only_the_build_is_required_and_ids_come_from_it and test_init_takes_several_builds_into_one_small_config prove the config is [ios]+app= (two lines; four with Android). The quickstart is four commands (install, activate, doctor, init; README.md:48-53) plus Maestro, Java 17+, a simulator build and writing the flow.",
+  "status": "proven",
+  "proof": "G1InitIsTwoLines.test_one_build_two_lines_two_builds_four_lines (init writes '[ios]' + 'app = ...': two lines that are not comments, four with an APK too, and a flow.yaml), SimpleConfig.test_only_the_build_is_required_and_ids_come_from_it, SimpleConfig.test_init_takes_several_builds_into_one_small_config. The prerequisites around it (install, activate, doctor, Maestro, Java 17+, a Debug simulator build, writing the flow) are not part of this claim; see C019 for the 10-minute quickstart.",
   "layer": "unit",
   "assertion": "Assert `init` of one .app writes a config with <= 2 non-comment lines and a flow.yaml.",
   "fix": "shotfleet init writes the two-line config; you write one English flow."
@@ -342,8 +342,8 @@
    "Both platforms from one config and one flow",
    "Both platforms from one flow."
   ],
-  "status": "partial",
-  "proof": "SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, test_run_goes_through_every_platform_in_the_file, ReviewFixes.test_map_form_screenshots_are_redirected_on_both_platforms. Real: Kuokka + HackerNewsKMP both-platform run (research/pricing-2026-10.md, 2026-10-02).",
+  "status": "evidence",
+  "proof": "Unit: SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, SimpleConfig.test_run_goes_through_every_platform_in_the_file, ReviewFixes.test_map_form_screenshots_are_redirected_on_both_platforms. Real: Kuokka and HackerNewsKMP, both platforms from one config and flow (research/pricing-2026-10.md, ROADMAP.md 2026-10-02); CrossfitTracker iOS and Android from one flow (PLAN.md). The 2026-10-03 fixture e2e passed on iOS (36/36) and on Android phone (29/29, tools/fixture-app-android).",
   "layer": "fixture",
   "assertion": "Fixture config with [ios] and [android]: one flow.yaml, `shotfleet run` produces out-ios/ and out-android/ each with N screenshots per locale.",
   "fix": ""
@@ -359,8 +359,8 @@
    "plus the sets the stores ask for.",
    "iPad and tablets"
   ],
-  "status": "evidence",
-  "proof": "iPad: MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices (unit) + ROADMAP.md:27 (remoti iPhone 6.9 + iPad 13 2064x2752, 2026-10-02). Android tablet: ROADMAP.md:27 (CrossfitTracker phone 1080x1920 + tablet 1440x2560 exported to phoneScreenshots/tenInchScreenshots, 2026-10-02) and ANDROID_DEVICES (shotfleet.py:1136); no unit test covers the tenInchScreenshots export (only a hook test names 'tablet'). 'Sets the stores ask for' is vague: no 7-inch tablet set (research/limits-platforms.md), and marketing/launch-posts-v2.md:119 still says 'Do NOT claim ... Android tablets'.",
+  "status": "proven",
+  "proof": "G1MultiDeviceExport.test_phone_and_tablet_runs_export_to_their_own_play_folders (phone 1080x1920 to phoneScreenshots and tablet 1440x2560 to tenInchScreenshots), G1MultiDeviceExport.test_the_tablet_device_matches_what_google_play_wants_and_the_ipad_size_is_the_13_inch_class, SevenInchTablet.test_export_writes_the_seven_inch_set_next_to_phone_and_ten_inch (the 7-inch slot exists since be96dd8), MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices (iPad 13\" next to iPhone, iPad rule across devices). Real: ROADMAP.md (remoti iPhone 6.9\" + iPad 13\" 2064x2752; CrossfitTracker phone + tablet exported, 2026-10-02) and the 2026-10-03 fixture e2e on an iPhone 17 Pro Max plus an iPad 13\" (STATUS.md gate 9). Not run on a device: the 7-inch tablet slot. marketing/launch-posts-v2.md:119 ('Do NOT claim ... Android tablets') is stale and contradicts this claim; see C102.",
   "layer": "unit",
   "assertion": "Export test for a run with device='tablet' writes metadata/android/<locale>/images/tenInchScreenshots; fixture: iPad Pro 13 run produces 2064x2752 PNGs and `check` passes the iPad rule.",
   "fix": "Reword to 'a 13\" iPad set and a 10\" Android tablet set from the same flow'; fix the contradictory instruction in launch-posts-v2.md:119."
@@ -406,8 +406,8 @@
   "where_text": [
    "**Languages your app doesn't have:**"
   ],
-  "status": "partial",
-  "proof": "Implemented (shotfleet.py:1580-1583, 'the app has no X translation'); real evidence research/real-apps.md (remoti: 108 problems, true positives viewed) and PLAN.md (zh-Hant listing). No unit test asserts the message.",
+  "status": "proven",
+  "proof": "G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language (a fr-FR listing for an app with en, de, ja gives exactly 'fr-FR: the app has no fr-FR translation, so this listing shows another language'). Real: remoti 108 true positives and the zh-Hant listing of CrossfitTracker (research/real-apps.md, PLAN.md).",
   "layer": "unit",
   "assertion": "cmd_check on {en,de} strings and a fr-FR folder returns a problem starting 'fr-FR: the app has no fr-FR translation' (audit snippet 2026-10-02 produced it).",
   "fix": ""
@@ -423,8 +423,8 @@
    "**Copies:** the same image in two languages.",
    "**Missing:** a language that didn't produce every screenshot."
   ],
-  "status": "partial",
-  "proof": "Audit snippet 2026-10-02 (not committed) on cmd_check: 'identical image in 2 languages: de-DE/01.png, ja/01.png' and 'en-US: missing 02.png' were reported. cold-test-2.md #18 (real run, 28 s). Only export tests mention the identical-image string; no unit test of the detection. Blind spot: copies need >=40 characters of text (shotfleet.py:1620); byte-identical only.",
+  "status": "proven",
+  "proof": "G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files ('identical image in 2 languages: de/01.png, en/01.png'), G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing ('ja: missing 02.png'), G1CheckDetectors.test_known_blind_spot_two_short_screens_in_two_languages_are_not_called_copies (the 40-character floor, byte-identical only). Real: research/cold-test-2.md #18 (planted copy and deleted file reported) and the 2026-10-03 fixture e2e planted copy and missing screen (STATUS.md gate 9).",
   "layer": "unit",
   "assertion": "Commit the audit snippet as a test: two identical PNGs with >=40 chars of .texts.json -> 'identical image'; a locale lacking one file -> '<l>: missing <file>'.",
   "fix": ""
@@ -453,8 +453,8 @@
   "where_text": [
    "On iOS, shotfleet reads the text straight from the app while each screenshot is on screen (exact, in every script)"
   ],
-  "status": "partial",
-  "proof": "ScreenText.test_check_prefers_the_apps_own_text and test_flows_pause_after_each_screenshot (consumption and flow pause); FrameworkFixes.test_empty_accessibility_tree_falls_back_to_ocr_but_a_short_real_screen_does_not. The capture through the Maestro driver is unverified without a simulator; ROADMAP.md says 1.5 done on iOS.",
+  "status": "evidence",
+  "proof": "Check side (no device): ScreenText.test_check_prefers_the_apps_own_text (Greek read exactly, no OCR), G1CheckDetectors.test_the_app_text_is_compared_with_the_apps_strings_not_with_a_language_guess, FrameworkFixes.test_empty_accessibility_tree_falls_back_to_ocr_but_a_short_real_screen_does_not. Capture side: ROADMAP.md 'iOS reads app text exactly' and research/frameworks.md; the 2026-10-03 fixture e2e reads each screen's text from .texts.json first (STATUS.md gate 9, de/ja/ar/tr), but its assertion would also pass on OCR, so a .texts.json file per screenshot is not asserted by any run.",
   "layer": "fixture",
   "assertion": "Fixture run on the Arabic and Japanese fixture languages: .texts.json contains the localized strings (no OCR involved).",
   "fix": ""
@@ -503,7 +503,7 @@
    "When we planted English screenshots in the German folder and deleted a Japanese one, both were reported."
   ],
   "status": "evidence",
-  "proof": "PLAN.md:23 (2026-10-01); research/first-run.md (252, ~30 s); research/cold-test-2.md #18 (28 s; planted copy and deleted file both reported). 126 Android screenshots and the exact 'English in German, deleted Japanese' scenario are not recorded. First `check` after a restart takes ~4 min while macOS compiles OCR (ROADMAP.md 'Still open').",
+  "proof": "PLAN.md:23 (2026-10-01); research/first-run.md (252, ~30 s); research/cold-test-2.md #18 (28 s; planted copy and deleted file both reported). 126 Android screenshots and the exact 'English in German, deleted Japanese' scenario are not recorded. First `check` after a restart takes ~4 min while macOS compiles OCR (ROADMAP.md 'Still open'). The planted-error behaviour is now also a unit test: G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files and G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing. ROADMAP.md 2026-10-03 adds 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes.",
   "layer": "fixture",
   "assertion": "Plant errors in the fixture's output (copy de->ja, delete ar/02) and assert both reported; time `check` on the 10 fixture images (< 60 s warm).",
   "fix": ""
@@ -520,7 +520,7 @@
    "Check any screenshots, from fastlane or by hand"
   ],
   "status": "partial",
-  "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/.",
+  "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes.",
   "layer": "unit",
   "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
   "fix": ""
@@ -611,8 +611,8 @@
   "where_text": [
    "Supported: `.arb`, i18next/react-intl `.json`"
   ],
-  "status": "partial",
-  "proof": "SourceFiles.test_flutter_arb_with_icu_plurals, test_i18next_json, test_xliff_resx_po_properties_csv_xcstrings, test_details_each_format_gets_right, test_language_from_file_and_folder_names, test_android_escapes; FrameworkFixes.*; PluralsAndFormats.*. 'react-intl' JSON is not tested by name; .xlf/.resx/.csv were never run on a real project.",
+  "status": "proven",
+  "proof": "SourceFiles.test_flutter_arb_with_icu_plurals, SourceFiles.test_i18next_json, SourceFiles.test_xliff_resx_po_properties_csv_xcstrings, SourceFiles.test_details_each_format_gets_right, SourceFiles.test_language_from_file_and_folder_names, SourceFiles.test_android_escapes, G1ReactIntlAndFormats.test_react_intl_flat_json_with_icu_plural (react-intl flat JSON, ICU plural and {name} placeholder, through translate_flow), FrameworkFixes.*, PluralsAndFormats.*. Format support is proven on fixture files only: .xlf/.resx/.csv/.po were never run on a real project, and only Flutter .arb, i18next/React Native and Compose strings.xml have been read from real apps (research/frameworks.md).",
   "layer": "unit",
   "assertion": "Add one react-intl flat-JSON fixture (with ICU plural) to SourceFiles.",
   "fix": ""
@@ -658,8 +658,8 @@
   "where_text": [
    "shotfleet makes the correct raw screenshots."
   ],
-  "status": "partial",
-  "proof": "Correctness is what check verifies (see 'checks every screenshot'); screenshots on the hero are right (viewed 2026-10-02) but the Remoti gallery shows the opposite (see next claim).",
+  "status": "evidence",
+  "proof": "What 'correct' means is what check verifies (C003, proven). Real: CrossfitTracker 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes (ROADMAP.md, 2026-10-03); Real run: the 2026-10-03 fixture end to end on iOS (SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios, 36 of 36 assertions, STATUS.md gate 9): iPhone 17 Pro Max and iPad 13\", de/ja/ar/tr, 2 screenshots per language, planted copy and missing screen caught, export 4 per language. The site hero images were viewed 2026-10-02; the Remoti gallery tab that showed the opposite is C040.",
   "layer": "fixture",
   "assertion": "Same as the fixture run + check assertions.",
   "fix": ""
@@ -1027,8 +1027,8 @@
   "where_text": [
    "# checks Maestro, Java, Xcode, Android SDK"
   ],
-  "status": "partial",
-  "proof": "JavaForMaestro.* (Java detection), FirstRun.* ; `python3 shotfleet.py doctor` output format read in code (shotfleet.py:1714-1752); research/cold-test-2.md #6 (clean-env run). No unit test of cmd_doctor's table.",
+  "status": "proven",
+  "proof": "G1Doctor.test_a_mac_with_nothing_installed_gets_one_fix_per_missing_tool_and_exit_2 (Maestro, Java 17+, swiftc, simctl, adb, emulator, avdmanager, aapt2 and the system image each get a MISSING line with ' -> ' and a fix command; exit 2), G1Doctor.test_a_complete_mac_is_ready_for_both_and_exit_0, MaestroVersion.*, DoctorUnderLoad.*, JavaForMaestro.*, DoctorAndroid.test_missing_pieces_come_with_one_exact_sdkmanager_command. Real: research/cold-test-2.md #6 (clean-env run) and the fixture e2e doctor step ('iOS: ready').",
   "layer": "unit",
   "assertion": "Patch shutil.which/sh to simulate a Mac with nothing installed: doctor returns 2 and prints one MISSING line with a fix per tool; with all present returns 0.",
   "fix": ""
@@ -1089,8 +1089,8 @@
    "device_types = [\"iPhone 17 Pro Max\", \"iPad Pro 13-inch (M5)\"]",
    "devices = [\"phone\", \"tablet\"]"
   ],
-  "status": "partial",
-  "proof": "Every README key is in KEYS (shotfleet.py:34-36). iPhone+iPad: MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices. Android devices: only the hook test uses 'tablet'. 'timeout_s' is accepted but undocumented.",
+  "status": "proven",
+  "proof": "G1ReadmeConfigBlocks.test_every_documented_table_and_key_passes_the_programs_validation (every ```toml block of README.md is parsed; every [ios]/[android]/[hooks]/[overrides]/[inputs]/[expect] key is accepted by KEYS and check_tables with the right type, and all ten keys the claim names appear), G1ReadmeConfigBlocks.test_the_documented_android_devices_exist, MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices, SevenInchTablet.test_export_writes_the_seven_inch_set_next_to_phone_and_ten_inch. 'timeout_s' is accepted but undocumented.",
   "layer": "unit",
   "assertion": "Test that every key shown in the README config block is accepted by load_config (parse the README fenced blocks).",
   "fix": ""
@@ -1104,8 +1104,8 @@
   "where_text": [
    "Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted."
   ],
-  "status": "partial",
-  "proof": "CheckAnyFolder.test_json_mode_keeps_stdout_machine_readable (exit 2 case only), Config.test_cli_exits_2..., PolarLicence (export exit 2). cold-test-2.md #4 verified 130 and #5 the JSON shape (stale: doctor exit code since changed to 2).",
+  "status": "proven",
+  "proof": "G1ExitCodes.test_zero_for_a_clean_set_one_for_a_problem (also the documented check --json keys exit, screenshots, problems, notes), G1ExitCodes.test_two_for_a_setup_error_with_one_line_on_stderr, G1ExitCodes.test_130_when_interrupted_and_stale_drivers_are_cleaned_up (main() with an interrupt; a real Ctrl-C was verified in research/cold-test-2.md #4), G1ExitCodes.test_doctor_is_two_when_nothing_is_ready, CheckAnyFolder.test_json_mode_keeps_stdout_machine_readable, DocumentedCommands.test_json_flag_is_on_run_check_and_export, JsonReports.*.",
   "layer": "unit",
   "assertion": "Subprocess matrix: check ok -> 0 with JSON keys exit/screenshots/problems/notes; check with a planted problem -> 1; missing folder -> 2; SIGINT -> 130.",
   "fix": ""
@@ -1171,7 +1171,7 @@
    "A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices."
   ],
   "status": "partial",
-  "proof": "Extending.test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure, test_before_run_failure_aborts_after_run_failure_changes_the_exit_code, test_after_run_counts_problems_across_all_devices_of_a_multi_device_run, test_no_hooks_flag_and_export_hooks. Mismatches with the documented variable list (README.md:186-188): SHOTFLEET_BUNDLE_ID is not set for export hooks, and SHOTFLEET_LOCALES is empty unless --locales or `locales` restricts the run (shotfleet.py:946-948, 2236-2238).",
+  "proof": "Extending.test_hooks_run_in_order_with_the_environment_and_stop_at_the_first_failure, test_before_run_failure_aborts_after_run_failure_changes_the_exit_code, test_after_run_counts_problems_across_all_devices_of_a_multi_device_run, test_no_hooks_flag_and_export_hooks. Mismatches with the documented variable list (README.md:186-188): SHOTFLEET_BUNDLE_ID is not set for export hooks, and SHOTFLEET_LOCALES is empty unless --locales or `locales` restricts the run (shotfleet.py:946-948, 2236-2238). G1HookVariables.test_each_event_gets_exactly_these_variables now records the real variables per event: before_run EVENT VERSION CONFIG PLATFORM OUT BUNDLE_ID LOCALES; after_run adds EXIT PROBLEMS REPORT; before_export EVENT VERSION CONFIG PLATFORM OUT FASTLANE REPORT (no BUNDLE_ID); after_export adds EXIT. README.md says _BUNDLE_ID reaches every event, so that sentence is wrong for the export hooks: reword it, or set BUNDLE_ID in export_with_hooks.",
   "layer": "unit",
   "assertion": "Hook test that dumps `env | grep SHOTFLEET_` for each of the four events and compares with a table generated from the README sentence.",
   "fix": "Say which variables each event gets; fill SHOTFLEET_LOCALES with the languages actually run."
@@ -1216,7 +1216,7 @@
    "Text recognition is macOS's. It reads 33 languages"
   ],
   "status": "evidence",
-  "proof": ".build/ocr --langs printed 33 codes on this Mac (macOS 27, 2026-10-02); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer). Weaker-check behaviour: JudgeScreen tests and ExternalOcr test.",
+  "proof": ".build/ocr --langs printed 33 codes on this Mac again on 2026-10-03 (en-US fr-FR it-IT de-DE es-ES pt-BR zh-Hans zh-Hant yue ko-KR ja-JP ru-RU uk-UA th-TH vi-VT ar-SA ars tr-TR id-ID cs-CZ da-DK nl-NL no nn nb ms-MY pl-PL ro-RO sv-SE fi-FI hi-IN mr-IN; macOS 27); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer). 'Others only get the weaker checks': G1ScriptsMacosCannotRead.test_a_blank_read_of_an_unreadable_script_proves_nothing_either_way and G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language (proven), ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command. Tesseract fills in when installed (ROADMAP.md: 84/85 languages verified by reading).",
   "layer": "unit",
   "assertion": "Test: judge_screen returns (None, None) for a Greek/Hebrew screen macOS cannot read and check prints 'macOS can't read the script of ...'. CI on the oldest supported macOS records len(--langs).",
   "fix": ""
@@ -1692,7 +1692,7 @@
    "screenshot sizes App Store Connect would have refused."
   ],
   "status": "partial",
-  "proof": "Captions over English UI: evidence (research/real-apps.md remoti: 108 problems, viewed; PLAN.md zh-Hant). The size claim has no recorded instance: the only size findings in the repo are noise from 360 px thumbnails (cold-test-2.md header).",
+  "proof": "Captions over English UI: evidence (research/real-apps.md remoti: 108 problems, viewed; PLAN.md zh-Hant). The size claim has no recorded instance: the only size findings in the repo are noise from 360 px thumbnails (cold-test-2.md header). Capability is unit-tested for both halves: G1CheckDetectors.test_a_translated_caption_over_an_english_ui_is_named_as_such and G1CheckDetectors.test_a_size_the_store_refuses_is_one_problem_per_file, StoreRules.test_app_store_sizes_alpha_counts_and_required_class. The email says it 'caught' sizes 'on my own apps while I built it': no such instance is recorded anywhere in the repo.",
   "layer": "unit",
   "assertion": "Keep a golden sample: an English-UI image under a Japanese caption must produce 'the caption is in ja but the app UI shows en strings'. Drop or substantiate the size line.",
   "fix": "Delete the third bullet unless a real rejected size is documented."
@@ -1998,8 +1998,8 @@
    "could not verify",
    "could not verify"
   ],
-  "status": "partial",
-  "proof": "Unit: ContentExpect.test_the_apps_own_text_is_exact_and_matched_like_judge_screen, ContentExpect.test_ocr_never_passes_or_fails_what_it_cannot_read, ContentExpect.test_check_content_cli_reads_the_config_and_keeps_the_json_keys. Fixtures only (.texts.json and fake OCR); no simulator or emulator run.",
+  "status": "proven",
+  "proof": "ContentExpect.test_the_apps_own_text_is_exact_and_matched_like_judge_screen, ContentExpect.test_a_missing_string_and_an_empty_state_are_each_one_problem_line_with_the_screen, ContentExpect.test_any_needs_one_of_the_strings, ContentExpect.test_ocr_never_passes_or_fails_what_it_cannot_read (missing and forbidden text are problems, an unreadable script is a note), ContentExpect.test_check_content_cli_reads_the_config_and_keeps_the_json_keys, G1ContentExpectInRun.test_run_passes_expect_to_cmd_check (iOS run hands [expect.*] to its check; android_run passes the same cfg['_expect']). Fixtures only (.texts.json and a fake text recognition); the claim is about comparing text, which needs no device.",
   "layer": "unit",
   "assertion": "cmd_check with .texts.json and fake-OCR fixtures: missing, forbidden and unreadable-script texts give a problem, a problem and a note.",
   "fix": "Keep 'proves the strings you list are present, not that the data looks right'."
@@ -2015,8 +2015,8 @@
    "A command that fails stops the run before anything is captured (exit 2)",
    "A command that fails stops the run before anything is captured (exit 2)"
   ],
-  "status": "partial",
-  "proof": "Unit: SetupCommands.test_simctl_commands_get_the_udid_and_run_in_order_after_the_status_bar, SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop, SetupCommands.test_a_failing_command_is_a_setup_error_that_prints_it. Command construction only; not run on a real emulator or simulator.",
+  "status": "proven",
+  "proof": "SetupCommands.test_simctl_commands_get_the_udid_and_run_in_order_after_the_status_bar, SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop, SetupCommands.test_a_failing_command_is_a_setup_error_that_prints_it, G1SetupCommandFailureStopsTheRun.test_ios_stops_before_install_and_maestro and G1SetupCommandFailureStopsTheRun.test_android_stops_before_install_and_maestro (the real make_pool / android_pool and run functions with fake devices: a failing command raises the setup Fail, nothing is installed and Maestro is never started). Not run on a real emulator: an on-device effect such as setprop debug.* on an emulator image.",
   "layer": "unit",
   "assertion": "Fake Sim/Emu record the commands in order; a device run with setprop debug.* on an emulator image is still to do.",
   "fix": "Say the Android commands are unit-tested as command lines only until run on an emulator."
