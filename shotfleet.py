@@ -1483,7 +1483,7 @@ def ios_run_inner(cfg, path, only, parallel):
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
-    note_partly_translated(strings, base_locale, only or cfg.get("locales"))
+    note_partly_translated(strings, base_locale, only or cfg.get("locales") or None)
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
@@ -1848,7 +1848,7 @@ def android_run(cfg, path, out, only, parallel):
     framework_hint(apk, "strings" in cfg, path("."))
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
-    note_partly_translated(strings, cfg.get("base_locale", "en"), only or cfg.get("locales"))
+    note_partly_translated(strings, cfg.get("base_locale", "en"), only or cfg.get("locales") or None)
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
