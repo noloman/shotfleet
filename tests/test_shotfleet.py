@@ -1032,6 +1032,13 @@ class StuckOcrFallback(unittest.TestCase):
         self.assertTrue(any(p.startswith("ja/1.png: shows en") for p in report["problems"]))  # still catches English
         self.assertFalse(any(p.startswith("de/") for p in report["problems"]))
 
+    def test_tesseract_lines_with_several_labels_still_count(self):
+        t = sf.string_tables({"de": {"a": "Alle", "b": "Übungen", "c": "Noch nichts eingetragen"},
+                              "en": {"a": "All", "b": "Exercises", "c": "Nothing logged yet"}})
+        ocr = {"chars": 60, "text": "All Exercises WODs\nNothing logged yet", "lang": None, "langs": {}, "ocr": "external"}
+        got, problem = sf.judge_screen("de", ocr, t)
+        self.assertEqual(got, "en"); self.assertIsNotNone(problem)
+
     def test_without_tesseract_it_says_how_to_fix(self):
         (self.bin / "tesseract").unlink()
         with mock.patch.object(sf.shutil, "which", return_value=None):
