@@ -61,3 +61,62 @@ No code change is needed.
 2.12.0 and 3.0.0 do not exist yet (release URLs return 404). One difference between the two that matters: **2.11.0 defines
 `MAESTRO_DEVICE_UDID`**, 2.0.10 does not (see `docs/handoff.md` item 5). The device runs under "Still to do" above are unchanged and are
 item 1 of `docs/handoff.md`, which also lists the exact edits to promote 2.11.0 to tested.
+
+## Real device run, 2026-10-03 (evening): 2.11.0 FAILS, do not promote
+
+Run on the Mac (Apple silicon, Xcode, iOS 26.4 simulators, Android emulator `shotfleet_android`) with the 2.11.0 download first on PATH
+(`maestro --version` printed 2.11.0; SHA-256 5384593c...e1283a, 314,886,578 bytes; `~/.maestro` still 2.0.10). Repo at `main` 4d5d642.
+`python3 tools/maestro-compat.py` on that download: 28 passed, 0 failed (as before). Both fixture e2e runs started from a quiet shotfleet
+pool (no shotfleet simulators or `emulator-57xx` up; another session's idle `paid-review-iphone` and `emulator-5562` were left alone).
+
+| Command | Result |
+|---|---|
+| `SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios` | exit 1 after 636 s, **FAIL: 25 of 36 assertions failed** (2.0.10: 36/36) |
+| `SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only android` | exit 1 after 164 s, **FAIL: 19 of 29 assertions failed** (2.0.10: 29/29) |
+
+Only the build, `init`, `doctor` and the few assertions that do not need screenshots passed. `shotfleet run` captured 0 of 4 locales on
+every device (iPhone, iPad, Android phone), so `check`, `export` and everything that reads screenshots failed after it. Nothing else differed:
+the assertion list of failures is the same set (screenshots missing, `check.json` missing, `after_run` hook `exit=1`, export folders empty).
+
+### The one cause
+
+Every flow fails at its first `takeScreenshot` step, 8 to 9 seconds in, with:
+
+```
+Invalid path "/private/var/folders/.../proj/out/iphone-17-pro-max/raw/de/01_welcome.png" for takeScreenshot: it resolves outside this run's
+takeScreenshot output folder. If the path comes from a variable, check what it expands to.
+```
+
+Android is identical, with the path `.../proj-android/out/phone/.work/tmp/retry1/f0/01_welcome.png`. The text is in `maestro-orchestra.jar`
+(next to `TAKE_SCREENSHOT_DIR`). 2.11.0's `maestro test --help` says `--test-output-dir` is "Directory for this run's artifacts: manifest.json,
+commands.json, logs/, takeScreenshot/ and startRecording/ written directly into it". So since the 2.7.0/2.8.0 artifact rework, `takeScreenshot`
+may only write inside `<test output dir>/takeScreenshot/`, and an absolute path elsewhere is rejected. shotfleet's generated per-locale flows
+give `takeScreenshot` an absolute path under `raw/<locale>/` (iOS) or `.work/tmp/retryN/fK/` (Android), outside that folder. This is a
+shotfleet/Maestro interface change, not load: the note shotfleet prints ("this Mac was short of memory...") is its generic hint and does not
+apply (load was 4.8 at the start, and the failure is identical on all four shards and both platforms). My earlier research table rated the
+2.8.0 `takeScreenshot` change "low"; that was wrong.
+
+A possible way forward (not tried, no code was changed): give each Maestro run its own `--test-output-dir`, let the flows use bare names
+(`takeScreenshot: 01_welcome`, which is what the user's `flow.yaml` has), and copy `<dir>/takeScreenshot/<name>.png` to
+`raw/<locale>/<name>.png` after the run. That must keep working on 2.0.10, which has no `--test-output-dir`, so it needs a version gate or the
+flag detected from `maestro test --help`. `MAESTRO_INTERFACE` and `tools/maestro-compat.py` should also learn to grep for the "resolves outside
+this run's" string so the static check would have caught this.
+
+### The other watch items from the risk table
+
+- **`Selected device ... using port` line:** present in every debug `maestro.log` (e.g. `[shard 1] Selected device 1D26F129-... using port 63038
+  with execution plan ExecutionPlan(flowsToRun=[...`). `capture_texts` would find its ports; no OCR fallback needed for this reason.
+- **Sharded parallel iOS runs:** four shards on four simulators started in the same millisecond and each ran its flow independently (shard 1
+  to 4, one device each). They behaved; the failures were all the `takeScreenshot` path, none a shard or port problem. Not a full proof,
+  because no flow got past its first screenshot.
+- **`launchApp` / `clearState` failing loudly (2.7.0):** not seen. Each flow got past `launchApp` and `waitForAnimationToEnd` and failed at
+  `takeScreenshot`. `clearState` is not exercised before that point in this fixture.
+- **Run time per flow vs 2.0.10:** not comparable; flows stop at 8 to 9 s. `doctor` took 64 s, `run` 568 s for iPhone plus iPad (all retries).
+- **Android `[inputs.<locale>]` with `MAESTRO_DEVICE_UDID`:** not tested, because no Android flow reaches a screenshot. Still open.
+
+### Consequences
+
+`MAESTRO_TESTED` stays `("2.0.10",)`, nothing was promoted, no PR. `doctor` saying "may work" for 2.11.0 is now known to be wrong for any
+shotfleet run: it does not work until the `takeScreenshot` handling above changes. Same for `doctor --fix` pinning (it still installs 2.0.10)
+and the Homebrew formula idea in `research/setup-friction.md`: do not pin 2.11.0.
+Evidence kept (not in the repo): `/private/tmp/claude-501/.../scratchpad/m211/{ios-evidence,android-evidence,e2e-ios.log,e2e-android.log}`.
