@@ -1468,6 +1468,7 @@ class FrameworkHints(unittest.TestCase):
         (self.dir / "shotfleet.toml").write_text(f'[ios]\napp = "{flutter}"\n'); (self.dir / "flow.yaml").write_text("- launchApp\n")
         err = io.StringIO()
         with contextlib.redirect_stderr(err), mock.patch.object(sf, "latest_ios_runtime", return_value="rt"), \
+             mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
              self.assertRaises(sf.Fail):  # no translations in the stub, so the run stops; the hint came first
             sf.cmd_run(str(self.dir / "shotfleet.toml"))
         self.assertIn('strings = "lib/l10n/*.arb"', err.getvalue())
@@ -1511,6 +1512,7 @@ class RetryOnSlowSimulator(unittest.TestCase):
         real = sf.sh
         def sh(cmd, **kw): return subprocess.CompletedProcess(cmd, 0, level, "") if cmd[0] == "sysctl" else real(cmd, **kw)
         with mock.patch.object(sf, "make_pool", return_value=[self.fake_sim()]), mock.patch.object(sf, "run_guarded", self.fake_maestro), \
+             mock.patch.object(sf.shutil, "which", return_value="/usr/bin/maestro"), \
              mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"), \
              mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "cmd_check", return_value=0), \
              mock.patch.object(sf, "java_env", return_value={}), mock.patch.object(sf, "sh", sh), \
