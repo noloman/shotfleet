@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Site claims proven in tests:** `tests/test_claims_site.py`, `tests/browser_site.cjs` (Chromium, `/api` stubbed) and more checks in `site/worker.test.mjs` now cover the prices, Apple silicon and Java prerequisites, internal links, what the worker stores and refuses, the 404 page and the signup, contact and counter scripts (claims C002, C033, C042, C077 to C084, C087, C088, C101, C104). The privacy page now says contact messages keep your country and that a removal can take a minute to reach every Cloudflare location.
 - **`check` knows the iPhone Duo screenshot sizes** (outer 1398x2034, inner 2007x2853; Apple opens uploads later this year). A Duo-only set still needs a 6.9" or 6.5" iPhone set.
 - **Maestro watch:** a weekly GitHub workflow (and `tools/latest-maestro.py`) fetches the newest stable Maestro release, checks it against what shotfleet relies on and goes red if something is gone; a compatible newer version is reported as "needs a real run", never as tested.
 - **Compatibility:** `tools/maestro-compat.py` checks any Maestro against what shotfleet relies on, without a device (2.0.10 and the newest, 2.11.0, both pass); tar extraction passes an explicit filter (Python 3.12 deprecates the default, 3.14 changes it); the Linux CI job also runs Python 3.13 with deprecation warnings as errors.
