@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import plistlib, platform as host_platform, ssl, subprocess, tarfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -1617,7 +1617,7 @@ DEMO_MODE = [  # SystemUI demo mode: fixed clock, full battery and signal, no no
 ]
 
 class Emu:
-    def __init__(self, port): self.port, self.serial = port, f"emulator-{port}"
+    def __init__(self, port): self.port, self.serial, self.proc = port, f"emulator-{port}", None  # proc: the emulator process shotfleet started
     def adb(self, *args, check=True, timeout=180):
         r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
         if check and r.returncode != 0:
@@ -1631,14 +1631,41 @@ SNAPSHOT = "shotfleet"
 def start_emu(avd, port, read_only=True, snapshot=False):
     """Headless emulator. Read-only copies boot from the saved snapshot (4-5 s instead of ~22 s cold, measured)."""
     boot = ["-snapshot", SNAPSHOT, "-no-snapshot-save"] if snapshot else ["-no-snapshot"]
-    return subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
-                             "-no-boot-anim"] + boot + (["-read-only"] if read_only else []),
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    EMU_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log = EMU_LOG_DIR / f"emulator-{port}.log"
+    with log.open("wb") as f:  # the child keeps its own copy of the handle
+        p = subprocess.Popen([str(SDK / "emulator/emulator"), "-avd", avd, "-port", str(port), "-no-window", "-no-audio",
+                              "-no-boot-anim"] + boot + (["-read-only"] if read_only else []),
+                             stdout=f, stderr=subprocess.STDOUT)
+    p.log_path = log
+    return p
+
+EMU_LOG_DIR = Path(tempfile.gettempdir()) / "shotfleet-emulator-logs"
+
+def emulator_log_tail(proc, lines=15):
+    """The last lines of an emulator's own output, for a failure message ('' when there is none)."""
+    try: text = Path(proc.log_path).read_text(errors="replace")
+    except (AttributeError, OSError): return ""
+    return "\n".join([l for l in text.splitlines() if l.strip()][-lines:])
+
+def boot_failure_hint():
+    if sys.platform.startswith("linux") and not (os.access("/dev/kvm", os.R_OK) and os.access("/dev/kvm", os.W_OK)):
+        return "this machine has no usable /dev/kvm, so the emulator is far too slow (docs/linux.md); Android runs need hardware virtualization"
+    return "each emulator wants about 3 GB of free memory and 2 CPU cores; lower `parallel` in the config, or free memory, and run again"
 
 def wait_booted(emus, timeout=600):
+    """Wait until every emulator reports sys.boot_completed. Fails at once, with the emulator's own output, when its process exits;
+    on a timeout the message carries the last lines of each emulator's log and the likely cause."""
     t0 = time.time()
     while not all(e.booted() for e in emus):
-        if time.time() - t0 > timeout: raise RuntimeError("emulators did not boot in time")
+        for e in emus:
+            proc = getattr(e, "proc", None)
+            if proc is not None and proc.poll() is not None:
+                raise RuntimeError(f"{e.serial}: the emulator exited with code {proc.returncode} before it booted.\n"
+                                   f"its output ({getattr(proc, 'log_path', 'not kept')}):\n{emulator_log_tail(proc)}\n{boot_failure_hint()}")
+        if time.time() - t0 > timeout:
+            tails = "\n".join(f"{e.serial} ({getattr(e.proc, 'log_path', 'no log')}):\n{emulator_log_tail(e.proc)}" for e in emus if getattr(e, "proc", None) is not None)
+            raise RuntimeError(f"emulators did not boot within {timeout} s.\n{tails}\n{boot_failure_hint()}")
         time.sleep(3)
 
 # Exactly 9:16 at 1080px+ so Google Play can recommend the listing (research/store-specs.md)
@@ -1673,7 +1700,7 @@ def android_pool(n, cfg, pool):
                        re.sub(r"(?m)^hw\.lcd\.height=.*", f"hw.lcd.height={h}",
                        re.sub(r"(?m)^hw\.lcd\.density=.*", f"hw.lcd.density={dpi}", ini.read_text()))))
     if not (avd_dir / "snapshots" / SNAPSHOT).exists():  # one-time: boot writable, save a snapshot copies start from
-        e = Emu(5700); p = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
+        e = Emu(5700); p = e.proc = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
         wait_booted([e]); time.sleep(20)
         e.adb("emu", "avd", "snapshot", "save", SNAPSHOT, check=False)
         e.adb("emu", "kill", check=False); p.wait(timeout=120)
@@ -1682,7 +1709,7 @@ def android_pool(n, cfg, pool):
     for i in range(n):
         e = Emu(5702 + 2 * i)
         if e.booted(): raise Fail(f"{e.serial} is already running. Stop it (adb -s {e.serial} emu kill) and run again")
-        start_emu(avd, e.port, snapshot=snap); pool.append(e)
+        e.proc = start_emu(avd, e.port, snapshot=snap); pool.append(e)
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:

@@ -369,3 +369,41 @@ class SdkManagerInvocation(FixTestCase):
         self.assertEqual(sf.sdkmanager_invocation(t, Path("/sdk"), ["--licenses"]), [str(t), "--sdk_root=/sdk", "--licenses"])
         old = self.tool(False)  # no android program next to it: an older command-line tools release
         self.assertEqual(sf.sdkmanager_invocation(old, Path("/sdk"), ["emulator"]), [str(old), "--sdk_root=/sdk", "emulator"])
+
+
+class EmulatorBootFailures(unittest.TestCase):
+    """E1 on a GitHub runner (2026-10-03): 'emulators did not boot in time' after 600 s with no clue why, because the emulator's output went to DEVNULL."""
+    def emu(self, returncode=None, log="line one\n\nHW config error: no KVM\n"):
+        d = Path(tempfile.mkdtemp()); (d / "e.log").write_text(log)
+        proc = mock.Mock(returncode=returncode, log_path=d / "e.log"); proc.poll.return_value = returncode
+        e = sf.Emu(5702); e.proc = proc; e.booted = lambda: False
+        return e
+
+    def test_a_dead_emulator_fails_at_once_with_its_exit_code_and_output(self):
+        with mock.patch.object(sf.time, "sleep", side_effect=AssertionError("must not wait for a dead emulator")):
+            with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu(returncode=1)], timeout=600)
+        msg = str(cm.exception)
+        self.assertIn("emulator-5702", msg); self.assertIn("exited with code 1", msg); self.assertIn("HW config error: no KVM", msg)
+
+    def test_a_timeout_carries_the_log_tail_and_the_likely_cause(self):
+        with mock.patch.object(sf.time, "sleep", lambda s: None), mock.patch.object(sf, "boot_failure_hint", lambda: "HINT"):
+            with self.assertRaises(RuntimeError) as cm: sf.wait_booted([self.emu()], timeout=-1)
+        msg = str(cm.exception)
+        self.assertIn("did not boot within -1 s", msg); self.assertIn("HW config error: no KVM", msg); self.assertIn("HINT", msg)
+        self.assertNotIn("\n\n\n", msg)  # blank lines of the log are dropped
+
+    def test_the_hint_names_missing_kvm_on_linux_and_memory_otherwise(self):
+        with mock.patch.object(sf.sys, "platform", "linux"), mock.patch.object(sf.os, "access", lambda p, m: False):
+            self.assertIn("/dev/kvm", sf.boot_failure_hint())
+        with mock.patch.object(sf.sys, "platform", "darwin"):
+            self.assertIn("3 GB", sf.boot_failure_hint())
+
+    def test_start_emu_keeps_the_emulators_output(self):
+        d = Path(tempfile.mkdtemp())
+        with mock.patch.object(sf, "EMU_LOG_DIR", d), mock.patch.object(sf.subprocess, "Popen") as popen:
+            p = sf.start_emu("avd", 5702)
+        self.assertEqual(p.log_path, d / "emulator-5702.log"); self.assertTrue(p.log_path.exists())
+        self.assertIs(popen.call_args.kwargs["stderr"], sf.subprocess.STDOUT); self.assertNotEqual(popen.call_args.kwargs["stdout"], sf.subprocess.DEVNULL)
+
+    def test_the_tail_is_empty_without_a_log(self):
+        self.assertEqual(sf.emulator_log_tail(object()), ""); self.assertEqual(sf.emulator_log_tail(mock.Mock(log_path="/nonexistent/x.log")), "")
