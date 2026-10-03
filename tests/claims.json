@@ -2029,7 +2029,7 @@
    "**Run `shotfleet init` in the project folder** and it does the finding for you."
   ],
   "status": "partial",
-  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so).",
+  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so). Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages.",
   "layer": "unit",
   "assertion": "On a real Flutter and a real Expo project init picks the build and the strings line without arguments.",
   "fix": ""

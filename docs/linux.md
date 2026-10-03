@@ -14,6 +14,18 @@ What works, what is untried, and what cannot work. Status 2026-10-03, from sourc
 | `run` on iOS | cannot work: iOS simulators exist only on a Mac with Xcode | |
 | `check --app MyApp.app` | reads the app's `.strings` (works); text from the app during a run needs a Mac | |
 
+## Real framework builds (2026-10-03, Linux x86_64, no emulator)
+
+| Project | Build | What `shotfleet init` (no arguments) did |
+|---|---|---|
+| Flutter 3.47.6, `flutter create` + `gen_l10n`, en/de/ja | `flutter build apk --debug` (82 s) | found `build/app/outputs/flutter-apk/app-debug.apk`, wrote `strings = "lib/l10n/*.arb"`, read package `com.shotfleet.demo_l10n`, 3 languages |
+| Expo (blank-typescript) + i18next + expo-localization, en/de/ja | `expo prebuild`, `./gradlew assembleRelease` (6.5 min) | found `android/app/build/outputs/apk/release/app-release.apk`, wrote `strings = "src/locales/*/translation.json"`, 3 languages |
+
+In both APKs the app's own text is **not** in the Android resources (85 and 86 library languages, no "Willkommen"), so without the
+`strings` line `init` would have reported about 85 languages. Flutter 3.47 writes the generated localizations next to the ARB files
+(`lib/l10n/*.dart`), not into `flutter_gen`. These are small demo apps made for this check, not third-party apps, and nothing was run on a
+device: the language mechanism (`cmd locale set-app-locales`, launch arguments) and Maestro's view of Flutter and React Native screens remain unproven.
+
 ## Set up
 
 ```bash
