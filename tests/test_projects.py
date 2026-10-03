@@ -296,3 +296,22 @@ class RealAppLessons(unittest.TestCase):
     def test_the_starter_flow_waits_for_text_before_the_first_screenshot(self):
         flow = sf.FLOW_TEMPLATE
         self.assertLess(flow.index("extendedWaitUntil"), flow.index("takeScreenshot: 01_home"))
+
+
+class BareReactNativeWithTheExpoPackage(unittest.TestCase):
+    """Rocket.Chat.ReactNative: a bare React Native app (ios/ and android/ committed) that depends on `expo` for native modules."""
+    ROCKET = {"package.json": json.dumps({"dependencies": {"react-native": "0.86.3", "expo": "^57.0.0"}}), "app.json": json.dumps({"name": "RocketChatRN"}),
+              "ios/RocketChat.xcodeproj/project.pbxproj": "", "android/build.gradle": "",
+              **{f"app/i18n/locales/{lp}.json": json.dumps({"Add": lp}) for lp in ("en", "de", "ar")}}
+
+    def test_it_is_react_native_not_expo_and_its_translations_are_found(self):
+        p = sf.detect_project(tree(self.ROCKET))
+        self.assertEqual((p.name, p.strings), ("React Native", "app/i18n/locales/*.json"))
+        self.assertIn("react-native run-ios", p.build_ios); self.assertNotIn("expo", p.build_android)
+
+    def test_an_expo_app_is_still_expo(self):
+        for extra in ({"app.config.ts": ""}, {"app.json": json.dumps({"expo": {"name": "x"}})}):
+            files = {"package.json": json.dumps({"dependencies": {"react-native": "0.81", "expo": "~54"}}), **extra}
+            self.assertEqual(sf.detect_project(tree(files)).name, "Expo", extra)
+        files = {"package.json": json.dumps({"main": "expo-router/entry", "dependencies": {"react-native": "0.81", "expo": "~54"}})}
+        self.assertEqual(sf.detect_project(tree(files)).name, "Expo")

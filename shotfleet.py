@@ -3123,7 +3123,7 @@ def flutter_arb_glob(cwd):
 I18N_JSON = ["src/locales/*/translation.json", "src/translations/*.json", "src/locales/*.json", "src/i18n/locales/*.json",
              "src/i18n/*.json", "src/lang/*.json", "src/assets/i18n/*.json", "locales/*/translation.json", "locales/*/*.json",
              "locales/*.json", "public/locales/*/translation.json", "assets/locales/*.json", "assets/i18n/*.json",
-             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "translations/*.json",
+             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "app/i18n/locales/*.json", "app/locales/*.json", "app/translations/*.json", "translations/*.json",
              "app/i18n/*.ts", "src/i18n/*.ts", "src/i18n/locales/*.ts", "src/locales/*.ts", "src/translations/*.ts", "i18n/*.ts", "locales/*.ts"]  # .ts: Ignite and friends
 I18N_PO = ["src/locales/*/messages.po", "src/locale/locales/*/messages.po", "locales/*/messages.po", "locale/*/LC_MESSAGES/*.po"]
 
@@ -3138,6 +3138,17 @@ def kotlin_multiplatform(cwd):
             if f.is_file() and f.stat().st_size < 1_000_000 and re.search(r"multiplatform", f.read_text(errors="replace"), re.I): return True
         except OSError: continue
     return False
+
+def is_expo(cwd, pkg, deps):
+    """An Expo app (its builds come from `expo run`), not a bare React Native app that merely depends on the `expo` package for some native
+    modules (Rocket.Chat does). Bare means ios/ and android/ are committed and nothing says Expo: no app.config, no `expo` key in app.json,
+    no Expo entry point. A package.json with only the dependency and no native folders is an Expo app that has not been prebuilt."""
+    if "expo" not in deps: return False
+    if any((cwd / f).is_file() for f in ("app.config.ts", "app.config.js", "app.config.json")): return True
+    app_json = read_json_file(cwd / "app.json")
+    if isinstance(app_json, dict) and "expo" in app_json: return True
+    if isinstance(pkg, dict) and str(pkg.get("main", "")).startswith(("expo/", "expo-router/")): return True
+    return not ((cwd / "ios").is_dir() and (cwd / "android").is_dir())
 
 def detect_project(cwd):
     """The Project for the app whose source is in `cwd`, or None for a native Swift/Kotlin app and for anything unrecognised.
@@ -3162,7 +3173,7 @@ def detect_project(cwd):
                        apps=("ios/build/Build/Products/Debug-iphonesimulator/*.app",),
                        notes=["web layers that read navigator.language may ignore the language shotfleet sets on iOS; check the first screenshots"])
     if "react-native" in deps or "expo" in deps:
-        expo = "expo" in deps
+        expo = is_expo(cwd, pkg, deps)
         return Project("Expo" if expo else "React Native", first_glob(cwd, I18N_PO) or first_glob(cwd, I18N_JSON),
                        apps=("ios/build/Build/Products/Release-iphonesimulator/*.app", "build/Build/Products/Release-iphonesimulator/*.app"),
                        apks=("android/app/build/outputs/apk/release/*.apk",), configs=("Release",),
