@@ -1890,6 +1890,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
+    if Path(folder).resolve() in (d.resolve() for d in device_runs(Path(folder).resolve().parent)):
+        ipad_rule = False  # one device of a multi-device run: the iPad set lives next to it (ipad_set_missing checks that)
     ipad = ipad_rule and bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
     store_problems, notes = store_rules(images, android, ipad)
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))

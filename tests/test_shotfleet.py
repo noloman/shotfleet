@@ -1068,6 +1068,15 @@ class MultiDevice(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(sf.ipad_set_missing(out), 1)  # iPad app, iPhone set only
 
+    def test_checking_one_device_of_a_multi_device_run_leaves_the_ipad_rule_to_the_whole_run(self):
+        class Stop(Exception): pass
+        with tempfile.TemporaryDirectory() as d:
+            out = self.make(d, {"iphone-17-pro-max": (1320, 2868)}, [1, 2])
+            with mock.patch.object(sf, "store_rules", side_effect=lambda images, android, ipad: (_ for _ in ()).throw(Stop(ipad))), \
+                 contextlib.redirect_stdout(io.StringIO()), self.assertRaises(Stop) as cm:
+                sf.cmd_check(out / "iphone-17-pro-max")
+            self.assertEqual(cm.exception.args, (False,))
+
 
 class StuckOcrFallback(unittest.TestCase):
     def setUp(self):
