@@ -41,4 +41,7 @@ jobs:
             doctor.log
             e2e.log
             /tmp/shotfleet-e2e*/**/*.log
+            /tmp/shotfleet-e2e*/proj-android/out/**
+            /tmp/shotfleet-e2e*/proj-android/*.toml
+            /tmp/shotfleet-e2e*/proj-android/*.yaml
           if-no-files-found: warn
