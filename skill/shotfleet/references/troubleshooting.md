@@ -66,8 +66,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `emulators did not boot in time` | slow boot (600 s limit) | close other apps, rerun |
 | `hook before_run failed` | the user's hook returned non-zero | fix the hook, or `--no-hooks` to skip |
 | `hook before_export failed` | same, before export | same |
-| `write launchApp options as a block` | inline `launchApp: { ... }` | block form, see flow-writing.md |
-| `write launchApp arguments as a block, not inline` | inline `arguments:` | block form |
+| `write launchApp arguments as a block, not inline` | `arguments:` given as a plain value, not a mapping | a block of `name: value` lines, or an inline `{ name: value }` |
 | `flow needs an 'appId:' header` | malformed flow header | start the flow with `- launchApp` or `appId:` then `---` |
 | `--locales is empty` | `--locales ,` | drop the flag for all languages |
 | `--parallel must be 1 or more` | `--parallel 0` | use 1 or more |

@@ -12,6 +12,15 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
 
+# These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in
+# test_portable.py. The patches last for this module only.
+_MAC = [mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf, "SYSTEM_SDKS", ()),
+        mock.patch.object(sf, "ABI", "arm64-v8a"), mock.patch.object(sf, "DEFAULT_IMAGE", "system-images;android-36;google_apis;arm64-v8a")]
+def setUpModule():
+    for p in _MAC: p.start()
+def tearDownModule():
+    for p in reversed(_MAC): p.stop()
+
 
 def touch(path, mtime=None, text="x"):
     path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)

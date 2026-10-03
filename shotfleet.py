@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one with: brew install python", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
-import plistlib, ssl, subprocess, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, platform as host_platform, ssl, subprocess, tarfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -148,7 +148,7 @@ def load_config(config_path, platform=None):
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
             raise Fail(f"no simulator app at {app}. Build it for the simulator (Debug-iphonesimulator) and point 'app' at the .app")
-        real = sh(["/usr/libexec/PlistBuddy", "-c", "Print CFBundleIdentifier", str(app / "Info.plist")]).stdout.strip()
+        real = plist_value(app / "Info.plist", "CFBundleIdentifier")
         if cfg.get("bundle_id") and real and real != cfg["bundle_id"]:
             raise Fail(f"bundle_id is {cfg['bundle_id']} but {app.name} is {real}")
         cfg["bundle_id"] = cfg.get("bundle_id") or real
@@ -227,6 +227,7 @@ def sh(cmd, **kw):
 def aapt2():
     """Newest aapt2 in the Android SDK; Fail with the fix if there is none."""
     found = sorted((SDK / "build-tools").glob("*/aapt2"))
+    if not found and shutil.which("aapt2"): return shutil.which("aapt2")  # Linux: the distribution's aapt2 package
     if not found:
         raise Fail(f"aapt2 not found under {SDK}/build-tools. Install Build-Tools in Android Studio's SDK Manager (or set ANDROID_HOME)")
     return str(found[-1])
@@ -234,10 +235,84 @@ def aapt2():
 # ---------- strings ----------
 
 def plist_value(plist, key):
-    """A top-level Info.plist value, or "" (PlistBuddy prints its errors on stdout)."""
+    """A top-level Info.plist value, or "" (PlistBuddy prints its errors on stdout). Without PlistBuddy (Linux) the
+    value is read in Python and printed the way PlistBuddy would: arrays as "Array {", one item per line, "}"."""
     if not Path(plist).is_file(): return ""
+    if not shutil.which("/usr/libexec/PlistBuddy"):
+        v = read_plist(plist).get(key)
+        if v is None: return ""
+        if isinstance(v, list): return "Array {\n" + "".join(f"    {x}\n" for x in v) + "}"
+        return str(v).lower() if isinstance(v, bool) else str(v)
     r = sh(["/usr/libexec/PlistBuddy", "-c", f"Print {key}", str(plist)])
     return r.stdout.strip() if r.returncode == 0 else ""
+
+_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "0": "\0", "a": "\a", "b": "\b", "f": "\f", "v": "\v", '"': '"', "'": "'", "\\": "\\"}
+
+def parse_strings_text(text):
+    """A .strings file (`"key" = "value";` with /* */ and // comments, \\n \\" \\UXXXX escapes) as {key: value}.
+    The old-style plist plutil reads; Linux has no plutil. Raises ValueError on anything else."""
+    pos, n, out = 0, len(text), {}
+    def skip():
+        nonlocal pos
+        while pos < n:
+            if text[pos].isspace() or text[pos] == "﻿": pos += 1
+            elif text.startswith("/*", pos):
+                end = text.find("*/", pos + 2)
+                if end < 0: raise ValueError("unterminated comment")
+                pos = end + 2
+            elif text.startswith("//", pos):
+                end = text.find("\n", pos)
+                pos = n if end < 0 else end
+            else: break
+    def token():
+        nonlocal pos
+        skip()
+        if pos >= n: raise ValueError("unexpected end")
+        if text[pos] in "\"'":
+            q, pos, buf = text[pos], pos + 1, []
+            while pos < n and text[pos] != q:
+                c = text[pos]
+                if c == "\\" and pos + 1 < n:
+                    e = text[pos + 1]
+                    if e in "uU" and re.match(r"[0-9a-fA-F]{4}", text[pos + 2:pos + 6]): buf.append(chr(int(text[pos + 2:pos + 6], 16))); pos += 6; continue
+                    if e in "01234567" and re.match(r"[0-7]{3}", text[pos + 1:pos + 4]): buf.append(chr(int(text[pos + 1:pos + 4], 8))); pos += 4; continue
+                    buf.append(_ESCAPES.get(e, e)); pos += 2; continue
+                buf.append(c); pos += 1
+            if pos >= n: raise ValueError("unterminated string")
+            pos += 1
+            return "".join(buf)
+        m = re.compile(r"[\w.$/:+-]+").match(text, pos)  # unquoted key or value
+        if not m: raise ValueError(f"unexpected {text[pos]!r}")
+        pos = m.end()
+        return m.group()
+    skip()
+    if pos < n and text[pos] == "{": pos += 1  # the same table wrapped in { } is a plist dictionary
+    while True:
+        skip()
+        if pos >= n or text[pos] == "}": return out
+        key = token(); skip()
+        if pos < n and text[pos] == ";": pos += 1; out[key] = key; continue  # `key;` means key = key
+        if pos >= n or text[pos] != "=": raise ValueError(f"expected = after {key!r}")
+        pos += 1
+        out[key] = token(); skip()
+        if pos >= n or text[pos] != ";": raise ValueError(f"expected ; after the value of {key!r}")
+        pos += 1
+
+def plist_to_json(path):
+    """A property list as plain data (dict/list/str), or None when unreadable. plutil where macOS has it (it also reads
+    binary and old-style plists); otherwise XML and binary plists through plistlib and .strings text in Python."""
+    path = Path(path)
+    if shutil.which("plutil"):
+        r = sh(["plutil", "-convert", "json", "-o", "-", str(path)])
+        return json.loads(r.stdout) if r.returncode == 0 else None
+    try: raw = path.read_bytes()
+    except OSError: return None
+    try: return json.loads(json.dumps(plistlib.loads(raw), default=lambda o: o.hex() if isinstance(o, bytes) else str(o)))
+    except Exception: pass
+    for enc in (("utf-16",) if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else ("utf-8-sig", "utf-16-le" if b"\0" in raw[:20] else "latin-1")):
+        try: return parse_strings_text(raw.decode(enc))
+        except (UnicodeDecodeError, ValueError): continue
+    return None
 
 def load_strings(res_dir):
     """{lproj: {key: value}} from every *.strings table in the app: its own *.lproj folders, plus those inside
@@ -248,15 +323,14 @@ def load_strings(res_dir):
         if lproj.stem == "Base": continue  # Base.lproj is layout/fallback storage, not a language
         where = lproj.parent.relative_to(res_dir).as_posix()
         for f in sorted(lproj.glob("*.stringsdict")):
-            r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
-            if r.returncode == 0:
-                table = stringsdict_forms(json.loads(r.stdout))
+            data = plist_to_json(f)
+            if data is not None:
+                table = stringsdict_forms(data)
                 if where != ".": table = {f"{where}/{f.stem}:{k}": v for k, v in table.items()}
                 out.setdefault(canon_lproj(lproj.stem), {}).update(table)
         for f in sorted(lproj.glob("*.strings")):
-            r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
-            if r.returncode == 0:
-                table = json.loads(r.stdout)
+            table = plist_to_json(f)
+            if isinstance(table, dict):
                 if where != ".": table = {f"{where}/{f.stem}:{k}": v for k, v in table.items()}
                 out.setdefault(canon_lproj(lproj.stem), {}).update(table)
     for f in sorted(res_dir.rglob("*.cvr")):
@@ -350,7 +424,7 @@ def locale_from_path(path, codes=None):
         if d.name.startswith("values"):
             return android_locale(d.name[7:]) if d.name != "values" else "base"
         if d.suffix == ".lproj": return d.stem
-        if ok(d.name): return d.name.replace("_", "-")
+        if ok(d.name) and lang(d.name): return d.name.replace("_", "-")  # app/i18n/index.ts is not "app" (a folder, not a language)
     return None
 
 def icu_forms(key, text):
@@ -372,6 +446,12 @@ def icu_forms(key, text):
         out[f"{key}#{f.group(1)}"] = head + form_text + tail
     return out or {key: text}
 
+def icu_forms_all(flat):
+    """(key, text) pairs of a flattened i18next-style table: key_one/key_other become key#one/key#other, ICU plurals one entry per form."""
+    for k, v in flat.items():
+        k = re.sub(r"_(zero|one|two|few|many|other)$", r"#\1", k)
+        yield from icu_forms(k, v).items()
+
 def flatten(d, prefix=""):
     """Nested JSON (i18next, Lokalise) -> {'a.b.c': text}."""
     out = {}
@@ -379,6 +459,112 @@ def flatten(d, prefix=""):
         if isinstance(v, dict): out.update(flatten(v, f"{prefix}{k}."))
         elif isinstance(v, str): out[prefix + k] = v
     return out
+
+def strip_js_comments(src):
+    """`src` without // and /* */ comments; string and template literals are left alone."""
+    out, i, n = [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if c in "\"'`":
+            j = i + 1
+            while j < n and src[j] != c: j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 1]); i = j + 1
+        elif src.startswith("//", i):
+            j = src.find("\n", i); i = n if j < 0 else j
+        elif src.startswith("/*", i):
+            j = src.find("*/", i + 2); i = n if j < 0 else j + 2
+        else: out.append(c); i += 1
+    return "".join(out)
+
+JS_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "b": "\b", "f": "\f", "v": "\v", "0": "\0"}
+
+def parse_js_translations(src):
+    """({key: text or nested dict}, skipped) for the object literal that holds a translation file's texts, read as data and
+    never run: `export default {..}`, `const en = {..}`, `const de: Translations = {..}`, `module.exports = {..}`. Strings,
+    template literals without ${}, 'a' + 'b', nested objects and arrays of strings are read; anything that is code (calls,
+    variables, functions, spreads) is skipped and counted. Raises ValueError when no object literal is found."""
+    text = strip_js_comments(src)
+    m = re.search(r"(?:export\s+default\s*(?:\w+\s*\(\s*)?|module\.exports\s*=\s*|exports\.\w+\s*=\s*|\b(?:const|let|var)\s+[\w$]+\s*(?::[^=;{]+?)?=\s*)\(?\s*(?=\{)", text)
+    if not m: raise ValueError("no object literal with the translations found (export default { ... } or const en = { ... })")
+    pos, n, skipped = m.end(), len(text), []
+    def ws():
+        nonlocal pos
+        while pos < n and text[pos].isspace(): pos += 1
+    def string():
+        nonlocal pos
+        q = text[pos]; pos += 1; buf = []; dynamic = False
+        while pos < n and text[pos] != q:
+            c = text[pos]
+            if c == "\\" and pos + 1 < n:
+                e = text[pos + 1]
+                if e == "u" and re.match(r"[0-9a-fA-F]{4}", text[pos + 2:pos + 6]): buf.append(chr(int(text[pos + 2:pos + 6], 16))); pos += 6; continue
+                if e == "u" and text[pos + 2:pos + 3] == "{":
+                    end = text.find("}", pos); buf.append(chr(int(text[pos + 3:end], 16))); pos = end + 1; continue
+                if e == "x" and re.match(r"[0-9a-fA-F]{2}", text[pos + 2:pos + 4]): buf.append(chr(int(text[pos + 2:pos + 4], 16))); pos += 4; continue
+                if e == "\n": pos += 2; continue
+                buf.append(JS_ESCAPES.get(e, e)); pos += 2; continue
+            if q == "`" and c == "$" and text[pos + 1:pos + 2] == "{": dynamic = True
+            buf.append(c); pos += 1
+        pos += 1
+        return None if dynamic else "".join(buf)
+    def skip_expr():
+        nonlocal pos
+        depth = 0
+        while pos < n:
+            c = text[pos]
+            if c in "\"'`": string(); continue
+            if c in "([{": depth += 1
+            elif c in ")]}":
+                if depth == 0: return
+                depth -= 1
+            elif c == "," and depth == 0: return
+            pos += 1
+    def value(name):
+        nonlocal pos
+        ws()
+        if pos >= n: raise ValueError("the file ends inside the translations")
+        c = text[pos]
+        if c in "\"'`":
+            v = string(); ws()
+            while v is not None and text[pos:pos + 1] == "+":  # "a" + "b"
+                pos += 1; ws()
+                if pos < n and text[pos] in "\"'`": w = string(); v = None if w is None else v + w; ws()
+                else: v = None; skip_expr()
+            if v is None or text[pos:pos + 1] not in (",", "}", "]", ""): 
+                if text[pos:pos + 1] not in (",", "}", "]", ""): skip_expr()
+                skipped.append(name); return None
+            return v
+        if c == "{": return obj()
+        if c == "[":
+            pos += 1; items = []
+            while True:
+                ws()
+                if pos >= n: raise ValueError("missing ] in the translations")
+                if text[pos] == "]": pos += 1; return {str(i): v for i, v in enumerate(items) if v is not None}
+                items.append(value(f"{name}[{len(items)}]")); ws()
+                if text[pos:pos + 1] == ",": pos += 1
+        skip_expr(); skipped.append(name); return None  # a call, a variable, a function, a number...
+    def obj(prefix=""):
+        nonlocal pos
+        pos += 1; out = {}
+        while True:
+            ws()
+            if pos >= n: raise ValueError("missing } in the translations")
+            if text[pos] == "}": pos += 1; return out
+            if text.startswith("...", pos): skip_expr(); skipped.append("..."); pos += text[pos:pos + 1] == ","; continue
+            if text[pos] in "\"'": key = string()
+            elif text[pos] == "[": skip_expr(); skipped.append("[computed]"); pos += text[pos:pos + 1] == ","; continue
+            else:
+                km = re.compile(r"[\w$]+").match(text, pos)
+                if not km: raise ValueError(f"unexpected {text[pos]!r} in the translations")
+                key, pos = km.group(), km.end()
+            ws()
+            if text[pos:pos + 1] != ":": skip_expr(); skipped.append(key); pos += text[pos:pos + 1] == ","; continue  # shorthand or method
+            pos += 1
+            v = value(key); ws()
+            if v is not None and key is not None: out[key] = v
+            if text[pos:pos + 1] == ",": pos += 1
+    return obj(), skipped
 
 def read_translation_file(f, base):
     """{locale: {key: text}} from one source file, by format."""
@@ -393,11 +579,18 @@ def read_translation_file(f, base):
             if not k.startswith("@") and isinstance(v, str): out.update(icu_forms(k, v))
         return {lp: out}
     if ext == ".json":  # i18next / react-intl / Lokalise: nested keys, key_one/key_other plurals
-        out = {}
-        for k, v in flatten(json.loads(f.read_text())).items():
-            k = re.sub(r"_(zero|one|two|few|many|other)$", r"#\1", k)
-            out.update(icu_forms(k, v))
-        return {lp: out}
+        return {lp: dict(icu_forms_all(flatten(json.loads(f.read_text()))))}
+    if ext in (".ts", ".tsx", ".js", ".mjs", ".cjs"):  # Ignite, i18n-js, vue-i18n: translations written as an object in code
+        try: tree, skipped = parse_js_translations(f.read_text(encoding="utf-8"))
+        except (ValueError, UnicodeDecodeError) as e:
+            raise Fail(f"can't read {f.name} as a translation file: {e}")
+        if skipped: print(f"note: {f.name}: {len(skipped)} entr{'y is' if len(skipped) == 1 else 'ies are'} code, not text, and skipped "
+                          f"({', '.join(dict.fromkeys(skipped))[:80]})", file=sys.stderr)
+        langs = {k: v for k, v in tree.items() if isinstance(v, dict) and locale_from_path(Path(k + ".json")) is not None}
+        if tree and len(langs) == len(tree):  # { en: {...}, de: {...} }: one file, every language
+            return {k: dict(icu_forms_all(flatten(v))) for k, v in langs.items()}
+        if locale_from_path(f) in (None, "base"): return {}  # index.ts, i18n.ts and other code next to the language files
+        return {lp: dict(icu_forms_all(flatten(tree)))}
     if ext == ".xcstrings":  # String Catalog source: every language in one file
         d, out = json.loads(f.read_text()), {}
         src = d.get("sourceLanguage", base)
@@ -411,9 +604,8 @@ def read_translation_file(f, base):
                         if "stringUnit" in v: out.setdefault(loc, {})[f"{key}#{form}"] = v["stringUnit"].get("value", "")
         return out
     if ext in (".strings", ".stringsdict"):
-        r = sh(["plutil", "-convert", "json", "-o", "-", str(f)])
-        if r.returncode: return {}
-        d = json.loads(r.stdout)
+        d = plist_to_json(f)
+        if d is None: return {}
         return {lp: stringsdict_forms(d) if ext == ".stringsdict" else d}
     if ext == ".xml":  # Android strings.xml / Compose Multiplatform composeResources
         root, out = ET.parse(f).getroot(), {}
@@ -424,6 +616,8 @@ def read_translation_file(f, base):
             if e.tag == "string" and e.get("translatable") != "false": out[e.get("name")] = text(e)
             elif e.tag == "plurals":
                 for item in e.findall("item"): out[f"{e.get('name')}#{item.get('quantity')}"] = text(item)
+            elif e.tag == "string-array":  # spinner and picker entries: name[0], name[1]...
+                for n, item in enumerate(e.findall("item")): out[f"{e.get('name')}[{n}]"] = text(item)
         return {lp: out}
     if ext in (".xlf", ".xliff"):  # XLIFF 1.2/2.0 exports: source and target languages in one file
         root = ET.parse(f).getroot()
@@ -525,8 +719,14 @@ def load_strings_apk(apk, base="en"):
             line, pending = pending, None
         elif name and (m := re.match(r'\s*\(([^)]*)\) "', line)) and not re.search(r'(?<!\\)"\s*$', line[m.end():]):
             pending = line; continue
-        if m := re.match(r"\s*resource 0x[0-9a-f]+ (string|plurals)/(\S+)", line):
+        if m := re.match(r"\s*resource 0x[0-9a-f]+ (string|plurals|array)/(\S+)", line):
             name, kind, loc = m.group(2), m.group(1), None; continue
+        if name and kind == "array":  # (de) (array) size=2 / ["Klein", "Groß"]
+            if m := re.match(r"\s*\(([^)]*)\) \(array\)", line):
+                loc = base if m.group(1) == "" else android_locale(m.group(1)); continue
+            if loc and re.match(r"\s*\[", line):
+                for n, item in enumerate(re.findall(r'"((?:[^"\\]|\\.)*)"', line)): out.setdefault(loc, {})[f"{name}[{n}]"] = unescape_android(item)
+                continue
         if name and kind == "plurals":  # (de) (plurals) size=2 / one="..." / other="..."
             if m := re.match(r"\s*\(([^)]*)\) \(plurals\)", line):
                 loc = base if m.group(1) == "" else android_locale(m.group(1)); continue
@@ -793,6 +993,67 @@ def with_env(header, env):
             return "\n".join(lines[:i + 1] + new + lines[i + 1:])
     return "\n".join(lines + ["env:"] + new)
 
+def flow_mapping_lines(text, indent=4):
+    """The block-YAML lines for an inline `{ key: value, nested: { a: b }, list: [x, y] }` (launchApp options written on one
+    line). Scalars keep their quotes. Raises ValueError on anything that isn't a flow mapping."""
+    pos, n = 0, len(text)
+    def ws():
+        nonlocal pos
+        while pos < n and text[pos].isspace(): pos += 1
+    def scalar(stops):
+        nonlocal pos
+        ws(); start = pos
+        if pos < n and text[pos] in "\"'":
+            q = text[pos]; pos += 1
+            while pos < n and text[pos] != q:
+                pos += 2 if text[pos] == "\\" and q == '"' else 1
+            if pos >= n: raise ValueError("unterminated quote in the launchApp options")
+            pos += 1
+            return text[start:pos]
+        while pos < n and text[pos] not in stops: pos += 1
+        return text[start:pos].strip()
+    def value():
+        nonlocal pos
+        ws()
+        if pos < n and text[pos] == "{": return mapping()
+        if pos < n and text[pos] == "[": return seq()
+        return scalar(",}]")
+    def mapping():
+        nonlocal pos
+        pos += 1; out = []
+        while True:
+            ws()
+            if pos < n and text[pos] == "}": pos += 1; return out
+            key = scalar(":,}")
+            if not key or pos >= n or text[pos] != ":": raise ValueError("write the launchApp options as 'key: value' pairs")
+            pos += 1
+            out.append((key, value())); ws()
+            if pos < n and text[pos] == ",": pos += 1
+            elif pos < n and text[pos] != "}": raise ValueError("expected , or } in the launchApp options")
+            elif pos >= n: raise ValueError("missing } in the launchApp options")
+    def seq():
+        nonlocal pos
+        pos += 1; out = []
+        while True:
+            ws()
+            if pos < n and text[pos] == "]": pos += 1; return ("seq", out)
+            out.append(value()); ws()
+            if pos < n and text[pos] == ",": pos += 1
+            elif pos >= n: raise ValueError("missing ] in the launchApp options")
+    ws()
+    if not text.lstrip().startswith("{"): raise ValueError("the launchApp options are not a { ... } mapping")
+    tree = mapping(); ws()
+    if pos != n: raise ValueError("unexpected text after } in the launchApp options")
+    def emit(items, pad):
+        lines = []
+        for k, v in items:
+            if isinstance(v, list) and v: lines += [" " * pad + f"{k}:"] + emit(v, pad + 2)
+            elif isinstance(v, list): lines.append(" " * pad + f"{k}: {{}}")
+            elif isinstance(v, tuple): lines += [" " * pad + f"{k}:"] + [" " * (pad + 2) + f"- {x}" for x in v[1]]
+            else: lines.append(" " * pad + f"{k}: {v}")
+        return lines
+    return emit(tree, indent)
+
 def localize_flow(flow, lproj, shots_dir, env=None):
     """Make a translated flow self-contained for one locale.
 
@@ -812,7 +1073,10 @@ def localize_flow(flow, lproj, shots_dir, env=None):
         if clear and top(r"clearState:") is None: lines.append("    clearState: true")
         i = top(r"arguments:")
         if i is None: return lines + opts + ["    arguments:"] + args
-        if opts[i].split(":", 1)[1].strip(): raise ValueError("write launchApp arguments as a block, not inline")
+        rest = opts[i].split(":", 1)[1].strip()
+        if rest.startswith("{"):  # `arguments: { demo: "1" }` on one line: expand it, then add ours to the block
+            opts[i:i + 1] = ["    arguments:"] + flow_mapping_lines(rest, indent=6)
+        elif rest: raise ValueError("write launchApp arguments as a block, not inline")
         return lines + opts[:i + 1] + args + opts[i + 1:]
 
     header, sep, body = flow.partition("\n---\n")
@@ -823,12 +1087,14 @@ def localize_flow(flow, lproj, shots_dir, env=None):
     while i < len(lines):
         line = lines[i]; i += 1
         if m := re.match(r"^(\s*)- launchApp:?\s*(.*)$", line):
-            if m.group(2): raise ValueError("write launchApp options as a block under '- launchApp:', not inline")
             opts = []  # the indented block under it, re-indented to 4 spaces
             while i < len(lines) and (not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > len(m.group(1))):
                 opts.append(lines[i]); i += 1
             pad = min((len(l) - len(l.lstrip()) for l in opts if l.strip()), default=4)
             opts = ["    " + l[pad:] for l in opts if l.strip()]
+            inline = re.sub(r"\s+#.*$", "", m.group(2)).strip() if m.group(2) else ""
+            if inline.startswith("{"): opts = flow_mapping_lines(inline) + opts  # `launchApp: { permissions: { all: allow } }`
+            elif inline: opts = [f"    appId: {inline}"] + opts  # `launchApp: com.example.app`
             if not started: first = opts  # the user's first launch is shotfleet's fresh-state launch
             else: out += [m.group(1) + l for l in launch(clear=False, opts=opts)]  # keep a nested step's indent
             started = True
@@ -1262,7 +1528,15 @@ def ios_run_inner(cfg, path, only, parallel):
 
 BREW = Path("/opt/homebrew")
 SDK_PARTS = ("platform-tools", "emulator", "cmdline-tools", "build-tools", "system-images")
-DEFAULT_IMAGE = "system-images;android-36;google_apis;arm64-v8a"
+
+def host_abi(machine=None):
+    """The emulator image architecture that runs at full speed here: arm64 on Apple silicon and ARM Linux, x86_64 elsewhere."""
+    return "arm64-v8a" if (machine or host_platform.machine()).lower() in ("arm64", "aarch64") else "x86_64"
+
+ABI = host_abi()
+DEFAULT_IMAGE = f"system-images;android-36;google_apis;{ABI}"
+
+SYSTEM_SDKS = (Path("/usr/lib/android-sdk"),)  # where Debian and Ubuntu packages put an SDK
 
 def find_sdk(env=None):
     """The Android SDK, first match of: ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's
@@ -1270,6 +1544,7 @@ def find_sdk(env=None):
     Nothing found: ANDROID_HOME (or the Android Studio default), so messages still name a place."""
     env = os.environ if env is None else env
     cands = [env.get("ANDROID_HOME"), env.get("ANDROID_SDK_ROOT"), Path.home() / "Library/Android/sdk",
+             Path.home() / "Android/Sdk", Path.home() / "Android/sdk", *SYSTEM_SDKS,  # Android Studio and Debian on Linux
              BREW / "share/android-commandlinetools",
              *sorted((BREW / "Caskroom/android-commandlinetools").glob("*"), reverse=True)]
     if adb := shutil.which("adb", path=env.get("PATH", "")):
@@ -1277,7 +1552,7 @@ def find_sdk(env=None):
         if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
     for c in filter(None, cands):
         if any((Path(c) / part).is_dir() for part in SDK_PARTS): return Path(c)
-    return Path(env.get("ANDROID_HOME") or Path.home() / "Library/Android/sdk")
+    return Path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
 
 SDK = find_sdk()
 
@@ -1288,14 +1563,14 @@ def cmdline_tool(name, sdk=None):
               Path(shutil.which(name) or "/nonexistent"), BREW / "bin" / name):
         if p.is_file(): return p
 
-def find_image(sdk=None):
-    """Package id of the best installed arm64 image of API 33+ (per-app languages need 33), or None: newest API first,
-    google_apis before google_apis_playstore."""
+def find_image(sdk=None, abi=None):
+    """Package id of the best installed image of API 33+ for this machine's architecture (per-app languages need 33), or
+    None: newest API first, google_apis before google_apis_playstore."""
     sdk, best = sdk or SDK, []
-    for d in (sdk / "system-images").glob("android-*/google_apis*/arm64-v8a"):
+    for d in (sdk / "system-images").glob(f"android-*/google_apis*/{abi or ABI}"):
         api = re.fullmatch(r"android-(\d+)(?:\.(\d+))?", d.parent.parent.name)
         if api and int(api[1]) >= 33 and any((d / f).is_file() for f in ("package.xml", "source.properties")):
-            best.append(((int(api[1]), int(api[2] or 0), d.parent.name == "google_apis"), f"system-images;{d.parent.parent.name};{d.parent.name};arm64-v8a"))
+            best.append(((int(api[1]), int(api[2] or 0), d.parent.name == "google_apis"), f"system-images;{d.parent.parent.name};{d.parent.name};{abi or ABI}"))
     return max(best)[1] if best else None
 
 def sdkmanager_commands(packages, sdk=None):
@@ -1304,7 +1579,12 @@ def sdkmanager_commands(packages, sdk=None):
     sdk = sdk or SDK
     tool, cmds = cmdline_tool("sdkmanager", sdk), []
     java = f"JAVA_HOME={shlex.quote(java_env()['JAVA_HOME'])} " if java_env().get("JAVA_HOME") else ""
-    if not tool:
+    if not tool and not is_mac():  # no Homebrew cask: Google's zip goes to <sdk>/cmdline-tools/latest
+        tool = sdk / "cmdline-tools/latest/bin/sdkmanager"
+        cmds += [f"# download 'Command line tools only' from https://developer.android.com/studio#command-line-tools-only and unzip it "
+                 f"so that {tool} exists",
+                 f"yes | {java}{shlex.quote(str(tool))} --sdk_root={shlex.quote(str(sdk))} --licenses"]
+    elif not tool:
         tool = BREW / "share/android-commandlinetools/cmdline-tools/latest/bin/sdkmanager"
         cmds += ["brew install --cask android-commandlinetools", f"yes | {java}{shlex.quote(str(tool))} --licenses"]
     known = any((sdk / part).is_dir() for part in SDK_PARTS)
@@ -1438,6 +1718,10 @@ def android_flow(text, name, shots_dir, env=None, mapped=()):
     # tears down its port forwards, which hung the run (measured 2026-10-01); Android screenshots are checked with OCR
     for line in body.splitlines():
         if re.match(r"^\s*clearState:", line): continue
+        if m := re.match(r"^(\s*)- launchApp:\s*(\{.*\})\s*(?:#.*)?$", line):  # one-line options: expand, so clearState can be dropped
+            out.append(f"{m.group(1)}- launchApp:")
+            out += [m.group(1) + l for l in flow_mapping_lines(m.group(2)) if not re.match(r"^    clearState:", l)]
+            continue
         out.append(line); redirect_screenshot(out, shots_dir)
     return header + "\n---\n" + "\n".join(out) + "\n"
 
@@ -1554,7 +1838,19 @@ def android_run(cfg, path, out, only, parallel):
 
 # ---------- check ----------
 
+def is_mac():
+    return sys.platform == "darwin"
+
+def vision_available():
+    """macOS text recognition (Vision) exists only on a Mac; elsewhere `check` reads screenshots with Tesseract."""
+    return is_mac()
+
+def install_hint(what="tesseract tesseract-lang"):
+    return f"brew install {what}" if is_mac() else \
+        "apt install tesseract-ocr tesseract-ocr-all (or your distribution's Tesseract packages)"
+
 def ocr_tool():
+    if not vision_available(): raise RuntimeError("macOS text recognition is not available on this system")
     if getattr(sys, "frozen", False):  # released build: the helper ships prebuilt inside it
         return str(Path(sys._MEIPASS) / "ocr")
     exe = HERE / ".build" / "ocr"
@@ -1568,10 +1864,17 @@ def ocr_tool():
 TWINS = {"ms": ("id",), "id": ("ms",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
 LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
 
-@functools.cache
 def readable_languages():
-    """Base languages this Mac's text recognition reads (macOS 27: 33 codes, e.g. CJK, Cyrillic, Arabic, Thai, Hindi;
-    not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts)."""
+    """Base languages the text recognition in use reads. On a Mac (macOS 27: 33 codes, e.g. CJK, Cyrillic, Arabic, Thai, Hindi;
+    not Greek, Hebrew, Armenian, Georgian or most Indic and Southeast Asian scripts); elsewhere, what the installed
+    Tesseract data covers."""
+    if not vision_available():
+        have = tesseract_languages()
+        return {l for l, t in TESSERACT.items() if t in have} | ({"zh"} if have & {"chi_sim", "chi_tra"} else set())
+    return vision_languages()
+
+@functools.cache
+def vision_languages():
     return {c.split("-")[0] for c in json.loads(sh([ocr_tool(), "--langs"]).stdout or "[]")}
 
 # Only scripts no other language shares: Cyrillic/Arabic/Han/Devanagari would let Russian pass as Ukrainian
@@ -1766,6 +2069,10 @@ def warm_up_ocr(ocr, timeout=600):
         return False
 
 TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
+# Tesseract starts one OpenMP thread per core; four of them at once spin against each other (measured on 4 cores:
+# 73 s for 4 screenshots instead of 2 s), so each process gets one thread unless the user sets the limit.
+def tesseract_env():
+    return {**os.environ, "OMP_THREAD_LIMIT": os.environ.get("OMP_THREAD_LIMIT", "1")}  # read at call time: PATH may have changed
 
 @functools.cache
 def tesseract_languages():
@@ -1828,7 +2135,7 @@ def tesseract_script(png, lp):
     Only for ja, ko and th, and only when installed with its osd data; {} otherwise. Measured on 144 real screenshots: right
     on 142 (the 2 wrong, Korean read as Japanese, scored 0.2 and 0.06), so judge_screen only trusts confidence 1.0 and up."""
     if canon(lp).split("-")[0] not in OSD_SCRIPT or "osd" not in tesseract_languages(): return {}
-    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60)
+    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60, env=tesseract_env())
     except (OSError, subprocess.TimeoutExpired): return {}
     m, c = re.search(r"Script: (\w+)", r.stdout + r.stderr), re.search(r"Script confidence: ([\d.]+)", r.stdout + r.stderr)
     return {"osd_script": m.group(1), "osd_conf": float(c.group(1))} if m and c else {}
@@ -1844,11 +2151,11 @@ def external_ocr(command, png, lp):
     except (KeyError, IndexError, ValueError) as e:
         raise Fail(f"unknown placeholder {e} in --ocr-command; use {{image}}, {{lang}}, {{tesseract}}, {{tesseract_with_english}}")
     try:
-        r = sh(args, timeout=180)
+        r = sh(args, timeout=180, env=tesseract_env())
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Fail(f"--ocr-command failed on {png.name}: {e}")
     if r.returncode != 0:
-        hint = " (install the language data: brew install tesseract-lang)" if "Failed loading language" in r.stderr else ""
+        hint = f" (install the language data: {install_hint('tesseract-lang') if is_mac() else install_hint()})" if "Failed loading language" in r.stderr else ""
         raise Fail(f"--ocr-command failed on {png.name}: {(r.stderr or r.stdout).strip()[-200:]}{hint}")
     text = "\n".join(l for l in r.stdout.splitlines() if l.strip())
     return {"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": "external"}
@@ -1947,20 +2254,24 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
     if Path(folder).resolve() in (d.resolve() for d in device_runs(Path(folder).resolve().parent)):
         ipad_rule = False  # one device of a multi-device run: the iPad set lives next to it (ipad_set_missing checks that)
-    ipad = ipad_rule and bool(ios_app) and "2" in sh(["/usr/libexec/PlistBuddy", "-c", "Print UIDeviceFamily", str(Path(ios_app) / "Info.plist")]).stdout
+    ipad = ipad_rule and bool(ios_app) and "2" in plist_value(Path(ios_app) / "Info.plist", "UIDeviceFamily")
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
-    ocr = ocr_tool()
     ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
     user_gave_command = bool(ocr_command)
-    use_vision = True
+    use_vision = vision_available()
+    ocr = ocr_tool() if use_vision else None
     texts = [usable_text(png, tables) for _, png in pngs]
     fallback = bool(ocr_command or shutil.which("tesseract"))
-    if not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600):  # no need to wait long with another OCR at hand
+    if not use_vision and not all(texts):  # Linux and other systems: Tesseract (or --ocr-command) reads every screenshot
+        if not fallback:
+            raise Fail("reading screenshots needs Tesseract on this system (macOS text recognition is Mac-only): " + install_hint())
+        ocr_command = ocr_command or TESSERACT_COMMAND
+    elif not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600):  # no need to wait long with another OCR at hand
         if not fallback:
             raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy "
                        "use); restarting the Mac fixes it. Or install Tesseract and shotfleet uses it automatically: "
@@ -2015,7 +2326,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                      "chars": r.get("chars", 0)})
     unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None})
     if unread:
-        print(f"macOS can't read the script of {', '.join(unread)}: those screens were only checked for showing another "
+        who = "macOS can't read the script of" if vision_available() else "Tesseract can't read the script of"
+        print(f"{who} {', '.join(unread)}: those screens were only checked for showing another "
               "language, copies and missing screens")
     for h, hits in by_hash.items():
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
@@ -2107,6 +2419,7 @@ def find_java():
     homes = [sh(["/usr/libexec/java_home", "-v", "17+"], timeout=30).stdout.strip() if Path("/usr/libexec/java_home").exists() else ""]
     homes += [f"/opt/homebrew/opt/openjdk{v}/libexec/openjdk.jdk/Contents/Home" for v in ("", "@21", "@17")]
     homes += [str(Path.home() / ".sdkman/candidates/java/current")] + sorted(glob.glob("/Library/Java/JavaVirtualMachines/*/Contents/Home"))
+    homes += sorted(glob.glob("/usr/lib/jvm/*"), reverse=True)  # Linux
     for h in homes:
         if h and java_major(Path(h) / "bin/java") >= 17: return True, h
     return False, None
@@ -2144,7 +2457,8 @@ def maestro_warning(version):
 def cmd_doctor():
     """Check the tools shotfleet drives; print how to fix what's missing."""
     have = lambda c: shutil.which(c) is not None
-    has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2")))
+    mac = is_mac()
+    has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
     has_adb, has_emulator, has_avdmanager = adb_cmd() != "adb" or have("adb"), (SDK / "emulator/emulator").exists(), bool(cmdline_tool("avdmanager"))
     has_image = bool(image) or (Path.home() / ".android/avd/shotfleet_android.avd").exists()  # an existing AVD needs no image
@@ -2154,15 +2468,20 @@ def cmd_doctor():
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if have("maestro") else "maestro", maestro_ok,
          "curl -Ls https://get.maestro.mobile.dev | bash  (shotfleet needs Maestro 2.x)", "both"),
-        ("java 17+", find_java()[0], "brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)", "both"),
-        ("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both"),
+        ("java 17+", find_java()[0], ("brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
+                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
+        *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
+          [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
-         "install Xcode and an iOS Simulator runtime", "iOS"),
+         "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
+        *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
+            "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]
+          if sys.platform.startswith("linux") and not mac else []),
         ("adb", has_adb, f"sdkmanager platform-tools {later}", "Android"),
         ("emulator", has_emulator, f"sdkmanager emulator {later}", "Android"),
         ("avdmanager", has_avdmanager, f"sdkmanager command-line tools {later}", "Android"),
         ("aapt2", has_aapt2, f"sdkmanager build-tools {later}", "Android"),
-        (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager an arm64 image of API 33 or newer {later}", "Android"),
+        (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager a system image of API 33 or newer for {ABI} {later}", "Android"),
     ]
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
@@ -2174,24 +2493,29 @@ def cmd_doctor():
     if pkgs or not has_avdmanager:  # without sdkmanager, Homebrew's command-line tools (installed first) bring avdmanager too
         cmds = sdkmanager_commands(pkgs) if pkgs else sdkmanager_commands([])[:-1]
         print("Android: to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
-    print(f"...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most {DOCTOR_OCR_TIMEOUT_S} s)", flush=True)
-    try:  # a timeout or an empty answer is a busy Mac or the one-time model compile (17 to 188 s measured), not a broken setup
-        t0 = time.time(); r = sh([ocr_tool(), "--warmup"], timeout=DOCTOR_OCR_TIMEOUT_S); read = r.stdout.strip()
-    except subprocess.TimeoutExpired:
-        read, r = None, None
-    except (OSError, RuntimeError) as e:
-        read, r = None, e
-    if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
-        print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
-              f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it")
-    elif isinstance(r, Exception):
-        print(f"PROBLEM text recognition   can't start ({r}); restarting the Mac usually fixes it")
-    elif r.returncode != 0:
-        print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; restarting the Mac usually fixes it")
-    elif read == "Ready":
-        print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
-    else:
-        print(f"note: text recognition read {read!r} instead of 'Ready'; screenshot checks may be unreliable")
+    if not mac:
+        langs = sorted(l for l in tesseract_languages() if l != "osd")
+        print(f"{'ok  ' if len(langs) > 1 else 'note:'} text recognition   Tesseract with {len(langs)} language(s)"
+              + ("" if len(langs) > 1 else f"; install more language data to verify other languages ({install_hint()})"))
+    if mac:
+        print(f"...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most {DOCTOR_OCR_TIMEOUT_S} s)", flush=True)
+        try:  # a timeout or an empty answer is a busy Mac or the one-time model compile (17 to 188 s measured), not a broken setup
+            t0 = time.time(); r = sh([ocr_tool(), "--warmup"], timeout=DOCTOR_OCR_TIMEOUT_S); read = r.stdout.strip()
+        except subprocess.TimeoutExpired:
+            read, r = None, None
+        except (OSError, RuntimeError) as e:
+            read, r = None, e
+        if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
+            print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
+                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it")
+        elif isinstance(r, Exception):
+            print(f"PROBLEM text recognition   can't start ({r}); restarting the Mac usually fixes it")
+        elif r.returncode != 0:
+            print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; restarting the Mac usually fixes it")
+        elif read == "Ready":
+            print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
+        else:
+            print(f"note: text recognition read {read!r} instead of 'Ready'; screenshot checks may be unreliable")
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
@@ -2224,7 +2548,39 @@ WRONG_BUILD = {
     ".aab": "an .aab can't be installed directly. Build an APK instead: ./gradlew assembleDebug",
     ".xcarchive": "pass the simulator .app, not an archive (archives are device builds)",
     ".zip": "unzip it first, then pass the .app or .apk inside",
+    ".gz": "unpack it first (tar -xzf), then pass the .app inside",
 }
+
+ARCHIVES = (".tar.gz", ".tgz", ".tar", ".zip")
+
+def unpack_build(archive, into):
+    """EAS (Expo), CI jobs and download pages hand over a simulator build as .tar.gz, .tgz or .zip: unpack it into `into` and
+    return the .app or .apk inside. Members that would land outside `into` are refused."""
+    archive, into = Path(archive).expanduser().resolve(), Path(into).resolve()
+    if not archive.is_file(): raise Fail(f"no such file: {archive}")
+    name = archive.name
+    for ext in ARCHIVES:
+        if name.lower().endswith(ext): name = name[:-len(ext)]; break
+    target = into / name
+    if target.exists(): shutil.rmtree(target)
+    target.mkdir(parents=True)
+    try:
+        if zipfile.is_zipfile(archive):
+            with zipfile.ZipFile(archive) as z:
+                for member in z.namelist():
+                    if not (target / member).resolve().is_relative_to(target): raise Fail(f"{archive.name} holds a file outside its folder: {member}")
+                z.extractall(target)
+        else:
+            with tarfile.open(archive) as t:
+                for member in t.getmembers():
+                    if not (target / member.name).resolve().is_relative_to(target) or member.issym() and not (target / member.name).parent.joinpath(member.linkname).resolve().is_relative_to(target):
+                        raise Fail(f"{archive.name} holds a file outside its folder: {member.name}")
+                t.extractall(target)
+    except (tarfile.TarError, zipfile.BadZipFile, EOFError, OSError) as e:
+        raise Fail(f"can't unpack {archive.name}: {e}")
+    found = [p for pat in ("*.app", "*/*.app", "*.apk", "*/*.apk") for p in sorted(target.glob(pat)) if p.is_dir() == (p.suffix == ".app")]
+    if not found: raise Fail(f"{archive.name} holds no .app or .apk (found: {', '.join(sorted(x.name for x in target.iterdir())) or 'nothing'})")
+    return found[0]
 
 def build_hint(app):
     return WRONG_BUILD.get(Path(app).suffix.lower(), "pass a simulator .app or an .apk")
@@ -2246,8 +2602,9 @@ def read_plist(path):
     except Exception: return {}  # missing or unreadable (binary, XML or garbage): no answer
 
 def xcode_projects(cwd):
-    """Xcode workspaces and projects in cwd and one folder below (not Pods, node_modules, hidden folders), workspaces first."""
-    return [p for pat in ("*.xcworkspace", "*.xcodeproj", "*/*.xcworkspace", "*/*.xcodeproj") for p in Path(cwd).glob(pat)
+    """Xcode workspaces and projects in cwd and up to two folders below (ios/App/App.xcodeproj; not Pods, node_modules, hidden
+    folders), workspaces first."""
+    return [p for pat in ("*.xcworkspace", "*.xcodeproj", "*/*.xcworkspace", "*/*.xcodeproj", "*/*/*.xcworkspace", "*/*/*.xcodeproj") for p in Path(cwd).glob(pat)
             if p.parent.suffix != ".xcodeproj" and not any(x.startswith(".") or x in ("Pods", "node_modules") for x in p.relative_to(cwd).parts)]
 
 def scheme_for(project):
@@ -2259,7 +2616,7 @@ def scheme_for(project):
             except (ET.ParseError, OSError): continue
             if any(r.get("BuildableName", "").endswith(".app") for r in root.iterfind("LaunchAction//BuildableReference")): return f.stem
 
-def derived_apps(cwd, root=None):
+def derived_apps(cwd, root=None, configs=("Debug",)):
     """Debug simulator builds in Xcode's DerivedData that belong to the project in cwd, newest first: [(mtime, .app, project)].
     A folder belongs when its info.plist WorkspacePath is cwd, below it (two folders deep, not hidden: worktree copies are
     other copies) or above it; a folder without that key matches when its name starts with a project name found here."""
@@ -2276,17 +2633,24 @@ def derived_apps(cwd, root=None):
             label = (rel / Path(ws).name).as_posix()
         elif d.name.rpartition("-")[0] in names: label = d.name
         else: continue
-        for app in d.glob("Build/Products/Debug-iphonesimulator/*.app"):
-            info = read_plist(app / "Info.plist")  # not a test runner, not a device build
-            if info.get("CFBundleExecutable") and not info.get("CFBundleIdentifier", "").endswith(".xctrunner") and info.get("DTPlatformName") != "iphoneos":
-                parts = (app, app / "Info.plist", app / info["CFBundleExecutable"])  # a rebuild rewrites these, not always the folder
-                found.append((max(x.stat().st_mtime for x in parts if x.exists()), app, label))
+        for config in configs:
+            for app in d.glob(f"Build/Products/{config}-iphonesimulator/*.app"):
+                if (t := simulator_app_time(app)) is not None: found.append((t, app, label))
     return sorted(found, reverse=True)
 
+def simulator_app_time(app):
+    """When this simulator .app was last built, or None when it is not an installable app (a test runner, a device build)."""
+    app = Path(app)
+    info = read_plist(app / "Info.plist")
+    if info.get("CFBundleExecutable") and not info.get("CFBundleIdentifier", "").endswith(".xctrunner") and info.get("DTPlatformName") != "iphoneos":
+        parts = (app, app / "Info.plist", app / info["CFBundleExecutable"])  # a rebuild rewrites these, not always the folder
+        return max(x.stat().st_mtime for x in parts if x.exists())
+
 def gradle_apks(cwd):
-    """Gradle debug APKs in cwd's app/ (or any module folder one level down, or cwd itself), newest first: [(mtime, apk)]."""
+    """Gradle debug APKs in cwd's app/ (or any module folder one or two levels down, as in android/app of a React Native or
+    Capacitor project, or cwd itself), newest first: [(mtime, apk)]."""
     cwd = Path(cwd)
-    apks = [a for pat in ("build/outputs/apk/**/debug/*.apk", "*/build/outputs/apk/**/debug/*.apk") for a in cwd.glob(pat)
+    apks = [a for pat in ("build/outputs/apk/**/debug/*.apk", "*/build/outputs/apk/**/debug/*.apk", "*/*/build/outputs/apk/**/debug/*.apk") for a in cwd.glob(pat)
             if not any(x.startswith(".") or x == "androidTest" for x in a.relative_to(cwd).parts)]
     return sorted(((a.stat().st_mtime, a) for a in set(apks)), reverse=True)
 
@@ -2294,33 +2658,153 @@ def is_watch_apk(apk):
     try: return "android.hardware.type.watch" in sh([aapt2(), "dump", "badging", str(apk)]).stdout
     except (Fail, OSError): return False  # no aapt2: can't tell, so don't drop it
 
-def find_builds(cwd, derived=None):
-    """The builds `shotfleet init` uses when none are given: the newest Debug simulator .app for this folder's project and the
-    newest Gradle debug APK, each announced in one line. Reads folders only: never runs xcodebuild or gradle. Nothing found: Fail
-    with the exact build commands."""
+# ---------- project detection: the source folder of a Flutter, React Native, ... app ----------
+
+class Project:
+    """What `shotfleet init` learns from a source folder: the framework, where its translation files are, where its
+    builds land and the commands that make them."""
+    def __init__(self, name, strings=None, apps=(), apks=(), configs=("Debug",), build_ios="", build_android="", notes=()):
+        self.name, self.strings, self.apps, self.apks, self.configs = name, strings, apps, apks, configs
+        self.build_ios, self.build_android, self.notes = build_ios, build_android, list(notes)
+
+SKIP_DIRS = {"node_modules", "Pods", "build", "bin", "obj", "DerivedData", "Carthage", "vendor", "venv"}
+
+def source_files(cwd, pattern, depth=5):
+    """Files under cwd matching a glob such as '*.arb', not in hidden, build or dependency folders, at most `depth` folders down."""
+    cwd, out = Path(cwd), []
+    for f in cwd.rglob(pattern):
+        parts = f.relative_to(cwd).parts
+        if len(parts) <= depth and not any(x.startswith(".") or x in SKIP_DIRS for x in parts[:-1]) and f.is_file(): out.append(f)
+    return out
+
+def richest_folder_glob(cwd, ext, min_files=1):
+    """'<folder>/*.ext' for the folder with the most translation files of that kind, or None."""
+    by_dir = {}
+    for f in source_files(cwd, f"*{ext}"):
+        if locale_from_path(f) not in (None, "base"): by_dir.setdefault(f.parent, []).append(f)
+    best = max(by_dir.items(), key=lambda kv: (len(kv[1]), -len(kv[0].parts)), default=None)
+    if not best or len(best[1]) < min_files: return None
+    return (best[0].relative_to(cwd).as_posix() + "/" if best[0] != Path(cwd) else "") + f"*{ext}"
+
+def first_glob(cwd, candidates, min_files=1):
+    """The first of these globs (relative to cwd) that matches files named like languages."""
+    for g in candidates:
+        files = [f for f in glob.glob(g, root_dir=cwd) if locale_from_path(Path(f)) not in (None, "base")]
+        if len(files) >= min_files: return g
+    return None
+
+def read_json_file(path):
+    try: return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError): return {}
+
+def flutter_arb_glob(cwd):
+    """l10n.yaml's arb-dir (flutter gen-l10n's setting), else the folder with the most .arb files."""
+    cfg = Path(cwd) / "l10n.yaml"
+    if cfg.is_file():
+        m = re.search(r"^\s*arb-dir\s*:\s*['\"]?([^'\"#\n]*?)['\"]?\s*(?:#.*)?$", cfg.read_text(errors="replace"), re.M)
+        if m and m.group(1).strip():
+            g = m.group(1).strip().rstrip("/") + "/*.arb"
+            if glob.glob(g, root_dir=cwd): return g
+    return richest_folder_glob(cwd, ".arb") or first_glob(cwd, ["lib/l10n/*.arb"])
+
+I18N_JSON = ["src/locales/*/translation.json", "src/translations/*.json", "src/locales/*.json", "src/i18n/locales/*.json",
+             "src/i18n/*.json", "src/lang/*.json", "src/assets/i18n/*.json", "locales/*/translation.json", "locales/*/*.json",
+             "locales/*.json", "public/locales/*/translation.json", "assets/locales/*.json", "assets/i18n/*.json",
+             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "translations/*.json",
+             "app/i18n/*.ts", "src/i18n/*.ts", "src/i18n/locales/*.ts", "src/locales/*.ts", "src/translations/*.ts", "i18n/*.ts", "locales/*.ts"]  # .ts: Ignite and friends
+I18N_PO = ["src/locales/*/messages.po", "src/locale/locales/*/messages.po", "locales/*/messages.po", "locale/*/LC_MESSAGES/*.po"]
+
+def detect_project(cwd):
+    """The Project for the app whose source is in `cwd`, or None for a native Swift/Kotlin app and for anything unrecognised.
+    Reads a few small files (pubspec.yaml, package.json, *.csproj, Gradle settings); never builds or runs anything.
+    ponytail: the build paths are the frameworks' documented defaults, not checked on every version of each toolchain."""
+    cwd = Path(cwd)
+    pkg = read_json_file(cwd / "package.json")
+    deps = {**pkg.get("devDependencies", {}), **pkg.get("dependencies", {})} if isinstance(pkg, dict) else {}
+    pubspec = (cwd / "pubspec.yaml").read_text(errors="replace") if (cwd / "pubspec.yaml").is_file() else ""
+    if re.search(r"^\s+sdk:\s*flutter\b", pubspec, re.M) or re.search(r"^flutter:", pubspec, re.M):
+        return Project("Flutter", flutter_arb_glob(cwd) or first_glob(cwd, I18N_JSON),
+                       apps=("build/ios/iphonesimulator/*.app",),
+                       apks=("build/app/outputs/flutter-apk/*.apk", "build/app/outputs/apk/*/*.apk"),
+                       build_ios="flutter build ios --simulator --debug", build_android="flutter build apk --debug")  # framework_hint warns about the DEBUG banner
+    if "@capacitor/core" in deps or any((cwd / f).is_file() for f in ("capacitor.config.ts", "capacitor.config.json", "capacitor.config.js")):
+        return Project("Capacitor", first_glob(cwd, I18N_JSON), apks=("android/app/build/outputs/apk/debug/*.apk",),
+                       build_ios="npm run build && npx cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug "
+                                 "-sdk iphonesimulator -derivedDataPath ios/build build",
+                       build_android="npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug)",
+                       apps=("ios/build/Build/Products/Debug-iphonesimulator/*.app",),
+                       notes=["web layers that read navigator.language may ignore the language shotfleet sets on iOS; check the first screenshots"])
+    if "react-native" in deps or "expo" in deps:
+        expo = "expo" in deps
+        return Project("Expo" if expo else "React Native", first_glob(cwd, I18N_PO) or first_glob(cwd, I18N_JSON),
+                       apps=("ios/build/Build/Products/Release-iphonesimulator/*.app", "build/Build/Products/Release-iphonesimulator/*.app"),
+                       apks=("android/app/build/outputs/apk/release/*.apk",), configs=("Release",),
+                       build_ios="npx expo run:ios --configuration Release --no-bundler" if expo else
+                       "npx react-native run-ios --mode Release --simulator 'iPhone 17 Pro Max'",
+                       build_android="npx expo run:android --variant release --no-bundler" if expo else "(cd android && ./gradlew assembleRelease)")
+    csproj = [f for f in cwd.glob("*.csproj")] + [f for f in cwd.glob("*/*.csproj")]
+    if any(re.search(r"<UseMaui>\s*true", f.read_text(errors="replace"), re.I) for f in csproj if f.stat().st_size < 1_000_000):
+        return Project(".NET MAUI", richest_folder_glob(cwd, ".resx"),
+                       apps=("bin/Debug/net*-ios/iossimulator-arm64/*.app", "*/bin/Debug/net*-ios/iossimulator-arm64/*.app"),
+                       apks=("bin/Debug/net*-android/*-Signed.apk", "*/bin/Debug/net*-android/*-Signed.apk"),
+                       build_ios="dotnet build -f net10.0-ios -c Debug -p:RuntimeIdentifier=iossimulator-arm64",
+                       build_android="dotnet build -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true")
+    if (cwd / "ProjectSettings/ProjectVersion.txt").is_file():
+        return Project("Unity", None, notes=["Unity draws its own UI, so text selectors rarely work; shotfleet is not built for games"])
+    gradle = [cwd / n for n in ("settings.gradle.kts", "settings.gradle")]
+    if any(g.is_file() for g in gradle) and any("multiplatform" in f.read_text(errors="replace") for f in
+                                                 list(cwd.glob("*/build.gradle.kts")) + list(cwd.glob("build.gradle.kts")) if f.stat().st_size < 1_000_000):
+        return Project("Kotlin Multiplatform", None)  # strings are compiled into native resources shotfleet reads from the build
+    return None
+
+def project_builds(cwd, project, derived=None):
+    """(ios apps, apks) of this project's own build folders, newest first: [(mtime, path)]."""
+    apps = sorted(((t, a) for pat in project.apps for a in Path(cwd).glob(pat) if (t := simulator_app_time(a)) is not None), reverse=True)
+    apks = sorted(((a.stat().st_mtime, a) for pat in project.apks for a in Path(cwd).glob(pat)), reverse=True)
+    return apps, apks
+
+def find_builds(cwd, derived=None, project=None):
+    """The builds `shotfleet init` uses when none are given: the newest simulator .app for this folder's project and the
+    newest APK, each announced in one line. A Flutter, React Native, ... project (`project`, from detect_project) is looked for
+    where that framework builds, ahead of Xcode's DerivedData and the Gradle folders. Reads folders only: never runs
+    xcodebuild, gradle or the framework's tools. Nothing found: Fail with the exact build commands."""
     cwd = Path(cwd).resolve()
-    apps, apks, builds = derived_apps(cwd, derived), gradle_apks(cwd), []
+    apps, apks = derived_apps(cwd, derived, project.configs + ("Debug",) if project else ("Debug",)), gradle_apks(cwd)
+    if project:
+        own_apps, own_apks = project_builds(cwd, project)
+        apps = [(t, a, f"the {project.name} build folder") for t, a in own_apps] or apps
+        apks = own_apks or apks
     if len(apks) > 1: apks = [a for a in apks if not is_watch_apk(a[1])] or apks  # the Wear app is not the phone app
     projects = xcode_projects(cwd)
+    builds = []
     if apps:
         t, app, where = apps[0]
-        print(f"iOS: using {app.name} ({app}): Debug-iphonesimulator, built {age(t)}, the newest of {len(apps)} Xcode build(s) of {where}")
+        print(f"iOS: using {app.name} ({app}): {app.parent.name}, built {age(t)}, the newest of {len(apps)} Xcode build(s) of {where}"
+              if not project else
+              f"iOS: using {app.name} ({app}): {app.parent.name}, built {age(t)}, the newest of {len(apps)} build(s) found in {where}")
         builds.append(str(app))
     if apks:
         t, apk = apks[0]
-        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} Gradle debug APK(s) under {cwd}")
+        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} " + ("Gradle debug APK(s)" if not project else "APK(s)") + f" under {cwd}")
         builds.append(str(apk))
     ios_cmd = "xcodebuild -scheme <scheme> -sdk iphonesimulator -configuration Debug build"
     if projects:
         proj = projects[0]
         ios_cmd = (f"xcodebuild {'-workspace' if proj.suffix == '.xcworkspace' else '-project'} {shlex.quote(proj.relative_to(cwd).as_posix())} "
                    f"-scheme {shlex.quote(scheme_for(proj) or '<scheme>')} -sdk iphonesimulator -configuration Debug build")
+    android_cmd = "./gradlew assembleDebug"
+    if project:  # the framework's own build command: a plain xcodebuild or gradlew skips its code generation and bundling
+        ios_cmd, android_cmd = project.build_ios or ios_cmd, project.build_android or android_cmd
+    has_gradle = any((cwd / f).is_file() for f in ("gradlew", "android/gradlew"))
     # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
-    here = [x for x, present in (((ios_cmd, "Debug simulator build", bool(apps)), bool(projects)),
-                                 (("./gradlew assembleDebug", "Gradle debug APK", bool(apks)), (cwd / "gradlew").is_file())) if present]
+    kind = f"{project.name} " if project else ""
+    ios_what, android_what = (f"{kind}simulator build", f"{kind}APK") if project else ("Debug simulator build", "Gradle debug APK")
+    here = [x for x, present in (((ios_cmd, ios_what, bool(apps)), bool(projects) or bool(project and project.build_ios)),
+                                 ((android_cmd, android_what, bool(apks)), has_gradle or bool(project and project.build_android))) if present]
     if not builds:
-        raise Fail(f"no Debug simulator build or Gradle debug APK found for {cwd}. Build one, then run shotfleet init again:\n  "
-                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), ("./gradlew assembleDebug", 0, 0)]))
+        what = f"no {ios_what} or {android_what} found for" if project else "no Debug simulator build or Gradle debug APK found for"
+        raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  "
+                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]))
     for cmd, what, ok in here:
         if not ok: print(f"note: no {what} yet; to make one: {cmd}")
     return builds
@@ -2328,9 +2812,23 @@ def find_builds(cwd, derived=None):
 def cmd_init(builds, dest="."):
     """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android).
     No builds given: use the newest Debug ones found in the current folder (find_builds)."""
-    builds = [builds] if isinstance(builds, (str, Path)) else builds or find_builds(Path.cwd())
+    project = detect_project(Path.cwd())  # a Flutter, React Native, ... source folder: its builds, translation files and commands
+    builds = [builds] if isinstance(builds, (str, Path)) else builds or find_builds(Path.cwd(), project=project)
     dest = Path(dest)
-    sections, found = [], []
+    builds = [unpack_build(b, dest / ".shotfleet/builds") if str(b).lower().endswith(ARCHIVES) else b for b in builds]
+    sections, found, source_strings = [], [], None
+    strings_line = ""
+    if project and project.strings:  # these frameworks keep translations in source files, not in the build
+        rel = project.strings if dest.resolve() == Path.cwd().resolve() else os.path.join(os.path.relpath(Path.cwd(), dest), project.strings)
+        try: source_strings = load_strings_files([str(Path.cwd() / project.strings)])
+        except Fail: source_strings = None
+        if source_strings:
+            strings_line = f'\nstrings = {json.dumps(rel)}   # {project.name}: translations are read from these files'
+            print(f"{project.name} project: translations from {project.strings} ({len(source_strings)} languages)")
+    elif project:
+        print(f"{project.name} project" + (": no translation files found; set strings = \"<glob>\" in the config to point at them"
+                                           if project.name != "Kotlin Multiplatform" else ""))
+    for n in (project.notes if project else ()): print(f"note: {n}")
     suffixes = [Path(b).suffix for b in builds]
     for kind in (".app", ".apk"):
         if suffixes.count(kind) > 1: raise Fail(f"two {kind} builds given; a config holds one app per platform, so run init once per app")
@@ -2340,19 +2838,19 @@ def cmd_init(builds, dest="."):
             if not app.is_file(): raise Fail(f"no APK at {app}")
             m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
             if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
-            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}\n'
+            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# devices = ["phone", "tablet"]   # Android sets from one flow\n# locales = ["de", "ja"]   # default: every language the app ships')
-            found.append((m.group(1), shipped_locales(load_strings_apk(app))))
+            found.append((m.group(1), shipped_locales(source_strings or load_strings_apk(app))))
         elif app.suffix == ".app":
             if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
             if device_build(app): raise Fail(f"{app.name} is a device build: {WRONG_BUILD['.xcarchive']}")
-            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}\n'
+            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
                             '# locales = ["de", "ja"]   # default: every language the app ships')
-            found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(load_strings(app))))
+            found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(source_strings or load_strings(app))))
         else:
             raise Fail(build_hint(app))
-    for build in builds: framework_hint(Path(build).expanduser().resolve(), False, dest)
+    for build in builds: framework_hint(Path(build).expanduser().resolve(), bool(strings_line), dest)
     dest.mkdir(parents=True, exist_ok=True)
     for name, text in (("shotfleet.toml", "\n\n".join(sections) + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
         if (dest / name).exists():

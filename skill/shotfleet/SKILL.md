@@ -18,7 +18,7 @@ cannot find `shotfleet` but the user has the source, use `python3 path/to/shotfl
 
 1. **The user has screenshots (fastlane or any folder) and wants to know if they are right** -> [Check](#check). No simulators, no licence.
 2. **The user wants to capture screenshots in many languages** -> [Capture](#capture): `doctor`, `init`, write the flow, `run` one language, then all.
-3. **The app is Flutter, React Native, .NET MAUI or Unity** -> same paths, plus `strings = "<glob>"` in the config or `--strings '<glob>'` on `check`, pointing at the translation files. Details in [references/config.md](references/config.md).
+3. **The app is Flutter, React Native, .NET MAUI or Unity** -> same paths, plus `strings = "<glob>"` in the config or `--strings '<glob>'` on `check`, pointing at the translation files. Details in [references/config.md](references/config.md). Run `shotfleet init` in the project folder first: it recognises these projects, finds the build where the framework puts it, writes the `strings` line itself and prints the framework's own build command when there is no build yet (EAS `.tar.gz` builds are unpacked).
 4. **The user wants it in CI** -> use the `shotfleet-ci` skill, or [references/ci.md](references/ci.md).
 5. **There is a check report to explain** -> use the `shotfleet-review` skill.
 6. **A command printed an error or a hint** -> [references/troubleshooting.md](references/troubleshooting.md) (grep the message).

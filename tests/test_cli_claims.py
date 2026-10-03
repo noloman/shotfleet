@@ -243,7 +243,8 @@ class NothingIsUploaded(unittest.TestCase):
         allowed = {"shotfleet.com",  # install hint, /download/VERSION
                    "api.polar.sh", "api.gumroad.com", "api.lemonsqueezy.com",  # licence checks
                    "127.0.0.1",  # local test servers
-                   "get.maestro.mobile.dev"}  # text of an install hint
+                   "get.maestro.mobile.dev",  # text of an install hint
+                   "developer.android.com"}  # text of an install hint (Linux: where the Android command-line tools come from)
         self.assertEqual(hosts - allowed, set())
 
 

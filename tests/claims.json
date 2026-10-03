@@ -1238,17 +1238,15 @@
  },
  {
   "id": "C073",
-  "claim": "Android needs API 33+ emulators; macOS only; launchApp options must be a block; typed text isn't translated",
+  "claim": "Android needs API 33+ emulators; typed text isn't translated",
   "where": [
-   "README.md",
    "README.md"
   ],
   "where_text": [
-   "Android needs API 33+ emulators for per-app languages.",
-   "`launchApp` options must be written as a block"
+   "Android needs API 33+ emulators for per-app languages."
   ],
   "status": "partial",
-  "proof": "LocalizeFlow.test_inline_launch_app_options_are_rejected_clearly. API 33 is a documented limit; research/limits-platforms.md argues it excludes almost nobody.",
+  "proof": "API 33 is a documented limit; research/limits-platforms.md argues it excludes almost nobody. (The inline launchApp limit was removed: LocalizeFlow.test_inline_launch_app_options_are_expanded_and_merged.)",
   "layer": "unit",
   "assertion": "Android pool refuses an AVD older than API 33 with a one-line message (check it exists).",
   "fix": ""
@@ -2020,5 +2018,80 @@
   "layer": "unit",
   "assertion": "Fake Sim/Emu record the commands in order; a device run with setprop debug.* on an emulator image is still to do.",
   "fix": "Say the Android commands are unit-tested as command lines only until run on an emulator."
+ },
+ {
+  "id": "C121",
+  "claim": "init in a Flutter, React Native, Expo, Capacitor, MAUI or Kotlin Multiplatform project folder finds the framework's build, writes the strings line and prints the framework's build commands",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "**Run `shotfleet init` in the project folder** and it does the finding for you."
+  ],
+  "status": "partial",
+  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so). Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages.",
+  "layer": "unit",
+  "assertion": "On a real Flutter and a real Expo project init picks the build and the strings line without arguments.",
+  "fix": ""
+ },
+ {
+  "id": "C122",
+  "claim": "An EAS .tar.gz or a .zip simulator build is unpacked by init",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Give it an EAS `.tar.gz` or a `.zip` build and it unpacks it next to the config."
+  ],
+  "status": "partial",
+  "proof": "UnpackBuilds.test_tar_gz_zip_and_a_nested_folder, UnpackBuilds.test_an_archive_with_nothing_installable_or_with_escaping_paths_is_refused, UnpackBuilds.test_init_takes_the_archive_directly: archives made in the test; not a real EAS artifact.",
+  "layer": "unit",
+  "assertion": "A real `eas build --profile preview` simulator archive gives a .app that init writes into the config.",
+  "fix": ""
+ },
+ {
+  "id": "C123",
+  "claim": "Translations written as an object in code (.ts, .js) are read as data and never run",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "translations written as an object in code (`.ts`, `.js`: Ignite, i18n-js, vue-i18n; read as data, never run"
+  ],
+  "status": "proven",
+  "proof": "ParseObject.test_ignite_style_file, ParseObject.test_template_with_interpolation_and_code_are_skipped_not_guessed, ReadFiles.test_load_strings_files_and_a_flow_translate_through_it: a hand-written Ignite-style file; the parser never calls node.",
+  "layer": "unit",
+  "assertion": "Ignite's own app/i18n/en.ts and ar.ts load with every text present.",
+  "fix": ""
+ },
+ {
+  "id": "C124",
+  "claim": "launchApp options may be written on one line",
+  "where": [
+   "skill/shotfleet/references/flow-writing.md"
+  ],
+  "where_text": [
+   "Options can be a block (below) or on one line, `- launchApp: { permissions: { all: allow } }`; shotfleet reads both."
+  ],
+  "status": "proven",
+  "proof": "LocalizeFlow.test_inline_launch_app_options_are_expanded_and_merged, AndroidFlow.test_inline_launch_app_options_lose_clear_state_but_keep_the_rest.",
+  "layer": "unit",
+  "assertion": "Inline options come out as the same block form the block spelling gives.",
+  "fix": ""
+ },
+ {
+  "id": "C125",
+  "claim": "check and the Android readers run on Linux with Tesseract; run on a Linux emulator is untried",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Linux: `check` and the Android readers run from source on Linux"
+  ],
+  "status": "partial",
+  "proof": "CheckWithoutMacOcr.test_wrong_language_is_found_with_an_ocr_command_and_no_macos, ReadTheApk.test_check_with_the_apk_finds_a_german_folder_in_english; also run by hand on rendered screenshots with Tesseract 5 on Linux (docs/linux.md). Android run on a Linux emulator needs KVM and was never run.",
+  "layer": "unit",
+  "assertion": "An 18-language run on a KVM emulator, then check, on a Linux machine.",
+  "fix": ""
  }
 ]

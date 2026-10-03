@@ -19,6 +19,7 @@ PRODUCT_ID = "Zm9vYmFyYmF6cXV4MTI0NQ=="  # the usual Gumroad shape: 22 character
 ARCHIVE = "shotfleet-macos-arm64.tar.gz"
 CLEAN = "/usr/bin:/bin:/usr/sbin:/sbin"
 APPLE_SILICON = os.uname().sysname == "Darwin" and os.uname().machine == "arm64"
+needs_mac = unittest.skipUnless(os.uname().sysname == "Darwin", "the release scripts use macOS tools (BSD sed -i, shasum)")
 
 
 def run(cmd, **kw):
@@ -101,6 +102,7 @@ class Fixture(unittest.TestCase):
 
 @unittest.skipIf(LIVE, "the site is already live; there is nothing left to rehearse")
 class DryRun(Fixture):
+    @needs_mac
     def test_the_dry_run_passes_and_says_what_it_would_do(self):
         self.assertEqual(self.dry.returncode, 0, self.dry.stdout + self.dry.stderr)
         out = self.dry.stdout
@@ -110,6 +112,8 @@ class DryRun(Fixture):
         self.assertIn(f'+GUMROAD_PRODUCT_ID = "{PRODUCT_ID}"', out)  # the diff summary shows the one-line change to the program
         self.assertIn("site/public/index.html", out)
 
+    @needs_mac
+
     def test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text(self):
         live = self.sale_html
         self.assertGreaterEqual(live.count(f'href="{CHECKOUT}"'), 3)
@@ -117,6 +121,8 @@ class DryRun(Fixture):
         self.assertIn("first 100 buyers", live)  # honest text: no counter number exists, nothing feeds one (LAUNCH.md open item)
         self.assertNotRegex(live.lower(), r"\d+ (of 100|left|remaining)|spots? left")
         self.assertIn(f'GUMROAD_PRODUCT_ID = "{PRODUCT_ID}"', (self.sale_pub.parent.parent / "shotfleet.py").read_text())
+
+    @needs_mac
 
     def test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed(self):
         before = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in ("shotfleet.py", "site/public/index.html")}
@@ -140,6 +146,8 @@ class DryRun(Fixture):
                 r = run(["sh", str(GOLIVE), "--dry-run", *args], env=env)
                 self.assertEqual(r.returncode, 1, r.stdout); self.assertIn(want, r.stdout); self.assertIn("DRY RUN FOUND PROBLEMS", r.stdout)
 
+    @needs_mac
+
     def test_a_link_that_is_not_gumroad_or_an_odd_id_shape_is_a_warning_not_a_failure(self):
         env = {**os.environ, "GOLIVE_SKIP_TESTS": "1", "GOLIVE_SKIP_MACHINE_CHECKS": "1"}
         r = run(["sh", str(GOLIVE), "--dry-run", "https://buy.example.com/shotfleet", "shortid=="], env=env)
@@ -152,6 +160,7 @@ class DryRun(Fixture):
 
 
 class Smoke(Fixture):
+    @needs_mac
     def test_a_good_site_passes_from_a_clean_environment(self):
         s = self.site(); r = self.smoke(s, *([self.sale_checkout] if self.sale_checkout else []))
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)

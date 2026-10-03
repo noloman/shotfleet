@@ -169,13 +169,15 @@ devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:1
 These frameworks don't keep their translations in a form shotfleet can read inside the built app, so point it at the
 source files instead. Add `strings` to either section (globs, relative to the config):
 
+**Run `shotfleet init` in the project folder** and it does the finding for you. It recognises a Flutter project (`pubspec.yaml`), React Native and Expo (`package.json`), Capacitor, .NET MAUI (a `.csproj` with `UseMaui`) and Kotlin Multiplatform. It looks for the build where that framework puts it (`build/ios/iphonesimulator/Runner.app` and `build/app/outputs/flutter-apk/` for Flutter; a Release simulator build and `android/app/build/outputs/apk/release/` for React Native), writes the `strings =` line for the translation files it finds (`arb-dir` from `l10n.yaml`, `src/locales/*/translation.json`, Lingui `messages.po`, `Resources/Strings/*.resx`, `app/i18n/*.ts`), and when there is no build yet it prints the framework's own command (`flutter build ios --simulator --debug`, `npx expo run:ios --configuration Release --no-bundler`) instead of a plain `xcodebuild`. Give it an EAS `.tar.gz` or a `.zip` build and it unpacks it next to the config. `init` has been tried on a real Flutter build and a real Expo build (Android APKs, made on Linux); nothing has been captured on a device yet.
+
 ```toml
 strings = "lib/l10n/*.arb"                      # Flutter
 strings = "src/locales/*/translation.json"      # React Native / Expo with i18next
 strings = ["Resources/Strings/*.resx"]          # .NET MAUI
 ```
 
-Supported: `.arb`, i18next/react-intl `.json` (nested keys, `_one`/`_other` plurals), `.xcstrings`, `.strings`,
+Supported: `.arb`, i18next/react-intl `.json`, translations written as an object in code (`.ts`, `.js`: Ignite, i18n-js, vue-i18n; read as data, never run, and entries that are code are skipped and counted), (nested keys, `_one`/`_other` plurals), `.xcstrings`, `.strings`,
 `.stringsdict`, Android/Compose `strings.xml`, XLIFF (`.xlf`, `.xliff`), `.resx`, gettext `.po`, `.properties`, and
 CSV with one column per language (Unity Localization, spreadsheets). ICU plurals (`{count, plural, one{…} other{…}}`)
 and placeholders (`%d`, `%1$@`, `{name}`, `{{name}}`) are understood. The language comes from `@@locale`, the file name
@@ -291,5 +293,5 @@ translation source.
 
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; it may still work, nothing is blocked.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing.
-- `launchApp` options must be written as a block (as above), not inline `{ ... }`.
+- Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac.
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, see above).
