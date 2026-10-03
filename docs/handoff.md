@@ -170,11 +170,13 @@ Polar organisation id nor the Gumroad product id is set in the source tree, so n
 
 ## 12. New from the strategy research (2026-10-03, see research/profit-plan-2026-10-03.md)
 
-- **Xcode 27 final (14 Sep) replaced Simulator.app with Device Hub.** Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
+- **Xcode 27 final replaced Simulator.app with Device Hub** (static analysis in `docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to; unproved). Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
   runtime, and record the Xcode build and iOS version in `STATUS.md` row 9 (no record says which Xcode the real runs used). Passed when 36 of 36 assertions hold; if `simctl` behaves
   differently, `shotfleet.py`'s simulator functions are where to look.
-- **Re-read Apple's screenshot specifications monthly** (it changed 8 Jul, 19 Aug, 9 Sep). Compare https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
-  with `APPLE_SIZES` in `shotfleet.py`. The iPhone Duo sizes were added on 2026-10-03; Apple opens uploads for it "later this year", so `export` for Duo is untested.
+- **Apple's screenshot specifications change often** (8 Jul, 19 Aug, 9 Sep). The sizes are now watched by `tools/apple-specs-watch.py` (monthly workflow `apple-specs`, or by hand): it
+  compares every size on Apple's page with `APPLE_SIZES` and was run on the real page on 2026-10-03 (45 distinct sizes, table matches; it also found four old-device landscape sizes
+  that were missing, now added). The prose rules (count, alpha, which set is required) are not machine-read: read the page once a month. iPhone Duo sizes are known; Apple opens
+  uploads for it "later this year", so `export` for Duo is untested. The first run of the `apple-specs` and `maestro-latest` workflows happens on GitHub: use "Run workflow" once on each.
 - **Team / CI demand test and the layout check** are decided by the experiments in section 7 of the strategy note, after launch; do not build them before.
 
 ## Known small things, not blocking

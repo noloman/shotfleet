@@ -1,0 +1,19 @@
+name: apple-specs
+# Monthly: does shotfleet's table of App Store screenshot sizes still match Apple's specification page? Red means a size was added or dropped (or the page changed
+# shape): update APPLE_SIZES in shotfleet.py and add a test. Sizes only; Apple's count, alpha and required-set rules are prose and need a human read.
+on:
+  schedule:
+    - cron: "41 7 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
+      - run: python3 tools/apple-specs-watch.py
