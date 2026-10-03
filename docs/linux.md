@@ -26,6 +26,14 @@ In both APKs the app's own text is **not** in the Android resources (85 and 86 l
 (`lib/l10n/*.dart`), not into `flutter_gen`. These are small demo apps made for this check, not third-party apps, and nothing was run on a
 device: the language mechanism (`cmd locale set-app-locales`, launch arguments) and Maestro's view of Flutter and React Native screens remain unproven.
 
+Project detection was also run on three real third-party repositories (shallow clones, nothing built):
+
+| Repository | Detected | Notes |
+|---|---|---|
+| wger-project/flutter | Flutter, `lib/l10n/*.arb` | 40 ARB files, 37 languages read; the other 3 (`gl`, `km`, `ur`) are empty files in the repo. 13 languages are under half translated, so `shipped_locales` skips them and says so |
+| obytes/react-native-template-obytes | Expo, `src/translations/*.json` | en and ar |
+| JetBrains/kotlinconf-app | Kotlin Multiplatform | first missed (version-catalog alias `kotlinMultiplatform`, modules two folders down); fixed, with a test |
+
 ## Set up
 
 ```bash
