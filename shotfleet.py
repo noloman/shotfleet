@@ -1682,6 +1682,9 @@ def judge_screen(lp, ocr, tables):
             if ocr.get("lang") == "en" and ocr.get("langs", {}).get("en", 0) > 0.9:
                 return "en", f"text looks like 'en', expected '{want}'"
             return None, None
+        osd = ocr.get("osd_script")  # Tesseract names no language; its script detection is the evidence (see tesseract_script)
+        if osd and ocr.get("osd_conf", 0) >= 1.0 and osd not in OSD_SCRIPT.get(want.split("-")[0], (osd,)):
+            return None, f"text looks like the {osd} script, expected '{want}'"
         script = SCRIPTS.get(want.split("-")[0])
         if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
             return lp, None
@@ -1817,6 +1820,18 @@ TESSERACT = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "it": "ita", "p
              "sr": "srp", "be": "bel", "kk": "kaz", "ky": "kir", "mn": "mon", "hu": "hun", "sk": "slk", "hr": "hrv",
              "sl": "slv", "et": "est", "lv": "lav", "lt": "lit", "is": "isl", "sq": "sqi", "az": "aze", "uz": "uzb",
              "ca": "cat", "eu": "eus", "gl": "glg", "sw": "swa", "zu": "zul", "af": "afr", "fil": "fil", "tl": "tgl"}
+
+OSD_SCRIPT = {"ja": ("Japanese", "Han"), "ko": ("Korean",), "th": ("Thai",)}  # what Tesseract's script detection calls them
+
+def tesseract_script(png, lp):
+    """Tesseract's script detection, for listings whose script it reads badly when told the wrong one ({"osd_script": ...}).
+    Only for ja, ko and th, and only when installed with its osd data; {} otherwise. Measured on 144 real screenshots: right
+    on 142 (the 2 wrong, Korean read as Japanese, scored 0.2 and 0.06), so judge_screen only trusts confidence 1.0 and up."""
+    if canon(lp).split("-")[0] not in OSD_SCRIPT or "osd" not in tesseract_languages(): return {}
+    try: r = sh(["tesseract", str(png), "stdout", "--psm", "0", "-l", "osd"], timeout=60)
+    except (OSError, subprocess.TimeoutExpired): return {}
+    m, c = re.search(r"Script: (\w+)", r.stdout + r.stderr), re.search(r"Script confidence: ([\d.]+)", r.stdout + r.stderr)
+    return {"osd_script": m.group(1), "osd_conf": float(c.group(1))} if m and c else {}
 
 def external_ocr(command, png, lp):
     """Run the user's OCR command for a language macOS can't read; {image}, {lang} and {tesseract} are filled in.
@@ -1975,7 +1990,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             redo = [i for i, (label, png) in enumerate(pngs)
                     if not texts[i] and (not use_vision or unreadable(label))
                     and (not auto or tesseract_code(app_locale(label, tables) or label) in tesseract_languages())]
-            for i, r in zip(redo, ex.map(lambda i: external_ocr(ocr_command, pngs[i][1], app_locale(pngs[i][0], tables) or pngs[i][0]), redo)):
+            def external(i):
+                lp = app_locale(pngs[i][0], tables) or pngs[i][0]
+                return {**external_ocr(ocr_command, pngs[i][1], lp), **tesseract_script(pngs[i][1], lp)}
+            for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
     rows, by_hash, expected_used, unverified = [], {}, set(), 0
     for (label, png), r in zip(pngs, ocrs):
