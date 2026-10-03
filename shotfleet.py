@@ -1623,7 +1623,10 @@ class Emu:
             raise RuntimeError(f"adb {' '.join(args)}: {(r.stderr or r.stdout).strip()}")
         return r.stdout
     def booted(self):
-        return sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() == "1"
+        """sys.boot_completed is 1 AND the package service answers: on a busy machine the first can be true while `adb install`
+        still says "Can't find service: package" (seen with two emulators on 2 cores)."""
+        if sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() != "1": return False
+        return "Service package: found" in sh([adb_cmd(), "-s", self.serial, "shell", "service", "check", "package"], timeout=15).stdout
 
 SNAPSHOT = "shotfleet"
 
