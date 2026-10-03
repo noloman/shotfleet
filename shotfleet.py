@@ -2360,8 +2360,9 @@ def read_plist(path):
     except Exception: return {}  # missing or unreadable (binary, XML or garbage): no answer
 
 def xcode_projects(cwd):
-    """Xcode workspaces and projects in cwd and one folder below (not Pods, node_modules, hidden folders), workspaces first."""
-    return [p for pat in ("*.xcworkspace", "*.xcodeproj", "*/*.xcworkspace", "*/*.xcodeproj") for p in Path(cwd).glob(pat)
+    """Xcode workspaces and projects in cwd and up to two folders below (ios/App/App.xcodeproj; not Pods, node_modules, hidden
+    folders), workspaces first."""
+    return [p for pat in ("*.xcworkspace", "*.xcodeproj", "*/*.xcworkspace", "*/*.xcodeproj", "*/*/*.xcworkspace", "*/*/*.xcodeproj") for p in Path(cwd).glob(pat)
             if p.parent.suffix != ".xcodeproj" and not any(x.startswith(".") or x in ("Pods", "node_modules") for x in p.relative_to(cwd).parts)]
 
 def scheme_for(project):
@@ -2373,7 +2374,7 @@ def scheme_for(project):
             except (ET.ParseError, OSError): continue
             if any(r.get("BuildableName", "").endswith(".app") for r in root.iterfind("LaunchAction//BuildableReference")): return f.stem
 
-def derived_apps(cwd, root=None):
+def derived_apps(cwd, root=None, configs=("Debug",)):
     """Debug simulator builds in Xcode's DerivedData that belong to the project in cwd, newest first: [(mtime, .app, project)].
     A folder belongs when its info.plist WorkspacePath is cwd, below it (two folders deep, not hidden: worktree copies are
     other copies) or above it; a folder without that key matches when its name starts with a project name found here."""
@@ -2390,17 +2391,24 @@ def derived_apps(cwd, root=None):
             label = (rel / Path(ws).name).as_posix()
         elif d.name.rpartition("-")[0] in names: label = d.name
         else: continue
-        for app in d.glob("Build/Products/Debug-iphonesimulator/*.app"):
-            info = read_plist(app / "Info.plist")  # not a test runner, not a device build
-            if info.get("CFBundleExecutable") and not info.get("CFBundleIdentifier", "").endswith(".xctrunner") and info.get("DTPlatformName") != "iphoneos":
-                parts = (app, app / "Info.plist", app / info["CFBundleExecutable"])  # a rebuild rewrites these, not always the folder
-                found.append((max(x.stat().st_mtime for x in parts if x.exists()), app, label))
+        for config in configs:
+            for app in d.glob(f"Build/Products/{config}-iphonesimulator/*.app"):
+                if (t := simulator_app_time(app)) is not None: found.append((t, app, label))
     return sorted(found, reverse=True)
 
+def simulator_app_time(app):
+    """When this simulator .app was last built, or None when it is not an installable app (a test runner, a device build)."""
+    app = Path(app)
+    info = read_plist(app / "Info.plist")
+    if info.get("CFBundleExecutable") and not info.get("CFBundleIdentifier", "").endswith(".xctrunner") and info.get("DTPlatformName") != "iphoneos":
+        parts = (app, app / "Info.plist", app / info["CFBundleExecutable"])  # a rebuild rewrites these, not always the folder
+        return max(x.stat().st_mtime for x in parts if x.exists())
+
 def gradle_apks(cwd):
-    """Gradle debug APKs in cwd's app/ (or any module folder one level down, or cwd itself), newest first: [(mtime, apk)]."""
+    """Gradle debug APKs in cwd's app/ (or any module folder one or two levels down, as in android/app of a React Native or
+    Capacitor project, or cwd itself), newest first: [(mtime, apk)]."""
     cwd = Path(cwd)
-    apks = [a for pat in ("build/outputs/apk/**/debug/*.apk", "*/build/outputs/apk/**/debug/*.apk") for a in cwd.glob(pat)
+    apks = [a for pat in ("build/outputs/apk/**/debug/*.apk", "*/build/outputs/apk/**/debug/*.apk", "*/*/build/outputs/apk/**/debug/*.apk") for a in cwd.glob(pat)
             if not any(x.startswith(".") or x == "androidTest" for x in a.relative_to(cwd).parts)]
     return sorted(((a.stat().st_mtime, a) for a in set(apks)), reverse=True)
 
@@ -2408,33 +2416,152 @@ def is_watch_apk(apk):
     try: return "android.hardware.type.watch" in sh([aapt2(), "dump", "badging", str(apk)]).stdout
     except (Fail, OSError): return False  # no aapt2: can't tell, so don't drop it
 
-def find_builds(cwd, derived=None):
-    """The builds `shotfleet init` uses when none are given: the newest Debug simulator .app for this folder's project and the
-    newest Gradle debug APK, each announced in one line. Reads folders only: never runs xcodebuild or gradle. Nothing found: Fail
-    with the exact build commands."""
+# ---------- project detection: the source folder of a Flutter, React Native, ... app ----------
+
+class Project:
+    """What `shotfleet init` learns from a source folder: the framework, where its translation files are, where its
+    builds land and the commands that make them."""
+    def __init__(self, name, strings=None, apps=(), apks=(), configs=("Debug",), build_ios="", build_android="", notes=()):
+        self.name, self.strings, self.apps, self.apks, self.configs = name, strings, apps, apks, configs
+        self.build_ios, self.build_android, self.notes = build_ios, build_android, list(notes)
+
+SKIP_DIRS = {"node_modules", "Pods", "build", "bin", "obj", "DerivedData", "Carthage", "vendor", "venv"}
+
+def source_files(cwd, pattern, depth=5):
+    """Files under cwd matching a glob such as '*.arb', not in hidden, build or dependency folders, at most `depth` folders down."""
+    cwd, out = Path(cwd), []
+    for f in cwd.rglob(pattern):
+        parts = f.relative_to(cwd).parts
+        if len(parts) <= depth and not any(x.startswith(".") or x in SKIP_DIRS for x in parts[:-1]) and f.is_file(): out.append(f)
+    return out
+
+def richest_folder_glob(cwd, ext, min_files=1):
+    """'<folder>/*.ext' for the folder with the most translation files of that kind, or None."""
+    by_dir = {}
+    for f in source_files(cwd, f"*{ext}"):
+        if locale_from_path(f) not in (None, "base"): by_dir.setdefault(f.parent, []).append(f)
+    best = max(by_dir.items(), key=lambda kv: (len(kv[1]), -len(kv[0].parts)), default=None)
+    if not best or len(best[1]) < min_files: return None
+    return (best[0].relative_to(cwd).as_posix() + "/" if best[0] != Path(cwd) else "") + f"*{ext}"
+
+def first_glob(cwd, candidates, min_files=1):
+    """The first of these globs (relative to cwd) that matches files named like languages."""
+    for g in candidates:
+        files = [f for f in glob.glob(g, root_dir=cwd) if locale_from_path(Path(f)) not in (None, "base")]
+        if len(files) >= min_files: return g
+    return None
+
+def read_json_file(path):
+    try: return json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError): return {}
+
+def flutter_arb_glob(cwd):
+    """l10n.yaml's arb-dir (flutter gen-l10n's setting), else the folder with the most .arb files."""
+    cfg = Path(cwd) / "l10n.yaml"
+    if cfg.is_file():
+        m = re.search(r"^\s*arb-dir\s*:\s*['\"]?([^'\"#\n]*?)['\"]?\s*(?:#.*)?$", cfg.read_text(errors="replace"), re.M)
+        if m and m.group(1).strip():
+            g = m.group(1).strip().rstrip("/") + "/*.arb"
+            if glob.glob(g, root_dir=cwd): return g
+    return richest_folder_glob(cwd, ".arb") or first_glob(cwd, ["lib/l10n/*.arb"])
+
+I18N_JSON = ["src/locales/*/translation.json", "src/translations/*.json", "src/locales/*.json", "src/i18n/locales/*.json",
+             "src/i18n/*.json", "src/lang/*.json", "src/assets/i18n/*.json", "locales/*/translation.json", "locales/*/*.json",
+             "locales/*.json", "public/locales/*/translation.json", "assets/locales/*.json", "assets/i18n/*.json",
+             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "translations/*.json"]
+I18N_PO = ["src/locales/*/messages.po", "src/locale/locales/*/messages.po", "locales/*/messages.po", "locale/*/LC_MESSAGES/*.po"]
+
+def detect_project(cwd):
+    """The Project for the app whose source is in `cwd`, or None for a native Swift/Kotlin app and for anything unrecognised.
+    Reads a few small files (pubspec.yaml, package.json, *.csproj, Gradle settings); never builds or runs anything.
+    ponytail: the build paths are the frameworks' documented defaults, not checked on every version of each toolchain."""
+    cwd = Path(cwd)
+    pkg = read_json_file(cwd / "package.json")
+    deps = {**pkg.get("devDependencies", {}), **pkg.get("dependencies", {})} if isinstance(pkg, dict) else {}
+    pubspec = (cwd / "pubspec.yaml").read_text(errors="replace") if (cwd / "pubspec.yaml").is_file() else ""
+    if re.search(r"^\s+sdk:\s*flutter\b", pubspec, re.M) or re.search(r"^flutter:", pubspec, re.M):
+        return Project("Flutter", flutter_arb_glob(cwd) or first_glob(cwd, I18N_JSON),
+                       apps=("build/ios/iphonesimulator/*.app",),
+                       apks=("build/app/outputs/flutter-apk/*.apk", "build/app/outputs/apk/*/*.apk"),
+                       build_ios="flutter build ios --simulator --debug", build_android="flutter build apk --debug")  # framework_hint warns about the DEBUG banner
+    if "@capacitor/core" in deps or any((cwd / f).is_file() for f in ("capacitor.config.ts", "capacitor.config.json", "capacitor.config.js")):
+        return Project("Capacitor", first_glob(cwd, I18N_JSON), apks=("android/app/build/outputs/apk/debug/*.apk",),
+                       build_ios="npm run build && npx cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug "
+                                 "-sdk iphonesimulator -derivedDataPath ios/build build",
+                       build_android="npm run build && npx cap sync android && (cd android && ./gradlew assembleDebug)",
+                       apps=("ios/build/Build/Products/Debug-iphonesimulator/*.app",),
+                       notes=["web layers that read navigator.language may ignore the language shotfleet sets on iOS; check the first screenshots"])
+    if "react-native" in deps or "expo" in deps:
+        expo = "expo" in deps
+        return Project("Expo" if expo else "React Native", first_glob(cwd, I18N_PO) or first_glob(cwd, I18N_JSON),
+                       apps=("ios/build/Build/Products/Release-iphonesimulator/*.app", "build/Build/Products/Release-iphonesimulator/*.app"),
+                       apks=("android/app/build/outputs/apk/release/*.apk",), configs=("Release",),
+                       build_ios="npx expo run:ios --configuration Release --no-bundler" if expo else
+                       "npx react-native run-ios --mode Release --simulator 'iPhone 17 Pro Max'",
+                       build_android="npx expo run:android --variant release --no-bundler" if expo else "(cd android && ./gradlew assembleRelease)")
+    csproj = [f for f in cwd.glob("*.csproj")] + [f for f in cwd.glob("*/*.csproj")]
+    if any(re.search(r"<UseMaui>\s*true", f.read_text(errors="replace"), re.I) for f in csproj if f.stat().st_size < 1_000_000):
+        return Project(".NET MAUI", richest_folder_glob(cwd, ".resx"),
+                       apps=("bin/Debug/net*-ios/iossimulator-arm64/*.app", "*/bin/Debug/net*-ios/iossimulator-arm64/*.app"),
+                       apks=("bin/Debug/net*-android/*-Signed.apk", "*/bin/Debug/net*-android/*-Signed.apk"),
+                       build_ios="dotnet build -f net10.0-ios -c Debug -p:RuntimeIdentifier=iossimulator-arm64",
+                       build_android="dotnet build -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true")
+    if (cwd / "ProjectSettings/ProjectVersion.txt").is_file():
+        return Project("Unity", None, notes=["Unity draws its own UI, so text selectors rarely work; shotfleet is not built for games"])
+    gradle = [cwd / n for n in ("settings.gradle.kts", "settings.gradle")]
+    if any(g.is_file() for g in gradle) and any("multiplatform" in f.read_text(errors="replace") for f in
+                                                 list(cwd.glob("*/build.gradle.kts")) + list(cwd.glob("build.gradle.kts")) if f.stat().st_size < 1_000_000):
+        return Project("Kotlin Multiplatform", None)  # strings are compiled into native resources shotfleet reads from the build
+    return None
+
+def project_builds(cwd, project, derived=None):
+    """(ios apps, apks) of this project's own build folders, newest first: [(mtime, path)]."""
+    apps = sorted(((t, a) for pat in project.apps for a in Path(cwd).glob(pat) if (t := simulator_app_time(a)) is not None), reverse=True)
+    apks = sorted(((a.stat().st_mtime, a) for pat in project.apks for a in Path(cwd).glob(pat)), reverse=True)
+    return apps, apks
+
+def find_builds(cwd, derived=None, project=None):
+    """The builds `shotfleet init` uses when none are given: the newest simulator .app for this folder's project and the
+    newest APK, each announced in one line. A Flutter, React Native, ... project (`project`, from detect_project) is looked for
+    where that framework builds, ahead of Xcode's DerivedData and the Gradle folders. Reads folders only: never runs
+    xcodebuild, gradle or the framework's tools. Nothing found: Fail with the exact build commands."""
     cwd = Path(cwd).resolve()
-    apps, apks, builds = derived_apps(cwd, derived), gradle_apks(cwd), []
+    apps, apks = derived_apps(cwd, derived, project.configs + ("Debug",) if project else ("Debug",)), gradle_apks(cwd)
+    if project:
+        own_apps, own_apks = project_builds(cwd, project)
+        apps = [(t, a, f"the {project.name} build folder") for t, a in own_apps] or apps
+        apks = own_apks or apks
     if len(apks) > 1: apks = [a for a in apks if not is_watch_apk(a[1])] or apks  # the Wear app is not the phone app
     projects = xcode_projects(cwd)
+    builds = []
     if apps:
         t, app, where = apps[0]
-        print(f"iOS: using {app.name} ({app}): Debug-iphonesimulator, built {age(t)}, the newest of {len(apps)} Xcode build(s) of {where}")
+        print(f"iOS: using {app.name} ({app}): {app.parent.name}, built {age(t)}, the newest of {len(apps)} Xcode build(s) of {where}"
+              if not project else
+              f"iOS: using {app.name} ({app}): {app.parent.name}, built {age(t)}, the newest of {len(apps)} build(s) found in {where}")
         builds.append(str(app))
     if apks:
         t, apk = apks[0]
-        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} Gradle debug APK(s) under {cwd}")
+        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} " + ("Gradle debug APK(s)" if not project else "APK(s)") + f" under {cwd}")
         builds.append(str(apk))
     ios_cmd = "xcodebuild -scheme <scheme> -sdk iphonesimulator -configuration Debug build"
     if projects:
         proj = projects[0]
         ios_cmd = (f"xcodebuild {'-workspace' if proj.suffix == '.xcworkspace' else '-project'} {shlex.quote(proj.relative_to(cwd).as_posix())} "
                    f"-scheme {shlex.quote(scheme_for(proj) or '<scheme>')} -sdk iphonesimulator -configuration Debug build")
+    android_cmd = "./gradlew assembleDebug"
+    if project:  # the framework's own build command: a plain xcodebuild or gradlew skips its code generation and bundling
+        ios_cmd, android_cmd = project.build_ios or ios_cmd, project.build_android or android_cmd
+    has_gradle = any((cwd / f).is_file() for f in ("gradlew", "android/gradlew"))
     # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
-    here = [x for x, present in (((ios_cmd, "Debug simulator build", bool(apps)), bool(projects)),
-                                 (("./gradlew assembleDebug", "Gradle debug APK", bool(apks)), (cwd / "gradlew").is_file())) if present]
+    kind = f"{project.name} " if project else ""
+    ios_what, android_what = (f"{kind}simulator build", f"{kind}APK") if project else ("Debug simulator build", "Gradle debug APK")
+    here = [x for x, present in (((ios_cmd, ios_what, bool(apps)), bool(projects) or bool(project and project.build_ios)),
+                                 ((android_cmd, android_what, bool(apks)), has_gradle or bool(project and project.build_android))) if present]
     if not builds:
-        raise Fail(f"no Debug simulator build or Gradle debug APK found for {cwd}. Build one, then run shotfleet init again:\n  "
-                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), ("./gradlew assembleDebug", 0, 0)]))
+        what = f"no {ios_what} or {android_what} found for" if project else "no Debug simulator build or Gradle debug APK found for"
+        raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  "
+                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]))
     for cmd, what, ok in here:
         if not ok: print(f"note: no {what} yet; to make one: {cmd}")
     return builds
@@ -2442,9 +2569,22 @@ def find_builds(cwd, derived=None):
 def cmd_init(builds, dest="."):
     """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android).
     No builds given: use the newest Debug ones found in the current folder (find_builds)."""
-    builds = [builds] if isinstance(builds, (str, Path)) else builds or find_builds(Path.cwd())
+    project = detect_project(Path.cwd())  # a Flutter, React Native, ... source folder: its builds, translation files and commands
+    builds = [builds] if isinstance(builds, (str, Path)) else builds or find_builds(Path.cwd(), project=project)
     dest = Path(dest)
-    sections, found = [], []
+    sections, found, source_strings = [], [], None
+    strings_line = ""
+    if project and project.strings:  # these frameworks keep translations in source files, not in the build
+        rel = project.strings if dest.resolve() == Path.cwd().resolve() else os.path.join(os.path.relpath(Path.cwd(), dest), project.strings)
+        try: source_strings = load_strings_files([str(Path.cwd() / project.strings)])
+        except Fail: source_strings = None
+        if source_strings:
+            strings_line = f'\nstrings = {json.dumps(rel)}   # {project.name}: translations are read from these files'
+            print(f"{project.name} project: translations from {project.strings} ({len(source_strings)} languages)")
+    elif project:
+        print(f"{project.name} project" + (": no translation files found; set strings = \"<glob>\" in the config to point at them"
+                                           if project.name != "Kotlin Multiplatform" else ""))
+    for n in (project.notes if project else ()): print(f"note: {n}")
     suffixes = [Path(b).suffix for b in builds]
     for kind in (".app", ".apk"):
         if suffixes.count(kind) > 1: raise Fail(f"two {kind} builds given; a config holds one app per platform, so run init once per app")
@@ -2454,19 +2594,19 @@ def cmd_init(builds, dest="."):
             if not app.is_file(): raise Fail(f"no APK at {app}")
             m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
             if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
-            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}\n'
+            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# devices = ["phone", "tablet"]   # Android sets from one flow\n# locales = ["de", "ja"]   # default: every language the app ships')
-            found.append((m.group(1), shipped_locales(load_strings_apk(app))))
+            found.append((m.group(1), shipped_locales(source_strings or load_strings_apk(app))))
         elif app.suffix == ".app":
             if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
             if device_build(app): raise Fail(f"{app.name} is a device build: {WRONG_BUILD['.xcarchive']}")
-            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}\n'
+            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
                             '# locales = ["de", "ja"]   # default: every language the app ships')
-            found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(load_strings(app))))
+            found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(source_strings or load_strings(app))))
         else:
             raise Fail(build_hint(app))
-    for build in builds: framework_hint(Path(build).expanduser().resolve(), False, dest)
+    for build in builds: framework_hint(Path(build).expanduser().resolve(), bool(strings_line), dest)
     dest.mkdir(parents=True, exist_ok=True)
     for name, text in (("shotfleet.toml", "\n\n".join(sections) + "\n"), ("flow.yaml", FLOW_TEMPLATE)):
         if (dest / name).exists():
