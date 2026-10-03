@@ -93,6 +93,8 @@ The owner allowed GitHub Actions once for this (`.github/workflows/e1-android-kv
 
 **Not established:** whether this is the runner (two software-rendered emulators, Maestro and the JVMs on 2 vCPUs, where a screen can be too slow to show the button within Maestro's wait) or a real Linux difference. The workflow did not keep the screenshots or Maestro's debug output, so the screen at the failure was not seen. It now does (`out/` is uploaded). To separate the two: run the same fixture on a machine with 4+ cores, or with `parallel = 1`, and look at the screenshot Maestro took before the failing step.
 
+**Run 6 (one emulator, `parallel = 1`, 2026-10-03):** same failure. One emulator booted from the snapshot, every language captured `01_welcome.png`, then Maestro reported `Element not found: Text matching regex: Weiter` (ja `次へ`, ar `التالي`, tr `İleri`) after 587 s of capture; `check` read the four welcome screens with 0 problems, so the app was in the right language. So the theory "two emulators starve a 2-vCPU runner" is **not** what breaks it (one emulator fails the same way); a slow software-rendered screen on 2 vCPUs, or a Linux difference in how Maestro finds the button, are both still open. The screenshot Maestro took at the failing step and `maestro_r*.log` are in the run's artifact (`e1-android-kvm`, ID 11279947777, 14 days) but this environment cannot download artifacts: Manu can, from the run page of run 37138279362. **Do not run E1 again** until those are read.
+
 Do not claim Linux `run` support from this. What is solid: setup, `doctor --fix`, building, booting and the per-app language on Linux/KVM; what is not: a complete run.
 
 ## Android emulators on Linux (untried)
