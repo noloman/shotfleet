@@ -1138,6 +1138,22 @@ class Sim:
             raise RuntimeError(f"simctl {' '.join(args)}: {r.stderr.strip()}")
         return r.stdout
 
+def healthy_installs(pool, k, install):
+    """Install the app on the first k simulators of the pool that answer, shutting down any that don't (CoreSimulator
+    wedges under heavy load; one dead simulator must not end the run while others work). Returns the pool with the k
+    ready simulators first and the dead ones gone; raises when none answers."""
+    ready, dead = [], []
+    for sim in pool:
+        if len(ready) == k: break
+        try: install([sim]); ready.append(sim)
+        except RuntimeError as e:
+            print(f"simulator {sim.udid} stopped answering ({e}); carrying on without it", flush=True)
+            dead.append(sim); OUR_SIMS.discard(sim.udid)
+            try: sh(["xcrun", "simctl", "shutdown", sim.udid], timeout=60)
+            except (OSError, subprocess.TimeoutExpired): pass
+    if not ready: raise RuntimeError("no simulator answers any more; restart the Mac or run `xcrun simctl shutdown all` and run again")
+    return ready + [s for s in pool if s not in ready and s not in dead]
+
 def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
     or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
@@ -1457,7 +1473,8 @@ def ios_run_inner(cfg, path, only, parallel):
             sim.run("terminate", sim.udid, cfg["bundle_id"], check=False)
             sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
             sim.run("install", sim.udid, cfg["app"])
-    install(pool)
+    pool[:] = healthy_installs(pool, len(pool), install)
+    n = len(pool)
 
     expected = count_screenshots(flow)
 
@@ -1505,7 +1522,8 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
         # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
         # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
-        install(pool[:min(n, len(retry))])
+        pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
+        n = len(pool)
         final.update(batch(retry, 2))
     results = []
     for lp, r_ in final.items():
@@ -3177,11 +3195,11 @@ def latest_ios_runtime():
 APPLE_SIZES = {
     'iPhone 6.9"': [(1260, 2736), (1290, 2796), (1320, 2868)], 'iPhone 6.5"': [(1284, 2778), (1242, 2688)],
     'iPhone 6.3"': [(1179, 2556), (1206, 2622)], 'iPhone 6.1"': [(1170, 2532), (1125, 2436), (1080, 2340)],
-    'iPhone 5.5"': [(1242, 2208)], 'iPhone 4.7"': [(750, 1334)], 'iPhone 4"': [(640, 1096), (640, 1136)],
-    'iPhone 3.5"': [(640, 920), (640, 960)],
+    'iPhone 5.5"': [(1242, 2208)], 'iPhone 4.7"': [(750, 1334)], 'iPhone 4"': [(640, 1096), (640, 1136), (1136, 600)],
+    'iPhone 3.5"': [(640, 920), (640, 960), (960, 600)],  # the (1136, 600) and (960, 600) landscape sizes of the old iPhones are not plain rotations; Apple lists them as written
     'iPhone Duo (outer display)': [(1398, 2034)], 'iPhone Duo (inner display)': [(2007, 2853)],  # listed 2026-10-03; ASC upload "later this year"
     'iPad 13"': [(2064, 2752), (2048, 2732)], 'iPad 11"': [(1488, 2266), (1668, 2420), (1668, 2388), (1640, 2360)],
-    'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024)],
+    'iPad 10.5"': [(1668, 2224)], 'iPad 9.7"': [(1536, 2008), (1536, 2048), (768, 1004), (768, 1024), (2048, 1496), (1024, 748)],
     "Apple Watch": [(422, 514), (410, 502), (416, 496), (396, 484), (368, 448), (312, 390)],
     "Mac": [(1280, 800), (1440, 900), (2560, 1600), (2880, 1800)], "Apple TV / Vision Pro": [(1920, 1080), (3840, 2160)],  # 3840x2160 is also the Vision Pro size
 }

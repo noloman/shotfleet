@@ -1517,6 +1517,21 @@ class PlayDeviceFolders(unittest.TestCase):
 
 
 class Review20261003(unittest.TestCase):
+    def test_a_simulator_that_stops_answering_is_dropped_and_the_run_carries_on(self):
+        sims = [sf.Sim(f"U{i}") for i in range(4)]
+        sf.OUR_SIMS.update(s.udid for s in sims); self.addCleanup(sf.OUR_SIMS.clear)
+        def install(group):
+            if group[0].udid == "U0": raise RuntimeError("simctl terminate did not answer within 300 s")
+        calls = []
+        with mock.patch.object(sf, "sh", side_effect=lambda cmd, **k: calls.append(cmd) or subprocess.CompletedProcess(cmd, 0, "", "")), \
+             contextlib.redirect_stdout(io.StringIO()) as out:
+            pool = sf.healthy_installs(sims, 2, install)
+        self.assertEqual([s.udid for s in pool], ["U1", "U2", "U3"])  # the two ready ones first, U3 untouched, U0 gone
+        self.assertEqual(calls, [["xcrun", "simctl", "shutdown", "U0"]])
+        self.assertIn("U0 stopped answering", out.getvalue()); self.assertNotIn("U0", sf.OUR_SIMS)
+        with mock.patch.object(sf, "sh"), contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(RuntimeError, "no simulator answers"):
+            sf.healthy_installs(sims[:1], 1, install)
+
     def test_tesseract_script_detection_flags_another_script_only_when_confident(self):
         # a Japanese screen in the Korean listing: Tesseract (-l eng+kor) reads Latin gibberish but its script detection says Japanese
         tables = sf.string_tables({"ko": {"a": "다음"}, "ja": {"a": "次へ"}, "en": {"a": "Next"}})
