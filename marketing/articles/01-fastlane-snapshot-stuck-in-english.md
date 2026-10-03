@@ -20,12 +20,12 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 
 ## TO VERIFY BEFORE PUBLISHING
 
-1. The build command in "Step 2" (`xcodebuild ... -sdk iphonesimulator`) with your real scheme name. It is the command from the README CI recipe, which has not been run on GitHub yet.
+1. The build command in "Step 2" (`xcodebuild ... -sdk iphonesimulator`) with your real scheme name. It is the command from the README CI recipe, which has not been run on GitHub yet. TICKED 2026-10-03 (ran it): `xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug -derivedDataPath build build` on Xcode 27.0 (27A266a), exit 0, `** BUILD SUCCEEDED **`, 60 s wall time with other jobs running on the Mac, and `build/Build/Products/Debug-iphonesimulator/MyApp.app` exists. The scheme was a throwaway SwiftUI app with a String Catalog (made with xcodegen in a scratch folder), not a real app. Not run: a workspace or a real app with several targets.
 2. `shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app` on a clean Mac with the released installer (`curl ... install.sh | sh`). At the time of writing `/download/VERSION` returned 404, so the installer does not work until the first release is published (claims C057).
 3. Cause 4 ("the app is not translated into that language, so iOS falls back to English") and cause 5 ("the app saved its own language choice"). They are my reasoning, not from an issue thread. Reproduce each once, for example by deleting `de.lproj` from a build and re-running, then edit or soften the text.
-4. That `ls MyApp.app/*.lproj` lists the languages of a build that uses a String Catalog (it should: Xcode compiles catalogs into `.lproj` folders; confirm on your app).
+4. That `ls MyApp.app/*.lproj` lists the languages of a build that uses a String Catalog (it should: Xcode compiles catalogs into `.lproj` folders; confirm on your app). TICKED 2026-10-03 (ran it): the build from item 1, whose catalog has `de` and `ja` entries, contains `de.lproj` and `ja.lproj` and no `en.lproj`, because the catalog has no explicit English entries (English is the key). The article now says so.
 5. The timing sentence (about 25 seconds, and minutes after a restart) is from claims C030 and README; re-time on the final build. TICKED 2026-10-02 (read from the repo, nothing run): README line 42 says about 25 seconds per platform for 252 iOS and 126 Android images; C030 is `evidence` (PLAN.md, research/first-run.md ~30 s, cold-test-2 28 s) and ROADMAP records about 4 minutes for the first check after a restart. Still to run: re-time on the final build.
-6. Re-open the four issue links and the fastlane docs page and check that the one-line descriptions below still match. The issues are from 2017 and 2018, so do not imply the bug exists in current fastlane without a fresh reproduction.
+6. Re-open the four issue links and the fastlane docs page and check that the one-line descriptions below still match. The issues are from 2017 and 2018, so do not imply the bug exists in current fastlane without a fresh reproduction. TICKED 2026-10-03 (opened the pages): there are three issue links, not four, plus two docs pages. #8895 (opened 2017-04-16, closed): language stays en-US after updating to Xcode 8.3, matches. #11457 (2018-01-06, closed): `localize_simulator true` fixes it and gives an "ugly statusbar" because the simulators are erased, matches. #12917 (2018-07-17, closed): English from fastlane, correct when run manually in Xcode with the generated language file, matches. Docs: the temporary-file sentence, `setupSnapshot(app)` before `app.launch()` in `setUp()`, `localize_simulator`, `reinstall_app`, `erase_simulator`, and the warning that running the test in Xcode does not create the snapshots all match. Added "All three are closed" to the text.
 7. Confirm the anchor names on the final site (`#price`, install section). TICKED 2026-10-02 (read from the repo, nothing run): `#price` and `#run` exist in site/public/index.html; there is no install-section anchor, so the article links `#price` (the install command is in that block). Done, unless the site is redesigned.
 
 Sources used (fetched 2026-10-02):
@@ -45,7 +45,7 @@ I build a tool in this area (shotfleet, which comes up at the end), so read this
 
 fastlane's docs say the language reaches your UI tests "via a temporary file which is written by snapshot before running the tests". Your test target includes `SnapshotHelper.swift`, and the docs tell you to call `setupSnapshot(app)` before `app.launch()`. That helper reads the file and passes the language to your app as launch arguments. There is also an option, `localize_simulator`, that sets the Simulator's own system language.
 
-So there are several places where the chain can break. The GitHub issues are old but show the pattern. In #8895 the Simulator language "stays en-US" after an Xcode update. In #12917 the reporter got English from `fastlane snapshot` while a manual Xcode run with the generated language file switched correctly. In #11457 the reporter found that `localize_simulator true` worked but changed the status bar because the simulator was erased. I did not reproduce any of these; they are the documented symptom, from 2017 and 2018.
+So there are several places where the chain can break. The GitHub issues are old but show the pattern. In #8895 the Simulator language "stays en-US" after an Xcode update. In #12917 the reporter got English from `fastlane snapshot` while a manual Xcode run with the generated language file switched correctly. In #11457 the reporter found that `localize_simulator true` worked but changed the status bar because the simulator was erased. I did not reproduce any of these; they are the documented symptom, from 2017 and 2018. All three are closed.
 
 ## Five things to rule out, in order
 
@@ -61,7 +61,7 @@ So there are several places where the chain can break. The GitHub issues are old
 ls path/to/MyApp.app | grep lproj
 ```
 
-Compare that list with your Snapfile. A language that is in the Snapfile but not in the app can only ever produce English.
+Compare that list with your Snapfile. The app's base language may not be listed: with a String Catalog that has no explicit English entries, my test build had `de.lproj` and `ja.lproj` and no `en.lproj`. A language that is in the Snapfile but not in the app can only ever produce your base language.
 
 **5. The app remembers something.** If your app stores its own language choice or onboarding state, a reused install can show the old language. snapshot has `reinstall_app` and `erase_simulator` for this. This and the previous cause are my reasoning rather than documented cases, so test them on your app.
 
