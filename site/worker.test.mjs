@@ -2,7 +2,7 @@ import w from "./worker.js";
 const kv = new Map(), meta = new Map();
 const env = { WAITLIST: { get: async k => kv.get(k) ?? null, put: async (k, v, o) => (kv.set(k, v), meta.set(k, o?.metadata)), delete: async k => kv.delete(k),
                           list: async ({ prefix }) => ({ keys: [...kv.keys()].filter(k => k.startsWith(prefix)).map(name => ({ name, metadata: meta.get(name) })) }) },
-              LIMITER: { limit: async () => ({ success: true }) }, HIT_BATCH: 3 };
+              LIMITER: { limit: async () => ({ success: true }) }, HIT_BATCH: 3, FLUSH_MS: 5 };
 const ctx = { waitUntil: p => (pending.push(p)) }; const pending = [];
 const call = async (path, body, method = "POST") => (await w.fetch(new Request("https://x" + path, { method, body: method === "POST" ? JSON.stringify(body) : undefined, headers: { "content-length": "100" } }), env, ctx)).status;
 let ok = true; const check = (name, cond) => { console.log((cond ? "ok   " : "FAIL ") + name); ok &&= cond; };
@@ -32,6 +32,9 @@ check("visits are counted per day, source and language", hits.some(([k, v]) => /
 check("known events are kept, unknown ones count as a view", hits.some(([k]) => k.endsWith("|x|xx|pricing")) && hits.some(([k]) => k.endsWith("|x|xx|cta")) && hits.every(([k]) => /\|(view|runs|pricing|cta)$/.test(k)));
 check("source is sanitised", hits.every(([k]) => !/[<>]/.test(k)));
 check("a visit stores nothing about the visitor", hits.every(([k, v]) => /^\d+$/.test(v)));
+// a quiet site: one lone visit, far below HIT_BATCH, must still be written by the timer
+pending.length = 0; await w.fetch(new Request("https://x/api/hit", { method: "POST", body: JSON.stringify({ src: "lonely" }) }), { ...env, HIT_BATCH: 99 }, ctx); await Promise.all(pending);
+check("a single visit below the batch size is still stored", [...kv].some(([k, v]) => k.includes("|lonely|") && v === "1"));
 
 // contact form, forget, and the error paths
 const msgs = () => [...kv].filter(([k]) => k.startsWith("msg:")).map(([, v]) => JSON.parse(v));
