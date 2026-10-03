@@ -51,6 +51,8 @@ Single source of truth for "what is left to have a sellable project". Evidence a
 7. Publish and post everything: articles, directories, launch email, Show HN, social; record the demo video. Claude posts nothing.
 8. Keep the Mac quiet and at least 30 GB free when device runs are scheduled.
 
+> **Left to do and how: [docs/handoff.md](docs/handoff.md). What was checked against which tool version: [docs/compat.md](docs/compat.md).**
+
 ## Plan (2026-10-03): from here to a product that can be sold and defended
 
 Rules: local checks are the gate (no GitHub Actions: memory `run-checks-locally-not-gh-actions`; `[skip ci]` in every commit and merge message). Every download needs Manu's OK (file, source, size). Each item is done only with evidence written in the row above or in `research/`. Order is by dependency, then by buyer reach.
@@ -59,7 +61,7 @@ Rules: local checks are the gate (no GitHub Actions: memory `run-checks-locally-
 |---|---|---|---|
 | A. Truth | A1 STATUS.md matches reality (this edit) | nothing | rows 2, 6, 8, 9 updated |
 | A. Truth | A2 Real-app regression on Maestro 2.0.10: CrossfitTracker iOS (18 languages), Android phone and tablet, Remoti iPhone+iPad | quiet Mac, 30+ GB free, about 40 min | 0 problems, timings in README |
-| B. Compatibility | B1 Maestro 2.11.x next to 2.0.10: fixture e2e and CrossfitTracker on both, then pin or widen the tested range | download Maestro 2.11 (about 315 MB) | e2e 36/36 on both; doctor message matches |
+| B. Compatibility | B1 Maestro 2.11.x next to 2.0.10: fixture e2e and CrossfitTracker on both, then pin or widen the tested range | download Maestro 2.11 (about 315 MB) | e2e 36/36 on both; doctor message matches UPDATE 2026-10-03: 2.11.0 is the newest Maestro and passes `tools/maestro-compat.py` 28/28 (as does 2.0.10); the device runs are still to do, step by step in docs/handoff.md item 1 |
 | B. Compatibility | B2 Android text from the UI tree: the 10-minute marker experiment on 2.11 (research/limits-text.md 1b) | B1, one emulator | one text file per screenshot, or "not possible" written down |
 | C. Reach | C1 Flutter on a real app (wger), then React Native with Expo (obytes), then Compose (kotlinconf-app), then MAUI | downloads per app (Flutter about 1.5 GB) | per app 0 untranslated selectors and 0 problems; README names only what passed UPDATE 2026-10-03: `init` found the Android build and wrote the strings line for a Flutter 3.47 demo app and an Expo demo app, both built on Linux (docs/linux.md); no device run yet, so the row stays open |
 | C. Reach | C2 7" Android tablet slot (`sevenInchScreenshots`), and `check`/`export` for Watch, Mac, TV, Vision screenshots made elsewhere | nothing (small) | unit tests plus one real export folder |
@@ -89,6 +91,7 @@ Build order for code (shared `shotfleet.py` with the core-product session, who o
 
 ## Changelog of this file
 
+- 2026-10-03 (end of session): docs/handoff.md (everything not done, with steps) and docs/compat.md (tool versions checked); B1 annotated.
 - 2026-10-03 (later): PR #8 merged (framework-aware `init`, Linux `check`, inline `launchApp`, `.ts` and string-array readers); C1 and E1 rows annotated.
 - 2026-10-03: rows 2, 6, 8, 9 updated and the plan above added.
 - 2026-10-02: created from the repo at eeb5cff, the live site and the test runs listed in research/sellable-audit.md.

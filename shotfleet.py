@@ -14,7 +14,7 @@ every screenshot (shows that language's strings, isn't a copy of another, none m
 import sys
 if sys.version_info < (3, 11):
     print(f"shotfleet needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable}).\n"
-          "Install one with: brew install python", file=sys.stderr)
+          "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
 import plistlib, platform as host_platform, ssl, subprocess, tarfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
@@ -2433,6 +2433,21 @@ def java_env():
 
 DOCTOR_OCR_TIMEOUT_S = 60  # doctor never waits longer than this for text recognition
 
+# Everything shotfleet relies on from Maestro, in one place: tools/maestro-compat.py checks a Maestro against it, so a new version
+# can be vetted without a device (it does not replace a real run: MAESTRO_TESTED means a real run happened).
+MAESTRO_INTERFACE = {
+    "cli": {"maestro": ["--device"],  # maestro --device A,B test ...
+            "maestro test": ["--shard-split", "--format", "--output", "--debug-output"]},
+    "format_values": ["JUNIT"],  # --format JUNIT
+    "class_strings": {  # constants that must still be in the jars (log lines shotfleet parses, variables it sets, flow keys it writes)
+        "log": ["Selected device", "using port", "with execution plan", "ExecutionPlan(flowsToRun=", "maestro.log"],
+        "env": ["MAESTRO_DRIVER_STARTUP_TIMEOUT", "MAESTRO_CLI_NO_ANALYTICS"],
+        "flow": ["launchApp", "clearState", "tapOn", "assertVisible", "takeScreenshot", "waitForAnimationToEnd", "scrollUntilVisible",
+                 "repeat", "runScript", "inputText", "extendedWaitUntil", "permissions", "arguments"],
+    },
+    "nice_to_have": ["MAESTRO_DEVICE_UDID"],  # lets Android [inputs.<locale>] pick a per-device value (README, Limits)
+}
+
 MAESTRO_TESTED = ("2.0.10",)  # the only Maestro every real run used; extend after re-testing a newer one
 
 def parse_maestro_version(*outputs):
@@ -2542,9 +2557,9 @@ def install_maestro():
     zpath = download(pin["url"], tmp / f"maestro-{pin['version']}.zip", sha256=pin["sha256"], label=f"Maestro {pin['version']}")
     stage = home / "maestro.new"; shutil.rmtree(stage, ignore_errors=True)
     extract_zip_safely(zpath, stage)
-    top = stage / "maestro"
-    if not (top / "bin/maestro").is_file(): shutil.rmtree(stage, ignore_errors=True); raise Fail("the Maestro download has no maestro/bin/maestro")
-    shutil.rmtree(home / "maestro", ignore_errors=True); top.rename(home / "maestro"); shutil.rmtree(stage, ignore_errors=True)
+    top = next((d for d in (stage / "maestro", stage) if (d / "bin/maestro").is_file()), None)  # 2.0.10 and 2.11.0 have a maestro/ folder; be ready for none
+    if not top: shutil.rmtree(stage, ignore_errors=True); raise Fail("the Maestro download has no bin/maestro")
+    shutil.rmtree(home / "maestro", ignore_errors=True); top.rename(home / "maestro"); shutil.rmtree(stage, ignore_errors=True)  # stage itself when there was no wrapper folder
     zpath.unlink(missing_ok=True)
     return home / "maestro/bin/maestro"
 
@@ -2568,7 +2583,7 @@ def install_jre():
         with tarfile.open(archive) as t:
             for m in t.getmembers():
                 if not (stage / m.name).resolve().is_relative_to(stage.resolve()): raise Fail(f"{archive.name} holds a file outside its folder: {m.name}")
-            t.extractall(stage)
+            t.extractall(stage, **TAR_SAFE)
     except (tarfile.TarError, EOFError, OSError) as e:
         shutil.rmtree(stage, ignore_errors=True); raise Fail(f"can't unpack {archive.name}: {e}")
     root = next((d for d in sorted(stage.iterdir()) if d.is_dir()), None)
@@ -2773,6 +2788,8 @@ WRONG_BUILD = {
 }
 
 ARCHIVES = (".tar.gz", ".tgz", ".tar", ".zip")
+# Python 3.12 deprecates extractall() without a filter and 3.14 makes "data" the default: ask for it where it exists (3.11.4+).
+TAR_SAFE = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
 
 def unpack_build(archive, into):
     """EAS (Expo), CI jobs and download pages hand over a simulator build as .tar.gz, .tgz or .zip: unpack it into `into` and
@@ -2796,7 +2813,7 @@ def unpack_build(archive, into):
                 for member in t.getmembers():
                     if not (target / member.name).resolve().is_relative_to(target) or member.issym() and not (target / member.name).parent.joinpath(member.linkname).resolve().is_relative_to(target):
                         raise Fail(f"{archive.name} holds a file outside its folder: {member.name}")
-                t.extractall(target)
+                t.extractall(target, **TAR_SAFE)
     except (tarfile.TarError, zipfile.BadZipFile, EOFError, OSError) as e:
         raise Fail(f"can't unpack {archive.name}: {e}")
     found = [p for pat in ("*.app", "*/*.app", "*.apk", "*/*.apk") for p in sorted(target.glob(pat)) if p.is_dir() == (p.suffix == ".app")]

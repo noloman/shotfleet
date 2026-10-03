@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Compatibility:** `tools/maestro-compat.py` checks any Maestro against what shotfleet relies on, without a device (2.0.10 and the newest, 2.11.0, both pass); tar extraction passes an explicit filter (Python 3.12 deprecates the default, 3.14 changes it); the Linux CI job also runs Python 3.13 with deprecation warnings as errors.
 - **`doctor --fix`:** downloads what `doctor` found missing after one question (`--yes` skips it): Maestro 2.0.10 pinned by SHA-256,
   a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools plus the SDK pieces. Never `sudo`, no shell
   files or PATH edits, no Xcode; `SSL_CERT_FILE` is honoured for proxies. Maestro from `~/.shotfleet` is used before the one on the PATH.

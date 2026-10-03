@@ -296,3 +296,19 @@ class LicenceCallsUseTheSameCaBundle(unittest.TestCase):
             sf.gumroad_verify("k", False)
         self.assertEqual(len(seen), 2)
         self.assertTrue(all(c is marker for c in seen), seen)
+
+
+class MaestroZipLayouts(FixTestCase):
+    def test_a_zip_without_the_maestro_folder_installs_too(self):
+        flat = zip_bytes({"bin/maestro": b"#!/bin/sh\necho 2.99.0\n", "lib/x.jar": b"j"}, {"bin/maestro": 0o755})
+        self.server.files["/maestro.zip"] = flat
+        with mock.patch.object(sf, "MAESTRO_PIN", {**sf.MAESTRO_PIN, "sha256": sha256(flat)}), self.quiet():
+            path = sf.install_maestro()
+        self.assertEqual(path, self.home / "maestro/bin/maestro")
+        self.assertTrue(os.access(path, os.X_OK)); self.assertTrue((self.home / "maestro/lib/x.jar").is_file())
+
+    def test_a_zip_with_no_maestro_binary_is_refused(self):
+        odd = zip_bytes({"readme.txt": b"x"}); self.server.files["/maestro.zip"] = odd
+        with mock.patch.object(sf, "MAESTRO_PIN", {**sf.MAESTRO_PIN, "sha256": sha256(odd)}), self.quiet(), self.assertRaisesRegex(sf.Fail, "no bin/maestro"):
+            sf.install_maestro()
+        self.assertFalse((self.home / "maestro").exists())
