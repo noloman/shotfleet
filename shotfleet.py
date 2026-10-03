@@ -938,7 +938,7 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
     """While Maestro runs: when a screenshot appears in raw/<locale>/, read that screen's text from the driver of the
     simulator running that locale (Maestro's log says which device and port run which flow) and save it next to it
     as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR."""
-    port_of, done = {}, set()  # done: (png, mtime): a re-taken screenshot is read again
+    port_of, done, sizes = {}, set(), {}  # done: (png, mtime): a re-taken screenshot is read again
     pat = re.compile(r"Selected device \S+ using port (\d+) with execution plan ExecutionPlan\(flowsToRun=\[([^\]]*)\]")
 
     def read(pngs):  # one port: its screenshots in order, so each gets the screen it shows
@@ -954,7 +954,9 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
     with ThreadPoolExecutor(8) as pool:  # a slow driver must not hold up the other simulators' reads
         while not stop.is_set():
             for log in Path(debug_dir).rglob("maestro.log"):
-                try: found = pat.findall(log.read_text(errors="replace"))
+                try:
+                    if (size := log.stat().st_size) == sizes.get(log): continue  # unchanged since the last tick
+                    sizes[log] = size; found = pat.findall(log.read_text(errors="replace"))
                 except OSError: continue
                 for port, flows in found:
                     for f in flows.split(","): port_of[Path(f.strip()).stem] = port
