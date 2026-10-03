@@ -12,6 +12,9 @@ LOCALES = ["de", "ja", "ar", "tr"]
 DEVICES = ["iphone-17-pro-max", "ipad-pro-13-inch-m5-12gb"]
 SHOTS = ["01_welcome", "02_settings"]
 LISTING = {"de": "de-DE", "ja": "ja", "ar": "ar-SA", "tr": "tr"}
+PLAY_LISTING = {"de": "de-DE", "ja": "ja-JP", "ar": "ar", "tr": "tr-TR"}
+SDK = Path(os.environ.get("ANDROID_HOME") or Path.home() / "Library/Android/sdk")
+CAN_BUILD_APK = bool(shutil.which("javac") and shutil.which("keytool") and list(SDK.glob("build-tools/*/apksigner")) and list(SDK.glob("platforms/android-[0-9]*/android.jar")))
 TEXTS = {"de": (["Willkommen", "Weiter"], ["Einstellungen", "Fertig"]), "ja": (["ようこそ", "次へ"], ["設定", "完了"]),
          "ar": (["مرحبا", "التالي"], ["الإعدادات", "تم"]), "tr": (["Hoş geldin", "İleri"], ["Ayarlar", "Bitti"]),
          "en": (["Welcome", "Next"], ["Settings", "Done"])}
@@ -22,8 +25,10 @@ def png(tag, w=1320, h=2868):
     return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big") + bytes([8, 2]) + b"\0" * 8 + b"IDAT" + tag.encode() * 2000
 
 
-def make_out(out, locales=LOCALES, devices=DEVICES, config="/x/shotfleet.toml"):
-    """A finished, clean multi-device run: out/<device>/raw/<locale>/<shot>.png (+ the app's text capture), check.json, run.json."""
+def make_out(out, locales=LOCALES, devices=DEVICES, config="/x/shotfleet.toml", android=False):
+    """A finished, clean multi-device run: out/<device>/raw/<locale>/<shot>.png (+ the app's text capture), check.json, run.json.
+    android: the one phone set of an Android run."""
+    devices = ["phone"] if android else devices
     for dev in devices:
         d = Path(out) / dev
         for lp in locales:
@@ -32,15 +37,16 @@ def make_out(out, locales=LOCALES, devices=DEVICES, config="/x/shotfleet.toml"):
                 (d / "raw" / lp / f"{shot}.png").write_bytes(png(f"{dev}{lp}{shot}"))
                 (d / "raw" / lp / f"{shot}.texts.json").write_text(json.dumps(TEXTS[lp][i], ensure_ascii=False))
         (d / "check.json").write_text(json.dumps({"screenshots": [], "problems": [], "notes": []}))
-        (d / "run.json").write_text(json.dumps({"config": config, "app": "/x/FleetFixture.app",
+        (d / "run.json").write_text(json.dumps({"config": config, "app": "/x/FleetFixture.app", **({"platform": "android"} if android else {}),
                                                 "locales": {lp: {"ok": True, "screenshots": 2} for lp in locales}}))
 
 
-def make_fastlane(out, fastlane):
-    """What `export --fastlane` writes: screenshots/<listing>/<device>_<shot>.png."""
+def make_fastlane(out, fastlane, android=False):
+    """What `export --fastlane` writes: screenshots/<listing>/<device>_<shot>.png (iOS), metadata/android/<listing>/images/phoneScreenshots/ (Android)."""
     for d in sorted(Path(out).iterdir()):
         for lp_dir in sorted((d / "raw").iterdir()):
-            dst = Path(fastlane) / "screenshots" / LISTING[lp_dir.name]; dst.mkdir(parents=True, exist_ok=True)
+            dst = Path(fastlane) / "metadata/android" / PLAY_LISTING[lp_dir.name] / "images/phoneScreenshots" if android else Path(fastlane) / "screenshots" / LISTING[lp_dir.name]
+            dst.mkdir(parents=True, exist_ok=True)
             for p in lp_dir.glob("*.png"): shutil.copy2(p, dst / f"{d.name}_{p.name}")
 
 
@@ -76,7 +82,7 @@ class Script(unittest.TestCase):
     def test_help_and_bad_options_need_no_opt_in(self):
         r = subprocess.run(["sh", str(SCRIPT), "--help"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0); self.assertIn("SHOTFLEET_E2E=1", r.stdout)
-        for args in (["--nope"], ["--platform-only", "android"]):
+        for args in (["--nope"], ["--platform-only", "windows"], ["--platform-only"]):
             r = subprocess.run(["sh", str(SCRIPT), *args], capture_output=True, text=True)
             self.assertEqual(r.returncode, 2, args)
 
@@ -196,6 +202,37 @@ class Helper(unittest.TestCase):
         self.assertEqual(self.h.booted_pool_sims(""), [])
 
 
+class AndroidHelper(unittest.TestCase):
+    """The same assertions on the Android layout: one phone set, Play listing folders."""
+    def setUp(self):
+        self._d = tempfile.TemporaryDirectory(); self.addCleanup(self._d.cleanup)
+        self.d = Path(self._d.name); self.h = load_helper(self.d)
+        self.out, self.fl, self.hooks = self.d / "out", self.d / "fastlane", self.d / "hooks.log"
+        make_out(self.out, android=True); make_fastlane(self.out, self.fl, android=True); self.hooks.write_text(GOOD_HOOKS)
+
+    def failed(self):
+        return [w for w, ok, _ in self.h.tree(self.out, self.fl, self.hooks, LOCALES, no_ocr, "android") if not ok]
+
+    def test_good_android_tree_passes(self):
+        self.assertEqual(self.failed(), [])
+
+    def test_ios_layout_is_not_an_android_run(self):
+        shutil.rmtree(self.out / "phone"); make_out(self.out)
+        self.assertTrue(any("a phone set" in w for w in self.failed()))
+
+    def test_export_in_the_ios_folders_or_missing_a_listing_fails(self):
+        shutil.rmtree(self.fl / "metadata/android/ja-JP")
+        self.assertEqual([w for w in self.failed() if w.startswith("export")], ["export: ja-JP has 2 screenshots (one set per device)"])
+        shutil.rmtree(self.fl); make_fastlane(self.out, self.fl)  # the App Store layout
+        self.assertEqual(len([w for w in self.failed() if w.startswith("export")]), 4)
+
+    def test_identical_images_and_missing_screenshots_fail(self):
+        self.h.plant(self.out, "copy")
+        self.assertTrue(any("identical image" in w for w in self.failed()))
+        self.h.plant(self.out, "delete")
+        self.assertTrue(any("screenshots in every language" in w for w in self.failed()))
+
+
 FAKE_SF = '''#!/usr/bin/env python3
 """Stands in for shotfleet: same commands and output files, no devices. FAKE_DEFECT picks one thing to get wrong."""
 import os, subprocess, sys, tomllib
@@ -210,15 +247,16 @@ def hook(cfg, event, **env):
     if event in hooks and defect != "no-hooks":
         subprocess.run(["/bin/sh", "-c", hooks[event]], cwd=Path(cfg).parent, env={**os.environ, **env}, check=True)
 
-if cmd == "doctor": print("iOS: ready   Android: not ready")
+if cmd == "doctor": print("iOS: ready   Android: ready")
 elif cmd == "init":
     app, dest = args[0], Path(args[args.index("--dir") + 1])
-    (dest / "shotfleet.toml").write_text('[ios]\\napp = "' + app + '"\\n'); (dest / "flow.yaml").write_text("- launchApp\\n")
+    section = '[android]\\napk = "' if app.endswith(".apk") else '[ios]\\napp = "'
+    (dest / "shotfleet.toml").write_text(section + app + '"\\n'); (dest / "flow.yaml").write_text("- launchApp\\n")
 elif cmd == "run":
     cfg = Path(args[0]).resolve(); out = cfg.parent / "out"
     locales = args[args.index("--locales") + 1]
     hook(cfg, "before_run", SHOTFLEET_LOCALES=locales)
-    t.make_out(out, locales.split(","), config=str(cfg))
+    t.make_out(out, locales.split(","), config=str(cfg), android="android" in tomllib.loads(cfg.read_text()))
     if defect == "bad-german":
         for p in out.glob("*/raw/de/01_welcome.texts.json"): p.write_text('["Welcome", "Next"]')
     hook(cfg, "after_run", SHOTFLEET_EXIT="0", SHOTFLEET_PROBLEMS="0")
@@ -240,8 +278,12 @@ elif cmd == "export":
     import json
     cfg = json.loads(next(out.glob("*/run.json")).read_text())["config"]
     hook(cfg, "before_export", SHOTFLEET_FASTLANE=str(fl))
-    t.make_fastlane(out, fl)
+    t.make_fastlane(out, fl, android=json.loads(next(out.glob("*/run.json")).read_text()).get("platform") == "android")
     hook(cfg, "after_export", SHOTFLEET_EXIT="0")
+'''
+
+FAKE_ADB = '''#!/bin/sh
+echo "List of devices attached"; [ -n "${FAKE_EMUS:-}" ] && printf '%s\\tdevice\\n' $FAKE_EMUS; exit 0
 '''
 
 FAKE_XCRUN = '''#!/bin/sh
@@ -259,15 +301,15 @@ class WholeScriptWithFakes(unittest.TestCase):
     def setUp(self):
         self._d = tempfile.TemporaryDirectory(); self.addCleanup(self._d.cleanup)
         d = self.d = Path(self._d.name); (d / "bin").mkdir(); (d / "tmp").mkdir()
-        shims = {"xcrun": FAKE_XCRUN, "codesign": "#!/bin/sh\nexit 0\n",
+        shims = {"xcrun": FAKE_XCRUN, "adb": FAKE_ADB, "codesign": "#!/bin/sh\nexit 0\n",
                  "df": "#!/bin/sh\necho 'Filesystem 1024-blocks Used Available Capacity Mounted'\necho \"/dev/x 1 1 ${FAKE_FREE_KB:-99999999} 1% /\"\n",
                  "memory_pressure": "#!/bin/sh\necho \"System-wide memory free percentage: ${FAKE_FREE_PCT:-50}%\"\n",
                  "sysctl": "#!/bin/sh\necho ${FAKE_LEVEL:-1}\n"}
         for name, body in shims.items(): (d / "bin" / name).write_text(body); (d / "bin" / name).chmod(0o755)
         sf = d / "fake-shotfleet"; sf.write_text(FAKE_SF % {"tests": str(ROOT / "tests")}); sf.chmod(0o755)
         self.env = {**os.environ, "PATH": f"{d / 'bin'}:{os.environ['PATH']}", "TMPDIR": str(d / "tmp"), "SHOTFLEET_E2E": "1",
-                    "SHOTFLEET_BIN": str(sf)}
-        for k in ("FAKE_DEFECT", "FAKE_BOOTED", "FAKE_FREE_KB", "FAKE_FREE_PCT", "FAKE_LEVEL"): self.env.pop(k, None)
+                    "SHOTFLEET_BIN": str(sf), "SHOTFLEET_E2E_ADB": str(d / "bin/adb")}
+        for k in ("FAKE_DEFECT", "FAKE_BOOTED", "FAKE_FREE_KB", "FAKE_FREE_PCT", "FAKE_LEVEL", "FAKE_EMUS", "SHOTFLEET_E2E_ANDROID"): self.env.pop(k, None)
 
     def run_script(self, *args, **env):
         r = subprocess.run(["sh", str(SCRIPT), *args], capture_output=True, text=True, env={**self.env, **env}, timeout=120)
@@ -280,7 +322,7 @@ class WholeScriptWithFakes(unittest.TestCase):
         for phase in ("build the fixture app", "shotfleet init", "shotfleet doctor", "shotfleet run", "shotfleet check",
                       "shotfleet export", "planted failures"):
             self.assertIn(f"== {phase}", out)
-        self.assertRegex(out, r"total \d+ min \d+ s"); self.assertIn("SKIP android", out); self.assertNotIn("FAIL", out)
+        self.assertRegex(out, r"total \d+ min \d+ s"); self.assertIn("SKIP android", out); self.assertNotIn("FAIL", out); self.assertNotIn("== android", out)  # iOS only by default
         self.assertRegex(out, r"PASS check-copy exits 1"); self.assertRegex(out, r"PASS check-delete exits 1")
         self.assertEqual(list((self.d / "tmp").iterdir()), [])  # temp work dir removed on success
 
@@ -293,6 +335,40 @@ class WholeScriptWithFakes(unittest.TestCase):
         for want in ('device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]', "before_run", "after_export", "[ios]"):
             self.assertIn(want, toml)
         self.assertIn("takeScreenshot: 02_settings", (kept[0] / "proj/flow.yaml").read_text())
+
+    @unittest.skipUnless(CAN_BUILD_APK, "the Android fixture builds with the SDK's own tools and a JDK")
+    def test_android_flag_adds_the_android_half_after_ios(self):
+        code, out, err = self.run_script("--android", "--keep")
+        self.assertEqual(code, 0, out + err)
+        phases = re.findall(r"^== (.*)$", out, re.M)
+        self.assertEqual(phases.index("build the fixture app"), 0)
+        self.assertEqual([p for p in phases if p.startswith("android: ")][:2], ["android: build the fixture app", "android: shotfleet init"])
+        self.assertNotIn("SKIP android", out)
+        for what in ("android-run exits 0", "android-check-copy exits 1", "android-check-delete exits 1", "phone: 2 screenshots in every language",
+                     "export: tr-TR has 2 screenshots (one set per device)", "hook after_export fired (hooks.log)"):
+            self.assertIn(f"PASS {what}", out)
+        kept = next((self.d / "tmp").glob("shotfleet-e2e.*"))
+        toml = (kept / "proj-android/shotfleet.toml").read_text()
+        for want in ("[android]", 'apk = "', 'devices = ["phone"]', "parallel = 2", "before_run"): self.assertIn(want, toml)
+        self.assertTrue((kept / "build-android/FleetFixture.apk").is_file())
+
+    @unittest.skipUnless(CAN_BUILD_APK, "the Android fixture builds with the SDK's own tools and a JDK")
+    def test_platform_only_android_skips_ios_and_the_env_var_opts_in(self):
+        for args, env in ((["--platform-only", "android"], {}), (["--keep"], {"SHOTFLEET_E2E_ANDROID": "1"})):
+            code, out, err = self.run_script(*args, **env)
+            self.assertEqual(code, 0, out + err); self.assertIn("== android: shotfleet run", out); self.assertNotIn("SKIP android", out)
+            self.assertEqual("== build the fixture app" in out, "--keep" in args)  # the env var adds Android to the iOS default
+        code, out, _ = self.run_script("--skip-android", SHOTFLEET_E2E_ANDROID="1")
+        self.assertEqual(code, 0); self.assertIn("SKIP android", out)
+
+    @unittest.skipUnless(CAN_BUILD_APK, "the Android fixture builds with the SDK's own tools and a JDK")
+    def test_android_check_that_misses_planted_defects_fails_the_script(self):
+        code, out, _ = self.run_script("--platform-only", "android", FAKE_DEFECT="blind-check")
+        self.assertEqual(code, 1); self.assertIn("FAIL android-check-copy exits 1", out); self.assertNotIn("FAIL check-copy", out)
+
+    def test_android_refuses_while_an_emulator_is_on_shotfleets_ports(self):
+        code, out, err = self.run_script("--platform-only", "android", FAKE_EMUS="emulator-5702")
+        self.assertEqual(code, 2, (out, err)); self.assertIn("emulator is already running", err); self.assertNotIn("== ", out)
 
     def test_no_hooks_failed_hook_assertions_and_work_dir_kept(self):
         code, out, err = self.run_script(FAKE_DEFECT="no-hooks")

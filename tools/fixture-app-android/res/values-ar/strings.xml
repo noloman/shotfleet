@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fleet Fixture</string>
+    <string name="welcome">مرحبًا</string>
+    <string name="settings">الإعدادات</string>
+    <string name="next">التالي</string>
+    <string name="done">تم</string>
+    <string name="tagline">لقطات الشاشة الخاصة بك، بكل اللغات.</string>
+    <string name="settings_hint">اختر مظهر التطبيق وصوته.</string>
+</resources>
