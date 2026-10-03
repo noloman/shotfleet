@@ -10,7 +10,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` | no hardware virtualization here |
-| 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
+| 3 | A real Flutter, Expo and React Native app captured end to end | **done 2026-10-03 on a Mac** (wger, obytes, kotlinconf-app; `research/frameworks.md` section 15); bare React Native and Linux/KVM runs still open | |
 | 4 | `doctor --fix` on a Mac | your Mac, a clean user | untried on macOS |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
 | 6 | Real-app regression (CrossfitTracker, Remoti) | your Mac and the apps | not on this machine |
@@ -77,26 +77,17 @@ emulator refuses x86_64 images without `vmx`/`svm` and refuses an arm64 image on
 
 Then the real one: `shotfleet run` of 18 languages on a real app on that machine, for the timing to compare with 15 min 24 s on the Mac.
 
-## 3. Real Flutter, Expo and React Native apps, end to end
+## 3. Real Flutter, Expo and Compose apps, end to end
 
-**State:** `init` finds the build and writes the `strings` line (proved on a Flutter 3.47.6 and an Expo demo app built on Linux, and on real
-repos wger and obytes by detection only). Nothing has been captured on a device. Questions only a run answers:
+**Done 2026-10-03 on a Mac** (iOS and Android; evidence in `research/frameworks.md` section 15 and `research/real-apps-2026-10-03/`): wger (Flutter), the obytes template (Expo, Release) and JetBrains' kotlinconf-app (Compose Multiplatform) were built, `init`ed with no arguments, run in two languages each and checked; README, `site/public/docs.html`, `skill/` and claims C035 and C121 name those apps and nothing more. Language reached all three on both platforms; `-AppleLanguages` and `set-app-locales` need no change.
 
-- Does the language reach the app? iOS: `-AppleLanguages` launch arguments. Android: `cmd locale set-app-locales`. Flutter and React Native read
-  the process locale, so it should; Expo apps with a persisted language (AsyncStorage) may ignore it.
-- Does Maestro see the text? Flutter needs `Semantics` labels (icons need `semanticLabel`); React Native `testID` maps to `id:`; on iOS an
-  `accessibilityLabel` replaces the visible text in the tree (Maestro issue 1409).
-- The Flutter DEBUG banner (iOS simulators run debug builds only) and the React Native Release requirement.
-
-**Steps (Mac for iOS, any KVM Linux or Mac for Android).** Use the three repos already checked: wger-project/flutter
-(`flutter build ios --simulator --debug`, `flutter build apk --debug`), obytes/react-native-template-obytes (`npx expo run:ios --configuration
-Release --no-bundler`, `npx expo run:android --variant release --no-bundler`), JetBrains/kotlinconf-app (`xcodebuild -workspace
-app/iosApp/KotlinConf.xcworkspace -scheme KotlinConfAppScheme ...`, `./gradlew :app:androidApp:assembleDebug`). In each: `shotfleet init`,
-write a 3-step English flow, `shotfleet run --locales de,ja`, open `out/index.html`.
-
-**Passed when** the German and Japanese screenshots show German and Japanese, 0 untranslated selectors in the run output, 0 problems from
-`check`. **Record** in `STATUS.md` row C1 and, only for what passed, in the README ("Flutter and React Native work from your translation files"
-currently says "not yet run on a real Flutter or React Native app"; claims C035, C121).
+**Still open from this item**
+- Bare React Native (Rocket.Chat or Ignite from section 12), and a Flutter or Expo app that is not one of these two.
+- The same on a KVM Linux box (Android only) for the timing.
+- **`check` does not flag a blank screenshot.** Seen twice (wger on a fresh Android emulator, KotlinConf's first iOS frame): a white image with only the status bar passes, and was caught only because two languages produced the same image. A one-language run would pass. Idea: flag a PNG whose pixels are all one colour below the status bar (needs a PNG decoder; stdlib `zlib` is enough). Not done: it changes what `check` reports for every user, so it needs a decision on the threshold.
+- **Flutter debug builds show the DEBUG banner on iOS and, with a debug APK, on Android;** `init` already warns. A `release` APK on Android is untried with shotfleet.
+- **Marketing and draft pages still say "not yet run on a real Flutter or React Native app"** (`site/draft/`, `marketing/kit/`, `site/public/alternatives.html`, `research/`): left alone on purpose, they are conservative. Update them when the posts are rewritten.
+- Xcode 27 and these three builds: see the "did not pass" table; none of it is shotfleet's, but a `doctor` or README note could save a buyer an afternoon (`expo run:ios` cannot open the Simulator; `IPHONEOS_DEPLOYMENT_TARGET=15.1`; `ARCHS=arm64` for KMP).
 
 ## 4. `doctor --fix` on a Mac
 

@@ -88,7 +88,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 - Do not upload to App Store Connect or Google Play; fastlane does that and the user decides.
 - Do not edit, move or delete files in the fastlane folder; only `export`, when asked, writes there.
 - Do not put the licence key in a repo, a config file, a command you echo, or chat. Never print `licence.json`.
-- Do not claim Flutter or React Native work beyond reading their translation files (not yet run on a real Flutter or React Native app).
+- Do not claim Flutter or React Native work beyond reading their translation files (run end to end only on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android, 2026-10-03; say "not yet run" for any other app or bare React Native).
 - Do not translate typed text: `inputText` is not rewritten, so demo data stays the same in every language.
 - Do not write one flow per language; write one English flow.
 - Do not start many simulators yourself or run `run` without asking: it uses the Mac heavily for minutes.

@@ -1,0 +1,34 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Not Now",
+    "Obytes Starter"
+   ],
+   "ok": true,
+   "seconds": 36,
+   "error": null,
+   "screenshots": 3,
+   "device": "emulator-5702"
+  },
+  "ar": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Not Now",
+    "Obytes Starter"
+   ],
+   "ok": true,
+   "seconds": 34,
+   "error": null,
+   "screenshots": 3,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/react-native-template-obytes/shotfleet.toml",
+ "wall_seconds": 100,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/react-native-template-obytes/android/app/build/outputs/apk/release/app-release.apk",
+ "device": "phone"
+}

@@ -1,0 +1,15 @@
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Not Now'
+   'Obytes Starter'
+memory pressure is elevated: using 1 devices instead of 2
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   en       3/3 screenshots
+ok   ar       3/3 screenshots
+captured 2/2 locales in 74s on 1 simulators
+
+checked 6 screenshots in 2 languages: 2 problem(s)
+  - ar/01_onboarding.png: text looks like 'en', expected 'ar'
+  - ar/02_login.png: text looks like 'en', expected 'ar'
+exit 1 after 104s

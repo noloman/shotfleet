@@ -584,23 +584,20 @@
  },
  {
   "id": "C035",
-  "claim": "Flutter and React Native work from your translation files (tested on sample projects so far)",
+  "claim": "Flutter and React Native work from your translation files (run end to end on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android)",
   "where": [
    "site/public/index.html",
    "README.md"
   ],
   "where_text": [
-   "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).",
-   "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app)."
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run)."
   ],
-  "status": "fixed",
-  "proof": "No sample project exists: examples/ holds only CrossfitTracker configs. What was tested are translation files: SourceFiles.* and FrameworkFixes.* (unit, synthetic) and research/frameworks.md (real ARB/PO/JSON files downloaded from wger, Bluesky, Rocket.Chat, 2026-10-02, loaded and translated). No Flutter/RN app was built or run. README.md:231 is accurate; the site is not. Fixed 2026-10-02: the site and README now say 'tested on real translation files; not yet run on a real Flutter or React Native app', and a banned-phrase test keeps 'tested on sample projects' out.",
+  "status": "evidence",
+  "proof": "Real runs on this Mac, 2026-10-03, Maestro 2.0.10, Xcode 27, Flutter 3.47.6 (research/frameworks.md section 15, screenshots and logs in research/real-apps-2026-10-03/): wger (Flutter, debug build) iOS and Android, de and ja: `init` with no arguments found the build and wrote strings = lib/l10n/*.arb, 0 untranslated selectors, German on every screenshot on both platforms (the DEBUG banner shows); ja falls back to English because wger's Japanese is 30% done, and check says so ('the app has no ja translation'). obytes template (Expo, Release build) iOS and Android, en and ar: init wrote strings = src/translations/*.json, Arabic and right-to-left reach the translated Settings screen on both platforms; the app's onboarding and login screens are hard-coded English, so 3 selectors are reported as untranslated and check flags those 2 screenshots (correctly). Not run: bare React Native, other Flutter or Expo apps, Maestro 2.11.",
   "layer": "site",
-  "assertion": "Static: the site sentence must contain 'translation files' and 'not yet' (or 'real app') whenever it contains 'Flutter'. Device layer: run a real Flutter and a real Expo app once.",
-  "fix": "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).",
-  "fixed_by": "wording",
-  "fixed": "Not made true by running a real app: this Mac has no Flutter SDK or Expo project, and building both toolchains plus a simulator run is more than half a day. Reworded to what is proven: translation files in real ARB/i18next/PO formats, read by shotfleet (SourceFiles tests; research/frameworks.md).",
-  "test": "SourceFiles.test_flutter_arb_with_icu_plurals, SourceFiles.test_i18next_json"
+  "assertion": "On wger and the obytes template, run --locales de,ja (en,ar) on iOS and Android: screenshots in the right language, check says what the app itself does not translate.",
+  "fix": ""
  },
  {
   "id": "C036",
@@ -2029,9 +2026,9 @@
    "**Run `shotfleet init` in the project folder** and it does the finding for you."
   ],
   "status": "partial",
-  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so). Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages.",
+  "proof": "Unit: Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages (synthetic folders). Real, 2026-10-03 on a Mac: `init` with no arguments in the wger (Flutter) and obytes (Expo) folders found the iOS .app and the Android APK and wrote the strings line (19 and 2 languages), and in kotlinconf-app (Compose Multiplatform) found both builds and read de and en from them; all three then ran end to end (research/frameworks.md section 15). Earlier, on Linux: a Flutter 3.47 debug APK and an Expo release APK. Not run for real: bare React Native, Capacitor, MAUI.",
   "layer": "unit",
-  "assertion": "On a real Flutter and a real Expo project init picks the build and the strings line without arguments.",
+  "assertion": "On a real Flutter, Expo and Compose project init picks the build and the strings line without arguments.",
   "fix": ""
  },
  {

@@ -818,6 +818,8 @@ def regex_literal(s):
     # Maestro matches text selectors as a full Java regex; escape metacharacters
     return re.sub(r"([\\.^$|?*+()\[\]{}])", r"\\\1", s)
 
+WRAPPED_RE = re.compile(r"^(\.\*)?(.+?)(\.\*)?$", re.S)
+
 SELECTOR_RE = re.compile(r"^(\s*-?\s*(?:%s):\s*)(.+?)\s*$" % "|".join(SELECTOR_KEYS))
 
 INLINE_RE = re.compile(r"(\b(?:%s)\s*:\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
@@ -847,7 +849,7 @@ def resolve_base(strings, wanted, app=None):
 # an alternative to any translation, so "Allow" matches the system's dialog and the app's own "Erlauben" button.
 SYSTEM_BUTTONS = {"Allow", "Don’t Allow", "Allow Once", "Allow While Using App", "Always Allow", "Change to Always Allow",
                   "Keep Only While Using", "Ask App Not to Track", "Allow Full Access", "Allow All Photos", "Select Photos",
-                  "Limit Access…", "Allow Access to All Photos", "OK", "Cancel",  # iOS (TCC, CoreLocation)
+                  "Limit Access…", "Allow Access to All Photos", "OK", "Cancel", "Not Now",  # iOS (TCC, CoreLocation, "Save Password?" after a login form)
                   "While using the app", "Only this time", "Don’t allow", "Allow all", "Allow limited access"}  # Android
 
 def override_pattern(overrides, text):
@@ -880,6 +882,11 @@ def translate_flow(flow, base, target, overrides=None):
         """Translated YAML value for one selector value, or None to leave it as it is."""
         text = yaml_unquote(raw)
         if (pat := override_pattern(overrides, text)) is not None: return yaml_single_quote(pat)
+        if text not in by_text and (m := WRAPPED_RE.match(text)) and (m[1] or m[3]):
+            # ".*Register", "Self-hosted.*": Flutter and others merge a row's texts into one label ("Title\nDetail"), so a flow
+            # matches the part it knows; translate that part and keep the wildcard
+            inner = tr(yaml_single_quote(m[2]))
+            return None if inner is None else "'" + (m[1] or "") + inner[1:-1] + (m[3] or "") + "'"
         keys = by_text.get(text) or by_text.get(text.replace("'", "\u2019"))
         system = text.replace("'", "\u2019") in SYSTEM_BUTTONS
         if not keys and system:  # the OS's own dialog: stays English (iOS spells it with a curly apostrophe)

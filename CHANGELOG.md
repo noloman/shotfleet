@@ -9,6 +9,7 @@
   the build where that framework puts it, writes the `strings` line for the translation files it finds and prints the
   framework's own build commands; EAS `.tar.gz` and `.zip` builds are unpacked by `init`. Translations written as objects
   in code (`.ts`, `.js`) and Android `<string-array>` are read.
+- **Flutter and merged labels:** a selector written as `Self-hosted.*` or `.*Register` now has the text inside the wildcard translated (Flutter merges a row's texts into one label with a newline, so a plain selector cannot match); `Not Now` (iOS "Save Password?") is a system button and stays English. Run on real apps for the first time: wger (Flutter), the obytes template (Expo) and kotlinconf-app (Compose), iOS and Android (`research/frameworks.md` section 15).
 - **Build hook:** `init` in a framework project leaves a commented `[hooks] before_run` with that framework's build command.
 - **Flows:** `launchApp` options may be written on one line, `- launchApp: { permissions: { all: allow } }`.
 - **Linux:** `check` reads screenshots with Tesseract where macOS text recognition does not exist (and Tesseract now gets one

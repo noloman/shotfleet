@@ -43,6 +43,14 @@ class TranslateFlow(unittest.TestCase):
         out, _, _ = sf.translate_flow('- assertVisible: "3+ years of training"\n', EN, EN)
         self.assertIn(r"'3\+ years of training'", out)
 
+    def test_wildcard_around_a_known_label_is_kept_and_the_label_translated(self):
+        # a Flutter row is one accessibility label "Title\nDetail"; `Start Training.*` and `.*Settings` are how a flow matches it
+        out, missing, _ = sf.translate_flow('- tapOn: "Start Training.*"\n- tapOn: ".*Settings"\n- tapOn: "Nope.*"\n', EN, DE)
+        self.assertIn("- tapOn: 'Training starten.*'", out)
+        self.assertIn("- tapOn: '.*Einstellungen'", out)
+        self.assertIn('- tapOn: "Nope.*"', out)
+        self.assertEqual(missing, ["Nope"])
+
     def test_unknown_selector_is_reported_and_left_alone(self):
         out, missing, _ = sf.translate_flow('- tapOn: "Benchmark WODs"\n', EN, DE)
         self.assertIn('- tapOn: "Benchmark WODs"', out)
@@ -133,6 +141,10 @@ class LocalizeFlow(unittest.TestCase):
         out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Allow\n- tapOn: \"Don't Allow\"\n",
                                             {"a": "Allow"}, {"a": "Erlauben"})
         self.assertIn("'(Allow|Erlauben)'", out); self.assertIn("'Don\u2019t Allow'", out); self.assertEqual(missing, [])  # curly, as iOS spells it
+
+    def test_not_now_after_a_login_form_is_a_system_button_too(self):  # iOS's "Save Password?" sheet, seen in the Expo app
+        out, missing, _ = sf.translate_flow("- tapOn: \"Not Now\"\n", {"a": "Settings"}, {"a": "Einstellungen"})
+        self.assertEqual((missing, out), ([], '- tapOn: "Not Now"\n'))
 
     def test_flow_without_header_is_rejected_clearly(self):
         with self.assertRaisesRegex(ValueError, "appId"):

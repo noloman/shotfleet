@@ -1,0 +1,15 @@
+[ios]
+app = "build/ios/iphonesimulator/Runner.app"
+strings = "lib/l10n/*.arb"   # Flutter: translations are read from these files
+# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow
+# locales = ["de", "ja"]   # default: every language the app ships
+
+[android]
+apk = "build/app/outputs/flutter-apk/app-debug.apk"
+strings = "lib/l10n/*.arb"   # Flutter: translations are read from these files
+# devices = ["phone", "tablet"]   # Android sets from one flow
+# locales = ["de", "ja"]   # default: every language the app ships
+
+# Build the app before every run, so `shotfleet run` goes from source to screenshots (uncomment):
+# [hooks]
+# before_run = "if [ \"$SHOTFLEET_PLATFORM\" = ios ]; then flutter build ios --simulator --debug; else flutter build apk --debug; fi"

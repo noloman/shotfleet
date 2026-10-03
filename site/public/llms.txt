@@ -16,7 +16,7 @@
 - An Apple silicon Mac. The installer refuses Intel Macs.
 - Maestro 2.x and Java 17+ (Maestro needs it).
 - Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
-- Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this has been tested on real translation files and not yet run on a real Flutter or React Native app.
+- Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
 - Text typed into fields by the flow is not translated.
 
 ## Price and licence

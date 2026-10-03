@@ -1,0 +1,6 @@
+
+checked 3 screenshots in 2 languages: 1 problem(s)
+  - ja: the app has no ja translation, so this listing shows another language
+notes (1, not blocking):
+  - 2 listing(s) (de, ja) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+report: /tmp/chk-android/index.html
