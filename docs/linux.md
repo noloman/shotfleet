@@ -120,6 +120,8 @@ Two real Linux problems came out of it, both fixed:
 - GitHub's runners set `XDG_CONFIG_HOME`, so `avdmanager` created the emulator in `~/.config/.android/avd` while shotfleet looked only in `~/.android/avd`; shotfleet now names the folder (`ANDROID_AVD_HOME`) to `avdmanager` and the emulator (`tests/test_setup_discovery.py`). Its error text also no longer shows only progress bars.
 - A slow machine put Android's "Process system isn't responding" dialog over the screenshots and `check` said 0 problems. Emulators now hide such dialogs and turn animations off at boot, and `check` reports a system dialog on a screenshot as a problem (`tests/test_shotfleet.py`, `G1CheckDetectors`).
 
+`run` now picks the emulator count itself on Linux (`fit_emulators`: at most cores / 2 and free GB / 3, printed when it lowers your `parallel`), so a 2-core machine runs one emulator without `SHOTFLEET_E2E_PARALLEL=1`. The rule is one measurement, not a fit; the two-emulator case on 4 or more cores is still to be run.
+
 This answers the "Not established" above. The second series kept the screenshots: every first screenshot had Android's "Process system isn't responding" dialog over the app (the German button "Weiter" is visible underneath, so the language switch worked), which blocked Maestro's tap. The cause is the 2-core machine, not a Linux difference; one emulator alone was not enough (run 4 above failed the same way as run 6 of the first series), the dialog had to be quieted too. So: Linux `run` is proven for the fixture with one emulator on 2 cores; not with two, and not for a real app.
 
 ## Android emulators on Linux (untried)
