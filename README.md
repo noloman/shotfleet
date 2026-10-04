@@ -227,9 +227,7 @@ name = "田中"
 
 The value goes into that language's flow as a Maestro `env:` entry. This works on iOS. Maestro hands any flow to any
 emulator, so on Android a name that has a per-language value is read from a small script (`shotfleet_vars.js`) that picks
-the emulator's row by `MAESTRO_DEVICE_UDID`. Maestro 2.0.10 doesn't define that variable (we looked in its jars; no
-device run), so there Android runs type the `[inputs]` defaults only. The values are tested as flow text, not yet
-run on a device, so check the first screenshots in a script like Japanese or Arabic.
+the emulator's row by `MAESTRO_DEVICE_UDID`. Maestro 2.11.0 sets that variable to the emulator's serial: German and Japanese values showed up as typed in screenshots (device run 2026-10-04, one emulator, one language after the other; two emulators at once and Arabic not run). Maestro 2.0.10 doesn't define it, so on 2.0.10 Android runs type the `[inputs]` defaults only. Check the first screenshots in a script like Japanese or Arabic.
 
 **Device setup** runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:
 
@@ -296,4 +294,4 @@ translation source.
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
 - Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac.
-- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, see above).
+- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, which 2.11.0 does and 2.0.10 doesn't; see above).

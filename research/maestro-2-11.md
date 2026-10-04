@@ -148,4 +148,17 @@ Unit tests: 5 new, the full suite passes. The Mac was shared with other sessions
 **The other watch items, now answered.** `Selected device ... using port` is written to `maestro.log` (seen in every debug log). Sharded parallel iOS
 runs on 2.11.0 worked: 36/36 on the iOS fixture, which runs four languages sharded over the simulator pool. No `launchApp`/`clearState` failure.
 
-**Not done.** CrossfitTracker/Remoti on 2.11.0 (`docs/handoff.md` item 6). The Android `[inputs.<locale>]` check with `MAESTRO_DEVICE_UDID` (item 5).
+**Not done.** CrossfitTracker/Remoti on 2.11.0 (`docs/handoff.md` item 6).
+
+## Android `[inputs.<locale>]` on 2.11.0, 2026-10-04: works (one emulator)
+
+Scratch copy of `tools/fixture-app-android` with a "Name" text field added (not in the repo), flow `tapOn: "Name"`, `inputText: ${name}`, `hideKeyboard`,
+`takeScreenshot: 01_input`; config `[inputs] name = "Alex"`, `[inputs.de] name = "Jürgen Müller"`, `[inputs.ja] name = "田中太郎"`; `shotfleet run --locales de,ja`
+on Maestro 2.11.0 (device lock held; load 94, free memory 47%, memory pressure level 2, 17 GB free disk). Result: exit 0, both languages captured,
+`MAESTRO_DEVICE_UDID` = `emulator-5702` (the adb serial shotfleet's script keys on; Maestro's command log shows it), and the screenshots show
+**"Jürgen Müller"** in the German UI and **"田中太郎"** in the Japanese one (Maestro 2.11 types non-Latin text on Android). No `no row for device` fallback.
+
+**Limit.** Memory pressure was at level 2, so shotfleet used **one** emulator instead of two (`memory pressure is elevated: using 1 devices instead of 2`):
+German and Japanese ran one after the other on the same emulator. That proves the variable's value and the typing; it does not exercise two emulators
+at once (where Maestro hands the flow to either emulator and the per-round map picks the row by serial; that map is unit-tested and the same
+log-based mapping is what the fixture e2e relies on for screenshots). Arabic typing was not tried. The user-facing wording says exactly this.

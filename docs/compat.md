@@ -25,8 +25,9 @@ What it cannot tell: whether the sharded parallel runs behave (Maestro 2.6.0 cha
 errors that 2.7.0 stopped swallowing now fail a flow that used to pass, or how long a run takes. Those need the device run.
 
 **A finding worth acting on:** 2.11.0 defines `MAESTRO_DEVICE_UDID` (in `maestro/orchestra/util/Env.class`); 2.0.10 does not. shotfleet's
-Android `[inputs.<locale>]` support already keys on that variable and was written for exactly this, so per-language typed text on Android may
-work on 2.11.0. Not run on a device; the value Maestro puts in it (the adb serial, which is what shotfleet's script expects) is unconfirmed.
+Android `[inputs.<locale>]` support already keys on that variable and was written for exactly this, and it works on 2.11.0: the
+device run of 2026-10-04 showed `MAESTRO_DEVICE_UDID` = the adb serial (`emulator-5702`) and the German and Japanese typed values in the screenshots
+(one emulator, de then ja; two at once and Arabic not run, see `research/maestro-2-11.md`).
 
 ## Other tools
 

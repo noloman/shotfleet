@@ -122,8 +122,9 @@ test of `STATUS.md` gate 7 (clean-Mac cold install) once the installer exists.
 
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
-**State:** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not), and shotfleet's script already uses it (`android_vars`). Unconfirmed: what
-value Maestro gives it. shotfleet expects the adb serial (`emulator-5700`...).
+**State: done 2026-10-04, with one limit.** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not) and it is the adb serial (`emulator-5702`); the German
+and Japanese screenshots show their own typed values. The run used ONE emulator (memory pressure made shotfleet halve 2 to 1), so de and ja ran one after
+the other; two emulators at once and Arabic are not run. The wording was updated as described below, saying exactly that.
 
 **Steps:** the fixture (`tools/fixture-app-android`), a flow with `inputText: ${name}` and `[inputs.de]`, `[inputs.ja]` with different values,
 `shotfleet run --locales de,ja` on 2 emulators with 2.11.0 first on the PATH. **Passed when** the German screenshot shows the German value and
