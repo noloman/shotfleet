@@ -646,18 +646,20 @@
  },
  {
   "id": "C038",
-  "claim": "fastlane snapshot is free and runs your UI tests in every language",
+  "claim": "fastlane snapshot is open source and built to run your UI tests in every language",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "<a href=\"/alternatives#fastlane\">fastlane snapshot</a> is free and does that."
+   "<a href=\"/alternatives#fastlane\">fastlane snapshot</a> is open source and built for that."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Third-party fact; true to the best of public knowledge (research/pricing-2026-10.md lists it as free, tagged A).",
   "layer": "legal",
   "assertion": "None.",
-  "fix": "Keep; it is a fair pointer."
+  "fix": "Keep; it is a fair pointer.",
+  "fixed_by": "wording",
+  "fixed": "The page said fastlane snapshot 'is free'; that rests on third-party pages that can change. It now says the tool is open source and built for running UI tests in every language, which its own repository and docs state."
  },
  {
   "id": "C039",
@@ -1463,18 +1465,20 @@
  },
  {
   "id": "C086",
-  "claim": "I receive your name, email, country and order details from Gumroad so I can support you",
+  "claim": "Gumroad passes me the details of your order, which can include your name, email and country, so I can support you",
   "where": [
    "site/public/privacy.html"
   ],
   "where_text": [
-   "I receive your name, email, country and order details so I can support you."
+   "Gumroad passes me the details of your order, which can include your name, email and country (its privacy policy says exactly what), so I can support you."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Depends on Gumroad's seller dashboard and sales export (name, email, country are in the sale record); no sale exists yet.",
   "layer": "legal",
   "assertion": "Human: check what Gumroad's order export contains once the first sale lands.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The privacy page said 'I receive your name, email, country and order details', which depends on what Gumroad's seller dashboard shows (no sale exists yet to check). It now says Gumroad passes me the order details, which can include name, email and country, and points to Gumroad's policy for the exact list."
  },
  {
   "id": "C087",
