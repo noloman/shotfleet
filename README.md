@@ -30,7 +30,7 @@ After capture, every screenshot's text is compared against your app's own string
 - **Store rules:** sizes each store accepts (every App Store display class, Play's 320–3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Notes (not failures) for Play's 2:1 rule and for listings that can't be recommended by Google Play (fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9).
 - **Languages your app doesn't have:** a store listing (say Traditional Chinese) whose screenshots can't be in that language because the app isn't translated into it.
 
-### Check screenshots made by any tool
+### Check screenshots you already have (fastlane, screengrab, by hand)
 
 Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:
 
@@ -43,7 +43,7 @@ Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `n
 
 Screenshots made in other tools work too. `check` knows Apple's sizes for Apple Watch, Mac, Apple TV and Vision Pro (3840x2160 is both Apple TV and Vision Pro), takes at most 10 per size, and flags a language whose Watch screenshots differ in size from the others (Apple wants one Watch size in every language). `export` takes a plain `<locale>/*.png` folder of such a set once `shotfleet check <folder> --report <folder>` has written its `check.json` there, and copies it into `screenshots/<locale>/` next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.
 
-A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
+`shotfleet run` (not `check`) also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
 
 ## Free and paid
 
