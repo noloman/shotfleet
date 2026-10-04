@@ -1769,11 +1769,16 @@ class RetryOnSlowSimulator(unittest.TestCase):
             def run(self, *a, check=True): calls.append(a[0]); return ""
         return S()
 
-    def fake_maestro(self, cmd, env=None, timeout=None):
+    layout = "2.0"  # where the fake Maestro puts `takeScreenshot: de/01`: "2.0" = relative to its working directory, "2.11" = its artifact folder
+
+    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None):
         self.runs += 1
         flows = Path(cmd[cmd.index("test") + 1]); out = flows.parent.parent.parent
         ok = self.runs == 2 and self.calls[-1] == "install"  # the retry only works when the app was reinstalled just before
-        if ok: (out / "raw" / "de" / "01.png").write_bytes(b"x")
+        if ok:
+            shots = Path(cwd) / "de" if self.layout == "2.0" else \
+                Path(cmd[cmd.index("--debug-output") + 1]) / ".maestro/tests/2026-10-03_120000/de/takeScreenshot/de"
+            shots.mkdir(parents=True); (shots / "01.png").write_bytes(b"x")
         Path(cmd[cmd.index("--output") + 1]).write_text(
             f'<testsuites><testsuite><testcase name="de" time="2">{"" if ok else "<failure>Unknown error</failure>"}</testcase></testsuite></testsuites>')
         return subprocess.CompletedProcess(cmd, 0 if ok else 1, "", "")
@@ -1797,6 +1802,42 @@ class RetryOnSlowSimulator(unittest.TestCase):
         self.assertEqual(self.calls.count("install"), 2)  # once before the run, once before the retry
         self.assertEqual(code, 0, out)
         self.assertIn("retrying 1: de", out)
+
+    @needs_mac
+    def test_screenshots_end_up_in_raw_with_maestro_2_11_which_confines_them_to_its_artifact_folder(self):
+        self.layout = "2.11"
+        code, out = self.run_it("1")
+        self.assertEqual(code, 0, out)
+        self.assertEqual((self.d / "out/raw/de/01.png").read_bytes(), b"x")
+
+    def test_collect_shots_moves_both_layouts_and_the_texts_next_to_them(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); staging, debug, dst = d / "s", d / "dbg", d / "raw/de"
+            (staging / "de").mkdir(parents=True); (staging / "de/01.png").write_bytes(b"a"); (staging / "de/01.texts.json").write_text("[]")
+            art = debug / ".maestro/tests/t/de/takeScreenshot/de"; art.mkdir(parents=True); (art / "02.png").write_bytes(b"b")
+            other = debug / ".maestro/tests/t/ja/takeScreenshot/ja"; other.mkdir(parents=True); (other / "01.png").write_bytes(b"j")
+            sf.collect_shots(staging, debug, "de", dst)
+            self.assertEqual(sorted(p.name for p in dst.iterdir()), ["01.png", "01.texts.json", "02.png"])
+            self.assertTrue((other / "01.png").exists())  # another locale's shots stay put
+            sf.collect_shots(staging, debug, "tr", d / "raw/tr")  # a flow that took none
+            self.assertEqual(list((d / "raw/tr").iterdir()), [])
+
+    def test_reader_also_reads_screenshots_in_maestros_own_folder(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "raw").mkdir(); art = d / "dbg/.maestro/tests/t/de/takeScreenshot/de"; art.mkdir(parents=True)
+            (d / "dbg/maestro.log").write_text("Selected device X using port 7001 with execution plan ExecutionPlan(flowsToRun=[/f/de.yaml]")
+            png = art / "1.png"; png.write_bytes(b"x"); stop = threading.Event()
+            with mock.patch.object(sf, "ios_screen_texts", lambda port, bundle: ["Weiter", "a", "b"]):
+                th = threading.Thread(target=sf.capture_texts, args=(stop, d / "dbg", d / "raw", "b")); th.start()
+                for _ in range(50):
+                    if png.with_suffix(".texts.json").exists(): break
+                    time.sleep(0.1)
+                stop.set(); th.join(5)
+            self.assertTrue(png.with_suffix(".texts.json").exists())
+
+    def test_flows_name_screenshots_relative_so_maestro_2_11_accepts_them(self):
+        body = sf.localize_flow("appId: x\n---\n- tapOn: a\n- takeScreenshot: 01_home\n", "de", Path("de")).split("\n---\n")[1]
+        self.assertIn("- takeScreenshot: 'de/01_home'", body)
 
     def test_overload_note_only_when_the_mac_was_loaded(self):
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "2", "")):

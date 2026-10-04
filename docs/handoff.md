@@ -27,8 +27,11 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 
 ## 1. Maestro 2.11.0 (and promoting it)
 
-**State:** 2.11.0 is the newest Maestro and passes all 28 static checks (`docs/compat.md`). No run on a device. `MAESTRO_TESTED` is still
-`("2.0.10",)`, so doctor says "may work". `doctor --fix` still installs 2.0.10.
+**State: done 2026-10-04.** The first device run on 2.11.0 failed (it rejects absolute `takeScreenshot` paths, `research/maestro-2-11.md`); shotfleet now
+names screenshots relative to Maestro's working directory and moves them into `raw/<locale>/` afterwards (`collect_shots`). The fixture e2e then
+passed on 2.11.0 (iOS 36/36, Android 29/29) and on 2.0.10 (36/36, 29/29). `MAESTRO_TESTED` is `("2.0.10", "2.11.0")` and `doctor --fix` installs
+2.11.0. Still open from this item: CrossfitTracker on 2.11.0 (item 6), per-flow timings on a quiet Mac (the runs were on a loaded one), and the
+Android `[inputs]` check (item 5). The steps below are what was run, for repeating it on a future version.
 
 **Steps, on your Mac, no other session using simulators:**
 
@@ -119,8 +122,9 @@ test of `STATUS.md` gate 7 (clean-Mac cold install) once the installer exists.
 
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
-**State:** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not), and shotfleet's script already uses it (`android_vars`). Unconfirmed: what
-value Maestro gives it. shotfleet expects the adb serial (`emulator-5700`...).
+**State: done 2026-10-04, with one limit.** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not) and it is the adb serial (`emulator-5702`); the German
+and Japanese screenshots show their own typed values. The run used ONE emulator (memory pressure made shotfleet halve 2 to 1), so de and ja ran one after
+the other; two emulators at once and Arabic are not run. The wording was updated as described below, saying exactly that.
 
 **Steps:** the fixture (`tools/fixture-app-android`), a flow with `inputText: ${name}` and `[inputs.de]`, `[inputs.ja]` with different values,
 `shotfleet run --locales de,ja` on 2 emulators with 2.11.0 first on the PATH. **Passed when** the German screenshot shows the German value and

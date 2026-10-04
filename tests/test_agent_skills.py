@@ -233,7 +233,7 @@ class LlmsTxt(unittest.TestCase):
         for fact in ("Apple silicon", "Java 17+"):
             self.assertIn(fact, readme)
             self.assertIn(fact, LLMS)
-        self.assertIn("Maestro (tested with 2.0.10)", readme)
+        self.assertIn("Maestro (tested with 2.0.10 and 2.11.0)", readme)
         self.assertIn("Maestro", LLMS)
         self.assertTrue(LLMS.startswith("# shotfleet\n\n> "))
 
