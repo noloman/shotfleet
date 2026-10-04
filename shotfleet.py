@@ -1777,7 +1777,8 @@ def android_pool(n, cfg, pool):
         r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n",
                env={**os.environ, **java_env(), "ANDROID_AVD_HOME": str(avd_home())})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
-            raise Fail(f"couldn't create the emulator {avd} from {image}: {" ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]}. "
+            detail = " ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]  # not inside the f-string: Python 3.11 rejects nested quotes there
+            raise Fail(f"couldn't create the emulator {avd} from {image}: {detail}. "
                        f"Install the image with: {commands_text(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
