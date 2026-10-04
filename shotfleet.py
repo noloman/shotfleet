@@ -1644,7 +1644,7 @@ def find_sdk(env=None):
         if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
     for c in filter(None, cands):
         if any((Path(c) / part).is_dir() for part in SDK_PARTS): return clean_path(c)
-    return clean_path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
+    return clean_path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if sys.platform == "darwin" else "Android/Sdk"))  # not is_mac(): SDK = find_sdk() below runs at import, before is_mac exists
 
 SDK = find_sdk()
 
