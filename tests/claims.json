@@ -219,13 +219,15 @@
   ],
   "where_text": [
    "The first run found a button nobody could reach.",
-   "A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next"
+   "`shotfleet run` (not `check`) also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next"
   ],
-  "status": "partial",
+  "status": "fixed",
   "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix. 2026-10-03 review (claims-unit): left partial. The sentence is history about one real run on CrossfitTracker, which no local test can prove, and README.md:46 still sits under 'Check screenshots made by any tool' (it says 'A run also surfaces', not that check does). A wording test would only prove where the sentence is; the fix above (move it) is a docs change.",
   "layer": "unit",
   "assertion": "Assert README wording: the sentence is in the 'run' section, or reads 'run failed on ...'. (Wording test only.)",
-  "fix": "Move README.md:44 out of the check section and say: 'While running my own app, the capture got stuck on an onboarding page ...'."
+  "fix": "Move README.md:44 out of the check section and say: 'While running my own app, the capture got stuck on an onboarding page ...'.",
+  "fixed_by": "wording",
+  "fixed": "README.md said 'A run also surfaces' under the heading about `check`, which implied `check` finds an unreachable button (it cannot). The sentence now says `shotfleet run` (not `check`) surfaced it. The history itself (CrossfitTracker, ja/ko/zh/ar) stays unproven by any local test."
  },
  {
   "id": "C014",
@@ -510,20 +512,24 @@
  },
  {
   "id": "C031",
-  "claim": "Check screenshots made by any tool (fastlane snapshot/screengrab, StoreScreens, by hand)",
+  "claim": "Check screenshots you already have: fastlane snapshot/screengrab, a plain folder per language, by hand (other tools' exports were not tried)",
   "where": [
    "README.md",
-   "site/public/index.html"
+   "site/public/index.html",
+   "marketing/kit/show-hn.md"
   ],
   "where_text": [
-   "Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:",
-   "Check any screenshots, from fastlane or by hand"
+   "### Check screenshots you already have (fastlane, screengrab, by hand)",
+   "Check any screenshots, from fastlane or by hand",
+   "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)"
   ],
-  "status": "partial",
+  "status": "fixed",
   "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names.",
   "layer": "unit",
   "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The README heading and the show-hn answer said 'any tool'. Only fastlane snapshot/screengrab folders, a plain folder per language and raw/ are tested; StoreScreens and other exports never were. The heading and the answer now name what is tested and say other tools' exports were not tried."
  },
  {
   "id": "C032",
@@ -619,20 +625,24 @@
  },
  {
   "id": "C037",
-  "claim": "Not for you if you want frames, captions or store upload / works alongside ButterKit, AppScreens, frameit",
+  "claim": "Not for you if you want frames, captions or store upload (use ButterKit or AppScreens for those)",
   "where": [
    "site/public/index.html",
+   "site/public/alternatives.html",
    "site/draft/alternatives.html"
   ],
   "where_text": [
-   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet works alongside them.",
-   "Point ButterKit at those same folders"
+   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet does not do those.",
+   "ButterKit and AppScreens specialize in that; shotfleet doesn't.",
+   "ButterKit and AppScreens specialize in that; shotfleet doesn't."
   ],
-  "status": "untested",
+  "status": "fixed",
   "proof": "Frames, captions and upload are indeed absent (research/pricing-2026-10.md 'Not offered'). Compatibility with ButterKit/AppScreens/frameit was never tried; fastlane deliver/supply flags in README.md:67-70 do exist (verified 2026-10-02 with `fastlane action deliver|supply`: skip_binary_upload, skip_metadata, overwrite_screenshots, force; skip_upload_apk/aab/metadata/changelogs/images exist).",
   "layer": "device",
   "assertion": "Manual: import raw/ screenshots into ButterKit, frame, export, then `shotfleet check` the framed folder (caption_problem path). Unit: if fastlane is installed, assert the option names used in the README recipes appear in `fastlane action deliver` / `supply`.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The pages said shotfleet 'works alongside' ButterKit and AppScreens; that was never tried. The sentence is gone: the pages now say only that shotfleet does not do frames, captions or store upload and name the tools that do."
  },
  {
   "id": "C038",
@@ -969,18 +979,20 @@
  },
  {
   "id": "C056",
-  "claim": "The founder price applies automatically for the first 100 (a code applied automatically on the Gumroad product)",
+  "claim": "The first 100 buyers pay the founder price",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "the founder price applies automatically for the first 100 buyers."
+   "the first 100 buyers pay the founder price."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Depends on the Gumroad product having FOUNDER29 ($20 off, limit 100 uses) set to apply automatically (research/gumroad-setup.md checklist step 5), which does not exist yet. Unverified: what the page shows once the 100 uses are spent (Gumroad documents only a validity-period end as returning to the full price), and whether a test purchase uses one.",
   "layer": "legal",
   "assertion": "Human: open the product page in a private window and read $49 crossed out and $29 in the order summary; after a test of the limit (or at 100 uses) it must read $49.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The page said the price 'applies automatically', which depends on a Gumroad discount code that is not set up yet and whose behaviour after 100 uses is undocumented. It now promises only the outcome: the first 100 buyers pay the founder price. How it is applied is Manu's checklist (research/gumroad-setup.md)."
  },
  {
   "id": "C057",
