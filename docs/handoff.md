@@ -80,6 +80,8 @@ emulator refuses x86_64 images without `vmx`/`svm` and refuses an arm64 image on
 
 Then the real one: `shotfleet run` of 18 languages on a real app on that machine, for the timing to compare with 15 min 24 s on the Mac.
 
+**A public app for that comparison now exists:** wger (commit `cf12708`, `flutter build apk --debug`, 19 languages, flow `research/real-apps-2026-10-03/wger-android/flow.yaml`). Mac, 2026-10-04: 19/19 captured, `wall_seconds` 822 on 1 emulator (memory pressure cut 2 to 1), with another session's emulator loading the Mac for the first ~13 minutes, so it is an upper bound, not a clean timing; a clean Mac rerun is queued (device queue line 8). The flow needs the `Title.*` selector translation from PR #29 (not in `main` before it). `research/frameworks.md` section 16.
+
 ## 3. Real Flutter, Expo and Compose apps, end to end
 
 **Done 2026-10-03 on a Mac** (iOS and Android; evidence in `research/frameworks.md` section 15 and `research/real-apps-2026-10-03/`): wger (Flutter), the obytes template (Expo, Release) and JetBrains' kotlinconf-app (Compose Multiplatform) were built, `init`ed with no arguments, run in two languages each and checked; README, `site/public/docs.html`, `skill/` and claims C035 and C121 name those apps and nothing more. Language reached all three on both platforms; `-AppleLanguages` and `set-app-locales` need no change.
