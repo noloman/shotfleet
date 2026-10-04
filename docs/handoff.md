@@ -16,7 +16,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
-| 10 | MAUI, Unity | per-framework toolchains and devices | not attempted |
+| 10 | Unity | a Unity install and devices | not planned |
 | 11 | Decisions that are not engineering | you | see the end |
 | 12 | Xcode 27 check, monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
 
@@ -128,7 +128,6 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 
 ## 10. Other frameworks
 
-- **.NET MAUI:** `dotnet workload install maui`, then the LocalizationDemo sample from dotnet/maui-samples (`research/frameworks.md` section 12).
 - **Unity / games:** not realistic (no text in the accessibility tree). Not planned.
 
 ## 11. Decisions that are not engineering

@@ -85,6 +85,16 @@ Cross-cutting facts used below:
 4. **Translations:** `Resources/Strings/AppResources.resx` + `.de.resx` **[V]**. Read today: `.resx`, culture from file name, neutral = base. Real sample worked [R]. Missing: nothing structural. Pitfall: bug 5 (native `values-*/Strings.xml` holding only the app name gets read by `load_strings_apk` when no `strings` is set).
 5. **Verdict: works today with `strings = "Resources/Strings/*.resx"`.** **Small work:** hint. Effort S.
 
+6. **Result of the run, 2026-10-04: passed.** Evidence in `research/experiments-2026-10-04/C/`. `dotnet/maui-samples` `10.0/Fundamentals/Localization/LocalizationDemo` (sparse checkout), .NET SDK 10.0.401 in a scratch folder,
+   `dotnet workload install maui` (MAUI SDK 10.0.110, iOS SDK 27.0; 101 packages, 2.07 GB download, **6.90 GB unpacked, over the task's 5 GB limit: run anyway with the owner's go-ahead**), Xcode 27.0.
+   `dotnet build -f net10.0-ios -c Debug -p:RuntimeIdentifier=iossimulator-arm64` -> `LocalizationDemo.app` (`rc=0`, 415 s). `shotfleet init` on the `.app` found 9 languages (de, en, es, fr, ja, pt, pt-PT, zh-Hans, zh-Hant) and printed the MAUI hint;
+   the config added `strings = "<...>/Resources/Strings/*.resx"` and `locales = ["de", "ja"]`. The flow (en): launch, `assertVisible: "Notes:"`, `assertVisible: "Add Note"`, `takeScreenshot: 01_home`.
+   `shotfleet run --locales de,ja --parallel 1` with Maestro 2.0.10 (shotfleet's tested version): `rc=0`, `captured 2/2 locales in 394s on 1 simulators` (iPhone 17 Pro Max, iOS 26.4), `untranslated_selectors: []` for both languages,
+   the selectors became `'Hinweise:'` / `'Neues Element hinzufügen'` (de) and `'注釈：'` / `'新しい項目を追加'` (ja) and their `assertVisible` steps passed, `shotfleet check`: `checked 2 screenshots in 2 languages: 0 problem(s)`.
+   The German screenshot shows the German labels and the sample's own German flag image, which only appears when the OS locale reached the app. **0 untranslated selectors on a 2-language run: C passes.**
+   What this does not show: Android (not built), the native `values-*` trap (bug 5; the iOS bundle has none), more than two languages or one screen, Release builds, or any MAUI app that is not this sample. The run was not on a quiet Mac: job #10's Android emulator
+   (port 5702) was running and the load was 480 to 640, with the queue owner's agreement for this iOS-only run; the language and selector results do not depend on timing, but the 394 s is not a speed figure.
+
 ## 6. Unity
 
 1. **Build.** Unity exports an Xcode project for iOS: build it with `xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -configuration Debug -sdk iphonesimulator`, after setting Player Settings > Target SDK = Simulator SDK [I, Unity manual not fetched]. Android: Build Settings with "Build App Bundle" off, or `Unity -batchmode -quit -buildTarget Android -executeMethod <your build method>` -> `.apk` [I]. Both produce installable artifacts.

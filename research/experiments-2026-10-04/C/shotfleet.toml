@@ -1,0 +1,4 @@
+[ios]
+app = "../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/bin/Debug/net10.0-ios/iossimulator-arm64/LocalizationDemo.app"
+strings = "../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/Resources/Strings/*.resx"
+locales = ["de", "ja"]
