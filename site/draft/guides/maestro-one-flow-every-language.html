@@ -77,6 +77,7 @@ appId: com.example.myapp
     id: onboarding_next
 - takeScreenshot: shots/${APP_LANG}/02_onboarding</code></pre>
 <p>I ran this on Maestro 2.0.10 against an iOS 26.4 simulator. The <code>tapOn</code> before the screenshot matters: when I put a <code>takeScreenshot</code> straight after <code>launchApp</code>, the image showed the iOS home screen, not the app, in 4 of 4 runs (with and without <code>clearState</code>; the Mac was under heavy load at the time). Putting <code>extendedWaitUntil</code> with <code>visible: id: next</code> first gave the app. Wait for something on screen before the first screenshot.</p>
+<p>Everything here was run on Maestro 2.0.10 only. Newer versions can differ: where <code>takeScreenshot</code> writes is one thing to check on yours (see the note on item 2 in the TO VERIFY list).</p>
 <p>Run it once per language, with the variables after <code>test</code>:</p>
 <pre><code class="language-bash">for pair in en:en_US de:de_DE ja:ja_JP; do
   maestro --device "$UDID" test \
