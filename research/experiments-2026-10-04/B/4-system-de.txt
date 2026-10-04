@@ -1,0 +1,13 @@
+capdemo
+navigator.language=de-DE
+Hallo
+device=de
+0 %
+Vertical scroll bar, 1 page
+Horizontal scroll bar, 1 page
+14:49
+Kein Signal
+Mobilfunk
+SSID, 3 von 3 WLAN-Balken
+Lädt nicht
+100 % Batterieladung

@@ -101,6 +101,24 @@ Cross-cutting facts used below:
 4. **Translations:** ngx-translate/Transloco/i18next/vue-i18n JSON and Angular `$localize` XLIFF: read today (JSON, `.xlf`). Missing: `.xmb`, TS locale objects (common in vue-i18n), remote-loaded JSON.
 5. **Verdict: needs real work or at least an experiment:** feasible if the app follows the native locale (Android yes; iOS unverified). Otherwise per-language means a URL/localStorage bridge that is app-specific (not generic). Effort M, uncertain.
 
+6. **Result of the iOS experiment, 2026-10-04 (run on a simulator): yes, the language reaches the webview.** Evidence in `research/experiments-2026-10-04/B/`.
+   Throwaway app `dev.shotfleet.capdemo`: Capacitor 8.5.2 (`@capacitor/core`, `@capacitor/ios`) with `@capacitor/device` 8.0.3, Debug build for the iOS Simulator SDK with Xcode 27.0,
+   web assets embedded. Two buttons, the first labelled with `navigator.language`, the second from a string table (`en: Hello`, `de: Hallo`, picked by the first two letters of
+   `navigator.language`), plus a text line from `Device.getLanguageCode()`. Run on a new iPhone 17 Pro simulator, iOS 26.4, launched with `xcrun simctl launch ... dev.shotfleet.capdemo <args>`;
+   the text was read back through Maestro 2.11.0 `hierarchy` (which also shows that Maestro on iOS sees WKWebView text) and one screenshot of each state was taken:
+
+   | Launch | `navigator.language` | String-table button | `Device.getLanguageCode()` |
+   |---|---|---|---|
+   | no argument | `en-GB` | Hello | `en` |
+   | `-AppleLanguages "(de)"` | `de-DE` | **Hallo** | `de` |
+   | `-AppleLanguages "(ja)"` | `ja` | Hello (no `ja` in the table, falls back) | `ja` |
+   | `-AppleLanguages "(de)" -AppleLocale de_DE` | `de-DE` | Hallo | `de` |
+   | system language set to German on the simulator, then rebooted | `de-DE` | Hallo | `de` |
+
+   So on iOS 26.4 `-AppleLanguages` alone is enough, and `navigator.language` follows it; the forum report (iOS 17.4 and later, `navigator.language` stays on the system language) was **not reproduced**.
+   What this does not show: a real device (simulator only), any iOS version other than 26.4, an app that sets its own language in code, and Android (the Android side stays [V]/[I] above).
+   The verdict changes from "iOS unverified" to: per-language capture of a Capacitor app works on iOS 26.4 with the launch argument, for apps that read `navigator.language` or `@capacitor/device`.
+
 ## 8. NativeScript
 
 1. **Build.** `ns build ios` (simulator build lands in `platforms/ios/build/Debug-iphonesimulator/`) and `ns build android` (APK in `platforms/android/app/build/outputs/apk/debug/`) [I, from CLI docs summaries; the doc page URL returned 404].

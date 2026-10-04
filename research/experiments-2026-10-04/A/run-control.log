@@ -1,0 +1,16 @@
+Will run 1 shards, with all 1 flows in each shard
+Running on shotfleet_android
+ > Flow expA-control
+Launch app "com.shotfleet.fixture"... COMPLETED
+Take screenshot shots-control/01_welcome... COMPLETED
+shotfleet:hier:01_welcome... WARNED
+
+
+ Warning: Assertion is false: false is true
+Tap on "次へ"... COMPLETED
+Take screenshot shots-control/02_settings... COMPLETED
+shotfleet:hier:02_settings... WARNED
+
+
+ Warning: Assertion is false: false is true
+control rc=0 secs=16
