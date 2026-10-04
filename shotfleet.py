@@ -1283,6 +1283,18 @@ def overload_note(want, n):
             + ", and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer."
             + " Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>\n")
 
+def flow_parse_note(out):
+    """When Maestro could not read a flow, say so: the retry would fail the same way within seconds, and a memory hint would send people
+    to close apps while the YAML is what is wrong. "" when no log says 'Parsing Failed'."""
+    for log in sorted(Path(out).glob("maestro*.log")):
+        try: text = log.read_text(errors="replace")
+        except OSError: continue
+        if "Parsing Failed" in text:
+            m = re.search(r"Parsing Failed\s+(\S+\.ya?ml:\d+)", text)
+            return (f"note: Maestro could not read a flow ({m.group(1) if m else 'see the log'}: 'Parsing Failed', {log}). "
+                    "Fix that YAML; this is not a slow-simulator problem.\n")
+    return ""
+
 # ---------- run ----------
 
 OUR_SIMS = set()  # UDIDs of shotfleet's simulators, so cleanup never touches anyone else's
@@ -1511,7 +1523,7 @@ def ios_run_inner(cfg, path, only, parallel):
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
         results.append({"lproj": lp, **r_})
-    if not all(r["ok"] for r in results): print(overload_note(want, n), end="")
+    if not all(r["ok"] for r in results): print(flow_parse_note(out) or overload_note(want, n), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n

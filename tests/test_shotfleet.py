@@ -1839,6 +1839,13 @@ class RetryOnSlowSimulator(unittest.TestCase):
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "1", "")):
             self.assertEqual(sf.overload_note(2, 2), "")
 
+    def test_a_flow_that_does_not_parse_is_named_instead_of_blamed_on_memory(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(sf.flow_parse_note(d), "")
+            (Path(d) / "maestro1.log").write_text("> Parsing Failed\n\n/x/out/.work/flows/attempt1/ja.yaml:8\n| arguments: ...\n")
+            note = sf.flow_parse_note(d)
+            self.assertIn("ja.yaml:8", note); self.assertIn("not a slow-simulator problem", note); self.assertNotIn("memory", note)
+
 
 class TypedTextPerLanguage(unittest.TestCase):
     FLOW = "appId: x\n---\n- launchApp\n- tapOn: Next\n- inputText: ${name}\n- takeScreenshot: 01\n"
