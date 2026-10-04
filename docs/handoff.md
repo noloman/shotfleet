@@ -4,7 +4,7 @@ Written 2026-10-03 at the end of a session that could not run anything on a devi
 done), **the steps**, **how you know it passed**, and **where to record it**. Evidence goes into `STATUS.md` (the row named) and, if a promise
 changes, into `tests/claims.json` and the README in the same commit. The rule of this repo stands: nothing is called "tested" without a run.
 
-Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3, 5 and 6, then the rest.
+Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, then the rest.
 
 | # | Item | Needs | Why not done here |
 |---|---|---|---|
@@ -12,7 +12,6 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3, 5 and 
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` | no hardware virtualization here |
 | 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
-| 6 | Real-app regression (CrossfitTracker, Remoti) | your Mac and the apps | not on this machine |
 | 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
 | 8 | Python 3.14 | the final release | only a release candidate existed |
 | 9 | Licence calls behind a re-signing proxy | a proxy, a test key | no proxy, no key |
@@ -108,20 +107,6 @@ the Japanese one the Japanese value (the run prints `no row for device '...'` if
 remove the "Maestro 2.0.10 doesn't define it" wording in `README.md` (Inputs), `site/public/docs.html`, `skill/shotfleet/references/config.md`
 and the note printed by `shotfleet.py` (search for `doesn't define it`), and drop the version caveat from `tests/test_limits_c2_c3.py`.
 
-## 6. Real-app regression
-
-`STATUS.md` plan A2: CrossfitTracker iOS (18 languages), Android phone and tablet, Remoti iPhone + iPad, on Maestro 2.0.10, after the config
-rewrite, `[inputs]`, the iOS retry and `init` discovery commits and the `plutil`/`PlistBuddy` replacements. Needs a quiet Mac (no other session with
-simulators or emulators booted) and 30+ GB free (93 GB were free on 2026-10-03).
-
-**Attempted 2026-10-03, not run:** the Mac was busy (4 iPad simulators booted and a `shotfleet.py run` from another session, a Remoti build, the
-Maestro 2.11.0 session queued for the Mac), so no timing would have been comparable. Do item 1 first, then this, so the two do not share the Mac.
-
-**How:** CrossfitTracker iOS: build Debug for the simulator, then `shotfleet run` with `examples/crossfittracker/shotfleet.toml` (the `app` path in it is
-the DerivedData folder of that build; `parallel = 4`). Android: `examples/crossfittracker/android.toml`. Remoti: its own repo under `~/Developer`
-(its README and `CLAUDE.md` say how to build the iOS app). Check the iOS run with `shotfleet check`. **Passed when** 0 problems and the timings are in the
-same range as the README (iOS 18 languages about 9 minutes, Android about 15); put the timings in `STATUS.md` rows 10 and 11 and the README only where they changed.
-
 ## 7. Android on-screen text from the UI tree (B2)
 
 `research/limits-text.md` 1b: a 10-minute marker experiment on one emulator with Maestro 2.11: can the UI hierarchy be read during a sharded
@@ -163,3 +148,4 @@ activation should succeed; without the variable it should fail with a certificat
   `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
 - `tools/status.sh` and `STATUS.md` counts of claims were not refreshed after the rows added this session (C121 to C126).
+- A quiet-Mac re-measure of the README timings (iOS about 9 min, Android about 15, 4 devices) is still open: the 2026-10-04 regression passed on correctness but ran on a swapping Mac with 2 devices (`STATUS.md` row 10). Do it once with nothing else running, `parallel = 4`, and only then change the README or claim C007.

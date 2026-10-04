@@ -115,7 +115,7 @@
    "about 9 minutes on iOS and 15 on Android"
   ],
   "status": "evidence",
-  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it.",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced.",
   "layer": "fixture",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
   "fix": ""

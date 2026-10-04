@@ -133,6 +133,19 @@ class Installers(FixTestCase):
         with mock.patch.dict(os.environ, {"JAVA_HOME": "", "PATH": "/nonexistent"}):
             self.assertEqual(sf.find_java(), (True, str(self.home / "jre")))
 
+    def test_the_macos_jre_layout_is_found(self):
+        """Temurin's real macOS tarball (seen on an arm64 Mac, 2026-10-03): jdk-21.x-jre/Contents/Home/bin/java, so JAVA_HOME is jre/Contents/Home."""
+        java = "jdk-21.0.12+1-jre/Contents/Home/bin/java"
+        tar = tar_bytes({java: b"#!/bin/sh\necho 'openjdk version \"21.0.12.1\"' >&2\n", "jdk-21.0.12+1-jre/Contents/Info.plist": b"x"}, executable=(java,))
+        assets = json.loads(self.server.files["/assets"]); assets[0]["binary"]["package"].update(checksum=sha256(tar), size=len(tar))
+        self.server.files.update({"/assets": json.dumps(assets).encode(), "/jre.tar.gz": tar})
+        with mock.patch.object(sys, "platform", "darwin"), mock.patch.object(sf.host_platform, "machine", lambda: "arm64"), self.quiet():
+            jre = sf.install_jre()
+        self.assertTrue(os.access(jre / "Contents/Home/bin/java", os.X_OK))
+        with mock.patch.dict(os.environ, {"JAVA_HOME": "", "PATH": "/nonexistent"}), \
+                mock.patch.object(sf.Path, "exists", lambda p: False if str(p) == "/usr/libexec/java_home" else os.path.exists(p)):
+            self.assertEqual(sf.find_java(), (True, str(self.home / "jre/Contents/Home")))
+
     def test_jre_checksum_comes_from_the_api_and_is_enforced(self):
         assets = json.loads(self.server.files["/assets"]); assets[0]["binary"]["package"]["checksum"] = "0" * 64
         self.server.files["/assets"] = json.dumps(assets).encode()
