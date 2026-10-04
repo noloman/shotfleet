@@ -125,14 +125,31 @@ of every node; `A/results/<run>/<name>.txt`). The Japanese is exact, not OCR:
 02_settings.txt  設定 / アプリの見た目と音を選びます。 / 完了                       (same status-bar lines)
 ```
 
-What this does not show: only one emulator and one shard (not two shards on two emulators at the same time), one app with two screens, one run of each.
-The 2.0.10 hang was not re-run here (the claim about it stays the 2026-10-01 measurement noted in `android_flow`). Status-bar nodes (time, signal, battery) are in
+What round 1 did not show (round 2 below covers the first three): two shards on two emulators at once, a right-to-left language, the 2.0.10 behaviour, and more than a two-screen app. Status-bar nodes (time, signal, battery) are in
 the text and must be dropped before matching. The same mechanism also fired for the optional 40 s wait step (it ended `WARNED`, so it saved a hierarchy too),
 which confirms any warned step saves one. Side finding for the Maestro 2.11 work: with `--debug-output` set, the relative `takeScreenshot` path ended up
 under `<debug>/<flow>/takeScreenshot/shots-control/01_welcome.png`, not in the working directory.
 
 **Not implemented in shotfleet.** `android_flow` still carries no markers and Android screenshots are still checked with OCR only; nothing in the README or the
 site changes. Next step if wanted: section 1d, Effort M, now with the trick confirmed.
+
+#### Round 2 (same day, evening): two shards, two emulators, Arabic, and Maestro 2.0.10
+
+Evidence in `research/experiments-2026-10-04/A2/`. Two read-only copies of the `shotfleet_android` AVD (ports 5760 and 5762), the fixture APK on both, two flows run as two shards in parallel
+(`maestro --device emulator-5760,emulator-5762 test --shard-split 2 --debug-output <dir> <flows>`), each flow = launch, screenshot, marker, a 40 s optional wait, tap, screenshot, marker. During the wait step (30 s into the run)
+`maestro hierarchy` was started on **both** emulators at once. A session restart killed my first attempt, and the probe timing was fixed before the runs below (the first script waited for a log line that sharded runs do not print).
+
+| Run | Result |
+|---|---|
+| Maestro 2.11.0, app language ja | `Passed: 2/2` (`rc=0`, 169 s with the 40 s wait). Both shards (`a2-m211ja-1-shard-2`, `a2-m211ja-2-shard-1`) wrote three hierarchy files each (two markers and the wait step). Both probes failed fast: `Device server died during 'deviceInfo' ... UNAVAILABLE`; nothing hung. |
+| Maestro 2.11.0, app language **ar** (right to left), no probe | `Passed: 2/2`, `rc=0`, 74 s. Four text files (two shards, two screens): `مرحبًا / لقطات الشاشة الخاصة بك، بكل اللغات. / التالي` and `الإعدادات / اختر مظهر التطبيق وصوته. / تم`, in logical order, equal to the app's own `values-ar` strings. |
+| Maestro **2.0.10**, app language ja, markers off, same probe | `Passed: 2/2`, `rc=0`, 90 s. The probes failed fast with `UNAVAILABLE: io exception` on both devices. **No `screen-hierarchy` folder is written at all** (2.0.10 has no per-step hierarchy), which matches the 2.7.0 minimum above. |
+
+The Japanese text of both shards matches round 1 (`ようこそ ... 次へ`, `設定 ... 完了`). Marker cost with two emulators running in parallel: 0.6 to 5.1 s for the first marker of a flow, 0.2 to 0.5 s for the second (`commands.json` durations).
+
+**The 2.0.10 hang was not reproduced.** The 2026-10-01 note in `android_flow` says `maestro hierarchy` "tears down its port forwards, which hung the run". In this setup (2.0.10, two emulators, two shards, a probe on each device in the middle of a 40 s wait) the probe failed with
+`UNAVAILABLE` and the sharded run still finished with `Passed: 2/2`. One attempt per case, one app, so this does not prove the hang cannot happen (it may need a different moment, such as the probe landing while a step is in flight), but it also means that
+claim is not confirmed by this run. The comment in `shotfleet.py` is unchanged; the design in 1d does not depend on it, because the marker needs no outside call.
 
 Effort: **M** (about 3 to 5 days with fixtures and the experiment).
 
