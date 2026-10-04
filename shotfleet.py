@@ -1240,7 +1240,8 @@ def ios_screen_texts(port, bundle_id):
 def capture_texts(stop, debug_dir, raw_dir, bundle_id):
     """While Maestro runs: when a screenshot appears in raw/<locale>/, read that screen's text from the driver of the
     simulator running that locale (Maestro's log says which device and port run which flow) and save it next to it
-    as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR."""
+    as <name>.texts.json. The flow pauses 1.5 s after each screenshot for this. `check` prefers these texts to OCR.
+    raw_dir is where Maestro 2.0.x writes <locale>/<name>.png; newer Maestro writes it inside debug_dir (see collect_shots)."""
     port_of, done, sizes = {}, set(), {}  # done: (png, mtime): a re-taken screenshot is read again
     pat = re.compile(r"Selected device \S+ using port (\d+) with execution plan ExecutionPlan\(flowsToRun=\[([^\]]*)\]")
 
@@ -1264,7 +1265,7 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
                 for port, flows in found:
                     for f in flows.split(","): port_of[Path(f.strip()).stem] = port
             by_port = {}
-            for png in Path(raw_dir).glob("*/*.png"):
+            for png in [*Path(raw_dir).glob("*/*.png"), *Path(debug_dir).glob("**/takeScreenshot/*/*.png")]:
                 try: key = (png, png.stat().st_mtime_ns)
                 except OSError: continue
                 if key in done or png.parent.name not in port_of: continue
@@ -1272,11 +1273,21 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
             list(pool.map(read, by_port.values()))
             stop.wait(0.2)
 
-def run_guarded(cmd, timeout, env=None):
+def collect_shots(staging, debug_dir, name, dst):
+    """Move the screenshots (and screen texts) of the flow that took `<name>/<shot>` into dst, which is raw/<locale>.
+    Flows name a screenshot relative to Maestro's working directory. 2.0.x writes it there, so under staging/<name>/.
+    Maestro 2.11 refuses a path outside its own artifact folder ("resolves outside this run's takeScreenshot output
+    folder") and writes it under <debug>/.maestro/tests/<run>/<flow>/takeScreenshot/<name>/ instead."""
+    dst.mkdir(parents=True, exist_ok=True)
+    for src in [Path(staging) / name, *Path(debug_dir).glob(f"**/takeScreenshot/{name}")]:
+        if src.is_dir():
+            for f in src.iterdir(): shutil.move(str(f), str(dst / f.name))
+
+def run_guarded(cmd, timeout, env=None, cwd=None):
     """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
     Maestro dumps simulator diagnostics after every failed flow; several at once wedge CoreSimulator
     (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed."""
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env, cwd=cwd)
     done = threading.Event()
     def watch():
         while not done.wait(5):
@@ -1338,6 +1349,18 @@ def overload_note(want, n):
     return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
             + ", and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer."
             + " Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>\n")
+
+def flow_parse_note(out):
+    """When Maestro could not read a flow, say so: the retry would fail the same way within seconds, and a memory hint would send people
+    to close apps while the YAML is what is wrong. "" when no log says 'Parsing Failed'."""
+    for log in sorted(Path(out).glob("maestro*.log")):
+        try: text = log.read_text(errors="replace")
+        except OSError: continue
+        if "Parsing Failed" in text:
+            m = re.search(r"Parsing Failed\s+(\S+\.ya?ml:\d+)", text)
+            return (f"note: Maestro could not read a flow ({m.group(1) if m else 'see the log'}: 'Parsing Failed', {log}). "
+                    "Fix that YAML; this is not a slow-simulator problem.\n")
+    return ""
 
 # ---------- run ----------
 
@@ -1486,7 +1509,7 @@ def ios_run_inner(cfg, path, only, parallel):
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
     # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
-    for d in ("flows", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
+    for d in ("flows", "debug", "shots"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     (out / ".work" / "flows").mkdir(parents=True)
 
@@ -1498,7 +1521,7 @@ def ios_run_inner(cfg, path, only, parallel):
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
-        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, out / "raw" / lp, inputs_for(cfg.get("_inputs"), lp)))
+        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -1525,19 +1548,21 @@ def ios_run_inner(cfg, path, only, parallel):
         """Run these locales in one sharded Maestro process; return {lproj: result}."""
         flows_dir = out / ".work" / "flows" / f"attempt{attempt}"
         flows_dir.mkdir(parents=True)
+        staging, debug = out / ".work" / "shots" / f"attempt{attempt}", out / ".work" / "debug" / f"attempt{attempt}"
+        staging.mkdir(parents=True)  # the flows' screenshot names are relative to this (Maestro's working directory)
         for lp in lps: shutil.copy(out / ".work" / "flows" / f"{lp}.yaml", flows_dir)
         k = min(n, len(lps))
         junit = out / f"junit{attempt}.xml"; junit.unlink(missing_ok=True)
         env = {**os.environ, **java_env(), "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000", "MAESTRO_CLI_NO_ANALYTICS": "1"}  # 4 drivers starting at once are slow
         stop = threading.Event()
         reader = threading.Thread(target=capture_texts, daemon=True,
-                                  args=(stop, out / ".work" / "debug" / f"attempt{attempt}", out / "raw", cfg["bundle_id"]))
+                                  args=(stop, debug, staging, cfg["bundle_id"]))
         reader.start()
         try:
             r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
-                             "--debug-output", str(out / ".work" / "debug" / f"attempt{attempt}")],
-                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
+                             "--debug-output", str(debug)],
+                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300, cwd=staging)
             (out / f"maestro{attempt}.log").write_text(r.stdout + r.stderr)
         except subprocess.TimeoutExpired as e:
             (out / f"maestro{attempt}.log").write_text(e.output or "")
@@ -1545,6 +1570,7 @@ def ios_run_inner(cfg, path, only, parallel):
         finally:
             stop.set(); reader.join(timeout=10)
             kill_stale_drivers()
+        for lp in lps: collect_shots(staging, debug, lp, out / "raw" / lp)
         res = junit_results(junit)
         out_ = {}
         for lp in lps:
@@ -1572,7 +1598,7 @@ def ios_run_inner(cfg, path, only, parallel):
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
         results.append({"lproj": lp, **r_})
-    if not all(r["ok"] for r in results): print(overload_note(want, n), end="")
+    if not all(r["ok"] for r in results): print(flow_parse_note(out) or overload_note(want, n), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
@@ -1618,7 +1644,7 @@ def find_sdk(env=None):
         if adb.parent.name == "platform-tools": cands.append(adb.parent.parent)
     for c in filter(None, cands):
         if any((Path(c) / part).is_dir() for part in SDK_PARTS): return clean_path(c)
-    return clean_path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if is_mac() else "Android/Sdk"))
+    return clean_path(env.get("ANDROID_HOME") or Path.home() / ("Library/Android/sdk" if sys.platform == "darwin" else "Android/Sdk"))  # not is_mac(): SDK = find_sdk() below runs at import, before is_mac exists
 
 SDK = find_sdk()
 
@@ -1780,7 +1806,8 @@ def android_pool(n, cfg, pool):
         r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n",
                env={**os.environ, **java_env(), "ANDROID_AVD_HOME": str(avd_home())})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
-            raise Fail(f"couldn't create the emulator {avd} from {image}: {" ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]}. "
+            detail = " ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]  # not inside the f-string: Python 3.11 rejects nested quotes there
+            raise Fail(f"couldn't create the emulator {avd} from {image}: {detail}. "
                        f"Install the image with: {commands_text(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
         w, h, dpi = kind["size"]
@@ -1866,7 +1893,7 @@ def android_run(cfg, path, out, only, parallel):
     expected = count_screenshots(flow)
     if any(isinstance(v, dict) for v in cfg.get("_inputs", {}).values()):
         print("note: on Android [inputs.<locale>] values are found by MAESTRO_DEVICE_UDID (Maestro hands any flow to any emulator); "
-              "Maestro 2.0.10 doesn't define it, so there Android types the [inputs] defaults. Not run on a device yet")
+              "Maestro 2.11.0 sets it; Maestro 2.0.10 doesn't, so on 2.0.10 Android types the [inputs] defaults")
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
@@ -1901,16 +1928,17 @@ def android_run(cfg, path, out, only, parallel):
                 lang[e.serial] = lp
             text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
+            staging = out / ".work" / "tmp" / tag; staging.mkdir(parents=True)  # the flows' screenshot names are relative to this
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
             if vars_js: (fdir / VARS_JS).write_text(vars_js)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", out / ".work" / "tmp" / tag / f"f{j}", inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
                 r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
-                                timeout=cfg.get("timeout_s", 600) + 300,
+                                timeout=cfg.get("timeout_s", 600) + 300, cwd=staging,
                                 env={**os.environ, **java_env(), **android_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
                                      "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
@@ -1923,9 +1951,7 @@ def android_run(cfg, path, out, only, parallel):
                 lp = lang[dev]
                 dst = out / "raw" / lp
                 shutil.rmtree(dst, ignore_errors=True)
-                src = out / ".work" / "tmp" / tag / f"f{j}"
-                if src.exists(): shutil.move(str(src), dst)
-                else: dst.mkdir(parents=True)
+                collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
                 results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev}
@@ -2585,7 +2611,7 @@ MAESTRO_INTERFACE = {
     "nice_to_have": ["MAESTRO_DEVICE_UDID"],  # lets Android [inputs.<locale>] pick a per-device value (README, Limits)
 }
 
-MAESTRO_TESTED = ("2.0.10",)  # the only Maestro every real run used; extend after re-testing a newer one
+MAESTRO_TESTED = ("2.0.10", "2.11.0")  # the Maestros a real fixture e2e passed on (iOS and Android); extend only after a real run
 
 def parse_maestro_version(*outputs):
     """The version in `maestro --version` output (a line like '2.0.10' or 'v2.0.10', maybe after JVM warnings), or None."""
@@ -2600,16 +2626,6 @@ def read_maestro_version(timeout=120):
     except (OSError, subprocess.TimeoutExpired): return None
     return parse_maestro_version(r.stdout, r.stderr)
 
-MAESTRO_BROKEN_FROM = (2, 11, 0)  # 2.11.0 rejects every takeScreenshot path outside its own output folder (path handling changed in 2.8.0): no run captures anything
-
-def maestro_blocked(version):
-    """The message when this Maestro cannot capture screenshots with shotfleet (measured on 2.11.0), else None."""
-    try: v = tuple(int(x) for x in (version or "").split(".")[:3])
-    except ValueError: return None
-    if v < MAESTRO_BROKEN_FROM: return None
-    return (f"Maestro {version} only accepts screenshot paths inside its own output folder, and shotfleet writes them elsewhere, so no screenshot can be captured. "
-            f"Run `shotfleet doctor --fix`: it installs the tested Maestro {MAESTRO_PIN['version']} and shotfleet then uses it by itself (or point SHOTFLEET_MAESTRO at a {MAESTRO_PIN['version']} install)")
-
 def maestro_warning(version):
     """One line when this isn't a Maestro shotfleet was tested with; None when it is. Never a reason to stop."""
     tested = ", ".join(MAESTRO_TESTED)
@@ -2622,9 +2638,9 @@ def maestro_warning(version):
 # one folder (~/.shotfleet, or $SHOTFLEET_HOME), over HTTPS, and is checked against a SHA-256 (Maestro: pinned here; the JRE:
 # Adoptium's API) or SHA-1 (Google's own repository manifest for the Android command-line tools) before it is unpacked.
 
-MAESTRO_PIN = {"version": "2.0.10", "size": 211669134,
-               "url": "https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.0.10/maestro.zip",
-               "sha256": "dbdcfbe2b673e1a6f40c65664f1ed5becad0b0a40e35d0e203dff511d05032f6"}  # the only Maestro every real run used
+MAESTRO_PIN = {"version": "2.11.0", "size": 314886578,
+               "url": "https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.11.0/maestro.zip",
+               "sha256": "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"}  # newest Maestro; the fixture e2e passed on it (and on 2.0.10)
 ADOPTIUM_ASSETS = "https://api.adoptium.net/v3/assets/latest/21/hotspot"  # Temurin 21 (LTS); Maestro needs Java 17 or newer
 ANDROID_REPOSITORY = "https://dl.google.com/android/repository/"
 
@@ -2835,6 +2851,11 @@ def run_fix_plan(plan, yes=False, stdin_is_tty=None):
     print("done; run shotfleet doctor again to see where you stand")
     return 0
 
+def simctl_works():
+    """`xcrun simctl help` answers. It can hang for minutes while other sessions load CoreSimulator (seen 2026-10-03), so it is timed."""
+    try: return sh(["xcrun", "simctl", "help"], timeout=120).returncode == 0
+    except subprocess.TimeoutExpired: return False
+
 def ios_runtimes():
     """Names of the iOS Simulator runtimes Xcode has (['iOS 26.4']), [] when it has none, None when xcrun can't say."""
     try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
@@ -2862,7 +2883,7 @@ def cmd_doctor(fix=False, yes=False):
                                        if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
-        ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
+        ("xcrun simctl", simctl_works() if have("xcrun") else False,
          "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
         *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
             "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]
@@ -2879,7 +2900,6 @@ def cmd_doctor(fix=False, yes=False):
     for name, ok, fix, platform in checks:
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
-    if has_maestro and (blocked := maestro_blocked(maestro_v)): print(f"PROBLEM maestro: {blocked}")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -3815,7 +3835,6 @@ def main_dispatch(a):
             if maestro_cmd():
                 ver = read_maestro_version(60)
                 if w := maestro_warning(ver): print(f"note: {w}", file=sys.stderr)
-                if blocked := maestro_blocked(ver): raise Fail(blocked)
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)

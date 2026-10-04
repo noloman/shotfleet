@@ -73,19 +73,19 @@ class FleetCase(unittest.TestCase):
                 return ""
         pool.extend(Emu(i) for i in range(n))
 
-    def fake_maestro(self, cmd, env=None, timeout=None):
+    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None):
         flows, junit = Path(cmd[cmd.index("test") + 1]), Path(cmd[cmd.index("--output") + 1])
         yamls = sorted(flows.glob("*.yaml")); cases = ""
-        if flows.parent.name == "flows" and "attempt" in flows.name:  # iOS: one flow per language, screenshots straight into out/raw/<lp>
+        if flows.parent.name == "flows" and "attempt" in flows.name:  # iOS: one flow per language, screenshots named <lp>/01 relative to Maestro's working directory (cwd)
             out, lps = flows.parent.parent.parent, [f.stem for f in yamls]
             self.ios.setdefault(self.device_types[-1], []).extend(lps)
-            for lp in lps: (out / "raw" / lp / "01.png").write_bytes(b"x"); cases += f'<testcase name="{lp}" time="1"/>'
+            for lp in lps: (Path(cwd) / lp).mkdir(parents=True, exist_ok=True); (Path(cwd) / lp / "01.png").write_bytes(b"x"); cases += f'<testcase name="{lp}" time="1"/>'
         else:  # Android: r<N>_f<j>.yaml per emulator; the log says which emulator ran which
             out, dbg = flows.parent.parent.parent, Path(cmd[cmd.index("--debug-output") + 1]); dbg.mkdir(parents=True, exist_ok=True)
             devs, log = cmd[cmd.index("--device") + 1].split(","), ""
             for j, f in enumerate(yamls):
                 log += f"Selected device {devs[j]} using port 7001 with execution plan ExecutionPlan(flowsToRun=[{f}], sequence=x)\n"
-                shots = out / ".work/tmp" / flows.name / f"f{j}"; shots.mkdir(parents=True); (shots / "01.png").write_bytes(b"x")
+                shots = Path(cwd) / f.stem; shots.mkdir(parents=True); (shots / "01.png").write_bytes(b"x")  # `<flow name>/01` relative to cwd
                 cases += f'<testcase name="{f.stem}" time="1"/>'
             (dbg / "maestro.log").write_text(log)
         junit.write_text(f"<testsuites><testsuite>{cases}</testsuite></testsuites>")

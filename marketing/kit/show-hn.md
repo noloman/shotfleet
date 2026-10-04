@@ -43,7 +43,7 @@ URL to submit: `https://shotfleet.com/?utm_source=hn` (the homepage; the funnel 
 > - Flutter and React Native work from your translation files. I have tested that on real translation files but not on a real Flutter or React Native app, so I do not claim it works there yet.
 > - The checks read text, they do not understand layout. Scripts macOS text recognition cannot read (Greek, Hebrew, most Indic scripts) only get the weaker checks unless you plug in Tesseract.
 >
-> Price and free tier: `shotfleet check` is free (no account, no licence) and works on screenshots made by any tool, including fastlane snapshot. `run` is free for 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, with a year of updates and a 14-day refund.
+> Price and free tier: `shotfleet check` is free (no account, no licence) and works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports). `run` is free for 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, with a year of updates and a 14-day refund.
 >
 > Install: `curl -fsSL https://shotfleet.com/install.sh | sh` (checksum-verified; read the script first if you like, it is short). I would like to hear how you check localized screenshots today, and what would stop you from trying it.
 

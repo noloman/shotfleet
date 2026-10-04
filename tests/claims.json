@@ -115,7 +115,7 @@
    "about 9 minutes on iOS and 15 on Android"
   ],
   "status": "evidence",
-  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it.",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced.",
   "layer": "fixture",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
   "fix": ""
@@ -219,13 +219,15 @@
   ],
   "where_text": [
    "The first run found a button nobody could reach.",
-   "A run also surfaces real localization bugs: on WOD Tracker the flow could not tap Next"
+   "`shotfleet run` (not `check`) also surfaces real localization bugs: on WOD Tracker the flow could not tap Next"
   ],
-  "status": "partial",
+  "status": "fixed",
   "proof": "The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix. 2026-10-03 review (claims-unit): left partial. The sentence is history about one real run on CrossfitTracker, which no local test can prove, and README.md:46 still sits under 'Check screenshots made by any tool' (it says 'A run also surfaces', not that check does). A wording test would only prove where the sentence is; the fix above (move it) is a docs change.",
   "layer": "unit",
   "assertion": "Assert README wording: the sentence is in the 'run' section, or reads 'run failed on ...'. (Wording test only.)",
-  "fix": "Move README.md:44 out of the check section and say: 'While running my own app, the capture got stuck on an onboarding page ...'."
+  "fix": "Move README.md:44 out of the check section and say: 'While running my own app, the capture got stuck on an onboarding page ...'.",
+  "fixed_by": "wording",
+  "fixed": "README.md said 'A run also surfaces' under the heading about `check`, which implied `check` finds an unreachable button (it cannot). The sentence now says `shotfleet run` (not `check`) surfaced it. The history itself (CrossfitTracker, ja/ko/zh/ar) stays unproven by any local test."
  },
  {
   "id": "C014",
@@ -510,20 +512,24 @@
  },
  {
   "id": "C031",
-  "claim": "Check screenshots made by any tool (fastlane snapshot/screengrab, StoreScreens, by hand)",
+  "claim": "Check screenshots you already have: fastlane snapshot/screengrab, a plain folder per language, by hand (other tools' exports were not tried)",
   "where": [
    "README.md",
-   "site/public/index.html"
+   "site/public/index.html",
+   "marketing/kit/show-hn.md"
   ],
   "where_text": [
-   "Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:",
-   "Check any screenshots, from fastlane or by hand"
+   "### Check screenshots you already have (fastlane, screengrab, by hand)",
+   "Check any screenshots, from fastlane or by hand",
+   "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)"
   ],
-  "status": "partial",
+  "status": "fixed",
   "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names.",
   "layer": "unit",
   "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The README heading and the show-hn answer said 'any tool'. Only fastlane snapshot/screengrab folders, a plain folder per language and raw/ are tested; StoreScreens and other exports never were. The heading and the answer now name what is tested and say other tools' exports were not tried."
  },
  {
   "id": "C032",
@@ -554,10 +560,10 @@
   ],
   "where_text": [
    "It needs an Apple silicon Mac, Maestro and Java 17+.",
-   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+"
+   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+"
   ],
   "status": "fixed",
-  "proof": "2026-10-03: PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things checks that README Limits, the index requirements data and llms.txt all name Apple silicon, Maestro (2.x; 'tested with 2.0.10' = sf.MAESTRO_TESTED), Java 17, Xcode for iOS and the Android SDK, and that no page names another Java floor. PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program: find_java() refuses Java 16 and accepts 17. The visible one-line sentence on the page (Apple silicon Mac, Maestro and Java 17+) is a subset of that set: it leaves out Xcode and the Android SDK, which the page's data block and README give. Earlier: JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro.",
+  "proof": "2026-10-03: PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things checks that README Limits, the index requirements data and llms.txt all name Apple silicon, Maestro (2.x; 'tested with 2.0.10 and 2.11.0' = sf.MAESTRO_TESTED), Java 17, Xcode for iOS and the Android SDK, and that no page names another Java floor. PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program: find_java() refuses Java 16 and accepts 17. The visible one-line sentence on the page (Apple silicon Mac, Maestro and Java 17+) is a subset of that set: it leaves out Xcode and the Android SDK, which the page's data block and README give. Earlier: JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro.",
   "layer": "site",
   "assertion": "Assert the prerequisite sentences in index.html and README.md name the same set: Mac, Xcode (iOS), Android SDK (Android), Maestro 2.x, Java 17+.",
   "fix": "README.md:237: 'Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+.'",
@@ -619,35 +625,41 @@
  },
  {
   "id": "C037",
-  "claim": "Not for you if you want frames, captions or store upload / works alongside ButterKit, AppScreens, frameit",
+  "claim": "Not for you if you want frames, captions or store upload (use ButterKit or AppScreens for those)",
   "where": [
    "site/public/index.html",
+   "site/public/alternatives.html",
    "site/draft/alternatives.html"
   ],
   "where_text": [
-   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet works alongside them.",
-   "Point ButterKit at those same folders"
+   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet does not do those.",
+   "ButterKit and AppScreens specialize in that; shotfleet doesn't.",
+   "ButterKit and AppScreens specialize in that; shotfleet doesn't."
   ],
-  "status": "untested",
+  "status": "fixed",
   "proof": "Frames, captions and upload are indeed absent (research/pricing-2026-10.md 'Not offered'). Compatibility with ButterKit/AppScreens/frameit was never tried; fastlane deliver/supply flags in README.md:67-70 do exist (verified 2026-10-02 with `fastlane action deliver|supply`: skip_binary_upload, skip_metadata, overwrite_screenshots, force; skip_upload_apk/aab/metadata/changelogs/images exist).",
   "layer": "device",
   "assertion": "Manual: import raw/ screenshots into ButterKit, frame, export, then `shotfleet check` the framed folder (caption_problem path). Unit: if fastlane is installed, assert the option names used in the README recipes appear in `fastlane action deliver` / `supply`.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The pages said shotfleet 'works alongside' ButterKit and AppScreens; that was never tried. The sentence is gone: the pages now say only that shotfleet does not do frames, captions or store upload and name the tools that do."
  },
  {
   "id": "C038",
-  "claim": "fastlane snapshot is free and runs your UI tests in every language",
+  "claim": "fastlane snapshot is open source and built to run your UI tests in every language",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "<a href=\"/alternatives#fastlane\">fastlane snapshot</a> is free and does that."
+   "<a href=\"/alternatives#fastlane\">fastlane snapshot</a> is open source and built for that."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Third-party fact; true to the best of public knowledge (research/pricing-2026-10.md lists it as free, tagged A).",
   "layer": "legal",
   "assertion": "None.",
-  "fix": "Keep; it is a fair pointer."
+  "fix": "Keep; it is a fair pointer.",
+  "fixed_by": "wording",
+  "fixed": "The page said fastlane snapshot 'is free'; that rests on third-party pages that can change. It now says the tool is open source and built for running UI tests in every language, which its own repository and docs state."
  },
  {
   "id": "C039",
@@ -969,18 +981,20 @@
  },
  {
   "id": "C056",
-  "claim": "The founder price applies automatically for the first 100 (a code applied automatically on the Gumroad product)",
+  "claim": "The first 100 buyers pay the founder price",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "the founder price applies automatically for the first 100 buyers."
+   "the first 100 buyers pay the founder price."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Depends on the Gumroad product having FOUNDER29 ($20 off, limit 100 uses) set to apply automatically (research/gumroad-setup.md checklist step 5), which does not exist yet. Unverified: what the page shows once the 100 uses are spent (Gumroad documents only a validity-period end as returning to the full price), and whether a test purchase uses one.",
   "layer": "legal",
   "assertion": "Human: open the product page in a private window and read $49 crossed out and $29 in the order summary; after a test of the limit (or at 100 uses) it must read $49.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The page said the price 'applies automatically', which depends on a Gumroad discount code that is not set up yet and whose behaviour after 100 uses is undocumented. It now promises only the outcome: the first 100 buyers pay the founder price. How it is applied is Manu's checklist (research/gumroad-setup.md)."
  },
  {
   "id": "C057",
@@ -1451,18 +1465,20 @@
  },
  {
   "id": "C086",
-  "claim": "I receive your name, email, country and order details from Gumroad so I can support you",
+  "claim": "Gumroad passes me the details of your order, which can include your name, email and country, so I can support you",
   "where": [
    "site/public/privacy.html"
   ],
   "where_text": [
-   "I receive your name, email, country and order details so I can support you."
+   "Gumroad passes me the details of your order, which can include your name, email and country (its privacy policy says exactly what), so I can support you."
   ],
-  "status": "unverifiable",
+  "status": "fixed",
   "proof": "Depends on Gumroad's seller dashboard and sales export (name, email, country are in the sale record); no sale exists yet.",
   "layer": "legal",
   "assertion": "Human: check what Gumroad's order export contains once the first sale lands.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "The privacy page said 'I receive your name, email, country and order details', which depends on what Gumroad's seller dashboard shows (no sale exists yet to check). It now says Gumroad passes me the order details, which can include name, email and country, and points to Gumroad's policy for the exact list."
  },
  {
   "id": "C087",
@@ -1908,16 +1924,16 @@
  },
  {
   "id": "C114",
-  "claim": "[inputs] sets the text a flow types per language on iOS (Maestro env entry in that language's flow); on Android a per-language value is read from shotfleet_vars.js by MAESTRO_DEVICE_UDID, which Maestro 2.0.10 does not define, so Android runs there use the defaults only",
+  "claim": "[inputs] sets the text a flow types per language on iOS (Maestro env entry in that language's flow); on Android a per-language value is read from shotfleet_vars.js by MAESTRO_DEVICE_UDID, which Maestro 2.11.0 sets to the emulator's serial and Maestro 2.0.10 does not define (there Android runs use the defaults only)",
   "where": [
    "README.md"
   ],
   "where_text": [
    "The value goes into that language's flow as a Maestro `env:` entry.",
-   "so there Android runs type the `[inputs]` defaults only"
+   "so on 2.0.10 Android runs type the `[inputs]` defaults only"
   ],
   "status": "partial",
-  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults); AndroidTypedValuesPerDevice.* (generated map, flow rewrite, JS run under node with a fake MAESTRO_DEVICE_UDID, fallback to the defaults). MAESTRO_DEVICE_UDID is absent from the Maestro 2.0.10 jars (scanned 2026-10-03). Not yet run on a simulator with CJK or Arabic typing (roadmap X5 kill criterion: iOS CJK/Arabic typing may fail on the simulator), nor on an emulator with a newer Maestro. 2026-10-03 review (claims-unit): left partial. Every part a local test can prove already has a test (above); what is open is typed Japanese/Arabic text showing in a simulator PNG, which needs a device.",
+  "proof": "Unit: TypedTextPerLanguage.* (header env block, merge with a user env block, YAML quoting, locale fallback, checker refusals, Android defaults); AndroidTypedValuesPerDevice.* (generated map, flow rewrite, JS run under node with a fake MAESTRO_DEVICE_UDID, fallback to the defaults). MAESTRO_DEVICE_UDID is absent from the Maestro 2.0.10 jars (scanned 2026-10-03). Device run 2026-10-04 on Maestro 2.11.0 (scratch copy of the Android fixture with a text field, one shotfleet_android emulator, de then ja): MAESTRO_DEVICE_UDID was the adb serial emulator-5702 and the screenshots show the typed 'Jürgen Müller' and '田中太郎'. Not run: two emulators at once (memory pressure made shotfleet use one), Arabic typing, and iOS CJK/Arabic typing (roadmap X5 kill criterion: it may fail on the simulator). 2026-10-03 review (claims-unit): left partial. Every part a local test can prove already has a test (above); what is open is typed Japanese/Arabic text showing in a simulator PNG, which needs a device.",
   "layer": "unit",
   "assertion": "Fixture app with a text field: Japanese value shows in the PNG (read by OCR).",
   "fix": ""
@@ -2107,9 +2123,9 @@
    "`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first"
   ],
   "status": "partial",
-  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Never run on a Mac.",
+  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Then run on a Mac (Apple silicon, macOS 27, 2026-10-03) in throwaway HOME/SHOTFLEET_HOME/ANDROID_HOME with this Mac's Java and Android tools hidden: without Homebrew, all 5 steps (Maestro 2.0.10, Temurin 21.0.12.1 JRE at jre/Contents/Home, Google's mac_arm64 command-line tools, licences, platform-tools/emulator/build-tools/arm64 image) ran and doctor reported Maestro, Java, iOS and Android ready; with Homebrew, `brew install --cask android-commandlinetools` plus licences and packages ran (635 s) and doctor reported Android ready. Both passed; the claim stays partial because each Mac run had Maestro or the JRE from the first run reused for the second, and no clean macOS user or outside machine has run it.",
   "layer": "unit",
-  "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok.",
+  "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok. (Run on a Mac in a throwaway environment, both Android branches, 2026-10-03; not on a separate clean user.)",
   "fix": ""
  }
 ]
