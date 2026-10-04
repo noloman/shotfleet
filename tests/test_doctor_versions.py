@@ -53,8 +53,9 @@ class Fakes(unittest.TestCase):
 
 
 class MaestroVersion(Fakes):
-    def test_the_tested_version_is_one_constant_and_it_is_2_0_10(self):
-        self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10",))
+    def test_the_tested_versions_are_one_constant_and_are_2_0_10_and_2_11_0(self):
+        self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10", "2.11.0"))
+        self.assertIn(sf.MAESTRO_PIN["version"], sf.MAESTRO_TESTED)  # doctor --fix installs a version that was really run
 
     def test_parsing_survives_noise_around_the_version(self):
         for text, want in (("2.0.10\n", "2.0.10"), ("v2.11.0\n", "2.11.0"), ("WARNING: illegal reflective access\n2.0.10\n", "2.0.10"),
@@ -66,17 +67,17 @@ class MaestroVersion(Fakes):
     def test_same_version_prints_it_with_the_tested_one_and_no_warning(self):
         self.maestro("echo 2.0.10")
         code, out = self.doctor()
-        self.assertIn("ok   maestro 2.0.10 (tested: 2.0.10)", out)
+        self.assertIn("ok   maestro 2.0.10 (tested: 2.0.10, 2.11.0)", out)
         self.assertNotIn("not the version shotfleet was tested with", out)
         self.assertNotIn("could not read", out)
 
     def test_a_newer_version_warns_in_one_line_that_names_the_tested_one_and_does_not_fail_doctor(self):
-        self.maestro("echo 2.11.0")
+        self.maestro("echo 2.99.0")
         code, out = self.doctor()
-        self.assertIn("ok   maestro 2.11.0 (tested: 2.0.10)", out)
+        self.assertIn("ok   maestro 2.99.0 (tested: 2.0.10, 2.11.0)", out)
         warn = [l for l in out.splitlines() if "not the version shotfleet was tested with" in l]
         self.assertEqual(len(warn), 1, out)
-        self.assertIn("(2.0.10)", warn[0]); self.assertIn("may work", warn[0]); self.assertIn("2.11.0", warn[0])
+        self.assertIn("(2.0.10, 2.11.0)", warn[0]); self.assertIn("may work", warn[0]); self.assertIn("2.99.0", warn[0])
         self.assertNotIn("MISSING maestro", out)
         # the exit code is not driven by the version: same as with the tested one
         self.maestro("echo 2.0.10")
@@ -94,7 +95,7 @@ class MaestroVersion(Fakes):
         self.maestro("echo 'Segmentation banana'")
         code, out = self.doctor()
         self.assertNotIn("MISSING maestro", out)
-        self.assertIn("maestro (version unknown; tested: 2.0.10)", out)
+        self.assertIn("maestro (version unknown; tested: 2.0.10, 2.11.0)", out)
         self.assertIn("could not read Maestro's version", out); self.assertIn("2.0.10", out); self.assertIn("may work", out)
 
     def test_no_maestro_is_still_missing_with_the_install_command(self):
@@ -115,8 +116,9 @@ class MaestroVersion(Fakes):
     def test_run_prints_the_note_once_to_stderr_only_when_the_version_differs(self):
         err = self.run_note("echo 2.5.0")
         self.assertEqual(err.count("not the version shotfleet was tested with"), 1, err)
-        self.assertIn("(2.0.10)", err); self.assertIn("may work", err)
+        self.assertIn("(2.0.10, 2.11.0)", err); self.assertIn("may work", err)
         self.assertEqual(self.run_note("echo 2.0.10"), "")
+        self.assertEqual(self.run_note("echo 2.11.0"), "")  # a real fixture e2e passed on it: no note
         self.assertIn("could not read", self.run_note("echo nonsense"))
 
 

@@ -554,10 +554,10 @@
   ],
   "where_text": [
    "It needs an Apple silicon Mac, Maestro and Java 17+.",
-   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+"
+   "macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+"
   ],
   "status": "fixed",
-  "proof": "2026-10-03: PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things checks that README Limits, the index requirements data and llms.txt all name Apple silicon, Maestro (2.x; 'tested with 2.0.10' = sf.MAESTRO_TESTED), Java 17, Xcode for iOS and the Android SDK, and that no page names another Java floor. PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program: find_java() refuses Java 16 and accepts 17. The visible one-line sentence on the page (Apple silicon Mac, Maestro and Java 17+) is a subset of that set: it leaves out Xcode and the Android SDK, which the page's data block and README give. Earlier: JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro.",
+  "proof": "2026-10-03: PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things checks that README Limits, the index requirements data and llms.txt all name Apple silicon, Maestro (2.x; 'tested with 2.0.10 and 2.11.0' = sf.MAESTRO_TESTED), Java 17, Xcode for iOS and the Android SDK, and that no page names another Java floor. PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program: find_java() refuses Java 16 and accepts 17. The visible one-line sentence on the page (Apple silicon Mac, Maestro and Java 17+) is a subset of that set: it leaves out Xcode and the Android SDK, which the page's data block and README give. Earlier: JavaForMaestro.test_finds_a_keg_only_jdk_and_sets_its_home_for_maestro.",
   "layer": "site",
   "assertion": "Assert the prerequisite sentences in index.html and README.md name the same set: Mac, Xcode (iOS), Android SDK (Android), Maestro 2.x, Java 17+.",
   "fix": "README.md:237: 'Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+.'",

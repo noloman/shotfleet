@@ -27,8 +27,11 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 
 ## 1. Maestro 2.11.0 (and promoting it)
 
-**State:** 2.11.0 is the newest Maestro and passes all 28 static checks (`docs/compat.md`). No run on a device. `MAESTRO_TESTED` is still
-`("2.0.10",)`, so doctor says "may work". `doctor --fix` still installs 2.0.10.
+**State: done 2026-10-04.** The first device run on 2.11.0 failed (it rejects absolute `takeScreenshot` paths, `research/maestro-2-11.md`); shotfleet now
+names screenshots relative to Maestro's working directory and moves them into `raw/<locale>/` afterwards (`collect_shots`). The fixture e2e then
+passed on 2.11.0 (iOS 36/36, Android 29/29) and on 2.0.10 (36/36, 29/29). `MAESTRO_TESTED` is `("2.0.10", "2.11.0")` and `doctor --fix` installs
+2.11.0. Still open from this item: CrossfitTracker on 2.11.0 (item 6), per-flow timings on a quiet Mac (the runs were on a loaded one), and the
+Android `[inputs]` check (item 5). The steps below are what was run, for repeating it on a future version.
 
 **Steps, on your Mac, no other session using simulators:**
 

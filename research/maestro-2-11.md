@@ -1,5 +1,7 @@
 # shotfleet on Maestro 2.11.0
 
+**Current state (2026-10-04): 2.11.0 passes the fixture e2e and is in `MAESTRO_TESTED`; see the last section. The sections in between are the history: the first device run failed on `takeScreenshot` paths and was fixed.**
+
 Date: 2026-10-03. Short version: nothing found so far that breaks shotfleet on Maestro 2.11.0, but the iOS end-to-end run did not happen, so 2.11.0 is not "tested" yet. Do not add it to `MAESTRO_TESTED` until that run passes.
 
 ## What was done
@@ -120,3 +122,30 @@ this run's" string so the static check would have caught this.
 shotfleet run: it does not work until the `takeScreenshot` handling above changes. Same for `doctor --fix` pinning (it still installs 2.0.10)
 and the Homebrew formula idea in `research/setup-friction.md`: do not pin 2.11.0.
 Evidence kept (not in the repo): `/private/tmp/claude-501/.../scratchpad/m211/{ios-evidence,android-evidence,e2e-ios.log,e2e-android.log}`.
+
+## Fix and passing device runs, 2026-10-04 (night): 2.11.0 is tested
+
+**What was changed.** Flows now name screenshots relative to Maestro's working directory (`takeScreenshot: de/01_welcome`; on Android `<tag>_f<j>/01_welcome`)
+and Maestro runs with a per-attempt working directory. Probed on a throwaway iOS 26.4 simulator with the real downloads: 2.0.10 writes the file
+under that directory (`<cwd>/de/01_welcome.png`); 2.11.0 writes it under `<--debug-output>/.maestro/tests/<run>/<flow>/takeScreenshot/de/01_welcome.png`
+(or `<--test-output-dir>/<run>/<flow>/takeScreenshot/...`). `ArtifactCollector.confinedTo` in `maestro-orchestra.jar` checks
+`artifactsDir.resolve(name).normalize().startsWith(artifactsDir)`, which is why an absolute path elsewhere fails and a relative one passes. `collect_shots()`
+moves the files of either layout into `raw/<locale>/` after the run, and `capture_texts()` also watches 2.11.0's folder so the live screen-text capture works.
+No version gate and no new flag, so the command line is unchanged.
+
+**Results** (fixture e2e, same machine, the device lock held, `tools/fixture-e2e.sh --platform-only ios|android`):
+
+| Maestro | Platform | Result | Time | Load / free memory / pressure at start |
+|---|---|---|---|---|
+| 2.11.0 | iOS | all 36 assertions passed | 344 s | 78 / 45% / level 2 |
+| 2.11.0 | Android | all 29 assertions passed | 148 s | 765 / 52% / level 1 |
+| 2.0.10 | iOS | first run: 11 of 22 failed, **not a Maestro result**: `simctl terminate did not answer within 300 s` (a simulator hung, load ~500) before Maestro started. Rerun: all 36 passed | 420 s (failed), 527 s (rerun) | 135 / 54% / 1 (failed); 51 / 50% / 2 (rerun) |
+| 2.0.10 | Android | all 29 assertions passed | 99 s | 499 / 61% / 1 |
+
+Unit tests: 5 new, the full suite passes. The Mac was shared with other sessions' builds and emulators (load 50 to 760), so the times are not a
+2.0.10 versus 2.11.0 comparison; at memory-pressure level 2 shotfleet also halves its simulator count.
+
+**The other watch items, now answered.** `Selected device ... using port` is written to `maestro.log` (seen in every debug log). Sharded parallel iOS
+runs on 2.11.0 worked: 36/36 on the iOS fixture, which runs four languages sharded over the simulator pool. No `launchApp`/`clearState` failure.
+
+**Not done.** CrossfitTracker/Remoti on 2.11.0 (`docs/handoff.md` item 6). The Android `[inputs.<locale>]` check with `MAESTRO_DEVICE_UDID` (item 5).

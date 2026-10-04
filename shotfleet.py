@@ -2581,7 +2581,7 @@ MAESTRO_INTERFACE = {
     "nice_to_have": ["MAESTRO_DEVICE_UDID"],  # lets Android [inputs.<locale>] pick a per-device value (README, Limits)
 }
 
-MAESTRO_TESTED = ("2.0.10",)  # the only Maestro every real run used; extend after re-testing a newer one
+MAESTRO_TESTED = ("2.0.10", "2.11.0")  # the Maestros a real fixture e2e passed on (iOS and Android); extend only after a real run
 
 def parse_maestro_version(*outputs):
     """The version in `maestro --version` output (a line like '2.0.10' or 'v2.0.10', maybe after JVM warnings), or None."""
@@ -2608,9 +2608,9 @@ def maestro_warning(version):
 # one folder (~/.shotfleet, or $SHOTFLEET_HOME), over HTTPS, and is checked against a SHA-256 (Maestro: pinned here; the JRE:
 # Adoptium's API) or SHA-1 (Google's own repository manifest for the Android command-line tools) before it is unpacked.
 
-MAESTRO_PIN = {"version": "2.0.10", "size": 211669134,
-               "url": "https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.0.10/maestro.zip",
-               "sha256": "dbdcfbe2b673e1a6f40c65664f1ed5becad0b0a40e35d0e203dff511d05032f6"}  # the only Maestro every real run used
+MAESTRO_PIN = {"version": "2.11.0", "size": 314886578,
+               "url": "https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.11.0/maestro.zip",
+               "sha256": "5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a"}  # newest Maestro; the fixture e2e passed on it (and on 2.0.10)
 ADOPTIUM_ASSETS = "https://api.adoptium.net/v3/assets/latest/21/hotspot"  # Temurin 21 (LTS); Maestro needs Java 17 or newer
 ANDROID_REPOSITORY = "https://dl.google.com/android/repository/"
 

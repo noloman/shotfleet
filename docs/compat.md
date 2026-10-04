@@ -8,8 +8,8 @@ left and how to do it.
 
 | Version | What was done | Result |
 |---|---|---|
-| 2.0.10 | every real run to date (CrossfitTracker 18/18 on iOS and Android, the iOS fixture e2e 36/36, the Android fixture 29/29), plus `tools/maestro-compat.py` | 28/28 static checks. **Tested** (`MAESTRO_TESTED`). |
-| 2.11.0 (the newest: 2.11.1, 2.12.0 and 3.0.0 do not exist as of 2026-10-03) | `tools/maestro-compat.py`, run on the real download (SHA-256 5384593c...e1283a, matches the release's own checksum file) on Linux; the changelog read from 2.1 to 2.11 in `research/maestro-2-11.md` | 28/28 static checks. **No device run**, so not in `MAESTRO_TESTED`: doctor says "may work". |
+| 2.0.10 | every real run until 2026-10-03 (CrossfitTracker 18/18 on iOS and Android, the iOS fixture e2e 36/36, the Android fixture 29/29), plus `tools/maestro-compat.py`; the fixture e2e again on 2026-10-04 after the relative-screenshot-name change: iOS 36/36, Android 29/29 | 28/28 static checks. **Tested** (`MAESTRO_TESTED`). |
+| 2.11.0 (the newest: 2.11.1, 2.12.0 and 3.0.0 do not exist as of 2026-10-03) | `tools/maestro-compat.py` on the real download (SHA-256 5384593c...e1283a, matches the release's own checksum file): 28/28. Real fixture e2e on a Mac, 2026-10-03: **failed** (iOS 25 of 36, Android 19 of 29): 2.11.0 rejects absolute `takeScreenshot` paths outside its artifact folder. After shotfleet named screenshots relative to Maestro's working directory (`collect_shots`), 2026-10-04: iOS 36/36, Android 29/29. See `research/maestro-2-11.md` | **Tested** (`MAESTRO_TESTED`); `doctor --fix` installs it. CrossfitTracker on 2.11.0 not run (`docs/handoff.md` item 6). |
 
 `tools/maestro-compat.py [folder]` checks any Maestro against `shotfleet.MAESTRO_INTERFACE`, the one list of what shotfleet relies on:
 `--version` parses; `maestro --device` and `maestro test --shard-split --format --output --debug-output` exist and `--format` offers JUNIT; the

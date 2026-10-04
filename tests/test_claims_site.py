@@ -73,7 +73,7 @@ class PlatformAndRequirements(unittest.TestCase):
         self.assertIn("Apple silicon", places["README Limits"]); self.assertIn("Apple silicon", places["index.html data"])
         self.assertIn("Maestro 2.x", places["index.html data"]); self.assertIn("Maestro 2.x", places["llms.txt"])
         self.assertIn("tested with 2.0.10", limits)
-        self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10",))
+        self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10", "2.11.0"))
         # the one-sentence version on the page is a subset of that set and never names another Java
         for rel in ("README.md", "site/public/index.html", "site/public/llms.txt", "site/public/alternatives.html", "site/public/terms.html"):
             self.assertNotRegex(plain(read(rel)), r"Java (1[0-6]|[0-9])\b(?!\.)", rel)
