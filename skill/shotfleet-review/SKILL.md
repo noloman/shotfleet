@@ -7,7 +7,7 @@ description: Read a shotfleet check report (check.json and the shotfleet-check/i
 
 Inputs: `check.json` (from `shotfleet check ... --json`, or `<out>/check.json` after `run`) and the grid
 `index.html` next to it (`shotfleet-check/index.html` by default). Read both; do not edit the screenshots or the
-fastlane folder. `check.json` is `{"screenshots": [{"file", "src", "sha", "lang", "chars"}], "problems": [...], "notes": [...]}`.
+fastlane folder. `check.json` is `{"screenshots": [{"file", "src", "sha", "lang", "chars", "evidence"}], "problems": [...], "notes": [...]}`.
 
 ## Procedure
 

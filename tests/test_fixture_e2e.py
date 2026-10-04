@@ -216,6 +216,15 @@ class AndroidHelper(unittest.TestCase):
     def test_good_android_tree_passes(self):
         self.assertEqual(self.failed(), [])
 
+    def set_markers(self, evidence):
+        run = json.loads((self.out / "phone/run.json").read_text()); (self.out / "phone/run.json").write_text(json.dumps({**run, "hierarchy_markers": True}))
+        (self.out / "phone/check.json").write_text(json.dumps({"screenshots": [{"file": f"{lp}/01_welcome.png", "evidence": ev} for lp, ev in evidence.items()], "problems": [], "notes": []}))
+
+    def test_with_hierarchy_markers_every_screenshot_must_be_read_from_the_hierarchy(self):
+        self.set_markers({lp: "hierarchy" for lp in LOCALES}); self.assertEqual(self.failed(), [])
+        self.set_markers({**{lp: "hierarchy" for lp in LOCALES}, LOCALES[0]: "ocr"})
+        self.assertEqual(self.failed(), ["phone: every screenshot's text came from the UI hierarchy"])
+
     def test_ios_layout_is_not_an_android_run(self):
         shutil.rmtree(self.out / "phone"); make_out(self.out)
         self.assertTrue(any("a phone set" in w for w in self.failed()))

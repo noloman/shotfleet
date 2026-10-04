@@ -70,7 +70,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 
 `stdout` is only JSON; progress goes to stderr. Read `exit` first.
 
-- `check` and `run`: `{"exit", "screenshots": [{"file": "<locale>/<name>.png", "src", "sha", "lang", "chars"}], "problems": ["<locale>/<file>: <what>", ...], "notes": [...]}`. `problems` fail the check; `notes` are worth knowing and do not. `lang` is the language the screen shows (null when macOS can't read that script). `src` is relative to the report folder.
+- `check` and `run`: `{"exit", "screenshots": [{"file": "<locale>/<name>.png", "src", "sha", "lang", "chars", "evidence"}], "problems": ["<locale>/<file>: <what>", ...], "notes": [...]}`. `problems` fail the check; `notes` are worth knowing and do not. `lang` is the language the screen shows (null when macOS can't read that script). `evidence` is `"hierarchy"` when the screen's text came from the app's own UI tree (saved next to the screenshot as `<name>.texts.json`), `"ocr"` when it was read from pixels. `src` is relative to the report folder.
 - `export`: `{"exit", "exported": ["<listing folder>", ...], "skipped": ["<locale>", ...]}`. A skipped language failed a check.
 - With `exit` 2 the JSON has only `exit`.
 - With several devices (`device_types`, `devices`) `--json` carries only the last device's report: read each `<out>/<device>/check.json`.
