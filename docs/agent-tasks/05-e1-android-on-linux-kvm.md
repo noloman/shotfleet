@@ -8,7 +8,7 @@
 
 ## What is already known (2026-10-03, one hosted-runner attempt; read `docs/linux.md`, section "E1 result", once the E1 PR is merged)
 
-On a GitHub-hosted 2-vCPU runner everything up to the first flow step worked and 9 of 13 assertions passed; then Maestro could not find the localized "Next" button in any of the four languages. A sixth run with one emulator (`parallel = 1`) failed the same way, so it is not two emulators sharing 2 vCPUs. Open question: slow 2-vCPU runner or a real Linux difference (artifact of run 37138279362 holds the failing screenshot and `maestro_r*.log`; read those first). On your machine, compare: if it passes with 4+ cores it was the runner; if it fails the same way, look at the screenshot Maestro took before the failing step (`<work dir>/proj-android/out/.work/debug/`) and at `maestro.log`.
+Settled so far (read `docs/linux.md`, section "E1 result"): on a 2-core GitHub runner with KVM the fixture e2e PASSES with ONE emulator (13 of 13 assertions). The earlier "cannot find Next" failure was Android's "System UI isn't responding" dialog on top of the app (visible in the kept screenshots), fixed in `main` by hiding error dialogs, turning animations off at boot and having `check` flag such a dialog. Still open for this task: two emulators, a machine with 4+ cores, the 18-language timing, and a real app.
 
 ## Steps
 
