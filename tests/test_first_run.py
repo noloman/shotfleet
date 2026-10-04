@@ -268,5 +268,28 @@ class SdkCommandsInSentences(Tree):
         self.assertIn("avdmanager not found", msg); self.assertNotIn("with: #", msg); self.assertIn(", then run: yes | ", msg)
 
 
+class FitEmulators(unittest.TestCase):
+    """On Linux the emulator count follows cores and memory (2 cores, 7 GB: one emulator passes, two show "Process system isn't responding")."""
+    def fit(self, n, cores, gb, platform="linux"):
+        with mock.patch.object(sf.sys, "platform", platform), mock.patch.object(sf.os, "cpu_count", return_value=cores), \
+             mock.patch.object(sf, "mem_available_gb", return_value=gb), contextlib.redirect_stdout(io.StringIO()) as out:
+            return sf.fit_emulators(n), out.getvalue()
+
+    def test_a_two_core_machine_gets_one_emulator_and_is_told_why(self):
+        got, out = self.fit(2, 2, 7.1)
+        self.assertEqual(got, 1); self.assertIn("2 cores", out); self.assertIn("using 1 emulator instead of 2", out)
+
+    def test_a_big_machine_keeps_what_was_asked_for(self):
+        self.assertEqual(self.fit(4, 16, 32.0), (4, ""))
+
+    def test_memory_can_be_the_limit_and_unreadable_memory_is_no_limit(self):
+        self.assertEqual(self.fit(4, 16, 7.0)[0], 2)
+        self.assertEqual(self.fit(4, 16, None)[0], 4)
+
+    def test_one_emulator_and_other_systems_are_left_alone(self):
+        self.assertEqual(self.fit(1, 1, 1.0), (1, ""))
+        self.assertEqual(self.fit(4, 2, 4.0, platform="darwin"), (4, ""))
+
+
 if __name__ == "__main__":
     unittest.main()

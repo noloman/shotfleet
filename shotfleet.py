@@ -1325,6 +1325,23 @@ def fit_parallel(n):
         return max(1, n // 2)
     return n
 
+def mem_available_gb():
+    """Linux MemAvailable in GB, None where /proc/meminfo isn't there."""
+    try: return next(int(l.split()[1]) for l in Path("/proc/meminfo").read_text().splitlines() if l.startswith("MemAvailable:")) / 1048576
+    except (OSError, StopIteration, ValueError, IndexError): return None
+
+def fit_emulators(n):
+    """On Linux, no more emulators than the machine can run: each wants about 2 cores and 3 GB. Measured 2026-10-03 on a 2-core,
+    7 GB runner (docs/linux.md): one emulator passes the fixture, two put "Process system isn't responding" over every screenshot.
+    # ponytail: the 2 cores and 3 GB per emulator are that one data point plus the emulator's own advice, not a fit; check on a 4-core machine.
+    Not applied elsewhere: a Mac is limited by memory pressure (fit_parallel), which this does not read."""
+    if not sys.platform.startswith("linux") or n <= 1: return n
+    cores, gb = os.cpu_count() or 1, mem_available_gb()
+    fit = max(1, min(n, cores // 2, int(gb // 3) if gb is not None else n))
+    if fit < n: print(f"this machine has {cores} cores and {gb if gb is None else round(gb, 1)} GB of free memory: using {fit} "
+                      f"emulator{'s' if fit > 1 else ''} instead of {n} (each wants about 2 cores and 3 GB)")
+    return fit
+
 def overload_note(want, n):
     """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
     level = memory_pressure()
@@ -1879,7 +1896,7 @@ def android_run(cfg, path, out, only, parallel):
     if not todo:
         raise Fail(f"none of those languages are in the app. It ships: {', '.join(shipped_locales(strings))} "
                    "(write them as listed; case and region matter)")
-    n = fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo)))
+    n = fit_emulators(fit_parallel(min(parallel or cfg.get("parallel", 4), len(todo))))
     kind = ANDROID_DEVICES[cfg.get("device", "phone")]
     name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
     print(f"booting {n} emulators ({name}, {kind['size'][0]}x{kind['size'][1]})", flush=True)
