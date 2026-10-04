@@ -4,6 +4,8 @@ Owner of every item below: **Manu posts**. Claude prepared the text; nothing her
 
 Rules that apply to every file: no price in build-in-public posts before the sale is live; $29 for the first 100 buyers is the only urgency and only while the live count is true; mention the price once per post; disclose that you built it; do not ask for upvotes; do not cross-post identical text; never claim Flutter or React Native on real apps, frames, captions, store upload, or any Maestro endorsement. Every link to our own site carries `?utm_source=<channel>` (the funnel counter reads only that tag).
 
+**Links that 404 today:** the guide pages these files link to (`/fastlane-snapshot-screenshots-all-english`, `/maestro-one-flow-every-language`, `/the-button-nobody-could-reach`) exist only as drafts in `site/draft/guides/`; `/google-play-screenshots-every-language-emulators` is a planned article with no draft yet. Publish the guides (move them into `site/public/`, add them to `sitemap.xml`) before posting anything that links to them, or drop the link.
+
 ## Kit files (marketing/kit/)
 
 | File | Where it is posted | Ready when | Owner |

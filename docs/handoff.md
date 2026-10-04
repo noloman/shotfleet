@@ -4,12 +4,14 @@ Written 2026-10-03 at the end of a session that could not run anything on a devi
 done), **the steps**, **how you know it passed**, and **where to record it**. Evidence goes into `STATUS.md` (the row named) and, if a promise
 changes, into `tests/claims.json` and the README in the same commit. The rule of this repo stands: nothing is called "tested" without a run.
 
+**Each open item that a local agent can do now has its own prompt in [docs/agent-tasks/](agent-tasks/README.md)** (start a session on your Mac and say: read the file and do it).
+
 Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, then the rest.
 
 | # | Item | Needs | Why not done here |
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
-| 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` | no hardware virtualization here |
+| 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
 | 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
 | 4 | `doctor --fix` on a Mac | your Mac, a clean user | untried on macOS |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
@@ -63,7 +65,7 @@ flow versus 2.0.10. Then the same on CrossfitTracker (item 6).
 
 ## 2. E1: the Android fixture on Linux
 
-**State:** everything up to the emulator was run (build, `init`, `doctor`, the Linux `check` path); the emulator was not. The checklist is in
+**State (2026-10-03):** passed with one emulator (`SHOTFLEET_E2E_PARALLEL=1`) on a 2-core GitHub runner with KVM, 466 s run phase (PR #33, `docs/linux.md`). The default two emulators failed on 2 cores in every run (Android's "Process system isn't responding"); **what is left** is the same script with the default two emulators on a machine with 4 or more cores (real hardware, a larger runner, or a nested-virtualization cloud VM), and the 18-language real-app timing below (build CrossFit Tracker's Android debug app from current `origin/main` for it: older debug builds send Firebase events to the production property). The checklist is in
 `docs/linux.md` ("Experiment E1"). Short form, on a Linux machine with `/dev/kvm`:
 
 ```bash
@@ -147,10 +149,10 @@ matrix in `.github/workflows/ci.yml` once `actions/setup-python` offers a final 
 
 ## 9. Licence calls behind a proxy
 
-Done for the TLS part (2026-10-03), in this sandbox, which sits behind a real HTTPS-re-signing proxy: `polar_post` aimed at a harmless public URL
+Done for the TLS part (2026-10-03), in this sandbox, which sits behind a real HTTPS-re-signing proxy: `gumroad_verify` aimed at a harmless public URL
 fails with `CERTIFICATE_VERIFY_FAILED (self-signed certificate)` without `SSL_CERT_FILE` and reaches the server with it. Left: a real activation
-with a real test key once Gumroad is live (`STATUS.md` gate 5): `HTTPS_PROXY=... SSL_CERT_FILE=<proxy CA> shotfleet activate <key>`. Neither the
-Polar organisation id nor the Gumroad product id is set in the source tree, so no real licence server could be called from here.
+with a real test key once Gumroad is live (`STATUS.md` gate 5): `HTTPS_PROXY=... SSL_CERT_FILE=<proxy CA> shotfleet activate <key>`. The
+Gumroad product id is not set in the source tree, so no real licence server could be called from here.
 
 ## 10. Other frameworks
 
@@ -170,11 +172,13 @@ Polar organisation id nor the Gumroad product id is set in the source tree, so n
 
 ## 12. New from the strategy research (2026-10-03, see research/profit-plan-2026-10-03.md)
 
-- **Xcode 27 final (14 Sep) replaced Simulator.app with Device Hub.** Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
+- **Xcode 27 final replaced Simulator.app with Device Hub** (static analysis in `docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to; unproved). Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
   runtime, and record the Xcode build and iOS version in `STATUS.md` row 9 (no record says which Xcode the real runs used). Passed when 36 of 36 assertions hold; if `simctl` behaves
   differently, `shotfleet.py`'s simulator functions are where to look.
-- **Re-read Apple's screenshot specifications monthly** (it changed 8 Jul, 19 Aug, 9 Sep). Compare https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications
-  with `APPLE_SIZES` in `shotfleet.py`. The iPhone Duo sizes were added on 2026-10-03; Apple opens uploads for it "later this year", so `export` for Duo is untested.
+- **Apple's screenshot specifications change often** (8 Jul, 19 Aug, 9 Sep). The sizes are now watched by `tools/apple-specs-watch.py` (run it monthly with `tools/watch-upstream.sh`): it
+  compares every size on Apple's page with `APPLE_SIZES` and was run on the real page on 2026-10-03 (45 distinct sizes, table matches; it also found four old-device landscape sizes
+  that were missing, now added). The prose rules (count, alpha, which set is required) are not machine-read: read the page once a month. iPhone Duo sizes are known; Apple opens
+  uploads for it "later this year", so `export` for Duo is untested. `tools/watch-upstream.sh` runs this and the Maestro check together. The two GitHub workflows for them are manual-only; nothing is scheduled.
 - **Team / CI demand test and the layout check** are decided by the experiments in section 7 of the strategy note, after launch; do not build them before.
 
 ## Known small things, not blocking

@@ -1,10 +1,8 @@
 name: maestro-latest
-# Weekly: does the newest Maestro release still have everything shotfleet relies on? Red means something shotfleet needs is gone from it.
+# Manual ("Run workflow"), same as `python3 tools/latest-maestro.py` locally: does the newest Maestro release still have everything shotfleet relies on? Red means something shotfleet needs is gone from it.
 # Green means "worth a real run on a device", never "supported": MAESTRO_TESTED only changes after tools/fixture-e2e.sh passes (docs/handoff.md item 1).
 on:
-  schedule:
-    - cron: "17 6 * * 1"
-  workflow_dispatch:
+  workflow_dispatch:   # manual only: this repo's rule is local checks, no scheduled Actions; tools/watch-upstream.sh runs the same check on your machine
 
 permissions:
   contents: read
