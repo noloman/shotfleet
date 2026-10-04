@@ -2120,10 +2120,10 @@
    "**Blank:** a screenshot with nothing drawn but the status bar",
    "<strong>Blank:</strong> a screenshot with nothing drawn but the status bar"
   ],
-  "status": "partial",
-  "proof": "BlankScreenshots.test_a_flat_frame_with_a_status_bar_is_blank, BlankScreenshots.test_a_screen_with_content_is_not_blank, BlankScreenshots.test_what_it_cannot_read_is_not_called_blank, BlankScreenshots.test_a_language_with_a_blank_frame_is_named_so_it_is_captured_again. Real blank frames seen 2026-10-03 on wger (Android, first launch) and kotlinconf-app (iOS); the detector flagged the real kotlinconf image and none of the 36 other real screenshots. Left partial: the capture-again step in run is not yet shown on a device (device queue).",
+  "status": "evidence",
+  "proof": "BlankScreenshots.test_a_flat_frame_with_a_status_bar_is_blank, BlankScreenshots.test_a_screen_with_content_is_not_blank, BlankScreenshots.test_what_it_cannot_read_is_not_called_blank, BlankScreenshots.test_a_language_with_a_blank_frame_is_named_so_it_is_captured_again. Real blank frames seen 2026-10-03 on wger (Android, first launch) and kotlinconf-app (iOS); the detector flagged the real kotlinconf image and none of the 36 other real screenshots. Device, 2026-10-04 (research/frameworks.md section 16, research/real-apps-2026-10-04/): KotlinConf iOS with no wait before the first screenshot: first capture blank, 'retrying 2: de, en', still blank, both reported FAIL with the fix named, check says 'blank' and 'identical image'. The capture-again step did not heal this deterministic case (it can only help a one-off), which README says ('captures that language again once, then reports it'). Not shown on a device: a blank frame that the second capture does heal.",
   "layer": "unit",
-  "assertion": "On a device: a flow without a wait gives a blank first frame, run says 'retrying', and the second capture is not blank.",
+  "assertion": "On a device: a flow without a wait gives a blank first frame; run retries once and then reports it; check flags it.",
   "fix": ""
  },
  {
@@ -2152,7 +2152,7 @@
    "`run` warns when you ask for such a language by name"
   ],
   "status": "proven",
-  "proof": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run, ExternalOcr.test_check_of_a_run_folder_reads_the_translation_files_the_run_used.",
+  "proof": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run, ExternalOcr.test_check_of_a_run_folder_reads_the_translation_files_the_run_used. Device, 2026-10-04: 'warning ja: only 27% ...' (wger) and 'warning ar: only 26% ...' (Rocket.Chat) printed before capturing.",
   "layer": "unit",
   "assertion": "The warning names the language and its percentage; check on run.json finds the .arb files.",
   "fix": "",

@@ -1,0 +1,18 @@
+- launchApp
+- extendedWaitUntil:
+    visible: "Obytes Starter"
+    timeout: 60000
+- tapOn: "Let's Get Started.*"
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 20000
+- tapOn:
+    id: "password-input"
+- inputText: "a"
+- inputText: "b"
+- inputText: "c"
+- inputText: "d"
+- inputText: "e"
+- inputText: "f"
+- takeScreenshot: 01_pw

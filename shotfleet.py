@@ -3450,7 +3450,8 @@ def blank_screenshot(path):
 
 def blank_note(folder):
     """The flow-failed text for a language whose screenshots include blank frames, or None. A blank frame is the app's first paint coming
-    after the flow's wait; the language is captured again once, which is usually warm and fine."""
+    after the flow's wait; the language is captured again once (that heals a one-off, not an app that always paints late: Compose
+    on iOS stays blank and is then reported, so the flow has to wait)."""
     blank = [p.name for p in sorted(Path(folder).glob("*.png")) if blank_screenshot(p)]
     return f"blank screenshot(s): {', '.join(blank)} (the app had not drawn its first frame; wait for text on the screen before takeScreenshot)" if blank else None
 

@@ -119,6 +119,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `of the app's own strings are translated` | `warning <lang>: only N% ...`: you asked for a language the app only half translates, so the missing strings show the base language | translate it, or drop it from `locales`; check reports the screenshots that came out in the base language |
 | `blank screenshot(s)` | a screenshot with only a status bar: Flutter debug builds and Compose paint after the text is readable; `run` captures the language again once, and prints this if it is still blank | before `takeScreenshot` add `extendedWaitUntil: {visible: "<text on the screen>", timeout: 60000}` |
 | `blank: nothing is drawn on it yet` | the same, found by `check` on a folder | the same wait |
+| a login flow works in English but the password field stays empty in Arabic (iOS) | iOS drops Latin letters typed into a secure field while the app runs in Arabic; digits are typed | use a numeric demo password (`123456`) |
 | Maestro: `Element not found: Text matching regex` on a Flutter row | Flutter joins a row's title and detail into one label (`Title\nDetail`) | tap it as `"Title.*"` |
 | `free tier: capturing` | no licence: 2 languages captured | see licence.md |
 | `memory pressure is elevated` | shotfleet halved the simulators | close apps |

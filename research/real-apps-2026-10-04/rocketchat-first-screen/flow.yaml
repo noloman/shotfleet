@@ -1,0 +1,15 @@
+# Write this flow in English: shotfleet translates every text selector for each language.
+# Tap and assert by the text the user sees, exactly as it appears in your English strings
+# ("Next", not "next"); take a screenshot for each store image you want. No appId needed:
+# shotfleet uses each build's own id, so this one flow serves iOS and Android.
+# Tips (dialogs, collisions, scrolling): see "Tips" in the README. Maestro's commands: maestro.mobile.dev
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+# An app that draws its first frame late (a Flutter debug build, Compose) can give a blank screenshot: wait for text first.
+# - extendedWaitUntil:
+#     visible: "<a text on your first screen>"
+#     timeout: 60000
+- takeScreenshot: 01_home
+# - tapOn: "Settings"
+# - takeScreenshot: 02_settings

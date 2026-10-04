@@ -1,0 +1,52 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_privacy.png",
+   "src": "raw/de/01_privacy.png",
+   "sha": "a56c14661a1a",
+   "lang": "de",
+   "chars": 659
+  },
+  {
+   "file": "de/02_notifications.png",
+   "src": "raw/de/02_notifications.png",
+   "sha": "a1a726260152",
+   "lang": "de",
+   "chars": 959
+  },
+  {
+   "file": "de/03_info.png",
+   "src": "raw/de/03_info.png",
+   "sha": "4db77a5a09a6",
+   "lang": "de",
+   "chars": 252
+  },
+  {
+   "file": "en/01_privacy.png",
+   "src": "raw/en/01_privacy.png",
+   "sha": "a56c14661a1a",
+   "lang": "en",
+   "chars": 551
+  },
+  {
+   "file": "en/02_notifications.png",
+   "src": "raw/en/02_notifications.png",
+   "sha": "8d41a393552f",
+   "lang": "en",
+   "chars": 744
+  },
+  {
+   "file": "en/03_info.png",
+   "src": "raw/en/03_info.png",
+   "sha": "6abea89ed878",
+   "lang": "en",
+   "chars": 260
+  }
+ ],
+ "problems": [
+  "de/01_privacy.png: blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot",
+  "en/01_privacy.png: blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot",
+  "identical image in 2 languages: de/01_privacy.png, en/01_privacy.png"
+ ],
+ "notes": []
+}

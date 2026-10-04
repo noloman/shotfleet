@@ -239,6 +239,26 @@ Flows (3 screenshots each): wger login, the Advanced sheet, its Self-hosted opti
 
 **Not run:** bare React Native, other Flutter and Expo apps, Capacitor, MAUI, Unity, Maestro 2.11, iPad and tablet sets, the full 37 (wger) languages, a real Flutter *release* build on Android.
 
+## 16. Device window, 2026-10-04 (13:21-14:05): checking the fixes of section 15
+
+Same Mac (Apple silicon, Xcode 27, iOS 26.4 simulator, Maestro 2.0.10), run inside the shared device queue. Evidence: `research/real-apps-2026-10-04/` (logs, `check.json`, `run.json`, resized screenshots; `window.log` has load, free memory and disk before each step).
+
+**Correction to section 15.** In the last KotlinConf iOS run of 2026-10-03 the English first screenshot (`01_privacy`) was a blank white frame and `check` passed it; the evidence image in `research/real-apps-2026-10-03/kotlinconf-ios/en-01_privacy.png` is that blank frame, and "6/6, 0 problems" for KotlinConf iOS was wrong for that image. `blank_screenshot()` flags it. A clean pair needs a longer wait than the 3 s pause used then (see below).
+
+| Check | Result |
+|---|---|
+| Blank frame found by `check` and `run` (KotlinConf iOS, flow without any wait before the first screenshot) | The first capture of both languages was blank; `run` printed `retrying 2: de, en`; the second capture was blank again, so both ended `FAIL ... blank screenshot(s): 01_privacy.png (the app had not drawn its first frame ...)` and `check` said `blank: nothing is drawn on it yet` plus `identical image in 2 languages`. So the capture-again step does **not** heal a deterministic blank (Compose paints after the text is readable every time); it only helps a transient one. The fix is in the flow: wait for text, then pause. Before this change that run would have passed `run` with the white frames. |
+| Same flow on KotlinConf Android | 2/2 languages ok, 6 screenshots, `check` 0 problems, 105 s, so Android does not need the pause. |
+| Flutter **release** APK on Android (wger, de + ja) | 2/2 languages ok in 69 s on 1 emulator; German, no DEBUG banner, first screenshot not blank; `check` flags ja like the debug build (27% translated). The `init` hint "on Android use flutter build apk --release" is right. Build: a release APK needs a signing key (wger reads `fastlane/metadata/envfiles/key.properties`); a throwaway `keytool -genkeypair` key works for a local build. |
+| Warning before the run for a half-translated language | Printed for real: `warning ja: only 27% of the app's own strings are translated, so the ja screenshots will mostly show en` (wger) and `warning ar: only 26% ...` (Rocket.Chat). |
+| wger Android, all 19 shipped languages | 19/19 captured, 3 screenshots each, **822 s on 1 emulator** (memory pressure cut 2 to 1; the first ~13 min ran under a load of 135 to 150 from another session's emulator, so this is not a clean timing). `check`: 60 screenshots in 20 languages (a stale `ja` folder from the earlier run was still in the output folder), 20 problems, all of the kind "shows en strings": **ca, it, nl, pl, pt, pt-PT, ro and zh-Hant show the English text on the Advanced screens** although they pass the 50% rule, because the Advanced sheet is newer than their translations. The 50% rule counts the whole app, not the screens in the flow; `check` is what catches it. |
+| wger iOS, all 19 languages | **Not run**: the simulator never finished booting (`simctl bootstatus did not answer within 900 s`), under the same load. To repeat. |
+| Arabic password typing on iOS (Expo app) | Letters typed into a secure field are dropped when the app runs in Arabic: `abcdef` typed nothing, six single letters nothing, `abc123` typed only `123` (3 dots), and earlier `123456` typed all six. Name and e-mail fields take letters. Not shotfleet's doing; documented in README Tips and `troubleshooting.md`. |
+| Rocket.Chat (bare React Native, 67 locale files) | Builds: Android release APK 214 MB (Gradle, 3 attempts' worth of setup: needs `-PKEYSTORE...` for the release signing), iOS Release needs `-destination 'generic/platform=iOS Simulator'` instead of `-sdk iphonesimulator` (its Watch app target fails with "no such module WatchKit"), `ARCHS=arm64`, `IPHONEOS_DEPLOYMENT_TARGET=16.4`; pods 11 min. `init` after the fix: React Native, `app/i18n/locales/*.json`, 25 languages, 16 shipped. First screens (en, de, ar on both platforms, 3/3): only the splash (red, logo) was captured because the starter flow's 5 s wait is shorter than the Release JS boot; the accessibility tree held only the app name. `ar` is 26% translated (warning printed). A real flow is still to be written. |
+| First try of the KotlinConf step | `no simulator app at .../DerivedData/...`: another session had cleaned DerivedData; the app was rebuilt into the scratch folder. |
+
+**Code changes after this window:** none beyond the README/troubleshooting lines; the blank check, the retry, the half-translated warning and the `init` fixes behaved as designed.
+
 ## Six-line summary
 
 1. Works today: Kotlin/Compose Multiplatform (native readers), Flutter (ARB, real wger files read fine) and RN/Expo (i18next JSON, Lingui `.po`) with Release builds, MAUI via `.resx`, NativeScript via native files (probable).
