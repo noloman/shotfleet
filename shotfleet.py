@@ -1350,6 +1350,18 @@ def overload_note(want, n):
             + ", and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer."
             + " Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>\n")
 
+def flow_parse_note(out):
+    """When Maestro could not read a flow, say so: the retry would fail the same way within seconds, and a memory hint would send people
+    to close apps while the YAML is what is wrong. "" when no log says 'Parsing Failed'."""
+    for log in sorted(Path(out).glob("maestro*.log")):
+        try: text = log.read_text(errors="replace")
+        except OSError: continue
+        if "Parsing Failed" in text:
+            m = re.search(r"Parsing Failed\s+(\S+\.ya?ml:\d+)", text)
+            return (f"note: Maestro could not read a flow ({m.group(1) if m else 'see the log'}: 'Parsing Failed', {log}). "
+                    "Fix that YAML; this is not a slow-simulator problem.\n")
+    return ""
+
 # ---------- run ----------
 
 OUR_SIMS = set()  # UDIDs of shotfleet's simulators, so cleanup never touches anyone else's
@@ -1586,7 +1598,7 @@ def ios_run_inner(cfg, path, only, parallel):
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
         results.append({"lproj": lp, **r_})
-    if not all(r["ok"] for r in results): print(overload_note(want, n), end="")
+    if not all(r["ok"] for r in results): print(flow_parse_note(out) or overload_note(want, n), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
@@ -2839,6 +2851,11 @@ def run_fix_plan(plan, yes=False, stdin_is_tty=None):
     print("done; run shotfleet doctor again to see where you stand")
     return 0
 
+def simctl_works():
+    """`xcrun simctl help` answers. It can hang for minutes while other sessions load CoreSimulator (seen 2026-10-03), so it is timed."""
+    try: return sh(["xcrun", "simctl", "help"], timeout=120).returncode == 0
+    except subprocess.TimeoutExpired: return False
+
 def ios_runtimes():
     """Names of the iOS Simulator runtimes Xcode has (['iOS 26.4']), [] when it has none, None when xcrun can't say."""
     try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
@@ -2866,7 +2883,7 @@ def cmd_doctor(fix=False, yes=False):
                                        if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
-        ("xcrun simctl", sh(["xcrun", "simctl", "help"]).returncode == 0 if have("xcrun") else False,
+        ("xcrun simctl", simctl_works() if have("xcrun") else False,
          "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
         *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
             "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]

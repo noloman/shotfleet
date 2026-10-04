@@ -115,7 +115,7 @@
    "about 9 minutes on iOS and 15 on Android"
   ],
   "status": "evidence",
-  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it.",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced.",
   "layer": "fixture",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
   "fix": ""
@@ -2107,9 +2107,9 @@
    "`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first"
   ],
   "status": "partial",
-  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Never run on a Mac.",
+  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Then run on a Mac (Apple silicon, macOS 27, 2026-10-03) in throwaway HOME/SHOTFLEET_HOME/ANDROID_HOME with this Mac's Java and Android tools hidden: without Homebrew, all 5 steps (Maestro 2.0.10, Temurin 21.0.12.1 JRE at jre/Contents/Home, Google's mac_arm64 command-line tools, licences, platform-tools/emulator/build-tools/arm64 image) ran and doctor reported Maestro, Java, iOS and Android ready; with Homebrew, `brew install --cask android-commandlinetools` plus licences and packages ran (635 s) and doctor reported Android ready. Both passed; the claim stays partial because each Mac run had Maestro or the JRE from the first run reused for the second, and no clean macOS user or outside machine has run it.",
   "layer": "unit",
-  "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok.",
+  "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok. (Run on a Mac in a throwaway environment, both Android branches, 2026-10-03; not on a separate clean user.)",
   "fix": ""
  }
 ]

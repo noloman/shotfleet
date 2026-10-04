@@ -22,12 +22,8 @@ name: "iOS Store Screenshots"
       - waitForAnimationToEnd:
           timeout: 2000
 
-# ── Onboarding (7 pages, redesigned in 1.5.x) ─────
-# 3 intro pages, Experience Level, Training Goals, Equipment: defaults are fine, so Next through them
+# ── Onboarding (shorter: Welcome, Timers, Experience level, first action) ─────
 - assertVisible: "Your Training. Your Data."
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 3000
 - tapOn: "Next"
 - waitForAnimationToEnd:
     timeout: 3000
@@ -42,19 +38,7 @@ name: "iOS Store Screenshots"
       text: "3+ years of dedicated training"
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "Training Goals"
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 3000
-- assertVisible: "Available Equipment"
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 3000
-- assertVisible: "You're All Set!"
-- tapOn: "Start Training"
-- waitForAnimationToEnd:
-    timeout: 3000
-- assertVisible: "One quick win before you start"
+- assertVisible: "Pick your first step"
 - tapOn: "I'll explore on my own"
 - waitForAnimationToEnd:
     timeout: 3000

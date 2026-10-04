@@ -6,16 +6,14 @@ changes, into `tests/claims.json` and the README in the same commit. The rule of
 
 **Each open item that a local agent can do now has its own prompt in [docs/agent-tasks/](agent-tasks/README.md)** (start a session on your Mac and say: read the file and do it).
 
-Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, then the rest.
+Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, then the rest.
 
 | # | Item | Needs | Why not done here |
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
 | 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
-| 4 | `doctor --fix` on a Mac | your Mac, a clean user | untried on macOS |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
-| 6 | Real-app regression (CrossfitTracker, Remoti) | your Mac and the apps | not on this machine |
 | 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
@@ -104,22 +102,6 @@ write a 3-step English flow, `shotfleet run --locales de,ja`, open `out/index.ht
 `check`. **Record** in `STATUS.md` row C1 and, only for what passed, in the README ("Flutter and React Native work from your translation files"
 currently says "not yet run on a real Flutter or React Native app"; claims C035, C121).
 
-## 4. `doctor --fix` on a Mac
-
-**State:** the Linux path was run for real (Maestro, Google's tools, platform-tools, emulator, image; the Java download separately). On macOS:
-the Temurin JRE tarball unpacks to `jdk-21.x.y+z-jre/Contents/Home/...`; `install_jre` renames that folder to `~/.shotfleet/jre`, and
-`find_java` looks at `~/.shotfleet/jre/Contents/Home`. Unverified. So is the `brew install --cask android-commandlinetools` branch, and the
-Google archive pick for `mac_arm64`.
-
-**Steps:** a clean macOS user (or `SHOTFLEET_HOME=$(mktemp -d)` plus `ANDROID_HOME=$(mktemp -d)` and a `PATH` without Java and Maestro):
-
-```bash
-python3 shotfleet.py doctor --fix --yes && python3 shotfleet.py doctor
-```
-
-**Passed when** `doctor` reports Maestro and Java as ok afterwards. **Record** in claim C126 and `STATUS.md` row D1. This is also the real
-test of `STATUS.md` gate 7 (clean-Mac cold install) once the installer exists.
-
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
 **State: done 2026-10-04, with one limit.** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not) and it is the adb serial (`emulator-5702`); the German
@@ -131,13 +113,6 @@ the other; two emulators at once and Arabic are not run. The wording was updated
 the Japanese one the Japanese value (the run prints `no row for device '...'` if the value is not a serial shotfleet knows). **If it passes:**
 remove the "Maestro 2.0.10 doesn't define it" wording in `README.md` (Inputs), `site/public/docs.html`, `skill/shotfleet/references/config.md`
 and the note printed by `shotfleet.py` (search for `doesn't define it`), and drop the version caveat from `tests/test_limits_c2_c3.py`.
-
-## 6. Real-app regression
-
-`STATUS.md` plan A2: CrossfitTracker iOS (18 languages), Android phone and tablet, Remoti iPhone + iPad, on Maestro 2.0.10, after the config
-rewrite, `[inputs]`, the iOS retry and `init` discovery commits, and now after this session's changes (the `plutil`/`PlistBuddy` replacements
-only run when those tools are absent, so macOS behaviour should be unchanged, but a real run is the proof). Needs a quiet Mac and 30+ GB free.
-**Passed when** 0 problems and the timings are in the README.
 
 ## 7. Android on-screen text from the UI tree (B2)
 
@@ -190,3 +165,4 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 - `tools/pretend-mac.py <test module>` runs a test module as if on an Apple-silicon Mac (platform and CPU only). It reproduced both macOS-only failures of the
   `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
+- A quiet-Mac re-measure of the README timings (iOS about 9 min, Android about 15, 4 devices) is still open: the 2026-10-04 regression passed on correctness but ran on a swapping Mac with 2 devices (`STATUS.md` row 10). Do it once with nothing else running, `parallel = 4`, and only then change the README or claim C007.
