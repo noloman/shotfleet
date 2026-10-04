@@ -28,7 +28,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 **State: done 2026-10-04.** The first device run on 2.11.0 failed (it rejects absolute `takeScreenshot` paths, `research/maestro-2-11.md`); shotfleet now
 names screenshots relative to Maestro's working directory and moves them into `raw/<locale>/` afterwards (`collect_shots`). The fixture e2e then
 passed on 2.11.0 (iOS 36/36, Android 29/29) and on 2.0.10 (36/36, 29/29). `MAESTRO_TESTED` is `("2.0.10", "2.11.0")` and `doctor --fix` installs
-2.11.0. Still open from this item: CrossfitTracker on 2.11.0 (item 6), per-flow timings on a quiet Mac (the runs were on a loaded one), and the
+2.11.0. CrossfitTracker on 2.11.0 was run on 2026-10-04 (all three targets 19/19, 0 problems; `research/maestro-2-11.md`). Still open from this item: per-flow timings on a quiet Mac (the runs were on a loaded one), why 9 iOS languages needed a retry at 4 simulators (the last bullet of this file), and the
 Android `[inputs]` check (item 5). The steps below are what was run, for repeating it on a future version.
 
 **Steps, on your Mac, no other session using simulators:**
@@ -166,3 +166,4 @@ Gumroad product id is not set in the source tree, so no real licence server coul
   `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
 - A quiet-Mac re-measure of the README timings (iOS about 9 min, Android about 15, 4 devices) is still open: the 2026-10-04 regression passed on correctness but ran on a swapping Mac with 2 devices (`STATUS.md` row 10). Do it once with nothing else running, `parallel = 4`, and only then change the README or claim C007.
+- **iOS driver start at 4 simulators on Maestro 2.11.0:** the CrossfitTracker run of 2026-10-04 passed 19/19 but 9 of 19 languages (18 in an earlier run) needed shotfleet's retry because two of four parallel simulators did not get their XCTest driver ready within 240 s (`research/maestro-2-11.md`, last section). Open: run the same on Maestro 2.0.10 with `parallel = 4` to see whether this is new; if it is, try a longer `MAESTRO_DRIVER_STARTUP_TIMEOUT` or staggered driver starts.

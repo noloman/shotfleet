@@ -148,7 +148,7 @@ Unit tests: 5 new, the full suite passes. The Mac was shared with other sessions
 **The other watch items, now answered.** `Selected device ... using port` is written to `maestro.log` (seen in every debug log). Sharded parallel iOS
 runs on 2.11.0 worked: 36/36 on the iOS fixture, which runs four languages sharded over the simulator pool. No `launchApp`/`clearState` failure.
 
-**Not done.** CrossfitTracker/Remoti on 2.11.0 (`docs/handoff.md` item 6).
+**Not done.** Remoti on 2.11.0. (CrossfitTracker: see the last section.)
 
 ## Android `[inputs.<locale>]` on 2.11.0, 2026-10-04: works (one emulator)
 
@@ -162,3 +162,31 @@ on Maestro 2.11.0 (device lock held; load 94, free memory 47%, memory pressure l
 German and Japanese ran one after the other on the same emulator. That proves the variable's value and the typing; it does not exercise two emulators
 at once (where Maestro hands the flow to either emulator and the per-round map picks the row by serial; that map is unit-tested and the same
 log-based mapping is what the fixture e2e relies on for screenshots). Arabic typing was not tried. The user-facing wording says exactly this.
+
+## CrossfitTracker on 2.11.0, 2026-10-04 (afternoon): passes on all three targets
+
+The same app as the 2.0.10 regression (CrossfitTracker `55ad0975` from `origin/main`, after PR #178 so a debug build sends no analytics; version 1.6.2, build 51), the same
+flows (`examples/crossfittracker/ios.yaml` and `android.yaml`, identical to what the 2.0.10 run used) and the same configs (iPhone 17 Pro Max 6.9", `shotfleet_android` phone and tablet, 2 emulators),
+shotfleet from `main` after PR #35, Maestro 2.11.0 first on PATH, iOS 26.4 simulators, the device lock held. The apps were rebuilt in a scratch copy of that commit
+(`git archive`; the CrossfitTracker repo was not touched). Builds: Android `assembleDebug` from the Gradle cache; iOS needed `xcodebuild` **without** `-sdk iphonesimulator` (with it the Watch complication
+target is compiled for iOS and fails on `accessoryCorner`) and a placeholder `iosApp/Secrets.swift` from the tracked `.example` (no real keys).
+
+| Target | Result | Capture time | Devices | Retries | Load / free memory / pressure at start |
+|---|---|---|---|---|---|
+| iOS, first run | 19/19, 76 screenshots, 0 problems | 1334 s (2047 s with boot and checks) | 3 simulators (the 4th stopped answering at boot: `simctl terminate did not answer within 300 s`) | 18 of 19 | 162 / 64% / level 1; another session's release-gate e2e overlapped, load up to 700 |
+| iOS, clean rerun | 19/19, 76 screenshots, 0 problems | 826 s (1031 s total) | 4 simulators | 9 of 19 (de, en, fr, nb, nl, pl, pt, sv, zh-Hans) | 10 / 64% / level 1 |
+| Android phone | 19/19, 76 screenshots, 0 problems | 475 s | 2 emulators | none | 513 / 62% / level 1 |
+| Android tablet | 19/19, 76 screenshots, 0 problems | 561 s | 2 emulators | none | (same run) |
+
+For comparison the 2.0.10 run of the same day took 772 s on iOS (2 simulators), 912 s (phone) and 1078 s (tablet) on a swapping Mac. None of these is a clean timing comparison (load, device counts and retries differ).
+
+**The iOS retries.** In the clean rerun, attempt 1 reported results from only two of the four shards (shard 2 and 3: 10 languages passed). The other two shards reported nothing, and the log ends with
+`iOS driver not ready in time, consider increasing timeout by configuring MAESTRO_DRIVER_STARTUP_TIMEOUT env variable` (`xcuitest.installer.LocalXCTestInstaller$IOSDriverTimeoutException`, printed once), although
+shotfleet sets `MAESTRO_DRIVER_STARTUP_TIMEOUT=240000`. shotfleet retried their 9 languages and all passed. So on 2.11.0 the drivers of two of the four simulators starting at the same time apparently did not
+become ready within 240 s even at low load (10); which of the two shards threw the exception is not visible in the log. shotfleet's code comment already says four drivers starting at once are slow (written for 2.0.10). **Not measured:** whether 2.0.10 behaves the same at four simulators (the 2.0.10 runs of
+2026-10-04 used 2 simulators, the README's 2026-10-01 run used 4; whether it needed retries is not recorded). If it is new in 2.11.0, a longer timeout or staggered driver starts would be the thing to try.
+
+**What was lost.** The first iOS run's artifacts (screenshots, `run.json`, attempt-1 Maestro log) were deleted by the scratch runner script itself when the Android part started; only the console log survived,
+which is why the iOS run was repeated. The first run's cause for its 18 retries (a hung simulator at boot, load 160 to 700) can therefore not be separated from a driver-start timeout like the one seen in the clean rerun.
+
+**Not done.** Remoti on 2.11.0.
