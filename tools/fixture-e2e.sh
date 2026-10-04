@@ -213,12 +213,14 @@ step android-init 0 sf init "$APK" --dir "$WORK/proj-android"
 [ -f "$WORK/proj-android/shotfleet.toml" ] && [ -f "$WORK/proj-android/flow.yaml" ] && ok "android init wrote shotfleet.toml and flow.yaml" || { bad "android init wrote no config or flow"; finish; }
 APKLINE=$(grep '^apk = ' "$WORK/proj-android/shotfleet.toml" || true)
 [ -n "$APKLINE" ] || { bad "android init's config has no apk line"; finish; }
-# parallel = 2: two emulators, two rounds; a busy Mac boots two much more reliably than four
+# parallel = 2: two emulators, two rounds; a busy Mac boots two much more reliably than four. SHOTFLEET_E2E_PARALLEL=1 is for a machine with
+# 2 CPU cores (a GitHub-hosted runner), where two software-rendered emulators plus Maestro may be too slow for the flow's waits (docs/linux.md, E1)
+PAR=${SHOTFLEET_E2E_PARALLEL:-2}; case "$PAR" in 1|2) ;; *) echo "fixture-e2e: SHOTFLEET_E2E_PARALLEL must be 1 or 2" >&2; exit 2 ;; esac
 { printf '[android]\n%s\n' "$APKLINE"; cat <<'TOML'
 devices = ["phone"]
 locales = ["de", "ja", "ar", "tr"]
-parallel = 2
 TOML
+printf 'parallel = %s\n' "$PAR"
 hooks_toml; } > "$WORK/proj-android/shotfleet.toml.new" && mv "$WORK/proj-android/shotfleet.toml.new" "$WORK/proj-android/shotfleet.toml"
 flow_yaml "$WORK/proj-android"
 

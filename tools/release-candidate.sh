@@ -5,8 +5,7 @@
 #   SHOTFLEET_RC=1 tools/release-candidate.sh [--no-sign] [--keep] [--reuse WORKDIR]
 #
 # It builds with PyInstaller (hundreds of MB, several minutes, `pip install` needs the network), so it refuses to run without
-# SHOTFLEET_RC=1. Nothing is deployed, pushed, uploaded or notarized: no `notarytool`, no Apple submission, no real Gumroad or
-# Polar call. The licence is tested against a local fake server (the Python at the end of this file); the build gets a TEST
+# SHOTFLEET_RC=1. Nothing is deployed, pushed, uploaded or notarized: no `notarytool`, no Apple submission, no real Gumroad call. The licence is tested against a local fake server (the Python at the end of this file); the build gets a TEST
 # GUMROAD_PRODUCT_ID in a temp COPY of shotfleet.py (the repo file is never edited) so the licence gate is ON. No simulator boots.
 #   --no-sign        skip signing even when a Developer ID Application identity is in the keychain
 #   --keep           keep the work dir (it is also kept when a check fails); --reuse WORKDIR runs the checks on a kept build

@@ -213,35 +213,11 @@ class Versions(unittest.TestCase):
             self.assertIsNone(sf.latest_release())  # silent when offline
 
 
-class PolarKeyStatus(unittest.TestCase):
-    """A revoked, disabled or refunded key stops working at the next weekly check (Polar answers 404 for those; a body whose
-    status isn't "granted" is refused too). Verified against Polar's documented answers, not against Polar itself."""
-    def check(self, answer):
-        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "LICENCE_FILE", Path(d) / "l.json"), \
-             mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "polar_post", return_value=answer):
-            sf.LICENCE_FILE.write_text(json.dumps({"key": "SHOTFLEET-X", "store": "polar", "activation": "a", "checked": time.time() - 8 * 86400}))
-            sf.require_licence()
-
-    def test_granted_and_a_body_without_status_pass(self):
-        self.check((200, {"status": "granted"})); self.check((200, {}))
-
-    def test_revoked_key_is_refused(self):
-        with self.assertRaisesRegex(sf.NoLicence, "no longer valid"): self.check((404, {"detail": "Resource not found"}))
-
-    def test_a_200_whose_status_is_not_granted_is_refused(self):
-        with self.assertRaisesRegex(sf.NoLicence, "status revoked"): self.check((200, {"status": "revoked"}))
-
-    def test_ci_key_is_held_to_the_same_rule(self):
-        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "SHOTFLEET-X"}), \
-             mock.patch.object(sf, "polar_post", return_value=(200, {"status": "disabled"})):
-            with self.assertRaises(sf.NoLicence): sf.require_licence()
-
-
 class NothingIsUploaded(unittest.TestCase):
     def test_the_program_only_names_the_servers_it_talks_to(self):
         hosts = set(re.findall(r"https?://([A-Za-z0-9.-]+)", SOURCE))
         allowed = {"shotfleet.com",  # install hint, /download/VERSION
-                   "api.polar.sh", "api.gumroad.com", "api.lemonsqueezy.com",  # licence checks
+                   "api.gumroad.com",  # licence checks
                    "127.0.0.1",  # local test servers
                    "get.maestro.mobile.dev",  # text of an install hint
                    "developer.android.com",  # text of an install hint (Linux: where the Android command-line tools come from)

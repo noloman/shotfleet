@@ -1,4 +1,6 @@
-# Launch post drafts
+# Launch post drafts (superseded)
+
+> **Superseded by `marketing/launch-posts-v2.md`.** The price in this file ($79, $49 for the first 100 on the list) is the old plan. Current price: $49 once, $29 for the first 100 buyers. Do not post from this file.
 
 Post these yourself. The links point at the live page, which already records which post each signup came from
 (add ?utm_source=reddit, ?utm_source=ih, ?utm_source=x … to the link in each post to make that exact).

@@ -113,7 +113,7 @@ class MaestroVersion(Fakes):
         return err.getvalue()
 
     def test_run_prints_the_note_once_to_stderr_only_when_the_version_differs(self):
-        err = self.run_note("echo 2.11.0")
+        err = self.run_note("echo 2.5.0")
         self.assertEqual(err.count("not the version shotfleet was tested with"), 1, err)
         self.assertIn("(2.0.10)", err); self.assertIn("may work", err)
         self.assertEqual(self.run_note("echo 2.0.10"), "")
@@ -180,3 +180,18 @@ class Simctl(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_run_refuses_a_maestro_that_rejects_every_screenshot_path_and_names_the_fix(self):
+        self.maestro("echo 2.11.0")
+        args = type("A", (), {"cmd": "run", "config": "x.toml", "locales": None, "parallel": None, "platform": None, "no_hooks": False})()
+        err = io.StringIO()
+        with mock.patch.dict(os.environ, {"PATH": f"{self.bin}:{os.environ['PATH']}"}), mock.patch.object(sf, "java_env", return_value={}), \
+             mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", return_value=0) as run, contextlib.redirect_stderr(err):
+            code = sf.main_dispatch(args)
+        self.assertEqual(code, 2); run.assert_not_called()
+        self.assertIn("shotfleet doctor --fix", err.getvalue()); self.assertIn("2.11.0", err.getvalue())
+
+    def test_only_versions_from_2_11_are_blocked(self):
+        for v in ("2.0.10", "2.7.0", "2.10.9", None, "garbage"): self.assertIsNone(sf.maestro_blocked(v), v)
+        for v in ("2.11.0", "2.12.1", "3.0.0"): self.assertIn("doctor --fix", sf.maestro_blocked(v), v)
+
