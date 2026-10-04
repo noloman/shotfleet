@@ -38,7 +38,7 @@ Single source of truth for "what is left to have a sellable project". Evidence a
 | R3 | The release was never published or installed from the real URL; Gatekeeper behaviour of a bare folder tarball not re-proven | Gate 6; live `/download/VERSION` 404 | Release candidate, `spctl`, quarantined install on a clean user, then smoke script (`tools/golive/smoke.sh`) |
 | R4 | A buyer installs Maestro 2.11 while every run used 2.0.10 | Gate 8; setup-friction.md, limits-text.md | Pin and show the tested version; warn outside it |
 | R5 | First-run friction (Java 17+, Debug simulator build, API 33+ AVD, silent text-recognition compile) causes refunds; time to first screenshot unmeasured | Gate 7; cold-test-2.md, setup-friction.md | Cold test 3; `doctor` already checks Java and says what is next |
-| R6 | Words ahead of proof: 48 of 126 claims not green (was 74 of 118); Flutter/RN/MAUI never run; the legal text now names Gumroad (still to re-read after the tax answer) | Gate 11; claims-audit.md | Keep the guard tests; reword or prove; update legal text with the migration |
+| R6 | Words ahead of proof: 46 of 126 claims not green (was 74 of 118); Flutter/RN/MAUI never run; the legal text now names Gumroad (still to re-read after the tax answer) | Gate 11; claims-audit.md | Keep the guard tests; reword or prove; update legal text with the migration |
 | R7 | Much code changed since the last real device run and there is no automated end-to-end run | Gates 9, 10; git log 10-02 | Fixture e2e script first, then re-run real apps |
 | R8 | No demand data, one person for support and tax, dev Mac nearly full again | pricing-2026-10.md; gate 16; waitlist last known 0 signups (not re-read today: needs the KV) | Decision gates G1-G5 in research/roadmap-2026-10.md after day 0; log support minutes; keep disk free |
 
@@ -75,7 +75,7 @@ Rules: local checks are the gate (no GitHub Actions: memory `run-checks-locally-
 | F. Sell | F3 Release rebuilt from final main (tarball + package), go-live, `tools/golive/smoke.sh` | F1, F2, Manu approves go | /download/VERSION answers 200; smoke ok |
 | F. Sell | F4 Clean-Mac cold install and 2-3 outside developers; measured time to first screenshot into README | a clean macOS user, testers (Manu) | median written in README |
 | F. Sell | F5 Tax and registration question | Manu | answer recorded; terms and privacy match |
-| G. Proof | G1 Claims to green (48 of 126 not proven, was 74 of 118), README and site reworded where proof is impossible | A to F | claims table counts |
+| G. Proof | G1 Claims to green (46 of 126 not proven, was 74 of 118), README and site reworded where proof is impossible | A to F | claims table counts |
 
 Build order for code (shared `shotfleet.py` with the core-product session, who owns capture and check internals): this session owns licence, packaging, site, release, experiments and validation runs; code for C2, C3, D1 goes through small PRs after a merge of main.
 
