@@ -16,8 +16,8 @@ SESSION = Path(sys.argv[-1] if len(sys.argv) > 1 and not sys.argv[-1].startswith
                Path.home() / "Developer/shotfleet-rc-build/demo-video/session")
 PROGRESS = SESSION.parent / "progress.log"
 LOCK, QUIET, GATE = Path("/tmp/shotfleet-devices.lock"), "/tmp/shotfleet-quiet-check.sh", Path("/tmp/shotfleet-rc-gate-done")
-TAPES = [("tapes/c3-run-ios.tape", 40 * 60), ("tapes/c4-run-android.tape", 30 * 60)]   # hard kill limit per step
-WAIT_H, FREE_FOR_S, EST, HARD = 8, 180, 35, 75
+TAPES = [("tapes/c3-run-ios.tape", 85 * 60), ("tapes/c4-run-android.tape", 45 * 60)]   # hard kill limit per step
+WAIT_H, FREE_FOR_S, EST, HARD = 10, 180, 60, 135
 POOLS = ("shotfleet-iphone-17-pro-max-", "shotfleet-ipad-pro-13-inch-m5")
 ADB = Path.home() / "Library/Android/sdk/platform-tools/adb"
 
@@ -55,7 +55,7 @@ def run_tape(tape, limit):
         time.sleep(20)
         for pid in our_shotfleet_pids(): sh("kill", "-KILL", pid)
         os.killpg(p.pid, signal.SIGKILL); p.wait(); rc = -9
-    log(f"end {tape} rc={rc} after {time.time() - t0:.0f} s")
+    log(f"end {tape} rc={rc} after {time.time() - t0:.0f} s; mp4 {'written' if (SESSION / 'rec' / (Path(tape).stem + '.mp4')).is_file() else 'MISSING'}")
     return rc
 
 def child():

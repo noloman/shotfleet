@@ -6,5 +6,5 @@ Sleep 600ms
 Type "shotfleet run --platform android"
 Sleep 400ms
 Enter
-Wait@30m /\$\s*$/
+Wait@40m /\$\s*$/
 Sleep 5s

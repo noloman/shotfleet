@@ -11,7 +11,7 @@ Sleep 400ms
 Enter
 Wait@180s /\$\s*$/
 Sleep 1s
-Type "head -16 check.json"
+Type "python3 -m json.tool check.json | head -18"
 Sleep 400ms
 Enter
 Sleep 7s
