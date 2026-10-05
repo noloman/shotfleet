@@ -4168,13 +4168,15 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
      "folders. It never changes a screenshot; it only writes its report (check.json, index.html) to the report folder "
      "(default: ./shotfleet-check in the server's working folder, or the run's own folder for shotfleet output). Takes seconds to a few minutes "
-     "(text recognition of every screenshot). Returns the report as JSON (problems, notes, screenshots).",
+     "(text recognition of every screenshot). Returns a short JSON summary: counts, the first problem and note lines, and "
+     "the path of the full check.json. Pass full: true to get the whole report (one entry per screenshot) instead.",
      "annotations": {"readOnlyHint": True, "openWorldHint": False},
      "inputSchema": {"type": "object", "required": ["folder"], "properties": {
          "folder": {"type": "string", "description": "folder with the screenshots"},
          "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
          "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"},
-         "report": {"type": "string", "description": "where to write check.json and index.html (default: ./shotfleet-check)"}}}},
+         "report": {"type": "string", "description": "where to write check.json and index.html (default: ./shotfleet-check)"},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}}}},
     {"name": "doctor", "title": "Check the setup",
      "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet, and say what is missing. "
      "Changes nothing (it never installs anything over MCP). Asks shotfleet.com once for the latest version. Takes seconds.",
@@ -4184,12 +4186,29 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
      "Boots iOS simulators or Android emulators, installs the app on them and replaces the screenshots and report "
      "in the config's output folder. Takes several minutes, and can take an hour or more for many languages and screens. "
-     "Without a licence it captures 2 languages.",
+     "Without a licence it captures 2 languages. Returns the same short summary as check (full: true for the whole report).",
      "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
      "inputSchema": {"type": "object", "required": ["config"], "properties": {
          "config": {"type": "string", "description": "path to shotfleet.toml"},
-         "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"}}}},
+         "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}}}},
 ]
+
+MCP_LINES, MCP_LINE_CHARS = 100, 300  # a summary keeps this many problem and note lines, each cut to this length
+
+def mcp_summary(code):
+    """The default reply: counts, the first problem and note lines, and where the full check.json files are.
+    The whole report is about 150 characters per screenshot, so 40 languages x 10 screens would pass the 50,000
+    characters at which Claude Code moves a tool result to a file."""
+    rep = reports_json()
+    shots, problems, notes = rep.get("screenshots", []), rep.get("problems", []), rep.get("notes", [])
+    cut = lambda lines: [l[:MCP_LINE_CHARS] for l in lines[:MCP_LINES]]
+    out = {"exit": code, "screenshots": len(shots), "languages": len({s.get("file", "").split("/")[0] for s in shots}),
+           "problems_total": len(problems), "problems": cut(problems), "notes_total": len(notes), "notes": cut(notes),
+           "reports": [str(f.resolve()) for f in REPORTS if f.is_file()]}
+    if len(problems) > MCP_LINES or len(notes) > MCP_LINES:
+        out["more"] = f"only the first {MCP_LINES} lines are here; the report files have all of them (or call again with full: true)"
+    return out
 
 def mcp_call(name, args):
     """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
@@ -4208,8 +4227,8 @@ def mcp_call(name, args):
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
         return f"{msg}\n\n{log.getvalue()[-2000:]}", True
-    report = reports_json() if name in ("check", "run") else None
-    text = json.dumps({"exit": code, **report}, ensure_ascii=False) if report else log.getvalue()
+    if name not in ("check", "run") or not any(f.is_file() for f in REPORTS): return log.getvalue(), False
+    text = json.dumps({"exit": code, **reports_json()} if args.get("full") else mcp_summary(code), ensure_ascii=False)
     return text, False
 
 def cmd_mcp():

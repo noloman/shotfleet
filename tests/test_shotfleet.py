@@ -1020,6 +1020,25 @@ class Mcp(unittest.TestCase):
             self.assertTrue((Path(d) / "rep/check.json").is_file())
         self.assertIn("report", next(t for t in sf.MCP_TOOLS if t["name"] == "check")["inputSchema"]["properties"])
 
+    def test_a_big_report_comes_back_as_a_short_summary_unless_full_is_asked(self):
+        with tempfile.TemporaryDirectory() as d, self.fake_check(40, 10, bad_every=2):  # 400 screenshots, 200 problems
+            rep = str(Path(d) / "rep")
+            text, err = sf.mcp_call("check", {"folder": d, "report": rep})
+            full, err2 = sf.mcp_call("check", {"folder": d, "report": rep, "full": True})
+        self.assertFalse(err or err2)
+        self.assertLess(len(text), 20000)  # Claude Code moves a result over 50,000 characters to a file
+        self.assertGreater(len(full), 50000)
+        s = json.loads(text)
+        self.assertEqual((s["exit"], s["screenshots"], s["languages"], s["problems_total"]), (1, 400, 40, 200))
+        self.assertEqual(len(s["problems"]), sf.MCP_LINES); self.assertIn("more", s)
+        self.assertEqual(s["reports"], [str((Path(rep) / "check.json").resolve())])
+        self.assertEqual(len(json.loads(full)["screenshots"]), 400)
+
+    def test_a_run_that_wrote_no_report_returns_its_output(self):
+        with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", lambda *a: print("stopped early") or 2):
+            text, err = sf.mcp_call("run", {"config": "x.toml"})
+        self.assertFalse(err); self.assertEqual(text.strip(), "stopped early")
+
     def test_tool_annotations_say_what_each_tool_does(self):
         tools = {t["name"]: t for t in sf.MCP_TOOLS}
         for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)
