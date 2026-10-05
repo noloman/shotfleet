@@ -3418,6 +3418,7 @@ def cmd_init(builds, dest="."):
         (dest / name).write_text(text); print(f"wrote {dest / name}")
     for app_id, locales in found: print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
     devices = {(True, False): "simulators", (False, True): "emulators"}.get((".app" in suffixes, ".apk" in suffixes), "simulators and emulators")
+    if not maestro_cmd(): print("note: Maestro is not installed yet, and `run` needs it: shotfleet doctor --fix fetches it (and Java) first")
     print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots {devices}, takes a few minutes):\n"
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0

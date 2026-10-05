@@ -97,5 +97,21 @@ class DoctorForAnIosOnlyBuyer(unittest.TestCase):
         self.assertRegex(out, r"MISSING java 17\+\s+\(both\)\s+-> shotfleet doctor --fix .*brew install openjdk@21")
 
 
+from tests.test_first_run import Tree  # noqa: E402  (a temp folder with simulator builds, as the other first-run tests use)
+
+
+class InitBeforeMaestro(Tree):
+    """The README order is install, doctor, init, run; a buyer who skips doctor must hear about Maestro at init, not at the first run."""
+    def test_init_says_maestro_is_missing_and_what_fetches_it(self):
+        with mock.patch.object(sf, "maestro_cmd", lambda: None):
+            out = self.init(str(self.app()), dest=str(self.d / "p"))
+        self.assertIn("Maestro is not installed yet", out); self.assertIn("shotfleet doctor --fix", out)
+        self.assertLess(out.index("Maestro is not installed"), out.index("next:"))
+
+    def test_init_is_quiet_about_maestro_when_it_is_there(self):
+        with mock.patch.object(sf, "maestro_cmd", lambda: "/m/maestro"):
+            self.assertNotIn("Maestro is not installed", self.init(str(self.app()), dest=str(self.d / "p")))
+
+
 if __name__ == "__main__":
     unittest.main()
