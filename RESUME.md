@@ -1,27 +1,25 @@
 # RESUME (branch claude/workarounds-text-recognition)
 
-Goal: research/workarounds-text-recognition-2026-10-05.md (<300 lines): can Vision's ANE wedge be avoided without reboot
-(usesCPUOnly / compute-device API / timeouts / fast level), per-macOS language coverage, bundled Tesseract worth it, design
-as patch under research/proposed-ocr/ (NOT applied to shotfleet.py). Every claim CONFIRMED or INFERENCE.
-Constraints: light CPU (device gate running, load ~800), no repo test suites (only tests.test_docs), no builds, no sudo,
-do not kill ANECompilerService, git via /usr/bin/git, commit messages end [skip ci].
+Goal: research/workarounds-text-recognition-2026-10-05.md. Can Vision's ANECompilerService wedge be avoided without a reboot; language
+coverage per macOS; is bundled Tesseract worth it; design as a patch under research/proposed-ocr/ (NOT applied to shotfleet.py).
+Constraints: light CPU, no repo test suites (only tests.test_docs), no builds of the product, no sudo, do not kill ANECompilerService, git via
+/usr/bin/git, commit messages end [skip ci].
 
-## Done
-- ocr.swift, shotfleet.py (ocr_tool, warm_up_ocr 90 s with fallback, read_text 120 s x2, cmd_check fallback) read.
-- research/proposed-ocr/vtest.swift (+ run_modes.py harness, hard 30 s): modes default|cpu14|cpuold|fast|fast+cpu14|devices|langs.
-- langs on macOS 27: rev1 en-US; rev2 8; rev3 33 (accurate); fast: 6 (rev2 and 3).
-- Coordinator note: usesCPUOnly deprecated macOS 14 -> setComputeDevice(.cpu, for: .main) via supportedComputeStageDevices;
-  supportedRecognitionLanguages(for:revision:) deprecated macOS 12 -> instance supportedRecognitionLanguages().
-  vtest uses both new APIs; compiles with no warnings at -target arm64-apple-macos13.0.
-- First timing run (the old pid 69742 is gone; new ANECompilerService pid 25561 was idle 0% before the run):
-  accurate default / cpu14 / cpuold: NO ANSWER in 30 s each; ANECompilerService went to ~92% CPU afterwards.
-  fast and fast+cpu14: answer in 0.2 s but German text is garbled.
+## PAUSED (coordinator, device gate): NO Vision / OCR / Tesseract runs until /tmp/shotfleet-rc-gate-done exists.
+Writing only until then. `ps` (read only) is fine.
 
-## Left
-- check whether cpu-only accurate is merely slow (poll ps; one run with a longer limit once idle) vs wedged; sample the hung client stack
-- Tesseract on 3-4 screenshots (de/ca/ar), licence/size facts, older-macOS language lists (Apple docs, mark INFERENCE)
-- design: proposed ocr.swift (exit codes, timeout), check messages, fake-helper tests under research/proposed-ocr/
-- write the deliverable, push
+## Done (all pushed)
+- Deliverable written: research/workarounds-text-recognition-2026-10-05.md (229 lines). Verdict: CPU-only (usesCPUOnly and compute-device
+  API), revision 2, the macOS 15 Swift API and cancel() do NOT avoid the ANE compile; only .fast answers during it (junk text). The old wedge
+  pid 69742 was gone (no reboot), so "while truly wedged" is untested; cold compile used as proxy (35-122 s under load 550-890).
+- research/proposed-ocr/: ocr.swift (exit codes, --rev2), shotfleet-ocr.patch (patient warm-up, messages, exit-2 handling, Latin-unlisted rule),
+  test_proposed_ocr.py (16 pass, fake helpers, no Vision), vtest.swift, vtest15.swift, nlprobe.swift, run_modes.py, patient.py, helper_smoke.py.
+
+## Left (after the gate file appears)
+Run section 9 of the deliverable, one at a time, each under 30 s hard timeout (run_modes.py), `ps ... | grep ANECompilerService` before and after;
+report whether a NEW ANECompilerService pid appears and whether usesCPUOnly / compute device avoids it (expected: no). Then update sections 1, 2, 8.
+Binaries are in the scratchpad (vtest, vtest15, ocr2, vtestB..F): rebuild from research/proposed-ocr/*.swift with swiftc -target arm64-apple-macos13.0
+(vtest15: macos15.0) if the scratchpad is gone. Copy a binary to a NEW path to get a cold compile.
 
 ## Next step
-Poll `ps` for ANECompilerService, then sample the client.
+Wait for /tmp/shotfleet-rc-gate-done; then experiment 1 of section 9.
