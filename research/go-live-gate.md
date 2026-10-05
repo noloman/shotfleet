@@ -37,3 +37,16 @@ If the sale page or a download is wrong after the deploy:
 3. Repo: `git revert` the commit "Site: sale open" and the "Gumroad product ID" commit if the program build is at fault, then rebuild with `packaging/release.sh`.
 4. Buyers already holding keys keep working: the licence check only needs the product ID, which does not change.
 Irreversible parts: emails and posts the owner sends, and sales that already happened (refund from the Gumroad Sales page, 14-day policy).
+
+## Post-launch verification (independent, 2026-10-05, on the files shotfleet.com serves)
+
+Run from a clean download, not from the build folder:
+- The published SHA-256 matches the downloaded tarball (8b36c7f8...).
+- The program starts with an empty home and a bare PATH (`env -i`): `shotfleet 0.1.0`. This is the crash found on 2026-10-04 (find_sdk called is_mac before it existed: every Mac without an Android SDK failed at `--version`); the live build has the fix.
+- `codesign --verify --deep --strict` ok, hardened runtime, team 2357A78TMR; a quarantined copy prints the version in 1.2 s.
+- The installer package: `spctl -t install` accepted (Notarized Developer ID), `stapler validate` ok, signed with the Developer ID Installer certificate, notarization trusted.
+- The live `install.sh`, run unchanged except that its target folder is limited to a temp HOME: downloads 0.1.0 from shotfleet.com, installs, `shotfleet --version` works, no quarantine flag on the installed binary, the real PATH folders gain no link.
+- The sale page has no waitlist text, the Gumroad link three times, `/download/VERSION` answers 0.1.0.
+
+Still not run (unchanged): a refunded real key being refused (needs a real paid sale), a clean macOS user or second Mac, outside developers, and the package installed by Installer.app with an administrator password.
+

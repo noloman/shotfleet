@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- The shotfleet mark: same glyph and rounded square as site/public/favicon.svg, glyph enlarged from 56% to 64% of the width so it holds at 32px. Colours are the ink and yellow tokens of site/public/site.css. -->
+  <rect width="1024" height="1024" rx="225" fill="#0b1220"/>
+  <path d="M182 218.5H842L677 512L842 805.5H182Z" fill="#f5c400"/>
+</svg>

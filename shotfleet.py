@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 class Fail(Exception):
     """A user-facing error: printed as one line, no traceback."""

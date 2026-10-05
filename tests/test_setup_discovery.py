@@ -214,11 +214,14 @@ class AndroidSdkDiscovery(Tree):
         adb = touch(sdk / "platform-tools/adb"); adb.chmod(0o755)
         self.assertEqual(sf.find_sdk({"PATH": f"/nonexistent:{sdk / 'platform-tools'}"}), sdk)
         stray = touch(self.root / "bin/adb"); stray.chmod(0o755)   # an adb that is not inside a platform-tools folder says nothing
-        self.assertEqual(sf.find_sdk({"PATH": str(self.root / "bin")}), self.home / "Library/Android/sdk")
+        self.assertEqual(sf.find_sdk({"PATH": str(self.root / "bin")}), self.default_sdk())
+
+    def default_sdk(self):  # find_sdk names ~/Library/Android/sdk on a Mac and ~/Android/Sdk elsewhere by the real sys.platform, not by the module's is_mac patch
+        return self.home / ("Library/Android/sdk" if sys.platform == "darwin" else "Android/Sdk")
 
     def test_nothing_found_falls_back_to_android_home_then_the_android_studio_default(self):
         self.assertEqual(sf.find_sdk({"PATH": "", "ANDROID_HOME": "/custom"}), Path("/custom"))
-        self.assertEqual(sf.find_sdk({"PATH": ""}), self.home / "Library/Android/sdk")
+        self.assertEqual(sf.find_sdk({"PATH": ""}), self.default_sdk())
 
     def image(self, sdk, api, tag="google_apis", abi="arm64-v8a", installed=True):
         d = sdk / "system-images" / f"android-{api}" / tag / abi; d.mkdir(parents=True, exist_ok=True)
