@@ -220,6 +220,21 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
+  <section class="wrap section" id="saves" aria-labelledby="saves-h">
+    <div class="notfor reveal">
+      <h2 id="saves-h">What it saves you</h2>
+      <p class="muted">There are other ways to make these screenshots, and some of them are free. This is what changes when you use shotfleet instead.</p>
+      <ul>
+        <li>Without it, you write UI-test code for fastlane snapshot and screengrab, and iOS and Android each need their own. With shotfleet, you write one Maestro flow in English, and it works on both platforms.</li>
+        <li>Without it, you add something to your project: a UI-test target for fastlane, or a few lines in the app for simshot, which is iOS only. With shotfleet, nothing in your app’s code changes.</li>
+        <li>Without it, every language you add is one more set of screenshots to make. With shotfleet, the same flow runs in every language. On my app, 18 languages × 4 screens took 9 minutes on iOS and 15 on Android, on one Mac.</li>
+        <li>Without it, a screenshot in the wrong language can reach your store listing, and you may only find out later. With shotfleet, <code>check</code> reads every screenshot before you upload. It flags the wrong language, blank screens and sizes the stores don’t accept.</li>
+        <li>On my first run, the Next button on one onboarding page was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone. The English screenshots looked fine, so I hadn’t noticed. The run got stuck on that page, and that’s how I found it.</li>
+      </ul>
+      <p class="small muted">ButterKit and AppScreens do a different job: frames and captions, not language checks. If your app has only one or two languages, you probably don’t need shotfleet. The details are on <a href="/alternatives">the comparison page</a>, along with who shouldn’t buy it.</p>
+    </div>
+  </section>
+
   <section class="wrap section" id="apps" aria-labelledby="apps-h">
     <div class="reveal">
       <h2 id="apps-h">What my other apps look like in five languages.</h2>

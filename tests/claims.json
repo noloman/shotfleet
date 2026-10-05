@@ -2450,5 +2450,84 @@
   "layer": "device",
   "assertion": "Recorded on the branch, merged and released in 0.1.3.",
   "fix": ""
+ },
+ {
+  "id": "C154",
+  "claim": "What it saves you: fastlane snapshot and screengrab need UI-test code, separate for iOS and Android; shotfleet uses one English Maestro flow on both platforms",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Without it, you write UI-test code for fastlane snapshot and screengrab, and iOS and Android each need their own.",
+   "With shotfleet, you write one Maestro flow in English, and it works on both platforms."
+  ],
+  "status": "evidence",
+  "proof": "fastlane side: as on the alternatives page (C108; research/pricing-2026-10.md, vendor docs: XCUITest/Espresso test targets, snapshot for iOS and screengrab for Android). shotfleet side: as C020: Unit: SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, SimpleConfig.test_run_goes_through_every_platform_in_the_file, ReviewFixes.test_map_form_screenshots_are_redirected_on_both_platforms. Real: Kuokka and HackerNewsKMP, both platforms from one config and flow (research/pricing-2026-10.md, ROADMAP.md 2026-10-02); CrossfitTracker iOS and Android from one flow (PLAN.md). The 2026-10-03 fixture e2e passed on iOS (36/36) and on Android phone (29/29, tools/fixture-app-android).",
+  "layer": "fixture",
+  "assertion": "Fixture config with [ios] and [android]: one flow.yaml, `shotfleet run` produces out-ios/ and out-android/ each with N screenshots per locale.",
+  "fix": ""
+ },
+ {
+  "id": "C155",
+  "claim": "What it saves you: fastlane needs a UI-test target and simshot a few lines in the app (iOS only); with shotfleet nothing in the app's code changes",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "a UI-test target for fastlane, or a few lines in the app for simshot, which is iOS only.",
+   "With shotfleet, nothing in your app’s code changes."
+  ],
+  "status": "evidence",
+  "proof": "Competitor side: C108 (simshot iOS only and needs a few lines in the app; fastlane adds a test target), research/pricing-2026-10.md. shotfleet side: as C006: Mechanism: LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages / -AppleLocale launch arguments), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; research/frameworks.md cites AOSP for per-app locales without the app's cooperation. Real: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01) and the 2026-10-03 fixture e2e (the fixture app has no shotfleet code; STATUS.md gate 9). It needs a Debug-iphonesimulator build and an API 33+ emulator (README.md Limits), which is a build, not a change to the app. Untested: apps that keep their own persisted in-app language picker.",
+  "layer": "fixture",
+  "assertion": "tools/fixture-app contains no shotfleet code: `run` on it produces German 'Willkommen' (accessibility text) - proves iOS needs no change. Add an Android fixture for `cmd locale set-app-locales`.",
+  "fix": ""
+ },
+ {
+  "id": "C156",
+  "claim": "What it saves you: the same flow runs in every language; 18 languages x 4 screens took 9 minutes on iOS and 15 on Android on one Mac",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "With shotfleet, the same flow runs in every language.",
+   "On my app, 18 languages × 4 screens took 9 minutes on iOS and 15 on Android, on one Mac."
+  ],
+  "status": "evidence",
+  "proof": "As C007 (same measurement, Maestro 2.0.10, stated next to the stats on the same page): PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro.",
+  "layer": "device",
+  "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
+  "fix": ""
+ },
+ {
+  "id": "C157",
+  "claim": "What it saves you: check reads every screenshot before upload and flags the wrong language, blank screens and sizes the stores don't accept",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "<code>check</code> reads every screenshot before you upload. It flags the wrong language, blank screens and sizes the stores don’t accept."
+  ],
+  "status": "proven",
+  "proof": "Wrong language as C026: ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command (el/2.png shows en), StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (ja shows en), JudgeScreen.test_screen_showing_another_locales_strings_fails. Blank as C127: BlankScreenshots.test_a_flat_frame_with_a_status_bar_is_blank. Sizes as C022: StoreRules.test_app_store_sizes_alpha_counts_and_required_class, test_google_play_limits_and_notes, test_image_info_reads_jpeg_size, MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices. Limits checked: 10 (App Store) / 8 (Play) per listing, 320-3840 px, no alpha, 6.9\" or 6.5\" iPhone set, 13\" iPad when UIDeviceFamily has 2. Rule data is Apple/Google's as of 2026-10-01 (research/store-specs.md) and can go stale.",
+  "layer": "unit",
+  "assertion": "As C026, C127 and C022.",
+  "fix": ""
+ },
+ {
+  "id": "C158",
+  "claim": "What it saves you: on the first run the onboarding Next button was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone; English fit; the run got stuck there (run found it, not check)",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "the Next button on one onboarding page was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone.",
+   "The run got stuck on that page, and that’s how I found it."
+  ],
+  "status": "evidence",
+  "proof": "As C012 and C013: site/public/img/bug_zh.jpg (viewed 2026-10-02: Chinese onboarding page, no Next button, small 360x640 screen). No run log, flow or commit is kept in the repo; research/cold-test-2.md says a buyer cannot reproduce it. Only zh has an image; ja, ko, ar are asserted. The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix. 2026-10-03 review (claims-unit): left partial. The sentence is history about one real run on CrossfitTracker, which no local test can prove, and README.md:46 still sits under 'Check screenshots made by any tool' (it says 'A run also surfaces', not that check does). A wording test would only prove where the sentence is; the fix above (move it) is a docs change.",
+  "layer": "device",
+  "assertion": "Keep the failing build as a fixture: an Android APK with a non-scrolling onboarding page and a long CJK/Arabic string on a 360x640 emulator; assert `run` reports the locale as failed (flow cannot tap Next) for ja,ko,zh,ar and passes for en.",
+  "fix": ""
  }
 ]
