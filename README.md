@@ -137,6 +137,10 @@ Gemini CLI and GitHub Copilot all load skills from a folder. `shotfleet skill in
 `~/.claude/skills` (Claude Code and Cursor read it) and `~/.agents/skills` (Codex, Gemini CLI, GitHub Copilot and Cursor
 read it). `shotfleet skill install --project` copies them into `./.claude/skills` and `./.agents/skills` instead.
 
+The skills are also in a public repo, so you can install them without shotfleet first. In Claude Code:
+`/plugin marketplace add noloman/shotfleet-skills`, then `/plugin install shotfleet@shotfleet` (the skills plus the
+MCP server). For other agents: `gh skill install noloman/shotfleet-skills --all --scope user`.
+
 Your licence key: on your Mac, run `shotfleet activate` once yourself. After that your agent uses the CLI and never
 sees the key. In CI, use the `SHOTFLEET_KEY` secret. Don't pass the key with `claude mcp add --env`: it ends up in
 plain text in `~/.claude.json`.

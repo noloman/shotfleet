@@ -49,7 +49,7 @@ because Gumroad is down. A CI key has no offline time limit and nothing is store
 not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good
 key. A key that is not four groups of 8 hex characters is refused without contacting Gumroad. A Mac where `shotfleet activate`
 was run is different: it re-checks about weekly and stops after 30 days offline. With an invalid key `export` refuses (exit 2) and `run` captures only 2 languages.
-`run` in CI also needs simulators and Maestro on the runner; the README does not document a recipe for that.
+`run` in CI also needs simulators and Maestro on the runner; the docs do not document a recipe for that.
 
 ```yaml
       - run: shotfleet export out --fastlane fastlane/ --json

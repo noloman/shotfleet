@@ -6,7 +6,7 @@
 | `run` | captures 2 languages (the first two of the list; `--locales a,b` picks others) | every language |
 | `export` | refused: `need a licence` (exit 2) | works |
 
-`check` needs no account and no licence. Price (README): $29 for the first 100 buyers, then $49 once per developer, a
+`check` needs no account and no licence. Price (https://shotfleet.com): $29 for the first 100 buyers, then $49 once per developer, a
 year of updates, a 14-day refund; up to 3 of the user's Macs plus their CI. Details are on the site's terms page.
 
 ## Activate
@@ -45,5 +45,5 @@ Mac where `shotfleet activate` was run). So an outage hides a refunded key until
 
 ## What to tell the user
 
-- Free tier hit: say `run` captured 2 languages and that `export` and the other languages need a licence; give the price once, from the README, and let the user decide. Do not buy, and do not enter payment details.
+- Free tier hit: say `run` captured 2 languages and that `export` and the other languages need a licence; give the price once, from https://shotfleet.com, and let the user decide. Do not buy, and do not enter payment details.
 - Never describe the licence as a subscription. Updates for a year are included; after that the installed version keeps working while macOS, Xcode and Maestro allow.
