@@ -20,12 +20,12 @@ MAX_MB, POSTER_KB = 4.0, 150
 DESC = {
     "c1-doctor": ("Is this Mac ready?", "shotfleet doctor --fix checks Maestro, Java, Xcode and the Android SDK, and fetches what is missing after asking once."),
     "c2-init": ("Set up a project", "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow."),
-    "c3-run-ios": ("Every language: iPhone and iPad", "One English Maestro flow captured in every language of the app on parallel iPhone and iPad simulators, then checked."),
+    "c3-run-ios": ("Every language on iPhone", "One English Maestro flow captured in every language of the app on parallel iPhone simulators, then checked."),
     "c4-run-android": ("Every language: Android", "The same English flow captured in every language on Android emulators, then checked."),
     "c5-check": ("Catch the wrong language", "A German screenshot planted in the Japanese folder is caught by shotfleet check; the real output passes with 0 problems."),
     "c6-check-existing": ("Check the screenshots you have", "shotfleet check reads fastlane folders or a plain folder of screenshots, with no simulator."),
     "c7-store-rules": ("Store rules, checked", "shotfleet check flags screenshot sizes the stores refuse and a missing 13\" iPad set."),
-    "c8-export": ("Export to fastlane", "One command puts the passing App Store and Google Play screenshots into fastlane's folders."),
+    "c8-export": ("Export to fastlane", "One command puts the passing Google Play screenshots into fastlane's folders."),
     "c9-ci": ("In CI", "The GitHub Actions recipe from the docs, and check's --json result and exit code."),
 }
 

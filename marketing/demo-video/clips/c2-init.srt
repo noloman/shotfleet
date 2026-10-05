@@ -15,7 +15,7 @@ and writes a config and a starter flow.
 4
 00:00:11,000 --> 00:00:15,500
 For this demo: a prepared config
-(iPhone, iPad, Android phone).
+(iPhone and Android phone).
 
 5
 00:00:15,500 --> 00:00:20,000

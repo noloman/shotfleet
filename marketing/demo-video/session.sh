@@ -24,7 +24,7 @@ EOF
 cat > "$S/edits/shotfleet.toml" <<'EOF'
 [ios]
 app = "build/FleetFixture.app"
-device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]
+device_types = ["iPhone 17 Pro Max"]
 runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
 
 [android]

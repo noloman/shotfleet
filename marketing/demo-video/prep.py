@@ -23,7 +23,7 @@ RUN_HEAD, RUN_TAIL, RUN_SHOWN = 4.0, 6.0, 12.0
 CLIPS = {
     "c1-doctor":         dict(label="Is this Mac ready?", wait=(2.4, 7.2, 1.6)),
     "c2-init":           dict(label="Set up a project"),
-    "c3-run-ios":        dict(label="Every language: iPhone and iPad", run=True, grid=("out-ios", 6.0)),
+    "c3-run-ios":        dict(label="Every language on iPhone", run=True, grid=("out-ios", 6.0)),
     "c4-run-android":    dict(label="Every language: Android", run=True, grid=("out-android", 5.0)),
     "c5-check":          dict(label="Catch the wrong language"),
     "c6-check-existing": dict(label="Check the screenshots you have"),

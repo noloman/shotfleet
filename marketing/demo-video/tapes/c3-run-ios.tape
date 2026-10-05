@@ -6,5 +6,5 @@ Sleep 600ms
 Type "shotfleet run --platform ios"
 Sleep 400ms
 Enter
-Wait@80m /\$\s*$/
+Wait@45m /\$\s*$/
 Sleep 5s

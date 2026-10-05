@@ -16,9 +16,8 @@ SESSION = Path(sys.argv[-1] if len(sys.argv) > 1 and not sys.argv[-1].startswith
                Path.home() / "Developer/shotfleet-rc-build/demo-video/session")
 PROGRESS = SESSION.parent / "progress.log"
 LOCK, QUIET, GATE = Path("/tmp/shotfleet-devices.lock"), "/tmp/shotfleet-quiet-check.sh", Path("/tmp/shotfleet-rc-gate-done")
-TAPES = [("tapes/c3-run-ios.tape", 85 * 60), ("tapes/c4-run-android.tape", 45 * 60)]   # hard kill limit per step
-WAIT_H, FREE_FOR_S, EST, HARD = 10, 180, 60, 135
-SWAP_MAX_GB = 10   # coordinator, 20:17: no device job while swap use is 10 GB or more
+TAPES = [("tapes/c3-run-ios.tape", 50 * 60), ("tapes/c4-run-android.tape", 45 * 60)]   # hard kill limit per step
+WAIT_H, FREE_FOR_S, EST, HARD = 12, 180, 45, 95
 POOLS = ("shotfleet-iphone-17-pro-max-", "shotfleet-ipad-pro-13-inch-m5")
 ADB = Path.home() / "Library/Android/sdk/platform-tools/adb"
 
@@ -45,9 +44,22 @@ def our_shotfleet_pids():
             if c not in pids: pids.add(c); todo.append(c)
     return pids
 
-def swap_gb():
-    m = re.search(r"used = ([\d.]+)M", sh("sysctl", "-n", "vm.swapusage"))
-    return float(m.group(1)) / 1024 if m else 99.0
+GATE_LOG = Path.home() / "Developer/shotfleet-rc-build/0.1.3/g3-013b.log"
+MIN_FREE_PCT = 40
+
+def others_done():
+    """Coordinator, 20:43: start only after the 0.1.3 gate rerun ('lock released' in its log) and the Tart VM agent
+    (its queue line marked DONE, or its branch pushed and it no longer holds the lock)."""
+    gate = GATE_LOG.is_file() and "lock released" in GATE_LOG.read_text(errors="replace")
+    q = Path("/tmp/shotfleet-device-queue.md").read_text(errors="replace") if Path("/tmp/shotfleet-device-queue.md").exists() else ""
+    vm_line_done = any(re.search(r"tart|\bVM\b", l, re.I) and "DONE" in l for l in q.splitlines())
+    holder = (LOCK / "holder").read_text(errors="replace") if (LOCK / "holder").exists() else ""
+    vm_pushed = bool(sh("git", "-C", str(REPO), "ls-remote", "origin", "claude/vm-older-macos-results").strip())
+    return gate and (vm_line_done or (vm_pushed and not re.search(r"tart|\bVM\b", holder, re.I)))
+
+def free_pct():
+    m = re.search(r"free percentage: *(\d+)%", sh("memory_pressure"))
+    return int(m.group(1)) if m else 0
 
 def run_tape(tape, limit):
     t0 = time.time(); log(f"start {tape} (hard limit {limit // 60} min)")
@@ -72,11 +84,11 @@ def child():
         else:
             free_since = free_since or time.time()
             q = subprocess.run(["sh", QUIET], capture_output=True, text=True)
-            if time.time() - free_since >= FREE_FOR_S and q.returncode == 0 and swap_gb() < SWAP_MAX_GB and GATE.exists():
+            if time.time() - free_since >= FREE_FOR_S and q.returncode == 0 and free_pct() >= MIN_FREE_PCT and others_done():
                 try: LOCK.mkdir()
                 except FileExistsError: free_since = None; continue
                 break
-            if time.time() - last_note > 600: log(f"lock free, waiting: {q.stdout.strip()}; swap {swap_gb():.1f} GB"); last_note = time.time()
+            if time.time() - last_note > 600: log(f"lock free, waiting: {q.stdout.strip()}; free {free_pct()}%; gate+VM done: {others_done()}"); last_note = time.time()
         time.sleep(30)
     (LOCK / "holder").write_text(f"Demo video recording (coordinator) | fixture run iOS+Android | started {time.strftime('%H:%M')} | "
                                  f"est. {EST} min, hard limit {HARD}\n")
