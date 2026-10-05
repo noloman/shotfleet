@@ -1,0 +1,150 @@
+diff --git a/shotfleet.py b/shotfleet.py
+index 07d967f..eb9dae1 100755
+--- a/shotfleet.py
++++ b/shotfleet.py
+@@ -2160,7 +2160,7 @@ def ocr_tool():
+         if r.returncode != 0: raise RuntimeError("ocr build failed:\n" + r.stderr)
+     return str(exe)
+ 
+-TWINS = {"ms": ("id",), "id": ("ms",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
++TWINS = {"ms": ("id",), "id": ("ms",), "hr": ("sl",), "sl": ("hr",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
+ LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
+ 
+ def readable_languages():
+@@ -2172,6 +2172,15 @@ def readable_languages():
+         return {l for l, t in TESSERACT.items() if t in have} | ({"zh"} if have & {"chi_sim", "chi_tra"} else set())
+     return vision_languages()
+ 
++# Latin-script languages Vision lists no model for (not in the 33 of macOS 27; INFERRED for 14 and 15). It still reads their text with
++# the Latin model (Catalan and Croatian read well, Hungarian loses accents: all-languages.md) and NaturalLanguage tells ca, hr, hu and
++# sk from English (research/proposed-ocr/nlprobe.swift; sl reads as hr, hence TWINS). So an unlisted Latin language is judged like a listed one.
++LATIN_UNLISTED = {"ca", "hr", "hu", "sk", "sl"}
++
++def can_read(lang):
++    """True if the text reader's output is evidence for this base language (listed, or Latin script on a Mac)."""
++    return lang in readable_languages() | {"zh"} or (vision_available() and lang in LATIN_UNLISTED)
++
+ @functools.cache
+ def vision_languages():
+     return {c.split("-")[0] for c in json.loads(sh([ocr_tool(), "--langs"]).stdout or "[]")}
+@@ -2278,14 +2287,14 @@ def judge_screen(lp, ocr, tables):
+     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
+     if not ocr.get("chars"):
+         lang = canon(lp).split("-")[0]
+-        if LEGACY.get(lang, lang) not in readable_languages() | {"zh"}:
++        if not can_read(LEGACY.get(lang, lang)):
+             return None, None  # Hebrew, Georgian, Burmese often read as nothing at all
+         return got, "no text found (blank or still loading?)"
+     if best < 2:  # one short label ("Training starten" is German and Dutch) proves nothing; use language detection
+         c = canon(lp)  # zh-CN -> zh-Hans, zh-HK -> zh-Hant-HK, iw -> he: what language detection reports
+         want = ("zh-Hant" if c.startswith("zh-Hant") else "zh-Hans") if c.startswith("zh") else \
+             EXPECTED_LANG.get(lp, LEGACY.get(lp.split("-")[0], lp.split("-")[0]))
+-        if want.split("-")[0] not in readable_languages() | {"zh"}:
++        if not can_read(want.split("-")[0]):
+             # macOS can't read this script, and the screen shows no other language's strings: not provable either way
+             if ocr.get("lang") == "en" and ocr.get("langs", {}).get("en", 0) > 0.9:
+                 return "en", f"text looks like 'en', expected '{want}'"
+@@ -2380,18 +2389,51 @@ def app_locale(label, available):
+ 
+ OCR_NOTE_AFTER_S = 8  # a first recognition slower than this gets a line saying why the screen is quiet
+ 
+-def warm_up_ocr(ocr, timeout=600):
++OCR_COMPILE_PATIENCE_S = 360  # measured 2026-10-05 on a Mac at load 550-850: a cold compile took 35 to 122 s (17 to 188 s earlier)
++OCR_STUCK_CPU_MIN = 120       # INFERENCE: a service that has used 2 h of CPU is the stuck one (the 2026-10-05 wedge ran 10 h at 90%);
++                              # a healthy one had used 18 CPU minutes after five cold compiles
++
++def ane_state():
++    """(is macOS's Neural Engine compiler service using the CPU right now, CPU minutes it has used in all). (False, 0) if not running."""
++    for line in sh(["ps", "-Ao", "pcpu=,time=,comm="]).stdout.splitlines():
++        if "ANECompilerService" in line:
++            cpu, t = line.split()[:2]
++            days, _, clock = t.rpartition("-")  # [dd-][hh:]mm:ss.cc
++            parts = [float(x) for x in clock.split(":")]
++            minutes = sum(v * 60 ** (len(parts) - 2 - i) for i, v in enumerate(parts)) + (float(days) * 1440 if days else 0)
++            return float(cpu) > 20, minutes
++    return False, 0
++
++def ocr_not_answering():
++    """What to tell the buyer when the text reader gave no answer: the cause as far as ps shows it, and the way out."""
++    busy, cpu_min = ane_state()
++    if busy and cpu_min >= OCR_STUCK_CPU_MIN:
++        return ("macOS text recognition isn't answering: its Neural Engine compiler (ANECompilerService) is stuck "
++                f"({cpu_min / 60:.0f} hours of CPU used). Restart the Mac to clear it")
++    if busy:
++        return ("macOS text recognition didn't answer in time: its Neural Engine compiler (ANECompilerService) is still compiling "
++                "the model, which takes up to a few minutes on a busy Mac (and is stored for next time). Run check again in a few minutes")
++    return "macOS text recognition isn't answering (is the Mac overloaded?). Run check again in a minute; if it keeps happening, restart the Mac"
++
++def warm_up_ocr(ocr, timeout=600, patience=0):
+     """One recognition on its own before the parallel ones, so macOS compiles its model once (minutes after a restart).
+     False if it doesn't answer in time: macOS's recognition service (ANECompilerService) is stuck or still compiling.
+-    It is left running then, so a slow first compile still finishes for the next check."""
++    It is left running then, so a slow first compile still finishes for the next check. With `patience`, waits past `timeout`
++    (up to `patience` seconds in all) as long as that service is using the CPU: a compile that is making progress, not a stuck Mac.
++    Killing and retrying does not help (measured: the retry waited behind the first compile, 76 s after a kill at 15 s)."""
+     p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+     note = threading.Timer(OCR_NOTE_AFTER_S, print, ["macOS is preparing its text recognition, a one-off wait of about 30 seconds "
+                                                     "(a few minutes on a busy Mac). Nothing is wrong if this stays quiet."], {"flush": True})
+     note.daemon = True; note.start()
++    start = time.time(); limit = timeout
+     try:
+-        return bool(p.communicate(timeout=timeout)[0].strip())
+-    except subprocess.TimeoutExpired:
+-        return False
++        while True:
++            try:
++                return bool(p.communicate(timeout=max(0.1, start + limit - time.time()))[0].strip())
++            except subprocess.TimeoutExpired:
++                busy, cpu_min = ane_state() if patience > time.time() - start else (False, 0)
++                if not busy or cpu_min >= OCR_STUCK_CPU_MIN: return False
++                limit = min(patience, time.time() - start + 10)  # still working: look again in 10 s
+     finally:
+         note.cancel()
+ 
+@@ -2435,14 +2477,13 @@ def read_text(ocr, png, timeout=120):
+     """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever."""
+     for _ in range(2):
+         try:
+-            return json.loads(sh([ocr, str(png)], timeout=timeout).stdout or "{}")
++            r = sh([ocr, str(png)], timeout=timeout)
++            if r.returncode != 0:  # the helper's exit 2 (Vision failed): an error, not an empty screen
++                raise RuntimeError(f"text recognition failed on {png}: {r.stderr.strip()[-200:] or 'exit ' + str(r.returncode)}")
++            return json.loads(r.stdout or "{}")
+         except subprocess.TimeoutExpired:
+             pass
+-    stuck = [l for l in sh(["ps", "-Ao", "pcpu=,comm="]).stdout.splitlines()
+-             if "ANECompilerService" in l and float(l.split()[0]) > 50]
+-    raise RuntimeError(f"text recognition hung twice on {png}. " + (
+-        "macOS's Neural Engine compiler (ANECompilerService) is stuck at full CPU, which blocks all text recognition; "
+-        "restarting the Mac fixes it" if stuck else "Is the Mac overloaded? Run check again"))
++    raise RuntimeError(f"text recognition hung twice on {png}. " + ocr_not_answering())
+ 
+ # Tesseract's names for the scripts macOS can't read (for {tesseract} in --ocr-command)
+ TESSERACT = {"en": "eng", "de": "deu", "fr": "fra", "es": "spa", "it": "ita", "pt": "por", "nl": "nld", "sv": "swe",
+@@ -2623,13 +2664,11 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
+         if not fallback:
+             raise Fail("reading screenshots needs Tesseract on this system (macOS text recognition is Mac-only): " + install_hint())
+         ocr_command = ocr_command or TESSERACT_COMMAND
+-    elif not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600):  # no need to wait long with another OCR at hand
++    elif not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600, patience=OCR_COMPILE_PATIENCE_S):  # a compile that is still working is waited for, with or without another OCR at hand
+         if not fallback:
+-            raise Fail("macOS text recognition isn't answering (its ANECompilerService is stuck, usually after heavy "
+-                       "use); restarting the Mac fixes it. Or install Tesseract and shotfleet uses it automatically: "
+-                       "brew install tesseract tesseract-lang")
+-        print("macOS text recognition isn't answering (its ANECompilerService is stuck); using "
+-              + ("your --ocr-command" if ocr_command else "Tesseract") + " instead")
++            raise Fail(ocr_not_answering() + ". Or install Tesseract and shotfleet uses it automatically: brew install tesseract tesseract-lang")
++        print(ocr_not_answering() + "; using " + ("your --ocr-command" if ocr_command else "Tesseract")
++              + " instead (it reads fewer scripts and names no language, so some screens will be reported as unverified)")
+         use_vision, ocr_command = False, ocr_command or TESSERACT_COMMAND
+     # ponytail: 4 at a time; 10 parallel first-use requests are the likely trigger of macOS's text-recognition
+     # service wedging (seen twice); raise it if that turns out to be unrelated
+@@ -3137,7 +3176,7 @@ def cmd_doctor(fix=False, yes=False):
+             read, r = None, e
+         if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
+             print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
+-                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it")
++                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it. Now: {ocr_not_answering()}")
+         elif isinstance(r, Exception):
+             print(f"PROBLEM text recognition   can't start ({r}); restarting the Mac usually fixes it")
+         elif r.returncode != 0:
