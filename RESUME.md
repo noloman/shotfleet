@@ -13,7 +13,7 @@ No new PR opened: the owner decides.
 - [x] Targeted tests green (420 tests, 2 skipped): tests.test_android_hierarchy tests.test_fixture_e2e tests.test_agent_skills tests.test_shotfleet
   tests.test_check_quality tests.test_json_multi_report tests.test_android_apk tests.test_claims tests.test_claims_unit tests.test_docs.
 - [x] Docs: README line 23, SKILL.md, docs/handoff.md, research/limits-text.md 1g already consistent after the merge; CHANGELOG Unreleased has one line.
-- [ ] Device run (coordinator, later): below. Not run: this session was device-free.
+- [x] Device run (coordinator slot, 2026-10-05 16:31-16:37): Maestro 2.11.0 PASS 30/30 (130 s, hierarchy 8 of 8, hierarchy_markers true, ja ようこそ, no status-bar lines); Maestro 2.0.10 PASS 29/29 (165 s, needs-2.7.0 note, evidence ocr 8 of 8). Recorded in C132. PR body not edited (owner).
 
 ## Device run for the coordinator (Android only, two Maestro versions, one after the other)
 
