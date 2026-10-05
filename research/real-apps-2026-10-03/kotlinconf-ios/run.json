@@ -1,0 +1,26 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 16,
+   "error": null,
+   "screenshots": 3,
+   "attempts": 1
+  },
+  "en": {
+   "untranslated_selectors": [],
+   "lproj": "en",
+   "ok": true,
+   "seconds": 26,
+   "error": null,
+   "screenshots": 3,
+   "attempts": 1
+  }
+ },
+ "config": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/kotlinconf-app/shotfleet.toml",
+ "wall_seconds": 56,
+ "simulators": 1,
+ "app": "/Users/manu/Library/Developer/Xcode/DerivedData/KotlinConf-dkqytcfkbvghhtcpxymjmkxcwwgc/Build/Products/Debug-iphonesimulator/KotlinConf.app"
+}

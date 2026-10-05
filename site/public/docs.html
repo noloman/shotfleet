@@ -115,6 +115,7 @@ shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/an
   <ul>
     <li><strong>Wrong language:</strong> the German folder actually shows English or Japanese strings.</li>
     <li><strong>Copies:</strong> the same image in two languages.</li>
+    <li><strong>Blank:</strong> a screenshot with nothing drawn but the status bar: an app that paints its first frame after the flow's wait passed (Flutter debug builds and Compose do). <code>run</code> captures that language again once, then reports it; wait for text on the screen before <code>takeScreenshot</code>.</li>
     <li><strong>Missing:</strong> a language that did not produce every screenshot.</li>
     <li><strong>Translation collisions, before anything runs:</strong> for example <code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>. A tap could hit the wrong button there, so you anchor that step with <code>below:</code> or use an override.</li>
     <li><strong>Store rules:</strong> sizes each store accepts (every App Store display class, Play's 320 to 3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Screenshots made in other tools work too: Apple Watch, Mac, Apple TV and Vision Pro sizes are known (3840x2160 is both Apple TV and Vision Pro), and one Watch size is required in every language.</li>
@@ -156,6 +157,7 @@ apk = "path/to/app-debug.apk"</code></pre>
 flow = "flow.yaml"
 out = "out"
 parallel = 4
+stall_s = 900   # seconds without a new screenshot before a hung simulator or flow is stopped and retried
 locales = ["de", "ja"]
 base_locale = "de"
 device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]
@@ -250,7 +252,7 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
   <h2 id="limits">Limits</h2>
   <ul>
     <li><strong>Where strings come from:</strong> <code>.strings</code>, <code>.stringsdict</code> and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), <code>strings.xml</code> and <code>&lt;plurals&gt;</code> on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see above). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.</li>
-    <li>Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).</li>
+    <li>Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</li>
     <li>If you pass <code>init</code>, <code>run</code> or <code>check</code> a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a <code>hint:</code> on stderr with the <code>strings =</code> line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run.</li>
     <li><strong>Text recognition</strong> is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it cannot read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), <code>check</code> still catches screens in another language, copies and missing screens, and says which screens it could not read.</li>
     <li>If macOS text recognition stops answering (its <code>ANECompilerService</code> occasionally gets stuck until a restart), <code>check</code> switches to Tesseract automatically when it is installed (<code>brew install tesseract tesseract-lang</code>), and otherwise tells you to restart. iOS runs are not affected: they read the app's own text.</li>

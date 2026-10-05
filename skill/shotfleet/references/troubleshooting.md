@@ -33,7 +33,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `could not verify` | a note: `[expect]` text in a script macOS can't read, on a screen read by OCR | not a failure; give `--ocr-command` an OCR that reads it (Tesseract), or trust the iOS run, which uses the app's own text |
 | `has an unknown setting` | typo in a key; the message suggests the nearest or lists all | see config.md |
 | `should be a` | wrong type, e.g. `parallel = "4"` | use a whole number, string, list |
-| `should be 1 or more` | `parallel = 0` or `timeout_s = 0` in the config | use a positive whole number |
+| `should be 1 or more` | `parallel = 0`, `timeout_s = 0` or `stall_s = 0` in the config | use a positive whole number |
 | `is empty. Remove the line` | `locales = []` in the config | delete the line (every language the app ships) or list some |
 | `should be a list of strings` | `locales`, `device_types`, `devices` or `strings` holds something other than text | `locales = ["de", "ja"]` |
 | `is missing:` | `app` (iOS) or `apk` (Android) not set | set it |
@@ -116,9 +116,15 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `selectors not found in the app's strings` | the flow taps a label that is not in the app's strings, left as-is, may fail outside English | write the label exactly as the English string, use `id:`, or add `[overrides.<lang>]` |
 | `also means` | `warning <lang>: 'Next' -> 'İleri' also means 'Advanced'`: a tap could hit the wrong element | anchor with `below:`/`above:`, or override |
 | `translated in the app, so it is skipped` | `note: <lang> is only N% translated`; below 50% of the app's own strings it is not captured | add the code to `locales` to capture it anyway |
+| `of the app's own strings are translated` | `warning <lang>: only N% ...`: you asked for a language the app only half translates, so the missing strings show the base language | translate it, or drop it from `locales`; check reports the screenshots that came out in the base language |
+| `blank screenshot(s)` | a screenshot with only a status bar: Flutter debug builds and Compose paint after the text is readable; `run` captures the language again once, and prints this if it is still blank | before `takeScreenshot` add `extendedWaitUntil: {visible: "<text on the screen>", timeout: 60000}` |
+| `blank: nothing is drawn on it yet` | the same, found by `check` on a folder | the same wait |
+| a login flow works in English but the password field stays empty in Arabic (iOS) | iOS drops Latin letters typed into a secure field while the app runs in Arabic; digits are typed | use a numeric demo password (`123456`) |
+| Maestro: `Element not found: Text matching regex` on a Flutter row | Flutter joins a row's title and detail into one label (`Title\nDetail`) | tap it as `"Title.*"` |
 | `free tier: capturing` | no licence: 2 languages captured | see licence.md |
 | `memory pressure is elevated` | shotfleet halved the simulators | close apps |
 | `this Mac was short of memory` | failures with `Unknown error` or `Unable to clear state` are usually a slow simulator | close other simulators, `shotfleet run --locales <failed codes>` |
+| `maestro made no new screenshot for` | no screenshot for `stall_s` (default 900 s): a simulator or flow hung; shotfleet stopped Maestro and the languages go to the retry | usually load: close other simulators; raise `stall_s` only if a flow really takes longer between screenshots |
 | `maestro timed out` | one round exceeded `timeout_s` (default 600) | raise `timeout_s`, shorten the flow, or fewer `parallel` |
 | `flow passed but took` | fewer screenshots than `takeScreenshot` steps (an optional step skipped?) | check the flow, the maestro log in the output folder |
 | `no result (see maestro log)` | Maestro crashed or produced no report | read `<out>/maestro1.log` |

@@ -1,0 +1,26 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": false,
+   "seconds": 16,
+   "error": "blank screenshot(s): 01_privacy.png (the app had not drawn its first frame; wait for text on the screen before takeScreenshot)",
+   "screenshots": 3,
+   "attempts": 2
+  },
+  "en": {
+   "untranslated_selectors": [],
+   "lproj": "en",
+   "ok": false,
+   "seconds": 16,
+   "error": "blank screenshot(s): 01_privacy.png (the app had not drawn its first frame; wait for text on the screen before takeScreenshot)",
+   "screenshots": 3,
+   "attempts": 2
+  }
+ },
+ "config": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/kotlinconf-app/shotfleet-ios3.toml",
+ "wall_seconds": 106,
+ "simulators": 1,
+ "app": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/kotlinconf-app/ios-build/Build/Products/Debug-iphonesimulator/KotlinConf.app"
+}

@@ -1,0 +1,15 @@
+appId: com.shotfleet.fixture
+name: expA-control
+---
+- launchApp
+- takeScreenshot: shots-control/01_welcome
+- assertTrue:
+    condition: ${false}
+    label: "shotfleet:hier:01_welcome"
+    optional: true
+- tapOn: "次へ"
+- takeScreenshot: shots-control/02_settings
+- assertTrue:
+    condition: ${false}
+    label: "shotfleet:hier:02_settings"
+    optional: true

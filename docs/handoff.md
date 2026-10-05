@@ -12,14 +12,13 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
-| 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
+| 3 | A real Flutter, Expo and React Native app captured end to end | **done 2026-10-03 on a Mac** (wger, obytes, kotlinconf-app; `research/frameworks.md` section 15); bare React Native and Linux/KVM runs still open | |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
-| 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
-| 10 | Capacitor, MAUI, Unity | per-framework toolchains and devices | not attempted |
+| 10 | Unity | a Unity install and devices | not planned |
 | 11 | Decisions that are not engineering | you | see the end |
-| 12 | Xcode 27 check, monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
+| 12 | Xcode 27 with an iOS 27 runtime (iOS 26.4 part done), monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
 
 ---
 
@@ -81,26 +80,21 @@ emulator refuses x86_64 images without `vmx`/`svm` and refuses an arm64 image on
 
 Then the real one: `shotfleet run` of 18 languages on a real app on that machine, for the timing to compare with 15 min 24 s on the Mac.
 
-## 3. Real Flutter, Expo and React Native apps, end to end
+**A public app for that comparison now exists:** wger (commit `cf12708`, `flutter build apk --debug`, 19 languages, flow `research/real-apps-2026-10-03/wger-android/flow.yaml`). Mac, 2026-10-04: 19/19 captured, `wall_seconds` 822 on 1 emulator (memory pressure cut 2 to 1), with another session's emulator loading the Mac for the first ~13 minutes, so it is an upper bound, not a clean timing; a clean Mac rerun is queued (device queue line 8). The flow needs the `Title.*` selector translation from PR #29 (not in `main` before it). `research/frameworks.md` section 16.
 
-**State:** `init` finds the build and writes the `strings` line (proved on a Flutter 3.47.6 and an Expo demo app built on Linux, and on real
-repos wger and obytes by detection only). Nothing has been captured on a device. Questions only a run answers:
+## 3. Real Flutter, Expo and Compose apps, end to end
 
-- Does the language reach the app? iOS: `-AppleLanguages` launch arguments. Android: `cmd locale set-app-locales`. Flutter and React Native read
-  the process locale, so it should; Expo apps with a persisted language (AsyncStorage) may ignore it.
-- Does Maestro see the text? Flutter needs `Semantics` labels (icons need `semanticLabel`); React Native `testID` maps to `id:`; on iOS an
-  `accessibilityLabel` replaces the visible text in the tree (Maestro issue 1409).
-- The Flutter DEBUG banner (iOS simulators run debug builds only) and the React Native Release requirement.
+**Done 2026-10-03 on a Mac** (iOS and Android; evidence in `research/frameworks.md` section 15 and `research/real-apps-2026-10-03/`): wger (Flutter), the obytes template (Expo, Release) and JetBrains' kotlinconf-app (Compose Multiplatform) were built, `init`ed with no arguments, run in two languages each and checked; README, `site/public/docs.html`, `skill/` and claims C035 and C121 name those apps and nothing more. Language reached all three on both platforms; `-AppleLanguages` and `set-app-locales` need no change.
 
-**Steps (Mac for iOS, any KVM Linux or Mac for Android).** Use the three repos already checked: wger-project/flutter
-(`flutter build ios --simulator --debug`, `flutter build apk --debug`), obytes/react-native-template-obytes (`npx expo run:ios --configuration
-Release --no-bundler`, `npx expo run:android --variant release --no-bundler`), JetBrains/kotlinconf-app (`xcodebuild -workspace
-app/iosApp/KotlinConf.xcworkspace -scheme KotlinConfAppScheme ...`, `./gradlew :app:androidApp:assembleDebug`). In each: `shotfleet init`,
-write a 3-step English flow, `shotfleet run --locales de,ja`, open `out/index.html`.
-
-**Passed when** the German and Japanese screenshots show German and Japanese, 0 untranslated selectors in the run output, 0 problems from
-`check`. **Record** in `STATUS.md` row C1 and, only for what passed, in the README ("Flutter and React Native work from your translation files"
-currently says "not yet run on a real Flutter or React Native app"; claims C035, C121).
+**Still open from this item**
+- Bare React Native (Rocket.Chat or Ignite from section 12), and a Flutter or Expo app that is not one of these two.
+- The same on a KVM Linux box (Android only) for the timing.
+- **Blank screenshots: done (2026-10-04).** `check` flags a flat frame and `run` captures that language again once, then reports it. On a device (KotlinConf iOS, no wait) the second capture was blank again, so the flow must wait for text; see `research/frameworks.md` section 16.
+- **Still to run on a device** (the 2026-10-04/05 follow-up window produced nothing: `research/frameworks.md` section 17; it needs a quiet Mac, and each job a hard time limit): Rocket.Chat with a real flow (the starter flow only caught the splash); wger iOS in all 19 languages (the first try hung on a stuck simulator); a clean wger Android 19-language timing for the Linux comparison (E1; the 2026-10-04 run of 822 s on 1 emulator ran under another session's load); a clean KotlinConf iOS pair with a longer wait (the 2026-10-03 evidence image `kotlinconf-ios/en-01_privacy.png` is blank).
+- **`run` keeps stale language folders:** an earlier run's `ja` folder stayed in `out-android/raw` and was checked with the new run ("20 languages" for 19). A partial rerun keeping the other languages is deliberate, but a full default-locales run could warn about folders it did not just capture.
+- **Flutter debug builds show the DEBUG banner on iOS and, with a debug APK, on Android;** `init` already warns. A `release` APK on Android is untried with shotfleet.
+- **Marketing and draft pages still say "not yet run on a real Flutter or React Native app"** (`site/draft/`, `marketing/kit/`, `site/public/alternatives.html`, `research/`): left alone on purpose, they are conservative. Update them when the posts are rewritten.
+- Xcode 27 and these three builds: see the "did not pass" table; none of it is shotfleet's, but a `doctor` or README note could save a buyer an afternoon (`expo run:ios` cannot open the Simulator; `IPHONEOS_DEPLOYMENT_TARGET=15.1`; `ARCHS=arm64` for KMP).
 
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
@@ -113,12 +107,6 @@ the other; two emulators at once and Arabic are not run. The wording was updated
 the Japanese one the Japanese value (the run prints `no row for device '...'` if the value is not a serial shotfleet knows). **If it passes:**
 remove the "Maestro 2.0.10 doesn't define it" wording in `README.md` (Inputs), `site/public/docs.html`, `skill/shotfleet/references/config.md`
 and the note printed by `shotfleet.py` (search for `doesn't define it`), and drop the version caveat from `tests/test_limits_c2_c3.py`.
-
-## 7. Android on-screen text from the UI tree (B2)
-
-`research/limits-text.md` 1b: a 10-minute marker experiment on one emulator with Maestro 2.11: can the UI hierarchy be read during a sharded
-run without hanging it (2.0.10's `maestro hierarchy` broke sharded runs)? One text file per screenshot, or "not possible" written down. Today
-Android screenshots are checked with OCR only.
 
 ## 8. Python 3.14
 
@@ -135,9 +123,6 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 
 ## 10. Other frameworks
 
-- **Capacitor / Ionic:** unverified whether the iOS WKWebView language follows the launch argument (an Apple forum report says
-  `navigator.language` ignores it since iOS 17.4). A throwaway app with two buttons settles it in 20 minutes on a Mac.
-- **.NET MAUI:** `dotnet workload install maui`, then the LocalizationDemo sample from dotnet/maui-samples (`research/frameworks.md` section 12).
 - **Unity / games:** not realistic (no text in the accessibility tree). Not planned.
 
 ## 11. Decisions that are not engineering
@@ -151,9 +136,8 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 
 ## 12. New from the strategy research (2026-10-03, see research/profit-plan-2026-10-03.md)
 
-- **Xcode 27 final replaced Simulator.app with Device Hub** (static analysis in `docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to; unproved). Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
-  runtime, and record the Xcode build and iOS version in `STATUS.md` row 9 (no record says which Xcode the real runs used). Passed when 36 of 36 assertions hold; if `simctl` behaves
-  differently, `shotfleet.py`'s simulator functions are where to look.
+- **Xcode 27 final replaced Simulator.app with Device Hub** (`docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to). **Run 2026-10-04 on Xcode 27.0 (27A266a), macOS 27.0 with the iOS 26.4 runtime: 36 of 36 assertions, no `open -a Simulator`, status bar and 1320x2868 right** (`STATUS.md` row 9). **Still open: the same run with an iOS 27 simulator runtime** (none is installed on this Mac). `xcodebuild -downloadPlatform iOS` offers "iOS 27.0 Simulator (24A434) (arm64)", **8.05 GB**; on 2026-10-05 it ran at about 0.9 MB/s (hours), so start it early with `-exportPath <dir>` (downloads the image without installing it; the import step was not tried). Installing it makes `latest_ios_runtime()` pick iOS 27 for every later `shotfleet init`, so on a shared Mac install it last or pin `runtime` in the configs, and delete it again afterwards if the others should stay on 26.4. If `simctl` behaves
+  differently on iOS 27, `shotfleet.py`'s simulator functions are where to look.
 - **Apple's screenshot specifications change often** (8 Jul, 19 Aug, 9 Sep). The sizes are now watched by `tools/apple-specs-watch.py` (run it monthly with `tools/watch-upstream.sh`): it
   compares every size on Apple's page with `APPLE_SIZES` and was run on the real page on 2026-10-03 (45 distinct sizes, table matches; it also found four old-device landscape sizes
   that were missing, now added). The prose rules (count, alpha, which set is required) are not machine-read: read the page once a month. iPhone Duo sizes are known; Apple opens
@@ -167,3 +151,13 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
 - A quiet-Mac re-measure of the README timings (iOS about 9 min, Android about 15, 4 devices) is still open: the 2026-10-04 regression passed on correctness but ran on a swapping Mac with 2 devices (`STATUS.md` row 10). Do it once with nothing else running, `parallel = 4`, and only then change the README or claim C007.
 - **iOS driver start at 4 simulators on Maestro 2.11.0:** the CrossfitTracker run of 2026-10-04 passed 19/19 but 9 of 19 languages (18 in an earlier run) needed shotfleet's retry because two of four parallel simulators did not get their XCTest driver ready within 240 s (`research/maestro-2-11.md`, last section). Open: run the same on Maestro 2.0.10 with `parallel = 4` to see whether this is new; if it is, try a longer `MAESTRO_DRIVER_STARTUP_TIMEOUT` or staggered driver starts.
+
+## 13. State at the end of 2026-10-05 (device-queue coordinator wrap-up)
+
+- **shotfleet 0.1.0 is LIVE** (go-live ran 2026-10-05 08:02-08:11: `5fa4f7c` Gumroad product ID, `5bbec86` Site: sale open). Evidence: `research/go-live-gate.md`: G3 65/65 on the signed build of main 081853b (iPhone, iPad, Android; real licence), G10 production smoke 36 checks / 0 failed, live archive's checksum, signature and quarantined run verified. Not run: a real `install.sh` from the live URL into this Mac's real PATH (it can link into /opt/homebrew/bin; use a temp HOME), G8 (real apps with the release binary) and a refunded real key (needs a real sale).
+- **Merged today after a full local gate (798 tests, 59 worker checks, exit 0):** #40 (small experiments), #32 (launch-article verification; `site/draft` is not deployed).
+- **Open PRs that change `shotfleet.py` (next release, 0.1.1), do not merge blind:** #29 (first real Flutter/Expo/Compose runs, has conflicts), then #31 (stacked on #29; its blank-frame retry, Flutter release APK, Arabic secure field and wger in 19 languages were never verified on a device), #44 (Android screen text from the UI hierarchy, Maestro 2.7+; device run pending), #37 (Xcode 27.0 on the iOS 26.4 runtime, 36/36; conflict in STATUS.md, its session merges it). Each needs: rebase on main, `tools/check-claims.sh` exit 0, the device run named in its PR, then a release rebuild and the fixture e2e gate (G3) on the exact build before publishing.
+- **Maestro:** 2.0.10 and 2.11.0 both pass the fixture e2e (iOS 36/36, Android 29/29; 2.11.0 with the relative-screenshot-names fix, PR #35 merged earlier). A two-emulator Android `[inputs]` check on 2.11.0 and the iOS 27 runtime (8.05 GB, ~0.5 MB/s: needs a fast connection or an overnight download; do not import it while other jobs run, it changes `latest_ios_runtime()`) are the open device items.
+- **Running device jobs on this Mac (shared by many agent sessions):** use the lock protocol in `docs/device-queue.md`. Every run script or waiter needs a hard time limit (an unbounded waiter held the lock for 8 h overnight); check ownership of a process or folder before killing or deleting it (a work dir deleted by mistake voided a release gate run); `simctl` wedges under load (CoreSimulatorService restart is a user decision: it stops every booted simulator).
+- **Disk:** swung between 11 and 50 GB on 2026-10-04/05; AVD images (35 GB in ~/.android), CoreSimulator (43 GB), Gradle caches (33 GB) and session scratch in /private/tmp (56 GB) are the big items. shotfleet's own simulator cache (shotfleet-*) is recreated on demand.
+

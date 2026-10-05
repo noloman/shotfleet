@@ -1,0 +1,53 @@
+{
+ "screenshots": [
+  {
+   "file": "ar/01_onboarding.png",
+   "src": "raw/ar/01_onboarding.png",
+   "sha": "ed2f08470bb1",
+   "lang": "en",
+   "chars": 197
+  },
+  {
+   "file": "ar/02_login.png",
+   "src": "raw/ar/02_login.png",
+   "sha": "bbf8ee87834a",
+   "lang": "en",
+   "chars": 174
+  },
+  {
+   "file": "ar/03_settings.png",
+   "src": "raw/ar/03_settings.png",
+   "sha": "3d12ea5a7aec",
+   "lang": "ar",
+   "chars": 166
+  },
+  {
+   "file": "en/01_onboarding.png",
+   "src": "raw/en/01_onboarding.png",
+   "sha": "a9fb2070359b",
+   "lang": "en",
+   "chars": 199
+  },
+  {
+   "file": "en/02_login.png",
+   "src": "raw/en/02_login.png",
+   "sha": "53e74897fb8e",
+   "lang": "en",
+   "chars": 168
+  },
+  {
+   "file": "en/03_settings.png",
+   "src": "raw/en/03_settings.png",
+   "sha": "686ed8b8cca1",
+   "lang": "en",
+   "chars": 176
+  }
+ ],
+ "problems": [
+  "ar/01_onboarding.png: text looks like 'en', expected 'ar'",
+  "ar/02_login.png: text looks like 'en', expected 'ar'"
+ ],
+ "notes": [
+  "2 listing(s) (ar, en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations"
+ ]
+}

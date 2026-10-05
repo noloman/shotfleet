@@ -289,11 +289,11 @@ class FirstScreen(unittest.TestCase):
 
     def test_the_flutter_and_react_native_caveat_is_under_the_hero_strip_not_only_in_the_price_section(self):
         note = re.search(r'<p class="small fleet-note[^>]*>(.*?)</p>', PAGES["index.html"], flags=re.S).group(1)
-        self.assertIn("Not yet run on a real Flutter or React Native app", note)
+        self.assertIn("not yet on other Flutter or React Native apps", note)
         self.assertIn("Apple silicon", note)
 
     def test_the_caveat_stays_in_the_price_section_and_on_the_comparison_page(self):
-        self.assertIn("not yet run on a real Flutter or React Native app", PAGES["index.html"])
+        self.assertIn("other apps and bare React Native not yet run", PAGES["index.html"])
         self.assertIn("I haven't run it on a real Flutter or React Native app yet", PAGES["alternatives.html"])
         self.assertIn("Apple silicon", PAGES["alternatives.html"])
 

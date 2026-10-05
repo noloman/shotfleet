@@ -1,0 +1,6 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+memory pressure is elevated: using 1 devices instead of 2
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 19 locales on 1 simulators...
+
+shotfleet: stopped.

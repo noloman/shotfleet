@@ -73,7 +73,7 @@ class FleetCase(unittest.TestCase):
                 return ""
         pool.extend(Emu(i) for i in range(n))
 
-    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None):
+    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None, **watchdog):  # progress= and stall_s= (the stall watchdog)
         flows, junit = Path(cmd[cmd.index("test") + 1]), Path(cmd[cmd.index("--output") + 1])
         yamls = sorted(flows.glob("*.yaml")); cases = ""
         if flows.parent.name == "flows" and "attempt" in flows.name:  # iOS: one flow per language, screenshots named <lp>/01 relative to Maestro's working directory (cwd)

@@ -1,0 +1,51 @@
+{
+ "screenshots": [
+  {
+   "file": "ar/01_onboarding.png",
+   "src": "raw/ar/01_onboarding.png",
+   "sha": "ab63ecae68c0",
+   "lang": "en",
+   "chars": 205
+  },
+  {
+   "file": "ar/02_login.png",
+   "src": "raw/ar/02_login.png",
+   "sha": "36d34bb0da2a",
+   "lang": "en",
+   "chars": 168
+  },
+  {
+   "file": "ar/03_settings.png",
+   "src": "raw/ar/03_settings.png",
+   "sha": "4633958917af",
+   "lang": "ar",
+   "chars": 390
+  },
+  {
+   "file": "en/01_onboarding.png",
+   "src": "raw/en/01_onboarding.png",
+   "sha": "794d6c70191d",
+   "lang": "en",
+   "chars": 201
+  },
+  {
+   "file": "en/02_login.png",
+   "src": "raw/en/02_login.png",
+   "sha": "9bb610e8f563",
+   "lang": "en",
+   "chars": 166
+  },
+  {
+   "file": "en/03_settings.png",
+   "src": "raw/en/03_settings.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396
+  }
+ ],
+ "problems": [
+  "ar/01_onboarding.png: text looks like 'en', expected 'ar'",
+  "ar/02_login.png: text looks like 'en', expected 'ar'"
+ ],
+ "notes": []
+}

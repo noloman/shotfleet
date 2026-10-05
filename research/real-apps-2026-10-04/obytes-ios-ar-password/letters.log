@@ -1,0 +1,11 @@
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Obytes Starter'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 1 locales on 1 simulators...
+ok   ar       1/1 screenshots
+captured 1/1 locales in 37s on 1 simulators
+
+checked 1 screenshots in 1 languages: 1 problem(s)
+  - ar/01_pw.png: text looks like 'en', expected 'ar'
+exit 1 after 102s

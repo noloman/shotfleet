@@ -1,0 +1,5 @@
+shotfleet: emulators did not boot in time (600 s).
+emulator-5702 (/var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-emulator-logs/emulator-5702.log):
+WARNING      | Requested adb port (5703) is outside the recommended range [5555,5586]. ADB may not function properly for the emulator. See -help-port for details.
+each emulator wants about 3 GB of free memory and 2 CPU cores; lower `parallel` in the config, or free memory, and run again
+exit 2 after 926s

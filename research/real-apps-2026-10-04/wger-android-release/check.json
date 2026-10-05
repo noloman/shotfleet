@@ -1,0 +1,53 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_login.png",
+   "src": "raw/de/01_login.png",
+   "sha": "0183febcab6f",
+   "lang": "de",
+   "chars": 136
+  },
+  {
+   "file": "de/02_advanced.png",
+   "src": "raw/de/02_advanced.png",
+   "sha": "1c5c038fc59b",
+   "lang": "de",
+   "chars": 380
+  },
+  {
+   "file": "de/03_self_hosted.png",
+   "src": "raw/de/03_self_hosted.png",
+   "sha": "faebb040b084",
+   "lang": "de",
+   "chars": 507
+  },
+  {
+   "file": "ja/01_login.png",
+   "src": "raw/ja/01_login.png",
+   "sha": "b9b0a7d2c1ef",
+   "lang": "ja",
+   "chars": 108
+  },
+  {
+   "file": "ja/02_advanced.png",
+   "src": "raw/ja/02_advanced.png",
+   "sha": "237f0925177d",
+   "lang": "en",
+   "chars": 321
+  },
+  {
+   "file": "ja/03_self_hosted.png",
+   "src": "raw/ja/03_self_hosted.png",
+   "sha": "af1cbe1637bd",
+   "lang": "en",
+   "chars": 404
+  }
+ ],
+ "problems": [
+  "ja/02_advanced.png: shows en strings (12 lines) more than ja (0)",
+  "ja/03_self_hosted.png: shows en strings (11 lines) more than ja (1)"
+ ],
+ "notes": [
+  "2 listing(s) (de, ja) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations"
+ ]
+}

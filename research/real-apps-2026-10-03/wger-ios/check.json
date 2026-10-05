@@ -1,0 +1,51 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_login.png",
+   "src": "raw/de/01_login.png",
+   "sha": "7ef4a1687d0b",
+   "lang": "de",
+   "chars": 233
+  },
+  {
+   "file": "de/02_advanced.png",
+   "src": "raw/de/02_advanced.png",
+   "sha": "e52ff65365d0",
+   "lang": "de",
+   "chars": 492
+  },
+  {
+   "file": "de/03_self_hosted.png",
+   "src": "raw/de/03_self_hosted.png",
+   "sha": "97b9f4c62dc9",
+   "lang": "de",
+   "chars": 619
+  },
+  {
+   "file": "ja/01_login.png",
+   "src": "raw/ja/01_login.png",
+   "sha": "04f9761918e4",
+   "lang": "ja",
+   "chars": 205
+  },
+  {
+   "file": "ja/02_advanced.png",
+   "src": "raw/ja/02_advanced.png",
+   "sha": "ea8335856f70",
+   "lang": "en",
+   "chars": 425
+  },
+  {
+   "file": "ja/03_self_hosted.png",
+   "src": "raw/ja/03_self_hosted.png",
+   "sha": "328c750a80cb",
+   "lang": "en",
+   "chars": 508
+  }
+ ],
+ "problems": [
+  "ja/02_advanced.png: shows en strings (6 lines) more than ja (0)",
+  "ja/03_self_hosted.png: shows en strings (6 lines) more than ja (2)"
+ ],
+ "notes": []
+}

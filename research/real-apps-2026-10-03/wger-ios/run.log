@@ -1,0 +1,12 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+memory pressure is elevated: using 1 devices instead of 2
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   de       3/3 screenshots
+ok   ja       3/3 screenshots
+captured 2/2 locales in 48s on 1 simulators
+
+checked 6 screenshots in 2 languages: 2 problem(s)
+  - ja/02_advanced.png: shows en strings (6 lines) more than ja (0)
+  - ja/03_self_hosted.png: shows en strings (6 lines) more than ja (2)
+exit 1 after 82s

@@ -1,0 +1,2 @@
+shotfleet: no simulator app at /Users/manu/Library/Developer/Xcode/DerivedData/KotlinConf-dkqytcfkbvghhtcpxymjmkxcwwgc/Build/Products/Debug-iphonesimulator/KotlinConf.app. Build it for the simulator (Debug-iphonesimulator) and point 'app' at the .app
+exit 2 after 4s

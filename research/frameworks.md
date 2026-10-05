@@ -85,6 +85,16 @@ Cross-cutting facts used below:
 4. **Translations:** `Resources/Strings/AppResources.resx` + `.de.resx` **[V]**. Read today: `.resx`, culture from file name, neutral = base. Real sample worked [R]. Missing: nothing structural. Pitfall: bug 5 (native `values-*/Strings.xml` holding only the app name gets read by `load_strings_apk` when no `strings` is set).
 5. **Verdict: works today with `strings = "Resources/Strings/*.resx"`.** **Small work:** hint. Effort S.
 
+6. **Result of the run, 2026-10-04: passed.** Evidence in `research/experiments-2026-10-04/C/`. `dotnet/maui-samples` `10.0/Fundamentals/Localization/LocalizationDemo` (sparse checkout), .NET SDK 10.0.401 in a scratch folder,
+   `dotnet workload install maui` (MAUI SDK 10.0.110, iOS SDK 27.0; 101 packages, 2.07 GB download, **6.90 GB unpacked, over the task's 5 GB limit: run anyway with the owner's go-ahead**), Xcode 27.0.
+   `dotnet build -f net10.0-ios -c Debug -p:RuntimeIdentifier=iossimulator-arm64` -> `LocalizationDemo.app` (`rc=0`, 415 s). `shotfleet init` on the `.app` found 9 languages (de, en, es, fr, ja, pt, pt-PT, zh-Hans, zh-Hant) and printed the MAUI hint;
+   the config added `strings = "<...>/Resources/Strings/*.resx"` and `locales = ["de", "ja"]`. The flow (en): launch, `assertVisible: "Notes:"`, `assertVisible: "Add Note"`, `takeScreenshot: 01_home`.
+   `shotfleet run --locales de,ja --parallel 1` with Maestro 2.0.10 (shotfleet's tested version): `rc=0`, `captured 2/2 locales in 394s on 1 simulators` (iPhone 17 Pro Max, iOS 26.4), `untranslated_selectors: []` for both languages,
+   the selectors became `'Hinweise:'` / `'Neues Element hinzufügen'` (de) and `'注釈：'` / `'新しい項目を追加'` (ja) and their `assertVisible` steps passed, `shotfleet check`: `checked 2 screenshots in 2 languages: 0 problem(s)`.
+   The German screenshot shows the German labels and the sample's own German flag image, which only appears when the OS locale reached the app. **0 untranslated selectors on a 2-language run: C passes.**
+   What this does not show: Android (not built), the native `values-*` trap (bug 5; the iOS bundle has none), more than two languages or one screen, Release builds, or any MAUI app that is not this sample. The run was not on a quiet Mac: job #10's Android emulator
+   (port 5702) was running and the load was 480 to 640, with the queue owner's agreement for this iOS-only run; the language and selector results do not depend on timing, but the 394 s is not a speed figure.
+
 ## 6. Unity
 
 1. **Build.** Unity exports an Xcode project for iOS: build it with `xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -configuration Debug -sdk iphonesimulator`, after setting Player Settings > Target SDK = Simulator SDK [I, Unity manual not fetched]. Android: Build Settings with "Build App Bundle" off, or `Unity -batchmode -quit -buildTarget Android -executeMethod <your build method>` -> `.apk` [I]. Both produce installable artifacts.
@@ -100,6 +110,24 @@ Cross-cutting facts used below:
 3. **Maestro:** iOS reads WebView content through accessibility, and an element's `id` becomes the accessibility id (HybridMob guide) **[V]**. Android WebView is the weak side: known issues 2293 (ids), 3497 (WebView 150+ text inputs unmatchable), 3646 (`androidWebViewHierarchy: devtools` fails on System WebView 148+, opened 2026-09-30), and the documented workaround `androidWebViewHierarchy: devtools` **[V]**.
 4. **Translations:** ngx-translate/Transloco/i18next/vue-i18n JSON and Angular `$localize` XLIFF: read today (JSON, `.xlf`). Missing: `.xmb`, TS locale objects (common in vue-i18n), remote-loaded JSON.
 5. **Verdict: needs real work or at least an experiment:** feasible if the app follows the native locale (Android yes; iOS unverified). Otherwise per-language means a URL/localStorage bridge that is app-specific (not generic). Effort M, uncertain.
+
+6. **Result of the iOS experiment, 2026-10-04 (run on a simulator): yes, the language reaches the webview.** Evidence in `research/experiments-2026-10-04/B/`.
+   Throwaway app `dev.shotfleet.capdemo`: Capacitor 8.5.2 (`@capacitor/core`, `@capacitor/ios`) with `@capacitor/device` 8.0.3, Debug build for the iOS Simulator SDK with Xcode 27.0,
+   web assets embedded. Two buttons, the first labelled with `navigator.language`, the second from a string table (`en: Hello`, `de: Hallo`, picked by the first two letters of
+   `navigator.language`), plus a text line from `Device.getLanguageCode()`. Run on a new iPhone 17 Pro simulator, iOS 26.4, launched with `xcrun simctl launch ... dev.shotfleet.capdemo <args>`;
+   the text was read back through Maestro 2.11.0 `hierarchy` (which also shows that Maestro on iOS sees WKWebView text) and one screenshot of each state was taken:
+
+   | Launch | `navigator.language` | String-table button | `Device.getLanguageCode()` |
+   |---|---|---|---|
+   | no argument | `en-GB` | Hello | `en` |
+   | `-AppleLanguages "(de)"` | `de-DE` | **Hallo** | `de` |
+   | `-AppleLanguages "(ja)"` | `ja` | Hello (no `ja` in the table, falls back) | `ja` |
+   | `-AppleLanguages "(de)" -AppleLocale de_DE` | `de-DE` | Hallo | `de` |
+   | system language set to German on the simulator, then rebooted | `de-DE` | Hallo | `de` |
+
+   So on iOS 26.4 `-AppleLanguages` alone is enough, and `navigator.language` follows it; the forum report (iOS 17.4 and later, `navigator.language` stays on the system language) was **not reproduced**.
+   What this does not show: a real device (simulator only), any iOS version other than 26.4, an app that sets its own language in code, and Android (the Android side stays [V]/[I] above).
+   The verdict changes from "iOS unverified" to: per-language capture of a Capacitor app works on iOS 26.4 with the launch argument, for apps that read `navigator.language` or `@capacitor/device`.
 
 ## 8. NativeScript
 
@@ -189,6 +217,91 @@ Ranking = developers x ease (my 1-5 scores: size x ease). Ease means "works with
 | 6 | Unity / games | 4 | 1 | 4 | big audience, no text in the accessibility tree; do not target |
 
 Do first: fixes 1-4 of section 11 (a day of work total), then wger and obytes real runs, publish "Flutter, React Native/Expo and Compose Multiplatform" as tested only after those pass (the README admits sample-only today).
+
+## 15. Real runs on a Mac, 2026-10-03
+
+First runs of the plans in section 12 on a device. Mac: Apple silicon, Xcode 27.0 (iOS 26.4 simulator), Android SDK with the `shotfleet_android` AVD, Maestro 2.0.10, Flutter 3.47.6 (`brew install --cask flutter`), Node 26. Apps were shallow clones in a scratch folder. Screenshots (resized), flows, configs, `run.log` and `check` output: `research/real-apps-2026-10-03/<app>-<platform>/`. Today's date is the date of every number below; one run per cell unless it says otherwise.
+
+**What passed**
+
+| App (framework, build) | Platform | `init` with no arguments | Languages run | Result |
+|---|---|---|---|---|
+| wger-project/flutter (Flutter, debug) | iOS | found `build/ios/iphonesimulator/Runner.app`, wrote `strings = "lib/l10n/*.arb"` (19 languages shipped, 37 files), printed the DEBUG-banner hint | de, ja | de 3/3 in German; ja 3/3 but mostly English (see below). Capture 48 s, whole run 82 s |
+| wger | Android | found `build/app/outputs/flutter-apk/app-debug.apk` (`de.wger.flutter.debug`; the iOS id is `de.wger.flutter.community`, one flow serves both) | de, ja | same; capture 61 s |
+| obytes template (Expo + i18next, Release) | iOS | found `ios/build/Build/Products/Release-iphonesimulator/ObytesApp.app`, wrote `strings = "src/translations/*.json"` (ar, en) | en, ar | en 3/3, ar 3/3; Arabic and right-to-left on the Settings screen. Capture 74 s |
+| obytes | Android | found `android/app/build/outputs/apk/release/app-release.apk`, same line | en, ar | same, tab bar flipped too. Capture 100 s |
+| JetBrains/kotlinconf-app (Compose Multiplatform, Debug) | iOS | found the DerivedData `KotlinConf.app`; no `strings` needed, read de and en from the build | de, en | 6/6, `check` 0 problems. Capture 56 s |
+| kotlinconf-app | Android | found `androidApp-debug.apk` | de, en | 6/6, `check` 0 problems. Capture 56 s |
+
+Flows (3 screenshots each): wger login, the Advanced sheet, its Self-hosted option; obytes onboarding, login, Settings; KotlinConf privacy notice, notifications, Info. I looked at the German, Arabic and Japanese images by eye: the text is in those languages.
+
+**What did not pass, or passed with a caveat**
+
+| What | Detail |
+|---|---|
+| wger ja | The app's Japanese is about 30% done: Flutter falls back to English per string. `check` flags it both ways: in the run ("shows en strings (6 lines) more than ja (0)") and, with `--strings`, "the app has no ja translation, so this listing shows another language". Correct behaviour, but a Japanese listing from wger is not usable. |
+| obytes onboarding and login | Hard-coded English in the template (only Settings uses i18next). The flow's three selectors for them (`Obytes Starter`, `Let's Get Started`, `Not Now`) are reported as untranslated, and `check` flags `ar/01_onboarding` and `ar/02_login` ("text looks like 'en', expected 'ar'"). Right again; they are the app's, not shotfleet's. The tab bar is also hard-coded English on iOS. |
+| DEBUG banner | Appears on every wger screenshot on iOS (expected) and also on Android (the Android build is a debug APK too). No React Native red box (Release builds), no Metro. |
+| `expo run:ios` as written | Fails after the 11-minute `pod install`: Xcode 27 has no Simulator.app, so Expo cannot "open the Simulator". Built with `xcodebuild -workspace ios/ObytesApp.xcworkspace -scheme ObytesApp -configuration Release -sdk iphonesimulator -derivedDataPath build IPHONEOS_DEPLOYMENT_TARGET=15.1` instead (Xcode 27 rejects the pods' deployment targets of 9.0 and 12.4 without that override). `npx expo run:android` needs a running emulator; used `npx expo prebuild --platform android` then `./gradlew assembleRelease`, which failed twice in `react-native-reanimated` (it looks for `react-native-worklets/android/build/intermediates/cmake/release/obj/...so`, which AGP wrote under `cxx/RelWithDebInfo`) and passed on the third run (3 min 44 s) once those files were copied to the expected folder. |
+| kotlinconf-app iOS build | The documented `xcodebuild` fails on Xcode 27 with "Xcode Requested Architecture Not Configured in Gradle: ios_x64"; `ARCHS=arm64 ONLY_ACTIVE_ARCH=YES` fixes it. The Android build needs `sdk.dir` in `local.properties` (or `ANDROID_HOME`). |
+| wger Android build | 1005 s on the first build because Gradle downloaded NDK r28c and CMake 3.22.1; the iOS build took 89 s. |
+| kotlinconf-app has no `ja` | Only `values` and `values-de`; so de and en were run (a `ja` run would have been English). |
+
+**The four questions**
+
+1. *Does the language reach the app?* Yes, everywhere: iOS `-AppleLanguages` reached Flutter, the Expo/Hermes app (i18next `lng` from `expo-localization`, nothing persisted on a fresh install) and Compose Multiplatform; Android `cmd locale set-app-locales` reached all three. Arabic right-to-left reached both platforms of the Expo app. No code change was needed for this.
+2. *Does Maestro see the text?* Flutter: yes, through implicit `Semantics`; no `Semantics` code was added to wger. Gotcha found: Flutter merges a row's texts into one label with a newline (`Selbst gehostet\nMit deiner eigenen Instanz verbinden`, and `New to wger? Register` is one label), so `tapOn: "Self-hosted"` finds nothing even in English. `tapOn: "Self-hosted.*"` matches. shotfleet used to leave such a selector untranslated (so German failed); it now translates the text inside a leading or trailing `.*` (code change below). Expo: `id:` selectors (`testID`) worked for all inputs, the tab and the button; text selectors worked on Settings. No `accessibilityLabel` was involved, so issue 1409 was not met. Compose: iOS tree non-empty with a current Compose (text selectors worked); Android fine.
+3. *Untranslated selectors in the run output?* wger 0 (after the `.*` change), kotlinconf 0, obytes 3 (the app's own English, above).
+4. *DEBUG banner or red box?* Banner yes (wger, both platforms); red box no.
+
+**Other findings from the runs**
+
+- **A blank first screenshot, and `check` did not flag it.** wger on Android (a Flutter debug build is slow to draw its first frame on a fresh emulator): `01_login.png` was a white screen with only the status bar; and KotlinConf on iOS (Compose has the text in the accessibility tree before it paints): the first image was white. Both were caught only by luck (a second language with the same white image: "identical image in 2 languages"). A single-language run would have passed. Fixes in the flows: `extendedWaitUntil: visible: "Log in", timeout: 60000` (wger) and a 3 s pause (`extendedWaitUntil: notVisible: id: "no-such-id", timeout: 3000`) after the wait (KotlinConf). Candidate for shotfleet: `check` could flag a screenshot with no content (hand-off item below).
+- **A first Android launch of a Flutter debug app can take longer than Maestro's default wait**: the first attempt with a plain `assertVisible: "Log in"` failed on both shards, shotfleet's retry then passed. The long `extendedWaitUntil` avoids the retry (61 s instead of 87 s).
+- **iOS Arabic keyboard in a secure field:** `inputText: "password123"` typed only 3 characters (`•••`) in the Arabic run, nothing at all when split into chunks, while `123456` typed fine; English was fine. The flow uses digits. Not a shotfleet problem; worth a line in Tips.
+- **A "Save Password?" system sheet** appears after the Expo login form on iOS and swallowed the next tap in the Arabic run; `tapOn: {text: "Not Now", optional: true}` handles it. `Not Now` is now a known system button (kept in English, no "untranslated" report).
+- Memory pressure on a busy Mac: shotfleet used 1 simulator or emulator instead of 2 (it says so), which is why the capture times above are one-device times.
+- `shotfleet check <out>` run on its own, without `--strings`, does not know the app's translations: wger iOS said 0 problems although the Japanese is English; with `--strings 'lib/l10n/*.arb'` it says what is true. `run` passes the strings itself.
+
+**Code changes made for this** (with tests in `tests/test_shotfleet.py`): `translate_flow` translates the text inside `.*Text` and `Text.*` selectors; `Not Now` joins the system buttons.
+
+**Not run:** bare React Native, other Flutter and Expo apps, Capacitor, MAUI, Unity, Maestro 2.11, iPad and tablet sets, the full 37 (wger) languages, a real Flutter *release* build on Android.
+
+## 16. Device window, 2026-10-04 (13:21-14:05): checking the fixes of section 15
+
+Same Mac (Apple silicon, Xcode 27, iOS 26.4 simulator, Maestro 2.0.10), run inside the shared device queue. Evidence: `research/real-apps-2026-10-04/` (logs, `check.json`, `run.json`, resized screenshots; `window.log` has load, free memory and disk before each step).
+
+**Correction to section 15.** In the last KotlinConf iOS run of 2026-10-03 the English first screenshot (`01_privacy`) was a blank white frame and `check` passed it; the evidence image in `research/real-apps-2026-10-03/kotlinconf-ios/en-01_privacy.png` is that blank frame, and "6/6, 0 problems" for KotlinConf iOS was wrong for that image. `blank_screenshot()` flags it. A clean pair needs a longer wait than the 3 s pause used then (see below).
+
+| Check | Result |
+|---|---|
+| Blank frame found by `check` and `run` (KotlinConf iOS, flow without any wait before the first screenshot) | The first capture of both languages was blank; `run` printed `retrying 2: de, en`; the second capture was blank again, so both ended `FAIL ... blank screenshot(s): 01_privacy.png (the app had not drawn its first frame ...)` and `check` said `blank: nothing is drawn on it yet` plus `identical image in 2 languages`. So the capture-again step does **not** heal a deterministic blank (Compose paints after the text is readable every time); it only helps a transient one. The fix is in the flow: wait for text, then pause. Before this change that run would have passed `run` with the white frames. |
+| Same flow on KotlinConf Android | 2/2 languages ok, 6 screenshots, `check` 0 problems, 105 s, so Android does not need the pause. |
+| Flutter **release** APK on Android (wger, de + ja) | 2/2 languages ok in 69 s on 1 emulator; German, no DEBUG banner, first screenshot not blank; `check` flags ja like the debug build (27% translated). The `init` hint "on Android use flutter build apk --release" is right. Build: a release APK needs a signing key (wger reads `fastlane/metadata/envfiles/key.properties`); a throwaway `keytool -genkeypair` key works for a local build. |
+| Warning before the run for a half-translated language | Printed for real: `warning ja: only 27% of the app's own strings are translated, so the ja screenshots will mostly show en` (wger) and `warning ar: only 26% ...` (Rocket.Chat). |
+| wger Android, all 19 shipped languages | 19/19 captured, 3 screenshots each, **822 s on 1 emulator** (memory pressure cut 2 to 1; the first ~13 min ran under a load of 135 to 150 from another session's emulator, so this is not a clean timing). `check`: 60 screenshots in 20 languages (a stale `ja` folder from the earlier run was still in the output folder), 20 problems, all of the kind "shows en strings": **ca, it, nl, pl, pt, pt-PT, ro and zh-Hant show the English text on the Advanced screens** although they pass the 50% rule, because the Advanced sheet is newer than their translations. The 50% rule counts the whole app, not the screens in the flow; `check` is what catches it. |
+| wger iOS, all 19 languages | **Not run**: the simulator never finished booting (`simctl bootstatus did not answer within 900 s`), under the same load. To repeat. |
+| Arabic password typing on iOS (Expo app) | Letters typed into a secure field are dropped when the app runs in Arabic: `abcdef` typed nothing, six single letters nothing, `abc123` typed only `123` (3 dots), and earlier `123456` typed all six. Name and e-mail fields take letters. Not shotfleet's doing; documented in README Tips and `troubleshooting.md`. |
+| Rocket.Chat (bare React Native, 67 locale files) | Builds: Android release APK 214 MB (Gradle, 3 attempts' worth of setup: needs `-PKEYSTORE...` for the release signing), iOS Release needs `-destination 'generic/platform=iOS Simulator'` instead of `-sdk iphonesimulator` (its Watch app target fails with "no such module WatchKit"), `ARCHS=arm64`, `IPHONEOS_DEPLOYMENT_TARGET=16.4`; pods 11 min. `init` after the fix: React Native, `app/i18n/locales/*.json`, 25 languages, 16 shipped. First screens (en, de, ar on both platforms, 3/3): only the splash (red, logo) was captured because the starter flow's 5 s wait is shorter than the Release JS boot; the accessibility tree held only the app name. `ar` is 26% translated (warning printed). A real flow is still to be written. |
+| First try of the KotlinConf step | `no simulator app at .../DerivedData/...`: another session had cleaned DerivedData; the app was rebuilt into the scratch folder. |
+
+**Code changes after this window:** none beyond the README/troubleshooting lines; the blank check, the retry, the half-translated warning and the `init` fixes behaved as designed.
+
+## 17. Follow-up window, 2026-10-04 22:45 to 2026-10-05 07:00: nothing usable, one product fix
+
+The follow-up of section 16 (clean KotlinConf iOS pair, wger Android and iOS in 19 languages, Rocket.Chat exploration) held the device lock for **8 h 15 min** and produced no screenshots. Logs in `research/real-apps-2026-10-05/`; load, memory and disk per step in `research/real-apps-2026-10-04/window.log`.
+
+| Step | What happened |
+|---|---|
+| KotlinConf iOS, 6 s pause | `captured 0/2 locales in 4425s`, `no result (see maestro log)`, whole command 6285 s. The Mac was at load 135 to 340 (the release-gate rerun and other sessions' jobs), and the simulator never answered. |
+| wger Android, 19 languages (clean timing for E1) | Refused to start in 926 s: `each emulator wants about 3 GB of free memory and 2 CPU cores` (the emulator's setup log is printed with it). Not a timing. |
+| wger iOS, 19 languages | Hung for **6 h 14 min with 0 screenshots**: Maestro (5 h 33 min old) against my `shotfleet-1` simulator, which had never finished booting. shotfleet had no way to notice: its only time limit is `timeout_s` x languages (600 s x 19 = 3 h per batch, then a retry batch). I killed my own process chain by exact PID, shut the simulators down and released the lock. |
+
+My waiter script had no maximum run time either, so I held the lock for 8 h without noticing; the next waiters (small experiments, the Play screenshots job) lost that time.
+
+**Product fix (this branch):** `run_guarded` watches progress: when no new screenshot appears for `stall_s` seconds (default 900, config key `stall_s`), Maestro and its drivers are killed and the run takes the existing retry path, printing `maestro made no new screenshot for N s and was stopped`. Unit-tested (`StalledRun.*`, claim C130). Not yet seen on a device (the situation that triggers it needs a hung simulator).
+
+**Still not run on a device:** a clean wger Android 19-language timing (needs a quiet Mac with 3 GB per emulator free), wger iOS in 19 languages, Rocket.Chat with a real flow, a clean KotlinConf iOS pair with a longer wait.
 
 ## Six-line summary
 

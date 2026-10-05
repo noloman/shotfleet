@@ -1,0 +1,41 @@
+- launchApp
+- extendedWaitUntil:
+    visible: "Obytes Starter"
+    timeout: 60000
+- takeScreenshot: 01_onboarding
+- tapOn: "Let's Get Started.*"
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 20000
+- tapOn:
+    id: "name"
+- inputText: "Alex"
+- tapOn:
+    id: "email-input"
+- inputText: "alex@example.com"
+- tapOn:
+    id: "password-input"
+- waitForAnimationToEnd:
+    timeout: 2000
+- inputText: "123456"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "Return"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- takeScreenshot: 02_login
+- tapOn:
+    id: "login-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- tapOn:
+    id: "settings-tab"
+- takeScreenshot: 03_settings

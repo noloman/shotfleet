@@ -590,23 +590,20 @@
  },
  {
   "id": "C035",
-  "claim": "Flutter and React Native work from your translation files (tested on sample projects so far)",
+  "claim": "Flutter and React Native work from your translation files (run end to end on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android)",
   "where": [
    "site/public/index.html",
    "README.md"
   ],
   "where_text": [
-   "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).",
-   "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app)."
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run)."
   ],
-  "status": "fixed",
-  "proof": "No sample project exists: examples/ holds only CrossfitTracker configs. What was tested are translation files: SourceFiles.* and FrameworkFixes.* (unit, synthetic) and research/frameworks.md (real ARB/PO/JSON files downloaded from wger, Bluesky, Rocket.Chat, 2026-10-02, loaded and translated). No Flutter/RN app was built or run. README.md:231 is accurate; the site is not. Fixed 2026-10-02: the site and README now say 'tested on real translation files; not yet run on a real Flutter or React Native app', and a banned-phrase test keeps 'tested on sample projects' out.",
+  "status": "evidence",
+  "proof": "Real runs on this Mac, 2026-10-03, Maestro 2.0.10, Xcode 27, Flutter 3.47.6 (research/frameworks.md section 15, screenshots and logs in research/real-apps-2026-10-03/): wger (Flutter, debug build) iOS and Android, de and ja: `init` with no arguments found the build and wrote strings = lib/l10n/*.arb, 0 untranslated selectors, German on every screenshot on both platforms (the DEBUG banner shows); ja falls back to English because wger's Japanese is 30% done, and check says so ('the app has no ja translation'). obytes template (Expo, Release build) iOS and Android, en and ar: init wrote strings = src/translations/*.json, Arabic and right-to-left reach the translated Settings screen on both platforms; the app's onboarding and login screens are hard-coded English, so 3 selectors are reported as untranslated and check flags those 2 screenshots (correctly). Not run: bare React Native, other Flutter or Expo apps, Maestro 2.11.",
   "layer": "site",
-  "assertion": "Static: the site sentence must contain 'translation files' and 'not yet' (or 'real app') whenever it contains 'Flutter'. Device layer: run a real Flutter and a real Expo app once.",
-  "fix": "Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).",
-  "fixed_by": "wording",
-  "fixed": "Not made true by running a real app: this Mac has no Flutter SDK or Expo project, and building both toolchains plus a simulator run is more than half a day. Reworded to what is proven: translation files in real ARB/i18next/PO formats, read by shotfleet (SourceFiles tests; research/frameworks.md).",
-  "test": "SourceFiles.test_flutter_arb_with_icu_plurals, SourceFiles.test_i18next_json"
+  "assertion": "On wger and the obytes template, run --locales de,ja (en,ar) on iOS and Android: screenshots in the right language, check says what the app itself does not translate.",
+  "fix": ""
  },
  {
   "id": "C036",
@@ -2048,9 +2045,9 @@
    "**Run `shotfleet init` in the project folder** and it does the finding for you."
   ],
   "status": "partial",
-  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; no real Flutter or React Native build was made (README says so). Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages. 2026-10-03 (claims-unit, tests/test_claims_unit.py): InitInEveryFramework.test_the_simulator_build_is_found_and_the_strings_line_is_written, InitInEveryFramework.test_the_apk_is_found_where_the_framework_builds_it and InitInEveryFramework.test_nothing_built_prints_the_frameworks_own_commands_for_both_platforms now cover Flutter, React Native, Expo, Capacitor and .NET MAUI (build found, strings line written, own build commands printed). InitInEveryFramework.test_kotlin_multiplatform_is_recognised_and_its_gradle_apk_found_but_it_has_no_strings_line shows that for Kotlin Multiplatform init writes no strings line (its strings are read from the build), so 'writes the strings line' holds for five of the six. Left partial: still folders made by the test; the assertion asks for a real Flutter and a real Expo project.",
+  "proof": "Detect.test_flutter_with_the_default_arb_folder, FindTheBuild.test_flutter_ios_build_in_the_flutter_build_folder, FindTheBuild.test_nothing_built_names_the_frameworks_own_commands, InitInAFlutterFolder.test_init_with_no_arguments_writes_the_strings_line_and_counts_the_languages: synthetic project folders. The build paths are each framework's documented defaults; Also run by hand on a real Flutter 3.47 debug APK and a real Expo release APK built on Linux (docs/linux.md): both found, strings line written, 3 languages. 2026-10-03 (claims-unit, tests/test_claims_unit.py): InitInEveryFramework.test_the_simulator_build_is_found_and_the_strings_line_is_written, InitInEveryFramework.test_the_apk_is_found_where_the_framework_builds_it and InitInEveryFramework.test_nothing_built_prints_the_frameworks_own_commands_for_both_platforms now cover Flutter, React Native, Expo, Capacitor and .NET MAUI (build found, strings line written, own build commands printed). InitInEveryFramework.test_kotlin_multiplatform_is_recognised_and_its_gradle_apk_found_but_it_has_no_strings_line shows that for Kotlin Multiplatform init writes no strings line (its strings are read from the build), so 'writes the strings line' holds for five of the six. Real, 2026-10-03 on a Mac: `init` with no arguments in the wger (Flutter) and obytes (Expo) folders found the iOS .app and the Android APK and wrote the strings line (19 and 2 languages), and in kotlinconf-app (Compose Multiplatform) found both builds and read de and en from them; all three then ran end to end (research/frameworks.md section 15). Left partial: Capacitor, MAUI and bare React Native were never run for real.",
   "layer": "unit",
-  "assertion": "On a real Flutter and a real Expo project init picks the build and the strings line without arguments.",
+  "assertion": "On a real Flutter, Expo and Compose project init picks the build and the strings line without arguments.",
   "fix": ""
  },
  {
@@ -2127,5 +2124,70 @@
   "layer": "unit",
   "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok. (Run on a Mac in a throwaway environment, both Android branches, 2026-10-03; not on a separate clean user.)",
   "fix": ""
+ },
+ {
+  "id": "C127",
+  "claim": "check flags a screenshot with nothing drawn on it but the status bar, and run captures that language again once",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "**Blank:** a screenshot with nothing drawn but the status bar",
+   "<strong>Blank:</strong> a screenshot with nothing drawn but the status bar"
+  ],
+  "status": "evidence",
+  "proof": "BlankScreenshots.test_a_flat_frame_with_a_status_bar_is_blank, BlankScreenshots.test_a_screen_with_content_is_not_blank, BlankScreenshots.test_what_it_cannot_read_is_not_called_blank, BlankScreenshots.test_a_language_with_a_blank_frame_is_named_so_it_is_captured_again. Real blank frames seen 2026-10-03 on wger (Android, first launch) and kotlinconf-app (iOS); the detector flagged the real kotlinconf image and none of the 36 other real screenshots. Device, 2026-10-04 (research/frameworks.md section 16, research/real-apps-2026-10-04/): KotlinConf iOS with no wait before the first screenshot: first capture blank, 'retrying 2: de, en', still blank, both reported FAIL with the fix named, check says 'blank' and 'identical image'. The capture-again step did not heal this deterministic case (it can only help a one-off), which README says ('captures that language again once, then reports it'). Not shown on a device: a blank frame that the second capture does heal.",
+  "layer": "unit",
+  "assertion": "On a device: a flow without a wait gives a blank first frame; run retries once and then reports it; check flags it.",
+  "fix": ""
+ },
+ {
+  "id": "C128",
+  "claim": "A selector written as Title.* or .*Title has the title translated, which is how a Flutter row (one label of title and detail) is tapped",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "so tap it as `\"Self-hosted.*\"`; shotfleet translates the part before the `.*`"
+  ],
+  "status": "proven",
+  "proof": "TranslateFlow.test_wildcard_around_a_known_label_is_kept_and_the_label_translated. On a device: wger iOS and Android, tapOn \"Self-hosted.*\" in German and English (research/frameworks.md section 15).",
+  "layer": "unit",
+  "assertion": "Self-hosted.* becomes Selbst gehostet.* in German and matches the merged label.",
+  "fix": "",
+  "test": "TranslateFlow.test_wildcard_around_a_known_label_is_kept_and_the_label_translated"
+ },
+ {
+  "id": "C129",
+  "claim": "run warns before capturing when you ask for a language the app only half translates; a standalone check of a run folder reads the same translation files as the run",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`run` warns when you ask for such a language by name"
+  ],
+  "status": "proven",
+  "proof": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run, ExternalOcr.test_check_of_a_run_folder_reads_the_translation_files_the_run_used. Device, 2026-10-04: 'warning ja: only 27% ...' (wger) and 'warning ar: only 26% ...' (Rocket.Chat) printed before capturing.",
+  "layer": "unit",
+  "assertion": "The warning names the language and its percentage; check on run.json finds the .arb files.",
+  "fix": "",
+  "test": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run"
+ },
+ {
+  "id": "C130",
+  "claim": "A run that produces no new screenshot for 15 minutes (a hung simulator or flow) is stopped and retried; stall_s sets the limit",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped"
+  ],
+  "status": "proven",
+  "proof": "StalledRun.test_no_progress_for_stall_s_kills_the_command, StalledRun.test_a_run_that_keeps_producing_is_left_alone, StalledRun.test_newest_screenshot_is_the_latest_png_at_any_depth. Cause: on 2026-10-05 a 19-language wger iOS run sat 6 h 14 min with 0 screenshots on a hung simulator, because the overall timeout (600 s per language per batch, up to 3 h) only fires at the end.",
+  "layer": "unit",
+  "assertion": "A command with no progress for stall_s seconds is killed within seconds of that and raises TimeoutExpired with .stalled.",
+  "fix": "",
+  "test": "StalledRun.test_no_progress_for_stall_s_kills_the_command"
  }
 ]

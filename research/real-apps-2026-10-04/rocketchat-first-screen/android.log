@@ -1,0 +1,12 @@
+warning ar: only 26% of the app's own strings are translated, so the ar screenshots will mostly show en; check will say so
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 1 emulators, 3 rounds...
+ok   en       1/1 screenshots
+ok   de       1/1 screenshots
+ok   ar       1/1 screenshots
+captured 3/3 locales in 67s on 1 emulators
+
+checked 3 screenshots in 3 languages: 0 problem(s)
+notes (1, not blocking):
+  - 3 listing(s) (ar, de, en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+exit 0 after 86s

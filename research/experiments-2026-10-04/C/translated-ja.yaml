@@ -1,0 +1,17 @@
+appId: com.companyname.localizationdemo
+name: ja
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(ja)"
+      AppleLocale: "ja"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: '注釈：'
+- assertVisible: '新しい項目を追加'
+- takeScreenshot: 'ja/01_home'
+- extendedWaitUntil:
+    visible: "__shotfleet_reading_screen__"
+    timeout: 1500
+    optional: true

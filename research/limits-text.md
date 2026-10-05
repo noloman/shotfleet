@@ -19,7 +19,7 @@ Two facts frame all three limits:
 
 ## 1. Read the screen's text from the UI hierarchy instead of pixels
 
-### Verdict: feasible now on Maestro >= 2.7.0, but the one trick it rests on needs a 10-minute experiment. Effort M. Not worth it on older Maestro.
+### Verdict: feasible now on Maestro >= 2.7.0; the one trick it rests on was run on 2.11.0 on 2026-10-04 and works (section 1f). Effort M. Not worth it on older Maestro.
 
 ### 1a. What exists (verified in source)
 
@@ -97,6 +97,59 @@ Add `- runScript: {file: snap.js, env: ...}` after each screenshot. `snap.js` ca
 - Upgrading Maestro 2.0.10 to 2.7+ changes the debug-output layout (`logs/maestro.log` is now inside each flow dir; `flow_devices()` uses `rglob("maestro.log")` so it should survive), adds a PNG per step, and in 2.6.0 changed parallel iOS handling. Re-run the whole suite on the new version before shipping. [inferred from changelog]
 - Hierarchy taken about 1 s after the screenshot can differ if the screen animates. A spinner or ticking timer shows up as a changed string; compare only table matches, not the whole tree.
 - Large iOS trees: the runner has a recovery path for `kAXErrorIllegalArgument` and `kAXErrorInvalidUIElement` [source: ViewHierarchyHandler.swift], and idb truncates at depth 50 / 3000 nodes.
+
+### 1f. Experiment result, 2026-10-04: yes, on one emulator with Maestro 2.11.0 (run, not source reading)
+
+**Question** (handoff item 7): can the UI hierarchy be read during a sharded run without hanging it (2.0.10's `maestro hierarchy` broke sharded runs)?
+**Answer: yes through the in-run marker (1b A); no through `maestro hierarchy` from outside.** Evidence is in `research/experiments-2026-10-04/A/`.
+
+Setup: Maestro 2.11.0 (`cli-2.11.0` release zip, unpacked in a scratch folder, Java home pointed at scratch with `-Duser.home` so `~/.maestro` was not
+touched: listing and mtime identical before and after). One read-only copy of the `shotfleet_android` AVD (Android 16, arm64) on port 5760, booted from
+its snapshot. App: the fixture APK (`com.shotfleet.fixture`, `tools/fixture-app-android/build.sh`) with the app language set to Japanese by
+`adb shell cmd locale set-app-locales com.shotfleet.fixture --locales ja`. Both runs used `maestro --device emulator-5760 test --shard-all 1
+--debug-output <dir> <flow>`, so they were sharded runs of one shard on one device.
+
+The flow (`A/flow-control.yaml`): `launchApp`, `takeScreenshot: shots-control/01_welcome`, the marker (`assertTrue: {condition: ${false}, label:
+"shotfleet:hier:01_welcome", optional: true}`), `tapOn: "次へ"`, `takeScreenshot` again, the marker again.
+
+| Run | What happened | Result |
+|---|---|---|
+| control (markers only) | both markers reported `WARNED`, the flow carried on | `rc=0`, 16 s. `screen-hierarchy/step-005-assertCondition.json` and `step-008-...json` written; `commands.json` lists each as a `SCREEN_HIERARCHY` artifact of the step labelled `shotfleet:hier:<name>`. Marker cost per `commands.json`: 1178 ms for the first, 77 ms for the second. |
+| probe (a 40 s `extendedWaitUntil` step, `optional: true`, in the middle; `maestro --device emulator-5760 hierarchy` started 17 s into the run, while that step was waiting) | the sharded run was **not hung**: it finished with `rc=0` in 54 s, the tap, the second screenshot and the second marker all ran | `maestro hierarchy` itself failed fast with `rc=1`: `Device server died during 'deviceInfo' on emulator-5760 ... StatusRuntimeException: UNAVAILABLE` (`A/probe-hierarchy.err`). It ended before the 25 s check, so nothing had to be killed. It returned no hierarchy. |
+
+One text file per screenshot (`A/extract.py` pairs each marker label with the `takeScreenshot` before it and flattens `text`, `accessibilityText`, `hintText`
+of every node; `A/results/<run>/<name>.txt`). The Japanese is exact, not OCR:
+
+```
+01_welcome.txt   ようこそ / あなたのスクリーンショットを、すべての言語で。 / 次へ   (then the status bar: 2:40, "T-Mobile, three bars.", "Battery charging, 100 percent.")
+02_settings.txt  設定 / アプリの見た目と音を選びます。 / 完了                       (same status-bar lines)
+```
+
+What round 1 did not show (round 2 below covers the first three): two shards on two emulators at once, a right-to-left language, the 2.0.10 behaviour, and more than a two-screen app. Status-bar nodes (time, signal, battery) are in
+the text and must be dropped before matching. The same mechanism also fired for the optional 40 s wait step (it ended `WARNED`, so it saved a hierarchy too),
+which confirms any warned step saves one. Side finding for the Maestro 2.11 work: with `--debug-output` set, the relative `takeScreenshot` path ended up
+under `<debug>/<flow>/takeScreenshot/shots-control/01_welcome.png`, not in the working directory.
+
+**Not implemented in shotfleet.** `android_flow` still carries no markers and Android screenshots are still checked with OCR only; nothing in the README or the
+site changes. Next step if wanted: section 1d, Effort M, now with the trick confirmed.
+
+#### Round 2 (same day, evening): two shards, two emulators, Arabic, and Maestro 2.0.10
+
+Evidence in `research/experiments-2026-10-04/A2/`. Two read-only copies of the `shotfleet_android` AVD (ports 5760 and 5762), the fixture APK on both, two flows run as two shards in parallel
+(`maestro --device emulator-5760,emulator-5762 test --shard-split 2 --debug-output <dir> <flows>`), each flow = launch, screenshot, marker, a 40 s optional wait, tap, screenshot, marker. During the wait step (30 s into the run)
+`maestro hierarchy` was started on **both** emulators at once. A session restart killed my first attempt, and the probe timing was fixed before the runs below (the first script waited for a log line that sharded runs do not print).
+
+| Run | Result |
+|---|---|
+| Maestro 2.11.0, app language ja | `Passed: 2/2` (`rc=0`, 169 s with the 40 s wait). Both shards (`a2-m211ja-1-shard-2`, `a2-m211ja-2-shard-1`) wrote three hierarchy files each (two markers and the wait step). Both probes failed fast: `Device server died during 'deviceInfo' ... UNAVAILABLE`; nothing hung. |
+| Maestro 2.11.0, app language **ar** (right to left), no probe | `Passed: 2/2`, `rc=0`, 74 s. Four text files (two shards, two screens): `مرحبًا / لقطات الشاشة الخاصة بك، بكل اللغات. / التالي` and `الإعدادات / اختر مظهر التطبيق وصوته. / تم`, in logical order, equal to the app's own `values-ar` strings. |
+| Maestro **2.0.10**, app language ja, markers off, same probe | `Passed: 2/2`, `rc=0`, 90 s. The probes failed fast with `UNAVAILABLE: io exception` on both devices. **No `screen-hierarchy` folder is written at all** (2.0.10 has no per-step hierarchy), which matches the 2.7.0 minimum above. |
+
+The Japanese text of both shards matches round 1 (`ようこそ ... 次へ`, `設定 ... 完了`). Marker cost with two emulators running in parallel: 0.6 to 5.1 s for the first marker of a flow, 0.2 to 0.5 s for the second (`commands.json` durations).
+
+**The 2.0.10 hang was not reproduced.** The 2026-10-01 note in `android_flow` says `maestro hierarchy` "tears down its port forwards, which hung the run". In this setup (2.0.10, two emulators, two shards, a probe on each device in the middle of a 40 s wait) the probe failed with
+`UNAVAILABLE` and the sharded run still finished with `Passed: 2/2`. One attempt per case, one app, so this does not prove the hang cannot happen (it may need a different moment, such as the probe landing while a step is in flight), but it also means that
+claim is not confirmed by this run. The comment in `shotfleet.py` is unchanged; the design in 1d does not depend on it, because the marker needs no outside call.
 
 Effort: **M** (about 3 to 5 days with fixtures and the experiment).
 
