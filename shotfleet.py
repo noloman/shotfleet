@@ -4166,14 +4166,15 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
      "no copies across languages, none missing, and the stores' size/count/transparency rules. Works on fastlane "
      "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
-     "folders. Read-only for the screenshots: it never changes the folder it checks, and only writes its report "
-     "(check.json, index.html) to ./shotfleet-check in the server's working folder. Takes seconds to a few minutes "
+     "folders. It never changes a screenshot; it only writes its report (check.json, index.html) to the report folder "
+     "(default: ./shotfleet-check in the server's working folder, or the run's own folder for shotfleet output). Takes seconds to a few minutes "
      "(text recognition of every screenshot). Returns the report as JSON (problems, notes, screenshots).",
      "annotations": {"readOnlyHint": True, "openWorldHint": False},
      "inputSchema": {"type": "object", "required": ["folder"], "properties": {
          "folder": {"type": "string", "description": "folder with the screenshots"},
          "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
-         "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"}}}},
+         "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"},
+         "report": {"type": "string", "description": "where to write check.json and index.html (default: ./shotfleet-check)"}}}},
     {"name": "doctor", "title": "Check the setup",
      "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet, and say what is missing. "
      "Changes nothing (it never installs anything over MCP). Asks shotfleet.com once for the latest version. Takes seconds.",
@@ -4200,7 +4201,8 @@ def mcp_call(name, args):
             if name == "doctor": code = cmd_doctor()
             elif name == "check":
                 folder = Path(args["folder"]).expanduser()
-                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"))  # report goes to ./shotfleet-check, never into the checked folder
+                report = args.get("report") and Path(args["report"]).expanduser()  # default ./shotfleet-check (a run's output: its own folder)
+                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"), report)
             elif name == "run": apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
             else: return f"unknown tool {name}", True
     except Exception as e:  # one bad call must not kill the server

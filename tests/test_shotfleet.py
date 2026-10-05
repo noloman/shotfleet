@@ -1001,6 +1001,25 @@ class Mcp(unittest.TestCase):
         self.assertTrue(out[3]["result"]["isError"]); self.assertIn("no folder", out[3]["result"]["content"][0]["text"])
         self.assertEqual(out[4]["error"]["code"], -32601)
 
+    def fake_check(self, n_locales, n_screens, bad_every=0):
+        """A stand-in for check_any: writes a synthetic check.json where the real one would go, reads no image."""
+        def check(folder, app=None, strings=None, ocr=None, report=None, *a, **k):
+            report = Path(report or "shotfleet-check"); report.mkdir(parents=True, exist_ok=True)
+            shots = [{"file": f"l{i:02}/{j:02}_screen_with_a_long_name.png", "src": f"raw/l{i:02}/{j:02}_screen_with_a_long_name.png",
+                      "sha": "d1ab71300024", "lang": f"l{i:02}", "chars": 208, "evidence": "ocr"} for i in range(n_locales) for j in range(n_screens)]
+            problems = [f"{s['file']}: shows en strings (5 lines) more than {s['lang']} (3)" for k_, s in enumerate(shots) if bad_every and k_ % bad_every == 0]
+            (report / "check.json").write_text(json.dumps({"screenshots": shots, "problems": problems, "notes": ["a note"]}))
+            sf.LAST_REPORT = report / "check.json"; sf.REPORTS.append(sf.LAST_REPORT)
+            return 1 if problems else 0
+        return mock.patch.object(sf, "check_any", check)
+
+    def test_check_takes_a_report_folder(self):
+        with tempfile.TemporaryDirectory() as d, self.fake_check(2, 2):
+            text, err = sf.mcp_call("check", {"folder": d, "report": str(Path(d) / "rep")})
+            self.assertFalse(err, text)
+            self.assertTrue((Path(d) / "rep/check.json").is_file())
+        self.assertIn("report", next(t for t in sf.MCP_TOOLS if t["name"] == "check")["inputSchema"]["properties"])
+
     def test_tool_annotations_say_what_each_tool_does(self):
         tools = {t["name"]: t for t in sf.MCP_TOOLS}
         for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)
