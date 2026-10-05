@@ -9,11 +9,10 @@ Done:
 - Targeted tests pass (test_free_tier_message, test_claims_unit, test_agent_skills, test_docs, test_release_candidate, test_handoff_docs).
 
 Left:
-- run tests/test_shotfleet.py output check, targeted claims tests (tests/test_claims.py), site/README text check.
-- ONE full `tools/check-claims.sh > <file> 2>&1` after `pgrep -f tools/check-claims.sh` shows no other run (poll 30 s). Record exit code and test count.
-- Draft PR: `gh pr create --draft --base main --head claude/fix-free-tier-message` (body: old/new message, tests, exit code, 'Merge with [skip ci]', RESUME.md must be deleted before merging).
+- Nothing in code. Full tools/check-claims.sh ran once: exit 0, 860 tests OK (skipped=21), worker 59 checks ok.
+- Delete this file before merging. Do not merge (draft PR).
 
 Tests: `cd tests && python3 -m unittest test_free_tier_message test_claims_unit test_agent_skills test_docs test_release_candidate`
 
-PR: not opened yet.
-Next step: run test_shotfleet and test_claims, then the single full check.
+PR: see `gh pr view --head claude/fix-free-tier-message`
+Next step: wait for the coordinator to review the draft PR.
