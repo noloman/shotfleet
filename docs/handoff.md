@@ -14,10 +14,9 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
 | 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
-| 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
-| 10 | Capacitor, MAUI, Unity | per-framework toolchains and devices | not attempted |
+| 10 | Unity | a Unity install and devices | not planned |
 | 11 | Decisions that are not engineering | you | see the end |
 | 12 | Xcode 27 check, monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
 
@@ -114,12 +113,6 @@ the Japanese one the Japanese value (the run prints `no row for device '...'` if
 remove the "Maestro 2.0.10 doesn't define it" wording in `README.md` (Inputs), `site/public/docs.html`, `skill/shotfleet/references/config.md`
 and the note printed by `shotfleet.py` (search for `doesn't define it`), and drop the version caveat from `tests/test_limits_c2_c3.py`.
 
-## 7. Android on-screen text from the UI tree (B2)
-
-`research/limits-text.md` 1b: a 10-minute marker experiment on one emulator with Maestro 2.11: can the UI hierarchy be read during a sharded
-run without hanging it (2.0.10's `maestro hierarchy` broke sharded runs)? One text file per screenshot, or "not possible" written down. Today
-Android screenshots are checked with OCR only.
-
 ## 8. Python 3.14
 
 Run on 3.14.0rc2 (2026-10-03, `uv python install 3.14`): all 595 tests pass with `-W error::DeprecationWarning`. Left: add `"3.14"` to the `linux`
@@ -135,9 +128,6 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 
 ## 10. Other frameworks
 
-- **Capacitor / Ionic:** unverified whether the iOS WKWebView language follows the launch argument (an Apple forum report says
-  `navigator.language` ignores it since iOS 17.4). A throwaway app with two buttons settles it in 20 minutes on a Mac.
-- **.NET MAUI:** `dotnet workload install maui`, then the LocalizationDemo sample from dotnet/maui-samples (`research/frameworks.md` section 12).
 - **Unity / games:** not realistic (no text in the accessibility tree). Not planned.
 
 ## 11. Decisions that are not engineering

@@ -1,0 +1,17 @@
+appId: com.companyname.localizationdemo
+name: de
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(de)"
+      AppleLocale: "de_DE"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: 'Hinweise:'
+- assertVisible: 'Neues Element hinzufügen'
+- takeScreenshot: 'de/01_home'
+- extendedWaitUntil:
+    visible: "__shotfleet_reading_screen__"
+    timeout: 1500
+    optional: true

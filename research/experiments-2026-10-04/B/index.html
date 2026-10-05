@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>capdemo</title>
+<style>body{font:22px -apple-system,sans-serif;padding:80px 24px}button{display:block;margin:24px 0;padding:18px 24px;font-size:22px}</style></head>
+<body>
+<button id="lang-button"></button>
+<button id="table-button"></button>
+<p id="device-lang"></p>
+<script>
+const table = { en: { hello: "Hello" }, de: { hello: "Hallo" } };
+const lang = navigator.language;
+const code = lang.slice(0, 2);
+document.getElementById('lang-button').textContent = 'navigator.language=' + lang;
+document.getElementById('table-button').textContent = (table[code] || table.en).hello;
+(async () => { try { document.getElementById('device-lang').textContent = 'device=' + (await window.Capacitor.Plugins.Device.getLanguageCode()).value; } catch (e) { document.getElementById('device-lang').textContent = 'device=error ' + e; } })();
+</script></body></html>

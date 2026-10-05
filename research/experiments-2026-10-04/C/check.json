@@ -1,0 +1,20 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_home.png",
+   "src": "raw/de/01_home.png",
+   "sha": "6783e6f17379",
+   "lang": "de",
+   "chars": 87
+  },
+  {
+   "file": "ja/01_home.png",
+   "src": "raw/ja/01_home.png",
+   "sha": "9c9fe326510f",
+   "lang": "ja",
+   "chars": 37
+  }
+ ],
+ "problems": [],
+ "notes": []
+}
