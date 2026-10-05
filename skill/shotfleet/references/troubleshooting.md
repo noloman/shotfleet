@@ -103,10 +103,10 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `no shotfleet run in` | `export` pointed at a folder without `run.json` | pass the `run` output folder (`out`, `out-ios`, `out-android`) |
 | `hasn't been checked` | no `check.json` in it | `shotfleet check <out>` |
 | `need a licence` | `export`, or `run` past 2 languages, without a licence | the user runs `shotfleet activate <key>`; see licence.md |
-| `that key didn't activate` | wrong, revoked, refunded or charged-back key | the user checks the key in the Gumroad receipt email |
+| `that key didn't activate` | wrong, disabled (`the key was disabled`), refunded or charged-back key | the user checks the key in the Gumroad receipt email |
 | `activations. Email hello@shotfleet.com` | the key has used all 3 activations (Gumroad keys); `deactivate` does not give one back | the user emails hello@shotfleet.com to have the count reset |
 | `SHOTFLEET_KEY isn't a valid licence` | bad key in CI | fix the secret |
-| `this licence is no longer valid` | refunded or revoked | the user contacts support |
+| `this licence is no longer valid` | refunded, charged back or disabled (the reason is in the parentheses) | the user contacts support |
 | `couldn't reach the licence server for 30 days` | offline too long | connect once |
 
 ## Warnings and notes (not errors)
