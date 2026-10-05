@@ -2,6 +2,7 @@
 // modes: rev2 (revision 2) | <mode>+cancel (cancel() after 5 s) | default | cpu14 (macOS 14+ compute-device API) | cpuold (usesCPUOnly) | fast | fast+cpu14 | devices | langs
 // Build: swiftc -target arm64-apple-macos13.0 vtest.swift -o vtest
 import CoreML
+import CoreText
 import Foundation
 import Vision
 
@@ -52,9 +53,22 @@ if mode.hasSuffix("+cancel") { DispatchQueue.global().asyncAfter(deadline: .now(
 if mode.hasSuffix("cpu14") { if !useCPUOnly(req) { print("{\"error\":\"no cpu device\"}"); exit(3) } }
 if mode == "cpuold" { req.usesCPUOnly = true }
 req.automaticallyDetectsLanguage = true
+/// "draw:<text>" renders the text in memory (to meet a script the repo has no screenshot of)
+func handler(_ arg: String) -> VNImageRequestHandler {
+    guard arg.hasPrefix("draw:") else { return VNImageRequestHandler(url: URL(fileURLWithPath: arg)) }
+    let ctx = CGContext(data: nil, width: 700, height: 160, bitsPerComponent: 8, bytesPerRow: 0,
+                        space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+    ctx.setFillColor(CGColor(gray: 1, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: 700, height: 160))
+    let font = CTFontCreateWithName("Helvetica" as CFString, 56, nil)
+    let line = CTLineCreateWithAttributedString(NSAttributedString(string: String(arg.dropFirst(5)), attributes: [
+        NSAttributedString.Key(kCTFontAttributeName as String): font,
+        NSAttributedString.Key(kCTForegroundColorAttributeName as String): CGColor(gray: 0, alpha: 1)]))
+    ctx.textPosition = CGPoint(x: 20, y: 55); CTLineDraw(line, ctx)
+    return VNImageRequestHandler(cgImage: ctx.makeImage()!)
+}
 let t0 = Date()
 do {
-    try VNImageRequestHandler(url: URL(fileURLWithPath: CommandLine.arguments[2])).perform([req])
+    try handler(CommandLine.arguments[2]).perform([req])
     let text = (req.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
     let ms = Int(Date().timeIntervalSince(t0) * 1000)
     let first = String(data: try JSONSerialization.data(withJSONObject: [String(text.prefix(Int(ProcessInfo.processInfo.environment["VT_CHARS"] ?? "60") ?? 60))]), encoding: .utf8)!
@@ -63,3 +77,4 @@ do {
     print("{\"mode\":\"\(mode)\",\"error\":\"\(error)\"}")
     exit(2)
 }
+// rebuilt 1791207960
