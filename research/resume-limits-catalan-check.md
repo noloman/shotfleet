@@ -19,6 +19,6 @@ Original left list (all done except PR):
 
 Docs tests: python3 -m unittest tests.test_docs tests.test_handoff_docs
 PR command: gh pr create --draft --base main --head claude/limits-catalan-check
-PR link: (none yet)
+PR link: https://github.com/noloman/shotfleet/pull/70 (draft, not merged)
 
-Next step: open the draft PR (gh pr create --draft --base main --head claude/limits-catalan-check), then put its link here.
+Next step: none; wait for review. Do not merge.
