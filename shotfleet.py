@@ -2498,7 +2498,17 @@ def check_content(rules, screen):
         elif not sure(t): unsure.append(f'checked that "{t}" is absent')
     return bad, unsure
 
-LAST_REPORT = None  # check.json of the last check, for --json
+LAST_REPORT = None  # check.json of the last check
+REPORTS = []  # every check.json this call wrote (several device folders, both platforms), for --json
+
+def reports_json():
+    """The --json body: the one report as it is; with several, all lists merged plus `reports` (one entry each)."""
+    docs = [(f, json.loads(f.read_text())) for f in REPORTS if f.is_file()]
+    if len(docs) < 2: return docs[0][1] if docs else {}
+    return {"screenshots": [r for _, d in docs for r in d.get("screenshots", [])],
+            "problems": [x for _, d in docs for x in d.get("problems", [])],
+            "notes": [x for _, d in docs for x in d.get("notes", [])],
+            "reports": [{"report": str(f), "problems": d.get("problems", [])} for f, d in docs]}
 
 def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
               play_folder="phoneScreenshots", expect=None):
@@ -2660,6 +2670,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         notes += [f"[expect.{name}.{k}] matches none of the languages checked" for k, v in expect[name].items()
                   if isinstance(v, dict) and k not in EXPECT_KEYS and (name, k) not in expected_used]
     global LAST_REPORT; LAST_REPORT = report / "check.json"
+    if LAST_REPORT not in REPORTS: REPORTS.append(LAST_REPORT)
     problems += store_problems
     (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
@@ -3795,9 +3806,9 @@ def main(argv=None):
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
     if getattr(a, "json", False):  # CI: stdout carries only the JSON report
-        EXPORT_RESULT.clear()
+        EXPORT_RESULT.clear(); REPORTS.clear()
         with contextlib.redirect_stdout(sys.stderr): code = main_cmd(a)
-        print(json.dumps({"exit": code, **(EXPORT_RESULT if a.cmd == "export" else json.loads(LAST_REPORT.read_text()) if LAST_REPORT and LAST_REPORT.is_file() else {})}, ensure_ascii=False))
+        print(json.dumps({"exit": code, **(EXPORT_RESULT if a.cmd == "export" else reports_json())}, ensure_ascii=False))
         return code
     return main_cmd(a)
 
@@ -3821,7 +3832,7 @@ MCP_TOOLS = [
 def mcp_call(name, args):
     """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
     global LAST_REPORT
-    LAST_REPORT = None  # a run that never reached `check` must not return the previous check's report
+    LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
     log = io.StringIO()
     try:
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
@@ -3834,7 +3845,7 @@ def mcp_call(name, args):
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
         return f"{msg}\n\n{log.getvalue()[-2000:]}", True
-    report = json.loads(LAST_REPORT.read_text()) if name in ("check", "run") and LAST_REPORT else None
+    report = reports_json() if name in ("check", "run") else None
     text = json.dumps({"exit": code, **report}, ensure_ascii=False) if report else log.getvalue()
     return text, False
 

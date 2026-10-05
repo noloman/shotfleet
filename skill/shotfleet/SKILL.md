@@ -73,7 +73,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 - `check` and `run`: `{"exit", "screenshots": [{"file": "<locale>/<name>.png", "src", "sha", "lang", "chars"}], "problems": ["<locale>/<file>: <what>", ...], "notes": [...]}`. `problems` fail the check; `notes` are worth knowing and do not. `lang` is the language the screen shows (null when macOS can't read that script). `src` is relative to the report folder.
 - `export`: `{"exit", "exported": ["<listing folder>", ...], "skipped": ["<locale>", ...]}`. A skipped language failed a check.
 - With `exit` 2 the JSON has only `exit`.
-- With several devices (`device_types`, `devices`) `--json` carries only the last device's report: read each `<out>/<device>/check.json`.
+- With several reports (several `device_types`, both platforms, a folder of device runs, Play phone and tablet sets) `screenshots`, `problems` and `notes` hold all of them, plus `reports`: `[{"report": "<path of check.json>", "problems": [...]}]`. With one report there is no `reports` key.
 - Count issues, not lines: one wrong-language locale usually yields a wrong-language line, a copy line and a missing line.
 
 ## Tell the user
