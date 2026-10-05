@@ -4,13 +4,19 @@
 #   packaging/build.sh                      -> dist/shotfleet/ (arm64), dist/shotfleet-<version>-macos-arm64.tar.gz
 # Signing and notarization run when these are set (Manu's Apple Developer account):
 #   DEVELOPER_ID="Developer ID Application: Name (TEAMID)"   NOTARY_PROFILE=<xcrun notarytool store-credentials name>
+# Which macOS the build runs on (research/limits-platform-reach-2026-10-05.md): the Swift OCR helper targets macOS ${MACOS_MIN:-13.0}
+# (Vision's newer text models start there). The Python is whatever PYTHON names (default python3). Homebrew's Python is built for the
+# macOS it was built on (27.0 measured), so the whole program then needs that macOS; a python.org or python-build-standalone
+# (`uv python install 3.14`) interpreter is built for macOS 11, so the program runs on macOS 13 and newer:
+#   PYTHON=$(uv python find 3.14 --managed-python) packaging/build.sh
+# The last lines say which macOS the build needs, whichever Python was used.
 set -eu
 cd "$(dirname "$0")/.."
 VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("shotfleet.py").read()).group(1))')
 ARCH=$(uname -m)
 rm -rf build dist && mkdir -p build
-swiftc -O ocr.swift -o build/ocr
-build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; python3 -m venv build/venv; }  # its Python may be gone (brew upgrade)
+swiftc -O -target "$ARCH-apple-macos${MACOS_MIN:-13.0}" ocr.swift -o build/ocr
+build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; "${PYTHON:-python3}" -m venv build/venv; }  # its Python may be gone (brew upgrade)
 build/venv/bin/pip install --quiet --upgrade pyinstaller certifi
 set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." --add-data "$PWD/skill:skill" \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
@@ -50,4 +56,5 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
 fi
 # The installer package (no quarantine flag, so no Gatekeeper check at run time): needs the Developer ID Installer certificate.
 if [ -n "${INSTALLER_ID:-}" ]; then packaging/pkg.sh; fi
+python3 tools/macho-minos.py dist/shotfleet || true  # informational: the oldest macOS this build runs on
 shasum -a 256 dist/*.tar.gz
