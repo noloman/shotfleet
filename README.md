@@ -133,6 +133,19 @@ With `--json`, progress goes to stderr, including the "free tier:" line, so a CI
 `claude mcp add shotfleet -- shotfleet mcp`, or to any MCP client as the command `shotfleet mcp`. There is also a
 Claude Code skill in `skill/shotfleet/`.
 
+### What the MCP tools do
+
+- `check` and `doctor` only look. `check` never changes a screenshot; it writes its report to `./shotfleet-check`, or
+  to the folder you pass as `report`.
+- `run` boots simulators or emulators and replaces the screenshots in the config's output folder. On a big app that can
+  take an hour or more, so if your client asks for progress, the server sends it a line every 30 seconds.
+- Over MCP, `run` skips the `[hooks]` commands in your config unless you pass `hooks: true`. A config in a repo you just
+  cloned can hold any shell command, and here you wouldn't see it the way you see a command in your terminal.
+- I keep the answers short: counts, the first 100 problems and notes, and the path to the full `check.json`. Pass
+  `full: true` to get the whole report. For 40 languages with 10 screens each, the whole report is about 67,000
+  characters, and Claude Code moves anything over 50,000 to a file instead of showing it.
+- The server speaks MCP 2025-11-25 and 2025-06-18. It doesn't do the newer 2026-07-28 yet.
+
 ## How it works
 
 | | iOS | Android |

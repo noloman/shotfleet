@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+- **MCP: short answers.** `check` and `run` now answer with counts, the first 100 problems and notes, and the path to the full `check.json`. Before, you got the whole report, and a big one (40 languages x 10 screens is about 67,000 characters) got moved to a file by Claude Code. Pass `full: true` for the whole thing.
+- **MCP: `check` takes `report`,** the folder for `check.json` and `index.html`, like `--report` on the command line.
+- **MCP: `run` skips your config's `[hooks]` unless you pass `hooks: true`.** On the command line nothing changes.
+- **MCP: progress during long calls.** If your client asks for progress, the server sends the last output line every 30 seconds, so a long `run` doesn't look stuck.
+- **MCP: the tools say what they do.** `check` and `doctor` are marked read-only, `run` is marked as one that changes things, and the descriptions say how long `run` can take.
+- **MCP: honest protocol version.** The server used to answer with whatever version the client asked for. Now it only says 2025-11-25 or 2025-06-18, the ones it really speaks.
 - **"No simulator answers any more" says what to do without a restart:** it gives the exact `xcrun simctl shutdown <UDID>` for shotfleet's own simulators (before, it suggested restarting the Mac or `xcrun simctl shutdown all`, which also stops your other simulators) and says the next run replaces the stuck ones.
 - **iOS: a simulator that stopped answering is replaced at the next run:** shotfleet remembers it (`~/.shotfleet/hung-simulators/<UDID>`) and the next run deletes it and creates a fresh one under the same name before booting. Only shotfleet's own pool simulators (`shotfleet-...-<n>`) are ever deleted. In the 0.1.3 release tests the same two pool simulators hung in three runs in a row.
 - **iOS: a simulator that stops answering costs 60 s, not 300 s:** before the run shotfleet no longer sends `simctl terminate` (uninstalling the app stops it, as Maestro's own clear-state does), and the uninstall, now the first call on each simulator, gives up after 60 s. In the 0.1.3 release test each stuck simulator held the run for 300 s.
