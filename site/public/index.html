@@ -23,54 +23,6 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <!-- WAITLIST -->
-<script type="application/ld+json">
-{
- "@context": "https://schema.org",
- "@type": "SoftwareApplication",
- "@id": "https://shotfleet.com/#software",
- "name": "shotfleet",
- "url": "https://shotfleet.com/",
- "image": "https://shotfleet.com/og.jpg",
- "description": "A macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by other tools.",
- "applicationCategory": "DeveloperApplication",
- "operatingSystem": "macOS (Apple silicon)",
- "softwareRequirements": "Apple silicon Mac, Maestro 2.x, Java 17 or newer. Xcode for iOS (Debug simulator build), Android SDK with API 33+ emulators for Android.",
- "author": {
-  "@type": "Person",
-  "name": "Manuel Lorenzo Parejo",
-  "url": "https://manulorenzo.me"
- },
- "offers": [
-  {
-   "@type": "Offer",
-   "name": "Free tier",
-   "price": "0",
-   "priceCurrency": "USD",
-   "description": "shotfleet check is free for everyone; run is free for up to 2 languages.",
-   "availability": "https://schema.org/PreOrder"
-  },
-  {
-   "@type": "Offer",
-   "name": "Licence, launch price",
-   "price": "29",
-   "priceCurrency": "USD",
-   "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, a year of updates, 14-day refund.",
-   "availability": "https://schema.org/PreOrder"
-  },
-  {
-   "@type": "Offer",
-   "name": "Licence, standard price",
-   "price": "49",
-   "priceCurrency": "USD",
-   "description": "The price after the first 100 buyers: once per developer, a year of updates, 14-day refund.",
-   "availability": "https://schema.org/PreOrder"
-  }
- ]
-}
-</script>
-    <!-- /WAITLIST -->
-    <!-- SALE
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -105,7 +57,7 @@
    "priceCurrency": "USD",
    "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, a year of updates, 14-day refund.",
    "availability": "https://schema.org/InStock",
-   "url": "@CHECKOUT@"
+   "url": "https://8954369651852.gumroad.com/l/shotfleet"
   },
   {
    "@type": "Offer",
@@ -114,12 +66,11 @@
    "priceCurrency": "USD",
    "description": "The price after the first 100 buyers: once per developer, a year of updates, 14-day refund.",
    "availability": "https://schema.org/InStock",
-   "url": "@CHECKOUT@"
+   "url": "https://8954369651852.gumroad.com/l/shotfleet"
   }
  ]
 }
 </script>
-    SALE -->
 <link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 <script src="/reveal.js"></script>
@@ -131,12 +82,7 @@
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
     <span class="links"><a href="#run">A real run</a><a href="#apps">My apps</a><a href="#price">Pricing</a></span>
-    <!-- WAITLIST -->
-    <a class="btn sm" href="#signup-top-email">Join the waitlist<span class="ico" aria-hidden="true">↗</span></a>
-    <!-- /WAITLIST -->
-    <!-- SALE
-    <a class="btn sm" href="@CHECKOUT@">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a>
-    SALE -->
+    <a class="btn sm" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a>
   </nav>
 </header>
 
@@ -146,43 +92,7 @@
     <span class="flag b">Mac command-line tool · Apple silicon</span>
     <h1>Store screenshots in every language your app ships.</h1>
     <p class="sub">One English Maestro flow, every language, iOS and Android. <b>shotfleet captures them all and checks every screenshot.</b> It makes your App Store and Google Play screenshots and works with <a href="https://maestro.mobile.dev">Maestro</a>, the UI-flow tool.</p>
-    <!-- WAITLIST -->
-    <form id="signup-top" class="signup" method="post" action="/api/signup" data-signup novalidate>
-      <div class="inline">
-        <label class="sr" for="signup-top-email">Email</label>
-        <input id="signup-top-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
-        <button class="btn" type="submit">Join the waitlist<span class="ico" aria-hidden="true">↗</span></button>
-      </div>
-      <p class="status small">Not released yet. Join the waitlist and I'll email you once, when it's ready. The first 100 buyers pay $29, then $49.</p>
-      <input name="contact_pref" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-      <p class="form-error" id="signup-top-error" role="alert" hidden></p>
-    </form>
-    <div id="signup-top-done" class="done" role="status" tabindex="-1" hidden>
-      <p><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
-      <form class="followup" id="stack-top" novalidate>
-        <label for="stack-top-stack">One more thing, if you like: what do you build with?</label>
-        <div class="inline">
-          <select id="stack-top-stack" name="stack">
-              <option value="">Choose one (optional)</option>
-              <option value="native">Native: Swift and Kotlin</option>
-              <option value="swift">Swift only</option>
-              <option value="kotlin">Kotlin only</option>
-              <option value="react-native">React Native / Expo</option>
-              <option value="flutter">Flutter</option>
-              <option value="kmp">Kotlin Multiplatform / Compose</option>
-              <option value="maui">.NET MAUI</option>
-              <option value="unity">Unity or another engine</option>
-              <option value="other">Something else</option>
-          </select>
-          <button class="btn ghost" type="submit">Send</button>
-        </div>
-      </form>
-      <p class="small followup-thanks" hidden>Thanks, that helps me decide what to build next.</p>
-    </div>
-    <!-- /WAITLIST -->
-    <!-- SALE
-    <p class="cta"><a class="btn" href="@CHECKOUT@">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a><a class="btn ghost" href="#run">See a real run</a></p>
-    SALE -->
+    <p class="cta"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a><a class="btn ghost" href="#run">See a real run</a></p>
   </div>
   <div class="hero-art" role="group" aria-label="The same app screen in Arabic, Japanese and German, each checked">
     <figure class="ship">
@@ -391,13 +301,8 @@ app = "<span class="y">MyApp.app</span>"</pre>
   </section>
 
   <section class="wrap section" id="price" aria-labelledby="price-h">
-    <h2 id="price-h" class="reveal">Early access</h2>
-    <!-- WAITLIST -->
-    <p class="muted lede-small">shotfleet isn’t released yet, and joining the list does not reserve the launch price: it goes to the first 100 buyers. I’ll email you once, when it’s ready. It needs an Apple silicon Mac, Maestro and Java 17+. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
-    <!-- /WAITLIST -->
-    <!-- SALE
+    <h2 id="price-h" class="reveal">Buy shotfleet</h2>
     <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
-    SALE -->
     <div class="plans">
       <div class="plan main reveal">
         <h3>Licence</h3>
@@ -409,44 +314,9 @@ app = "<span class="y">MyApp.app</span>"</pre>
           <li>A year of updates; after that your version keeps working while macOS and your tools allow</li>
           <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
         </ul>
-    <!-- WAITLIST -->
-    <form id="signup" class="signup" method="post" action="/api/signup" data-signup novalidate>
-      <div class="inline">
-        <label class="sr" for="signup-email">Email</label>
-        <input id="signup-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
-        <button class="btn" type="submit">Join the waitlist<span class="ico" aria-hidden="true">↗</span></button>
-      </div>
-      <input name="contact_pref" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" class="trap">
-      <p class="form-error" id="signup-error" role="alert" hidden></p>
-    </form>
-    <div id="signup-done" class="done" role="status" tabindex="-1" hidden>
-      <p><b>You’re on the list.</b> I’ll email you once, when it’s ready.</p>
-      <form class="followup" id="stack-card" novalidate>
-        <label for="stack-card-stack">One more thing, if you like: what do you build with?</label>
-        <div class="inline">
-          <select id="stack-card-stack" name="stack">
-              <option value="">Choose one (optional)</option>
-              <option value="native">Native: Swift and Kotlin</option>
-              <option value="swift">Swift only</option>
-              <option value="kotlin">Kotlin only</option>
-              <option value="react-native">React Native / Expo</option>
-              <option value="flutter">Flutter</option>
-              <option value="kmp">Kotlin Multiplatform / Compose</option>
-              <option value="maui">.NET MAUI</option>
-              <option value="unity">Unity or another engine</option>
-              <option value="other">Something else</option>
-          </select>
-          <button class="btn ghost" type="submit">Send</button>
-        </div>
-      </form>
-      <p class="small followup-thanks" hidden>Thanks, that helps me decide what to build next.</p>
-    </div>
-    <!-- /WAITLIST -->
-    <!-- SALE
-    <p><a class="btn" href="@CHECKOUT@">Buy shotfleet</a></p>
+    <p><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet</a></p>
     <p class="small">Checkout is on Gumroad, and the first 100 buyers pay the founder price. Your key arrives in the Gumroad receipt email. Then install:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
     <p class="small">The licence is checked online once and then about weekly, and works offline for 30 days.</p>
-    SALE -->
       </div>
       <div class="plan reveal">
         <h3>Free at launch</h3>
