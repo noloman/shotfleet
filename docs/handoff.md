@@ -148,8 +148,7 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 - `tools/pretend-mac.py <test module>` runs a test module as if on an Apple-silicon Mac (platform and CPU only). It reproduced both macOS-only failures of the
   `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
-- A quiet-Mac re-measure of the README timings (iOS about 9 min, Android about 15, 4 devices) is still open: the 2026-10-04 regression passed on correctness but ran on a swapping Mac with 2 devices (`STATUS.md` row 10). Do it once with nothing else running, `parallel = 4`, and only then change the README or claim C007.
-- **iOS driver start at 4 simulators on Maestro 2.11.0:** the CrossfitTracker run of 2026-10-04 passed 19/19 but 9 of 19 languages (18 in an earlier run) needed shotfleet's retry because two of four parallel simulators did not get their XCTest driver ready within 240 s (`research/maestro-2-11.md`, last section). Open: run the same on Maestro 2.0.10 with `parallel = 4` to see whether this is new; if it is, try a longer `MAESTRO_DRIVER_STARTUP_TIMEOUT` or staggered driver starts.
+- **iOS driver start at 4 simulators on Maestro 2.11.0:** the CrossfitTracker run of 2026-10-04 passed 19/19 but 9 of 19 languages (18 in an earlier run) needed shotfleet's retry because two of four parallel simulators did not get their XCTest driver ready within 240 s (`research/maestro-2-11.md`, last section). Answered 2026-10-05: the same run on Maestro 2.0.10 with `parallel = 4` (iOS 26.4) passed 19/19 on the first attempt with no retry (404 s), so this is specific to 2.11.0; if 2.11.0 is ever promoted, try a longer `MAESTRO_DRIVER_STARTUP_TIMEOUT` or staggered driver starts first.
 
 ## 13. State at the end of 2026-10-05 (device-queue coordinator wrap-up)
 
