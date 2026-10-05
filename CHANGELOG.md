@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Release pipeline:** `packaging/publish.sh` publishes the already tested files (manifest hashes, version, rollback id recorded, verified, automatic rollback, archived bytes), `packaging/preflight.sh` and `tools/verify-release.sh` check before and after, `tests/test_release_consistency.py` keeps `VERSION`, the CHANGELOG heading and the docs line equal; the stale `shotfleet.spec` and `packaging/shotfleet.rb` are gone. Flow in `packaging/README.md`. `research/0.1.2-plan.md` group A.
 - **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 - **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each; with one report nothing changes. #68.
 

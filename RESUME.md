@@ -5,4 +5,4 @@ Branch claude/release-pipeline (from origin/main). Use /usr/bin/git. Push with: 
 Verify with targeted tests only: python3 -m unittest tests.test_release_consistency tests.test_release_candidate tests.test_docs tests.test_handoff_docs tests.test_claims; sh -n on new scripts.
 
 Done: A6 (shotfleet.spec, packaging/shotfleet.rb deleted; DISTRIBUTION.md line fixed).
-Left: packaging/README.md, CHANGELOG line, release.sh header note, final targeted test run. A1-A4, A6 written and tested (tests/test_release_scripts.py 20 tests green, tests/test_release_consistency.py green).
+Left: nothing; all items done and pushed. Only the coordinator review and a staging rehearsal of publish.sh remain.
