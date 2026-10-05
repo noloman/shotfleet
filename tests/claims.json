@@ -326,15 +326,15 @@
    "README.md"
   ],
   "where_text": [
-   "## Quickstart (once Maestro and a simulator build exist)"
+   "## Quickstart (build the app once for the simulator first)"
   ],
   "status": "fixed",
   "proof": "No timed cold install exists. research/cold-test-2.md lists unlisted prerequisites (Java, Debug simulator build, API 33 AVD) and never times the path.",
   "layer": "legal",
   "assertion": "Time a cold install on a clean Mac user account (install, doctor, init, first --locales en run) and publish the real number.",
-  "fix": "Quickstart (install and first single-language run, once Maestro and a simulator build exist)",
+  "fix": "Quickstart (install, doctor --fix, init, a first single-language run, then activate; build the app once for the simulator first)",
   "fixed_by": "removed",
-  "fixed": "A cold install cannot be timed today: /download/VERSION is 404 before launch so install.sh fails, and research/cold-test-2.md found prerequisites the quickstart did not list. The number is removed; the heading says what the quickstart needs.",
+  "fixed": "A cold install cannot be timed today: /download/VERSION is 404 before launch so install.sh fails, and research/cold-test-2.md found prerequisites the quickstart did not list. The number is removed; the heading says what the quickstart needs. 2026-10-05 (owner approved): the order is now install, doctor --fix, init, run, then activate when you want every language, from research/limits-first-run-2026-10-05.md; still no timed cold install.",
   "test": "Style.test_banned_phrases_are_absent"
  },
  {

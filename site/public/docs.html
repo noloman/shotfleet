@@ -69,9 +69,9 @@
   </ul>
 
   <h2 id="install">Install</h2>
-<pre><code>curl -fsSL https://shotfleet.com/install.sh | sh
-shotfleet activate &lt;your key&gt;    # from your Gumroad receipt email (check works without one)
-shotfleet doctor                 # checks Maestro, Java, Xcode, Android SDK</code></pre>
+<pre><code>curl -fsSL https://shotfleet.com/install.sh | sh   # then open a new Terminal window
+shotfleet doctor --fix           # checks Maestro, Java, Xcode, Android SDK; shows what is missing, asks once, then fetches Maestro and Java</code></pre>
+  <p>Xcode must be the selected one (<code>xcode-select -p</code> shows which); the Android block of <code>doctor</code> can be ignored by iOS-only apps; the first <code>doctor</code> can take a minute while macOS prepares text recognition. <code>shotfleet activate &lt;your key&gt;</code> (the key is in your Gumroad receipt email) comes after your first run, when you want every language; <code>check</code> works without a licence.</p>
   <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. <code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; see <a href="/terms">licence and refunds</a>. Without a valid licence, <code>run</code> captures only 2 languages (the first two of your app's languages unless you pick them with <code>--locales de,ja</code>) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If <code>SHOTFLEET_KEY</code> is set but refused, that line says why. <code>check</code>, <code>doctor</code> and <code>init</code> are always free.</p>
 
   <p>Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). <code>shotfleet doctor</code> tells you when a newer version is out. A year of updates is included.</p>
@@ -79,13 +79,14 @@ shotfleet doctor                 # checks Maestro, Java, Xcode, Android SDK</cod
   <p>Prefer an installer you can double-click? Each release is also published as a signed, notarized package, <code>https://shotfleet.com/download/shotfleet-macos-arm64.pkg</code>. It puts the program in <code>/usr/local/lib/shotfleet</code> and links <code>shotfleet</code> into <code>/usr/local/bin</code>; macOS asks for your password. Use it if the <code>curl</code> line is not an option, or if a browser-downloaded copy shows "Apple could not verify ...".</p>
 
   <h2 id="quickstart">Quickstart</h2>
-  <p>Once Maestro and a simulator build exist, in your project folder:</p>
+  <p>Build the app once for the simulator in Xcode (Debug) first, then, in your project folder:</p>
 <pre><code>shotfleet init
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself</code></pre>
   <p><code>shotfleet init</code> without arguments only reads folders, never builds. For iOS it takes the newest <code>Debug-iphonesimulator</code> app in Xcode's default DerivedData folder (<code>~/Library/Developer/Xcode/DerivedData</code>) whose <code>info.plist</code> points at an Xcode project in this folder, up to two folders below it, or above it. For Android it takes the newest debug APK under <code>build/outputs/apk/debug</code> in this folder or up to two folders below it (<code>app/build/outputs/apk/debug</code>, <code>&lt;module&gt;/build/outputs/apk/debug</code>, <code>android/app/build/outputs/apk/debug</code>; a flavour folder such as <code>apk/free/debug</code> counts too). It prints which build it chose and how old it is. If it finds nothing it exits with the exact <code>xcodebuild</code> and <code>./gradlew assembleDebug</code> commands to run; then run <code>shotfleet init</code> again.</p>
   <ol>
     <li>Edit the generated <code>flow.yaml</code>: <a href="https://maestro.mobile.dev">Maestro</a> steps in English. Navigate by the text users see and add a <code>takeScreenshot:</code> for each store image. No <code>appId</code> is needed: shotfleet uses each build's own id, so one flow serves iOS and Android.</li>
     <li>Try one language: <code>shotfleet run --locales en</code></li>
+    <li>When you want every language: <code>shotfleet activate &lt;your key&gt;</code> (from your Gumroad receipt email; <code>check</code> and 2 languages in <code>run</code> work without one).</li>
     <li>Run them all: <code>shotfleet run</code> (finds <code>./shotfleet.toml</code>; both platforms if the file has both, <code>--platform ios</code> for one).</li>
     <li>Review <code>out/index.html</code> (<code>out-ios/</code> and <code>out-android/</code> if the config has both platforms). It is a grid with a row per language and a column per screen, and problems are outlined in red.</li>
     <li>Export to fastlane: <code>shotfleet export out --fastlane fastlane/</code> (<code>out-ios</code> or <code>out-android</code> if the config has both). That writes <code>deliver</code>'s <code>screenshots/&lt;locale&gt;/</code> or <code>supply</code>'s <code>metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code>. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.</li>

@@ -52,15 +52,17 @@ Screenshots made in other tools work too. `check` knows Apple's sizes for Apple 
 
 `shotfleet activate <key>` stores your key on this Mac. The key from your Gumroad receipt works on 3 Macs, and activating again on a Mac that already holds it counts nothing. `shotfleet deactivate` removes it from this Mac but does not give the activation back; email hello@shotfleet.com to move to a fourth Mac. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, that line says why. `check`, `doctor` and `init` are always free.
 
-## Quickstart (once Maestro and a simulator build exist)
+## Quickstart (build the app once for the simulator first)
 
 ```bash
-curl -fsSL https://shotfleet.com/install.sh | sh   # signed, notarized; Apple silicon
-shotfleet activate <your key>                      # from your Gumroad receipt email (`check` works without one)
-shotfleet doctor                                   # checks Maestro, Java, Xcode, Android SDK
+curl -fsSL https://shotfleet.com/install.sh | sh   # signed, notarized; Apple silicon; then open a new Terminal window
+shotfleet doctor --fix                             # checks Maestro, Java, Xcode, Android SDK; shows what is missing, asks once, then fetches Maestro and Java
+cd path/to/MyApp                                   # your project; build it once for the simulator in Xcode (Debug) first
 shotfleet init                                     # in your project folder: uses the newest Debug simulator build and Gradle debug APK it finds
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
+
+Notes: Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition. After `init`, try `shotfleet run --locales en`, and run `shotfleet activate <your key>` when you want every language (steps below).
 
 Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
 
@@ -72,9 +74,10 @@ Prefer an installer you can double-click? Each release is also published as a si
 
 1. Edit the generated `flow.yaml`: [Maestro](https://maestro.mobile.dev) steps in English. Navigate by the text users see and add a `takeScreenshot:` for each store image. No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android.
 2. Try one language: `shotfleet run --locales en`.
-3. Run them all: `shotfleet run` (finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one).
-4. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red.
-5. Export to fastlane: `shotfleet export out --fastlane fastlane/` (`out-ios` or `out-android` if the config has both). That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
+3. When you want every language: `shotfleet activate <your key>` (from your Gumroad receipt email; `check` and 2 languages in `run` work without one).
+4. Run them all: `shotfleet run` (finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one).
+5. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red.
+6. Export to fastlane: `shotfleet export out --fastlane fastlane/` (`out-ios` or `out-android` if the config has both). That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
 
 ## Uploading
 

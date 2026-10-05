@@ -12,6 +12,6 @@ Coordinator follow-up (Manu approved, apply AFTER the first pass, push after eac
  Also second llms.txt bullet of A8 ("when you buy or write to me") depends on D1: do it with item (1).
 
 Done: A1-A9, B1-B8, B10, C1-C17 (research/README.md written; update its first-run line after follow-up 3), C16 proofs. First pass COMPLETE.
-Left: follow-up (3) D7/B9 quickstart, (1) D1 privacy; D5 and D3 done
+Left: follow-up (1) D1 privacy.html (+ llms.txt second bullet); D5, D3, D7/B9 done
 Skipped on purpose: section (d) items not approved
 Next step: follow-up (4) D5 first (smallest), then (2) D3, (3) D7/B9, (1) D1

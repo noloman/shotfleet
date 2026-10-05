@@ -55,7 +55,8 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 2. Edit `flow.yaml` (English Maestro steps, one `takeScreenshot:` per store image): see [references/flow-writing.md](references/flow-writing.md).
 3. `run` prints `warning <lang>: ... also means ...` for translation collisions and `selectors not found in the app's strings` for labels it could not translate. Fix those before the full run (anchor with `below:`/`above:`, or `[overrides.<lang>]`).
 4. `export` writes into the user's fastlane folder (it replaces same-size PNGs in the listing folders). Run it only when asked, after `check` is clean.
-5. Free tier: `run` captures 2 languages without a licence and `export` refuses. Never ask the user to paste the key into chat.
+5. Free tier: `run` captures 2 languages without a licence and `export` refuses. Never ask the user to paste the key into chat. `activate` comes after the first run, when the user wants every language ([references/licence.md](references/licence.md)).
+6. Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition.
 
 ## Exit codes (run, check, export, doctor)
 
