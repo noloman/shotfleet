@@ -1,0 +1,29 @@
+1
+00:00:00,000 --> 00:00:02,000
+Install with one line from shotfleet.com,
+then check the Mac.
+
+2
+00:00:02,000 --> 00:00:04,000
+shotfleet doctor --fix checks Maestro,
+Java, Xcode and the Android SDK.
+
+3
+00:00:04,000 --> 00:00:05,700
+Sped up 3x while it checks
+(real time 5 s).
+
+4
+00:00:05,700 --> 00:00:09,500
+If something is missing, it shows the
+plan, asks once, then downloads it.
+
+5
+00:00:09,500 --> 00:00:13,000
+On this Mac nothing was missing:
+iOS ready, Android ready.
+
+6
+00:00:13,000 --> 00:00:15,900
+It never uses sudo.
+Next step: shotfleet init.
