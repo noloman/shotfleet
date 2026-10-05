@@ -68,9 +68,11 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `no translation files match` | `strings` glob matches nothing (globs are relative to the config) | fix the glob |
 | `Set base_locale in the config` | the app has no `en` strings (the message names its development language) | `base_locale = "<code>"`, the language the flow is written in |
 | `none of those languages are in the app` | `--locales` or `locales` names languages the app does not ship; the message lists what it ships | use those codes |
-| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun |
+| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun; free memory first (see "Free memory before a run" in the README Tips) |
+| a run behaves differently after an iOS 27 runtime was installed | `runtime` defaults to the newest installed one, so `run` now uses iOS 27 | pin a tested one: `runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"` (`xcrun simctl list runtimes` shows the ids). iOS 27 ran with one simulator and one language (0 problems, 2026-10-05); four simulators at once has not been tried on it |
 | `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
 | `unknown Android device` | `devices` entry other than phone, tablet, tablet-7 | use `phone`, `tablet` or `tablet-7` |
+| `which needs API 33 (Android 13) or newer` ("... is Android API 31; ...") | the `system_image` in the config, or the existing emulator, is older than API 33 (per-app languages need Android 13) | install an API 33+ image (the message prints the command) and set `system_image` (or `avd`); the app's minSdk can stay low |
 | `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |
 | `is already running. Stop it` | a leftover emulator on shotfleet's port | `adb -s emulator-<port> emu kill` |
 | `emulators did not boot in time` | slow boot (600 s limit), or on Linux no usable `/dev/kvm`; the message ends with the emulator's last log lines (kept in `<tmp>/shotfleet-emulator-logs/`) and the likely cause. `the emulator exited with code N before it booted` means it crashed: read those lines | close other apps and rerun; on Linux check `ls -l /dev/kvm` |
@@ -86,7 +88,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | Fragment | Cause | Fix |
 |---|---|---|
 | `no folder at` | wrong path | fix it |
-| `no screenshots found in` | layout not recognised | use `screenshots/<locale>/*.png`, `metadata/android/<locale>/images/phoneScreenshots/*.png` or `<locale>/*.png` |
+| `no screenshots found in` | layout not recognised | use `screenshots/<locale>/*.png`, `metadata/android/<locale>/images/phoneScreenshots/*.png` or `<locale>/*.png`; a flat folder of one language's PNGs needs `--locale <code>` (`shotfleet check shots/ --locale en`) |
 | `has both iOS and Android screenshots` | a folder with both stores and no `--app` | pass `--app` with the build of the store to check |
 | `screenshots but --app is` | an iOS folder with an `.apk` or the reverse | pass the matching build |
 | `contains no translations shotfleet can read` | the build has no `.lproj`, String Catalog or resources (typical for Flutter, React Native, Unity, MAUI) | use `--strings '<glob>'` |
@@ -103,10 +105,10 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `no shotfleet run in` | `export` pointed at a folder without `run.json` | pass the `run` output folder (`out`, `out-ios`, `out-android`) |
 | `hasn't been checked` | no `check.json` in it | `shotfleet check <out>` |
 | `need a licence` | `export`, or `run` past 2 languages, without a licence | the user runs `shotfleet activate <key>`; see licence.md |
-| `that key didn't activate` | wrong, revoked, refunded or charged-back key | the user checks the key in the Gumroad receipt email |
+| `that key didn't activate` | wrong, disabled (`the key was disabled`), refunded or charged-back key | the user checks the key in the Gumroad receipt email |
 | `activations. Email hello@shotfleet.com` | the key has used all 3 activations (Gumroad keys); `deactivate` does not give one back | the user emails hello@shotfleet.com to have the count reset |
 | `SHOTFLEET_KEY isn't a valid licence` | bad key in CI | fix the secret |
-| `this licence is no longer valid` | refunded or revoked | the user contacts support |
+| `this licence is no longer valid` | refunded, charged back or disabled (the reason is in the parentheses) | the user contacts support |
 | `couldn't reach the licence server for 30 days` | offline too long | connect once |
 
 ## Warnings and notes (not errors)

@@ -108,14 +108,18 @@
   "claim": "18 languages x 4 screens took 9 minutes on iOS and 15 on Android, on one Mac",
   "where": [
    "site/public/index.html",
-   "marketing/launch-posts-v2.md"
+   "marketing/launch-posts-v2.md",
+   "site/public/index.html",
+   "site/public/alternatives.html"
   ],
   "where_text": [
    "took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac",
-   "about 9 minutes on iOS and 15 on Android"
+   "about 9 minutes on iOS and 15 on Android",
+   "The 9 and 15 minutes were measured on Maestro 2.0.10.",
+   "Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac."
   ],
   "status": "evidence",
-  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced.",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro.",
   "layer": "fixture",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
   "fix": ""
@@ -322,15 +326,15 @@
    "README.md"
   ],
   "where_text": [
-   "## Quickstart (once Maestro and a simulator build exist)"
+   "## Quickstart (build the app once for the simulator first)"
   ],
   "status": "fixed",
   "proof": "No timed cold install exists. research/cold-test-2.md lists unlisted prerequisites (Java, Debug simulator build, API 33 AVD) and never times the path.",
   "layer": "legal",
   "assertion": "Time a cold install on a clean Mac user account (install, doctor, init, first --locales en run) and publish the real number.",
-  "fix": "Quickstart (install and first single-language run, once Maestro and a simulator build exist)",
+  "fix": "Quickstart (install, doctor --fix, init, a first single-language run, then activate; build the app once for the simulator first)",
   "fixed_by": "removed",
-  "fixed": "A cold install cannot be timed today: /download/VERSION is 404 before launch so install.sh fails, and research/cold-test-2.md found prerequisites the quickstart did not list. The number is removed; the heading says what the quickstart needs.",
+  "fixed": "A cold install cannot be timed today: /download/VERSION is 404 before launch so install.sh fails, and research/cold-test-2.md found prerequisites the quickstart did not list. The number is removed; the heading says what the quickstart needs. 2026-10-05 (owner approved): the order is now install, doctor --fix, init, run, then activate when you want every language, from research/limits-first-run-2026-10-05.md; still no timed cold install.",
   "test": "Style.test_banned_phrases_are_absent"
  },
  {
@@ -516,12 +520,14 @@
   "where": [
    "README.md",
    "site/public/index.html",
-   "marketing/kit/show-hn.md"
+   "marketing/kit/show-hn.md",
+   "site/public/docs.html"
   ],
   "where_text": [
    "### Check screenshots you already have (fastlane, screengrab, by hand)",
    "Check any screenshots, from fastlane or by hand",
-   "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)"
+   "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)",
+   "<h2 id=\"check\">Check screenshots you already have</h2>"
   ],
   "status": "fixed",
   "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names.",
@@ -593,11 +599,13 @@
   "claim": "Flutter and React Native work from your translation files (run end to end on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android)",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "README.md",
+   "site/public/alternatives.html"
   ],
   "where_text": [
    "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
-   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run)."
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
+   "has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native."
   ],
   "status": "evidence",
   "proof": "Real runs on this Mac, 2026-10-03, Maestro 2.0.10, Xcode 27, Flutter 3.47.6 (research/frameworks.md section 15, screenshots and logs in research/real-apps-2026-10-03/): wger (Flutter, debug build) iOS and Android, de and ja: `init` with no arguments found the build and wrote strings = lib/l10n/*.arb, 0 untranslated selectors, German on every screenshot on both platforms (the DEBUG banner shows); ja falls back to English because wger's Japanese is 30% done, and check says so ('the app has no ja translation'). obytes template (Expo, Release build) iOS and Android, en and ar: init wrote strings = src/translations/*.json, Arabic and right-to-left reach the translated Settings screen on both platforms; the app's onboarding and login screens are hard-coded English, so 3 selectors are reported as untranslated and check flags those 2 screenshots (correctly). Not run: bare React Native, other Flutter or Expo apps, Maestro 2.11.",
@@ -794,14 +802,16 @@
   "claim": "The licence is checked online once and then about weekly, and works offline for 30 days",
   "where": [
    "site/public/index.html",
-   "DISTRIBUTION.md"
+   "DISTRIBUTION.md",
+   "README.md"
   ],
   "where_text": [
    "The licence is checked online once and then about weekly, and works offline for 30 days.",
-   "re-checks at most weekly, works offline for 30 days"
+   "re-checks at most weekly, works offline for 30 days",
+   "This check fails open on purpose: if the licence server can't be reached, the run counts as licensed"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence).",
+  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online and documented in README, docs.html, DISTRIBUTION.md and the skill.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -815,16 +825,17 @@
   ],
   "where_text": [
    "ask for a refund within 14 days of buying and you'll get it",
-   "refunds, chargebacks and disputes are\n  refused"
+   "refunds, chargebacks and disputes are\n  refused",
+   "A refund ends the licence. The key stops unlocking every language and <code>export</code> the next time shotfleet checks it with Gumroad"
   ],
   "status": "partial",
-  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid.",
+  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid. 2026-10-05 addition: the terms now say a refund ends the licence at the next check (about weekly, up to 30 days offline) and that nothing already made is deleted. Gumroad's own source (antiwork/gumroad, app/modules/purchase/refundable.rb, added 2026-08-19, #7326) disables the key on a full refund, so a refunded key may now answer 404 'This license key has been disabled' instead of success:true with refunded:true; both are refused (GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays). Not seen against live Gumroad: see research/refund-process-2026-10-05.md. CI keys: a refused key is refused only when a run reaches Gumroad; with Gumroad unreachable the run counts as licensed (fail-open, owner decision 2026-10-05), so an outage hides a refunded key, and a CI key has no 30-day limit.",
   "layer": "device",
   "assertion": "Real Gumroad product: buy with a test code, refund the sale in the dashboard, set licence.json 'checked' back 8 days and run `shotfleet export`: it must raise NoLicence ('refunded').",
   "fix": "",
   "fixed_by": "code",
   "fixed": "Rewritten for Gumroad 2026-10-02. gumroad_verify checks refunded, chargebacked and disputed (a won dispute keeps the licence) and treats a 5xx as an outage, not a verdict. Not run against live Gumroad: no product exists yet.",
-  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation"
+  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays"
  },
  {
   "id": "C048",
@@ -947,15 +958,17 @@
   ],
   "where_text": [
    "14-day refund.",
-   "If shotfleet doesn't work for your app, ask for a refund within 14 days of buying and you'll get it, no questions asked.",
-   "If it doesn't work for your app, reply within 14 days and I'll refund you.",
+   "You can ask for a refund within 14 days of buying and you'll get it, no questions asked",
+   "Reply within 14 days and I'll refund you, no questions asked.",
    "14-day refunds"
   ],
   "status": "partial",
-  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
+  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The conditional 'if shotfleet doesn't work for your app' was removed from terms.html and the launch email on 2026-10-05; Gumroad's live policy says 'You do not have to explain'.",
   "layer": "legal",
   "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
-  "fix": "Drop either 'if shotfleet doesn't work for your app' or 'no questions asked'."
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "2026-10-05: terms.html no longer says 'If shotfleet doesn't work for your app' before 'no questions asked'. Gumroad's live refund policy (read 2026-10-05) is unconditional: '14-day money back guarantee ... You do not have to explain.' The launch email (marketing/launch-email.md) now says 'Reply within 14 days and I'll refund you, no questions asked.'"
  },
  {
   "id": "C055",
@@ -1149,7 +1162,7 @@
    "shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json"
   ],
   "status": "fixed",
-  "proof": "A buyer installs the signed program, not shotfleet.py (README.md:229 'The installed program brings its own Python'; source is not shipped, DISTRIBUTION.md). The recipe cannot run as written; it is marked 'hasn't been run on GitHub yet' (honest) but is still the wrong command. Also needs install.sh on the runner and, for run, SHOTFLEET_KEY.",
+  "proof": "A buyer installs the signed program, not shotfleet.py (README.md:229 'The installed program brings its own Python'; source is not shipped, DISTRIBUTION.md). The recipe cannot run as written; it is marked 'hasn't been run on GitHub yet' (honest) but is still the wrong command. Also needs install.sh on the runner and, for run, SHOTFLEET_KEY. 2026-10-05: two manual GitHub runs installed the live 0.1.1 on Apple-silicon macos-14 (14.8.9) and macos-15 (15.7.9) runners; install.sh, `shotfleet --version`, `doctor` (ran to the end) and `check` on two sample screenshots worked. The recipe as written (an xcodebuild step, then check --app ... --json) still has not run on GitHub; the README, docs and skill now say exactly that.",
   "layer": "device",
   "assertion": "Run the recipe on a macos-15 runner in a private repo with the released binary: exit 0 and the artifact contains check.json.",
   "fix": "- run: curl -fsSL https://shotfleet.com/install.sh | sh  then  shotfleet check fastlane/ --app ... --json > check.json",
@@ -1227,7 +1240,7 @@
    "Text recognition is macOS's. It reads 33 languages"
   ],
   "status": "evidence",
-  "proof": ".build/ocr --langs printed 33 codes on this Mac again on 2026-10-03 (en-US fr-FR it-IT de-DE es-ES pt-BR zh-Hans zh-Hant yue ko-KR ja-JP ru-RU uk-UA th-TH vi-VT ar-SA ars tr-TR id-ID cs-CZ da-DK nl-NL no nn nb ms-MY pl-PL ro-RO sv-SE fi-FI hi-IN mr-IN; macOS 27); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer). 'Others only get the weaker checks': G1ScriptsMacosCannotRead.test_a_blank_read_of_an_unreadable_script_proves_nothing_either_way and G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language (proven), ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command. Tesseract fills in when installed (ROADMAP.md: 84/85 languages verified by reading).",
+  "proof": ".build/ocr --langs printed 33 codes on this Mac again on 2026-10-03 (en-US fr-FR it-IT de-DE es-ES pt-BR zh-Hans zh-Hant yue ko-KR ja-JP ru-RU uk-UA th-TH vi-VT ar-SA ars tr-TR id-ID cs-CZ da-DK nl-NL no nn nb ms-MY pl-PL ro-RO sv-SE fi-FI hi-IN mr-IN; macOS 27); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer): 33 is the macOS 27 number. Hosted runs 2026-10-05 (research/limits-platform-reach-2026-10-05.md, research/limits-catalan-check-macos-2026-10-05.md): the same Catalan screenshot was skipped on macOS 14.8.9 (\"macOS can't read the script of ca\") and judged \"looks like 'en'\" on 15.7.9; Catalan, Croatian and Hungarian are not among the 33. The README and docs say so. 'Others only get the weaker checks': G1ScriptsMacosCannotRead.test_a_blank_read_of_an_unreadable_script_proves_nothing_either_way and G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language (proven), ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command. Tesseract fills in when installed (ROADMAP.md: 84/85 languages verified by reading).",
   "layer": "unit",
   "assertion": "Test: judge_screen returns (None, None) for a Greek/Hebrew screen macOS cannot read and check prints 'macOS can't read the script of ...'. CI on the oldest supported macOS records len(--langs).",
   "fix": ""
@@ -1331,7 +1344,7 @@
    "site/public/privacy.html"
   ],
   "where_text": [
-   "Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me."
+   "Beyond that, the only things stored are your analytics choice, in your own browser, and what you sent if you joined the early-access list before the sale opened, or send when you write to me."
   ],
   "status": "fixed",
   "proof": "2026-10-03: WorkerBehaviour.test_c078_only_three_kinds_of_record_exist_and_none_holds_the_ip_or_user_agent (a signup record has exactly at, platform, stack, country, lang, ref; a message exactly message, email, country; only email:, msg: and hit: keys are ever written; the log lines hold the event and country only), PrivacyPageListsWhatIsStored.test_c078_the_contact_message_fields_are_named_on_the_page, PrivacyPageListsWhatIsStored.test_c079_each_field_of_the_waitlist_record_is_named_on_the_page. 'platform' is derived from the stack answer (what you build with). Still not checkable here: the platform's own request logs.",
@@ -1782,10 +1795,11 @@
   ],
   "where_text": [
    "languages times screens in one run: 72 screenshots, one English flow, one Mac",
-   "for that run on iOS and on Android"
+   "for that run on iOS and on Android",
+   "The 9 and 15 minutes were measured on Maestro 2.0.10."
   ],
   "status": "evidence",
-  "proof": "research/first-run.md and PLAN.md Status 2026-10-01 (CrossfitTracker iOS 18/18 in 534 s, Android 18/18 about 15 min); research/pricing-2026-10.md section 1 'Proven'.",
+  "proof": "research/first-run.md and PLAN.md Status 2026-10-01 (CrossfitTracker iOS 18/18 in 534 s, Android 18/18 about 15 min); research/pricing-2026-10.md section 1 'Proven'. Re-measure 2026-10-05 (CrossfitTracker, 19 languages, 4 devices, Maestro 2.0.10, Xcode 27, iOS 26.4): iOS 404 s capture, Android phone 415 s, 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. That ran on Maestro 2.0.10; the installer fetches 2.11.0, where the iOS run needed retries (826 s of capture, loaded Mac, 2026-10-04). The 9 and 15 minutes were measured on 2.0.10.",
   "layer": "device",
   "assertion": "Re-run on the release build (roadmap N3/N4) and refresh the numbers if they change by more than 20%.",
   "fix": ""
@@ -2120,7 +2134,7 @@
    "`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first"
   ],
   "status": "partial",
-  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Then run on a Mac (Apple silicon, macOS 27, 2026-10-03) in throwaway HOME/SHOTFLEET_HOME/ANDROID_HOME with this Mac's Java and Android tools hidden: without Homebrew, all 5 steps (Maestro 2.0.10, Temurin 21.0.12.1 JRE at jre/Contents/Home, Google's mac_arm64 command-line tools, licences, platform-tools/emulator/build-tools/arm64 image) ran and doctor reported Maestro, Java, iOS and Android ready; with Homebrew, `brew install --cask android-commandlinetools` plus licences and packages ran (635 s) and doctor reported Android ready. Both passed; the claim stays partial because each Mac run had Maestro or the JRE from the first run reused for the second, and no clean macOS user or outside machine has run it.",
+  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Then run on a Mac (Apple silicon, macOS 27, 2026-10-03) in throwaway HOME/SHOTFLEET_HOME/ANDROID_HOME with this Mac's Java and Android tools hidden: without Homebrew, all 5 steps (Maestro 2.0.10, Temurin 21.0.12.1 JRE at jre/Contents/Home, Google's mac_arm64 command-line tools, licences, platform-tools/emulator/build-tools/arm64 image) ran and doctor reported Maestro, Java, iOS and Android ready; with Homebrew, `brew install --cask android-commandlinetools` plus licences and packages ran (635 s) and doctor reported Android ready. Both passed; the claim stays partial because each Mac run had Maestro or the JRE from the first run reused for the second, and no clean macOS user or outside machine has run it. The Mac run installed Maestro 2.0.10, the pin of that day; the pin is 2.11.0 now, so the 2.11.0 download has not been run by doctor --fix on a Mac.",
   "layer": "unit",
   "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok. (Run on a Mac in a throwaway environment, both Android branches, 2026-10-03; not on a separate clean user.)",
   "fix": ""
@@ -2192,6 +2206,27 @@
  },
  {
   "id": "C131",
+  "claim": "The release is built for macOS 13 or later on Apple silicon and tested on macOS 27",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/index.html",
+   "site/public/alternatives.html",
+   "site/public/llms.txt",
+   "skill/shotfleet/SKILL.md",
+   "docs/AGENTS-snippet.md"
+  ],
+  "where_text": [
+   "Built for macOS 13 or later on Apple silicon; tested on macOS 27."
+  ],
+  "status": "evidence",
+  "proof": "2026-10-05, release 0.1.1 built from a standalone Python 3.14.2 and `swiftc -target arm64-apple-macos13.0`: `python3 tools/macho-minos.py dist/shotfleet` on the unpacked tarball gives 2 Mach-O files at macOS 11.0 and 1 (the ocr helper) at 13.0, none at 27.0 (the 0.1.0 folder had 52 of 56 at 27.0). Apple notarized both the program and the package (Accepted); the quarantined run, `check` on 72 real screenshots (0 problems) and a licence call over TLS all ran on macOS 27. Tests: tests/test_platform_reach.py. The Mach-O minimum is a build fact, not proof that it runs below macOS 27. After the deploy (2026-10-05) two manual GitHub runs installed the LIVE 0.1.1 on Apple-silicon macOS 14.8.9 and 15.7.9: install, `shotfleet --version` (0.1.1), `doctor` (ran to the end) and `check` on two sample screenshots worked with no start-up error (docs/owner-note-0.1.1.md, research/limits-platform-reach-2026-10-05.md; hosted runners 37303612329 and 37304115758; runner images macos-14 for 14.8.9 and macos-15 for 15.7.9). Not shown: simulator runs on those versions, macOS 13, macOS 26.0 to 26.2, a real Mac or a clean Mac. With the owner's yes (2026-10-05) the same sentence is also on the home page (the price lede and the \"Not for you if\" list), the comparison page, llms.txt, the skill and the agent snippet, and the JSON-LD softwareRequirements starts with `macOS 13 or later on an Apple silicon Mac`; the Gumroad page carries it too (not in the repo).",
+  "layer": "device",
+  "assertion": "On a Mac running macOS 13 or 26.0 to 26.2 (no hosted runner exists; a real Mac or a VM), the installed 0.1.1 prints `shotfleet 0.1.1` and `doctor` runs to the end. Already shown on macOS 14.8.9 and 15.7.9.",
+  "fix": ""
+ },
+ {
+  "id": "C132",
   "claim": "On Android with Maestro 2.7.0 or newer the screen text is read from the UI hierarchy (a marker step after each screenshot), exact in every script",
   "where": [
    "README.md"

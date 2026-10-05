@@ -93,6 +93,14 @@ Cross-cutting facts used below:
    the selectors became `'Hinweise:'` / `'Neues Element hinzufügen'` (de) and `'注釈：'` / `'新しい項目を追加'` (ja) and their `assertVisible` steps passed, `shotfleet check`: `checked 2 screenshots in 2 languages: 0 problem(s)`.
    The German screenshot shows the German labels and the sample's own German flag image, which only appears when the OS locale reached the app. **0 untranslated selectors on a 2-language run: C passes.**
    What this does not show: Android (not built), the native `values-*` trap (bug 5; the iOS bundle has none), more than two languages or one screen, Release builds, or any MAUI app that is not this sample. The run was not on a quiet Mac: job #10's Android emulator
+
+7. **Round 2, 2026-10-05, part (a): the same sample as an Android build passes too.** Evidence in `research/experiments-2026-10-04/C2/android/`. `dotnet build -f net10.0-android -c Debug -p:EmbedAssembliesIntoApk=true` (JDK 21; JDK 11 fails in the manifest merger with an `UnsupportedClassVersionError`) gave `com.companyname.localizationdemo-Signed.apk` (85 MB, built in 184 s). `shotfleet init` on the APK found **only `en`** (MAUI keeps its translations in compiled code; the APK's own resources hold only library locales) and printed the `strings = "Resources/Strings/*.resx"` hint, as the iOS build does.
+   With that line and `locales = ["de", "ja"]`, `shotfleet run --platform android --locales de,ja --parallel 1` on one `shotfleet_android` emulator (Android 16) with Maestro 2.0.10: `rc=0`, `captured 2/2 locales in 58s on 1 emulators` (82 s with the check), `untranslated_selectors: []` for both languages, `shotfleet check`: `checked 2 screenshots in 2 languages: 0 problem(s)` plus one non-blocking Play note (2 listings with fewer than 4 screenshots of 1080 px, true for a one-screen sample). The German screenshot shows the German labels and the sample's German flag. **0 untranslated selectors on a 2-language Android run.**
+   Run beside another session's iOS job (the queue owner approved it, no lock taken, load 140 to 180, free memory about 50 %); it had a 15 min hard limit and removed only its own emulator. Not shown: Release builds, more than two languages on Android (part (b), five languages on iOS, is still to run), a real MAUI app. Native `values-*/Strings.xml` (bug 5) is not exercised here (the APK has none for the app).
+
+8. **Round 2, 2026-10-05, part (b): five languages on iOS pass.** Evidence in `research/experiments-2026-10-04/C2/ios5/`. The iOS build of the same sample (`LocalizationDemo.app`, Debug, simulator), `strings = "Resources/Strings/*.resx"`, `locales = ["de", "es", "fr", "ja", "zh-Hans"]`, the runtime pinned to iOS 26.4 (`runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"`, because an iOS 27 runtime was installed on that Mac), `shotfleet run --parallel 2` with Maestro 2.0.10: `rc=0`, `captured 5/5 locales in 110s on 2 simulators` (iPhone 17 Pro Max), `untranslated_selectors: []` for all five, `shotfleet check`: `checked 5 screenshots in 5 languages: 0 problem(s)`, no notes. The Simplified Chinese screenshot (`zh-Hans-01_home.png`) shows the Chinese labels and the sample's own 汉 flag, the German one the German flag.
+   Correction to my own plan: I expected `fr` and `zh-Hans` to be problem cases because their `.resx` files are only about 1 KB. They are small because they hold just the three keys this app uses (`NotesLabel`, `NotesPlaceholder`, `AddButton`), so they are complete. A genuinely partial translation (a key missing in one language) was not tested here.
+   Ran under the shared device lock after the Play job released it. A first attempt at 14:48 beside the Play job was stopped by the queue's own abort rule (load 417 > 400) before any screenshot; nothing was recorded from it. Still not shown: Android with more than two languages, a Release build, a real MAUI app, and a partial translation.
    (port 5702) was running and the load was 480 to 640, with the queue owner's agreement for this iOS-only run; the language and selector results do not depend on timing, but the 394 s is not a speed figure.
 
 ## 6. Unity
@@ -128,6 +136,23 @@ Cross-cutting facts used below:
    So on iOS 26.4 `-AppleLanguages` alone is enough, and `navigator.language` follows it; the forum report (iOS 17.4 and later, `navigator.language` stays on the system language) was **not reproduced**.
    What this does not show: a real device (simulator only), any iOS version other than 26.4, an app that sets its own language in code, and Android (the Android side stays [V]/[I] above).
    The verdict changes from "iOS unverified" to: per-language capture of a Capacitor app works on iOS 26.4 with the launch argument, for apps that read `navigator.language` or `@capacitor/device`.
+
+7. **Round 2, 2026-10-05: iOS 18.6 and the Android WebView.** Evidence in `research/experiments-2026-10-04/B2/` (same throwaway app, rebuilt: Capacitor 8.x, Debug builds, web assets embedded; Maestro 2.11.0 `hierarchy` plus a screenshot per case; `run.sh` has a hard 30 min limit and removes only its own devices).
+   **iOS 18.6 simulator** (iPhone 16 Pro, created for the run and deleted afterwards), the version family the Apple forum report is about (17.4 and later):
+
+   | Launch | `navigator.language` | String-table button | `Device.getLanguageCode()` |
+   |---|---|---|---|
+   | no argument | `en-GB` | Hello | `en` |
+   | `-AppleLanguages "(de)"` | `de-DE` | Hallo | `de` |
+   | `-AppleLanguages "(ja)"` | `ja` | Hello (no `ja` in the table) | `ja` |
+   | `-AppleLanguages "(de)" -AppleLocale de_DE` | `de-DE` | Hallo | `de` |
+   | system language German, rebooted | `de-DE` | Hallo | `de` |
+
+   **So the forum report is not reproduced on iOS 18.6 either**: `-AppleLanguages` alone reaches the webview on 18.6 and on 26.4. (The default row is read from the screenshot, `ios18-1-default.png`: Maestro's first hierarchy call after a boot returned nothing.)
+   **Android 16 emulator (API 36, `shotfleet_android`), WebView `com.google.android.webview` 133.0.6943.137**, per-app language set with `adb shell cmd locale set-app-locales dev.shotfleet.capdemo --locales <tag>`:
+   no setting `navigator.language=en-US`, Hello, `device=en`; `de`: `navigator.language=de`, **Hallo**, `device=de`; `ja`: `navigator.language=ja`, Hello (no `ja` in the table), `device=ja` (read from the screenshots in `B2/`). So on Android the per-app locale reaches the WebView, as the note above expected.
+   **Maestro on the Android WebView is the weak side, as noted:** `hierarchy` returned only the status bar (and for `de` also "capdemo" and the first button) and nothing for the default and `ja` launches, although the screen was fully rendered; the iOS WebView text was read every time except the first call after boot. So language capture works; reading WebView text on Android through Maestro does not (issues 2293, 3497, 3646 above).
+   What this still does not show: a real device, an app that sets its own language in code, Android older than 16 / other WebView versions, or Ionic-specific plugins.
 
 ## 8. NativeScript
 

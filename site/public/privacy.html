@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Privacy · shotfleet</title>
-<meta name="description" content="What the shotfleet waitlist stores about you, why, and how to delete it.">
+<meta name="description" content="What shotfleet stores about you, why, and how to delete it.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
 <meta property="og:title" content="Privacy · shotfleet">
-<meta property="og:description" content="What the shotfleet waitlist stores about you, why, and how to delete it.">
+<meta property="og:description" content="What shotfleet stores about you, why, and how to delete it.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:url" content="https://shotfleet.com/privacy">
 <meta property="og:type" content="website">
@@ -33,13 +33,13 @@
  <div class="page">
   <p class="label">Privacy</p>
   <h1>What I keep, and how to delete it.</h1>
-  <p class="lede">By default this site sets no cookies and loads nothing from other servers. Google Analytics runs only if you press Accept analytics, and <a href="#analytics">below</a> I explain what that involves. Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language. Those totals are not linked to you and your IP address is not stored. Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me.</p>
+  <p class="lede">By default this site sets no cookies and loads nothing from other servers. Google Analytics runs only if you press Accept analytics, and <a href="#analytics">below</a> I explain what that involves. Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language. Those totals are not linked to you and your IP address is not stored. Beyond that, the only things stored are your analytics choice, in your own browser, and what you sent if you joined the early-access list before the sale opened, or send when you write to me.</p>
 
   <h2 id="analytics">Analytics (only if you accept)</h2>
   <p>The first time you visit, a banner asks whether I may use Google Analytics 4 to see how this site is used. Accept analytics and Decline are equal choices. Until you accept, nothing is loaded from Google and no cookie is set. If you decline, or your browser blocks local storage, that stays true. I keep your choice in your browser's local storage under the name <code>shotfleet-analytics</code>, not in a cookie.</p>
   <p>If you accept:</p>
   <ul>
-    <li>Your browser loads a script from googletagmanager.com and sends data to Google Analytics: the page address and title, the site that referred you, your browser, operating system, screen size and language, your approximate location, the time, and a few actions I chose (clicking a button, reaching the run or pricing section, joining the waitlist). It does not send your email address.</li>
+    <li>Your browser loads a script from googletagmanager.com and sends data to Google Analytics: the page address and title, the site that referred you, your browser, operating system, screen size and language, your approximate location, the time, and a few actions I chose (clicking a button, reaching the run or pricing section). It does not send your email address.</li>
     <li>Two cookies are set on shotfleet.com, <code>_ga</code> and <code>_ga_</code> followed by an id from my property. They hold a random identifier so repeat visits can be told apart, and they last up to 13 months.</li>
     <li>On your IP address, Google <a href="https://support.google.com/analytics/answer/2763052">documents</a> that Google Analytics 4 does not log or store IP addresses. I never see it.</li>
     <li>Google signals and the advertising features are off, and the consent settings keep ad storage, ad user data and ad personalization denied. Only analytics storage is granted.</li>
@@ -51,7 +51,8 @@
   <h2>When you buy</h2>
   <p>Purchases go through Gumroad (<a href="https://gumroad.com/privacy">privacy policy</a>), which sells shotfleet to you as the merchant of record. Gumroad passes me the details of your order, which can include your name, email and country (its privacy policy says exactly what), so I can support you. The installed program checks your licence key with Gumroad when you activate it and about once a week after. It sends Gumroad your key, the product ID, and whether the call should count as an activation (only the first call on a new Mac does); it sends no Mac name, no activation id and no program version, and the request carries your IP address and Python's standard user-agent string. It sends nothing else. <code>shotfleet doctor</code> also asks this site for the latest version number; that is an ordinary page request and I don't record it. Your app and screenshots are never uploaded.</p>
 
-  <h2>When you join the waitlist</h2>
+  <h2>If you joined the list before the sale opened</h2>
+  <p>Until the sale opened, the site had an early-access list. It has no signup form now. If you joined it, this is what I stored:</p>
   <ul>
     <li>Your email address.</li>
     <li>What you build with, if you answered the optional question.</li>
@@ -61,7 +62,7 @@
   </ul>
 
   <h2>What I use it for</h2>
-  <p>To send you one email when shotfleet is available to buy, and to count how many people are interested. I don't share it, sell it, or add you to any other list. When someone joins, my server sends me an email through Cloudflare with the signup number, the country, the source and the stack answer. It never contains the email address.</p>
+  <p>To send you one email when shotfleet is available to buy (the sale is open now, and that one email is about the launch), and to count how many people are interested. I don't share it, sell it, or add you to any other list. When someone joined, my server sent me an email through Cloudflare with the signup number, the country, the source and the stack answer. It never contains the email address.</p>
 
   <h2>Where it's kept, and for how long</h2>
   <p>In Cloudflare Workers KV, the storage for the small server behind this page. Cloudflare also processes your IP address to serve the page and to limit how often the forms can be sent. I will delete the waitlist within 30 days after I send the launch email, or sooner if you ask. Messages you send through the contact form are kept until I've answered them, with the reply address if you gave one and your country (worked out from your IP address, which isn't stored), and I delete them on request.</p>

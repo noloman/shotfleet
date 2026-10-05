@@ -1,0 +1,57 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 10,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "es": {
+   "untranslated_selectors": [],
+   "lproj": "es",
+   "ok": true,
+   "seconds": 9,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "fr": {
+   "untranslated_selectors": [],
+   "lproj": "fr",
+   "ok": true,
+   "seconds": 9,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "lproj": "ja",
+   "ok": true,
+   "seconds": 11,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "zh-Hans": {
+   "untranslated_selectors": [],
+   "lproj": "zh-Hans",
+   "ok": true,
+   "seconds": 8,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  }
+ },
+ "config": "/private<scratch>/c2ios5/shotfleet.toml",
+ "strings": [
+  "/private<scratch>/c2ios5/../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/Resources/Strings/*.resx"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 110,
+ "simulators": 2,
+ "app": "/private<scratch>/c2ios5/../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/bin/Debug/net10.0-ios/iossimulator-arm64/LocalizationDemo.app"
+}

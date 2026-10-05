@@ -9,8 +9,7 @@ JSON shapes: `check` and `run` give `exit`, `screenshots`, `problems` (and `note
 ## The pull-request check
 
 Checking needs only a Mac (it uses macOS text recognition) and no simulators, so it fits a pull-request job on
-GitHub's macOS runners. `check` is free and needs no licence. This recipe has not been run on GitHub yet (README says
-so); the `check` command itself is the one tested.
+GitHub's macOS runners. `check` is free and needs no licence. The recipe as written (the build step, then check with --app) has not been run on GitHub yet. The installer, shotfleet --version, doctor and check on sample screenshots did run on GitHub's macos-14 and macos-15 runners (2026-10-05).
 
 ```yaml
 # .github/workflows/screenshots.yml
@@ -44,8 +43,12 @@ Notes:
 ## run and export in CI
 
 Set `SHOTFLEET_KEY` to the licence key, kept in the CI system's secret store (GitHub: repository secret, exposed as an
-env var of the step). It is checked online on each run and uses none of the 3 activations; if the licence server can't
-be reached the job is not failed. With an invalid key `export` refuses (exit 2) and `run` captures only 2 languages.
+env var of the step). It is checked online on each run and uses none of the 3 activations. The check fails open on purpose: if the licence
+server can't be reached (no network, a Gumroad 5xx, an unreadable answer), the run counts as licensed, so a CI job never fails
+because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is
+not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good
+key. A key that is not four groups of 8 hex characters is refused without contacting Gumroad. A Mac where `shotfleet activate`
+was run is different: it re-checks about weekly and stops after 30 days offline. With an invalid key `export` refuses (exit 2) and `run` captures only 2 languages.
 `run` in CI also needs simulators and Maestro on the runner; the README does not document a recipe for that.
 
 ```yaml
@@ -55,6 +58,11 @@ be reached the job is not failed. With an invalid key `export` refuses (exit 2) 
 ```
 
 Never write the key into the workflow file, the repo, a log line (`echo`, `set -x`), or an artifact.
+
+## Two things to know when a script reads the result (checked in the code on 0.1.1, not on a device)
+
+- A folder with several reports (a multi-device run `out/<device>/`, a config with both platforms, Play listings with phone and tablet sets) is checked once per report. `--json` prints one document: `screenshots`, `problems` and `notes` hold every report, and `reports` lists `{"report": "<path of check.json>", "problems": [...]}` per report so you can tell which device a problem came from. With one report there is no `reports` key.
+- A `run` whose `SHOTFLEET_KEY` is missing or invalid does not fail: it captures 2 languages and exits 0 if those pass. It says `free tier: capturing 2 of N languages` (progress, so on stderr with `--json`); a CI job that must capture every language should fail on that line or compare the language count in `run.json`.
 
 ## Reading the result in a script
 

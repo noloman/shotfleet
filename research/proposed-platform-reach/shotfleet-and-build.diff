@@ -1,0 +1,96 @@
+diff --git a/packaging/build.sh b/packaging/build.sh
+index 83d0b02..8ef780d 100755
+--- a/packaging/build.sh
++++ b/packaging/build.sh
+@@ -4,13 +4,19 @@
+ #   packaging/build.sh                      -> dist/shotfleet/ (arm64), dist/shotfleet-<version>-macos-arm64.tar.gz
+ # Signing and notarization run when these are set (Manu's Apple Developer account):
+ #   DEVELOPER_ID="Developer ID Application: Name (TEAMID)"   NOTARY_PROFILE=<xcrun notarytool store-credentials name>
++# Which macOS the build runs on (research/limits-platform-reach-2026-10-05.md): the Swift OCR helper targets macOS ${MACOS_MIN:-13.0}
++# (Vision's newer text models start there). The Python is whatever PYTHON names (default python3). Homebrew's Python is built for the
++# macOS it was built on (27.0 measured), so the whole program then needs that macOS; a python.org or python-build-standalone
++# (`uv python install 3.14`) interpreter is built for macOS 11, so the program runs on macOS 13 and newer:
++#   PYTHON=$(uv python find 3.14 --managed-python) packaging/build.sh
++# The last lines say which macOS the build needs, whichever Python was used.
+ set -eu
+ cd "$(dirname "$0")/.."
+ VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("shotfleet.py").read()).group(1))')
+ ARCH=$(uname -m)
+ rm -rf build dist && mkdir -p build
+-swiftc -O ocr.swift -o build/ocr
+-build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; python3 -m venv build/venv; }  # its Python may be gone (brew upgrade)
++swiftc -O -target "$ARCH-apple-macos${MACOS_MIN:-13.0}" ocr.swift -o build/ocr
++build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; "${PYTHON:-python3}" -m venv build/venv; }  # its Python may be gone (brew upgrade)
+ build/venv/bin/pip install --quiet --upgrade pyinstaller certifi
+ set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." --add-data "$PWD/skill:skill" \
+   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
+@@ -50,4 +56,5 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
+ fi
+ # The installer package (no quarantine flag, so no Gatekeeper check at run time): needs the Developer ID Installer certificate.
+ if [ -n "${INSTALLER_ID:-}" ]; then packaging/pkg.sh; fi
++python3 tools/macho-minos.py dist/shotfleet || true  # informational: the oldest macOS this build runs on
+ shasum -a 256 dist/*.tar.gz
+diff --git a/shotfleet.py b/shotfleet.py
+index f20b185..b2640c3 100755
+--- a/shotfleet.py
++++ b/shotfleet.py
+@@ -1435,6 +1435,19 @@ def device_type_id(name):
+     if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
+     return match
+ 
++DEFAULT_IPHONE = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
++
++def default_device_type(listed=None):
++    """iPhone 17 Pro Max, the 6.9" size class. Xcode 16 and early 26 builds do not have it: then the newest 'iPhone N Pro Max' this Xcode lists
++    (the 16 Pro Max is 1320x2868 like the 17; the 15 Pro Max's 1290x2796 is also a 6.9" size). `listed` is `simctl list devicetypes -j` text, for tests."""
++    try:
++        if listed is None: listed = sh(["xcrun", "simctl", "list", "devicetypes", "-j"], timeout=60).stdout
++        types = json.loads(listed or "{}").get("devicetypes", [])
++    except (OSError, ValueError, TypeError, AttributeError, subprocess.TimeoutExpired): return DEFAULT_IPHONE  # ponytail: unreadable list -> the old default, simctl then names the problem
++    if any(t.get("identifier") == DEFAULT_IPHONE for t in types): return DEFAULT_IPHONE
++    maxes = [(int(m[1]), t["identifier"]) for t in types if (m := re.fullmatch(r"iPhone (\d+) Pro Max", t.get("name", "")))]
++    return max(maxes)[1] if maxes else DEFAULT_IPHONE
++
+ def device_slug(device_type):
+     """com.apple...iPad-Pro-13-inch-M5-12GB -> ipad-pro-13-inch-m5-12gb (a folder and simulator-name prefix)."""
+     return device_type.rsplit(".", 1)[-1].lower()
+@@ -1535,7 +1548,7 @@ def ios_run(cfg, path, only=None, parallel=None):
+ def ios_run_inner(cfg, path, only, parallel):
+     cfg = dict(cfg)
+     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
+-    cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
++    if "device_type" not in cfg: cfg["device_type"] = default_device_type()
+     if "runtime" not in cfg: cfg["runtime"] = latest_ios_runtime()  # setdefault would ask xcrun even when the config names one
+     cfg["app"] = str(path(cfg["app"]))
+     framework_hint(cfg["app"], "strings" in cfg, path("."))
+@@ -1835,6 +1848,15 @@ def avd_home():
+     if env.get("ANDROID_AVD_HOME"): return Path(env["ANDROID_AVD_HOME"])
+     return (Path(env["ANDROID_USER_HOME"]) if env.get("ANDROID_USER_HOME") else Path.home() / ".android") / "avd"
+ 
++def require_api33(image, source):
++    """Per-app languages (`cmd locale set-app-locales`) exist from Android 13 (API 33). `image` is a package id or an AVD's image.sysdir path.
++    An older emulator would boot, then fail at the first language; say so before that. The app's own minSdk can stay low."""
++    api = re.search(r"android-(\d+)", image or "")
++    if api and int(api[1]) < 33:
++        raise Fail(f"{source} is Android API {api[1]}; shotfleet sets each language with `cmd locale set-app-locales`, which needs API 33 (Android 13) or newer. "
++                   f"Your app's minSdk can stay as low as it is: it runs on a newer emulator. Install an image with: {commands_text(sdkmanager_commands([DEFAULT_IMAGE]))}, "
++                   "then set system_image (or avd, for an emulator that already exists) in the config")
++
+ def android_pool(n, cfg, pool):
+     """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
+     The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
+@@ -1842,8 +1864,13 @@ def android_pool(n, cfg, pool):
+     kind = ANDROID_DEVICES[device]
+     avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
+     avd_dir = avd_home() / f"{avd}.avd"
+-    if not avd_dir.exists():
++    if avd_dir.exists():
++        try: sysdir = re.search(r"(?m)^image\.sysdir\.1\s*=\s*(.+)$", (avd_dir / "config.ini").read_text())
++        except OSError: sysdir = None
++        require_api33(sysdir and sysdir[1], f"the emulator {avd}")
++    else:
+         image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
++        require_api33(image, f"the system image {image}")
+         avdmanager = cmdline_tool("avdmanager")
+         if not avdmanager:
+             raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))

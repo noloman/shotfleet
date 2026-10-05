@@ -8,8 +8,8 @@ Copy everything between the lines into the project's agent instructions file (`A
 ## shotfleet (localized store screenshots)
 
 shotfleet captures App Store and Google Play screenshots in every language the app ships from one English Maestro
-flow, and checks every screenshot against the app's own strings. It also checks screenshots made by any other tool.
-Needs an Apple silicon Mac, Maestro 2.x and Java 17+; Xcode for iOS, the Android SDK for Android.
+flow, and checks every screenshot against the app's own strings. It also checks screenshots you already have (fastlane, screengrab, by hand).
+Needs an Apple silicon Mac, Maestro 2.x and Java 17+; Xcode for iOS, the Android SDK for Android. Built for macOS 13 or later on Apple silicon; tested on macOS 27.
 
 Commands:
 

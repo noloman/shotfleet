@@ -1,0 +1,26 @@
+"""Static import survey of a PyInstaller folder: libraries each Mach-O links, and its imported symbols per library (dyld_info -imports)."""
+import subprocess, sys, pathlib, collections, json, re
+root = pathlib.Path(sys.argv[1])
+libs = collections.defaultdict(set)
+syms = collections.defaultdict(lambda: collections.defaultdict(set))   # lib -> symbol -> {files}
+weak = collections.Counter()
+files = []
+for f in sorted(root.rglob("*")):
+    if f.is_symlink() or not f.is_file(): continue
+    if "Mach-O" not in subprocess.run(["file", "-b", str(f)], capture_output=True, text=True).stdout: continue
+    rel = f.relative_to(root).as_posix(); files.append(rel)
+    for l in subprocess.run(["otool", "-L", "-arch", "arm64", str(f)], capture_output=True, text=True).stdout.splitlines()[1:]:
+        libs[l.strip().split(" (")[0]].add(rel)
+    for l in subprocess.run(["nm", "-u", "-m", "-arch", "arm64", str(f)], capture_output=True, text=True).stdout.splitlines():
+        m = re.match(r"\s+\(undefined\)\s+(weak )?external\s+(\S+)\s+\(from ([^)]+?)\)", l)
+        if not m: continue
+        w, sym, lib = m.groups()
+        if w: weak[lib + ":" + sym] += 1
+        syms[lib][sym].add(rel)
+print("macho files", len(files), "| weak imports:", len(weak), sorted(weak))
+print("\nlinked libraries (otool -L):")
+for k, v in sorted(libs.items()): print(f"  {len(v):3} files  {k}")
+print("\nimported symbols per library (unique):")
+for k, v in sorted(syms.items(), key=lambda kv: -len(kv[1])): print(f"  {len(v):5}  {k}")
+json.dump({"syms": {k: {s: sorted(t) for s, t in v.items()} for k, v in syms.items()}, "libs": {k: sorted(v) for k, v in libs.items()}},
+          open(sys.argv[2], "w"))

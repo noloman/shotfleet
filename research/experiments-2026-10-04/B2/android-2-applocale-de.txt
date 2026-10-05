@@ -1,0 +1,10 @@
+12:54
+12:54 PM
+Android System notification: 
+Wifi signal full.
+T-Mobile, three bars.
+Battery charging, 100 percent.
+capdemo
+navigator.language=de
+Hallo
+device=de

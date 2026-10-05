@@ -1,5 +1,7 @@
 # Launch: your part (about 30 minutes in Gumroad, then Gumroad's first-payout review)
 
+> **Status, 2026-10-05:** go-live ran 2026-10-05 (5fa4f7c, 5bbec86). Sections 4 to 6 are the record and the template for the next release. Section 8 (purge the waitlist 30 days after the launch email) is still live and is a promise on the privacy page.
+
 > **2026-10-02: Polar was dropped.** Polar pays out through Stripe, and Stripe will ask a Dutch resident for a KvK number.
 > The sale moves to **Gumroad**, which you already use for Keysi (Individual account, EUR bank payout, no KvK entered).
 > Everything about Polar below this note is gone; the Polar organization, product, discount and checkout links are no
@@ -7,7 +9,7 @@
 > `research/gumroad-setup.md`. Its last section is the click-by-click checklist for the Gumroad product.
 
 Everything else is done and scripted. Signing and notarization use your Developer ID and the `KeysiNotary` profile;
-the program is served from the shotfleet site (no public repos); `packaging/go-live.sh` does the rest.
+the program is served from the shotfleet site (no public source repo; the empty public repo `noloman/shotfleet-releases` is kept for a later Action, tap and fastlane plugin, see DISTRIBUTION.md); `packaging/go-live.sh` does the rest.
 
 Payments are on **Gumroad** (merchant of record since 2025-01-01: it charges and pays the VAT and sales tax worldwide; an
 Individual account needs no business registration). Lemon Squeezy and Polar are not used: both end in a Stripe check that
@@ -104,8 +106,9 @@ Still by hand after the smoke test: open the page in a browser and click the buy
 product page showing $49 crossed out and $29), then do one real install on a clean Mac account
 (`curl -fsSL https://shotfleet.com/install.sh | sh`, `shotfleet doctor`) and one test purchase: Gumroad's own "Test card"
 checkout while logged in, or a single-use 100%-off code (never your own card; Gumroad can suspend the account for that).
-Activate the key it issues, activate again (counts nothing), refund the sale in the dashboard and check the next weekly
-check refuses it.
+Activate the key it issues, activate again (counts nothing). A 100%-off sale cannot be refunded (no refund action on a $0
+sale): disable its key under Manage license keys instead and check the next weekly check refuses it (`the key was disabled`).
+Only a paid sale by another person tests the refund itself (`docs/refund-runbook.md`).
 
 ## 7. Send the launch email (your account, your words; draft in marketing/launch-email.md)
 

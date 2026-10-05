@@ -366,7 +366,7 @@ class PrivacyPageListsWhatIsStored(unittest.TestCase):
 
     def test_c078_the_contact_message_fields_are_named_on_the_page(self):
         self.assertIn("Messages you send through the contact form are kept until I've answered them, with the reply address if you gave one and your country", self.PRIVACY)
-        self.assertIn("Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me.", self.PRIVACY)
+        self.assertIn("Beyond that, the only things stored are your analytics choice, in your own browser, and what you sent if you joined the early-access list before the sale opened, or send when you write to me.", self.PRIVACY)
 
     def test_c077_the_counter_is_described_as_the_code_does_it(self):
         self.assertIn("one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.", self.PRIVACY)

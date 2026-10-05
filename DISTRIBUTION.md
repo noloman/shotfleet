@@ -1,5 +1,7 @@
 # How shotfleet gets to buyers
 
+> History: written before the sale opened. The sale has been live since 2026-10-05, so the waitlist wording below (for example the waitlist as the only list to email) describes the pre-sale state.
+
 ## What a buyer's Mac has today (measured 2026-10-01)
 
 - `/usr/bin/python3` is **3.9.6**. shotfleet needs 3.11+ (`tomllib`), so `python3 shotfleet.py` fails out of the box
@@ -17,12 +19,12 @@
 | Package | A single executable built with PyInstaller (Python bundled), plus the prebuilt `ocr` helper, Apple silicon only (arm64) | No Python or Swift needed on the buyer's Mac; source not shipped as plain text |
 | Trust | Signed with Manu's Developer ID and notarized by Apple | Without it Gatekeeper blocks the download ("cannot be opened") |
 | Install | `curl -fsSL https://shotfleet.com/install.sh \| sh` (checksum-verified). No Homebrew formula is published | One line, no public repos needed (Homebrew was the first plan; see Status) |
-| Where binaries live | The shotfleet site's `/download` folder (no public repos; source stays private) | The installer reads it over HTTPS and checks the SHA-256 |
+| Where binaries live | The shotfleet site's `/download` folder (no public source repo; source stays private; the empty `noloman/shotfleet-releases` is reserved for a later Action, tap and plugin) | The installer reads it over HTTPS and checks the SHA-256 |
 | Payment | Gumroad product linked from the site (merchant of record since 2025-01-01: handles VAT/sales tax worldwide, added on top of the price; Individual account, Netherlands bank payout; the same account sells Keysi) | Lemon Squeezy and Polar end in a Stripe check that asks for a KvK (none here; dropped 2026-10-02). Gumroad: 10% + $0.50 plus card 2.9% + $0.30, so about $24.46 net at $29 (research/gumroad-setup.md) |
-| Licence | `shotfleet activate <key>` validates once with the store's licence API (Gumroad keys: four groups of 8 hex characters, no secret in the app, one use count per key, 3 activations; a key from any other store is refused, with no network call), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days | Honest buyers never notice; casual sharing stops |
+| Licence | `shotfleet activate <key>` validates once with the store's licence API (Gumroad keys: four groups of 8 hex characters, no secret in the app, one use count per key, 3 activations; a key from any other store is refused, with no network call), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days (an activated Mac; a CI key stores nothing and has no offline limit, see CI below) | Honest buyers never notice; casual sharing stops |
 | Free vs paid | `check`, `doctor`, `init` free; `run` free up to 2 languages; every language and `export` need a key | STRATEGY.md 2.1: checking is the funnel |
 | Updates | `shotfleet doctor` mentions a newer release (read from the site's `/download/VERSION`; `--version` makes no network call); re-running `install.sh` installs it | A year of updates is part of the $49 |
-| CI | Same binary; key passed as `SHOTFLEET_KEY` | Team licence later |
+| CI | Same binary; key passed as `SHOTFLEET_KEY`, checked online on each run, no activation used, **fails open on purpose** (owner decision 2026-10-05): with Gumroad unreachable the run counts as licensed, with no offline time limit for a CI key | A CI job never fails because Gumroad is down. Cost: an outage hides a refunded or disabled key until a run reaches Gumroad. Team licence later |
 
 A licence check in a Python app can be removed by a determined person. At $29–49 that's acceptable: the goal is to make
 paying the easy path, not to win against crackers.
@@ -50,10 +52,11 @@ paying the easy path, not to win against crackers.
 Only needed once the founder sale opens (STRATEGY.md week 4). Until then the waitlist is enough.
 
 ## Status (2026-10-01)
-- Decision: no public repos. The signed, notarized program is served from the shotfleet site; buyers install with
+- **Owner decision 2026-10-05:** the public GitHub repo `noloman/shotfleet-releases` exists and is empty. It is kept for later, to hold only a GitHub Action, a Homebrew tap and a fastlane plugin, plus release downloads if ever needed. The core program stays closed source in the private repo, and nothing is published there today. `noloman/homebrew-shotfleet` is not created.
+- Decision: the program is not published in a public repo. The signed, notarized program is served from the shotfleet site; buyers install with
   `curl -fsSL https://shotfleet.com/install.sh | sh` (checksum-verified; installs on the PATH).
-  `doctor` announces newer versions from `/download/VERSION`. The Homebrew formula (packaging/shotfleet.rb) is kept
-  for later if buyers ask for `brew install`; it was tested through a local tap.
+  `doctor` announces newer versions from `/download/VERSION`. A Homebrew formula was tried through a local tap and
+  removed in 0.1.2 (it was stale); if buyers ask for `brew install`, generate one from the tested tarball's SHA-256 (git history has the old file).
 - Signing and notarization: done with the existing Developer ID (2357A78TMR) and `KeysiNotary` profile. Apple accepted
   the 0.1.0 build; a quarantined copy runs without a Gatekeeper prompt.
 - Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake Gumroad licence API

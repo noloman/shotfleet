@@ -4,14 +4,31 @@
 #   packaging/build.sh                      -> dist/shotfleet/ (arm64), dist/shotfleet-<version>-macos-arm64.tar.gz
 # Signing and notarization run when these are set (Manu's Apple Developer account):
 #   DEVELOPER_ID="Developer ID Application: Name (TEAMID)"   NOTARY_PROFILE=<xcrun notarytool store-credentials name>
+# Which macOS the build runs on (research/limits-platform-reach-2026-10-05.md): the Swift OCR helper targets macOS ${MACOS_MIN:-13.0}
+# (Vision's newer text models start there). The Python is the recorded one, python-build-standalone ${PINNED_PYTHON:-3.14.2} from uv
+# (`uv python install 3.14.2`), built for macOS 11, so the program runs on macOS 13 and newer; a Homebrew Python is built for the macOS it
+# was built on (27.0 measured), so the whole program would need that macOS, and it is refused. PYTHON=<interpreter> names another copy
+# of that same version. The build installs ONLY packaging/requirements-build.txt (exact versions with hashes: PyInstaller, its hooks
+# and dependencies, certifi) with `pip --require-hashes`, so two builds use the same inputs. Offline, point pip at a folder of those wheels:
+#   PIP_NO_INDEX=1 PIP_FIND_LINKS=<folder of wheels> packaging/build.sh
+# The last lines say which macOS the build needs.
 set -eu
 cd "$(dirname "$0")/.."
+PINNED_PYTHON=${PINNED_PYTHON:-3.14.2}; MINOS_MAX=${PYTHON_MINOS_MAX:-11}
+PYTHON=${PYTHON:-$(uv python find "$PINNED_PYTHON" --managed-python 2>/dev/null || true)}
+[ -n "$PYTHON" ] && [ -x "$PYTHON" ] || { echo "build: no standalone Python $PINNED_PYTHON (run: uv python install $PINNED_PYTHON, or set PYTHON=<interpreter>)" >&2; exit 1; }
+GOT=$("$PYTHON" -c 'import sys;print("%d.%d.%d" % sys.version_info[:3])')
+[ "$GOT" = "$PINNED_PYTHON" ] || { echo "build: $PYTHON is Python $GOT, the recorded build Python is $PINNED_PYTHON (change PINNED_PYTHON and requirements-build.txt on purpose, not by accident)" >&2; exit 1; }
+PYMINOS=$(mktemp -d); cp "$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$PYTHON")" "$PYMINOS/python"  # macho-minos reads regular files only
+python3 tools/macho-minos.py "$PYMINOS" --max "$MINOS_MAX" >/dev/null 2>&1 || { rm -rf "$PYMINOS"; echo "build: $PYTHON needs a newer macOS than $MINOS_MAX.0 (a Homebrew Python?): the program would need that macOS too" >&2; exit 1; }
+rm -rf "$PYMINOS"
 VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("shotfleet.py").read()).group(1))')
 ARCH=$(uname -m)
 rm -rf build dist && mkdir -p build
-swiftc -O ocr.swift -o build/ocr
-build/venv/bin/python -c "" 2>/dev/null || { rm -rf build/venv; python3 -m venv build/venv; }  # its Python may be gone (brew upgrade)
-build/venv/bin/pip install --quiet --upgrade pyinstaller certifi
+swiftc -O -target "$ARCH-apple-macos${MACOS_MIN:-13.0}" ocr.swift -o build/ocr
+"$PYTHON" -m venv build/venv  # fresh every build (build/ was just removed)
+build/venv/bin/python -m pip install --quiet --disable-pip-version-check --only-binary=:all: --require-hashes -r packaging/requirements-build.txt \
+  || { echo "build: installing packaging/requirements-build.txt failed (a hash mismatch means the file is not the recorded one: do not build; see pip's message above)" >&2; exit 1; }
 set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." --add-data "$PWD/skill:skill" \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
 if [ -n "${DEVELOPER_ID:-}" ]; then  # PyInstaller signs the bundled pieces too, with hardened-runtime entitlements
@@ -50,4 +67,5 @@ if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
 fi
 # The installer package (no quarantine flag, so no Gatekeeper check at run time): needs the Developer ID Installer certificate.
 if [ -n "${INSTALLER_ID:-}" ]; then packaging/pkg.sh; fi
+python3 tools/macho-minos.py dist/shotfleet || true  # informational: the oldest macOS this build runs on
 shasum -a 256 dist/*.tar.gz

@@ -1,0 +1,30 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 11,
+   "error": null,
+   "screenshots": 1,
+   "device": "emulator-5702"
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 9,
+   "error": null,
+   "screenshots": 1,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/private<scratch>/c2android/shotfleet.toml",
+ "strings": [
+  "/private<scratch>/c2android/../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/Resources/Strings/*.resx"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 58,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/private<scratch>/c2android/../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/bin/Debug/net10.0-android/com.companyname.localizationdemo-Signed.apk",
+ "device": "phone"
+}

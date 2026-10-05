@@ -1,0 +1,61 @@
+# Manual only, never on push or pull request. One run costs money (macOS minutes), so dispatch it once, on purpose:
+#   gh workflow run macos-compat.yml
+# Tests the LIVE download from shotfleet.com on macOS 14 and 15 (arm64) in a temporary HOME. It proves the notarised-by-install.sh
+# program starts, `doctor` runs, and `check` reads two screenshots. It does NOT prove: macOS 13 or 26.0-26.2 (no hosted runner
+# exists), simulators or emulators, Quarantine/Gatekeeper (curl sets no quarantine), or a real buyer's Mac.
+name: macOS compatibility of the live download
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: research/real-apps-2026-10-04/wger-android-19-languages
+      - name: Install from the live install.sh into a temporary HOME
+        run: |
+          export HOME="$(mktemp -d)"
+          echo "HOME=$HOME" >> "$GITHUB_ENV"
+          sw_vers; uname -m
+          curl -fsSL https://shotfleet.com/install.sh | sh
+          echo "SHOTFLEET=$HOME/Library/Application Support/shotfleet/app/shotfleet" >> "$GITHUB_ENV"
+      - name: shotfleet --version
+        run: '"$SHOTFLEET" --version'
+      - name: shotfleet doctor (expect no simulator; must not crash)
+        run: |
+          # doctor exits 2 when the Mac is not ready (no Maestro, no Android image): that is a finding, not a crash (first run, 2026-10-05).
+          # exit 0, 1 or 2 are fine; a dyld error, a signal or 142 (our alarm) fails the job
+          set +e
+          perl -e 'alarm 150; exec @ARGV' "$SHOTFLEET" doctor 2>&1 | tee doctor.out
+          rc=${PIPESTATUS[0]}
+          echo "doctor exit $rc"
+          grep -qiE "symbol not found|dyld|library not loaded" doctor.out && exit 1
+          [ "$rc" -le 2 ]
+      - name: shotfleet check on two sample screenshots (must not crash)
+        run: |
+          D=research/real-apps-2026-10-04/wger-android-19-languages
+          mkdir -p sample/ca sample/de
+          cp "$D/ca-02_advanced.png" sample/ca/02_advanced.png
+          cp "$D/de-02_advanced.png" sample/de/02_advanced.png
+          set +e
+          perl -e 'alarm 240; exec @ARGV' "$SHOTFLEET" check sample 2>&1 | tee check.out
+          rc=${PIPESTATUS[0]}
+          echo "check exit $rc"
+          grep -qiE "symbol not found|dyld|library not loaded" check.out && exit 1
+          [ "$rc" -le 1 ]
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### ${{ matrix.os }}"
+            echo '```'; sw_vers; "$SHOTFLEET" --version 2>&1 | head -1; echo '```'
+            echo "doctor and check outputs are in the log above."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,24 @@
+ios18 udid=846DEA1F-67CF-4E24-8B01-FE0B9358C722
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    t=sys.stdin.read(); i=t.find('{'); d=json.loads(t[i:]) if i>=0 else {}
+                                         ~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py", line 348, in decode
+    raise JSONDecodeError("Extra data", s, end)
+json.decoder.JSONDecodeError: Extra data: line 799 column 2 (char 26106)
+== ios18-1-default: 
+== ios18-2-argonly-de: navigator.language=de-DE|Hallo|device=de|
+== ios18-3-argonly-ja: navigator.language=ja|Hello|device=ja|
+== ios18-4-arg-and-locale-de: navigator.language=de-DE|Hallo|device=de|
+== ios18-5-system-de: navigator.language=de-DE|Hallo|device=de|
+deleted 846DEA1F-67CF-4E24-8B01-FE0B9358C722
+android emulator booted after ~9 s; release 16; webview   Current WebView package (name, version): (com.google.android.webview, 133.0.6943.137)
+Success
+== android-1-default: 
+== android-2-applocale-de: navigator.language=de|Hallo|device=de|
+== android-3-applocale-ja: 
+finished
+guard: script exit 0

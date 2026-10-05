@@ -293,6 +293,29 @@ class RealAppLessons(unittest.TestCase):
             sf.find_builds(d, derived=d / "no-derived-data", project=project)
         self.assertIn("ARCHS=arm64", str(e.exception))  # Xcode 27 asks for x86_64 as well, which the Gradle build lacks
 
+    KMP = {"settings.gradle.kts": 'include(":shared")', "shared/build.gradle.kts": 'plugins { kotlin("multiplatform") }',
+           "iosApp/App.xcodeproj/project.pbxproj": ""}
+
+    def test_kmp_hint_says_both_xcframeworks_must_be_built_before_xcodebuild(self):
+        d = tree(self.KMP)
+        with self.assertRaises(sf.Fail) as e, contextlib.redirect_stdout(io.StringIO()):
+            sf.find_builds(d, derived=d / "no-derived-data", project=sf.detect_project(d))
+        msg = str(e.exception)
+        for word in ("cannot find <name> in scope", ":shared:assembleSharedDebugXCFramework", ":shared:assembleSharedReleaseXCFramework", "stale release slice"):
+            self.assertIn(word, msg)
+
+    def test_kmp_hint_is_also_printed_with_the_note_when_only_the_apk_was_found(self):
+        d = tree({**self.KMP, "shared/build/outputs/apk/debug/app-debug.apk": "x"})
+        with contextlib.redirect_stdout(io.StringIO()) as out, mock.patch.object(sf, "is_watch_apk", return_value=False):
+            sf.find_builds(d, derived=d / "no-derived-data", project=sf.detect_project(d))
+        self.assertIn("note: no", out.getvalue()); self.assertIn("assembleSharedReleaseXCFramework", out.getvalue())
+
+    def test_other_projects_do_not_get_the_kmp_hint(self):
+        d = tree(FLUTTER)
+        with self.assertRaises(sf.Fail) as e, contextlib.redirect_stdout(io.StringIO()):
+            sf.find_builds(d, derived=d / "no-derived-data", project=sf.detect_project(d))
+        self.assertNotIn("XCFramework", str(e.exception))
+
     def test_the_starter_flow_waits_for_text_before_the_first_screenshot(self):
         flow = sf.FLOW_TEMPLATE
         self.assertLess(flow.index("extendedWaitUntil"), flow.index("takeScreenshot: 01_home"))

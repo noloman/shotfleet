@@ -62,7 +62,7 @@
 
     <h3 id="shotfleet">shotfleet</h3>
     <p>Rewrites one English Maestro flow for every language your app ships using the app's own compiled strings, runs the flow in parallel on simulators and emulators, checks each screenshot (language, copies, missing, store size rules), and exports to fastlane's folders.</p>
-    <p>Setup: one command, a two-line config, a Maestro flow in English. Measured on my own app: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
+    <p>Setup: one command, a two-line config, a Maestro flow in English. Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
 
     <h3 id="fastlane">fastlane snapshot / screengrab</h3>
     <p>The standard: UI-test code (XCUITest, Espresso) that taps buttons and takes screenshots, run once per language. You add a test target to your app, and iOS and Android need separate code. Free, a large community, works in CI.</p>
@@ -85,8 +85,8 @@
         <li>You ship in one or two languages. fastlane snapshot or simshot (both free) will do the job, and shotfleet's own free tier covers 2 languages.</li>
         <li>You already have a fastlane UI-test setup working well and don't mind multiple tests per language.</li>
         <li>You want frames, captions, or store upload. ButterKit and AppScreens specialize in that; shotfleet doesn't.</li>
-        <li>Your app is Flutter or React Native. shotfleet reads translation files from those stacks, but I haven't run it on a real Flutter or React Native app yet.</li>
-        <li>You don't have an Apple silicon Mac. shotfleet runs on macOS on Apple silicon only, and needs Maestro and Java 17 or newer.</li>
+        <li>Your app is Flutter or React Native. shotfleet reads translation files from those stacks and has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native.</li>
+        <li>You don't have an Apple silicon Mac. shotfleet runs on macOS on Apple silicon only, and needs Maestro and Java 17 or newer. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
       </ul>
     </div>
 

@@ -91,7 +91,8 @@ if status200 /sitemap.xml sitemap; then
 fi
 for p in alternatives terms privacy; do status200 "/$p" "page-$p" || true; done
 
-case "$BASE" in
+case "${SMOKE_SKIP_REDIRECT:+skip}$BASE" in
+  skip*) skip "http to https redirect (SMOKE_SKIP_REDIRECT: workers.dev does not redirect)" ;;
   https://*)
     CODE=$(curl -sS --max-time 60 -o /dev/null -D "$T/redir.h" -w '%{http_code}' "http://${BASE#https://}/" 2>/dev/null) || CODE=000
     case "$CODE" in

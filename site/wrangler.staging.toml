@@ -1,0 +1,14 @@
+# The throwaway STAGING worker, used only by `packaging/publish.sh --staging` (rehearsals of the release flow). It has NO routes, NO custom
+# domains and NO bindings (no KV, no rate limiter, no email): it is reachable only on its own workers.dev address and shares no data with
+# production. publish.sh --staging refuses to run if this file gains a route, a binding, another table than [assets], or the name "shotfleet".
+name = "shotfleet-staging"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+workers_dev = true
+preview_urls = false
+
+[assets]
+directory = "public"
+not_found_handling = "404-page"
+run_worker_first = ["/api/*"]

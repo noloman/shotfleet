@@ -34,7 +34,7 @@
  "description": "A macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by other tools.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "macOS (Apple silicon)",
- "softwareRequirements": "Apple silicon Mac, Maestro 2.x, Java 17 or newer. Xcode for iOS (Debug simulator build), Android SDK with API 33+ emulators for Android.",
+ "softwareRequirements": "macOS 13 or later on an Apple silicon Mac, Maestro 2.x, Java 17 or newer. Xcode for iOS (Debug simulator build), Android SDK with API 33+ emulators for Android.",
  "installUrl": "https://shotfleet.com/install.sh",
  "author": {
   "@type": "Person",
@@ -145,7 +145,7 @@
       <div class="cell reveal"><dt>4 languages</dt><dd>shared one unreachable Next button on Android. English hid it</dd></div>
       <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: translated captions over an English UI</dd></div>
     </dl>
-    <p class="small muted">Measured on my own apps. <a href="/alternatives">How it compares with other tools</a>.</p>
+    <p class="small muted">Measured on my own apps. The 9 and 15 minutes were measured on Maestro 2.0.10. <a href="/alternatives">How it compares with other tools</a>.</p>
   </section>
 
   <section class="wrap section" id="run" data-cmd="$ shotfleet run" aria-labelledby="run-h">
@@ -293,7 +293,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
     <div class="notfor reveal">
       <h2 id="not-h">Not for you if…</h2>
       <ul>
-        <li>you don’t have an Apple silicon Mac. iOS simulators need a Mac, and so does the screenshot check; there is no Intel build yet.</li>
+        <li>you don’t have an Apple silicon Mac. iOS simulators need a Mac, and so does the screenshot check; there is no Intel build yet. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
         <li>you want frames, captions or store upload. Use <a href="/alternatives#butterkit">ButterKit</a> or <a href="/alternatives#appscreens">AppScreens</a> for those; shotfleet does not do those.</li>
         <li>your UI tests already run in every language and you are happy with them. <a href="/alternatives#fastlane">fastlane snapshot</a> is open source and built for that.</li>
       </ul>
@@ -302,7 +302,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
 
   <section class="wrap section" id="price" aria-labelledby="price-h">
     <h2 id="price-h" class="reveal">Buy shotfleet</h2>
-    <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
+    <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. Built for macOS 13 or later on Apple silicon; tested on macOS 27. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
     <div class="plans">
       <div class="plan main reveal">
         <h3>Licence</h3>

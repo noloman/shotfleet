@@ -1,0 +1,31 @@
+"""For each strongly imported libSystem symbol: the macOS version in which the SDK headers say it was introduced (statement-level scan, one pass)."""
+import json, re, subprocess, sys, pathlib, collections
+data = json.load(open(sys.argv[1]))
+want = {s.lstrip("_"): s for s in data["syms"].get("libSystem", {})}
+sdk = pathlib.Path(subprocess.run(["xcrun", "--show-sdk-path"], capture_output=True, text=True).stdout.strip())
+AV = re.compile(r"(?:__API_AVAILABLE|__OSX_AVAILABLE_STARTING|__OSX_AVAILABLE|API_AVAILABLE)\s*\(([^;]{0,200})")
+MAC = re.compile(r"(?:macos|macOS)\(([\d.]+)|__MAC_([\d_]+)|^\s*(?:__MAC_)?([\d_]+)")
+IDENT = re.compile(r"\b([A-Za-z_]\w*)\s*\(")
+found = {}
+def ver(s): return (tuple(int(x) for x in re.findall(r"\d+", s)) + (0, 0))[:2]
+for h in (sdk / "usr/include").rglob("*.h"):
+    if not h.is_file(): continue
+    t = re.sub(r"//[^\n]*|/\*.*?\*/", " ", h.read_text(errors="replace"), flags=re.S)
+    for st in t.split(";"):
+        a = AV.search(st)
+        if not a: continue
+        m = MAC.search(a.group(1))
+        if not m: continue
+        v = ver(next(g for g in m.groups() if g))
+        for name in IDENT.findall(st[:a.start()]):
+            if name in want and name not in found: found[name] = v
+res = collections.defaultdict(list)
+for n, v in found.items(): res[v].append(n)
+print("SDK", sdk.resolve().name, "| libSystem symbols imported:", len(want), "| with a macOS availability in /usr/include:", len(found))
+for v in sorted(res):
+    if v > (10, 15): print(" introduced", v, sorted(res[v]))
+print("introduced at or before 10.15:", sum(len(x) for v, x in res.items() if v <= (10, 15)))
+nf = sorted(set(want) - set(found))
+print("no availability found (old C/POSIX API or data symbol):", len(nf))
+print(nf)
+json.dump({"found": {n: list(v) for n, v in found.items()}, "notfound": nf}, open(sys.argv[2], "w"))

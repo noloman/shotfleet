@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 class Fail(Exception):
     """A user-facing error: printed as one line, no traceback."""
@@ -151,7 +151,7 @@ def load_config(config_path, platform=None):
     missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
     if missing:
         raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
-    path = lambda p: cfg_path.parent / Path(p).expanduser()  # absolute/~ paths win, others are relative to the config
+    path = lambda p: Path(os.path.normpath(cfg_path.parent / Path(p).expanduser()))  # absolute/~ paths win, others are relative to the config; no `..` left in the path
     flow = path(cfg["flow"])
     if not flow.is_file():
         raise Fail(f"flow file not found: {flow}. `shotfleet init` writes a starter flow")
@@ -1217,6 +1217,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
             raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})" + (f": {err}" if err else "") +
                                ". Set device_type (valid ones: xcrun simctl list devicetypes) or runtime in the config")
         s = Sim(udid)
+        OUR_SIMS.add(udid)  # at once: a bootstatus timeout on the 2nd of 4 must still shut the other booted ones down
         s.run("boot", udid, check=False)  # already-booted is fine
         pool.append(s)
     for s in pool:
@@ -1224,7 +1225,6 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
-        OUR_SIMS.add(s.udid)  # a failing setup command must not leave the simulator booted
         run_setup(s, "simctl", simctl)
     return pool
 
@@ -1311,14 +1311,21 @@ def run_guarded(cmd, timeout, env=None, cwd=None, progress=None, stall_s=STALL_S
     `progress` (optional) returns something that changes whenever the run gets somewhere (the newest screenshot's time); when it stays
     the same for `stall_s` seconds the run is killed and TimeoutExpired is raised with `.stalled` set. The overall `timeout` scales with
     the number of languages, so on its own a hung simulator would keep a 19-language run alive for hours (seen: 6 h with no screenshot)."""
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env, cwd=cwd)
+    # Output goes to a file, not a pipe: communicate() waits for EOF, so a helper that inherited the pipe and outlived Maestro
+    # (a daemonised driver, a reparented process that is no longer a descendant) would block us after the kill, with no watchdog left.
+    log = tempfile.TemporaryFile()
+    proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, env=env, cwd=cwd)
     done, stalled = threading.Event(), threading.Event()
+    def output():
+        log.seek(0); return log.read().decode(errors="replace")
     def watch():
         last, since = progress() if progress else None, time.monotonic()
         while not done.wait(min(5, max(0.2, stall_s / 4))):
-            ours = descendants(proc.pid)
-            for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
-                if int(line) in ours: sh(["kill", "-9", line])
+            try:  # a missing pgrep or an odd ps line must not end the thread: it is also the stall watchdog
+                ours = descendants(proc.pid)
+                for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
+                    if int(line) in ours: sh(["kill", "-9", line])
+            except (OSError, ValueError, subprocess.SubprocessError): pass
             if progress:
                 now = progress()
                 if now != last: last, since = now, time.monotonic()
@@ -1328,14 +1335,17 @@ def run_guarded(cmd, timeout, env=None, cwd=None, progress=None, stall_s=STALL_S
                     return
     threading.Thread(target=watch, daemon=True).start()
     try:
-        out, _ = proc.communicate(timeout=timeout)
+        proc.wait(timeout=timeout)
     except BaseException as e:  # timeout, Ctrl-C, SIGTERM: never leave Maestro and its drivers running
         for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
-        partial = proc.communicate()[0] or ""
-        if isinstance(e, subprocess.TimeoutExpired): e.output = partial
+        try: proc.wait(timeout=30)
+        except subprocess.TimeoutExpired: pass
+        if isinstance(e, subprocess.TimeoutExpired): e.output = output()
+        log.close()
         raise
     finally:
         done.set()
+    out = output(); log.close()
     if stalled.is_set():
         e = subprocess.TimeoutExpired(cmd, timeout, output=out); e.stalled = True
         raise e
@@ -1435,6 +1445,19 @@ def device_type_id(name):
     if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
     return match
 
+DEFAULT_IPHONE = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
+
+def default_device_type(listed=None):
+    """iPhone 17 Pro Max, the 6.9" size class. Xcode 16 and early 26 builds do not have it: then the newest 'iPhone N Pro Max' this Xcode lists
+    (the 16 Pro Max is 1320x2868 like the 17; the 15 Pro Max's 1290x2796 is also a 6.9" size). `listed` is `simctl list devicetypes -j` text, for tests."""
+    try:
+        if listed is None: listed = sh(["xcrun", "simctl", "list", "devicetypes", "-j"], timeout=60).stdout
+        types = json.loads(listed or "{}").get("devicetypes", [])
+    except (OSError, ValueError, TypeError, AttributeError, subprocess.TimeoutExpired): return DEFAULT_IPHONE  # ponytail: unreadable list -> the old default, simctl then names the problem
+    if any(t.get("identifier") == DEFAULT_IPHONE for t in types): return DEFAULT_IPHONE
+    maxes = [(int(m[1]), t["identifier"]) for t in types if (m := re.fullmatch(r"iPhone (\d+) Pro Max", t.get("name", "")))]
+    return max(maxes)[1] if maxes else DEFAULT_IPHONE
+
 def device_slug(device_type):
     """com.apple...iPad-Pro-13-inch-M5-12GB -> ipad-pro-13-inch-m5-12gb (a folder and simulator-name prefix)."""
     return device_type.rsplit(".", 1)[-1].lower()
@@ -1528,14 +1551,43 @@ def shutdown_sims():
         except subprocess.TimeoutExpired: print(f"note: simulator {udid} did not shut down within 60 s; run `xcrun simctl shutdown {udid}`", file=sys.stderr)
     OUR_SIMS.clear()
 
+USE_DEVICE_LOCK = True  # the tests that run a fake run set this False: they use no device, and two test suites at once must not refuse each other
+
+@contextlib.contextmanager
+def device_lock(key):
+    """One shotfleet run at a time per set of devices. Pool simulators are named shotfleet-<device>-N and emulators sit on fixed ports,
+    so two runs on one Mac reinstall the app under each other and give each other wrong or missing screenshots (seen 2026-10-03).
+    An flock on /tmp/shotfleet-<key>.lock: the OS drops it when the process dies, so there is no stale lock to clean up.
+    A lock file that can't be made or locked for any other reason does not stop the run."""
+    f = None
+    try:
+        if not USE_DEVICE_LOCK: raise ImportError
+        import fcntl
+        f = os.fdopen(os.open(f"/tmp/shotfleet-{key}.lock", os.O_CREAT | os.O_RDWR, 0o666), "r+")
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        who = f.read().strip() if f else ""
+        f.close()
+        raise Fail(f"another shotfleet run is using these devices ({key}{', ' + who if who else ''}). Two runs at once reinstall the app under each other; "
+                   "wait for it to finish, or stop it, and run again")
+    except (ImportError, OSError):
+        if f: f.close()
+        f = None
+    if f:
+        f.seek(0); f.truncate(); f.write(f"pid {os.getpid()}, since {time.strftime('%H:%M')}"); f.flush()
+    try: yield
+    finally:
+        if f: f.close()
+
 def ios_run(cfg, path, only=None, parallel=None):
-    try: return ios_run_inner(cfg, path, only, parallel)
+    try:
+        with device_lock(f"ios-{cfg.get('sim_prefix', 'shotfleet')}"): return ios_run_inner(cfg, path, only, parallel)
     finally: shutdown_sims()  # a 2nd device's pool must not boot on top of the 1st's
 
 def ios_run_inner(cfg, path, only, parallel):
     cfg = dict(cfg)
     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
-    cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
+    if "device_type" not in cfg: cfg["device_type"] = default_device_type()  # an explicit device_type was resolved above and is never changed
     if "runtime" not in cfg: cfg["runtime"] = latest_ios_runtime()  # setdefault would ask xcrun even when the config names one
     cfg["app"] = str(path(cfg["app"]))
     framework_hint(cfg["app"], "strings" in cfg, path("."))
@@ -1636,9 +1688,12 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
         # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
         # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
-        pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
-        n = len(pool)
-        final.update(batch(retry, 2))
+        try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
+        except RuntimeError as e:  # none answers any more: keep what the first attempt captured, check it and report the rest as failed (exit 1)
+            print(f"not retrying: {e}", flush=True)
+        else:
+            n = len(pool)
+            final.update(batch(retry, 2))
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
@@ -1761,7 +1816,10 @@ DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a s
 class Emu:
     def __init__(self, port): self.port, self.serial, self.proc = port, f"emulator-{port}", None  # proc: the emulator process shotfleet started
     def adb(self, *args, check=True, timeout=180):
-        r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
+        try: r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"adb {args[0]} did not answer within {timeout} s: emulator {self.serial} is not responding. "
+                               f"Stop it with `adb -s {self.serial} emu kill` and run again; if it stays stuck, restart the Mac")
         if check and r.returncode != 0:
             raise RuntimeError(f"adb {' '.join(args)}: {(r.stderr or r.stdout).strip()}")
         return r.stdout
@@ -1770,6 +1828,22 @@ class Emu:
         still says "Can't find service: package" (seen with two emulators on 2 cores)."""
         if sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() != "1": return False
         return "Service package: found" in sh([adb_cmd(), "-s", self.serial, "shell", "service", "check", "package"], timeout=15).stdout
+
+EMU_STOP_WAIT_S = 20  # how long an emulator gets to exit after `adb emu kill` before its process tree is killed
+
+def stop_emulators(pool):
+    """Stop every emulator shotfleet started. One that does not answer adb (a hung emulator is the case this is for) must not keep
+    the others running: each is asked politely with a short timeout, then its own process tree is killed (the Popen handle is ours)."""
+    for e in pool:
+        try: e.adb("emu", "kill", check=False, timeout=30)
+        except (OSError, RuntimeError, subprocess.SubprocessError): pass
+    for e in pool:
+        proc = getattr(e, "proc", None)
+        if proc is None: continue
+        try: proc.wait(timeout=EMU_STOP_WAIT_S)
+        except subprocess.TimeoutExpired:
+            for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
+        except OSError: pass
 
 SNAPSHOT = "shotfleet"
 
@@ -1835,6 +1909,15 @@ def avd_home():
     if env.get("ANDROID_AVD_HOME"): return Path(env["ANDROID_AVD_HOME"])
     return (Path(env["ANDROID_USER_HOME"]) if env.get("ANDROID_USER_HOME") else Path.home() / ".android") / "avd"
 
+def require_api33(image, source):
+    """Per-app languages (`cmd locale set-app-locales`) exist from Android 13 (API 33). `image` is a package id or an AVD's image.sysdir path.
+    An older emulator would boot, then fail at the first language; say so before that. The app's own minSdk can stay low."""
+    api = re.search(r"android-(\d+)", image or "")
+    if api and int(api[1]) < 33:
+        raise Fail(f"{source} is Android API {api[1]}; shotfleet sets each language with `cmd locale set-app-locales`, which needs API 33 (Android 13) or newer. "
+                   f"Your app's minSdk can stay as low as it is: it runs on a newer emulator. Install an image with: {commands_text(sdkmanager_commands([DEFAULT_IMAGE]))}, "
+                   "then set system_image (or avd, for an emulator that already exists) in the config")
+
 def android_pool(n, cfg, pool):
     """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
     The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
@@ -1842,8 +1925,13 @@ def android_pool(n, cfg, pool):
     kind = ANDROID_DEVICES[device]
     avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
     avd_dir = avd_home() / f"{avd}.avd"
-    if not avd_dir.exists():
+    if avd_dir.exists():
+        try: sysdir = re.search(r"(?m)^image\.sysdir\.1\s*=\s*(.+)$", (avd_dir / "config.ini").read_text())
+        except OSError: sysdir = None
+        require_api33(sysdir and sysdir[1], f"the emulator {avd}")
+    else:
         image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
+        require_api33(image, f"the system image {image}")
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
             raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))
@@ -2001,6 +2089,10 @@ def flow_devices(debug_dir):
     return m
 
 def android_run(cfg, path, out, only, parallel):
+    with device_lock("android-emulators"):  # the emulators sit on fixed ports (5702, 5704...)
+        return android_run_inner(cfg, path, out, only, parallel)
+
+def android_run_inner(cfg, path, out, only, parallel):
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     framework_hint(apk, "strings" in cfg, path("."))
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
@@ -2026,6 +2118,7 @@ def android_run(cfg, path, out, only, parallel):
         _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
+        shutil.rmtree(out / "raw" / lp, ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])
     if not todo:
@@ -2086,17 +2179,28 @@ def android_run(cfg, path, out, only, parallel):
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
             return results
 
+        broken = []  # why the emulators stopped working, once they did
+
+        def safe_round(lps, tag):
+            """round_, except that an emulator that stops answering adb ends the capturing, not the report: what the earlier rounds took is
+            kept, checked and written to run.json, and these languages are reported as failed (rerun them with --locales)."""
+            if not broken:
+                try: return round_(lps, tag)
+                except (RuntimeError, subprocess.TimeoutExpired) as e:
+                    broken.append(str(e)); print(f"emulators stopped answering in {tag}: {e}", flush=True)
+            return {lp: {"ok": False, "error": f"not captured: {broken[0]}"[:300], "screenshots": 0} for lp in lps}
+
         t0, final = time.time(), {}
         print(f"capturing {len(todo)} locales on {n} emulators, {-(-len(todo) // n)} rounds...", flush=True)
         for i in range(0, len(todo), n):
-            final.update(round_(todo[i:i + n], f"r{i // n + 1}"))
+            final.update(safe_round(todo[i:i + n], f"r{i // n + 1}"))
         retry = [lp for lp, r_ in final.items() if not r_["ok"]]
-        if retry:
+        if retry and not broken:
             print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
             for i in range(0, len(retry), n):
-                for lp, r_ in round_(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True}
+                for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True}
     finally:
-        for e in pool: e.adb("emu", "kill", check=False)
+        stop_emulators(pool)
     for lp in todo:
         r_ = final[lp]
         print_result(lp, r_, expected)
@@ -2233,6 +2337,12 @@ def string_tables(strings):
         tables[lp] = t
     return tables
 
+def read_nothing(ocr):
+    """True when a reader that may simply have failed found no text: Tesseract or --ocr-command (an Arabic Android screen came back
+    empty), or no reader at all (the fallback has no data for the language). Such a screenshot is unverified, not blank. An empty
+    read by macOS text recognition, or by the app's own text, is a finding and stays one."""
+    return not ocr.get("chars") and (ocr.get("ocr") == "external" or "chars" not in ocr)
+
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
 
@@ -2286,8 +2396,11 @@ def judge_screen(lp, ocr, tables):
 # language the app text under it is in. English only (the emulator's system language), and only where text is read from the picture.
 SYSTEM_DIALOG = re.compile(r"isn.?t responding|keeps stopping|has stopped\b", re.I)
 
+DIALOG_BUTTON = re.compile(r"^\s*(close app|wait|app info)\s*$", re.I | re.M)  # Android's crash and ANR dialogs always have one
+
 def system_dialog(ocr):
-    m = SYSTEM_DIALOG.search(ocr.get("text", ""))
+    """The dialog's words alone are not enough: an app's own screen can say "Server isn't responding" or "Tracking has stopped"."""
+    m = SYSTEM_DIALOG.search(ocr.get("text", "")) if DIALOG_BUTTON.search(ocr.get("text", "")) else None
     return f'an Android system dialog covers the screen ("{m.group(0)}")' if m else None
 
 def caption_problem(lp, ocr, tables, problem):
@@ -2311,10 +2424,13 @@ def play_folders(folder):
     folder = Path(folder)
     return [k for k in PLAY_FOLDERS if any(folder.glob(f"metadata/android/*/images/{k}/*")) or any(folder.glob(f"*/images/{k}/*"))]
 
-def find_screenshots(folder, platform=None, play_folder="phoneScreenshots"):
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
+LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
+
+def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
-    or plain <locale>/ folders."""
+    or plain <locale>/ folders. `locale` names the language of a flat folder of images (no <locale>/ level)."""
     folder = Path(folder)
     if (folder / "screenshots").is_dir() and (folder / "metadata/android").is_dir():
         if platform == "ios": return find_screenshots(folder / "screenshots")
@@ -2323,15 +2439,16 @@ def find_screenshots(folder, platform=None, play_folder="phoneScreenshots"):
                    f"{folder / 'metadata/android'} separately (each with its own --app)")
     for pattern in ("raw/*/*", f"metadata/android/*/images/{play_folder}/*",
                     f"*/images/{play_folder}/*", "screenshots/*/*", "*/*"):
-        found = sorted(p for p in folder.glob(pattern) if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
+        found = sorted(p for p in folder.glob(pattern) if p.suffix.lower() in IMAGE_SUFFIXES)
         if found:
             out = {}
             for png in found:
                 label = png.parent.parent.parent.name if png.parent.name == play_folder else png.parent.name
-                if re.fullmatch(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*", label) or label in CANON:
+                if LOCALE_LABEL.fullmatch(label) or label in CANON:
                     out.setdefault(label, []).append(png)  # not ipad_only/, default/, appleTV/
             return out
-    return {}
+    flat = sorted(p for p in folder.glob("*") if p.suffix.lower() in IMAGE_SUFFIXES)
+    return {locale: flat} if locale and flat else {}
 
 def app_locale(label, available):
     """The app language a store folder name stands for (de-DE -> de, no -> nb, zh-CN -> zh-Hans, iw-IL -> iw), or None."""
@@ -2494,14 +2611,27 @@ def check_content(rules, screen):
         elif not sure(t): unsure.append(f'checked that "{t}" is absent')
     return bad, unsure
 
-LAST_REPORT = None  # check.json of the last check, for --json
+LAST_REPORT = None  # check.json of the last check
+REPORTS = []  # every check.json this call wrote (several device folders, both platforms), for --json
+
+def reports_json():
+    """The --json body: the one report as it is; with several, all lists merged plus `reports` (one entry each)."""
+    docs = [(f, json.loads(f.read_text())) for f in REPORTS if f.is_file()]
+    if len(docs) < 2: return docs[0][1] if docs else {}
+    return {"screenshots": [r for _, d in docs for r in d.get("screenshots", [])],
+            "problems": [x for _, d in docs for x in d.get("problems", [])],
+            "notes": [x for _, d in docs for x in d.get("notes", [])],
+            "reports": [{"report": str(f), "problems": d.get("problems", [])} for f, d in docs]}
 
 def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
-              play_folder="phoneScreenshots", expect=None):
+              play_folder="phoneScreenshots", expect=None, locale=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder.
-    `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen."""
+    `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen.
+    `locale`: the language of a flat folder of screenshots (no <locale>/ folders)."""
     folder = Path(folder)
+    if locale is not None and not (LOCALE_LABEL.fullmatch(locale) or locale in CANON):
+        raise Fail(f"--locale {locale!r} is not a language code (examples: en, de, pt-BR, zh-Hans)")
     run_json = folder / "run.json"
     if app:
         app = Path(app).expanduser()
@@ -2537,10 +2667,14 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
     images = find_screenshots(folder, platform={".app": "ios", ".apk": "android"}.get(Path(app).suffix) if app else None,
-                              play_folder=play_folder)
+                              play_folder=play_folder, locale=locale)
     if not images:
+        if any(p.suffix.lower() in IMAGE_SUFFIXES for p in folder.glob("*")):  # a hand-made set of one language
+            raise Fail(f"{folder} holds screenshots directly, so shotfleet cannot tell which language they are in. "
+                       f"Say it with --locale, e.g. shotfleet check {folder} --locale en")
         raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
-                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too)")
+                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); "
+                   "a flat folder of one language's screenshots needs --locale <code>")
     if app is not None: android = Path(app).suffix == ".apk"  # the build says which store's rules apply
     elif run_json.exists(): android = json.loads(run_json.read_text()).get("platform") == "android"
     else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
@@ -2552,6 +2686,12 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
+    if run_json.exists():  # a rerun keeps the languages it did not capture on purpose, but a check of "this run" should say which ones those are
+        captured = set(json.loads(run_json.read_text()).get("locales", {}))
+        old_folders = sorted(l for l in images if captured and l not in captured)
+        if old_folders:
+            notes.append(f"{', '.join(old_folders)} {'is' if len(old_folders) == 1 else 'are'} not from this run (an earlier run's "
+                         f"folder{'' if len(old_folders) == 1 else 's'} was kept); delete {'it' if len(old_folders) == 1 else 'them'} for a check of this run alone")
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language; translate the app into it or remove the listing" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
@@ -2593,14 +2733,14 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                 lang = canon(app_locale(label, tables) or label).split("-")[0]
                 return LEGACY.get(lang, lang) not in readable_languages() | {"zh"}
             redo = [i for i, (label, png) in enumerate(pngs)
-                    if not texts[i] and (not use_vision or unreadable(label))
+                    if not texts[i] and (unreadable(label) or (not use_vision and not ocrs[i].get("chars")))  # a read macOS finished before it hung stands
                     and (not auto or tesseract_code(app_locale(label, tables) or label) in tesseract_languages())]
             def external(i):
                 lp = app_locale(pngs[i][0], tables) or pngs[i][0]
                 return {**external_ocr(ocr_command, pngs[i][1], lp), **tesseract_script(pngs[i][1], lp)}
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
-    rows, by_hash, expected_used, unverified = [], {}, set(), 0
+    rows, by_hash, expected_used, unverified, unread_files, no_language = [], {}, set(), 0, set(), []
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -2608,7 +2748,14 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
-        if blank_screenshot(png):
+        if not tables and r.get("ocr") == "external" and r.get("chars") and "osd_script" not in r: no_language.append(f"{label}/{png.name}")
+        blank = blank_screenshot(png)  # pixels, not OCR: only a flat frame is provably blank
+        if problem and problem.startswith("no text found") and read_nothing(r) and not blank:
+            got, problem = None, None  # the reader failed, the picture is not blank: say so, don't fail the run
+            unread_files.add(f"{label}/{png.name}")
+            notes.append(f"{label}/{png.name}: could not read this screenshot (the text reader found nothing and the picture is not blank), "
+                         "so its language is unverified")
+        if blank:
             problem = ("blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; "
                        "wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot")
         if problem: problems.append(f"{label}/{png.name}: {problem}")
@@ -2617,13 +2764,18 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             rules, used = content_rules(expect[png.stem], label, lp)
             expected_used.update((png.stem, k) for k in used)
             bad, unsure = check_content(rules, r)
+            why = "text recognition can't read that script"
+            if f"{label}/{png.name}" in unread_files: bad, unsure, why = [], bad + unsure, "the text reader found nothing on this screenshot"
             problems += [f"{label}/{png.name}: {m}" for m in bad]
-            notes += [f"{label}/{png.name}: could not verify, {m} (text recognition can't read that script)" for m in unsure]
+            notes += [f"{label}/{png.name}: could not verify, {m} ({why})" for m in unsure]
             unverified += len(unsure)
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0),
                      "evidence": "hierarchy" if r.get("ocr") == "app" else "ocr"})
-    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None})
+    if no_language:  # without strings only language detection judges the language, and Tesseract has none (macOS does)
+        notes.append(f"{len(no_language)} screenshot(s) ({', '.join(no_language[:3])}{', ...' if len(no_language) > 3 else ''}) were read by "
+                     "Tesseract without --app: it names no language, so their language was not checked (pass --app or --strings)")
+    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None and r["file"] not in unread_files})
     if unread:
         who = "macOS can't read the script of" if vision_available() else "Tesseract can't read the script of"
         print(f"{who} {', '.join(unread)}: those screens were only checked for showing another "
@@ -2645,6 +2797,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         notes += [f"[expect.{name}.{k}] matches none of the languages checked" for k, v in expect[name].items()
                   if isinstance(v, dict) and k not in EXPECT_KEYS and (name, k) not in expected_used]
     global LAST_REPORT; LAST_REPORT = report / "check.json"
+    if LAST_REPORT not in REPORTS: REPORTS.append(LAST_REPORT)
     problems += store_problems
     (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
@@ -3000,6 +3153,14 @@ def ios_runtimes():
     except (ValueError, KeyError, TypeError): return None
     return None if rts is None else [r.get("name") or r.get("identifier", "iOS") for r in rts if r.get("platform") == "iOS" and r.get("isAvailable")]
 
+def xcode_hint():
+    """What to do when `xcrun simctl` does not answer on a Mac. The usual cause is Xcode installed but not selected (xcode-select still
+    points at the Command Line Tools, which have no simctl), so name the Xcode that is there instead of saying 'install Xcode'."""
+    xcodes = sorted(p for p in glob.glob("/Applications/Xcode*.app") if os.path.isdir(p + "/Contents/Developer"))
+    if xcodes: return (f"Xcode is installed but not selected: sudo xcode-select -s {shlex.quote(xcodes[-1])}/Contents/Developer "
+                       "(and once: sudo xcodebuild -license accept)")
+    return "install Xcode from the App Store, open it once to accept its licence, and let it add an iOS Simulator runtime"
+
 def cmd_doctor(fix=False, yes=False):
     """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
     have = lambda c: shutil.which(c) is not None
@@ -3015,12 +3176,12 @@ def cmd_doctor(fix=False, yes=False):
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if has_maestro else "maestro", maestro_ok,
          "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", "both"),
-        ("java 17+", find_java()[0], ("brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
+        ("java 17+", find_java()[0], ("shotfleet doctor --fix  (downloads a Java runtime), or brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
                                        if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", simctl_works() if have("xcrun") else False,
-         "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
+         xcode_hint() if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
         *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
             "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]
           if sys.platform.startswith("linux") and not mac else []),
@@ -3033,8 +3194,8 @@ def cmd_doctor(fix=False, yes=False):
     if mac and next(ok for n, ok, _, _ in checks if n == "xcrun simctl") and (runtimes := ios_runtimes()) is not None:
         checks.append((f"iOS Simulator runtime {runtimes[-1]}" if runtimes else "iOS Simulator runtime", bool(runtimes),
                        "xcodebuild -downloadPlatform iOS  (or Xcode > Settings > Components)", "iOS"))
-    for name, ok, fix, platform in checks:
-        print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {fix}"))
+    for name, ok, how, platform in checks:  # not `fix`: that is the --fix flag, and shadowing it made a plain `doctor` run the fix plan
+        print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
@@ -3042,7 +3203,9 @@ def cmd_doctor(fix=False, yes=False):
                                 (has_image, DEFAULT_IMAGE), (has_avdmanager or not sdkmanager, "cmdline-tools;latest")) if not ok]
     if pkgs or not has_avdmanager:  # without sdkmanager, Homebrew's command-line tools (installed first) bring avdmanager too
         cmds = sdkmanager_commands(pkgs) if pkgs else sdkmanager_commands([])[:-1]
-        print("Android: to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
+        print("Android (skip this if you only capture iOS): to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
+        if mac and not (have("brew") or (BREW / "bin/brew").exists()):
+            print("  No Homebrew on this Mac, so the brew line will not work: `shotfleet doctor --fix` downloads Google's command-line tools itself.")
     if not mac:
         langs = sorted(l for l in tesseract_languages() if l != "osd")
         print(f"{'ok  ' if len(langs) > 1 else 'note:'} text recognition   Tesseract with {len(langs)} language(s)"
@@ -3069,11 +3232,13 @@ def cmd_doctor(fix=False, yes=False):
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
+    for plat, ready in (("iOS", ok_ios), ("Android", ok_android)):  # an iOS-only buyer must not think the Android lines block them
+        if not ready: print(f"  {plat} still needs: " + ", ".join(n for n, ok, _, p in checks if not ok and p in ("both", plat)))
     vt = lambda v: tuple(int(n) for n in re.findall(r"\d+", v))
     if (latest := latest_release()) and vt(latest) > vt(VERSION):  # a dev build newer than the release says nothing
         print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.com/install.sh | sh")
     print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
-          else "next: fix the MISSING lines above, then run shotfleet doctor again")
+          else "next: fix the MISSING lines above (shotfleet doctor --fix fetches Maestro, Java and the Android tools), then run shotfleet doctor again")
     if fix:
         print()
         fix_pkgs = [pk for pk in pkgs if not (pk == "cmdline-tools;latest" and not sdkmanager)]  # sdkmanager can't install itself
@@ -3176,6 +3341,12 @@ def config_path(target, dest):
     if not rel.startswith("../../.."): return rel
     home = str(Path.home())
     return "~" + str(target)[len(home):] if str(target).startswith(home + "/") else str(target)
+
+def outside_note(target, spelled):
+    """The one line init prints when the config has to name a build by its place on this Mac (outside the project folder)."""
+    if not spelled.startswith(("/", "~")): return
+    print(f"note: {Path(target).name} is outside this project folder, so shotfleet.toml names it as {spelled}, which is only valid on this Mac; "
+          "build into the project folder (or edit the path) before you commit the config")
 
 def age(t):
     s = time.time() - t
@@ -3372,6 +3543,10 @@ def project_builds(cwd, project, derived=None):
     apks = sorted(((a.stat().st_mtime, a) for pat in project.apks for a in Path(cwd).glob(pat)), reverse=True)
     return apps, apks
 
+KMP_XCFRAMEWORK_HINT = ("(Kotlin Multiplatform: Xcode fails with 'cannot find <name> in scope' unless BOTH "
+                        "`./gradlew :shared:assembleSharedDebugXCFramework` and `:shared:assembleSharedReleaseXCFramework` were built first; "
+                        "a stale release slice gives the same error. Use your shared module's name for `shared`)")
+
 def find_builds(cwd, derived=None, project=None):
     """The builds `shotfleet init` uses when none are given: the newest simulator .app for this folder's project and the
     newest APK, each announced in one line. A Flutter, React Native, ... project (`project`, from detect_project) is looked for
@@ -3402,10 +3577,11 @@ def find_builds(cwd, derived=None, project=None):
         proj = projects[0]
         ios_cmd = (f"xcodebuild {'-workspace' if proj.suffix == '.xcworkspace' else '-project'} {shlex.quote(proj.relative_to(cwd).as_posix())} "
                    f"-scheme {shlex.quote(scheme_for(proj) or '<scheme>')} -sdk iphonesimulator -configuration Debug build")
-    android_cmd = "./gradlew assembleDebug"
+    android_cmd, kmp_ios = "./gradlew assembleDebug", False
     if project:  # the framework's own build command: a plain xcodebuild or gradlew skips its code generation and bundling
         ios_cmd, android_cmd = project.build_ios or ios_cmd, project.build_android or android_cmd
         if project.name == "Kotlin Multiplatform" and not project.build_ios:
+            kmp_ios = True
             ios_cmd += " ARCHS=arm64"  # Xcode 27 also asks for x86_64, which the Gradle build does not have: "Architecture Not Configured in Gradle"
     has_gradle = any((cwd / f).is_file() for f in ("gradlew", "android/gradlew"))
     # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
@@ -3415,10 +3591,13 @@ def find_builds(cwd, derived=None, project=None):
                                  ((android_cmd, android_what, bool(apks)), has_gradle or bool(project and project.build_android))) if present]
     if not builds:
         what = f"no {ios_what} or {android_what} found for" if own else "no Debug simulator build or Gradle debug APK found for"
-        raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  "
-                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]))
+        cmds = [c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]]
+        explain = ("\n(<scheme> is the name in Xcode's scheme menu next to the Run button; `xcodebuild -list` prints it)"
+                   if any("<scheme>" in c for c in cmds) else "")  # no shared scheme on disk to read it from
+        if kmp_ios and ios_cmd in cmds: explain += "\n" + KMP_XCFRAMEWORK_HINT
+        raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  " + "\n  ".join(cmds) + explain)
     for cmd, what, ok in here:
-        if not ok: print(f"note: no {what} yet; to make one: {cmd}")
+        if not ok: print(f"note: no {what} yet; to make one: {cmd}" + (f"\n{KMP_XCFRAMEWORK_HINT}" if kmp_ios and cmd == ios_cmd else ""))
     return builds
 
 def keep_note(config, dest, builds, text):
@@ -3461,12 +3640,14 @@ def cmd_init(builds, dest="."):
             if not app.is_file(): raise Fail(f"no APK at {app}")
             m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
             if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
+            outside_note(app, config_path(app, dest))
             sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# devices = ["phone", "tablet"]   # Android sets from one flow\n# locales = ["de", "ja"]   # default: every language the app ships')
             found.append((m.group(1), shipped_locales(source_strings or load_strings_apk(app))))
         elif app.suffix == ".app":
             if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
             if device_build(app): raise Fail(device_build_message(app))
+            outside_note(app, config_path(app, dest))
             sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
                             '# locales = ["de", "ja"]   # default: every language the app ships')
@@ -3489,6 +3670,7 @@ def cmd_init(builds, dest="."):
         (dest / name).write_text(text); print(f"wrote {dest / name}")
     for app_id, locales in found: print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
     devices = {(True, False): "simulators", (False, True): "emulators"}.get((".app" in suffixes, ".apk" in suffixes), "simulators and emulators")
+    if not maestro_cmd(): print("note: Maestro is not installed yet, and `run` needs it: shotfleet doctor --fix fetches it (and Java) first")
     print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots {devices}, takes a few minutes):\n"
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
@@ -3728,7 +3910,8 @@ def main(argv=None):
     p = sub.add_parser("skill", help="install the Claude Code skills for shotfleet")
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills instead of ~/.claude/skills")
     p.add_argument("--dir", help="install into this skills folder (for other agents)"); p.add_argument("--force", action="store_true", help="replace skills that are already installed")
-    p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
+    p = sub.add_parser("activate", help="activate your licence on this Mac")
+    p.add_argument("key", help="the licence key from your Gumroad receipt email (needs internet once; run does 2 languages and check is free without one)")
     sub.add_parser("deactivate", help="remove the licence from this Mac (a Gumroad activation is not given back: email hello@shotfleet.com)")
     p = sub.add_parser("init", help="write a starter config and flow for your app")
     p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
@@ -3751,6 +3934,8 @@ def main(argv=None):
     p.add_argument("--strings", action="append", metavar="GLOB",
                    help="translation files instead of --app, e.g. 'lib/l10n/*.arb' or 'locales/*/translation.json' "
                         "(.arb .json .xcstrings .strings .xml .xlf .resx .po .properties .csv); repeatable")
+    p.add_argument("--locale", metavar="CODE",
+                   help="the language of a flat folder of screenshots (no <locale>/ folders), e.g. --locale en")
     p.add_argument("--content", nargs="?", const="shotfleet.toml", metavar="CONFIG",
                    help="also check the [expect.<screenshot>] texts of this config (default: ./shotfleet.toml) are on screen; put it after the folder")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
@@ -3764,9 +3949,9 @@ def main(argv=None):
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
     if getattr(a, "json", False):  # CI: stdout carries only the JSON report
-        EXPORT_RESULT.clear()
+        EXPORT_RESULT.clear(); REPORTS.clear()
         with contextlib.redirect_stdout(sys.stderr): code = main_cmd(a)
-        print(json.dumps({"exit": code, **(EXPORT_RESULT if a.cmd == "export" else json.loads(LAST_REPORT.read_text()) if LAST_REPORT and LAST_REPORT.is_file() else {})}, ensure_ascii=False))
+        print(json.dumps({"exit": code, **(EXPORT_RESULT if a.cmd == "export" else reports_json())}, ensure_ascii=False))
         return code
     return main_cmd(a)
 
@@ -3790,7 +3975,7 @@ MCP_TOOLS = [
 def mcp_call(name, args):
     """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
     global LAST_REPORT
-    LAST_REPORT = None  # a run that never reached `check` must not return the previous check's report
+    LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
     log = io.StringIO()
     try:
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
@@ -3803,7 +3988,7 @@ def mcp_call(name, args):
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
         return f"{msg}\n\n{log.getvalue()[-2000:]}", True
-    report = json.loads(LAST_REPORT.read_text()) if name in ("check", "run") and LAST_REPORT else None
+    report = reports_json() if name in ("check", "run") else None
     text = json.dumps({"exit": code, **report}, ensure_ascii=False) if report else log.getvalue()
     return text, False
 
@@ -3839,14 +4024,17 @@ GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
 MAX_MACS = 3
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
+LOCALE_CAP_WHY = None  # with LOCALE_CAP: why a SHOTFLEET_KEY was refused (None when no key is set); only worded, never decides anything
 
 class NoLicence(Fail):
     """No valid licence: `export` stops; `run` falls back to the free tier."""
 
 def cap_locales(locales):
     if LOCALE_CAP is None or len(locales) <= LOCALE_CAP: return locales
+    why = f": the key was not accepted, {LOCALE_CAP_WHY}" if LOCALE_CAP_WHY else ""
     print(f"free tier: capturing {LOCALE_CAP} of {len(locales)} languages ({', '.join(locales[:LOCALE_CAP])}). "
-          f"`shotfleet activate <key>` unlocks every language ({BUY_URL})")
+          f"This run is limited to {LOCALE_CAP} languages because there is no valid licence{why}. "
+          f"`--locales a,b` picks which ones; `shotfleet activate <key>` unlocks every language ({BUY_URL})")
     return locales[:LOCALE_CAP]
 
 # The licence calls use tls_context(): certifi's CA bundle (the released build can't count on the Mac's), unless the environment names
@@ -3859,7 +4047,8 @@ def is_gumroad_key(key):
 def gumroad_verify(key, count_use):
     """Gumroad's licence check -> (ok, uses, reason). Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
     and every check bumps it unless count_use is False. Gumroad answers success:true for a refunded or charged-back purchase
-    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict."""
+    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict.
+    Gumroad's source (Aug 2026) also disables the key itself on a full refund: that is a 404 "This license key has been disabled"."""
     if not GUMROAD_PRODUCT_ID: raise Fail("this build has no Gumroad product id (packaging/go-live.sh sets it)")
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
@@ -3873,7 +4062,13 @@ def gumroad_verify(key, count_use):
             except ValueError: raise OSError(f"Gumroad answered {e.code}")
     except (urllib.error.URLError, TimeoutError) as e:
         raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
-    if not body.get("success"): return False, 0, body.get("message", "invalid key").rstrip(".")
+    except ValueError:  # a 200 that is not JSON (a hotel Wi-Fi login page): not a verdict, so the 30 days offline grace applies
+        raise OSError("can't reach the licence server (its answer was not readable)")
+    if not isinstance(body, dict): raise OSError("can't reach the licence server (its answer was not readable)")
+    if not body.get("success"):
+        why = body.get("message", "invalid key").rstrip(".")
+        if "disabled" in why: why = "the key was disabled, as Gumroad does after a full refund"  # the buyer sees why, not Gumroad's English sentence
+        return False, 0, why
     p = body.get("purchase") or {}
     uses = body.get("uses", 0)
     if p.get("refunded"): return False, uses, "the purchase was refunded"
@@ -3974,22 +4169,24 @@ def export_with_hooks(out, fastlane):
 
 def apply_free_tier():
     """`run` without a valid licence still runs, for two languages (the free tier shows the product)."""
-    global LOCALE_CAP
+    global LOCALE_CAP, LOCALE_CAP_WHY
     try: require_licence()
     except NoLicence as e:
         print(f"note: {e}", file=sys.stderr); LOCALE_CAP = FREE_LANGUAGES
+        LOCALE_CAP_WHY = str(e) if os.environ.get("SHOTFLEET_KEY") else None
 
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
 
 def main_cmd(a):
-    signal.signal(signal.SIGTERM, on_sigterm)
+    for name in ("SIGTERM", "SIGHUP"):  # SIGHUP: the terminal window closed or the ssh session dropped
+        if sig := getattr(signal, name, None): signal.signal(sig, on_sigterm)
     try:
         return main_dispatch(a)
     finally:
         shutdown_sims()
 
-def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None):
+def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None):
     """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own)."""
     if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
     if len(kinds := play_folders(folder)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
@@ -4006,7 +4203,7 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
     if not app and not strings_files and not (Path(folder) / "run.json").exists():
         print("no --app given: checking by language detection only, which can misjudge short screens; treat a language problem as "
               "a hint (pass --app to compare with your app's strings)")
-    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect)
+    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
 
 def main_dispatch(a):
     try:
@@ -4025,7 +4222,7 @@ def main_dispatch(a):
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
-        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None)
+        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale)
         if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2

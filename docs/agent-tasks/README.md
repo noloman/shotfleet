@@ -7,9 +7,9 @@ The cloud session that wrote them had no Mac, no simulator, no hardware virtuali
 
 | # | Task | Machine | Why it is open | Blocks |
 |---|---|---|---|---|
-| 01 | [Run Maestro 2.11.0 on the fixture apps, then promote it](01-maestro-2-11.md) | Mac | no simulator or emulator in the sandbox | promoting 2.11.0 to tested; Android `[inputs]` |
-| 03 | [Capture a real Flutter, Expo and Compose app end to end](03-frameworks-real-apps.md) | Mac | no device; each framework has a build trap | README Flutter/React Native wording |
-| 04 | [Verify shotfleet on Xcode 27 final (Device Hub)](04-xcode-27-verification.md) | Mac with Xcode 27 | Device Hub replaced Simulator.app; static analysis only | selling the iOS path |
+| 01 | [Run Maestro 2.11.0 on the fixture apps, then promote it](01-maestro-2-11.md) | Mac | DONE 2026-10-04: 2.11.0 passes the fixture (iOS 36/36, Android 29/29) and is tested; evidence `research/maestro-2-11.md` | (nothing; Android `[inputs]` two-emulator check is still open) |
+| 03 | [Capture a real Flutter, Expo and Compose app end to end](03-frameworks-real-apps.md) | Mac | DONE 2026-10-03: wger (Flutter), the obytes template (Expo) and kotlinconf-app (Compose), iOS and Android; evidence `research/frameworks.md` | (nothing; bare React Native and other apps are not run) |
+| 04 | [Verify shotfleet on Xcode 27 final (Device Hub)](04-xcode-27-verification.md) | Mac with Xcode 27 | DONE 2026-10-04 (iOS 26.4, 36/36) and 2026-10-05 (iOS 27, one simulator and one language); evidence `docs/compat.md` | (nothing; four simulators on iOS 27 is untested) |
 | 05 | [Run the Android fixture on Linux with KVM (experiment E1)](05-e1-android-on-linux-kvm.md) | Linux with /dev/kvm | sandbox has no hardware virtualization | any Linux support claim |
 | 06 | [Run three small experiments: Android UI-tree text, Capacitor language, MAUI sample](06-small-experiments.md) | Mac | need an emulator and simulators | text checks on Android; Capacitor and MAUI claims |
 | 07 | [Verify and tick the launch articles' TO VERIFY lists](07-verify-the-launch-articles.md) | Mac | TO VERIFY items need real runs | publishing the tutorials the launch plan relies on |
@@ -19,7 +19,7 @@ The cloud session that wrote them had no Mac, no simulator, no hardware virtuali
 - **A real purchase and refund against the live Gumroad product** (`STATUS.md` gate 5; `tools/release-candidate.sh` is the harness). An agent cannot spend money.
 - **Tax and registration question** (`research/tax-nl-2026-10.md`), **go-live approval**, **a clean macOS user and 2 to 3 outside developers for the cold test**, **publishing and posting** everything in `marketing/`.
 - **Decisions** listed at the end of `research/profit-plan-2026-10-03.md` section 9.
-- **Team and CI interest block on the site.** Proposed, not added, because the site has WAITLIST/SALE markup that `packaging/go-live.sh` rewrites and the wording is a pricing decision. Proposed copy for the pricing section, to go in after the licence card: *Running shotfleet in CI for a team? A per-repository plan (about $149 a year) is an idea, not a product. Tell me what you would check there: hello@shotfleet.com.* Measure replies and count them against the thresholds in the profit plan section 7.
+- **Team and CI interest block on the site.** Proposed, not added: the wording is a pricing decision (the old reason, the WAITLIST/SALE markup that `packaging/go-live.sh` rewrites, is moot: go-live ran on 2026-10-05). Proposed copy for the pricing section, to go in after the licence card: *Running shotfleet in CI for a team? A per-repository plan (about $149 a year) is an idea, not a product. Tell me what you would check there: hello@shotfleet.com.* Measure replies and count them against the thresholds in the profit plan section 7.
 
 ## E1 state
 
