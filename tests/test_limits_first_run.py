@@ -57,5 +57,45 @@ class XcodeNotSelected(unittest.TestCase):
         self.assertRegex(out.getvalue(), r"MISSING xcrun simctl\s+\(iOS\)\s+-> HINT-X")
 
 
+class DoctorForAnIosOnlyBuyer(unittest.TestCase):
+    """A Mac with Xcode and nothing else (no Homebrew, no Android SDK): the report must say what iOS needs apart from Android's list."""
+    def doctor(self, maestro, brew=False, java=True):
+        d = Path(tempfile.mkdtemp()); self.addCleanup(__import__("shutil").rmtree, d, True)
+        out = io.StringIO()
+        ok = lambda cmd, **k: subprocess.CompletedProcess(cmd, 0, "Ready\n" if "--warmup" in cmd else '{"runtimes": []}', "")
+        with mock.patch.object(sf, "SDK", d / "sdk"), mock.patch.object(sf, "BREW", d / "brew"), mock.patch.object(sf.Path, "home", return_value=d / "home"), \
+                mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf, "SYSTEM_SDKS", ()), \
+                mock.patch.object(sf.shutil, "which", lambda c, **k: f"/usr/bin/{c}" if c in ("xcrun", "swiftc") or (brew and c == "brew") else None), \
+                mock.patch.object(sf, "find_java", return_value=(java, None)), mock.patch.object(sf, "java_env", return_value={}), \
+                mock.patch.object(sf, "sh", ok), mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "latest_release", lambda: None), \
+                mock.patch.object(sf, "ios_runtimes", lambda: ["iOS 26.4"]), mock.patch.object(sf, "maestro_cmd", lambda: "/m" if maestro else None), \
+                mock.patch.object(sf, "read_maestro_version", return_value="2.11.0"), contextlib.redirect_stdout(out):
+            code = sf.cmd_doctor()
+        return code, out.getvalue()
+
+    def test_ios_ready_android_not_lists_only_androids_parts_under_android(self):
+        code, out = self.doctor(maestro=True)
+        self.assertEqual(code, 0)
+        self.assertIn("iOS: ready   Android: not ready", out)
+        self.assertNotIn("iOS still needs", out)
+        self.assertRegex(out, r"Android still needs: adb, emulator, avdmanager, aapt2, system image")
+        self.assertIn("skip this if you only capture iOS", out)
+
+    def test_without_maestro_both_lists_start_with_it_and_next_names_doctor_fix(self):
+        code, out = self.doctor(maestro=False)
+        self.assertEqual(code, 2)
+        self.assertRegex(out, r"iOS still needs: maestro\n")
+        self.assertRegex(out, r"Android still needs: maestro, adb")
+        self.assertIn("next: fix the MISSING lines above (shotfleet doctor --fix fetches Maestro, Java", out)
+
+    def test_no_homebrew_says_the_brew_line_will_not_work_and_what_to_run_instead(self):
+        self.assertIn("No Homebrew on this Mac", self.doctor(maestro=True)[1])
+        self.assertNotIn("No Homebrew", self.doctor(maestro=True, brew=True)[1])
+
+    def test_the_java_line_offers_doctor_fix_before_brew(self):
+        out = self.doctor(maestro=True, java=False)[1]
+        self.assertRegex(out, r"MISSING java 17\+\s+\(both\)\s+-> shotfleet doctor --fix .*brew install openjdk@21")
+
+
 if __name__ == "__main__":
     unittest.main()

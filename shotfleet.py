@@ -2940,7 +2940,7 @@ def cmd_doctor(fix=False, yes=False):
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if has_maestro else "maestro", maestro_ok,
          "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", "both"),
-        ("java 17+", find_java()[0], ("brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
+        ("java 17+", find_java()[0], ("shotfleet doctor --fix  (downloads a Java runtime), or brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
                                        if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
@@ -2967,7 +2967,9 @@ def cmd_doctor(fix=False, yes=False):
                                 (has_image, DEFAULT_IMAGE), (has_avdmanager or not sdkmanager, "cmdline-tools;latest")) if not ok]
     if pkgs or not has_avdmanager:  # without sdkmanager, Homebrew's command-line tools (installed first) bring avdmanager too
         cmds = sdkmanager_commands(pkgs) if pkgs else sdkmanager_commands([])[:-1]
-        print("Android: to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
+        print("Android (skip this if you only capture iOS): to install what is missing, run" + (" (the image is a large download)" if DEFAULT_IMAGE in pkgs else "") + ":\n  " + "\n  ".join(cmds))
+        if mac and not (have("brew") or (BREW / "bin/brew").exists()):
+            print("  No Homebrew on this Mac, so the brew line will not work: `shotfleet doctor --fix` downloads Google's command-line tools itself.")
     if not mac:
         langs = sorted(l for l in tesseract_languages() if l != "osd")
         print(f"{'ok  ' if len(langs) > 1 else 'note:'} text recognition   Tesseract with {len(langs)} language(s)"
@@ -2994,11 +2996,13 @@ def cmd_doctor(fix=False, yes=False):
     ok_ios = all(ok for _, ok, _, p in checks if p in ("both", "iOS"))
     ok_android = all(ok for _, ok, _, p in checks if p in ("both", "Android"))
     print(f"\niOS: {'ready' if ok_ios else 'not ready'}   Android: {'ready' if ok_android else 'not ready'}")
+    for plat, ready in (("iOS", ok_ios), ("Android", ok_android)):  # an iOS-only buyer must not think the Android lines block them
+        if not ready: print(f"  {plat} still needs: " + ", ".join(n for n, ok, _, p in checks if not ok and p in ("both", plat)))
     vt = lambda v: tuple(int(n) for n in re.findall(r"\d+", v))
     if (latest := latest_release()) and vt(latest) > vt(VERSION):  # a dev build newer than the release says nothing
         print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.com/install.sh | sh")
     print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
-          else "next: fix the MISSING lines above, then run shotfleet doctor again")
+          else "next: fix the MISSING lines above (shotfleet doctor --fix fetches Maestro, Java and the Android tools), then run shotfleet doctor again")
     if fix:
         print()
         fix_pkgs = [pk for pk in pkgs if not (pk == "cmdline-tools;latest" and not sdkmanager)]  # sdkmanager can't install itself
