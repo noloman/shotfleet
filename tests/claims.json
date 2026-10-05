@@ -2550,5 +2550,22 @@
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
+ },
+ {
+  "id": "C160",
+  "claim": "With AI agents: activate the Mac once and the agent uses the CLI without seeing the key; use the SHOTFLEET_KEY secret in CI; claude mcp add --env would store the key in plain text in ~/.claude.json",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "After that your agent uses the CLI and never sees the key.",
+   "Don't pass the key with `claude mcp add --env`: it ends up in"
+  ],
+  "status": "evidence",
+  "proof": "Code: every licensed path (CLI and the MCP `run` tool) goes through require_licence(), which reads LICENCE_FILE (~/Library/Application Support/shotfleet/licence.json) or SHOTFLEET_KEY, so nothing asks the agent for the key; FreeTierOnAFrozenBuild.test_the_mcp_run_tool_is_capped_the_same_way (tests/test_claims_unit.py) shows the MCP path uses the same licence check. The skills tell the agent never to ask for the key or read licence.json (skill/shotfleet/references/licence.md). ~/.claude.json: Claude Code MCP docs (code.claude.com/docs/en/mcp, read 2026-10-05) say local- and user-scope servers, including --env values, are stored in ~/.claude.json. Not run with Claude Code on this Mac.",
+  "layer": "unit",
+  "assertion": "Already covered for the licence path; the ~/.claude.json part is vendor documentation.",
+  "fix": ""
  }
 ]
