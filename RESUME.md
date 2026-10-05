@@ -1,6 +1,6 @@
 # RESUME (delete before any merge)
-Goal: write research/docs-audit-2026-10-05.md (punch list of stale/false/missing docs). Read-only on README, site, docs, skill, tests/claims.json.
+Goal: research/docs-audit-2026-10-05.md (punch list of stale/false/missing docs). Read-only on README, site, docs, skill, tests/claims.json. Device-free. Only targeted tests (python3 -m unittest tests.test_docs).
 Branch: claude/docs-audit. Commit with [skip ci], push at least every 10 min.
-Done: read README, site pages, CHANGELOG, STATUS.
-Left: docs/*.md, skill/**, LAUNCH.md, claims.json, research notes, verify facts, write the note.
-Next step: read docs/handoff.md, docs/compat.md, then claims.json rows for changed sentences.
+Done: all reading; section (a) written (9 items A1-A9), pushed.
+Left: (b) MISSING (B1..: runtime pin iOS 27, min macOS/Xcode on home+llms+JSON-LD, what free tier prints + which 2 languages, --json shape in docs, how to update, refund behaviour, tested Maestro versions in docs.html, API 33/Xcode 26 minimums, gradle memory), (c) INTERNAL (CHANGELOG mis-attribution lines 18-63 + #68 missing + Polar contradictions lines 36/50/54, STATUS header/rows, handoff s.12/13, compat.md, linux.md:68, device-wishlist row 1, LAUNCH.md historical, research index missing, claims counts 47 of 131), (d) OWNER (privacy waitlist text D1, terms refund inferred, macOS line on home/Gumroad, fail-open licence D6, price, marketing), (e) order + file list. Push after each section; final reply: branch, commit, counts per section.
+Next step: write section (b), append to the note, commit, push.
