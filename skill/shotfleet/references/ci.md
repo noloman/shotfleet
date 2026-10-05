@@ -56,6 +56,11 @@ be reached the job is not failed. With an invalid key `export` refuses (exit 2) 
 
 Never write the key into the workflow file, the repo, a log line (`echo`, `set -x`), or an artifact.
 
+## Two traps when a script reads the result (checked in the code on 0.1.1, not on a device)
+
+- A folder with several reports (a multi-device run `out/<device>/`, a config with both platforms, Play listings with phone and tablet sets) is checked once per report, but `--json` prints only the last one: another report's problems can be missing from `problems` while `exit` is 1. Trust `exit`, and read each `check.json` (`out/<device>/check.json`, `shotfleet-check/<kind>/check.json`) for the details.
+- A `run` whose `SHOTFLEET_KEY` is missing or invalid does not fail: it captures 2 languages and exits 0 if those pass. It says `free tier: capturing 2 of N languages` (progress, so on stderr with `--json`); a CI job that must capture every language should fail on that line or compare the language count in `run.json`.
+
 ## Reading the result in a script
 
 ```bash
