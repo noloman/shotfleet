@@ -277,6 +277,11 @@ class Consent(FixTestCase):
 
 
 class DoctorCommand(FixTestCase):
+    def setUp(self):  # doctor's text-recognition probe answers at once: these tests are about --fix (real Vision: test_cli_claims.RealVisionSmoke)
+        super().setUp()
+        ocr = self.home / "ocr"; ocr.write_text("#!/bin/sh\necho Ready\n"); ocr.chmod(0o755)
+        p = mock.patch.object(sf, "ocr_tool", return_value=str(ocr)); p.start(); self.addCleanup(p.stop)
+
     def test_the_flags_exist(self):
         r = subprocess.run([sys.executable, str(Path(sf.__file__)), "doctor", "--help"], capture_output=True, text=True)
         self.assertIn("--fix", r.stdout); self.assertIn("--yes", r.stdout)

@@ -252,7 +252,7 @@ class McpCheckDoesNotTouchTheFolder(unittest.TestCase):
             old = os.getcwd(); os.chdir(cwd)
             try:
                 real = sf.cmd_check  # the fake reader stands in for macOS OCR, which compiles a model on first use
-                with mock.patch.object(sf, "cmd_check", lambda *a, **k: real(*a, **{**k, "ocr_command": "cat {image}.txt"})):
+                with fake_vision(), mock.patch.object(sf, "cmd_check", lambda *a, **k: real(*a, **{**k, "ocr_command": "cat {image}.txt"})):
                     text, err = sf.mcp_call("check", {"folder": str(shots), "strings": str(d / "locales/*/translation.json")})
             finally:
                 os.chdir(old)
@@ -261,3 +261,28 @@ class McpCheckDoesNotTouchTheFolder(unittest.TestCase):
             self.assertEqual(before, after)  # nothing was written into the checked folder
             self.assertTrue((Path(cwd) / "shotfleet-check" / "index.html").exists())
         self.assertIn("avd_tablet", sf.KEYS["android"])
+
+
+
+def word_png(rows, scale=12):
+    """A real grayscale PNG of black pixel-font letters on white: '1' is ink. Vision reads it (the fixture PNGs are header-only)."""
+    import struct, zlib
+    w, h = (len(rows[0]) + 4) * scale, (len(rows) + 4) * scale
+    ink = lambda x, y: 0 <= y // scale - 2 < len(rows) and 0 <= x // scale - 2 < len(rows[0]) and rows[y // scale - 2][x // scale - 2] == "1"
+    raw = b"".join(b"\0" + bytes(0 if ink(x, y) else 255 for x in range(w)) for y in range(h))
+    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 0, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+
+
+@unittest.skipUnless(sf.vision_available(), "macOS text recognition exists only on a Mac")
+class RealVisionSmoke(unittest.TestCase):
+    """The one test that runs the real macOS text recognition; every other test stubs it (fake_vision), because a cold model
+    compile takes minutes. Builds the helper, warms it up (it draws and reads "Ready") and reads a real picture of "EEE"."""
+    def test_real_macos_text_recognition_warms_up_and_reads_a_word(self):
+        ocr = sf.ocr_tool()
+        self.assertTrue(sf.warm_up_ocr(ocr, timeout=600, patience=sf.OCR_COMPILE_PATIENCE_S), sf.ocr_not_answering())
+        e = ["11111", "10000", "10000", "11110", "10000", "10000", "11111"]
+        with tempfile.TemporaryDirectory() as d:
+            png = Path(d, "word.png"); png.write_bytes(word_png([a + "0" + b + "0" + c for a, b, c in zip(e, e, e)]))
+            r = sf.read_text(ocr, png)
+        self.assertIn("EEE", r["text"], r)

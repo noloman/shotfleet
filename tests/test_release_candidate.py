@@ -159,7 +159,7 @@ class Fixtures(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             rc.fixture(d)
             out, err = io.StringIO(), io.StringIO()
-            with mock.patch.dict(os.environ, {"SHOTFLEET_OCR": "cat {image}.txt"}), mock.patch.object(sf, "ocr_tool", return_value="ocr"), \
+            with mock.patch.dict(os.environ, {"SHOTFLEET_OCR": "cat {image}.txt"}), \
                  mock.patch.object(sf, "warm_up_ocr", return_value=False), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 code = sf.main(["check", f"{d}/shots", "--strings", f"{d}/locales/*/translation.json", "--report", f"{d}/rep", "--json"])
             report = json.loads(out.getvalue())

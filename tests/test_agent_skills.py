@@ -9,7 +9,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "tests"))
 import shotfleet as sf
-from test_cli_claims import fixture, run_main  # the same fixture and runner the README's promises are tested with
+from test_cli_claims import fixture, fake_vision, run_main  # the same fixture, stubbed text recognition and runner the README's promises are tested with
 
 SKILLS = sorted(p.parent for p in (ROOT / "skill").glob("*/SKILL.md"))
 DOCS = sorted((ROOT / "skill").rglob("*.md")) + [ROOT / "docs/AGENTS-snippet.md"]
@@ -142,8 +142,9 @@ class AgainstTheProgram(unittest.TestCase):
     def test_json_keys_in_the_skill_are_the_ones_check_prints(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d); shots = fixture(d)
-            code, out, err = run_main("check", str(shots), "--strings", str(d / "locales/*/translation.json"),
-                                      "--ocr-command", "cat {image}.txt", "--report", str(d / "rep"), "--json")
+            with fake_vision():  # the keys, not the reader: real Vision is test_cli_claims.RealVisionSmoke's job
+                code, out, err = run_main("check", str(shots), "--strings", str(d / "locales/*/translation.json"),
+                                          "--ocr-command", "cat {image}.txt", "--report", str(d / "rep"), "--json")
         report = json.loads(out)
         self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes"})
         self.assertEqual(set(report["screenshots"][0]), {"file", "src", "sha", "lang", "chars", "evidence"})
