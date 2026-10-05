@@ -2517,7 +2517,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                 lang = canon(app_locale(label, tables) or label).split("-")[0]
                 return LEGACY.get(lang, lang) not in readable_languages() | {"zh"}
             redo = [i for i, (label, png) in enumerate(pngs)
-                    if not texts[i] and (not use_vision or unreadable(label))
+                    if not texts[i] and (unreadable(label) or (not use_vision and not ocrs[i].get("chars")))  # a read macOS finished before it hung stands
                     and (not auto or tesseract_code(app_locale(label, tables) or label) in tesseract_languages())]
             def external(i):
                 lp = app_locale(pngs[i][0], tables) or pngs[i][0]

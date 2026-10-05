@@ -80,5 +80,27 @@ class CouldNotRead(unittest.TestCase):
         self.assertEqual((code, report["problems"], report["notes"]), (0, [], []))
 
 
+class HangMidCheck(unittest.TestCase):
+    def test_a_screen_macos_read_before_it_hung_is_not_replaced_by_an_empty_tesseract_read(self):
+        import threading
+        d = Path(tempfile.mkdtemp()); first_done = threading.Event()
+        for lp in ("en", "ar"):
+            f = d / "shots" / lp / "01_welcome.png"; f.parent.mkdir(parents=True); f.write_bytes(real_png(60, 300, APP))
+        def read(ocr, png, timeout=120):
+            if "/en/" in str(png): first_done.set(); return {"text": "Next\nSettings", "chars": 13, "lang": "en", "langs": {"en": 1}}
+            first_done.wait(5); raise RuntimeError("hung twice")  # the second screenshot hangs after the first was read
+        with mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "warm_up_ocr", return_value=True), \
+             mock.patch.object(sf, "readable_languages", return_value={"en", "ar"}), mock.patch.object(sf, "read_text", read), \
+             mock.patch.object(sf, "tesseract_languages", return_value=frozenset({"eng", "ara"})), \
+             mock.patch.object(sf, "external_ocr", return_value=NOTHING), mock.patch.object(sf, "tesseract_script", return_value={}), \
+             mock.patch.object(sf, "store_rules", return_value=([], [])), mock.patch.object(sf.shutil, "which", return_value="/x"), \
+             contextlib.redirect_stdout(io.StringIO()):
+            code = sf.cmd_check(d / "shots", strings=STRINGS, report_dir=d / "rep")
+        report = json.loads((d / "rep/check.json").read_text())
+        self.assertEqual({r["file"]: r["chars"] for r in report["screenshots"]}, {"en/01_welcome.png": 13, "ar/01_welcome.png": 0})
+        self.assertEqual((code, report["problems"]), (0, []))  # en keeps its good read; ar is only a note
+        self.assertEqual(len(report["notes"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
