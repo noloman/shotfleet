@@ -1,0 +1,30 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.000
+The store rules.
+
+2
+00:00:02.000 --> 00:00:06.500
+This output has only an iPhone set.
+But my app also runs on iPad.
+
+3
+00:00:06.500 --> 00:00:12.000
+check tells me: the App Store needs
+13-inch iPad screenshots.
+
+4
+00:00:12.000 --> 00:00:18.000
+Now I make a copy and resize
+one screenshot to 1000x2000.
+
+5
+00:00:18.000 --> 00:00:22.000
+The App Store does not take that
+size. check names the file.
+
+6
+00:00:22.000 --> 00:00:27.600
+It checks sizes, counts, transparency
+and device sets for both stores.

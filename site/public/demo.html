@@ -6,7 +6,7 @@
 <title>See shotfleet work: clips and dated evidence</title>
 <meta name="description" content="Short recordings of shotfleet's commands, and my dated list of the real runs behind what the site says: release tests, macOS versions and real apps.">
 <meta property="og:title" content="See shotfleet work: clips and dated evidence">
-<meta property="og:description" content="Recordings of doctor and init, and what shotfleet has really been run on, with dates.">
+<meta property="og:description" content="Short recordings of shotfleet at work, and what it has really been run on, with dates.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -67,18 +67,13 @@
       </video>
       <figcaption>shotfleet init reads an iOS simulator build and an Android APK, lists the languages each one has, and writes a config and an English flow.</figcaption>
     </figure>
-
-    <!-- CLIP c3-run-ios
     <figure class="clip" id="c3-run-ios">
-      <h3>Every language on iPhone and iPad</h3>
+      <h3>Every language on iPhone</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c3-run-ios-poster.webp" src="/media/demo/c3-run-ios.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c3-run-ios.en.vtt">
       </video>
-      <figcaption>The English Maestro flow runs in every language the app has, on several iPhone and iPad simulators at once. Then every screenshot is checked.</figcaption>
+      <figcaption>The English Maestro flow runs in every language the app has, on several iPhone simulators at once. Then every screenshot is checked.</figcaption>
     </figure>
-    CLIP -->
-
-    <!-- CLIP c4-run-android
     <figure class="clip" id="c4-run-android">
       <h3>Every language on Android</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c4-run-android-poster.webp" src="/media/demo/c4-run-android.mp4">
@@ -86,9 +81,6 @@
       </video>
       <figcaption>The same English flow runs in every language on Android emulators. Then every screenshot is checked.</figcaption>
     </figure>
-    CLIP -->
-
-    <!-- CLIP c5-check
     <figure class="clip" id="c5-check">
       <h3>Catching the wrong language</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c5-check-poster.webp" src="/media/demo/c5-check.mp4">
@@ -96,9 +88,6 @@
       </video>
       <figcaption>I put a German screenshot in the Japanese folder, and shotfleet check caught it. The real output passes with 0 problems.</figcaption>
     </figure>
-    CLIP -->
-
-    <!-- CLIP c6-check-existing
     <figure class="clip" id="c6-check-existing">
       <h3>Checking screenshots you already have</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c6-check-existing-poster.webp" src="/media/demo/c6-check-existing.mp4">
@@ -106,9 +95,6 @@
       </video>
       <figcaption>shotfleet check reads fastlane folders or a plain folder of screenshots. You don't need a simulator for this.</figcaption>
     </figure>
-    CLIP -->
-
-    <!-- CLIP c7-store-rules
     <figure class="clip" id="c7-store-rules">
       <h3>Store rules</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c7-store-rules-poster.webp" src="/media/demo/c7-store-rules.mp4">
@@ -116,19 +102,13 @@
       </video>
       <figcaption>shotfleet check flags screenshot sizes the stores refuse. It also flags a missing 13-inch iPad set.</figcaption>
     </figure>
-    CLIP -->
-
-    <!-- CLIP c8-export
     <figure class="clip" id="c8-export">
       <h3>Export to fastlane</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c8-export-poster.webp" src="/media/demo/c8-export.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c8-export.en.vtt">
       </video>
-      <figcaption>One command puts the passing App Store and Google Play screenshots into fastlane's folders.</figcaption>
+      <figcaption>One command puts the passing Google Play screenshots into fastlane's folders.</figcaption>
     </figure>
-    CLIP -->
-
-    <!-- CLIP c9-ci
     <figure class="clip" id="c9-ci">
       <h3>In CI</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c9-ci-poster.webp" src="/media/demo/c9-ci.mp4">
@@ -136,7 +116,6 @@
       </video>
       <figcaption>The GitHub Actions setup from the docs, with the --json result and the exit code from check.</figcaption>
     </figure>
-    CLIP -->
 
     <h2 id="evidence">Evidence</h2>
     <p>What I ran, when, and what came out. I only list runs that are written down. The note under each line says where to find that record in shotfleet's repository.</p>

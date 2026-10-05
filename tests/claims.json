@@ -2584,5 +2584,110 @@
   "layer": "site",
   "assertion": "Install check by hand in a throwaway HOME, repeated when the plugin layout changes; tools/sync-public-skills.sh keeps the public copy equal to skill/ at each release.",
   "fix": ""
+ },
+ {
+  "id": "C162",
+  "claim": "Clip c3-run-ios: The English Maestro flow runs in every language the app has, on several iPhone simulators at once. Then every screenshot is checked.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "The English Maestro flow runs in every language the app has, on several iPhone simulators at once. Then every screenshot is checked."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c3-run-ios.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: 2026-10-06: 5 of 5 languages captured on 2 iPhone 17 Pro Max simulators (iOS 26.4) in 253 s, 10 screenshots, 0 problems. shotfleet used 2 simulators instead of 4 because the Mac was short on memory; it says so on screen. No iPad set in this run, so check prints the App Store's 13-inch iPad requirement.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen ([{'from_s': 5.7, 'shown_s': 12.0, 'factor': 29, 'real_s': 353}]).",
+  "fix": ""
+ },
+ {
+  "id": "C163",
+  "claim": "Clip c4-run-android: The same English flow runs in every language on Android emulators. Then every screenshot is checked.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "The same English flow runs in every language on Android emulators. Then every screenshot is checked."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c4-run-android.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: 2026-10-06: 5 of 5 languages captured on 2 Android phone emulators (1080x1920) in 3 rounds, 94 s, 10 screenshots, 0 problems, one non-blocking Play note.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen ([{'from_s': 5.7, 'shown_s': 12.0, 'factor': 16, 'real_s': 197}]).",
+  "fix": ""
+ },
+ {
+  "id": "C164",
+  "claim": "Clip c5-check: I put a German screenshot in the Japanese folder, and shotfleet check caught it. The real output passes with 0 problems.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "I put a German screenshot in the Japanese folder, and shotfleet check caught it. The real output passes with 0 problems."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c5-check.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: A copy of the Android output with the German welcome screenshot placed in the Japanese folder: 2 problems ('shows de strings', identical image in 2 languages). The real output: 0 problems.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen (none).",
+  "fix": ""
+ },
+ {
+  "id": "C165",
+  "claim": "Clip c6-check-existing: shotfleet check reads fastlane folders or a plain folder of screenshots. You don't need a simulator for this.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "shotfleet check reads fastlane folders or a plain folder of screenshots. You don't need a simulator for this."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c6-check-existing.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: Two Japanese screenshots in a plain folder labelled --locale de: check reports both as showing Japanese strings. No simulator used.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen (none).",
+  "fix": ""
+ },
+ {
+  "id": "C166",
+  "claim": "Clip c7-store-rules: shotfleet check flags screenshot sizes the stores refuse. It also flags a missing 13-inch iPad set.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "shotfleet check flags screenshot sizes the stores refuse. It also flags a missing 13-inch iPad set."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c7-store-rules.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: iPhone-only output of an app that runs on iPad: the 13-inch iPad requirement is reported. One screenshot resized to 1000x2000: 'isn't an App Store screenshot size'.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen (none).",
+  "fix": ""
+ },
+ {
+  "id": "C167",
+  "claim": "Clip c8-export: One command puts the passing Google Play screenshots into fastlane's folders.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "One command puts the passing Google Play screenshots into fastlane's folders."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c8-export.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: The 10 passing Android screenshots copied into fastlane/metadata/android/<locale>/images/phoneScreenshots/. The iOS set was not exported: export needs the iPad set the App Store requires.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen (none).",
+  "fix": ""
+ },
+ {
+  "id": "C168",
+  "claim": "Clip c9-ci: The GitHub Actions setup from the docs, with the --json result and the exit code from check.",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "The GitHub Actions setup from the docs, with the --json result and the exit code from check."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c9-ci.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json), recorded on the repo's fixture apps under the device lock 2026-10-06 00:25-00:36 (shotfleet-rc-build/demo-video/progress.log). Facts recorded with it: The workflow file is the recipe from site/public/docs.html, shown, not run on GitHub here. check --json on the Android output: exit code 0.",
+  "layer": "device",
+  "assertion": "The clip shows what its caption says; speed-ups are labelled on screen (none).",
+  "fix": ""
  }
 ]
