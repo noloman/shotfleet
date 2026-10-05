@@ -6,7 +6,7 @@
 <title>fastlane snapshot alternatives, and when not to buy shotfleet</title>
 <meta name="description" content="shotfleet vs fastlane snapshot, simshot, ButterKit and AppScreens for localized App Store and Play screenshots, with prices and who should skip shotfleet.">
 <meta property="og:title" content="fastlane snapshot alternatives, and when not to buy shotfleet">
-<meta property="og:description" content="An honest comparison, with the free options first and a list of who should not buy shotfleet.">
+<meta property="og:description" content="How shotfleet compares with the free and paid tools, and who should not buy it.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -37,7 +37,7 @@
 <main class="wrap" id="main">
   <section class="page wide">
     <h1>fastlane snapshot alternatives, and when not to buy shotfleet</h1>
-    <p class="lede">How shotfleet compares to the tools developers use for localized store screenshots.</p>
+    <p class="lede">There are a few good tools for localized store screenshots, and some of them are free. This page shows how shotfleet compares, and when you should use something else.</p>
 
     <h2>Feature comparison</h2>
     <div class="tablewrap" tabindex="0" role="region" aria-label="Feature comparison table, scrolls sideways on narrow screens">
@@ -56,44 +56,44 @@
     </table>
     </div>
     <p class="cta-row"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a></p>
-    <p class="note">Checked on 2026-10-02 from each tool's own pages and docs. "Not stated" means the page doesn't say, not that the answer is no. A mistake? Tell me and I'll fix it the same day.</p>
+    <p class="note">Checked on 2026-10-02 from each tool's own pages and docs. "Not stated" means the page doesn't say, not that the answer is no. If I got something wrong, tell me and I'll fix it the same day.</p>
 
     <h2>What each tool does</h2>
 
     <h3 id="shotfleet">shotfleet</h3>
-    <p>Rewrites one English Maestro flow for every language your app ships using the app's own compiled strings, runs the flow in parallel on simulators and emulators, checks each screenshot (language, copies, missing, store size rules), and exports to fastlane's folders.</p>
-    <p>Setup: one command, a two-line config, a Maestro flow in English. Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
+    <p>It takes one English Maestro flow and rewrites it for every language your app has. It uses the translations built into your app to do that. Then it runs the flow on several simulators and emulators at the same time. It checks each screenshot for the wrong language, copies, missing screens and store size rules. Last, it exports the screenshots to fastlane's folders.</p>
+    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
 
     <h3 id="fastlane">fastlane snapshot / screengrab</h3>
-    <p>The standard: UI-test code (XCUITest, Espresso) that taps buttons and takes screenshots, run once per language. You add a test target to your app, and iOS and Android need separate code. Free, a large community, works in CI.</p>
-    <p>If you already have UI tests that run in every language, you may not need shotfleet. If you don't want test code in your app, or want one flow for both platforms and a check of the results, that is the gap shotfleet fills; fastlane still handles upload and framing.</p>
+    <p>This is the one most people use. You write UI-test code (XCUITest on iOS, Espresso on Android) that taps buttons and takes screenshots, and it runs once per language. You add a test target to your app, and iOS and Android need separate code. It's free, lots of people use it, and it works in CI.</p>
+    <p>If you already have UI tests that run in every language, you may not need shotfleet. shotfleet is for when you don't want test code in your app, or you want one flow for both platforms and a check of the results. fastlane still does the upload and the framing.</p>
 
     <h3 id="simshot">simshot</h3>
-    <p>Free, MIT-licensed, iOS only. It launches the app in each language with launch arguments and takes the screenshots. It needs a few lines added to your app. It is a very new project.</p>
+    <p>Free, MIT-licensed, iOS only. It opens the app in each language with launch arguments and takes the screenshots. You need to add a few lines to your app. It's a very new project.</p>
 
     <h3 id="butterkit">ButterKit</h3>
     <p>A Mac app that takes screenshots from the iOS Simulator, adds device frames and captions, translates the text with AI and uploads to App Store Connect. Its pricing page lists a free tier (watermarked exports, 50 languages, on-device translation) and Pro at $99 once, with free updates, 5 Macs and a 14-day refund. It doesn't say whether it re-captures your app in each language.</p>
-    <p><b>Using it with shotfleet:</b> run shotfleet to get the raw localized screenshots in fastlane's folders, point ButterKit at them for frames and captions, and upload. shotfleet's check tells you whether the language inside the app matches the language on the listing.</p>
+    <p><b>Using the two together:</b> run shotfleet to get the raw localized screenshots into fastlane's folders. Then point ButterKit at them for frames and captions, and upload. shotfleet's check tells you whether the language inside the app matches the language on the listing.</p>
 
     <h3 id="appscreens">AppScreens</h3>
-    <p>A web editor: upload screenshots, add device frames, text and backgrounds, for iOS and Android. Free covers one project with no localizations; Pro is $99 a year (10 languages) and Scale $180 a year (80+ locales). It makes marketing images from what you upload and doesn't capture from your app.</p>
+    <p>A web editor. You upload screenshots and add device frames, text and backgrounds, for iOS and Android. Free covers one project with no localizations; Pro is $99 a year (10 languages) and Scale $180 a year (80+ locales). It makes marketing images from what you upload. It doesn't take screenshots from your app.</p>
 
-    <h2>When you should NOT buy shotfleet</h2>
+    <h2>When you shouldn't buy shotfleet</h2>
     <div class="when-not">
-      <h3>If you use any of these, start there first</h3>
+      <h3>Skip it if one of these sounds like you</h3>
       <ul>
-        <li>You ship in one or two languages. fastlane snapshot or simshot (both free) will do the job, and shotfleet's own free tier covers 2 languages.</li>
-        <li>You already have a fastlane UI-test setup working well and don't mind multiple tests per language.</li>
-        <li>You want frames, captions, or store upload. ButterKit and AppScreens specialize in that; shotfleet doesn't.</li>
+        <li>Your app has one or two languages. fastlane snapshot or simshot (both free) will do the job, and shotfleet's own free tier covers 2 languages.</li>
+        <li>Your fastlane UI tests already work well, and you don't mind running them once per language.</li>
+        <li>You want frames, captions, or store upload. ButterKit and AppScreens are made for that; shotfleet doesn't do it.</li>
         <li>Your app is Flutter or React Native. shotfleet reads translation files from those stacks and has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native.</li>
         <li>You don't have an Apple silicon Mac. shotfleet runs on macOS on Apple silicon only, and needs Maestro and Java 17 or newer. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
       </ul>
     </div>
 
     <h2>The story</h2>
-    <p>I ship a workout app in 18 languages. A Maestro flow taps buttons by their label, so every flow I wrote only worked in English.</p>
-    <p>So I wrote shotfleet: one English flow, every language, both platforms, checked. On the first full run, I found that the onboarding button was unreachable in Japanese, Korean, Chinese and Arabic on small phones: taller text, no scrolling. It took a small fix in my app: I made two pages scroll. Nobody had noticed because English screenshots fit fine.</p>
-    <p>ButterKit, AppScreens and fastlane do different things: make framing, make mockups, run UI tests. shotfleet makes sure the raw screenshots inside your app are actually in the right language.</p>
+    <p>I have a workout app in 18 languages. A Maestro flow finds buttons by the text on them, so every flow I wrote only worked in English.</p>
+    <p>So I wrote shotfleet. My flow stays in English, and shotfleet changes it for each language, on both platforms, then checks what comes out. On the first full run, the onboarding button was out of reach in Japanese, Korean, Chinese and Arabic on small phones. The text was taller and the page didn't scroll. The fix in my app was small: I made two pages scroll. Nobody had noticed, because the English screenshots fit fine.</p>
+    <p>ButterKit, AppScreens and fastlane do other jobs: frames, mockups and UI tests. shotfleet does one smaller job. It makes sure the raw screenshots of your app are really in the right language.</p>
     <p class="cta-row"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a></p>
   </section>
 </main>
