@@ -23,3 +23,12 @@ Setup: Tart 2.32.1 (Cirrus Labs, notarized; the GitHub release the Homebrew form
 | Gatekeeper, quarantined program from the tarball | not run (script bug) | `spctl -t exec`: `rejected` (same as on the host for a bare command-line program: "does not seem to be an app") |
 
 My own per-test steps (two real wger PNGs, explicit licence.json check, quarantined run) did not run in run 1: the time-limit helper was a shell function called through `env`. Fixed; rerun pending. The Cirrus 26.2 image starts with `assessments disabled`; `sudo spctl --global-enable` turned it on.
+
+## What this proves and what not
+
+Proven, for the live 0.1.2 on macOS 26.2 in a VM with nothing installed: it downloads, installs, starts (so the Expat/dyld problem of the 0.1.0 folder does not affect 0.1.2 on 26.2), `doctor` runs to the end, the bundled text recognition works, `check` runs, and the packaged program reaches Gumroad over TLS and a made-up key is refused.
+Not proven: macOS 13.x and 26.0/26.1 (not run); simulators and Android (a VM can run neither); a real buyer's Mac (a VM is not one); the Gatekeeper path for a browser download (the .pkg assessment was rejected in the VM, the quarantined tarball program was not run in run 1).
+
+## Recommendation for the public macOS line (proposal only)
+
+Keep "Built for macOS 13 or later on Apple silicon" (a build fact). The "tested on" part could widen to "tested on macOS 14, 15, 26.2 and 27" only after one more check, because the 14 and 15 evidence is for 0.1.1, not 0.1.2. Do not claim macOS 13 until the 13.6 VM (or a person's Mac) has run. Before any wider claim, explain the .pkg `spctl` rejection on 26.2 (rerun with the extra diagnostics already in `guest-test.sh`: `spctl -a -vvv`, the rule list, `syspolicy_check`, the syspolicyd log). The coordinator and owner decide.
