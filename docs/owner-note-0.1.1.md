@@ -19,13 +19,17 @@ It also carries four fixes: `check` no longer calls an unreadable screenshot a p
 
 **Release gate, 2026-10-05, 12:36: PASS.** On the signed standalone build the fixture app passed all 65 assertions on iPhone, iPad and Android (66 PASS lines, 0 FAIL). The iPhone run needed a second attempt for Turkish (`tr`) because the Mac was under heavy load, and it was pinned to iOS 26.4.
 
+## Tested on macOS 14 and 15 (2026-10-05, after the deploy)
+
+Two manual GitHub runs (about $0.25 in all) installed the LIVE 0.1.1 from shotfleet.com on Apple-silicon macOS 14.8.9 and 15.7.9: install, `shotfleet --version` (0.1.1), `doctor` (ran to the end, text recognition ready in 1 s) and `check` on two sample screenshots all worked, with no start-up error. It does not prove simulator runs, Gatekeeper, macOS 13, macOS 26.0 to 26.2, or a clean Mac. One oddity: macOS 14 cannot read Catalan text (check says so), macOS 15 reads it. Details: research/limits-platform-reach-2026-10-05.md.
+
 ## iOS 27 and a lesson about memory
 
 On a quiet Mac, iOS 27 with Maestro 2.0.10 captured one language in 78 s with 0 problems. The earlier 35-minute stall was memory thrashing: idle Gradle daemons from several projects held about 21 GB. **Lesson:** idle Gradle daemons can silently fill the memory; `gradle --stop` (once per Gradle version) frees it. A 4-simulator iOS 27 run is untested.
 
 ## Still unproven
 
-- **Any Mac older than macOS 27.** Nobody has started 0.1.1 or 0.1.0 on one (docs/device-wishlist.md, row 1). Hosted GitHub runners exist for macOS 14 and 15 only, none for 13 or 26.0 to 26.2.
+- **macOS 13 and 26.0 to 26.2, and a real Mac older than 27.** No hosted runner exists for those (docs/device-wishlist.md, row 1).
 - A refunded key being refused: needs a paid sale by a second person, not your own card (docs/refund-runbook.md).
 - A clean Mac with nothing installed, as a buyer has it.
 
