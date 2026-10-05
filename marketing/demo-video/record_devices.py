@@ -44,7 +44,7 @@ def our_shotfleet_pids():
             if c not in pids: pids.add(c); todo.append(c)
     return pids
 
-GATE_LOG = Path.home() / "Developer/shotfleet-rc-build/0.1.3/g3-013b.log"
+GATE_LOG = Path.home() / "Developer/shotfleet-rc-build/0.1.3/g3-013c.log"
 MIN_FREE_PCT = 40
 
 def others_done():
@@ -53,9 +53,7 @@ def others_done():
     gate = GATE_LOG.is_file() and "lock released" in GATE_LOG.read_text(errors="replace")
     q = Path("/tmp/shotfleet-device-queue.md").read_text(errors="replace") if Path("/tmp/shotfleet-device-queue.md").exists() else ""
     vm_line_done = any(re.search(r"tart|\bVM\b", l, re.I) and "DONE" in l for l in q.splitlines())
-    holder = (LOCK / "holder").read_text(errors="replace") if (LOCK / "holder").exists() else ""
-    vm_pushed = bool(sh("git", "-C", str(REPO), "ls-remote", "origin", "claude/vm-older-macos-results").strip())
-    return gate and (vm_line_done or (vm_pushed and not re.search(r"tart|\bVM\b", holder, re.I)))
+    return gate and vm_line_done   # 22:36: the VM agent must mark its queue line DONE (its branch is pushed but it may still run)
 
 def free_pct():
     m = re.search(r"free percentage: *(\d+)%", sh("memory_pressure"))
