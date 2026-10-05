@@ -1,5 +1,5 @@
 // vtest <mode> <image.png> : one Vision text request in one configuration; prints JSON {mode, ms, chars, ...}.
-// modes: default | cpu14 (macOS 14+ compute-device API) | cpuold (usesCPUOnly) | fast | fast+cpu14 | devices | langs
+// modes: rev2 (revision 2) | <mode>+cancel (cancel() after 5 s) | default | cpu14 (macOS 14+ compute-device API) | cpuold (usesCPUOnly) | fast | fast+cpu14 | devices | langs
 // Build: swiftc -target arm64-apple-macos13.0 vtest.swift -o vtest
 import CoreML
 import Foundation
@@ -46,7 +46,9 @@ if mode == "devices" {
     exit(0)
 }
 let fast = mode.hasPrefix("fast")
-let req = request(level: fast ? .fast : .accurate)
+let req = request(level: fast ? .fast : .accurate, revision: mode.hasPrefix("rev2") ? 2 : nil)
+// cancel<N>: cancel() the request after N seconds from another thread (does perform return?)
+if mode.hasSuffix("+cancel") { DispatchQueue.global().asyncAfter(deadline: .now() + 5) { req.cancel() } }
 if mode.hasSuffix("cpu14") { if !useCPUOnly(req) { print("{\"error\":\"no cpu device\"}"); exit(3) } }
 if mode == "cpuold" { req.usesCPUOnly = true }
 req.automaticallyDetectsLanguage = true
