@@ -31,13 +31,14 @@ jobs:
         run: '"$SHOTFLEET" --version'
       - name: shotfleet doctor (expect no simulator; must not crash)
         run: |
-          # exit 0 or 1 are fine (missing tools are findings); a dyld error, a signal or 124 (our alarm) fails the job
+          # doctor exits 2 when the Mac is not ready (no Maestro, no Android image): that is a finding, not a crash (first run, 2026-10-05).
+          # exit 0, 1 or 2 are fine; a dyld error, a signal or 142 (our alarm) fails the job
           set +e
           perl -e 'alarm 150; exec @ARGV' "$SHOTFLEET" doctor 2>&1 | tee doctor.out
           rc=${PIPESTATUS[0]}
           echo "doctor exit $rc"
           grep -qiE "symbol not found|dyld|library not loaded" doctor.out && exit 1
-          [ "$rc" -le 1 ]
+          [ "$rc" -le 2 ]
       - name: shotfleet check on two sample screenshots (must not crash)
         run: |
           D=research/real-apps-2026-10-04/wger-android-19-languages
