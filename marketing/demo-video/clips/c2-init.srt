@@ -23,6 +23,6 @@ One English flow, every language,
 iOS and Android.
 
 6
-00:00:20,000 --> 00:00:24,500
+00:00:20,000 --> 00:00:24,100
 You maintain one flow; shotfleet
 rewrites it for every language.

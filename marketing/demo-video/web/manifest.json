@@ -39,23 +39,23 @@
    "slug": "c2-init",
    "title": "Set up a project",
    "description": "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow.",
-   "duration_s": 24.5,
+   "duration_s": 24.2,
    "files": {
     "mp4": {
      "path": "c2-init.mp4",
-     "bytes": 423978
+     "bytes": 403286
     },
     "square": {
      "path": "c2-init-square.mp4",
-     "bytes": 631078
+     "bytes": 614734
     },
     "poster": {
      "path": "c2-init-poster.webp",
-     "bytes": 33292
+     "bytes": 31550
     },
     "captions": {
      "path": "c2-init.en.vtt",
-     "bytes": 572
+     "bytes": 569
     }
    },
    "sped_up": [],
