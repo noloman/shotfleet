@@ -198,3 +198,66 @@ None of these is read by buyers; they steer the next agent, so a wrong line cost
 - `DISTRIBUTION.md:50` ("Only needed once the founder sale opens ... Until then the waitlist is enough"), `PLAN.md:35` (`Cloudflare Worker + KV waitlist`), `MARKETING.md:41` (`email the waitlist`) describe a pre-sale state. Add "history" to their first line or leave them; they do not steer anything today. `MARKETING.md` and `marketing/` are the owner's; no edit proposed.
 
 Items in (c): 17 (C1 to C17).
+
+---
+
+## (d) NEEDS THE OWNER'S SAY
+
+Public-facing legal, price, refund, licence and marketing wording. Listed, not changed. A refresh agent must not touch these without a yes in chat.
+
+**D1. privacy.html still describes a waitlist. CONFIRMED text; whether it is still true is INFERRED.**
+- Lines 36, 54-61, 64 and 67: `the only things stored are ... what you send when you join the waitlist`, a "When you join the waitlist" section, `To send you one email when shotfleet is available to buy`, and the promise `I will delete the waitlist within 30 days after I send the launch email`. The live page has no signup form (`LAUNCH.md` smoke check "no waitlist form"; index.html has none), but `forms.js` and the worker still carry the endpoints and the KV data exists until `site/signups.sh --purge-waitlist` runs (LAUNCH.md section 8). I do not know whether the launch email went out, so I cannot say whether the 30-day clock is running.
+- Options for the owner: (1) leave it while the list exists and purge on schedule, then remove the sections in the same commit as the purge; (2) rewrite now in the past tense ("people who joined the list before the launch"). Claims C078, C086 quote this page; `tests/test_claims_site.py` and the worker tests pin parts of it.
+
+**D2. terms.html states the refund behaviour as fact; it is inferred from Gumroad's source. CONFIRMED.**
+- Line 52 area: `A refund ends the licence. The key stops unlocking every language and export the next time shotfleet checks it with Gumroad, about once a week (up to 30 days later if the Mac is offline)`. STATUS gate 5 and claim C047 (`partial`): "a refunded key being refused" has not been seen on a live key (needs a paid sale by a second person, `docs/refund-runbook.md`). The full-refund-disables-the-key rule is read from Gumroad's published code. Options: keep (the direction is the honest one for the buyer), or add "should"/"as far as I know" until the first real refund. Also open from `research/refund-process-2026-10-05.md` (lawyer or owner): a postal address on terms and privacy (Dutch civil code 6:230m), the EU withdrawal sentence, the "nothing here limits your statutory rights" line near "No warranty", and what happens after day 14 (only Gumroad's own 90-day discretion is stated).
+
+**D3. Putting the macOS line on the home page, JSON-LD, llms.txt and alternatives.html. CONFIRMED gap; the decision is the owner's.**
+- `docs/owner-note-0.1.1.md` item 1: "decide when it goes up". README, docs.html and the Gumroad page carry `Built for macOS 13 or later on Apple silicon; tested on macOS 27.` Adding it to index.html (price lede, "Not for you if"), the JSON-LD `softwareRequirements` and llms.txt is a public change on the sales page, so it waits for the OK (B3).
+
+**D4. The range stays "13 or later; tested on macOS 27". Recorded, not reopened.**
+- Decided today not to widen. What the hosted runs support at most: "installs, starts, runs doctor and check on macOS 14.8.9 and 15.7.9" (not simulators, Gatekeeper, macOS 13 or 26.0 to 26.2). If the owner later wants a sentence like that on the site, C131 and its test (`tests/test_platform_reach.py`) change with it.
+
+**D5. Home-page numbers and the claims behind them. CONFIRMED facts; wording is the owner's.**
+- index.html:144, :155 and alternatives.html "9 minutes on iOS and 15 on Android" (C007, C105, also quoted in `marketing/launch-posts-v2.md`). They are conservative against the 2026-10-05 re-measure (iOS 404 s, Android phone 415 s, 19 languages, Maestro 2.0.10, load 86 to 497) but the app now ships 19 languages, the run is "18 x 4" and the installer fetches Maestro 2.11.0 (B7). Options: leave as is (my reading: safest, C007 stays `evidence`), or add "Maestro 2.0.10" to the "Measured on my own apps" line. No marketing post is touched either way.
+
+**D6. The licence fails open when `SHOTFLEET_KEY` is set and Gumroad is unreachable. EXISTING DESIGN; nothing proposed. CONFIRMED that no document claims otherwise.**
+- README:116 and docs.html:243 say "if the licence server cannot be reached the job is not failed". The 30-day offline limit (index.html:319, terms.html, `references/licence.md:36`) is described for an activated Mac and never promised for a CI key. If the owner ever changes the design, README:116, docs.html:243, terms.html and `references/ci.md` change together.
+
+**D7. Public setup advice that changes order (B9).** Moving `activate` after `doctor` and `init` in the README quickstart is the owner's call because it changes how the first five minutes read; the note it comes from is `research/limits-first-run-2026-10-05.md`.
+
+**D8. Founder price mechanics. CONFIRMED text; mechanics need the owner.**
+- Public pages say "$29 for the first 100 buyers, then $49" and "the first 100 buyers pay the founder price" (C042, C056); CHANGELOG line 20 says the sentence was kept free of a code on purpose. The Gumroad side is FOUNDER29 ($20 off, limit 100); STATUS says it applies by itself even with the discount-code box set to "Never", but the brief for this audit calls it "code FOUNDER29". The owner should confirm that a buyer never has to type a code, because if one is needed the pages promise something the checkout does not do. No edit proposed.
+
+**D9. Email to 0.1.0 and 0.1.1 buyers with the update line (`research/0.1.2-plan.md` C).** The owner sends it; the same line goes in the docs (B1).
+
+**D10. Competitor facts on alternatives.html are dated 2026-10-02. LOW. INFERRED.**
+- `Checked on 2026-10-02 from each tool's own pages`: prices of ButterKit ($99 once) and AppScreens ($99 or $180 a year) are third-party facts that can move. Not stale today; recheck before the first launch post is read widely. Marketing posts: no edit proposed, and `marketing/` was only read for context.
+
+Items in (d): 10 (D1 to D10).
+
+---
+
+## (e) RECOMMENDED ORDER AND FILES
+
+**Order for one agent in one pass (device-free, targeted tests only, `[skip ci]`, no deploy):**
+
+1. **Remove what is false or overstated** (public, small, no owner decision): A1 (alternatives.html:88 plus `tests/test_site_audit.py:297` plus C035 `where`), A2 (README:63, C126 proof), A3 (docs.html:259), A4 (four files and the docs.html heading), A6 (docs.html:224 and `notes` in README:92), A7 (three places, C066 proof). Run `python3 -m unittest tests.test_docs tests.test_claims tests.test_site_audit tests.test_agent_skills tests.test_cli_claims`.
+2. **Platform and version truth** (README, docs.html, skill, with claim proofs): A5 and C071, B2, B3 (README and docs.html only; the home page waits for D3), B7 (docs.html versions and the timing sentence), C131 and C007/C105 proofs.
+3. **What is missing**: B1, B4, B5, B6, B8, B10, then B9 if D7 is a yes. Mirror every README sentence in docs.html and in the skill; do not paraphrase a quoted claim sentence (`tests/test_claims.py` tells which row broke).
+4. **Internal docs**: C1 to C4 (CHANGELOG), C5 to C8 (STATUS), C9 to C15, C17; `research/README.md` last, because it lists what steps 1 to 3 applied.
+5. **Then the coordinator**: one full local gate when the Mac is quiet (`tools/check-claims.sh`; this audit did not run it), the owner's yes on (d), and a site deploy only by the owner's approval, from a tree that holds `site/public/download` (a deploy from a tree without it can delete the downloads: `research/release-0.1.1-evidence-2026-10-05.md`). Edits to `site/public/*` do nothing until deployed; README and docs are what the next release tarball and the skill ship.
+
+**Files a refresh touches**
+
+Public: `README.md`, `site/public/docs.html`, `site/public/alternatives.html`, `site/public/llms.txt`, `skill/shotfleet/SKILL.md`, `skill/shotfleet/references/ci.md`, `config.md`, `licence.md`, `troubleshooting.md`, `docs/AGENTS-snippet.md`. Only with the owner's yes: `site/public/index.html` (D3, D5), `site/public/privacy.html` (D1), `site/public/terms.html` (D2).
+
+Tests and register: `tests/claims.json` (rows C031, C035, C066, C071, C126, C131, C007, C105; optional new rows for B1, B2, B4), `tests/test_site_audit.py` (line 297 and any llms.txt or alternatives asserts), `tests/test_docs.py` (only if the "Last checked" line changes; it must match VERSION 0.1.1 and the top CHANGELOG heading), `tests/test_agent_skills.py` and `tests/test_cli_claims.py` (run, edit only if a README quote moves).
+
+Internal: `CHANGELOG.md`, `STATUS.md`, `docs/handoff.md`, `docs/compat.md`, `docs/linux.md`, `docs/device-wishlist.md`, `docs/agent-tasks/README.md`, `LAUNCH.md`, `docs/owner-note-0.1.1.md` (last line), `research/0.1.2-plan.md` (two statuses), new `research/README.md`.
+
+Not touched by anyone: `marketing/**`, `site/draft/**`, `shotfleet.py`, `packaging/**`.
+
+**Counts:** (a) 9, (b) 10, (c) 17, (d) 10.
+
+**Not checked (so nobody assumes it was):** the Gumroad product page itself (not in the repo); any live page (I read the repo copies; the live site equals the repo at the 0.1.1 deploy plus nothing since, INFERRED from the evidence note); the `site/draft/` pages; claims rows other than the ones named; whether `tools/status.sh` numbers match today (not run).
