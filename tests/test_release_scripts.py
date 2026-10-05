@@ -257,7 +257,11 @@ class Versioned(Fixture):
         self.assertEqual(r.returncode, 0, r.stdout)
         for v, n in (("9.9.9", "tar.gz"), ("9.9.9", "pkg"), ("9.9.8", "tar.gz"), ("9.9.8", "pkg")):
             self.assertIn(f"would: stage /download/{v}/shotfleet-macos-arm64.{n}", r.stdout)
-        self.assertIn(f"from {self.rel}/archive/9.9.8", r.stdout)
+        self.assertIn(f"would: stage /download/9.9.8/shotfleet-macos-arm64.tar.gz (sha256 {sha(self.rel / 'archive/9.9.8/shotfleet-macos-arm64.tar.gz')[:12]}...) "
+                      f"from {self.rel}/archive/9.9.8, plus shotfleet-macos-arm64.tar.gz.sha256\n", r.stdout)
+        self.assertIn("would: stage /download/9.9.9/shotfleet-macos-arm64.pkg (sha256 ", r.stdout)
+        self.assertIn("from the tested artifacts\n", r.stdout)
+        self.assertEqual(r.stderr, "")
         self.assertFalse((self.tree / "site/public/download").exists())
 
     def test_a_corrupted_archived_file_refuses_before_anything_is_deployed(self):

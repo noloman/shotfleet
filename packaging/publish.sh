@@ -213,7 +213,9 @@ if [ "$DRY" = 1 ]; then
   echo "  would: rm -rf $D; copy $TAR -> $D/shotfleet-macos-arm64.tar.gz, $PKG -> $D/shotfleet-macos-arm64.pkg, write the .sha256 and VERSION ($VERSION)"
   echo "  would: archive the staged bytes plus SHA256SUMS in $ARCH (and the files now live, in $REL/archive/live-before-$VERSION)"
   printf '%s' "$PLAN" | while read -r v n h; do
-    echo "  would: stage /download/$v/$n (sha256 $(echo "$h" | cut -c1-12)...) from $( [ "$v" = "$VERSION" ] && echo "the tested $( case "$n" in *.pkg) echo "$PKG" ;; *) echo "$TAR" ;; esac )" || echo "$REL/archive/$v")$( case "$n" in *.tar.gz) echo ", plus $n.sha256" ;; esac )"
+    src=$REL/archive/$v; [ "$v" != "$VERSION" ] || src="the tested artifacts"
+    extra=; [ "${n%.tar.gz}" = "$n" ] || extra=", plus $n.sha256"
+    echo "  would: stage /download/$v/$n (sha256 $(echo "$h" | cut -c1-12)...) from $src$extra"
   done
   echo "  would: write the rollback id $OLDID to $STATE/rollback-$VERSION-$STAMP.txt"
   echo "  would: wrangler deploy$( [ "$STAGING" = 1 ] && echo " (STAGING: --config $STAGING_CONFIG --name $STAGING_NAME)" ) in $TREE/site"
