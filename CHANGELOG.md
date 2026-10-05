@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Memory warning wording:** it said "running 1 device at once instead of 4" although the run still used 4 (the warning only warns); it now says 1 would be safer and that the run still uses 4.
 - **Text recognition waits for a compile mid-check too:** when macOS starts compiling its text-reading model while `check` is already reading screenshots (seen on a Mac at load 800), each read now waits for that compile (up to 6 minutes, only while `ANECompilerService` is using the CPU) like the warm-up does, instead of failing with "text recognition hung twice" on a Mac without Tesseract.
 
 ## 0.1.3 (2026-10-05)

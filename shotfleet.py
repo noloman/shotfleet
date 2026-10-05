@@ -1455,7 +1455,7 @@ def capacity_message(plan, want, r):
                                  f"{r.swap_used_gb:.1f} GB swap in use" if r.swap_used_gb is not None else "",
                                  f"load {r.load1:.0f} on {r.cores} cores" if r.load1 is not None and r.cores else "",
                                  f"{r.booted_other} other simulators/emulators booted" if r.booted_other else "") if s)
-    head = f"this Mac is short of memory: running {plan.n} device{'s' if plan.n != 1 else ''} at once instead of {want}" if plan.n < want else "this Mac is busy"
+    head = f"this Mac is short of memory: {plan.n} device{'s' if plan.n != 1 else ''} at once would be safer than {want} (this run still uses {want})" if plan.n < want else "this Mac is busy"
     return (f"{head} ({'; '.join(plan.notes)}). Seen: {seen or 'nothing readable'}. A loaded Mac makes flows time out and the retries add load. "
             "Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.")
 
