@@ -1,0 +1,41 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_home.png",
+   "src": "raw/de/01_home.png",
+   "sha": "6783e6f17379",
+   "lang": "de",
+   "chars": 160
+  },
+  {
+   "file": "es/01_home.png",
+   "src": "raw/es/01_home.png",
+   "sha": "5e1cfe906abf",
+   "lang": "es",
+   "chars": 167
+  },
+  {
+   "file": "fr/01_home.png",
+   "src": "raw/fr/01_home.png",
+   "sha": "99e713d5aea2",
+   "lang": "fr",
+   "chars": 171
+  },
+  {
+   "file": "ja/01_home.png",
+   "src": "raw/ja/01_home.png",
+   "sha": "9c9fe326510f",
+   "lang": "ja",
+   "chars": 133
+  },
+  {
+   "file": "zh-Hans/01_home.png",
+   "src": "raw/zh-Hans/01_home.png",
+   "sha": "115487bbc260",
+   "lang": "zh-Hans",
+   "chars": 127
+  }
+ ],
+ "problems": [],
+ "notes": []
+}

@@ -1,0 +1,4 @@
+ios5 run rc=0 secs=428
+check rc=0
+finished-ios5
+guard: script exit 0
