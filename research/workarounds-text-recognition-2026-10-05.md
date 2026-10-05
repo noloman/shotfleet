@@ -227,3 +227,51 @@ with `patient.py` and a 150 s limit only if the coordinator agrees), and `ps -ax
 | 13 | hosted macos-14 and macos-15: print `ocr --langs` | settles section 4 | the two lists |
 
 The coordinator's question "does a new `ANECompilerService` appear": during all runs so far, no (every cold compile ran in pid 25561).
+
+## 10. Post-gate experiments (2026-10-05)
+
+Run 16:26 to 16:31 by the coordinator's device-slot runner (no device lock: no simulator or emulator), after the gate (`/tmp/shotfleet-rc-gate-done`
+present), quiet Mac (free memory 56 %, load 17 at the start; 10 cores, 32 GB, macOS 27.0 26A428). Binaries built from `research/proposed-ocr/`
+(`vtest.swift` with `-target arm64-apple-macos13.0`, `vtest15.swift` with `-target arm64-apple-macos15.0`); every experiment ran a fresh
+byte-identical copy at a new path (cold by the per-path theory) through `run_modes.py` (hard 30 s, kills only its own child), image
+`real-apps-2026-10-04/wger-android-19-languages/de-02_advanced.png`. `ps -axo pid,user,pcpu,etime,time,command` for `ANECompilerService`
+before, every 2 s during, and after; between experiments the driver waited until the service was under 5 % CPU (max 120 s).
+`patient.py` (150 s) was not run: the note asks for the coordinator's OK first, and none was given for this slot.
+
+| # | Config | Answered | Time | ANECompilerService | Load (1/5/15 min) before -> after |
+|---|---|---|---|---|---|
+| 1 | idle check, 60 s apart | n/a | n/a | pid 25561 (root), 0.0 %, CPU time 27:52.66 both times, no other pid | 16.4 / 17.5 / 92.8 -> 18.8 / 17.5 / 87.6 |
+| 2 | `default` (accurate), new path | **no** (killed at 30 s) | >30 s | same pid 25561, busy: peak 100 %, +26.6 s CPU | 18.8 -> 19.7 |
+| 3 | `cpu14` (compute device `.cpu`) | **no** | >30 s | 25561, peak 99.9 %, +26.6 s CPU | 19.7 -> 14.8 |
+| 4 | `cpuold` (`usesCPUOnly`) | **no** | >30 s | 25561, peak 100 %, +27.0 s CPU | 14.8 -> 12.8 |
+| 5 | `fast` | **yes**, 178 chars, the known junk ("Str¥rr und Aulhrfjtrt") | 0.3 s wall, 165 ms in Vision | 25561, **0.0 %**, CPU time unchanged | 12.8 -> 12.3 |
+| 6 | `rev2` (revision 2) | **no** | >30 s | 25561, peak 100 %, +26.9 s CPU | 12.3 -> 13.7 |
+| 7 | `vtest15 default` (macOS 15 Swift API) | **no** | >30 s | 25561, peak 98.7 %, +25.0 s CPU | 13.7 -> 13.4 |
+| 8 | `default+cancel` (`cancel()` after 5 s) | **no**: `cancel()` did not make `perform` return | >30 s | 25561, peak 96.7 %, +20.6 s CPU | 13.5 -> 19.2 |
+
+Findings:
+
+- **No new `ANECompilerService` appeared** in any experiment; every compile ran in the existing root pid 25561 (alive 1 h 21 min at the end,
+  30:29 CPU total). This extends the earlier "no" to 7 more cold compiles on a quiet Mac.
+- **On a quiet Mac a cold accurate request still does not answer in 30 s**, for every accurate configuration: CPU-only (both APIs),
+  revision 2 and the new Swift API all start the same compile (service at 97 to 100 % within 2 s). Only `.fast` skips the service. This
+  confirms on an idle machine what section 2 saw under load: none of the cheap knobs avoids the cold compile.
+- `cancel()` after 5 s does not interrupt a request that is waiting on the compile (experiment 8).
+- New: after the client was killed, the service fell under 5 % CPU within 3 to 13 s (settle waits: 3, 3, 3, 0, 0, 6, 13 s). Section 2
+  observation 4 saw about 20 s of compiling after a kill; here the compile seems to stop soon after its client dies (INFERENCE from 7
+  samples at 3 s resolution). Each killed attempt cost about 21 to 27 s of service CPU and left no warm cache behind (the next new path
+  was cold again).
+- Not run: 9 (needs a reboot), 10 (no wedge: the service idled at 0 %), 11 (needs `patient.py` with the longer limit), 13 (hosted
+  runners: no GitHub Actions in this slot).
+
+Experiment 12 (Tesseract 5, `--psm 6`, 30 s limit each; the repo has no full-size Arabic screens, so the three 257x560 `obytes-ios` screens):
+
+| Screen | `-l ara`: lines / Arabic letters | `-l eng+ara`: lines / Arabic letters | Time |
+|---|---|---|---|
+| `ar-01_onboarding` | 9 / 109 | 9 / 10 | 0.3 s / 0.5 s |
+| `ar-02_login` | 5 / 14 | 5 / 3 (but reads the English "Sign In") | 0.1 s / 0.2 s |
+| `ar-03_settings` | 18 / 124 (`إعدادات`, `عام` right) | 18 / 85 (same two labels right) | 0.2 s / 0.5 s |
+
+`ara` alone returns far more Arabic text than `eng+ara`, which reads Arabic glyphs as Latin; `eng+ara` is only better for English left in the
+UI. Line accuracy against the real labels was not scored (no ground truth file); at this resolution both are well below Vision's revision 3
+(section 2: all 17 labels of `ar-03_settings`).
