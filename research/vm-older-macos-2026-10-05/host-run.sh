@@ -17,9 +17,10 @@ gate() {  # all must hold before a pull
   grep -q "Job 3 device work DONE" /Users/manu/Developer/shotfleet-rc-build/device-slots/RESUME.md \
     || { echo "gate: Job 3 not reported done in device-slots/RESUME.md"; ok=1; }
   l=$(sysctl -n vm.loadavg | awk '{print int($2)}'); [ "$l" -lt 300 ] || { echo "gate: load $l >= 300"; ok=1; }
-  sw=$(sysctl -n vm.swapusage | awk '{v=$6; sub("M","",v); print int(v/1024)}'); [ "$sw" -lt 10 ] || { echo "gate: swap used ${sw} GB >= 10"; ok=1; }
-  f=$(df -g / | awk 'NR==2{print $4}'); [ "$f" -gt 50 ] || { echo "gate: free disk ${f} GB <= 50"; ok=1; }
-  echo "gate: load=$l swap=${sw}GB free=${f}GB lock='${h:-none}' -> $([ $ok = 0 ] && echo CLEAR || echo WAIT)"
+  grep -q "lock released" /Users/manu/Developer/shotfleet-rc-build/0.1.3/g3-013d.log 2>/dev/null || { echo "gate: 0.1.3 gate rerun not finished (g3-013d.log)"; ok=1; }
+  sw=$(memory_pressure 2>/dev/null | awk -F': ' '/free percentage/{print int($2)}'); [ "${sw:-0}" -ge 30 ] || { echo "gate: memory free ${sw}% < 30"; ok=1; }
+  f=$(df -g / | awk 'NR==2{print $4}'); [ "$f" -ge 70 ] || { echo "gate: free disk ${f} GB < 70 (VM needs ~25-30 GB, floor 40)"; ok=1; }
+  echo "gate: load=$l memfree=${sw}% free=${f}GB lock='${h:-none}' -> $([ $ok = 0 ] && echo CLEAR || echo WAIT)"
   return $ok
 }
 [ "$1" = --gate ] && { gate; exit $?; }
@@ -38,7 +39,8 @@ cleanup() {
   log "$N: deleted VM and image; tart list: $("$TART" list 2>&1 | tail -n +2 | wc -l | tr -d ' ') entries; TART_HOME $(du -sh "$TART_HOME" | cut -f1); disk free $(df -g / | awk 'NR==2{print $4}') GB; cycle $(( ($(date +%s) - START) / 60 )) min"
 }
 # watchdog: 45 min for the whole cycle, then kill our own tart pids (the main flow then cleans up)
-( sleep 2700; log "$N: 45 min limit reached, killing own tart pids"; for p in $(cat "$PIDS"); do kill "$p" 2>/dev/null; done ) &
+( t=0; while [ $t -lt 2700 ]; do sleep 15; t=$((t+15)); f=$(df -g / | awk 'NR==2{print $4}'); [ "$f" -lt 40 ] && { log "$N: free disk ${f} GB < 40, aborting"; break; }; done
+  [ $t -ge 2700 ] && log "$N: 45 min limit reached, killing own tart pids"; for p in $(cat "$PIDS"); do kill "$p" 2>/dev/null; done ) &
 WD=$!
 trap 'kill $WD 2>/dev/null; cleanup' EXIT
 

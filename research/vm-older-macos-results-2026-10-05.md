@@ -1,6 +1,8 @@
 # shotfleet on older macOS in Tart VMs (2026-10-05) — IN PROGRESS
 
-Status: partial. macOS 26.2 run 1 done (one script bug, see below); 26.2 rerun, 26.0 and 13.6 pending (waiting for the device lock / quiet Mac).
+Status: partial. macOS 26.2 run 1 done (one script bug, see below); 26.2 rerun, 26.0 and 13.6 not run.
+
+Why not: the VM runs were queued behind the device jobs (Job 3, demo video, icon check, 0.1.3 gate runs 1 to 4, Flutter re-run, Kuokka check) from 18:29 to past 00:30. A second 26.2 pull at 00:21 was aborted by hand at 00:32: the line had dropped to about 3 MB/s (1.7 of 23.3 GB in 10 min; the first pull at 18:28 took 8 min for all of it), and free disk had fallen from 102 GB (18:25) to 46 GB because of other jobs. A pulled 26.x image takes about 25 to 30 GB of real disk (my estimate: 23.3 GB compressed; `du` showed 51 GB, which counts the APFS clone twice), so with the 40 GB floor a VM needs about 70 GB free before it starts.
 Release tested: the LIVE one from https://shotfleet.com (0.1.2 at the time of the run).
 
 Setup: Tart 2.32.1 (Cirrus Labs, notarized; the GitHub release the Homebrew formula points to, sha256 8554ab4f...4529 matches the formula; `brew install cirruslabs/cli/tart` fails on Homebrew 7 with a `depends_on macos:` error in the tap). Cirrus "vanilla" images (no Homebrew, no Xcode or Command Line Tools, no Java), 4 CPUs, 6 GB, headless, image default login admin/admin. Scripts: `vm-older-macos-2026-10-05/host-run.sh` (gate, pull, run, SSH, delete) and `guest-test.sh` (the tests inside the VM).
