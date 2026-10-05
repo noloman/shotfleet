@@ -18,7 +18,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
 | 10 | Unity | a Unity install and devices | not planned |
 | 11 | Decisions that are not engineering | you | see the end |
-| 12 | Xcode 27 check, monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
+| 12 | Xcode 27 with an iOS 27 runtime (iOS 26.4 part done), monthly spec check, demand tests | a Mac; the site after launch | research dated 2026-10-03 |
 
 ---
 
@@ -141,9 +141,8 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 
 ## 12. New from the strategy research (2026-10-03, see research/profit-plan-2026-10-03.md)
 
-- **Xcode 27 final replaced Simulator.app with Device Hub** (static analysis in `docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to; unproved). Before selling, run `tools/fixture-e2e.sh --platform-only ios` on a Mac with Xcode 27 final and an iOS 27 simulator
-  runtime, and record the Xcode build and iOS version in `STATUS.md` row 9 (no record says which Xcode the real runs used). Passed when 36 of 36 assertions hold; if `simctl` behaves
-  differently, `shotfleet.py`'s simulator functions are where to look.
+- **Xcode 27 final replaced Simulator.app with Device Hub** (`docs/compat.md`: shotfleet never opens Simulator.app and Maestro only does so when it starts a simulator itself, which shotfleet never asks it to). **Run 2026-10-04 on Xcode 27.0 (27A266a), macOS 27.0 with the iOS 26.4 runtime: 36 of 36 assertions, no `open -a Simulator`, status bar and 1320x2868 right** (`STATUS.md` row 9). **Still open: the same run with an iOS 27 simulator runtime** (none is installed on this Mac). `xcodebuild -downloadPlatform iOS` offers "iOS 27.0 Simulator (24A434) (arm64)", **8.05 GB**; on 2026-10-05 it ran at about 0.9 MB/s (hours), so start it early with `-exportPath <dir>` (downloads the image without installing it; the import step was not tried). Installing it makes `latest_ios_runtime()` pick iOS 27 for every later `shotfleet init`, so on a shared Mac install it last or pin `runtime` in the configs, and delete it again afterwards if the others should stay on 26.4. If `simctl` behaves
+  differently on iOS 27, `shotfleet.py`'s simulator functions are where to look.
 - **Apple's screenshot specifications change often** (8 Jul, 19 Aug, 9 Sep). The sizes are now watched by `tools/apple-specs-watch.py` (run it monthly with `tools/watch-upstream.sh`): it
   compares every size on Apple's page with `APPLE_SIZES` and was run on the real page on 2026-10-03 (45 distinct sizes, table matches; it also found four old-device landscape sizes
   that were missing, now added). The prose rules (count, alpha, which set is required) are not machine-read: read the page once a month. iPhone Duo sizes are known; Apple opens
