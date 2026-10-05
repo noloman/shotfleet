@@ -89,7 +89,7 @@ also catches folders you edited by hand.
 
 ## In CI
 
-`run`, `check` and `export` take `--json`: the result goes to stdout as JSON (`exit`, `screenshots`, `problems` for `run` and `check`; `exit`, `exported`, `skipped` for `export`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
+`run`, `check` and `export` take `--json`: the result goes to stdout as JSON (`exit`, `screenshots`, `problems` for `run` and `check`, merged over every device or platform checked, plus `reports` (one `{report, problems}` each) when there are several; `exit`, `exported`, `skipped` for `export`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
 
 Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. `check` is free and needs no licence. (This recipe hasn't been run on GitHub yet; the command itself is the one tested above.)
 
