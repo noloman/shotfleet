@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 0.1.4 (2026-10-06)
 - **`check` is faster on a folder in a busy place:** to tell whether a folder is one device of a multi-device run, `check` listed every entry next to it. In a big folder like the system temp folder (68,000 entries on my Mac) that cost about 15 s per check. It now looks for two `run.json` files instead. Same answer.
 - **Site: plain, informal English:** I rewrote the website in my own voice, in simple English, and added a short "What it saves you" section to the home page. No facts or prices changed.
 - **The skills are in a public repo:** [noloman/shotfleet-skills](https://github.com/noloman/shotfleet-skills) holds the three skills as a Claude Code plugin with its own marketplace (`/plugin marketplace add noloman/shotfleet-skills`, then `/plugin install shotfleet@shotfleet`; the plugin also starts `shotfleet mcp`) and works with `gh skill install noloman/shotfleet-skills --all`. README and the docs page say so. The skill text now points at the docs page instead of the README, and no longer mentions running from source. `tools/sync-public-skills.sh <checkout>` copies `skill/` there at each release, sets the plugin version and prints the diff; it never pushes.
