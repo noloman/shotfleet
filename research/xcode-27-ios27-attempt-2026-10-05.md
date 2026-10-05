@@ -1,5 +1,7 @@
 # Fixture e2e on an iOS 27 simulator: did not finish in 35 minutes (2026-10-05)
 
+**Update 2026-10-05 12:41: the one-simulator repro PASSED on iOS 27 (below). The result of the full e2e itself stays inconclusive.**
+
 **Result: inconclusive. Not a pass, and not a proven failure.** The same `SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios`
 passed 36 of 36 on iOS 26.4.1 (2026-10-04, PR #37). On iOS 27.0 (24A434) it passed build, init and doctor and then `shotfleet run`
 had not finished when the 35 minute hard limit killed it. The two runs were not made under the same conditions (below), so the
@@ -67,3 +69,13 @@ lock, with Maestro 2.0.10 and, if there is time, 2.11.0 (`REPRO_MAESTRO_BIN_DIR`
 - `PASS run exits 0` on a quiet Mac: the stall was load. Then run the full e2e on iOS 27 once, also on a quiet Mac.
 - `FAIL run killed at its 600 s limit` on a quiet Mac: an iOS 27 problem. `progress.log` shows whether the simulator booted and
   whether the driver processes were alive; start with the driver's port and boot status.
+
+## Update: the repro ran and passed (2026-10-05 12:36:54 to 12:41:25)
+
+`IOS27_REPRO=1 tools/ios27-repro.sh`, started by its waiter right after the release-candidate gate finished, on the iOS 27.0 (24A434) runtime, Xcode 27.0 (27A266a), macOS 27.0, Maestro 2.0.10, **load 22.7 (1 min), swap 6.1 of 7.2 GB, 68 GiB free**:
+
+- build 8 s, init 1 s, doctor passed (73 s into the script); `shotfleet run` booted 1 simulator (iPhone 17 Pro Max, iOS-27-0), **captured 1/1 locales in 78 s, 0 problems** (`xc27-repro-out/run.log`). The script deleted its simulator by UDID afterwards.
+- The script printed `FAIL run exits 1`. The only cause is the fixture running on iPad, so `shotfleet run` says "add iPad Pro 13-inch (M5) to device_types" and exits 1. Not an iOS 27 problem; the script now treats that warning, and nothing else, as a pass (`PASS ... exit 1 is only the 'add iPad Pro 13-inch (M5)' warning`).
+- No `open -a Simulator`: the repro does not watch for it, so this was checked afterwards: the unified log (`log show --predicate 'process == "open"'`, 12:36:50 to 12:41:35) has no `open` process, and no Simulator.app exists. `DeviceHub.app` was running since 09:24:41 (not started by this run).
+
+**What this shows:** iOS 27 plus Maestro 2.0.10's driver works for one simulator and one language at low load. The earlier 35 min stall did not reproduce, which is consistent with the load (735 to 950, swap 21 GB) being the cause. **What it does not show:** that the 4-simulator, 4-language, iPhone-and-iPad e2e passes on iOS 27 (untested), or that load was the only factor (one passing run at low load does not exclude a problem that needs several simulators at once).

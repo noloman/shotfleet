@@ -7,7 +7,8 @@
 #   REPRO_MAESTRO_BIN_DIR=/path/to/maestro-2.11.0/bin IOS27_REPRO=1 tools/ios27-repro.sh   (puts that Maestro first on PATH)
 #
 # It boots ONE simulator (shotfleet's own pool name shotfleet-iphone-17-pro-max-1 on the iOS 27 runtime) and deletes it again,
-# by UDID, if it was not there before. It never touches a runtime. Nothing it prints counts as a pass unless `run exits 0` is PASS.
+# by UDID, if it was not there before. It never touches a runtime. A pass is a `PASS` line: exit 0, or exit 1 whose only cause is the
+# fixture's iPad 13-inch device-type warning (clean capture, 0 problems, no other output line). Exit status 0 means PASS, 1 FAIL.
 set -u
 [ "${IOS27_REPRO:-}" = 1 ] || { echo "ios27-repro: boots a simulator; set IOS27_REPRO=1 to run it" >&2; exit 2; }
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -55,6 +56,12 @@ SAMPLER=$!
 
 run_limited 600 "$OUT/run.log" python3 "$ROOT/shotfleet.py" run "$W/proj/shotfleet.toml" --locales de --parallel 1; rc=$?
 if [ $rc = 124 ]; then say "FAIL run killed at its 600 s limit: it did not finish (see progress.log, run.log)"
-elif [ $rc = 0 ]; then say "PASS run exits 0"; else say "FAIL run exits $rc (see run.log)"; fi
+elif [ $rc = 0 ]; then say "PASS run exits 0"
+elif [ $rc = 1 ] && grep -q "captured 1/1 locales" "$OUT/run.log" && grep -q ": 0 problem(s)" "$OUT/run.log" \
+     && [ "$(grep -c -v -E '^$|^== |booting |capturing |^ok |captured 1/1|checked 1 screenshots|requires 13" iPad' "$OUT/run.log")" = 0 ]; then
+  # the fixture runs on iPad, so `shotfleet run` exits 1 with "add iPad Pro 13-inch (M5) to device_types" even when the capture is clean.
+  # One simulator is the point of this repro, so that warning is the only tolerated reason for exit 1; any other line is a FAIL.
+  say "PASS run captured 1/1 locales with 0 problems; exit 1 is only the 'add iPad Pro 13-inch (M5)' warning"; rc=0
+else say "FAIL run exits $rc (see run.log)"; fi
 tail -5 "$OUT/run.log" | cut -c1-160 | while read -r l; do say "run.log: $l"; done
 exit $rc
