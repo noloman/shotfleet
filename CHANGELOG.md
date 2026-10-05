@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`check` says "could not read" instead of "blank":** when Tesseract or `--ocr-command` (the fallback when macOS text recognition is stuck) finds no text on a screenshot whose pixels are not flat, it is a note and the language is unverified, not a problem that fails the run (seen on a real Arabic Android screenshot, 2026-10-05). Also: a screenshot macOS read before it hung keeps that read; `[expect]` texts on an unreadable screenshot are unverified, not missing; without `--app` Tesseract-read screens get a note that their language was not checked; an app's own "isn't responding" text is not taken for an Android system dialog. `research/limits-check-quality-2026-10-05.md` lists what remains.
 
 ## 0.1.1 (2026-10-05)
 - **Found by running real apps** (wger Flutter, the obytes Expo template, kotlinconf-app Compose, Rocket.Chat bare React Native; iOS and Android; `research/frameworks.md` sections 15 to 17):
