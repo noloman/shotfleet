@@ -187,6 +187,7 @@ class Fixtures(unittest.TestCase):
             with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", Path(d) / "none.json"), \
                  mock.patch.object(sf, "LOCALE_CAP", None), mock.patch.object(sf.shutil, "which", return_value="/usr/bin/true"), \
                  mock.patch.object(sf, "make_pool", side_effect=AssertionError("a simulator must not be created")), \
+                 mock.patch.object(sf, "read_maestro_version", return_value=sf.MAESTRO_TESTED[0]), \
                  mock.patch.dict(os.environ, {"SHOTFLEET_KEY": ""}), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
                 code = sf.main(["run", f"{d}/shotfleet.toml"])
         self.assertEqual(code, 2)

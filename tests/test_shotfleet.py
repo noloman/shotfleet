@@ -16,7 +16,9 @@ needs_mac = unittest.skipUnless(sys.platform == "darwin", "needs macOS tools (Pl
 # These tests describe the Mac and Apple-silicon behaviour (Vision, Homebrew, arm64 images); the same code on Linux is in
 # test_portable.py. The patches last for this module only.
 _MAC = [mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf, "SYSTEM_SDKS", ()),
-        mock.patch.object(sf, "ABI", "arm64-v8a"), mock.patch.object(sf, "DEFAULT_IMAGE", "system-images;android-36;google_apis;arm64-v8a")]
+        mock.patch.object(sf, "ABI", "arm64-v8a"), mock.patch.object(sf, "DEFAULT_IMAGE", "system-images;android-36;google_apis;arm64-v8a"),
+        # `run` asks the installed Maestro its version: a JVM start, 4-60 s a call on a busy Mac. Reading it is test_doctor_versions' job
+        mock.patch.object(sf, "read_maestro_version", lambda timeout=120: sf.MAESTRO_TESTED[0])]
 def setUpModule():
     for p in _MAC: p.start()
 def tearDownModule():
@@ -435,8 +437,9 @@ class Config(unittest.TestCase):
                     sf.load_config(path)
 
     def test_cli_exits_2_with_a_message_instead_of_a_traceback(self):
+        maestro = Path(tempfile.mkdtemp()) / "maestro"; maestro.write_text(f"#!/bin/sh\necho {sf.MAESTRO_TESTED[0]}\n"); maestro.chmod(0o755)
         r = subprocess.run([sys.executable, str(Path(sf.__file__)), "run", "/nonexistent/shotfleet.toml"],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, env={**os.environ, "SHOTFLEET_MAESTRO": str(maestro)})  # the real one starts a JVM: up to 60 s
         self.assertEqual(r.returncode, 2)
         self.assertIn("shotfleet: no config at", r.stderr)
         self.assertNotIn("Traceback", r.stderr)

@@ -85,7 +85,7 @@ class ReadText(unittest.TestCase):
             self.assertEqual(sf.read_text(h, "x.png", timeout=0.5, patience=20)["chars"], 3)
 
     def test_hang_is_retried_once_then_names_the_cause(self):
-        h = fake_helper("sleep 30\n")
+        h = fake_helper("exec sleep 30\n")  # one process, like the real helper: the kill ends it (a shell's child would hold the pipe 30 s)
         with mock.patch.object(sf, "ane_state", return_value=(True, 700)), self.assertRaisesRegex(RuntimeError, "stuck"):
             sf.read_text(h, "x.png", timeout=0.3)
 

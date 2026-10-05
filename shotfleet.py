@@ -2879,7 +2879,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
-    if Path(folder).resolve() in (d.resolve() for d in device_runs(Path(folder).resolve().parent)):
+    here = Path(folder).resolve()  # in device_runs(here.parent), without listing the parent (a folder in $TMPDIR: 68,000 entries, 15 s)
+    if (here / "run.json").exists() and not (here.parent / "run.json").exists():
         ipad_rule = False  # one device of a multi-device run: the iPad set lives next to it (ipad_set_missing checks that)
     ipad = ipad_rule and bool(ios_app) and "2" in plist_value(Path(ios_app) / "Info.plist", "UIDeviceFamily")
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"

@@ -99,8 +99,8 @@ class MaestroVersion(Fakes):
         self.assertIn("could not read Maestro's version", out); self.assertIn("2.0.10", out); self.assertIn("may work", out)
 
     def test_no_maestro_is_still_missing_with_the_install_command(self):
-        code, out = self.doctor()  # nothing on the fake bin; skip if the machine's PATH has a real maestro
-        if "MISSING maestro" not in out: self.skipTest("a real maestro is on the PATH")
+        if sf.maestro_cmd(): self.skipTest("this machine has a real maestro")  # asked before doctor starts its JVM
+        code, out = self.doctor()  # nothing on the fake bin
         self.assertIn("get.maestro.mobile.dev", out)
 
     def run_note(self, version_body):
