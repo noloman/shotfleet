@@ -3,7 +3,7 @@
 | Command | Without a licence | With one |
 |---|---|---|
 | `check`, `doctor`, `init` | free, always | same |
-| `run` | captures 2 languages (the first two of the list) | every language |
+| `run` | captures 2 languages (the first two of the list; `--locales a,b` picks others) | every language |
 | `export` | refused: `need a licence` (exit 2) | works |
 
 `check` needs no account and no licence. Price (README): $29 for the first 100 buyers, then $49 once per developer, a

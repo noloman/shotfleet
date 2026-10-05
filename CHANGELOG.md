@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 
 ## 0.1.1 (2026-10-05)
 - **Build for macOS 13 or later:** the release folder is built from a standalone Python (python-build-standalone 3.14.2 via uv, minimum macOS 11) and the OCR helper with `swiftc -target arm64-apple-macos13.0`, so its Mach-O files need macOS 11 or 13 instead of the build host's 27.0, measured with `tools/macho-minos.py`; not run on a Mac older than macOS 27. `packaging/build.sh` takes `PYTHON=<interpreter>` (default `python3`, the old recipe). `research/limits-platform-reach-2026-10-05.md`.

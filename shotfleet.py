@@ -3870,14 +3870,17 @@ GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
 MAX_MACS = 3
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
+LOCALE_CAP_WHY = None  # with LOCALE_CAP: why a SHOTFLEET_KEY was refused (None when no key is set); only worded, never decides anything
 
 class NoLicence(Fail):
     """No valid licence: `export` stops; `run` falls back to the free tier."""
 
 def cap_locales(locales):
     if LOCALE_CAP is None or len(locales) <= LOCALE_CAP: return locales
+    why = f": the key was not accepted, {LOCALE_CAP_WHY}" if LOCALE_CAP_WHY else ""
     print(f"free tier: capturing {LOCALE_CAP} of {len(locales)} languages ({', '.join(locales[:LOCALE_CAP])}). "
-          f"`shotfleet activate <key>` unlocks every language ({BUY_URL})")
+          f"This run is limited to {LOCALE_CAP} languages because there is no valid licence{why}. "
+          f"`--locales a,b` picks which ones; `shotfleet activate <key>` unlocks every language ({BUY_URL})")
     return locales[:LOCALE_CAP]
 
 # The licence calls use tls_context(): certifi's CA bundle (the released build can't count on the Mac's), unless the environment names
@@ -4012,10 +4015,11 @@ def export_with_hooks(out, fastlane):
 
 def apply_free_tier():
     """`run` without a valid licence still runs, for two languages (the free tier shows the product)."""
-    global LOCALE_CAP
+    global LOCALE_CAP, LOCALE_CAP_WHY
     try: require_licence()
     except NoLicence as e:
         print(f"note: {e}", file=sys.stderr); LOCALE_CAP = FREE_LANGUAGES
+        LOCALE_CAP_WHY = str(e) if os.environ.get("SHOTFLEET_KEY") else None
 
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
