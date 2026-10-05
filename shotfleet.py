@@ -2620,6 +2620,7 @@ def app_locale(label, available):
 
 OCR_NOTE_AFTER_S = 8  # a first recognition slower than this gets a line saying why the screen is quiet
 
+OCR_RETRY_S = 10  # wait before starting a text-recognition helper again after it exited without an answer
 OCR_COMPILE_PATIENCE_S = 360  # measured 2026-10-05 on a Mac at load 550-850: a cold compile took 35 to 122 s (17 to 188 s earlier)
 OCR_STUCK_CPU_MIN = 120       # INFERENCE: a service that has used 2 h of CPU is the stuck one (the 2026-10-05 wedge ran 10 h at 90%);
                               # a healthy one had used 18 CPU minutes after five cold compiles
@@ -2655,13 +2656,19 @@ def warm_up_ocr(ocr, timeout=600, patience=0):
     It is left running then, so a slow first compile still finishes for the next check. With `patience`, waits past `timeout`
     (up to `patience` seconds in all) as long as that service is using the CPU: a compile that is making progress, not a stuck Mac.
     Killing and retrying does not help (measured: the retry waited behind the first compile, 76 s after a kill at 15 s)."""
-    p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
     note = threading.Timer(OCR_NOTE_AFTER_S, print, ["macOS is preparing its text recognition, a one-off wait of about 30 seconds "
                                                     "(a few minutes on a busy Mac). Nothing is wrong if this stays quiet."], {"flush": True})
     note.daemon = True; note.start()
+    start = time.time()
     try:
-        out = wait_for_ocr(p, timeout, patience)
-        return bool(out and out[0].strip())
+        while True:  # a helper that exits without an answer (seen at load 800: a Vision error while the model compiles) is started again
+            p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+            spent = time.time() - start
+            out = wait_for_ocr(p, max(1, timeout - spent), max(0, patience - spent))
+            if out is None: return False  # no answer in time: left running
+            if out[0].strip(): return True
+            if time.time() - start + OCR_RETRY_S >= max(timeout, patience): return False
+            time.sleep(OCR_RETRY_S)
     finally:
         note.cancel()
 

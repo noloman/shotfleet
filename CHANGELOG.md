@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Text recognition retries a helper that quit:** on a very busy Mac the macOS text reader sometimes quits without an answer while it is still getting ready. `check` used to stop right there and blame the compile; now it tries again every 10 seconds within the same time limit.
 
 ## 0.1.4 (2026-10-06)
 - **`check` is faster on a folder in a busy place:** to tell whether a folder is one device of a multi-device run, `check` listed every entry next to it. In a big folder like the system temp folder (68,000 entries on my Mac) that cost about 15 s per check. It now looks for two `run.json` files instead. Same answer.

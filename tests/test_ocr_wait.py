@@ -64,6 +64,18 @@ class WarmUp(unittest.TestCase):
         ok, took = self.run_warm(fake_helper("sleep 30\n"), (True, 700), timeout=0.5, patience=20)
         self.assertFalse(ok); self.assertLess(took, 3)
 
+    def test_a_helper_that_exits_without_an_answer_is_started_again(self):  # first call fails, second answers
+        flag = TMP / "warm-flag"
+        h = fake_helper(f"if [ -e {flag} ]; then echo Ready; else touch {flag}; exit 1; fi\n")
+        with mock.patch.object(sf, "OCR_RETRY_S", 0.2):
+            ok, took = self.run_warm(h, (True, 5), timeout=5, patience=20)
+        self.assertTrue(ok)
+
+    def test_a_helper_that_always_fails_gives_up_at_timeout(self):
+        with mock.patch.object(sf, "OCR_RETRY_S", 0.2):
+            ok, took = self.run_warm(fake_helper("exit 1\n"), (False, 0), timeout=1.5)
+        self.assertFalse(ok); self.assertLess(took, 4)
+
     def test_default_patience_is_off(self):  # callers and tests that pass only timeout behave as before
         ok, took = self.run_warm(fake_helper("sleep 30\n"), (True, 5), timeout=0.5)
         self.assertFalse(ok); self.assertLess(took, 3)
