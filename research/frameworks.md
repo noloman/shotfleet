@@ -129,6 +129,23 @@ Cross-cutting facts used below:
    What this does not show: a real device (simulator only), any iOS version other than 26.4, an app that sets its own language in code, and Android (the Android side stays [V]/[I] above).
    The verdict changes from "iOS unverified" to: per-language capture of a Capacitor app works on iOS 26.4 with the launch argument, for apps that read `navigator.language` or `@capacitor/device`.
 
+7. **Round 2, 2026-10-05: iOS 18.6 and the Android WebView.** Evidence in `research/experiments-2026-10-04/B2/` (same throwaway app, rebuilt: Capacitor 8.x, Debug builds, web assets embedded; Maestro 2.11.0 `hierarchy` plus a screenshot per case; `run.sh` has a hard 30 min limit and removes only its own devices).
+   **iOS 18.6 simulator** (iPhone 16 Pro, created for the run and deleted afterwards), the version family the Apple forum report is about (17.4 and later):
+
+   | Launch | `navigator.language` | String-table button | `Device.getLanguageCode()` |
+   |---|---|---|---|
+   | no argument | `en-GB` | Hello | `en` |
+   | `-AppleLanguages "(de)"` | `de-DE` | Hallo | `de` |
+   | `-AppleLanguages "(ja)"` | `ja` | Hello (no `ja` in the table) | `ja` |
+   | `-AppleLanguages "(de)" -AppleLocale de_DE` | `de-DE` | Hallo | `de` |
+   | system language German, rebooted | `de-DE` | Hallo | `de` |
+
+   **So the forum report is not reproduced on iOS 18.6 either**: `-AppleLanguages` alone reaches the webview on 18.6 and on 26.4. (The default row is read from the screenshot, `ios18-1-default.png`: Maestro's first hierarchy call after a boot returned nothing.)
+   **Android 16 emulator (API 36, `shotfleet_android`), WebView `com.google.android.webview` 133.0.6943.137**, per-app language set with `adb shell cmd locale set-app-locales dev.shotfleet.capdemo --locales <tag>`:
+   no setting `navigator.language=en-US`, Hello, `device=en`; `de`: `navigator.language=de`, **Hallo**, `device=de`; `ja`: `navigator.language=ja`, Hello (no `ja` in the table), `device=ja` (read from the screenshots in `B2/`). So on Android the per-app locale reaches the WebView, as the note above expected.
+   **Maestro on the Android WebView is the weak side, as noted:** `hierarchy` returned only the status bar (and for `de` also "capdemo" and the first button) and nothing for the default and `ja` launches, although the screen was fully rendered; the iOS WebView text was read every time except the first call after boot. So language capture works; reading WebView text on Android through Maestro does not (issues 2293, 3497, 3646 above).
+   What this still does not show: a real device, an app that sets its own language in code, Android older than 16 / other WebView versions, or Ionic-specific plugins.
+
 ## 8. NativeScript
 
 1. **Build.** `ns build ios` (simulator build lands in `platforms/ios/build/Debug-iphonesimulator/`) and `ns build android` (APK in `platforms/android/app/build/outputs/apk/debug/`) [I, from CLI docs summaries; the doc page URL returned 404].
