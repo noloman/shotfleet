@@ -135,17 +135,23 @@ function make(path, lines) {
   var ctx = $.NSGraphicsContext.graphicsContextWithBitmapImageRep(rep);
   $.NSGraphicsContext.setCurrentContext(ctx);
   var cg = ctx.CGContext; $.CGContextSetRGBFillColor(cg, 1, 1, 1, 1); $.CGContextFillRect(cg, $.CGRectMake(0, 0, w, h));
+  $.CGContextSetRGBFillColor(cg, 0.2, 0.5, 0.95, 1); $.CGContextFillRect(cg, $.CGRectMake(0, h - 300, w, 300));
+  for (var j = 0; j < 7; j++) { $.CGContextSetRGBFillColor(cg, 0.86, 0.9, 0.97, 1); $.CGContextFillRect(cg, $.CGRectMake(40, h - 700 - j * 300, w - 80, 250)); }
   var attrs = $.NSMutableDictionary.alloc.init;
   attrs.setObjectForKey($.NSFont.boldSystemFontOfSize(62), $.NSFontAttributeName);
   for (var i = 0; i < lines.length; i++)
-    $.NSString.stringWithString(lines[i]).drawAtPointWithAttributes($.NSMakePoint(80, h - 400 - i * 200), attrs);
+    $.NSString.stringWithString(lines[i]).drawAtPointWithAttributes($.NSMakePoint(80, h - 650 - i * 300), attrs);
   rep.representationUsingTypeProperties($.NSBitmapImageFileTypePNG, $.NSMutableDictionary.alloc.init).writeToFileAtomically(path, true);
 }
 var a = $.NSProcessInfo.processInfo.arguments, dir = ObjC.unwrap(a.objectAtIndex(a.count - 1));
-make(dir + "/en/01_home.png", ["Welcome back", "Your settings and privacy", "Notifications are on", "Search for workouts"]);
-make(dir + "/de/01_home.png", ["Willkommen zurueck", "Deine Einstellungen und Datenschutz", "Benachrichtigungen sind aktiv", "Suche nach Trainings"]);
+make(dir + "/en/01_home.png", ["Welcome back", "Your settings and privacy", "Notifications are on", "Search for workouts", "Your plan renews on Friday", "Share progress with friends"]);
+make(dir + "/de/01_home.png", ["Willkommen zurueck", "Deine Einstellungen und Datenschutz", "Benachrichtigungen sind aktiv", "Suche nach Trainings", "Dein Plan verlaengert sich am Freitag", "Teile Fortschritte mit Freunden"]);
 EOF
     osascript -l JavaScript "$W/draw.js" "$W/samples" >"$W/draw.out" 2>&1
+    # the stores reject PNGs with an alpha channel; a trip through JPEG drops it (sips has no direct switch)
+    for f in "$W/samples/en/01_home.png" "$W/samples/de/01_home.png"; do
+      sips -s format jpeg -s formatOptions 95 "$f" --out "$f.jpg" >/dev/null 2>&1 && sips -s format png "$f.jpg" --out "$f" >/dev/null 2>&1; rm -f "$f.jpg"
+    done
     if [ -s "$W/samples/en/01_home.png" ] && [ -s "$W/samples/de/01_home.png" ]; then
       say "drawn: $(sips -g pixelWidth -g pixelHeight "$W/samples/en/01_home.png" 2>/dev/null | awk '/pixel/ {printf "%s ", $2}')pixels, 2 files"
       ( cd "$W" && run 240 "$EXE" check "$W/samples" --report "$W/report" ) >"$W/c.out" 2>&1 </dev/null; CRC=$?
@@ -167,9 +173,9 @@ fi
 RES=PASS
 [ "$STEP_INSTALL" = ok ] && [ "$V" = ok ] && [ "$D" = ok ] && [ "$C" != FAIL ] && [ "$P" != FAIL ] || RES=FAIL
 [ "$C" = skipped ] && RES="$RES (check was skipped)"
-OCR=$(grep -iE "text recognition" "$W/d.out" 2>/dev/null | head -1 | cut -c1-110)
+OCR=$(grep -E "^(ok|MISSING|WARN)[ ]+text recognition" "$W/d.out" 2>/dev/null | head -1 | cut -c1-110)
 IOS=$(grep -iE "ios runtime|simulator runtime" "$W/d.out" 2>/dev/null | head -1 | cut -c1-110)
-N=$(grep -ciE "problem" "$W/c.out" 2>/dev/null)
+N=$(grep -E "^checked " "$W/c.out" 2>/dev/null | head -1 | cut -c1-90)
 echo
 echo "===== shotfleet selftest: $RES ====="
 echo "macOS $OSV ($OSB), $ARCH, hw.optional.arm64=$ARM64, $MODEL, ${RAM} GB"
@@ -180,7 +186,7 @@ echo "install into a throwaway HOME: $STEP_INSTALL"
 echo "--version: $V   ${VOUT}"
 echo "doctor: $D (exit $DRC)   $OCR"
 [ -n "$IOS" ] && echo "doctor, iOS: $IOS"
-echo "check on 2 drawn screenshots: $C (exit $CRC, lines mentioning a problem: ${N:-0})"
+echo "check on 2 drawn screenshots: $C (exit $CRC)   $N"
 echo "licence probe: $P"
 echo "paste everything between the two ===== lines into your reply (no file names or user name are printed)"
 echo "===== end ====="
