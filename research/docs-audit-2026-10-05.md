@@ -129,3 +129,72 @@ What a buyer needs and does not find. Each item: where it belongs, proposed text
 - Text: copy those README sentences into docs.html "Limits" unchanged (so C121 and neighbours stay valid), and mirror A5 and B3 wording into both.
 
 Items in (b): 10 (B1 to B10).
+
+---
+
+## (c) INTERNAL DOCS
+
+None of these is read by buyers; they steer the next agent, so a wrong line costs a session. "Replace" gives the fact to put in, not always a full sentence.
+
+**C1. CHANGELOG.md files 0.1.0's changes under 0.1.1. CONFIRMED.**
+- The 0.1.0 build (081853b) carried an `## Unreleased` section of 9 bullets plus the older ones. The 0.1.1 release renamed `Unreleased` to `## 0.1.1 (2026-10-05)` wholesale, so every bullet from line 18 ("CrossfitTracker passes on Maestro 2.11.0") to line 63 ("Site: redesigned") except line 43 is a 0.1.0 change shown as 0.1.1, while `## 0.1.0` (lines 65-69) is a four-line stub. I diffed the bullets against `git show 081853b:CHANGELOG.md`; a code check agrees: `stall_s`, the blank-screenshot check, the `Self-hosted.*` translation and `isn't a valid licence` handling are absent from 0.1.0's `shotfleet.py` and present now.
+- Replace: lines 7 to 12 and 43 are 0.1.1 (macOS 13 build, first-run, refunds, capture reliability, "could not read", "Found by running real apps", "Flutter and merged labels"). Move lines 18 to 63 except 43 under `## 0.1.0 (2026-10-05)` and drop the stub's duplicate summary or keep it as the first line.
+
+**C2. CHANGELOG.md contradicts itself on Polar and the Maestro pin. CONFIRMED.**
+- Line 24: Polar and Lemon Squeezy code removed. Line 50 (older bullet, same section): `Polar and Lemon Squeezy keys still work.` Line 54: `Polar added as a store`. Line 36: `doctor --fix` installs `Maestro 2.0.10 pinned by SHA-256`; line 22 says 2.11.0 is installed.
+- Replace: append `(changed later: see the Polar bullet above)` or edit the three bullets to past tense. Lines 19 and 20 quote claims counts (`46 of 126`, `48 of 126`) that were true on the day; add "on that day".
+
+**C3. CHANGELOG.md `Unreleased` is missing #68. CONFIRMED.**
+- Only #69 is listed. README:92, SKILL.md:76 and `skill/shotfleet/references/ci.md:61` already describe #68 (`--json` prints one merged document plus `reports`).
+- Add: `- **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds reports, one {report, problems} each; with one report nothing changes. #68.` Optional tool lines: `tools/macho-minos.py`, `tools/ios27-repro.sh`, the manual `macos-compat` workflow.
+
+**C4. CHANGELOG.md 0.1.1 line 7 is out of date and the section lacks three facts. CONFIRMED.**
+- Line 7: `not run on a Mac older than macOS 27`; since then the live 0.1.1 ran on macOS 14.8.9 and 15.7.9 runners (install, `--version`, `doctor`, `check`). It also says "minimum macOS 11" for the standalone Python; the declared minimum is 13.0 (two files at 11.0, the `ocr` helper at 13.0).
+- Missing from 0.1.1: the Catalan difference between macOS 14 and 15 (`research/limits-catalan-check-macos-2026-10-05.md`), iOS 27 on one simulator (78 s, 0 problems), the line `Built for macOS 13 or later on Apple silicon; tested on macOS 27.` in README and docs.
+
+**C5. STATUS.md says 0.1.0 is the live release. STALE. CONFIRMED.**
+- Line 7: `As of 2026-10-05 (main 533299e): shotfleet 0.1.0 is LIVE`; line 13: `/download/VERSION` = 0.1.0, tarball 9.7 MB; line 14: `Built from main 081853b`; line 16: gate evidence for 0.1.0 only.
+- Replace with: 0.1.1 live since 13:27 (Cloudflare version 65c62221, rollback 609fa866), tarball 10,705,287 B sha256 6f6b5bfc..., pkg 10,723,486 B, built from commit e2e1998 (main 2ccda21) with standalone Python 3.14.2, minimum macOS 13; gate 65 of 65 in 54 min 57 s (iOS pinned to 26.4); smoke 36/0; macOS 14.8.9 and 15.7.9 hosted runs; main at 44cd5f2. Pointer: `research/release-0.1.1-evidence-2026-10-05.md`. Keep the 0.1.0 text as history ("live 08:02 to 13:27").
+
+**C6. STATUS.md "Next release, 0.1.1" is done. STALE. CONFIRMED.**
+- Lines 31 to 35: `Open PRs that change shotfleet.py: #29, #31, #44, #37`, and the "known issue" that `check` reports a false "no text found" for the Arabic screen. #31 and #37 are merged (git log; #29 was stacked under #31, INFERRED merged with it), #51 fixed the false "blank", 0.1.1 shipped. Only #44 is open (Android UI-tree text, conflicts with main).
+- Replace with the 0.1.2 pointer: `research/0.1.2-plan.md` (pipeline A1 to A6, then B1 to B4 where B1 `--json` is merged (#68) and B2 is half done (#69 is wording; an invalid key still runs 2 languages and exits 0), PR #44 last) and the unproven list: macOS 13 and 26.0 to 26.2, a clean Mac, a refunded key on the real API, 4 simulators on iOS 27.
+
+**C7. STATUS.md claim counts. STALE. CONFIRMED.**
+- Line 34 and 69 (R6) and 106 (G1 row): `46 of 126 claims`. Register today: 131 rows; proven 60, fixed 22, evidence 27, partial 17, unverifiable 2, untested 1, removed 2; green 82, not green 47. Row 11 (line 53) ends at 126. Refresh with `tools/status.sh --quick`.
+
+**C8. STATUS.md "What is left to do" and the file's own changelog. STALE. CONFIRMED.**
+- Add to "Manu only": email the 0.1.0 and 0.1.1 buyers one update line (0.1.2 plan, C); an older-Mac or VM test for macOS 13 and 26.0 to 26.2 (`docs/device-wishlist.md` row 1); the owner items of `docs/owner-note-0.1.1.md` (who makes the paid test sale, a postal address, the policy after 14 days); the privacy waitlist text (D1).
+- Line 123 (`Changelog of this file`) ends at "0.1.0 live"; add a 2026-10-05 line for 0.1.1.
+
+**C9. docs/handoff.md section 13 and neighbours. STALE. CONFIRMED.**
+- Lines 155 to 161 say 0.1.0 is live and that 0.1.1 is "next release" with PRs #29, #31, #44, #37 open; line 158 lists the iOS 27 runtime as an open item although one simulator passed (line 139 says so). Add a section "State after 0.1.1": the paragraph of C5, the hosted-runner result, the Catalan finding, the Gradle-daemon lesson (`gradle --stop` per version), pointer to `research/0.1.2-plan.md` and `docs/refund-runbook.md`.
+- Line 96 says the marketing and `site/public/alternatives.html` pages "still say not yet run on a real Flutter or React Native app" and were left alone on purpose. alternatives.html is public and wrong (A1): reword the line to say it was fixed once A1 is done.
+
+**C10. docs/compat.md: header date and missing platform rows. STALE. CONFIRMED.**
+- Line 3 `Checked 2026-10-03`; line 49 `Xcode, iOS Simulator runtimes, macOS | not checked in this environment` is wrong now. The Result cell of the Xcode 27 row (line 47) opens with "iOS 27 not run" and a few sentences later says iOS 27 works on one simulator and one language; make the cell say the second.
+- Add rows: macOS 27 (every run to date), macOS 14.8.9 and 15.7.9 (live 0.1.1: install, `--version`, `doctor`, `check` on 2 PNGs, hosted runner 2026-10-05; Catalan read on 15, not on 14), macOS 13 and 26.0 to 26.2 (untested; 0.1.0 very probably fails to start there: 52 of 56 Mach-O files at macOS 27.0 and Expat symbols that macOS below 26.3 lacks, INFERRED), Xcode 27.0 only (26.x unknown, 16 and older need `device_type`), Python (0.1.1 bundles standalone 3.14.2; 0.1.0 had Homebrew 3.14.8), and under Maestro 2.0.10 the quiet re-measure of 2026-10-05 (iOS 404 s, Android phone 415 s, no retries) next to the 2.11.0 retry result.
+
+**C11. docs/linux.md:68. STALE. CONFIRMED.** `Maestro 2.0.10: the tested version` becomes `Maestro 2.0.10 and 2.11.0 are tested; doctor --fix installs 2.11.0`. (`tests/test_handoff_docs.py` only checks paths in backticks, so no test pins this line.)
+
+**C12. docs/device-wishlist.md row 1 and the sources line. STALE. CONFIRMED.**
+- Row 1 asks "Does the 0.1.0 folder start?" and says "the site names no minimum". README and docs now name it, and macOS 14.8.9 and 15.7.9 are answered for 0.1.1. Left: macOS 13, macOS 26.0 to 26.2, Gatekeeper on a browser download, a clean user account, `flock` on `/tmp` under the hardened runtime. Line 5 `all on origin branches until merged`: the platform, capture, check, first-run and refund notes are in `research/` on main now (INFERRED for the refund note; check `ls research`).
+
+**C13. docs/agent-tasks/README.md. STALE. CONFIRMED.**
+- Tasks 01 (Maestro 2.11.0), 03 (real framework apps) and 04 (Xcode 27) are done (`docs/handoff.md` items 1, 3, 12); the README table still lists them as open "why it is open". The line about a "Team and CI interest block ... site has WAITLIST/SALE markup that `packaging/go-live.sh` rewrites" is moot: go-live ran. Mark done tasks with a date and the evidence file.
+
+**C14. LAUNCH.md is a pre-go-live runbook. STALE AS A STATUS, USEFUL AS A RUNBOOK. CONFIRMED.**
+- Sections 4 to 7 ("Check the live product, then rehearse", "Go live (the one-shot)") describe steps that ran on 2026-10-05; line 83 says "the waitlist page is still what visitors see". Put one status line at the top: `Go-live ran 2026-10-05 (5fa4f7c, 5bbec86); sections 4 to 6 are the record and the template for the next release; section 8 (purge the waitlist 30 days after the launch email) is still live and is a promise on the privacy page.`
+
+**C15. research/ has no index, and three notes carry their own stale status. CONFIRMED.**
+- `ls research` lists about 60 files, 14 of them dated 2026-10-05, and no README. Add `research/README.md`: one line per note, with its date, what it decided and whether it was applied (for example: `limits-platform-reach-2026-10-05.md` applied by 0.1.1 and #55; `limits-catalan-check-macos-2026-10-05.md` caveat NOT applied; `limits-first-run-2026-10-05.md` messages applied, README quickstart NOT applied; `refund-process-2026-10-05.md` terms applied, runbook in docs/, postal address and consumer-rights lines NOT applied; `0.1.2-plan.md` B1 done).
+- `docs/owner-note-0.1.1.md` last line says the notes are "on their draft PR branches until merged": merged now (INFERRED for each; `git log` shows #55, #56, #57, #58).
+- `research/0.1.2-plan.md` "Known small defects: --json prints only the last report": fixed by #68; the "invalid SHOTFLEET_KEY silently runs 2 languages" line: only the wording is fixed (#69), the behaviour is not.
+
+**C16. tests/claims.json proof text to refresh (read-only for this audit; a refresh agent edits it with the sentences). CONFIRMED.**
+- C071 proof (33 is macOS 27; hosted 14 and 15 runs); C131 proof (already cites the hosted runs; add which runner images); C126 proof (Mac run 2026-10-03 on Maestro 2.0.10, not 2.11.0); C066 proof (hosted installs, A7); C007 and C105 proof (the re-measure ran on 2.0.10, B7); C035 `where` (alternatives.html, A1); C031 `where` (docs.html heading, A4). No status needs to move: nothing here becomes `proven` without a device or a second person.
+
+**C17. Low: dated planning files. INFERRED.**
+- `DISTRIBUTION.md:50` ("Only needed once the founder sale opens ... Until then the waitlist is enough"), `PLAN.md:35` (`Cloudflare Worker + KV waitlist`), `MARKETING.md:41` (`email the waitlist`) describe a pre-sale state. Add "history" to their first line or leave them; they do not steer anything today. `MARKETING.md` and `marketing/` are the owner's; no edit proposed.
+
+Items in (c): 17 (C1 to C17).
