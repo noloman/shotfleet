@@ -1026,6 +1026,7 @@ class GumroadLicence(unittest.TestCase):
     def setUp(self):
         import http.server, threading, urllib.parse
         self.uses, self.calls, self.flags, self.status, test = {self.GOOD: 0, self.REFUNDED: 0}, [], {self.REFUNDED: {"refunded": True}}, 200, self
+        self.junk = None  # bytes: answer every call with this 200 body
         self.disabled = set()  # keys Gumroad disabled (it does that itself on a full refund; the seller can too)
         class H(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
@@ -1034,6 +1035,8 @@ class GumroadLicence(unittest.TestCase):
                 key = b.get("license_key")
                 if test.status >= 500:
                     self.send_response(test.status); self.end_headers(); self.wfile.write(b'{"success":false,"message":"boom"}'); return
+                if test.junk is not None:  # a captive portal answers every request with a 200 page
+                    self.send_response(200); self.end_headers(); self.wfile.write(test.junk); return
                 if key in test.disabled:
                     self.send_response(404); self.end_headers(); self.wfile.write(b'{"success":false,"message":"This license key has been disabled."}'); return
                 if key not in test.uses or b.get("product_id") != "prod1":
@@ -1126,6 +1129,18 @@ class GumroadLicence(unittest.TestCase):
         sf.require_licence()  # offline grace, the licence stays
         self.assertTrue(sf.LICENCE_FILE.exists())
         with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
+
+    def test_a_200_that_is_not_json_is_offline_not_a_verdict(self):
+        self.activate(self.GOOD)
+        for junk in (b"<html>Sign in to the hotel Wi-Fi</html>", b"[1, 2]", b"\xff\xfe"):
+            with self.subTest(junk=junk):
+                self.junk = junk; self.stale()
+                with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
+                sf.require_licence()  # inside the 30 days offline grace the licence stays, and no cryptic JSON error reaches the buyer
+                self.assertTrue(sf.LICENCE_FILE.exists())
+        lic = json.loads(sf.LICENCE_FILE.read_text())
+        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 31 * 86400}))
+        with self.assertRaisesRegex(sf.Fail, "30 days"): sf.require_licence()  # and the grace still ends
 
     def test_released_build_needs_a_licence_for_run(self):
         with self.assertRaisesRegex(sf.Fail, "shotfleet activate"): sf.require_licence()

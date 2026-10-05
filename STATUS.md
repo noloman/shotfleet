@@ -22,7 +22,7 @@ Rows in the gate table below keep their pre-launch history (the state column is 
 
 **Manu only**
 1. Register with the KvK (eenmanszaak) and ask an accountant about btw (the supply to a US merchant of record, the KOR) and the W-8BEN rate: `research/tax-nl-2026-10.md`. Then re-read terms and privacy (claims C055, C056, C086).
-2. Prove "a refunded key is refused" with one real paid sale: buy with your own card, refund in Gumroad Sales, let the weekly re-check run (or set `checked` in licence.json back 8 days). The creator test purchase cannot be refunded (Gumroad lists it nowhere in Sales). Harness: `tools/release-candidate.sh`. Gate 5 closes with this.
+2. Prove "a refunded key is refused" with one real paid sale: have another person buy at full price with their own card (never your own card: Gumroad treats it as card testing and can suspend the account, help article 62), refund it in Gumroad Sales, let the weekly re-check run (or set `checked` in licence.json back 8 days). Expect `the key was disabled, as Gumroad does after a full refund` or `the purchase was refunded`. The creator test purchase cannot be refunded (Gumroad lists it nowhere in Sales; a $0 sale has no refund action). Steps: `docs/refund-runbook.md`; why: `research/refund-process-2026-10-05.md`. Harness: `tools/release-candidate.sh`. Gate 5 closes with this.
 3. Install the `.pkg` once with your administrator password in Installer.app, run a clean-Mac cold test and get 2 to 3 outside developers: measured time to first screenshot goes into the README (gate 7, claim C019).
 4. Launch: articles, directories, launch email, Show HN, social; record the demo video. Claude posts nothing.
 5. Gumroad settings that also affect Keysi, left untouched: tipping is on, "customers also bought" recommends Keysi, the discount-code box is set to Never (FOUNDER29 applies by itself anyway); purchasing-power pricing was not checked; no cover image or thumbnail yet.
@@ -74,7 +74,7 @@ Rows in the gate table below keep their pre-launch history (the state column is 
 
 1. Finish the Gumroad account: identity check, payout account, accept their terms, create the product ($49, $29 for the first 100, licence keys on), then send Claude the product URL and ID.
 2. Ask the Belastingdienst or an accountant whether software sales need a KvK or other registration, and what Gumroad's handling of sales tax does and does not cover.
-3. Make one real purchase with his own card and refund it (Claude cannot spend money), once Claude has the rehearsal script.
+3. Have another person make one real purchase with their own card and refund it (Claude cannot spend money; not Manu's own card, see item 2 above), once Claude has the rehearsal script.
 4. Approve the go-live (deploy and push): the one-shot cannot be undone.
 5. Provide a clean macOS user (or second Mac) and 2-3 outside developers for the cold test.
 6. Set the Google Analytics admin items (retention 14 months, Google signals off, internal-traffic filter) in Google's own pages.

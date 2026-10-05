@@ -949,16 +949,16 @@
   "where_text": [
    "14-day refund.",
    "You can ask for a refund within 14 days of buying and you'll get it, no questions asked",
-   "If it doesn't work for your app, reply within 14 days and I'll refund you.",
+   "Reply within 14 days and I'll refund you, no questions asked.",
    "14-day refunds"
   ],
   "status": "partial",
-  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
+  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The conditional 'if shotfleet doesn't work for your app' was removed from terms.html and the launch email on 2026-10-05; Gumroad's live policy says 'You do not have to explain'.",
   "layer": "legal",
   "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
   "fix": "",
   "fixed_by": "wording",
-  "fixed": "2026-10-05: terms.html no longer says 'If shotfleet doesn't work for your app' before 'no questions asked'. Gumroad's live refund policy (read 2026-10-05) is unconditional: '14-day money back guarantee ... You do not have to explain.' The launch email (marketing/launch-email.md) still has the conditional wording and is not published."
+  "fixed": "2026-10-05: terms.html no longer says 'If shotfleet doesn't work for your app' before 'no questions asked'. Gumroad's live refund policy (read 2026-10-05) is unconditional: '14-day money back guarantee ... You do not have to explain.' The launch email (marketing/launch-email.md) now says 'Reply within 14 days and I'll refund you, no questions asked.'"
  },
  {
   "id": "C055",

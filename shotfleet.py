@@ -3791,6 +3791,9 @@ def gumroad_verify(key, count_use):
             except ValueError: raise OSError(f"Gumroad answered {e.code}")
     except (urllib.error.URLError, TimeoutError) as e:
         raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
+    except ValueError:  # a 200 that is not JSON (a hotel Wi-Fi login page): not a verdict, so the 30 days offline grace applies
+        raise OSError("can't reach the licence server (its answer was not readable)")
+    if not isinstance(body, dict): raise OSError("can't reach the licence server (its answer was not readable)")
     if not body.get("success"):
         why = body.get("message", "invalid key").rstrip(".")
         if "disabled" in why: why = "the key was disabled, as Gumroad does after a full refund"  # the buyer sees why, not Gumroad's English sentence
