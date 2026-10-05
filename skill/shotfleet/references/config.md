@@ -41,7 +41,7 @@ Keys valid in `[ios]` and `[android]`:
 |---|---|---|
 | `app` (required) | none | simulator `.app` |
 | `bundle_id` | read from the app | refused if it differs from the app's |
-| `device_type` | iPhone 17 Pro Max (6.9") | CoreSimulator device type id or name |
+| `device_type` | iPhone 17 Pro Max (6.9"); an Xcode without it gets its newest `iPhone N Pro Max` | CoreSimulator device type id or name; one you set is never changed |
 | `device_types` | none | several sizes from one flow, e.g. `["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]`; output goes to `out/<device>/` and `check`/`export` handle the folder; an app that runs on iPad needs the 13" iPad set |
 | `runtime` | newest installed iOS | CoreSimulator runtime id. Installing an iOS 27 runtime changes what `run` uses; to stay on a runtime you have tested, pin it: `runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"` (`xcrun simctl list runtimes` shows the ids) |
 | `simctl` | none | list of `xcrun simctl` commands run once per simulator after boot and the status bar; `$UDID` is the simulator's id, e.g. `["ui $UDID appearance dark"]`; applies to every language |
