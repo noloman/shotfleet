@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **"No simulator answers any more" says what to do without a restart:** it gives the exact `xcrun simctl shutdown <UDID>` for shotfleet's own simulators (before, it suggested restarting the Mac or `xcrun simctl shutdown all`, which also stops your other simulators) and says the next run replaces the stuck ones.
 - **iOS: a simulator that stopped answering is replaced at the next run:** shotfleet remembers it (`~/.shotfleet/hung-simulators/<UDID>`) and the next run deletes it and creates a fresh one under the same name before booting. Only shotfleet's own pool simulators (`shotfleet-...-<n>`) are ever deleted. In the 0.1.3 release tests the same two pool simulators hung in three runs in a row.
 - **iOS: a simulator that stops answering costs 60 s, not 300 s:** before the run shotfleet no longer sends `simctl terminate` (uninstalling the app stops it, as Maestro's own clear-state does), and the uninstall, now the first call on each simulator, gives up after 60 s. In the 0.1.3 release test each stuck simulator held the run for 300 s.
 - **iOS: the app is installed on every simulator at once:** a simulator that stops answering now costs one timeout for the whole pool instead of one each in turn (in the 0.1.2 release test, five stuck simulators cost 1500 s of the iOS step's 1872 s); a failed one is still replaced in pool order.

@@ -1192,7 +1192,10 @@ def healthy_installs(pool, k, install):
             dead.append(sim); OUR_SIMS.discard(sim.udid); mark_hung(sim.udid)
             try: sh(["xcrun", "simctl", "shutdown", sim.udid], timeout=60)
             except (OSError, subprocess.TimeoutExpired): pass
-    if not ready: raise RuntimeError("no simulator answers any more; restart the Mac or run `xcrun simctl shutdown all` and run again")
+    if not ready:  # only shotfleet's own simulators: `shutdown all` would stop the user's others too, and a restart is rarely needed
+        raise RuntimeError("no simulator answers any more. Shut down shotfleet's simulators (your other simulators are left alone): `" +
+                           "; ".join(f"xcrun simctl shutdown {s.udid}" for s in dead) + "` and run again; the next run replaces the ones that "
+                           "stopped answering with new ones. This usually means the Mac is short of memory: close other simulators and heavy apps first")
     return ready + [s for s in pool if s not in ready and s not in dead]
 
 def hung_marker(udid):

@@ -79,6 +79,13 @@ class SimctlTimeout(unittest.TestCase):
         self.assertEqual([s.udid for s in pool], ["U0"])
         self.assertIn("xcrun simctl delete U0", out.getvalue()); self.assertTrue(sf.hung_marker("U0").exists())
 
+    def test_when_none_answers_the_message_gives_the_exact_shutdown_of_shotfleets_simulators_only(self):
+        with mock.patch.object(sf, "sh"), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(RuntimeError) as cm:
+            sf.healthy_installs([sf.Sim("A"), sf.Sim("B")], 2, lambda g: (_ for _ in ()).throw(RuntimeError("hung")))
+        msg = str(cm.exception)
+        self.assertIn("`xcrun simctl shutdown A; xcrun simctl shutdown B`", msg)
+        self.assertNotIn("shutdown all", msg); self.assertNotIn("restart", msg)
+
     def test_shutting_down_a_wedged_simulator_does_not_hang_the_cleanup(self):
         sf.OUR_SIMS.update({"A", "B"})
         err = io.StringIO()
