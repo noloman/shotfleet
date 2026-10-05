@@ -9,7 +9,7 @@
 > `research/gumroad-setup.md`. Its last section is the click-by-click checklist for the Gumroad product.
 
 Everything else is done and scripted. Signing and notarization use your Developer ID and the `KeysiNotary` profile;
-the program is served from the shotfleet site (no public repos); `packaging/go-live.sh` does the rest.
+the program is served from the shotfleet site (no public source repo; the empty public repo `noloman/shotfleet-releases` is kept for a later Action, tap and fastlane plugin, see DISTRIBUTION.md); `packaging/go-live.sh` does the rest.
 
 Payments are on **Gumroad** (merchant of record since 2025-01-01: it charges and pays the VAT and sales tax worldwide; an
 Individual account needs no business registration). Lemon Squeezy and Polar are not used: both end in a Stripe check that

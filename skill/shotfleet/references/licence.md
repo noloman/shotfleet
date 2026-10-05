@@ -34,12 +34,14 @@ like a password:
 ## How it is checked
 
 The licence is checked online once at activation and about weekly after that, and works offline for 30 days after the
-last good check (`couldn't reach the licence server for 30 days` after that). A refunded or revoked key stops
+last good check (`couldn't reach the licence server for 30 days` after that; this applies to an activated Mac, not to `SHOTFLEET_KEY`). A refunded or revoked key stops
 working (`this licence is no longer valid`).
 
 ## CI
 
-Set `SHOTFLEET_KEY` in the CI secret store (not an activation, no slot used). Details in ci.md.
+Set `SHOTFLEET_KEY` in the CI secret store (not an activation, no slot used). It is checked online on each run and fails open on
+purpose: with Gumroad unreachable the run counts as licensed, and a CI key has no offline limit (the 30 days above apply only to a
+Mac where `shotfleet activate` was run). So an outage hides a refunded key until a run reaches Gumroad. Details in ci.md.
 
 ## What to tell the user
 

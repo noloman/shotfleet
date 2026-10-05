@@ -63,7 +63,7 @@ Do not mention chargebacks or argue about whose fault it is.
 | 200, `"refunded": false` | The refund did not go through, or it was partial. The key still works. | nothing |
 | 404 `That license does not exist for the provided product.` | Wrong product ID or key. Do not conclude anything. | |
 
-4. The Mac locks at its next check, up to 7 days after the refund (30 if offline). To see it sooner on your own test Mac, set `checked` in `licence.json` back 8 days and run `shotfleet export`. Details: `research/refund-process-2026-10-05.md`, section 3.
+4. The Mac locks at its next check, up to 7 days after the refund (30 if offline). A CI key (`SHOTFLEET_KEY`) is different: it is checked on every run and has no offline limit, so it locks at the first run that reaches Gumroad after the refund, however long Gumroad was unreachable before that. To see it sooner on your own test Mac, set `checked` in `licence.json` back 8 days and run `shotfleet export`. Details: `research/refund-process-2026-10-05.md`, section 3.
 
 ## 5. Reset or disable a key
 

@@ -47,7 +47,7 @@ jobs:
 ## `run` and `export` in CI
 
 Need the licence: set `SHOTFLEET_KEY` from the CI secret store (GitHub: `env: SHOTFLEET_KEY: ${{ secrets.SHOTFLEET_KEY }}`).
-It is checked online each run, uses none of the 3 activations, and an unreachable licence server does not fail the job.
+It is checked online each run and uses none of the 3 activations. It fails open on purpose: with the licence server unreachable the run counts as licensed, with no offline time limit for a CI key (so a refunded key keeps working until a run reaches Gumroad); an activated Mac still stops after 30 days offline.
 With an invalid key `export` refuses and `run` captures only 2 languages. The README documents no CI recipe for `run`
 (it needs simulators and Maestro on the runner); do not invent one.
 

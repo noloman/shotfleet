@@ -53,7 +53,7 @@ Screenshots made in other tools work too. `check` knows Apple's sizes for Apple 
 
 `shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
 
-`shotfleet activate <key>` stores your key on this Mac. The key from your Gumroad receipt works on 3 Macs, and activating again on a Mac that already holds it counts nothing. `shotfleet deactivate` removes it from this Mac but does not give the activation back; email hello@shotfleet.com to move to a fourth Mac. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, that line says why. `check`, `doctor` and `init` are always free.
+`shotfleet activate <key>` stores your key on this Mac. The key from your Gumroad receipt works on 3 Macs, and activating again on a Mac that already holds it counts nothing. `shotfleet deactivate` removes it from this Mac but does not give the activation back; email hello@shotfleet.com to move to a fourth Mac. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, that line says why. A `SHOTFLEET_KEY` in CI is never refused just because the licence server is down (see "In CI" below). `check`, `doctor` and `init` are always free.
 
 ## Quickstart (build the app once for the simulator first)
 
@@ -123,7 +123,7 @@ jobs:
             shotfleet-check/
 ```
 
-To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations; if the licence server can't be reached the job isn't failed. With an invalid key, `export` refuses and `run` captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with `--locales de,ja`; `run` says so on a line that starts with "free tier:", and if the key is refused that line says why.
+To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations. This check fails open on purpose: if the licence server can't be reached, the run counts as licensed, so a CI job never fails because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good key. A Mac where you ran `shotfleet activate` is different: it re-checks about weekly and stops after 30 days offline. With an invalid key, `export` refuses and `run` captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with `--locales de,ja`; `run` says so on a line that starts with "free tier:", and if the key is refused that line says why.
 
 With `--json`, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in `run.json`.
 

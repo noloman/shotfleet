@@ -1131,6 +1131,16 @@ class GumroadLicence(unittest.TestCase):
         self.assertTrue(sf.LICENCE_FILE.exists())
         with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
 
+    def test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online(self):
+        """Owner decision 2026-10-05: with SHOTFLEET_KEY set and Gumroad unreachable the run counts as licensed, with no time limit
+        and no file written; a verdict (refunded, unknown, not key-shaped) still refuses."""
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}):
+            self.status = 503; sf.require_licence()
+            self.assertFalse(sf.LICENCE_FILE.exists())  # nothing stored, so nothing to age out
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.REFUNDED}), self.assertRaisesRegex(sf.NoLicence, "refunded"):
+            self.status = 200; sf.require_licence()
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "not-a-key"}), self.assertRaisesRegex(sf.NoLicence, "not a shotfleet key"): sf.require_licence()
+
     def test_a_200_that_is_not_json_is_offline_not_a_verdict(self):
         self.activate(self.GOOD)
         for junk in (b"<html>Sign in to the hotel Wi-Fi</html>", b"[1, 2]", b"\xff\xfe"):
