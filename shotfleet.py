@@ -1909,6 +1909,15 @@ def avd_home():
     if env.get("ANDROID_AVD_HOME"): return Path(env["ANDROID_AVD_HOME"])
     return (Path(env["ANDROID_USER_HOME"]) if env.get("ANDROID_USER_HOME") else Path.home() / ".android") / "avd"
 
+def require_api33(image, source):
+    """Per-app languages (`cmd locale set-app-locales`) exist from Android 13 (API 33). `image` is a package id or an AVD's image.sysdir path.
+    An older emulator would boot, then fail at the first language; say so before that. The app's own minSdk can stay low."""
+    api = re.search(r"android-(\d+)", image or "")
+    if api and int(api[1]) < 33:
+        raise Fail(f"{source} is Android API {api[1]}; shotfleet sets each language with `cmd locale set-app-locales`, which needs API 33 (Android 13) or newer. "
+                   f"Your app's minSdk can stay as low as it is: it runs on a newer emulator. Install an image with: {commands_text(sdkmanager_commands([DEFAULT_IMAGE]))}, "
+                   "then set system_image (or avd, for an emulator that already exists) in the config")
+
 def android_pool(n, cfg, pool):
     """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
     The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
@@ -1916,8 +1925,13 @@ def android_pool(n, cfg, pool):
     kind = ANDROID_DEVICES[device]
     avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
     avd_dir = avd_home() / f"{avd}.avd"
-    if not avd_dir.exists():
+    if avd_dir.exists():
+        try: sysdir = re.search(r"(?m)^image\.sysdir\.1\s*=\s*(.+)$", (avd_dir / "config.ini").read_text())
+        except OSError: sysdir = None
+        require_api33(sysdir and sysdir[1], f"the emulator {avd}")
+    else:
         image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
+        require_api33(image, f"the system image {image}")
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
             raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))
