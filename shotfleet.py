@@ -4089,16 +4089,25 @@ def cmd_export(out, fastlane, name_prefix=""):
 COMMANDS = ("doctor", "mcp", "skill", "activate", "deactivate", "init", "run", "check", "export")
 
 def cmd_skill(where, project, force):
-    """Copy the agent skills that ship with shotfleet into Claude Code's skills folder (~/.claude/skills, or ./.claude/skills with --project)."""
+    """Copy the agent skills that ship with shotfleet into the folders AI coding agents load skills from:
+    ~/.claude/skills (Claude Code; Cursor reads it too) and ~/.agents/skills (Codex, Gemini CLI, Copilot, Cursor).
+    --project: ./.claude/skills and ./.agents/skills instead. --dir: only that folder."""
     src = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "skill"
     skills = sorted(p for p in src.glob("*") if (p / "SKILL.md").is_file()) if src.is_dir() else []
     if not skills: raise Fail(f"no skills found next to the program ({src}). Copy skill/ from the shotfleet repo instead")
-    dest = Path(where).expanduser() if where else (Path(".claude/skills") if project else Path.home() / ".claude/skills")
-    for s in skills:
-        target = dest / s.name
-        if target.exists() and not force: print(f"kept {target} (already there; --force replaces it)"); continue
-        if target.exists(): shutil.rmtree(target)
-        shutil.copytree(s, target, ignore=shutil.ignore_patterns("__pycache__", ".DS_Store")); print(f"installed {target}")
+    base = Path(".") if project else Path.home()
+    dests = [(Path(where).expanduser(), "")] if where else \
+        [(base / ".claude/skills", " (Claude Code, Cursor)"), (base / ".agents/skills", " (Codex, Gemini CLI, Copilot, Cursor)")]
+    for dest, who in dests:
+        done, kept = [], []
+        for s in skills:
+            target = dest / s.name
+            if target.exists() and not force: kept.append(s.name); continue
+            if target.exists(): shutil.rmtree(target)
+            shutil.copytree(s, target, ignore=shutil.ignore_patterns("__pycache__", ".DS_Store")); done.append(s.name)
+        line = f"{dest}{who}: " + (f"installed {', '.join(done)}" if done else "")
+        if kept: line += ("; " if done else "") + f"kept {', '.join(kept)} (already there; --force replaces it)"
+        print(line)
     return 0
 
 def main(argv=None):
@@ -4113,9 +4122,9 @@ def main(argv=None):
     p.add_argument("--fix", action="store_true", help="offer to download what is missing (Maestro, Java, the Android tools); never uses sudo")
     p.add_argument("--yes", action="store_true", help="with --fix: don't ask before running the steps")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
-    p = sub.add_parser("skill", help="install the Claude Code skills for shotfleet")
-    p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills instead of ~/.claude/skills")
-    p.add_argument("--dir", help="install into this skills folder (for other agents)"); p.add_argument("--force", action="store_true", help="replace skills that are already installed")
+    p = sub.add_parser("skill", help="install the shotfleet skills for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Copilot)")
+    p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills and ./.agents/skills instead of ~/.claude/skills and ~/.agents/skills")
+    p.add_argument("--dir", help="install into this one skills folder instead"); p.add_argument("--force", action="store_true", help="replace skills that are already installed")
     p = sub.add_parser("activate", help="activate your licence on this Mac")
     p.add_argument("key", help="the licence key from your Gumroad receipt email (needs internet once; run does 2 languages and check is free without one)")
     sub.add_parser("deactivate", help="remove the licence from this Mac (a Gumroad activation is not given back: email hello@shotfleet.com)")
