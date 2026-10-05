@@ -61,6 +61,114 @@
    "sped_up": [],
    "facts": [],
    "burned_in_subtitles": true
+  },
+  {
+   "slug": "c5-check",
+   "title": "Catch the wrong language",
+   "description": "A German screenshot planted in the Japanese folder is caught by shotfleet check; the real output passes with 0 problems.",
+   "duration_s": 24.8,
+   "files": {
+    "mp4": {
+     "path": "c5-check.mp4",
+     "bytes": 380846
+    },
+    "square": {
+     "path": "c5-check-square.mp4",
+     "bytes": 580382
+    },
+    "poster": {
+     "path": "c5-check-poster.webp",
+     "bytes": 19238
+    },
+    "captions": {
+     "path": "c5-check.en.vtt",
+     "bytes": 605
+    }
+   },
+   "sped_up": [],
+   "facts": [],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c6-check-existing",
+   "title": "Check the screenshots you have",
+   "description": "shotfleet check reads fastlane folders or a plain folder of screenshots, with no simulator.",
+   "duration_s": 21.7,
+   "files": {
+    "mp4": {
+     "path": "c6-check-existing.mp4",
+     "bytes": 350604
+    },
+    "square": {
+     "path": "c6-check-existing-square.mp4",
+     "bytes": 539287
+    },
+    "poster": {
+     "path": "c6-check-existing-poster.webp",
+     "bytes": 36270
+    },
+    "captions": {
+     "path": "c6-check-existing.en.vtt",
+     "bytes": 473
+    }
+   },
+   "sped_up": [],
+   "facts": [],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c7-store-rules",
+   "title": "Store rules, checked",
+   "description": "shotfleet check flags screenshot sizes the stores refuse and a missing 13\" iPad set.",
+   "duration_s": 27.7,
+   "files": {
+    "mp4": {
+     "path": "c7-store-rules.mp4",
+     "bytes": 388926
+    },
+    "square": {
+     "path": "c7-store-rules-square.mp4",
+     "bytes": 589601
+    },
+    "poster": {
+     "path": "c7-store-rules-poster.webp",
+     "bytes": 30528
+    },
+    "captions": {
+     "path": "c7-store-rules.en.vtt",
+     "bytes": 539
+    }
+   },
+   "sped_up": [],
+   "facts": [],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c9-ci",
+   "title": "In CI",
+   "description": "The GitHub Actions recipe from the docs, and check's --json result and exit code.",
+   "duration_s": 23.6,
+   "files": {
+    "mp4": {
+     "path": "c9-ci.mp4",
+     "bytes": 427746
+    },
+    "square": {
+     "path": "c9-ci-square.mp4",
+     "bytes": 646557
+    },
+    "poster": {
+     "path": "c9-ci-poster.webp",
+     "bytes": 88414
+    },
+    "captions": {
+     "path": "c9-ci.en.vtt",
+     "bytes": 425
+    }
+   },
+   "sped_up": [],
+   "facts": [],
+   "burned_in_subtitles": true
   }
  ]
 }

@@ -1,0 +1,28 @@
+1
+00:00:00,000 --> 00:00:02,000
+The stores' rules, checked.
+
+2
+00:00:02,000 --> 00:00:06,500
+This output has an iPhone set only,
+but the app also runs on iPad.
+
+3
+00:00:06,500 --> 00:00:12,000
+check says so: the App Store requires
+13" iPad screenshots.
+
+4
+00:00:12,000 --> 00:00:18,000
+Now a copy with one screenshot
+resized to 1000x2000.
+
+5
+00:00:18,000 --> 00:00:22,000
+That is not a size the App Store
+accepts: check names the file.
+
+6
+00:00:22,000 --> 00:00:27,600
+Sizes, counts, transparency and
+device sets, for both stores.

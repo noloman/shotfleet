@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:02,000
+Check screenshots in CI.
+
+2
+00:00:02,000 --> 00:00:08,500
+The GitHub Actions recipe from the
+docs: install, then shotfleet check.
+
+3
+00:00:08,500 --> 00:00:11,500
+check needs only a Mac,
+no simulators.
+
+4
+00:00:11,500 --> 00:00:16,000
+--json puts the result on stdout;
+the exit code tells CI what happened.
+
+5
+00:00:16,000 --> 00:00:21,500
+0 all good, 1 problems found,
+2 setup error.

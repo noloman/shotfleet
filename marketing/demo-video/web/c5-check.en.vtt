@@ -1,0 +1,34 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.000
+Catch a screenshot in the wrong language.
+
+2
+00:00:02.000 --> 00:00:06.000
+We copy the real output, then plant
+a mistake on purpose:
+
+3
+00:00:06.000 --> 00:00:10.500
+the German welcome screen goes
+into the Japanese folder.
+
+4
+00:00:10.500 --> 00:00:15.000
+check reads the text: the Japanese
+screenshot shows German strings.
+
+5
+00:00:15.000 --> 00:00:18.500
+It also flags the same image
+in two languages.
+
+6
+00:00:18.500 --> 00:00:22.700
+The real output: 0 problems.
+(The iPad set is captured separately.)
+
+7
+00:00:22.700 --> 00:00:24.700
+Every screenshot, checked.
