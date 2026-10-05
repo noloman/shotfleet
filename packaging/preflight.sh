@@ -12,7 +12,7 @@ case "${1:-}" in -h|--help) sed -n '2,/^PATH=/p' "$0" | sed '$d' | sed 's/^# \{0
 cd "$(dirname "$0")/.." || exit 2
 DEVELOPER_ID=${DEVELOPER_ID:-Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)}
 INSTALLER_ID=${INSTALLER_ID:-Developer ID Installer: Manuel Lorenzo Parejo (2357A78TMR)}
-NOTARY_PROFILE=${NOTARY_PROFILE:-KeysiNotary}
+NOTARY_PROFILE=${NOTARY_PROFILE:-ShotfleetNotary}
 MIN_FREE_GB=${MIN_FREE_GB:-5}; MIN_CERT_DAYS=${MIN_CERT_DAYS:-14}; WRANGLER=${WRANGLER:-npx --yes wrangler@latest}; MINOS_MAX=${PYTHON_MINOS_MAX:-11}
 T=$(mktemp -d) && trap 'rm -rf "$T"' EXIT
 BAD=0
@@ -32,7 +32,7 @@ for kind in "Developer ID Application:$DEVELOPER_ID" "Developer ID Installer:$IN
 done
 
 if timed 60 xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >"$T/nt.out" 2>&1; then ok "notarytool history works with the keychain profile $NOTARY_PROFILE"
-else fail "notarytool history failed with the keychain profile $NOTARY_PROFILE (not stored, no network, or Apple is down): $(grep -iv 'password\|token' "$T/nt.out" | head -1 | cut -c1-100)"; fi
+else fail "notarytool history failed with the keychain profile $NOTARY_PROFILE (not stored, no network, or Apple is down): $(grep -iv 'token' "$T/nt.out" | grep . | head -1 | cut -c1-100); if not stored, the owner runs: xcrun notarytool store-credentials $NOTARY_PROFILE --apple-id <id> --team-id 2357A78TMR (it prompts for the password)"; fi
 
 # shellcheck disable=SC2086  # $WRANGLER is a command with arguments
 if [ -d site ] && (cd site && timed 90 $WRANGLER whoami >"$T/who.out" 2>&1) && grep -qi 'logged in' "$T/who.out"; then ok "wrangler is logged in to Cloudflare"

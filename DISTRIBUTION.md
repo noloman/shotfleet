@@ -57,7 +57,7 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
   `curl -fsSL https://shotfleet.com/install.sh | sh` (checksum-verified; installs on the PATH).
   `doctor` announces newer versions from `/download/VERSION`. A Homebrew formula was tried through a local tap and
   removed in 0.1.2 (it was stale); if buyers ask for `brew install`, generate one from the tested tarball's SHA-256 (git history has the old file).
-- Signing and notarization: done with the existing Developer ID (2357A78TMR) and `KeysiNotary` profile. Apple accepted
+- Signing and notarization: done with the existing Developer ID (2357A78TMR) and the `KeysiNotary` profile (shotfleet's own `ShotfleetNotary` from 2026-10-05). Apple accepted
   the 0.1.0 build; a quarantined copy runs without a Gatekeeper prompt.
 - Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake Gumroad licence API
   (the earlier Lemon Squeezy path was removed 2026-10-03).

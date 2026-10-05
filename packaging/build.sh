@@ -14,6 +14,13 @@
 # The last lines say which macOS the build needs.
 set -eu
 cd "$(dirname "$0")/.."
+if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then packaging/notary-check.sh; fi  # minutes before the submit would find out
+notary_failed() {  # $1: the notarytool log; name the submission id only when Apple gave one
+  ID=$(sed -n 's/^ *id: //p' "$1" | head -1)
+  if [ -n "$ID" ]; then echo "notarization failed: xcrun notarytool log $ID --keychain-profile $NOTARY_PROFILE" >&2
+  else echo "notarization failed before Apple gave a submission id (notarytool's message is above; check the profile: packaging/notary-check.sh)" >&2; fi
+  exit 1
+}
 PINNED_PYTHON=${PINNED_PYTHON:-3.14.2}; MINOS_MAX=${PYTHON_MINOS_MAX:-11}
 PYTHON=${PYTHON:-$(uv python find "$PINNED_PYTHON" --managed-python 2>/dev/null || true)}
 [ -n "$PYTHON" ] && [ -x "$PYTHON" ] || { echo "build: no standalone Python $PINNED_PYTHON (run: uv python install $PINNED_PYTHON, or set PYTHON=<interpreter>)" >&2; exit 1; }
@@ -53,9 +60,9 @@ fi
 tar -C dist -czf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz" shotfleet
 if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   (cd dist && ditto -c -k --keepParent shotfleet "shotfleet-$VERSION-macos-$ARCH.zip")
-  xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
-    | tee build/notary.log
-  grep -q "status: Accepted" build/notary.log || { echo "notarization failed: xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE" >&2; exit 1; }
+  (set -o pipefail; xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
+    | tee build/notary.log) || notary_failed build/notary.log  # pipefail only here: tee must not hide notarytool's exit status
+  grep -q "status: Accepted" build/notary.log || notary_failed build/notary.log
   # Don't trust the verdict alone: unpack the tarball we will ship, mark it as downloaded (quarantine) and ask Gatekeeper.
   CHECK=$(mktemp -d); tar -C "$CHECK" -xzf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz"
   xattr -w com.apple.quarantine "0081;00000000;Safari;" "$CHECK/shotfleet/shotfleet"

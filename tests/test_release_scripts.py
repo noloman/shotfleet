@@ -417,5 +417,24 @@ class Preflight(Fixture):
         self.assertIn("preflight: ", r.stdout)
 
 
+class NotaryCheck(Fixture):
+    def test_missing_profile_stops_with_the_store_credentials_command(self):
+        fakebin = self.tmp / "bin"; fakebin.mkdir()
+        (fakebin / "xcrun").write_text('#!/bin/sh\necho "Error: No Keychain password item found for profile: $4" >&2; exit 69\n'); (fakebin / "xcrun").chmod(0o755)
+        r = run(["sh", ROOT / "packaging/notary-check.sh"], env={"PATH": f"{fakebin}:{os.environ['PATH']}", "NOTARY_PROFILE": ""})
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("No Keychain password item found for profile: ShotfleetNotary", r.stderr)  # the default, and notarytool's reason kept
+        self.assertIn("xcrun notarytool store-credentials ShotfleetNotary --apple-id <id> --team-id 2357A78TMR", r.stderr)
+
+    def test_scripts_check_first_and_keep_notarytools_exit_status(self):
+        release, golive = (ROOT / "packaging/release.sh").read_text(), (ROOT / "packaging/go-live.sh").read_text()
+        self.assertLess(release.index("packaging/notary-check.sh"), release.index("packaging/build.sh\n"))
+        self.assertLess(golive.index("packaging/notary-check.sh"), golive.index("sed -i ''"))
+        for f in ("build.sh", "pkg.sh"):
+            code = (ROOT / "packaging" / f).read_text()
+            self.assertIn("(set -o pipefail; xcrun notarytool submit", code)
+            self.assertNotIn("log <id>", code)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,12 @@
 # double-click or an offline Mac shows "Apple could not verify ...". Without NOTARY_PROFILE the package is only signed.
 set -eu
 cd "$(dirname "$0")/.."
+notary_failed() {  # $1: the notarytool log; name the submission id only when Apple gave one
+  ID=$(sed -n 's/^ *id: //p' "$1" | head -1)
+  if [ -n "$ID" ]; then echo "pkg: notarization failed: xcrun notarytool log $ID --keychain-profile $NOTARY_PROFILE" >&2
+  else echo "pkg: notarization failed before Apple gave a submission id (notarytool's message is above; check the profile: packaging/notary-check.sh)" >&2; fi
+  exit 1
+}
 VERSION=$(python3 -c 'import re;print(re.search(r"VERSION = \"(.+?)\"", open("shotfleet.py").read()).group(1))')
 PKG="dist/shotfleet-$VERSION-macos-$(uname -m).pkg"
 [ -x dist/shotfleet/shotfleet ] || { echo "pkg: no dist/shotfleet; run packaging/build.sh first" >&2; exit 1; }
@@ -24,8 +30,9 @@ pkgbuild --root "$STAGE/root" --scripts "$STAGE/scripts" --identifier com.shotfl
   --install-location / --sign "$INSTALLER_ID" --timestamp "$PKG"
 pkgutil --check-signature "$PKG" | grep -q "Developer ID Installer" || { echo "pkg: the package is not signed with a Developer ID Installer certificate" >&2; exit 1; }
 if [ -n "${NOTARY_PROFILE:-}" ]; then
-  xcrun notarytool submit "$PKG" --keychain-profile "$NOTARY_PROFILE" --wait | tee build/notary-pkg.log
-  grep -q "status: Accepted" build/notary-pkg.log || { echo "pkg: notarization failed: xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE" >&2; exit 1; }
+  (set -o pipefail; xcrun notarytool submit "$PKG" --keychain-profile "$NOTARY_PROFILE" --wait | tee build/notary-pkg.log) \
+    || notary_failed build/notary-pkg.log  # pipefail only here: tee must not hide notarytool's exit status
+  grep -q "status: Accepted" build/notary-pkg.log || notary_failed build/notary-pkg.log
   xcrun stapler staple "$PKG"
   xcrun stapler validate "$PKG"
   # Gatekeeper's verdict for an installer package (a bare executable cannot be assessed this way, a package can).
