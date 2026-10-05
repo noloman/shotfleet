@@ -2315,10 +2315,13 @@ def play_folders(folder):
     folder = Path(folder)
     return [k for k in PLAY_FOLDERS if any(folder.glob(f"metadata/android/*/images/{k}/*")) or any(folder.glob(f"*/images/{k}/*"))]
 
-def find_screenshots(folder, platform=None, play_folder="phoneScreenshots"):
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
+LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
+
+def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
-    or plain <locale>/ folders."""
+    or plain <locale>/ folders. `locale` names the language of a flat folder of images (no <locale>/ level)."""
     folder = Path(folder)
     if (folder / "screenshots").is_dir() and (folder / "metadata/android").is_dir():
         if platform == "ios": return find_screenshots(folder / "screenshots")
@@ -2327,15 +2330,16 @@ def find_screenshots(folder, platform=None, play_folder="phoneScreenshots"):
                    f"{folder / 'metadata/android'} separately (each with its own --app)")
     for pattern in ("raw/*/*", f"metadata/android/*/images/{play_folder}/*",
                     f"*/images/{play_folder}/*", "screenshots/*/*", "*/*"):
-        found = sorted(p for p in folder.glob(pattern) if p.suffix.lower() in (".png", ".jpg", ".jpeg"))
+        found = sorted(p for p in folder.glob(pattern) if p.suffix.lower() in IMAGE_SUFFIXES)
         if found:
             out = {}
             for png in found:
                 label = png.parent.parent.parent.name if png.parent.name == play_folder else png.parent.name
-                if re.fullmatch(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*", label) or label in CANON:
+                if LOCALE_LABEL.fullmatch(label) or label in CANON:
                     out.setdefault(label, []).append(png)  # not ipad_only/, default/, appleTV/
             return out
-    return {}
+    flat = sorted(p for p in folder.glob("*") if p.suffix.lower() in IMAGE_SUFFIXES)
+    return {locale: flat} if locale and flat else {}
 
 def app_locale(label, available):
     """The app language a store folder name stands for (de-DE -> de, no -> nb, zh-CN -> zh-Hans, iw-IL -> iw), or None."""
@@ -2511,11 +2515,14 @@ def reports_json():
             "reports": [{"report": str(f), "problems": d.get("problems", [])} for f, d in docs]}
 
 def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
-              play_folder="phoneScreenshots", expect=None):
+              play_folder="phoneScreenshots", expect=None, locale=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder.
-    `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen."""
+    `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen.
+    `locale`: the language of a flat folder of screenshots (no <locale>/ folders)."""
     folder = Path(folder)
+    if locale is not None and not (LOCALE_LABEL.fullmatch(locale) or locale in CANON):
+        raise Fail(f"--locale {locale!r} is not a language code (examples: en, de, pt-BR, zh-Hans)")
     run_json = folder / "run.json"
     if app:
         app = Path(app).expanduser()
@@ -2551,10 +2558,14 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
     images = find_screenshots(folder, platform={".app": "ios", ".apk": "android"}.get(Path(app).suffix) if app else None,
-                              play_folder=play_folder)
+                              play_folder=play_folder, locale=locale)
     if not images:
+        if any(p.suffix.lower() in IMAGE_SUFFIXES for p in folder.glob("*")):  # a hand-made set of one language
+            raise Fail(f"{folder} holds screenshots directly, so shotfleet cannot tell which language they are in. "
+                       f"Say it with --locale, e.g. shotfleet check {folder} --locale en")
         raise Fail(f"no screenshots found in {folder}. Expected one of: screenshots/<locale>/*.png (fastlane deliver), "
-                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too)")
+                   "metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); "
+                   "a flat folder of one language's screenshots needs --locale <code>")
     if app is not None: android = Path(app).suffix == ".apk"  # the build says which store's rules apply
     elif run_json.exists(): android = json.loads(run_json.read_text()).get("platform") == "android"
     else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
@@ -3793,6 +3804,8 @@ def main(argv=None):
     p.add_argument("--strings", action="append", metavar="GLOB",
                    help="translation files instead of --app, e.g. 'lib/l10n/*.arb' or 'locales/*/translation.json' "
                         "(.arb .json .xcstrings .strings .xml .xlf .resx .po .properties .csv); repeatable")
+    p.add_argument("--locale", metavar="CODE",
+                   help="the language of a flat folder of screenshots (no <locale>/ folders), e.g. --locale en")
     p.add_argument("--content", nargs="?", const="shotfleet.toml", metavar="CONFIG",
                    help="also check the [expect.<screenshot>] texts of this config (default: ./shotfleet.toml) are on screen; put it after the folder")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
@@ -4043,7 +4056,7 @@ def main_cmd(a):
     finally:
         shutdown_sims()
 
-def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None):
+def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None):
     """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own)."""
     if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
     if len(kinds := play_folders(folder)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
@@ -4060,7 +4073,7 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
     if not app and not strings_files and not (Path(folder) / "run.json").exists():
         print("no --app given: checking by language detection only, which can misjudge short screens; treat a language problem as "
               "a hint (pass --app to compare with your app's strings)")
-    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect)
+    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
 
 def main_dispatch(a):
     try:
@@ -4079,7 +4092,7 @@ def main_dispatch(a):
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
-        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None)
+        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale)
         if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2

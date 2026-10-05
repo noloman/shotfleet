@@ -87,7 +87,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | Fragment | Cause | Fix |
 |---|---|---|
 | `no folder at` | wrong path | fix it |
-| `no screenshots found in` | layout not recognised | use `screenshots/<locale>/*.png`, `metadata/android/<locale>/images/phoneScreenshots/*.png` or `<locale>/*.png` |
+| `no screenshots found in` | layout not recognised | use `screenshots/<locale>/*.png`, `metadata/android/<locale>/images/phoneScreenshots/*.png` or `<locale>/*.png`; a flat folder of one language's PNGs needs `--locale <code>` (`shotfleet check shots/ --locale en`) |
 | `has both iOS and Android screenshots` | a folder with both stores and no `--app` | pass `--app` with the build of the store to check |
 | `screenshots but --app is` | an iOS folder with an `.apk` or the reverse | pass the matching build |
 | `contains no translations shotfleet can read` | the build has no `.lproj`, String Catalog or resources (typical for Flutter, React Native, Unity, MAUI) | use `--strings '<glob>'` |

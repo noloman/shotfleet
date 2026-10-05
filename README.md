@@ -38,7 +38,10 @@ Already have screenshots from fastlane snapshot/screengrab or by hand? Check the
 ```bash
 shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/<locale>/
 shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/<locale>/images/phoneScreenshots/
+shotfleet check shots/ --locale en --app path/to/MyApp.app # a flat folder of one language's PNGs, no <locale>/ level
 ```
+
+A flat folder of PNGs needs `--locale <code>` because shotfleet does not guess the language of a folder; without it `check` says so and exits 2. `<locale>/` folders ignore `--locale`.
 
 Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`). The report (`check.json` and `index.html`) goes to `./shotfleet-check` (change it with `--report`), and your fastlane folders are never touched. On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform. It found one real problem: the Traditional Chinese listings have Chinese captions over an English app. When we planted English screenshots in the German folder and deleted a Japanese one, both were reported.
 

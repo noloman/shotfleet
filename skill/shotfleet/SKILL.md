@@ -32,7 +32,7 @@ Update: run the install line again. It replaces the program and keeps your licen
 shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json --report <report-dir> > check.json
 ```
 
-- `<fastlane-dir>` is the fastlane folder or its `screenshots/` folder (deliver: `screenshots/<locale>/`), or `metadata/android/<locale>/images/phoneScreenshots/` (supply), or plain `<locale>/` folders. A folder with both stores is checked one store per run: `--app` (an `.app` or an `.apk`) picks which.
+- `<fastlane-dir>` is the fastlane folder or its `screenshots/` folder (deliver: `screenshots/<locale>/`), or `metadata/android/<locale>/images/phoneScreenshots/` (supply), or plain `<locale>/` folders. A flat folder of one language's PNGs (no `<locale>/` level) needs `--locale <code>`, e.g. `shotfleet check shots/ --locale en`; shotfleet never guesses the language. A folder with both stores is checked one store per run: `--app` (an `.app` or an `.apk`) picks which.
 - `--app` is a simulator build (`Debug-iphonesimulator/*.app`, never an `.ipa` or archive) or a debug `.apk`. Without it only language detection runs and short screens can't be judged.
 - Translation files instead of a build: `--strings 'lib/l10n/*.arb'` (repeatable).
 - Put `--report` outside the fastlane folder (default is `./shotfleet-check` in the current directory). shotfleet never edits the checked folder.
