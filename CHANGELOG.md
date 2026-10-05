@@ -2,6 +2,7 @@
 
 ## Unreleased
 - **Text recognition waits for its first compile:** `check` keeps waiting past 90 s while macOS's `ANECompilerService` is using the CPU (up to 6 minutes) instead of dropping to Tesseract; when macOS still does not answer it says what happened and what to do (wait and re-run, close heavy apps, install Tesseract), and says in the output when the fallback reader was used. Catalan, Croatian, Hungarian, Slovak and Slovenian screens are judged by language detection on every macOS, like on macOS 15. Not tested: a real cold compile under load, macOS 13.
+- **Memory warning and Maestro deny list:** `run` prints a warning when the Mac is short of memory or already swapping hard (config `capacity = "warn"`, the default; `"off"` silences it). It only warns: the run, the number of devices and the exit codes are unchanged. `run` also stops before booting devices for a Maestro version proven bad (none is today; untested versions still only warn). `tools/latest-maestro.py` downloads only when a new release tag appears.
 
 ## 0.1.2 (2026-10-05)
 - **`--json` covers every report:** with several reports (several device types, both platforms, Play phone and tablet sets) the one JSON document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each. With one report nothing changes.

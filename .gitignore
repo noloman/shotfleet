@@ -7,3 +7,4 @@ exp/
 build/
 dist/
 site/public/download/
+tools/.latest-maestro-seen
