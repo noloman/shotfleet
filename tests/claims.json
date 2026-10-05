@@ -108,11 +108,15 @@
   "claim": "18 languages x 4 screens took 9 minutes on iOS and 15 on Android, on one Mac",
   "where": [
    "site/public/index.html",
-   "marketing/launch-posts-v2.md"
+   "marketing/launch-posts-v2.md",
+   "site/public/index.html",
+   "site/public/alternatives.html"
   ],
   "where_text": [
    "took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac",
-   "about 9 minutes on iOS and 15 on Android"
+   "about 9 minutes on iOS and 15 on Android",
+   "The 9 and 15 minutes were measured on Maestro 2.0.10.",
+   "Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac."
   ],
   "status": "evidence",
   "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro.",
@@ -1789,7 +1793,8 @@
   ],
   "where_text": [
    "languages times screens in one run: 72 screenshots, one English flow, one Mac",
-   "for that run on iOS and on Android"
+   "for that run on iOS and on Android",
+   "The 9 and 15 minutes were measured on Maestro 2.0.10."
   ],
   "status": "evidence",
   "proof": "research/first-run.md and PLAN.md Status 2026-10-01 (CrossfitTracker iOS 18/18 in 534 s, Android 18/18 about 15 min); research/pricing-2026-10.md section 1 'Proven'. Re-measure 2026-10-05 (CrossfitTracker, 19 languages, 4 devices, Maestro 2.0.10, Xcode 27, iOS 26.4): iOS 404 s capture, Android phone 415 s, 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. That ran on Maestro 2.0.10; the installer fetches 2.11.0, where the iOS run needed retries (826 s of capture, loaded Mac, 2026-10-04). The 9 and 15 minutes were measured on 2.0.10.",
