@@ -1001,6 +1001,13 @@ class Mcp(unittest.TestCase):
         self.assertTrue(out[3]["result"]["isError"]); self.assertIn("no folder", out[3]["result"]["content"][0]["text"])
         self.assertEqual(out[4]["error"]["code"], -32601)
 
+    def test_tool_annotations_say_what_each_tool_does(self):
+        tools = {t["name"]: t for t in sf.MCP_TOOLS}
+        for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)
+        run = tools["run"]["annotations"]
+        self.assertEqual((run["readOnlyHint"], run["destructiveHint"], run["idempotentHint"]), (False, True, False))
+        self.assertIn("hour", tools["run"]["description"])
+
 
 class Licence(unittest.TestCase):
     """Only Gumroad keys work. Nothing here may touch the network: a key from any other store is refused on its shape."""

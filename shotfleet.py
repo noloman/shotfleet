@@ -4161,21 +4161,33 @@ def main(argv=None):
         return code
     return main_cmd(a)
 
-MCP_TOOLS = [
-    {"name": "check", "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
+MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations); the descriptions say the same in words
+    {"name": "check", "title": "Check screenshots",
+     "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
      "no copies across languages, none missing, and the stores' size/count/transparency rules. Works on fastlane "
      "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
-     "folders. Returns the report as JSON (problems, notes, screenshots).",
+     "folders. Read-only for the screenshots: it never changes the folder it checks, and only writes its report "
+     "(check.json, index.html) to ./shotfleet-check in the server's working folder. Takes seconds to a few minutes "
+     "(text recognition of every screenshot). Returns the report as JSON (problems, notes, screenshots).",
+     "annotations": {"readOnlyHint": True, "openWorldHint": False},
      "inputSchema": {"type": "object", "required": ["folder"], "properties": {
          "folder": {"type": "string", "description": "folder with the screenshots"},
          "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
          "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"}}}},
-    {"name": "doctor", "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet.",
-     "inputSchema": {"type": "object", "properties": {}}},
-    {"name": "run", "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
-     "Boots simulators or emulators and takes minutes.",
+    {"name": "doctor", "title": "Check the setup",
+     "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet, and say what is missing. "
+     "Changes nothing (it never installs anything over MCP). Asks shotfleet.com once for the latest version. Takes seconds.",
+     "annotations": {"readOnlyHint": True, "openWorldHint": True},
+     "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}},
+    {"name": "run", "title": "Capture screenshots",
+     "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
+     "Boots iOS simulators or Android emulators, installs the app on them and replaces the screenshots and report "
+     "in the config's output folder. Takes several minutes, and can take an hour or more for many languages and screens. "
+     "Without a licence it captures 2 languages.",
+     "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
      "inputSchema": {"type": "object", "required": ["config"], "properties": {
-         "config": {"type": "string"}, "locales": {"type": "array", "items": {"type": "string"}}}}},
+         "config": {"type": "string", "description": "path to shotfleet.toml"},
+         "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"}}}},
 ]
 
 def mcp_call(name, args):
