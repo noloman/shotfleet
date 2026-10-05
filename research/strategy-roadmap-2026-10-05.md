@@ -228,4 +228,73 @@ Likelihood and impact are my estimates (INFERENCE) unless a fact is cited; each 
 | **Competitor adds the check** | Medium | Medium | asc CLI ships weekly (5.10.0 on 2026-10-04), has multi-locale capture and a `lint`; ButterKit has a free tier with translation and upload | Depth and accuracy of the check, Android, "check any tool" (F3), and being listed in their ecosystems (item 11) |
 | **A public claim that is wrong** | Medium | Medium (refunds, trust) | 49 of 131 claim rows not green; the live alternatives page contradicts the home page today | F4 now; keep `test_no_claim_is_still_false`; run the claims check before any post |
 
-<!-- PART5 -->
+## 9. 30/60/90-day plan for one developer with AI agents
+
+Day 1 is Tuesday 2026-10-06. The sale opened 2026-10-05, so the existing day-60 gate falls on 2026-12-04. Budget: about 6 hours a week of owner time; everything marked "agent" needs none. Device jobs go through the lock in `docs/device-queue.md`, with a kill limit per step. No GitHub Actions run without the owner's OK (cost rule).
+
+### Days 1 to 30: proof, reach, first sales (goal: the first 10 paying customers)
+
+| Week | Agents | Owner |
+|---|---|---|
+| 1 (10-06 to 10-12) | F4 (fix `/alternatives`, add asc CLI row); F1 sample page and F3 `/check` page built from real files; F8 changelog and feed; 0.1.2 group A (item 1); verify the open TO VERIFY items of articles 1 and 2 with the live installer; prepare the cold-test kit | Record the demo (F2, 2 h); Gumroad page polish and the purchase Workflow email (F9, F10, 1 h); ask the accountant and start the KvK step (section 10); pick 3 design partners and send `outreach.md` mail 1 |
+| 2 (10-13 to 10-19) | 0.1.2 B1 to B3 plus items 4 and 5 (device-free, unit tests, then one gate); publish the first two guides; F5 email box and F12 download counter (owner approves the privacy wording first); run the README CI recipe once (F13, owner OK to spend about $1) | Cold test with 2 outside developers (F6, 2 h); Search Console and Bing; answer questions in the Maestro Slack without links (kit rule) |
+| 3 (10-20 to 10-26) | Release 0.1.2 through the new publish script; Gumroad update email text; third guide; Action and tap in the public repo if the owner agreed (items 8, 9) | Send the update email; submit the guides to newsletters (section 6.2, rank 3); directories, one hour (rank 4); first affiliate invitations |
+| 4 (10-27 to 11-02) | Read the first buyers' answers and refund reasons; fix the top onboarding wall (maybe item 7 if F6 says so); prepare the Show HN answers against real numbers | Show HN once, Tuesday to Thursday, only if the demo, sample page and cold-test number are live; reply for a day |
+
+Day-30 targets (INFERENCE; base case from the profit plan is about 10 buyers a month on 500 visits): 1,500 visits; 300 tarball downloads; 3 design-partner reports; the cold-test median measured; 0 unexplained refunds. **Sales: 3 is the floor, 10 is the goal.** If a week-3 count is 0 sales with 500 or more visits, the problem is the page or the install, not reach: read the cold-test video again before any new post.
+
+### Days 31 to 60: the next 100
+
+| Focus | Work |
+|---|---|
+| Content | One verified guide a week from `marketing/kit`'s ideas file; each ends on the free check and links the sample page |
+| Distribution surfaces | fastlane plugin (item 10), asc hand-off recipe and pitch (item 11), `awesome-maestro` PRs once the article is live; 3 to 5 affiliates |
+| Product | Release 0.1.3: the cold-test fix, `check` for other store sets (item 6), B4 if its device slot passes; patch for any Maestro or Xcode break found by the watchers |
+| Price and Team | Read the interest box and the purchase-email answers weekly; log visits and sales per week; check what the Gumroad page shows after the 100th `FOUNDER29` use before sale 90 |
+| Gate on 2026-12-04 | Count sales since 2026-10-05 and decide (below) |
+
+### Days 61 to 90: decide from data
+
+| Result at day 60 | Decision |
+|---|---|
+| **50 or more sales** | Keep investing (STRATEGY.md rule): Team and CI licence (item 13) if the box has 15 emails or 3 CI replies; layout check (item 14) if 5 buyers named it; price step after sale 100 |
+| **15 to 49 sales** | Narrow: no big feature; double the content and surfaces that produced buyers (read the per-channel `utm_source` counts, F12); publish the fastlane plugin and Action; decide the open-source question |
+| **Fewer than 15 sales** | Stop building (STRATEGY.md rule). Keep it as a free tool: lift the free limit or open the check engine, keep the guides and the benchmark as a reputation piece, keep the licence for existing buyers. Do not add features to rescue it |
+
+### Metrics and stop rules
+
+- **Success metrics:** visits and visit-to-download (F12, first-party counter, GA4 key events); downloads to sales; sales per channel (`utm_source`); median time to first screenshot (F6); refund rate (aim under 15% of the first 10, and every refund has a written reason); support minutes per buyer (aim under 30); number of third-party quotes with written permission.
+- **Stop or pause rules:** (a) day 60 under 15 sales: stop features. (b) Two or more of the first 10 refunds with the same cause: fix onboarding before any further post. (c) Support above 5 hours a week with fewer than 20 buyers: onboarding is broken, freeze marketing. (d) A clean Mac cannot start the program: freeze marketing until fixed. (e) A tax, KvK or Gumroad payout block: finish the accountant step before the first payout; do not let it wait for the first $100.
+
+## 10. DECISIONS FOR THE OWNER
+
+Only the owner can decide, pay, sign or publish these.
+
+1. **Public GitHub repos.** The earlier decision was "no public repos" (DISTRIBUTION.md), yet an empty public repo `noloman/shotfleet-releases` exists (1 commit, 0 stars, CONFIRMED 2026-10-05). Use it for releases, the Action, the tap and the fastlane plugin (the core stays closed), or delete it. `noloman/homebrew-shotfleet` does not exist (404).
+2. **Record the demo video and approve the sample run** (WOD Tracker images and report).
+3. **Posting:** wording and timing of Show HN, directories, newsletter and Maestro Slack posts. Agents prepared text; the owner posts.
+4. **Design partners:** who gets a free key for an honest write-up, and written permission before any quote.
+5. **Spend:** about $1 to $2 of GitHub macOS minutes for the CI recipe run and an older-macOS start test (cost rule says ask); the $30 Reddit-ads test; optional $5 AlternativeTo priority review. Nothing else is needed.
+6. **KvK, tax and legal (research only, `research/tax-nl-2026-10.md`):** registration, btw on the supply to a US merchant of record, the KOR and the W-8BEN rate go to the accountant before the first payout; then terms, privacy and claims C055, C056, C086 are re-read.
+7. **Gumroad settings:** cover image and thumbnail; tipping; "customers also bought" showing Keysi; the Discover category (Discover sales cost 30% instead of 10% + $0.50, so a $29 sale nets about $19 to $20 instead of $24.46, depending on whether card processing is inside the 30%, which I could not confirm; more reach versus margin); affiliate commission; the purchase Workflow wording; one update email per release; purchasing-power pricing (unchecked).
+8. **Emailing buyers of the owner's other Gumroad products** about shotfleet: allowed and wanted or not.
+9. **Privacy page edits** needed before: the email box (F5), the download counter (F12) and the in-product update notice (item 3).
+10. **Team and CI price and wording** to test publicly ("$149 per repo per year") and whether to promise it at all.
+11. **The renewal promise** in the terms ("I plan to offer an optional renewal"): keep or soften.
+12. **Open-source question for the check engine:** revisit at the day-60 gate.
+13. **The second person for the paid-sale and refund test** (never the owner's own card, Gumroad help article 62) and the date.
+14. **Backups and the "if I stop" line:** certificates, the notarization profile, Gumroad and Cloudflare recovery; the wording of a short continuity note on the site.
+15. **Older-macOS wording:** keep "tested on macOS 27" until a start test passes on an older Mac or runner.
+
+## 11. What I could not verify
+
+- **Demand itself.** Reddit, Stack Overflow and Hacker News threads were not reachable, so there is no direct quote of a developer saying what they would pay. Pain evidence is GitHub issue titles (bodies not read), vendor pages and two blog posts. There is no benchmark for visit-to-purchase of a niche Mac CLI; every conversion figure here is an assumption.
+- **Market size.** No source for the share of apps with 10+ languages; the 1,000 to 2,200 range is the earlier note's stacked guess.
+- **Competitor internals.** Whether ButterKit re-captures per language (its pricing page does not say); whether asc CLI's `matrix` and any language check behave as its README summary says (the docs page I could fetch did not describe `matrix`); user or revenue counts for any competitor. Third-party roundups disagree on prices (ButterKit $49, $79 or $99; AppScreens monthly or yearly); I used each vendor's own pricing page, read today.
+- **Search-summary-only facts** (marked "secondary" above): Xcode 27 leaving `simctl` screenshots unchanged, iOS 27's public date, Gumroad's Discover default and Workflow details, the March 2026 payout-minimum change (STATUS.md does record the $100 minimum), Maestro's Apache 2.0 licence, Apple's screenshot-spec change dates.
+- **Not tested here:** that 0.1.1 starts on macOS 13 to 26; a copied `licence.json` working on a second Mac; whether Homebrew downloads set the quarantine flag on the notarized tarball; whether the 0.1.0 `doctor` update notice fails without Homebrew; what Gumroad shows after the 100th `FOUNDER29` use; whether a refunded real key is refused; whether a Gumroad affiliate's commission is clawed back on a refund; the Maestro community page's submission route; AlternativeTo's current queue.
+- **Whether AI assistants cite shotfleet.com.** One web search listed the site; I did not query any assistant.
+- **fastlane's maintenance status.** Release 2.240.1 on 2026-09-15 is confirmed; the earlier note's "maintenance mode" wording was not re-checked.
+- **Live product state beyond the pages I fetched** (home, alternatives): I did not run the smoke test, and I did not open Gumroad.
+- No device, build, deploy, post, email, purchase or GitHub Actions run was done for this note.
+
