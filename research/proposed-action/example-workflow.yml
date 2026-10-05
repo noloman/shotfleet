@@ -1,0 +1,18 @@
+# What a buyer would put in .github/workflows/screenshots.yml once the action is published (it is not).
+on: pull_request
+jobs:
+  check-screenshots:
+    runs-on: macos-15   # an Apple-silicon runner; macos-14 and macos-26 also work; the -intel labels do not
+    steps:
+      - uses: actions/checkout@v4
+      - uses: noloman/shotfleet-releases@v1
+        with:
+          command: check
+          args: fastlane/screenshots --strings Resources/*/Localizable.strings   # --strings needs no app build; --app does
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-check
+          path: |
+            shotfleet.json
+            shotfleet-check/

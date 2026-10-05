@@ -1,0 +1,95 @@
+# DRAFT, NOT PUBLISHED. Would be the root action.yml of the public repo noloman/shotfleet-releases (owner decision pending).
+# A composite action: installs the signed shotfleet program with the site's install.sh, checks its signature, runs one command.
+# Never run on GitHub (no Actions minutes were used for this draft); see README.md for what was and was not checked.
+name: shotfleet
+description: Check localized App Store and Google Play screenshots (language, copies, missing screens, store rules) on a macOS Apple-silicon runner.
+author: noloman
+branding: { icon: image, color: blue }
+inputs:
+  command:
+    description: "check (default, free, no licence), doctor, or run (needs simulators, Maestro and a licence key; see the README)"
+    default: check
+  args:
+    description: "Arguments after the command, for example: fastlane/ --app build/MyApp.app (one line, split on spaces; --json is added for check and run)"
+    required: true
+  working-directory:
+    description: Folder to run in
+    default: "."
+  key:
+    description: "Licence key for run (pass secrets.SHOTFLEET_KEY, never a literal). Not needed for check."
+    default: ""
+  require-licence:
+    description: "With command run: fail the step when shotfleet says 'free tier:' (a missing or refused key otherwise captures 2 languages and exits 0)"
+    default: "true"
+  verify-signature:
+    description: "Require the installed program to be signed by team 2357A78TMR and notarized (codesign requirement; Apple's ticket is looked up online)"
+    default: "true"
+  fail-on-problems:
+    description: "Exit code 1 (problems found) fails the step. Set false to only report."
+    default: "true"
+  cache-home:
+    description: "Cache ~/.shotfleet (the Maestro and Java that doctor --fix fetched). Only useful with command run."
+    default: "false"
+outputs:
+  exit-code:
+    description: "shotfleet's exit code: 0 ok, 1 problems, 2 setup error, 130 interrupted"
+    value: ${{ steps.run.outputs.exit }}
+  problems:
+    description: Number of problem lines in the JSON report
+    value: ${{ steps.run.outputs.problems }}
+runs:
+  using: composite
+  steps:
+    - name: Refuse anything but an Apple-silicon Mac
+      shell: bash
+      run: |
+        [ "$RUNNER_OS" = macOS ] || { echo "::error::shotfleet needs a macOS runner (macos-14, macos-15 or macos-26); this is $RUNNER_OS"; exit 2; }
+        [ "$(sysctl -n hw.optional.arm64 2>/dev/null || echo 0)" = 1 ] || { echo "::error::shotfleet needs an Apple-silicon runner; the macos-*-intel labels are not supported"; exit 2; }
+    - name: Cache Maestro and Java
+      if: inputs.cache-home == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.shotfleet
+        key: shotfleet-home-${{ runner.os }}-${{ runner.arch }}-v1
+    - name: Install shotfleet
+      shell: bash
+      run: |
+        curl -fsSL https://shotfleet.com/install.sh | sh
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"; echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+        shotfleet --version
+    - name: Verify signature and notarization
+      if: inputs.verify-signature == 'true'
+      shell: bash
+      run: |
+        APP="$HOME/Library/Application Support/shotfleet/app/shotfleet"
+        codesign --verify --strict -R='anchor apple generic and certificate leaf[subject.OU] = "2357A78TMR" and notarized' "$APP" \
+          || { echo "::error::the installed shotfleet is not signed by the expected team or not notarized; refusing to run it"; exit 2; }
+    - name: Run shotfleet
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        SHOTFLEET_KEY: ${{ inputs.key }}
+        SF_COMMAND: ${{ inputs.command }}
+        SF_ARGS: ${{ inputs.args }}
+        SF_REQUIRE_LICENCE: ${{ inputs.require-licence }}
+        SF_FAIL_ON_PROBLEMS: ${{ inputs.fail-on-problems }}
+        SF_ACTION: ${{ github.action_path }}
+      run: |
+        # SF_ARGS is split on spaces on purpose (no eval). A path with a space needs a plain `run:` step instead of this action.
+        case "$SF_COMMAND" in check|doctor|run) ;; *) echo "::error::command must be check, doctor or run"; exit 2;; esac
+        [ -n "$SHOTFLEET_KEY" ] || unset SHOTFLEET_KEY
+        set +e
+        # shellcheck disable=SC2086
+        if [ "$SF_COMMAND" = doctor ]; then shotfleet doctor $SF_ARGS 2> shotfleet.stderr.log; CODE=$?
+        else shotfleet "$SF_COMMAND" $SF_ARGS --json > shotfleet.json 2> shotfleet.stderr.log; CODE=$?; fi
+        set -e
+        cat shotfleet.stderr.log >&2
+        echo "exit=$CODE" >> "$GITHUB_OUTPUT"
+        python3 "$SF_ACTION/summarize.py" "$CODE" shotfleet.json shotfleet.stderr.log >> "$GITHUB_STEP_SUMMARY" || true
+        echo "problems=$(python3 "$SF_ACTION/summarize.py" --count shotfleet.json 2>/dev/null || echo 0)" >> "$GITHUB_OUTPUT"
+        if [ "$SF_COMMAND" = run ] && [ "$SF_REQUIRE_LICENCE" = true ] && grep -q '^free tier:' shotfleet.stderr.log; then
+          echo "::error::shotfleet ran in the free tier (2 languages): no valid SHOTFLEET_KEY reached it. Set require-licence: false to allow that."; exit 2
+        fi
+        if [ "$CODE" = 1 ] && [ "$SF_FAIL_ON_PROBLEMS" != true ]; then exit 0; fi
+        exit "$CODE"
