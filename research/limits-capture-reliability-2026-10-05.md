@@ -21,7 +21,8 @@ on stubs; everything else is read from the code and says so.
    `shotfleet-<device>-N` and emulators sit on 5702/5704, so a second run reinstalls the app under the first (the 2026-10-03 voided runs). Fixed:
    `device_lock` (an `flock` on `/tmp/shotfleet-ios-<prefix>.lock` and `/tmp/shotfleet-android-emulators.lock`, dropped by the OS when the process dies, so
    there is no stale lock; a second run exits 2 with "another shotfleet run is using these devices (pid, since)"; a lock file that cannot be made does not stop
-   the run). SIGHUP (terminal closed, ssh dropped) now cleans up like SIGTERM and Ctrl-C; before, the process died with simulators and emulators running.
+   the run; the four test modules that run fake runs set `sf.USE_DEVICE_LOCK = False`, because two test suites at once on this shared Mac must not refuse each
+   other). SIGHUP (terminal closed, ssh dropped) now cleans up like SIGTERM and Ctrl-C; before, the process died with simulators and emulators running.
 
 ## Per-step table
 

@@ -1538,6 +1538,8 @@ def shutdown_sims():
         except subprocess.TimeoutExpired: print(f"note: simulator {udid} did not shut down within 60 s; run `xcrun simctl shutdown {udid}`", file=sys.stderr)
     OUR_SIMS.clear()
 
+USE_DEVICE_LOCK = True  # the tests that run a fake run set this False: they use no device, and two test suites at once must not refuse each other
+
 @contextlib.contextmanager
 def device_lock(key):
     """One shotfleet run at a time per set of devices. Pool simulators are named shotfleet-<device>-N and emulators sit on fixed ports,
@@ -1546,6 +1548,7 @@ def device_lock(key):
     A lock file that can't be made or locked for any other reason does not stop the run."""
     f = None
     try:
+        if not USE_DEVICE_LOCK: raise ImportError
         import fcntl
         f = os.fdopen(os.open(f"/tmp/shotfleet-{key}.lock", os.O_CREAT | os.O_RDWR, 0o666), "r+")
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)

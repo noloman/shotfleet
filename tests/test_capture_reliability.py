@@ -44,6 +44,7 @@ class PoolBoot(unittest.TestCase):
         self.assertEqual(set(shut), booted)
 
 
+@mock.patch.object(sf, "USE_DEVICE_LOCK", True)  # the other test modules switch it off
 class OneRunPerDeviceSet(unittest.TestCase):
     def test_a_second_run_on_the_same_devices_is_refused_until_the_first_ends(self):
         key = f"test-{os.getpid()}"
