@@ -1068,6 +1068,28 @@ class Mcp(unittest.TestCase):
             self.assertFalse(sf.NO_HOOKS)
         self.assertIn("hooks: true", next(t for t in sf.MCP_TOOLS if t["name"] == "run")["description"])
 
+    def call_in_process(self, *msgs):
+        out = io.StringIO()
+        with mock.patch.object(sf.sys, "stdin", io.StringIO("\n".join(map(json.dumps, msgs)) + "\n")), \
+             mock.patch.object(sf.sys, "__stdout__", out), mock.patch.object(sf, "MCP_HEARTBEAT_S", 0.05), \
+             mock.patch.object(sf, "apply_free_tier"):
+            sf.cmd_mcp()
+        return [json.loads(l) for l in out.getvalue().splitlines()]
+
+    def test_a_long_run_sends_progress_with_its_last_line_until_it_answers(self):
+        def slow_run(config, locales):
+            for step in ("booting 4 simulators", "de: 3 of 10 screens"): print(step); time.sleep(0.2)
+            return 0
+        call = lambda i, meta: {"jsonrpc": "2.0", "id": i, "method": "tools/call", "params": {"name": "run", "arguments": {"config": "x.toml"}, **meta}}
+        with mock.patch.object(sf, "cmd_run", slow_run):
+            out = self.call_in_process(call(1, {"_meta": {"progressToken": "t1"}}), call(2, {}))
+        first = out[:out.index(next(m for m in out if m.get("id") == 1))]
+        self.assertGreaterEqual(len(first), 3)
+        self.assertTrue(all(m["method"] == "notifications/progress" and m["params"]["progressToken"] == "t1" for m in first))
+        self.assertEqual([m["params"]["progress"] for m in first], list(range(1, len(first) + 1)))  # always going up
+        self.assertIn("de: 3 of 10 screens", [m["params"]["message"] for m in first])
+        self.assertEqual([m.get("id") for m in out[len(first):]], [1, 2])  # no token: no progress, and none after a reply
+
     def test_tool_annotations_say_what_each_tool_does(self):
         tools = {t["name"]: t for t in sf.MCP_TOOLS}
         for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)

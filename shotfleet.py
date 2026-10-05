@@ -4212,11 +4212,19 @@ def mcp_summary(code):
         out["more"] = f"only the first {MCP_LINES} lines are here; the report files have all of them (or call again with full: true)"
     return out
 
-def mcp_call(name, args):
-    """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
+MCP_HEARTBEAT_S = 30  # with a progressToken, a progress notification this often (Claude Code drops a stdio call silent for 30 min)
+
+def mcp_call(name, args, progress=None):
+    """One tool call -> (text, is_error). Output is captured; with `progress` (a function taking a message), its last line
+    is sent every MCP_HEARTBEAT_S seconds while the tool works."""
     global LAST_REPORT, NO_HOOKS
     LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
-    log = io.StringIO()
+    log, stop = io.StringIO(), threading.Event()
+    def beat():
+        while not stop.wait(MCP_HEARTBEAT_S):
+            progress(next((l.strip() for l in reversed(log.getvalue()[-2000:].splitlines()) if l.strip()), "working")[:200])
+    beater = threading.Thread(target=beat, daemon=True)
+    if progress: beater.start()
     try:
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             if name == "doctor": code = cmd_doctor()
@@ -4232,6 +4240,9 @@ def mcp_call(name, args):
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
         return f"{msg}\n\n{log.getvalue()[-2000:]}", True
+    finally:  # no progress notification may follow the reply
+        stop.set()
+        if progress: beater.join()
     if name not in ("check", "run") or not any(f.is_file() for f in REPORTS): return log.getvalue(), False
     text = json.dumps({"exit": code, **reports_json()} if args.get("full") else mcp_summary(code), ensure_ascii=False)
     return text, False
@@ -4257,7 +4268,12 @@ def cmd_mcp():
                       "serverInfo": {"name": "shotfleet", "version": VERSION}}
         elif method == "tools/list": result = {"tools": MCP_TOOLS}
         elif method == "tools/call":
-            text, err = mcp_call(params.get("name"), params.get("arguments") or {})
+            token, sent = (params.get("_meta") or {}).get("progressToken"), [0]
+            def progress(message):  # `progress` must go up with every notification; there is no total
+                sent[0] += 1
+                send({"jsonrpc": "2.0", "method": "notifications/progress",
+                      "params": {"progressToken": token, "progress": sent[0], "message": message}})
+            text, err = mcp_call(params.get("name"), params.get("arguments") or {}, progress if token is not None else None)
             result = {"content": [{"type": "text", "text": text}], "isError": err}
         elif method == "ping": result = {}
         else:
