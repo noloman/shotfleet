@@ -1247,15 +1247,15 @@
  },
  {
   "id": "C072",
-  "claim": "If macOS text recognition gets stuck, check switches to Tesseract automatically when installed, otherwise says to restart",
+  "claim": "If macOS text recognition gets stuck, check switches to Tesseract automatically when installed, otherwise says to wait and re-run, close heavy apps or install Tesseract (a restart is a last resort)",
   "where": [
    "README.md"
   ],
   "where_text": [
-   "`check` switches to Tesseract automatically when it's installed"
+   "switches to Tesseract when it's installed"
   ],
   "status": "proven",
-  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, test_without_tesseract_it_says_how_to_fix.",
+  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, test_without_tesseract_it_says_how_to_fix; tests.test_ocr_wait (patient warm-up with a fake helper and fake ps, messages, Latin rule).",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""

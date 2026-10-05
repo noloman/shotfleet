@@ -93,8 +93,8 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `screenshots but --app is` | an iOS folder with an `.apk` or the reverse | pass the matching build |
 | `contains no translations shotfleet can read` | the build has no `.lproj`, String Catalog or resources (typical for Flutter, React Native, Unity, MAUI) | use `--strings '<glob>'` |
 | `the app this run used is gone` | a shotfleet output folder whose `.app` or `.apk` moved | pass `--app` |
-| `macOS text recognition isn't answering` | `ANECompilerService` stuck, usually after heavy use | restart the Mac, or `brew install tesseract tesseract-lang` (used automatically) |
-| `text recognition hung twice on` | same, or an overloaded Mac | restart the Mac if `ANECompilerService` is at full CPU, else rerun |
+| `macOS text recognition isn't answering` | macOS is still compiling its text model in `ANECompilerService` (first time, can take minutes on a loaded Mac), or it is stuck | wait for the first compile and re-run, close heavy apps, or `brew install tesseract` (used automatically, and named in the output); a restart is a last resort |
+| `text recognition hung twice on` | same, or an overloaded Mac | wait and rerun; restart only as a last resort |
 | `--ocr-command failed on` | the custom OCR command failed; if it says language data: `brew install tesseract-lang` | fix the command |
 | `ocr build failed` | source checkout: `swiftc` could not build `ocr.swift` | `xcode-select --install` |
 
