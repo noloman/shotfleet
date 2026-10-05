@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 0.1.1 (2026-10-05)
 - **Found by running real apps** (wger Flutter, the obytes Expo template, kotlinconf-app Compose, Rocket.Chat bare React Native; iOS and Android; `research/frameworks.md` sections 15 to 17):
   - `check` flags a blank screenshot (an app that paints its first frame after the flow's wait: Flutter debug builds, Compose), and `run` captures that language again once, then reports it.
   - `run` warns up front when you ask for a language the app only half translates; a standalone `check <out>` reads the same translation files as the run.
