@@ -7,6 +7,6 @@ Done:
 - [x] site/public/_headers: /download/:file no-cache, /download/:version/* immutable (no /download/* any more: rules would join values)
 - [x] tests/test_release_scripts.py class Versioned (6 tests), 32/32 green
 Next:
-- [ ] docs: packaging/README.md, CHANGELOG Unreleased, docs/handoff.md note
+- [x] docs: packaging/README.md, CHANGELOG Unreleased, docs/handoff.md note
 - [ ] staging rehearsal (staging only), in a clean export tree (publish.sh refuses a tree with RESUME.md)
-- [ ] targeted tests: test_release_scripts test_release_consistency test_docs test_handoff_docs test_golive
+- [x] targeted tests (85 ran, 6 skipped): test_release_scripts test_release_consistency test_docs test_handoff_docs test_golive

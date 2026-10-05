@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Permanent download URLs:** from the next release on, each release (and the earlier ones kept in the release archive) also stays at `https://shotfleet.com/download/<version>/` (for example `/download/0.1.2/shotfleet-macos-arm64.tar.gz`, its `.sha256` and the `.pkg`), and those files never change. The install line and `/download/VERSION` still give the latest.
 
 ## 0.1.2 (2026-10-05)
 - **`--json` covers every report:** with several reports (several device types, both platforms, Play phone and tablet sets) the one JSON document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each. With one report nothing changes.
