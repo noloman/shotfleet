@@ -28,6 +28,18 @@ EL = {"a": "Επόμενο", "b": "Ρυθμίσεις", "c": "Έναρξη πρ�
 STRINGS = {"en": EN, "el": EL}
 
 
+def fake_vision():
+    """macOS text recognition stubbed to read each screenshot's .txt sidecar, like the `cat {image}.txt` OCR command. The real one
+    waits on macOS's model compile: 139 s and 214 s for one test each on a loaded Mac (research/speed-2026-10-05.md)."""
+    def read(ocr, png, timeout=120):
+        t = Path(f"{png}.txt").read_text() if Path(f"{png}.txt").exists() else ""
+        return {"text": t, "chars": len(t), "lang": None, "langs": {}, "lines": []}
+    stack = contextlib.ExitStack()
+    for name, fake in (("warm_up_ocr", lambda *a, **k: True), ("read_text", read)):  # ocr_tool and its --langs list stay real: no model compile
+        stack.enter_context(mock.patch.object(sf, name, side_effect=fake))
+    return stack
+
+
 def fixture(d):
     """Two languages from translation files: el/1.png shows Greek (fine), el/2.png shows English (a problem). OCR is `cat`."""
     en, el = EN, EL
@@ -60,7 +72,7 @@ class TerminalSample(unittest.TestCase):
     def test_check_summary_line_matches_what_cmd_check_prints(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d); shots = fixture(d)
-            with contextlib.redirect_stdout(io.StringIO()) as out:
+            with fake_vision(), contextlib.redirect_stdout(io.StringIO()) as out:
                 sf.cmd_check(shots, strings=STRINGS, report_dir=d / "rep", ocr_command="cat {image}.txt")
         printed = [l for l in out.getvalue().splitlines() if l.startswith("checked ")]
         self.assertEqual(len(printed), 1, out.getvalue())
@@ -135,8 +147,8 @@ class JsonReports(unittest.TestCase):
     def test_check_json_is_valid_json_with_the_documented_keys_and_nothing_else_on_stdout(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d); shots = fixture(d)
-            code, out, err = run_main("check", str(shots), "--strings", str(d / "locales/*/translation.json"),
-                                      "--ocr-command", "cat {image}.txt", "--report", str(d / "rep"), "--json")
+            with fake_vision(): code, out, err = run_main("check", str(shots), "--strings", str(d / "locales/*/translation.json"),
+                                                       "--ocr-command", "cat {image}.txt", "--report", str(d / "rep"), "--json")
         report = json.loads(out)
         self.assertEqual(code, 1, err)
         self.assertEqual(report["exit"], 1)
@@ -163,7 +175,7 @@ class CheckPromises(unittest.TestCase):
             before = sorted(str(p.relative_to(shots)) for p in shots.rglob("*"))
             cwd = os.getcwd(); os.chdir(d)
             try:
-                with contextlib.redirect_stdout(io.StringIO()):
+                with fake_vision(), contextlib.redirect_stdout(io.StringIO()):
                     sf.cmd_check(shots, strings=STRINGS, ocr_command="cat {image}.txt")
             finally: os.chdir(cwd)
             self.assertEqual(sorted(str(p.relative_to(shots)) for p in shots.rglob("*")), before)
@@ -172,7 +184,7 @@ class CheckPromises(unittest.TestCase):
     def test_index_is_a_grid_with_a_row_per_language_a_column_per_screen_and_problems_outlined(self):
         with tempfile.TemporaryDirectory() as d:
             d = Path(d); shots = fixture(d)
-            with contextlib.redirect_stdout(io.StringIO()):
+            with fake_vision(), contextlib.redirect_stdout(io.StringIO()):
                 sf.cmd_check(shots, strings=STRINGS, report_dir=d / "rep", ocr_command="cat {image}.txt")
             page = (d / "rep/index.html").read_text()
         self.assertEqual(page.count("<tr>"), 3)  # header + el + en

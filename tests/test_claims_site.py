@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "tests"))
 import shotfleet as sf
 from test_site import Page, go_live, LIVE, INDEX as INDEX_HTML
-from test_cli_claims import fixture, STRINGS
+from test_cli_claims import fixture, fake_vision, STRINGS
 
 PUB = ROOT / "site/public"
 NODE = shutil.which("node")
@@ -470,7 +470,7 @@ class ComparisonTable(unittest.TestCase):
         import contextlib, io
         with tempfile.TemporaryDirectory() as d:
             d = Path(d); shots = fixture(d)
-            with contextlib.redirect_stdout(io.StringIO()) as out:
+            with fake_vision(), contextlib.redirect_stdout(io.StringIO()) as out:
                 code = sf.cmd_check(shots, strings=STRINGS, report_dir=d / "rep", ocr_command="cat {image}.txt")
             report = json.loads((d / "rep/check.json").read_text())
         self.assertIn("el/2.png: shows en strings", out.getvalue()); self.assertNotEqual(code, 0)
