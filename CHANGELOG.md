@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Android below API 33 is refused up front:** a config `system_image` or an existing emulator whose image is older than API 33 now stops `run` with the reason (`cmd locale set-app-locales` needs Android 13), the install command and the config key to set, before the emulator boots; before, it booted (1 to 5 minutes) and failed at the first language with an adb error. API 33 and newer, preview images with no number, and an emulator whose config cannot be read are unchanged. The app's minSdk is irrelevant. `research/limits-platform-reach-2026-10-05.md`.
 - **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 - **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each; with one report nothing changes. #68.
 
