@@ -65,6 +65,12 @@ class Reading(unittest.TestCase):
         ar = sf.hierarchy_lines(json.loads((FIX / "ar-welcome.json").read_text()))
         self.assertEqual(ar, ["مرحبًا", "لقطات شاشتك بكل اللغات", "التالي", "ابحث"])  # the two lines of one node are split; the duplicate is dropped
 
+    def test_a_real_maestro_2_11_hierarchy_keeps_only_the_apps_lines(self):
+        # step-010-assertCondition.json written by the 2026-10-05 fixture e2e (German settings screen, Android 16): the status bar has a clock,
+        # wifi and battery nodes with text, none of which belongs in the result
+        real = sf.hierarchy_lines(json.loads((FIX / "de-settings-real.json").read_text()))
+        self.assertEqual(real, ["Einstellungen", "Lege fest, wie die App aussieht und klingt.", "Fertig"])
+
     def test_each_marker_is_paired_with_the_screenshot_before_it(self):
         with tempfile.TemporaryDirectory() as d:
             debug_run(d, "r1_f0", [("01_welcome", "ja-welcome.json"), ("02_settings", "ar-welcome.json")])

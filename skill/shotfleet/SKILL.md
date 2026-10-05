@@ -80,7 +80,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 
 - What you ran, the exit code, the number of problems, and the path of `index.html` (open it for the grid: a row per language, a column per screen, problems outlined in red).
 - For each problem group: which locale to recapture and whether the cause is in the app (untranslated string, button off-screen in a long language) or in the flow.
-- What was not covered: scripts macOS can't read, `check` without `--app`, Android screens (read by text recognition only).
+- What was not covered: scripts macOS can't read, `check` without `--app`, Android screens on Maestro older than 2.7.0 (read by text recognition only).
 
 ## Do not
 

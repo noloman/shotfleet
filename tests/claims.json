@@ -2189,5 +2189,20 @@
   "assertion": "A command with no progress for stall_s seconds is killed within seconds of that and raises TimeoutExpired with .stalled.",
   "fix": "",
   "test": "StalledRun.test_no_progress_for_stall_s_kills_the_command"
+ },
+ {
+  "id": "C131",
+  "claim": "On Android with Maestro 2.7.0 or newer the screen text is read from the UI hierarchy (a marker step after each screenshot), exact in every script",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "on Android it does the same with Maestro 2.7.0 or newer, from the screen hierarchy Maestro saves for a marker step after each screenshot"
+  ],
+  "status": "proven",
+  "proof": "2026-10-05 fixture e2e (SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only android --keep, Maestro 2.11.0, one Android 16 emulator, de/ja/ar/tr): 30 of 30 assertions passed, including 'every screenshot's text came from the UI hierarchy' (check.json evidence 'hierarchy' on 8 of 8 screenshots, run.json hierarchy_markers true, .texts.json held the exact Japanese, Arabic, German and Turkish strings and no status-bar lines). The same run on Maestro 2.0.10 (markers off, note printed) passed 29 of 29 with evidence 'ocr'. Mechanism proven earlier by experiment A (research/limits-text.md 1f). Unit: Markers.test_one_marker_after_every_screenshot_step_scalar_and_map_form, Reading.test_a_real_maestro_2_11_hierarchy_keeps_only_the_apps_lines, Reading.test_each_marker_is_paired_with_the_screenshot_before_it, Check.test_japanese_and_arabic_are_proven_from_the_hierarchy_without_ocr, Check.test_a_screenshot_without_hierarchy_falls_back_to_ocr_and_says_so (tests/test_android_hierarchy.py: canned Japanese and Arabic, one real Maestro 2.11.0 file). Limits: one emulator, four languages, one app; two shards on two emulators at once not run in this e2e; Flutter or Compose text merged into one node is only split on newlines.",
+  "layer": "fixture",
+  "assertion": "Fixture run on Maestro 2.11.0: every screenshot's check evidence is 'hierarchy'.",
+  "fix": ""
  }
 ]

@@ -1922,9 +1922,9 @@ def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False):
     first = next((l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")), "")
     out = [f"- runScript: {VARS_JS}"] if mapped else []
     if not re.match(r"\s*- launchApp", first): out.append("- launchApp")
-    # ponytail: no screen-text reading on Android: `maestro hierarchy` can't reach the drivers of a sharded run and
-    # tears down its port forwards, which hung the run (measured 2026-10-01); Android screenshots are checked with OCR
-    # (the `hierarchy` markers below are not yet proven in shotfleet on a device: remove this comment when a device run passes)
+    # Never `maestro hierarchy` for the screen text: it can't reach the drivers of a sharded run and tears down their port
+    # forwards, which hung the run (measured 2026-10-01; fails fast on 2.11.0). The marker steps make Maestro save it itself.
+    # ponytail: below Maestro 2.7.0 (no per-step hierarchy) Android screenshots are checked with OCR only
     pending = None  # [indent, screenshot name or None] of a takeScreenshot step still open: its marker goes after the whole step
     def close():
         nonlocal pending

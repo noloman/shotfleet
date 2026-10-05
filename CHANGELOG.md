@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Android reads each screenshot's text from the app** with Maestro 2.7.0 or newer (a marker step after every screenshot makes Maestro save the UI hierarchy), exact in every script instead of OCR; `check.json` says per screenshot whether the evidence was `hierarchy` or `ocr`. Older Maestro, and screenshots from other tools, keep reading pixels. Fixture e2e on Maestro 2.11.0: 8 of 8 screenshots read from the hierarchy.
 
 ## 0.1.1 (2026-10-05)
 - **Found by running real apps** (wger Flutter, the obytes Expo template, kotlinconf-app Compose, Rocket.Chat bare React Native; iOS and Android; `research/frameworks.md` sections 15 to 17):

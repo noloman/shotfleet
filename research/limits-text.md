@@ -130,8 +130,7 @@ the text and must be dropped before matching. The same mechanism also fired for 
 which confirms any warned step saves one. Side finding for the Maestro 2.11 work: with `--debug-output` set, the relative `takeScreenshot` path ended up
 under `<debug>/<flow>/takeScreenshot/shots-control/01_welcome.png`, not in the working directory.
 
-**Not implemented in shotfleet.** `android_flow` still carries no markers and Android screenshots are still checked with OCR only; nothing in the README or the
-site changes. Next step if wanted: section 1d, Effort M, now with the trick confirmed.
+**Not implemented in shotfleet when this was written (2026-10-04); see 1g.**
 
 #### Round 2 (same day, evening): two shards, two emulators, Arabic, and Maestro 2.0.10
 
@@ -152,6 +151,19 @@ The Japanese text of both shards matches round 1 (`ようこそ ... 次へ`, `�
 claim is not confirmed by this run. The comment in `shotfleet.py` is unchanged; the design in 1d does not depend on it, because the marker needs no outside call.
 
 Effort: **M** (about 3 to 5 days with fixtures and the experiment).
+
+### 1g. Implemented for Android, 2026-10-05 (PR noloman/shotfleet#44)
+
+Section 1d, Android only: `android_flow` adds the marker after every `takeScreenshot` when `maestro --version` is 2.7.0 or newer (below that, or unreadable, it prints a
+note and `check` reads pixels); after each round `save_hierarchy_texts` pairs each marker with the screenshot before it in `commands.json` and writes
+`raw/<lp>/<name>.texts.json` (the file iOS already writes, not a new `.hier.json`, so `check` needed no new path); `check.json` rows carry `evidence: "hierarchy" | "ocr"`.
+Status-bar nodes are dropped by `resource-id` prefix `com.android.systemui:` (confirmed on a real Maestro 2.11.0 file: clock, wifi and battery nodes carry it).
+
+**Device run (fixture e2e, Maestro 2.11.0, one Android 16 emulator, de/ja/ar/tr, 2026-10-05):** 30 of 30 assertions passed, including the new one that every
+screenshot's evidence is `hierarchy`; 8 of 8 screenshots read from the hierarchy, `hierarchy_markers: true`, 200 s wall time, no problems. The texts are exact
+(`ようこそ / あなたのスクリーンショットを、すべての言語で。 / 次へ`, the Arabic and Turkish strings too, no clock or battery lines). The same script on Maestro 2.0.10 (markers off)
+passed 29 of 29 with evidence `ocr`. Still not run: two shards on two emulators at once under shotfleet (only the experiment did one shard on one emulator); iOS keeps its own
+`capture_texts` path; `check` on screenshots from other tools has no hierarchy and stays OCR.
 
 ---
 
