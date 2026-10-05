@@ -1,0 +1,4 @@
+[android]
+apk = "../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/bin/Debug/net10.0-android/com.companyname.localizationdemo-Signed.apk"
+strings = "../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/Resources/Strings/*.resx"
+locales = ["de", "ja"]

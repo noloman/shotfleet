@@ -1,0 +1,5 @@
+[ios]
+app = "<sample dir>/bin/Debug/net10.0-ios/iossimulator-arm64/LocalizationDemo.app"
+strings = "<sample dir>/Resources/Strings/*.resx"
+locales = ["de", "es", "fr", "ja", "zh-Hans"]
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"

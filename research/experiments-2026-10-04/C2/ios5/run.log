@@ -1,0 +1,11 @@
+booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 5 locales on 2 simulators...
+ok   de       1/1 screenshots
+ok   es       1/1 screenshots
+ok   fr       1/1 screenshots
+ok   ja       1/1 screenshots
+ok   zh-Hans  1/1 screenshots
+captured 5/5 locales in 110s on 2 simulators
+
+checked 5 screenshots in 5 languages: 0 problem(s)
+ios5 run rc=0 secs=428
