@@ -2446,7 +2446,7 @@
    "On Android, shotfleet reads the screen text from Maestro's UI hierarchy instead of from pixels. On the Android fixture app it passed 30 of 30 assertions with Maestro 2.11.0, and 29 of 29 with Maestro 2.0.10, where it still reads pixels."
   ],
   "status": "evidence",
-  "proof": "Pull request 44, branch claude/013-android-hierarchy, tests/claims.json row C132 there (commit 3a82f88): 2026-10-05 fixture e2e (tools/fixture-e2e.sh --platform-only android --keep), Maestro 2.11.0 30 of 30 with check evidence 'hierarchy' on 8 of 8 screenshots; Maestro 2.0.10 29 of 29 with evidence 'ocr'; re-run on the merged branch 16:31 to 16:37 with the same results. Not on main and not in any release (STATUS.md: 0.1.3 candidate). When PR #44 ships, drop 'not released yet' from the page and point the record at main.",
+  "proof": "Merged to main 2026-10-05 (pull request 44, branch claude/013-android-hierarchy, commit 3a82f88), not yet released; tests/claims.json row C132: 2026-10-05 fixture e2e (tools/fixture-e2e.sh --platform-only android --keep), Maestro 2.11.0 30 of 30 with check evidence 'hierarchy' on 8 of 8 screenshots; Maestro 2.0.10 29 of 29 with evidence 'ocr'; re-run on the merged branch 16:31 to 16:37 with the same results. Not on main and not in any release (STATUS.md: 0.1.3 candidate). When PR #44 ships, drop 'not released yet' from the page and point the record at main.",
   "layer": "device",
   "assertion": "Recorded on the branch; the page says it is not released.",
   "fix": ""
