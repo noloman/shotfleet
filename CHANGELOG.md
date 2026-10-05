@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Text recognition waits for a compile mid-check too:** when macOS starts compiling its text-reading model while `check` is already reading screenshots (seen on a Mac at load 800), each read now waits for that compile (up to 6 minutes, only while `ANECompilerService` is using the CPU) like the warm-up does, instead of failing with "text recognition hung twice" on a Mac without Tesseract.
 
 ## 0.1.3 (2026-10-05)
 - **Site: "See it work" page (/demo):** the first two feature clips (doctor, init) with captions, and a dated evidence list of the release gates, the macOS runs and the real apps run so far, each line backed by a claims row; linked from the home and docs navigation.

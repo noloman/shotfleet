@@ -79,6 +79,11 @@ class ReadText(unittest.TestCase):
         h = fake_helper("""echo '{"lang": "de", "chars": 3, "text": "abc"}'\n""")
         self.assertEqual(sf.read_text(h, "x.png", timeout=5)["chars"], 3)
 
+    def test_a_compile_mid_check_is_waited_for(self):
+        h = fake_helper("""sleep 1.5; echo '{"chars": 3}'\n""")
+        with mock.patch.object(sf, "ane_state", return_value=(True, 5)):
+            self.assertEqual(sf.read_text(h, "x.png", timeout=0.5, patience=20)["chars"], 3)
+
     def test_hang_is_retried_once_then_names_the_cause(self):
         h = fake_helper("sleep 30\n")
         with mock.patch.object(sf, "ane_state", return_value=(True, 700)), self.assertRaisesRegex(RuntimeError, "stuck"):

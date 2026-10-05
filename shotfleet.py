@@ -2626,17 +2626,23 @@ def warm_up_ocr(ocr, timeout=600, patience=0):
     note = threading.Timer(OCR_NOTE_AFTER_S, print, ["macOS is preparing its text recognition, a one-off wait of about 30 seconds "
                                                     "(a few minutes on a busy Mac). Nothing is wrong if this stays quiet."], {"flush": True})
     note.daemon = True; note.start()
-    start = time.time(); limit = timeout
     try:
-        while True:
-            try:
-                return bool(p.communicate(timeout=max(0.1, start + limit - time.time()))[0].strip())
-            except subprocess.TimeoutExpired:
-                busy, cpu_min = ane_state() if patience > time.time() - start else (False, 0)
-                if not busy or cpu_min >= OCR_STUCK_CPU_MIN: return False
-                limit = min(patience, time.time() - start + 10)  # still working: look again in 10 s
+        out = wait_for_ocr(p, timeout, patience)
+        return bool(out and out[0].strip())
     finally:
         note.cancel()
+
+def wait_for_ocr(p, timeout, patience=0):
+    """p.communicate()'s (stdout, stderr), or None if p gives no answer in `timeout` s. With `patience`, waits past `timeout`
+    (up to `patience` seconds in all) as long as ANECompilerService is using the CPU: a compile making progress, not a stuck Mac."""
+    start = time.time(); limit = timeout
+    while True:
+        try:
+            return p.communicate(timeout=max(0.1, start + limit - time.time()))
+        except subprocess.TimeoutExpired:
+            busy, cpu_min = ane_state() if patience > time.time() - start else (False, 0)
+            if not busy or cpu_min >= OCR_STUCK_CPU_MIN: return None
+            limit = min(patience, time.time() - start + 10)  # still working: look again in 10 s
 
 TESSERACT_COMMAND = "tesseract {image} stdout -l {tesseract_with_english}"
 # Tesseract starts one OpenMP thread per core; four of them at once spin against each other (measured on 4 cores:
@@ -2674,16 +2680,18 @@ def usable_text(png, tables):
         if not any(len(lines & vals) >= 2 for vals in tables.values()): return None
     return t
 
-def read_text(ocr, png, timeout=120):
-    """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever."""
+def read_text(ocr, png, timeout=120, patience=OCR_COMPILE_PATIENCE_S):
+    """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever;
+    a model compile that is still working mid-check (seen at load 800 on 2026-10-05) is waited for like the warm-up's."""
     for _ in range(2):
-        try:
-            r = sh([ocr, str(png)], timeout=timeout)
-            if r.returncode != 0:  # the helper's exit 2 (Vision failed): an error, not an empty screen
-                raise RuntimeError(f"text recognition failed on {png}: {r.stderr.strip()[-200:] or 'exit ' + str(r.returncode)}")
-            return json.loads(r.stdout or "{}")
-        except subprocess.TimeoutExpired:
-            pass
+        p = subprocess.Popen([ocr, str(png)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        out = wait_for_ocr(p, timeout, patience)
+        if out is None:
+            p.kill(); p.communicate()
+            continue
+        if p.returncode != 0:  # the helper's exit 2 (Vision failed): an error, not an empty screen
+            raise RuntimeError(f"text recognition failed on {png}: {out[1].strip()[-200:] or 'exit ' + str(p.returncode)}")
+        return json.loads(out[0] or "{}")
     raise RuntimeError(f"text recognition hung twice on {png}. " + ocr_not_answering())
 
 # Tesseract's names for the scripts macOS can't read (for {tesseract} in --ocr-command)
