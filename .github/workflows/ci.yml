@@ -1,5 +1,7 @@
 name: claims
-on: [push, pull_request]
+# Manual only (the owner pays for runner minutes, and the local gate tools/check-claims.sh is the real gate). Run it from the Actions tab if wanted.
+on:
+  workflow_dispatch:
 jobs:
   check-claims:
     runs-on: macos-latest
