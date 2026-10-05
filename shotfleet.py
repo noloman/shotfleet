@@ -3344,8 +3344,10 @@ def find_builds(cwd, derived=None, project=None):
                                  ((android_cmd, android_what, bool(apks)), has_gradle or bool(project and project.build_android))) if present]
     if not builds:
         what = f"no {ios_what} or {android_what} found for" if own else "no Debug simulator build or Gradle debug APK found for"
-        raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  "
-                   + "\n  ".join(c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]))
+        cmds = [c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]]
+        explain = ("\n(<scheme> is the name in Xcode's scheme menu next to the Run button; `xcodebuild -list` prints it)"
+                   if any("<scheme>" in c for c in cmds) else "")  # no shared scheme on disk to read it from
+        raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  " + "\n  ".join(cmds) + explain)
     for cmd, what, ok in here:
         if not ok: print(f"note: no {what} yet; to make one: {cmd}")
     return builds

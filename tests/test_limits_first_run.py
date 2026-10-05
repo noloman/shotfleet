@@ -121,5 +121,27 @@ class InitBeforeMaestro(Tree):
             self.assertNotIn("Maestro is not installed", self.init(str(self.app()), dest=str(self.d / "p")))
 
 
+from tests.test_setup_discovery import Tree as DiscoveryTree  # noqa: E402  (a fake home, Homebrew prefix and project folder)
+
+
+class WhereTheSchemeNameComesFrom(DiscoveryTree):
+    """A new Xcode project has no shared scheme on disk, so init prints '<scheme>'; the buyer must be told what to put there."""
+    def failure(self):
+        with self.assertRaises(sf.Fail) as e, contextlib.redirect_stdout(io.StringIO()): sf.find_builds(self.proj)
+        return str(e.exception)
+
+    def test_the_placeholder_is_explained(self):
+        (self.proj / "MyApp.xcodeproj").mkdir()
+        msg = self.failure()
+        self.assertIn("-scheme '<scheme>'", msg); self.assertIn("scheme menu next to the Run button", msg); self.assertIn("xcodebuild -list", msg)
+
+    def test_no_explanation_when_the_scheme_name_is_known(self):
+        proj = self.proj / "MyApp.xcodeproj"; schemes = proj / "xcshareddata/xcschemes"; schemes.mkdir(parents=True)
+        (schemes / "MyApp.xcscheme").write_text('<Scheme><LaunchAction><BuildableProductRunnable><BuildableReference BuildableName="MyApp.app"/>'
+                                                '</BuildableProductRunnable></LaunchAction></Scheme>')
+        msg = self.failure()
+        self.assertIn("-scheme MyApp", msg); self.assertNotIn("scheme menu", msg)
+
+
 if __name__ == "__main__":
     unittest.main()
