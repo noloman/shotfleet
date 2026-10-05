@@ -1342,7 +1342,7 @@
    "site/public/privacy.html"
   ],
   "where_text": [
-   "Beyond that, the only things stored are your analytics choice, in your own browser, and what you send when you join the waitlist or write to me."
+   "Beyond that, the only things stored are your analytics choice, in your own browser, and what you sent if you joined the early-access list before the sale opened, or send when you write to me."
   ],
   "status": "fixed",
   "proof": "2026-10-03: WorkerBehaviour.test_c078_only_three_kinds_of_record_exist_and_none_holds_the_ip_or_user_agent (a signup record has exactly at, platform, stack, country, lang, ref; a message exactly message, email, country; only email:, msg: and hit: keys are ever written; the log lines hold the event and country only), PrivacyPageListsWhatIsStored.test_c078_the_contact_message_fields_are_named_on_the_page, PrivacyPageListsWhatIsStored.test_c079_each_field_of_the_waitlist_record_is_named_on_the_page. 'platform' is derived from the stack answer (what you build with). Still not checkable here: the platform's own request logs.",

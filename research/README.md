@@ -6,7 +6,7 @@ One line per note: date, what it decided, whether it was applied. Written 2026-1
 
 | Note | Decided / found | Applied? |
 |---|---|---|
-| `docs-audit-2026-10-05.md` | Audit of README, site, skill and internal docs after 0.1.1: 9 false or stale, 10 missing, 17 internal, 10 owner decisions | Applied on `claude/docs-refresh` except what the owner has not approved (see that branch's commits); the owner items it lists in section (d) are decided in chat |
+| `docs-audit-2026-10-05.md` | Audit of README, site, skill and internal docs after 0.1.1: 9 false or stale, 10 missing, 17 internal, 10 owner decisions | Applied on `claude/docs-refresh`. Of the owner items in its section (d) these were approved in chat and applied: D1 (privacy page in the past tense), D3 (the macOS line on the home page and the other pages), D5 (Maestro 2.0.10 next to the timings), D7 (quickstart order). Not changed: terms.html (D2), the licence design (D6), founder price (D8), marketing/, site/draft/ |
 | `release-0.1.1-evidence-2026-10-05.md` | What 0.1.1 shipped (build e2e1998, main 2ccda21), gate 65 of 65, smoke 36/0, how to rebuild | Record; STATUS and `docs/handoff.md` section 14 now point to it |
 | `0.1.2-plan.md` | Scope, order and risks for 0.1.2 (pipeline A1 to A6, B1 to B4, PR #44 last) | Plan. B1 (`--json` over every report) done in #68; B2 half done (#69 is wording; an invalid key still runs 2 languages) |
 | `limits-platform-reach-2026-10-05.md` | Which Macs and OS versions can run shotfleet; the standalone-Python build for macOS 13; hosted-runner tests | Applied by 0.1.1 and #55 (build, `tools/macho-minos.py`, the macOS line `Built for macOS 13 or later on Apple silicon; tested on macOS 27.`) |

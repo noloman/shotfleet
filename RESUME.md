@@ -11,7 +11,7 @@ Coordinator follow-up (Manu approved, apply AFTER the first pass, push after eac
  Still NOT approved: terms.html, licence design, D8 founder price, marketing/**, site/draft/**.
  Also second llms.txt bullet of A8 ("when you buy or write to me") depends on D1: do it with item (1).
 
-Done: A1-A9, B1-B8, B10, C1-C17 (research/README.md written; update its first-run line after follow-up 3), C16 proofs. First pass COMPLETE.
-Left: follow-up (1) D1 privacy.html (+ llms.txt second bullet); D5, D3, D7/B9 done
+Done: everything: A1-A9, B1-B8 B10, C1-C17, C16; follow-ups (1) D1 (4) D5 (2) D3 (3) D7/B9
+Left: nothing; coordinator deletes this file before merge and runs the full tools/check-claims.sh
 Skipped on purpose: section (d) items not approved
-Next step: follow-up (4) D5 first (smallest), then (2) D3, (3) D7/B9, (1) D1
+Next step: final targeted test run and report
