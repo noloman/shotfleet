@@ -1,0 +1,77 @@
+{
+ "attributes": {},
+ "children": [
+  {
+   "attributes": {
+    "bounds": "[0,0][1080,200]",
+    "resource-id": "com.android.systemui:id/status_bar",
+    "clickable": "false"
+   },
+   "children": [
+    {
+     "attributes": {
+      "bounds": "[0,0][1080,200]",
+      "resource-id": "com.android.systemui:id/clock",
+      "clickable": "false",
+      "text": "2:40"
+     },
+     "children": []
+    },
+    {
+     "attributes": {
+      "bounds": "[0,0][1080,200]",
+      "resource-id": "com.android.systemui:id/mobile_signal",
+      "clickable": "false",
+      "accessibilityText": "T-Mobile, three bars."
+     },
+     "children": []
+    },
+    {
+     "attributes": {
+      "bounds": "[0,0][1080,200]",
+      "resource-id": "com.android.systemui:id/battery",
+      "clickable": "false",
+      "accessibilityText": "Battery charging, 100 percent."
+     },
+     "children": []
+    }
+   ]
+  },
+  {
+   "attributes": {
+    "bounds": "[0,0][1080,200]",
+    "resource-id": "",
+    "clickable": "false"
+   },
+   "children": [
+    {
+     "attributes": {
+      "bounds": "[0,0][1080,200]",
+      "resource-id": "",
+      "clickable": "false",
+      "text": "ようこそ"
+     },
+     "children": []
+    },
+    {
+     "attributes": {
+      "bounds": "[0,0][1080,200]",
+      "resource-id": "",
+      "clickable": "false",
+      "text": "あなたのスクリーンショットを、すべての言語で。"
+     },
+     "children": []
+    },
+    {
+     "attributes": {
+      "bounds": "[0,0][1080,200]",
+      "resource-id": "",
+      "clickable": "false",
+      "text": "次へ"
+     },
+     "children": []
+    }
+   ]
+  }
+ ]
+}

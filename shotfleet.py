@@ -2096,10 +2096,26 @@ def android_vars(inputs, lang):
             '  if (!byDevice[udid] && typeof console !== "undefined") console.log("shotfleet: no row for device \'" + udid + "\'; typing the [inputs] defaults");\n'
             "  return byDevice[udid] || fallback;\n})();\n"), names
 
-def android_flow(text, name, shots_dir, env=None, mapped=()):
+HIER_MIN = (2, 7, 0)  # first Maestro whose warned steps save the screen hierarchy (research/limits-text.md 1f: run on 2.11.0)
+HIER_LABEL = "shotfleet:hier:"
+
+def hierarchy_supported(version):
+    """True when this `maestro --version` string is >= HIER_MIN (None, unreadable, is not)."""
+    try: v = tuple(int(x) for x in re.findall(r"\d+", version or "")[:3])
+    except ValueError: return False
+    return bool(v) and (v + (0, 0, 0))[:3] >= HIER_MIN
+
+def hierarchy_marker(indent, shot):
+    """The step that makes Maestro save the screen hierarchy: an optional assertTrue on `false` ends WARNED (the flow
+    carries on) and a warned step writes screen-hierarchy/step-NNN-assertCondition.json."""
+    label = HIER_LABEL + re.sub(r"[^\w.-]", "_", Path(shot).name)
+    return [f"{indent}- assertTrue:", f"{indent}    condition: ${{false}}", f"{indent}    label: {json.dumps(label)}", f"{indent}    optional: true"]
+
+def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
     No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself.
-    `mapped` names (see android_vars) are read from the script's output.v, after a runScript step at the top."""
+    `mapped` names (see android_vars) are read from the script's output.v, after a runScript step at the top.
+    `hierarchy`: a marker step after every takeScreenshot (see hierarchy_marker); read back by save_hierarchy_texts."""
     header, sep, body = text.partition("\n---\n")
     if not sep: raise ValueError("flow needs an 'appId:' header followed by '---'")
     header = with_env(re.sub(r"(?m)^name:.*\n?", "", header).rstrip() + f"\nname: {name}", env)
@@ -2108,16 +2124,73 @@ def android_flow(text, name, shots_dir, env=None, mapped=()):
     first = next((l for l in body.splitlines() if l.strip() and not l.strip().startswith("#")), "")
     out = [f"- runScript: {VARS_JS}"] if mapped else []
     if not re.match(r"\s*- launchApp", first): out.append("- launchApp")
-    # ponytail: no screen-text reading on Android: `maestro hierarchy` can't reach the drivers of a sharded run and
-    # tears down its port forwards, which hung the run (measured 2026-10-01); Android screenshots are checked with OCR
+    # Never `maestro hierarchy` for the screen text: it can't reach the drivers of a sharded run and tears down their port
+    # forwards, which hung the run (measured 2026-10-01; fails fast on 2.11.0). The marker steps make Maestro save it itself.
+    # ponytail: below Maestro 2.7.0 (no per-step hierarchy) Android screenshots are checked with OCR only
+    pending = None  # [indent, screenshot name or None] of a takeScreenshot step still open: its marker goes after the whole step
+    def close():
+        nonlocal pending
+        if pending and pending[1]: out.extend(hierarchy_marker(*pending))
+        pending = None
     for line in body.splitlines():
+        if hierarchy and pending and line.strip() and not line.lstrip().startswith("#") and len(line) - len(line.lstrip()) <= len(pending[0]):
+            close()
         if re.match(r"^\s*clearState:", line): continue
         if m := re.match(r"^(\s*)- launchApp:\s*(\{.*\})\s*(?:#.*)?$", line):  # one-line options: expand, so clearState can be dropped
             out.append(f"{m.group(1)}- launchApp:")
             out += [m.group(1) + l for l in flow_mapping_lines(m.group(2)) if not re.match(r"^    clearState:", l)]
             continue
+        if hierarchy and not pending:
+            if m := re.match(r"^(\s*)- takeScreenshot:\s*['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line): pending = [m.group(1), m.group(2)]
+            elif m := re.match(r"^(\s*)- takeScreenshot:\s*$", line): pending = [m.group(1), None]
+        elif pending and not pending[1] and (m := re.match(r"^\s*path:\s*['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line)):
+            pending[1] = m.group(1)
         out.append(line); redirect_screenshot(out, shots_dir)
+    close()
     return header + "\n---\n" + "\n".join(out) + "\n"
+
+def hierarchy_lines(tree):
+    """The text of one Maestro screen-hierarchy tree, one string per line in screen order, without the status bar and
+    navigation bar (com.android.systemui: time, signal, battery) and without duplicates."""
+    out = []
+    def walk(n):
+        if not isinstance(n, dict): return
+        a = n.get("attributes") or {}
+        if str(a.get("resource-id") or "").startswith("com.android.systemui:"): return
+        for k in ("text", "accessibilityText", "hintText"):
+            out.extend(t for l in str(a.get(k) or "").split("\n") if (t := l.strip()) and t not in out)
+        for c in n.get("children") or []: walk(c)
+    walk(tree)
+    return out
+
+def hierarchy_texts(debug_dir, flow):
+    """{screenshot name: [text lines]} for the flow called `flow`, from Maestro's debug output: each marker step in
+    commands.json is paired with the takeScreenshot step right before it and with its SCREEN_HIERARCHY artifact."""
+    found = {}
+    for cj in sorted(Path(debug_dir).rglob("commands.json"), key=lambda p: p.stat().st_mtime):  # a retried flow's later folder wins
+        try: cmds = json.loads(cj.read_text())
+        except (OSError, ValueError): continue
+        steps = [(next(iter(c.items())), (e.get("metadata") or {})) for e in cmds if isinstance(e, dict)
+                 and isinstance(c := (e.get("metadata") or {}).get("evaluatedCommand") or e.get("command"), dict) and c]
+        if flow not in {(b or {}).get("config", {}).get("name") for (k, b), _ in steps if k == "applyConfigurationCommand"} | {cj.parent.name}: continue
+        shot = None
+        for (kind, body), meta in steps:
+            if kind == "takeScreenshotCommand": shot = Path(str((body or {}).get("path", ""))).name or None
+            elif shot and str((body or {}).get("label", "")).startswith(HIER_LABEL):
+                art = next((a["path"] for a in meta.get("artifacts") or [] if a.get("type") == "SCREEN_HIERARCHY"), None)
+                try: found[shot] = hierarchy_lines(json.loads((cj.parent / art).read_text())) if art else []
+                except (OSError, ValueError): pass
+                shot = None
+    return found
+
+def save_hierarchy_texts(debug_dir, flow, dst):
+    """Write <name>.texts.json (what iOS writes; `check` prefers it to OCR) next to each screenshot in dst that has a
+    hierarchy. Returns how many it wrote. A screenshot without one is read from pixels by `check`."""
+    n = 0
+    for shot, lines in hierarchy_texts(debug_dir, flow).items():
+        if lines and (dst / f"{shot}.png").exists():
+            (dst / f"{shot}.texts.json").write_text(json.dumps(lines, ensure_ascii=False)); n += 1
+    return n
 
 def flow_devices(debug_dir):
     """{flow file stem: device serial} from Maestro's own log of how it sharded the run."""
@@ -2146,6 +2219,11 @@ def android_run_inner(cfg, path, out, only, parallel):
         print("note: on Android [inputs.<locale>] values are found by MAESTRO_DEVICE_UDID (Maestro hands any flow to any emulator); "
               "Maestro 2.11.0 sets it; Maestro 2.0.10 doesn't, so on 2.0.10 Android types the [inputs] defaults")
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
+    version = read_maestro_version()
+    hier = hierarchy_supported(version)
+    if not hier:
+        print(f"note: Maestro {version or '(version unreadable)'} saves no per-step screen hierarchy (needs {'.'.join(map(str, HIER_MIN))}); "
+              "Android screen text is read from pixels (OCR)")
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
@@ -2186,7 +2264,7 @@ def android_run_inner(cfg, path, out, only, parallel):
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
             if vars_js: (fdir / VARS_JS).write_text(vars_js)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped, hier))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
@@ -2211,7 +2289,8 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
                 if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev}
+                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev,
+                               **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
             return results
@@ -2242,8 +2321,11 @@ def android_run_inner(cfg, path, out, only, parallel):
         r_ = final[lp]
         print_result(lp, r_, expected)
         report["locales"][lp].update(r_)
+    if hier:
+        got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())
+        print(f"screen text from the UI hierarchy for {got} of {total} screenshots" + ("" if got == total else "; the rest are read from pixels (OCR)"))
     report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk,
-                  device=cfg.get("device", "phone"))
+                  device=cfg.get("device", "phone"), hierarchy_markers=hier)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators")
     if not any((out / "raw").glob("*/*.png")):
@@ -2846,7 +2928,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             notes += [f"{label}/{png.name}: could not verify, {m} ({why})" for m in unsure]
             unverified += len(unsure)
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
-                     "chars": r.get("chars", 0)})
+                     "chars": r.get("chars", 0),
+                     "evidence": "hierarchy" if r.get("ocr") == "app" else "ocr"})
     if no_language:  # without strings only language detection judges the language, and Tesseract has none (macOS does)
         notes.append(f"{len(no_language)} screenshot(s) ({', '.join(no_language[:3])}{', ...' if len(no_language) > 3 else ''}) were read by "
                      "Tesseract without --app: it names no language, so their language was not checked (pass --app or --strings)")

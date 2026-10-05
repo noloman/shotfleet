@@ -333,6 +333,12 @@ def tree(out, fastlane, hooks, locales, ocr, platform="ios"):
         except (OSError, ValueError, KeyError): ran = {}
         notok = [lp for lp in locales if not ran.get(lp, {}).get("ok")]
         res.append((f"{d.name}: run.json has every language captured ok", not notok, f"not ok: {notok}"))
+        try: markers = json.loads((d / "run.json").read_text()).get("hierarchy_markers")
+        except (OSError, ValueError): markers = None
+        if markers:  # Android on Maestro >= 2.7: every screen's text must have come from the UI hierarchy, not OCR
+            try: ocr_read = [r["file"] for r in json.loads((d / "check.json").read_text())["screenshots"] if r.get("evidence") != "hierarchy"]
+            except (OSError, ValueError, KeyError): ocr_read = ["no readable check.json"]
+            res.append((f"{d.name}: every screenshot's text came from the UI hierarchy", not ocr_read, f"read from pixels: {ocr_read}"))
     for lp in locales:
         listing = PLAY_LISTING.get(lp, lp) if platform == "android" else LISTING.get(lp, lp)
         folder = Path(fastlane) / ("metadata/android" if platform == "android" else "screenshots") / listing
