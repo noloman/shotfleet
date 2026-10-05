@@ -104,6 +104,7 @@ class PartialResults(FleetCase):
                     return ""
             pool.append(Emu())
         self.buy()
+        stale = self.d / "out-android" / "raw" / "ja"; stale.mkdir(parents=True); (stale / "01.png").write_bytes(b"last week")
         with mock.patch.object(sf, "android_pool", side_effect=pool_with_a_hang):
             code, out, err = self.main("run", self.config(), "--platform", "android", "--parallel", "1")
         self.assertEqual(code, 1, out + err)  # a failed run, not a crash (exit 2)
