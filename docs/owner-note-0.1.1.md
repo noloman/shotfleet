@@ -1,39 +1,38 @@
 # What changed in 0.1.1, and why (note for Manu, 2026-10-05)
 
-Plain words, under a page. Nothing here is posted anywhere. Where I know something from a test I say so; where I read it or guess it, I say that too.
+Plain words, one page. Nothing here is posted anywhere. "Measured" means a test; "read" or "expect" means a report or a guess.
 
 ## The problem in 0.1.0
 
-0.1.0 was built on this Mac with Homebrew's Python. That has two consequences:
+0.1.0 was built on this Mac with Homebrew's Python, which has two consequences:
 
-1. **It only starts on a new macOS.** 52 of the 56 program files inside the 0.1.0 download say they need macOS 27.0 or newer (measured on the live tarball by two sessions). The site names no minimum macOS, so a buyer on an older Mac gets a failure and no explanation.
-2. **It probably fails even on macOS 26.0 to 26.2.** Python reads XML through a system library called Expat. 0.1.0 needs newer Expat functions than those macOS releases carry. Homebrew's own Python crashed the same way on 26.1 and 26.2 ("Symbol not found: _XML_SetAllocTrackerActivationThreshold"), and Homebrew's advice there was to update to macOS 26.3. shotfleet loads this library the moment it starts, so I expect a crash before the first message. This is read from public reports, **not tested on a real 26.0 to 26.2 Mac**.
+1. **It only starts on a very new macOS.** 52 of the 56 program files in the 0.1.0 download need macOS 27.0 or newer (measured on the live file by two sessions). The site named no minimum, so a buyer on an older Mac would get a failure and no explanation.
+2. **It probably fails even on macOS 26.0 to 26.2.** Python reads XML through a system library (Expat), and 0.1.0 needs newer Expat functions than those macOS releases have. Homebrew's own Python crashed the same way on 26.1 and 26.2, and the advice there was to update to 26.3. shotfleet loads it at start-up, so expect a crash before the first message. This is read from public reports, **not tested on a real 26.0 to 26.2 Mac**.
 
-So 0.1.0 probably works only on macOS 26.3 and later. Buyers on anything older would have seen it crash. Nobody has reported that yet; there is no evidence either way about real buyers.
+So 0.1.0 probably works only on macOS 26.3 and later. No buyer has reported a crash; there is no evidence either way.
 
-## What the fix is
+## What 0.1.1 changes
 
-0.1.1 is built with a stand-alone Python (not Homebrew's) and its text-reading helper is built for macOS 13. The build's declared minimum is macOS 13 (measured: the program files need macOS 11 to 13, none 27). The Expat library travels inside the download instead of coming from the Mac. On the real 0.1.1 build, the 0.1.1 session measured: 3 program files instead of 56, with minimum macOS 11 to 13 and none at 27; Apple accepted the notarization of both the zip and the pkg; the quarantined run works; `check` on the 72 CrossfitTracker screenshots in 18 languages gives 0 problems; the licence call to Gumroad works from the packaged program.
+It is built with a stand-alone Python and a text-reading helper built for macOS 13, and Expat travels inside the download. Measured on the real build: program files need macOS 11 to 13, none 27; Apple accepted notarization of the zip and the pkg; the quarantined run works; `check` on 72 CrossfitTracker screenshots in 18 languages gives 0 problems; the Gumroad licence call works from the packaged program. The README and docs now say: "Built for macOS 13 or later on Apple silicon; tested on macOS 27."
 
-**Release gate result (2026-10-05, 12:36):** PASS. On the signed standalone build, the fixture app ran end to end on iPhone, iPad and Android: 65 assertions passed (66 PASS lines, 0 FAIL). Honest detail: the iPhone run needed a second attempt for Turkish (`tr`) because the Mac was under heavy load, and the run was pinned to iOS 26.4. This is the source-of-truth for the claim that 0.1.1 works on this Mac; it says nothing about older Macs.
+It also carries four fixes: `check` no longer calls an unreadable screenshot a problem (the Arabic case); capture cleans up after a stuck simulator, keeps earlier results when a run fails, and two runs no longer steal each other's devices; a plain `doctor` no longer offers the 600 MB download by mistake; and a refunded key is refused with a clear message, with terms wording that matches the Gumroad page.
 
-0.1.1 also carries four earlier fixes (draft PRs #51 to #54):
-- **check:** a screenshot the text reader could not read is now "could not read", not a false problem (the Arabic case).
-- **capture:** a wedged simulator no longer leaves the others booted, two runs on the same devices no longer steal each other's, and a failed run keeps the results it already had.
-- **first run:** a plain `doctor` no longer offers the 600 MB download plan by mistake, and install and `init` messages say what to do next.
-- **refunds:** a refunded key is refused with a clear message, and the terms wording now matches the Gumroad page.
+**Release gate, 2026-10-05, 12:36: PASS.** On the signed standalone build the fixture app passed all 65 assertions on iPhone, iPad and Android (66 PASS lines, 0 FAIL). The iPhone run needed a second attempt for Turkish (`tr`) because the Mac was under heavy load, and it was pinned to iOS 26.4.
 
-## What is still unproven
+## iOS 27 and a lesson about memory
 
-- **Running on any Mac older than macOS 27.** Nobody has started 0.1.1 (or 0.1.0) on one. One real Mac, or a VM of macOS 13 to 15, would settle it (docs/device-wishlist.md, row 1). A hosted GitHub macOS runner exists for macOS 14 and 15 only, none for 26.0 to 26.2 or 13.
-- **A full run on iOS 27**, and the other real-device tests ranked in docs/device-wishlist.md.
-- **A refunded key being refused.** It needs a paid sale by a second person (not your own card; Gumroad can suspend an account for that). See docs/refund-runbook.md.
-- **A clean Mac with nothing installed**, as a buyer would have it (first-run note).
+On a quiet Mac, iOS 27 with Maestro 2.0.10 captured one language in 78 s with 0 problems. The earlier 35-minute stall was memory thrashing: idle Gradle daemons from several projects held about 21 GB. **Lesson:** idle Gradle daemons can silently fill the memory; `gradle --stop` (once per Gradle version) frees it. A 4-simulator iOS 27 run is untested.
+
+## Still unproven
+
+- **Any Mac older than macOS 27.** Nobody has started 0.1.1 or 0.1.0 on one (docs/device-wishlist.md, row 1). Hosted GitHub runners exist for macOS 14 and 15 only, none for 13 or 26.0 to 26.2.
+- A refunded key being refused: needs a paid sale by a second person, not your own card (docs/refund-runbook.md).
+- A clean Mac with nothing installed, as a buyer has it.
 
 ## What I would do
 
-1. After 0.1.1 is live, add one line to the site and the Gumroad page naming the minimum macOS, once it is measured on a real older Mac.
-2. Find one older Mac or VM for the first unproven item; it is the most valuable single test.
-3. Decide the few owner items in the refund note (who makes the paid test sale, a postal address, the refund policy after 14 days).
+1. The site and Gumroad page should carry the same macOS line as the README; decide when it goes up.
+2. Find one older Mac or a macOS 13 to 15 VM for the first unproven item.
+3. Decide the owner items in the refund note: who makes the paid test sale, a postal address, the policy after 14 days.
 
-Sources: research/limits-platform-reach-2026-10-05.md, research/limits-first-run-2026-10-05.md, research/limits-capture-reliability-2026-10-05.md, research/limits-check-quality-2026-10-05.md, research/refund-process-2026-10-05.md (all on their draft PR branches until merged).
+Sources: research/limits-platform-reach, limits-first-run, limits-capture-reliability, limits-check-quality (all 2026-10-05) and refund-process-2026-10-05, on their draft PR branches until merged.
