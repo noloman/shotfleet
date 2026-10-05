@@ -10,5 +10,6 @@ Done:
 - Nav link "See it work" on index.html and docs.html; sitemap, llms.txt; _headers cache rule for /media/* (CSP unchanged:
   default-src 'self' already covers media and tracks); .clip styles in site.css; test_site.py checks posters and the video attributes.
 
-Left: CHANGELOG Unreleased line, docs/handoff.md line, run the targeted tests, push.
+Also done: CHANGELOG Unreleased line, docs/handoff.md section 15 line, tools/build-guides.py nav (the guides share the docs nav; site/draft/guides/*.html regenerate on the next build). Targeted tests green (226, 19 skipped).
+Left for the coordinator: deploy through the release pipeline; add clips c3 to c9 as the page comment says.
 Tests: python3 -m unittest tests.test_site tests.test_site_audit tests.test_claims tests.test_claims_unit tests.test_claims_site tests.test_docs tests.test_handoff_docs tests.test_golive
