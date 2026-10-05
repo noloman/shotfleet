@@ -102,5 +102,18 @@ class HangMidCheck(unittest.TestCase):
         self.assertEqual(len(report["notes"]), 1)
 
 
+class NoStringsOnTesseract(unittest.TestCase):
+    def test_a_german_screen_in_the_english_folder_is_not_flagged_so_the_run_says_the_language_was_not_checked(self):
+        d = Path(tempfile.mkdtemp()); f = d / "shots/en/01_home.png"; f.parent.mkdir(parents=True); f.write_bytes(real_png(60, 300, APP))
+        german = {"text": "Einstellungen\nTraining starten\nVerlauf", "chars": 36, "lang": None, "langs": {}, "ocr": "external"}
+        with mock.patch.object(sf, "vision_available", lambda: False), mock.patch.object(sf.shutil, "which", return_value="/x"), \
+             mock.patch.object(sf, "external_ocr", return_value=german), mock.patch.object(sf, "store_rules", return_value=([], [])), \
+             mock.patch.object(sf, "tesseract_languages", return_value=frozenset({"eng"})), contextlib.redirect_stdout(io.StringIO()):
+            code = sf.cmd_check(d / "shots", report_dir=d / "rep")
+        report = json.loads((d / "rep/check.json").read_text())
+        self.assertEqual((code, report["problems"]), (0, []))  # nothing can judge it: that is a limit, so it is said
+        self.assertTrue(any("without --app" in n and "language was not checked" in n for n in report["notes"]))
+
+
 if __name__ == "__main__":
     unittest.main()

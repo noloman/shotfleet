@@ -2524,7 +2524,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                 return {**external_ocr(ocr_command, pngs[i][1], lp), **tesseract_script(pngs[i][1], lp)}
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
-    rows, by_hash, expected_used, unverified, unread_files = [], {}, set(), 0, set()
+    rows, by_hash, expected_used, unverified, unread_files, no_language = [], {}, set(), 0, set(), []
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -2532,6 +2532,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
+        if not tables and r.get("ocr") == "external" and r.get("chars") and "osd_script" not in r: no_language.append(f"{label}/{png.name}")
         blank = blank_screenshot(png)  # pixels, not OCR: only a flat frame is provably blank
         if problem and problem.startswith("no text found") and read_nothing(r) and not blank:
             got, problem = None, None  # the reader failed, the picture is not blank: say so, don't fail the run
@@ -2552,6 +2553,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             unverified += len(unsure)
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0)})
+    if no_language:  # without strings only language detection judges the language, and Tesseract has none (macOS does)
+        notes.append(f"{len(no_language)} screenshot(s) ({', '.join(no_language[:3])}{', ...' if len(no_language) > 3 else ''}) were read by "
+                     "Tesseract without --app: it names no language, so their language was not checked (pass --app or --strings)")
     unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None and r["file"] not in unread_files})
     if unread:
         who = "macOS can't read the script of" if vision_available() else "Tesseract can't read the script of"
