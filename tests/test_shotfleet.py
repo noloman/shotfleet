@@ -1004,6 +1004,102 @@ class Mcp(unittest.TestCase):
         self.assertTrue(out[3]["result"]["isError"]); self.assertIn("no folder", out[3]["result"]["content"][0]["text"])
         self.assertEqual(out[4]["error"]["code"], -32601)
 
+    def serve(self, *msgs):
+        r = subprocess.run([sys.executable, str(Path(sf.__file__)), "mcp"], input="\n".join(map(json.dumps, msgs)) + "\n",
+                           capture_output=True, text=True, timeout=60)
+        return [json.loads(l) for l in r.stdout.splitlines()]
+
+    def test_only_versions_it_implements_are_claimed(self):
+        init = lambda i, v: {"jsonrpc": "2.0", "id": i, "method": "initialize", "params": {"protocolVersion": v}}
+        out = self.serve(init(1, "2025-11-25"), init(2, "2025-06-18"), init(3, "2026-07-28"), init(4, "2025-03-26"),
+                         init(5, "1900-01-01"), {"jsonrpc": "2.0", "id": 6, "method": "server/discover"}, [{"jsonrpc": "2.0", "id": 7, "method": "ping"}])
+        self.assertEqual([m["result"]["protocolVersion"] for m in out[:5]], ["2025-11-25", "2025-06-18"] + ["2025-11-25"] * 3)
+        self.assertEqual(out[5]["error"]["code"], -32601)  # a 2026-07-28 client's probe: any non-modern error means "use initialize"
+        self.assertEqual(out[6]["error"]["code"], -32600)  # a batch is refused, the server keeps going
+        self.assertEqual(len(out), 7)
+
+    def fake_check(self, n_locales, n_screens, bad_every=0):
+        """A stand-in for check_any: writes a synthetic check.json where the real one would go, reads no image."""
+        def check(folder, app=None, strings=None, ocr=None, report=None, *a, **k):
+            report = Path(report or "shotfleet-check"); report.mkdir(parents=True, exist_ok=True)
+            shots = [{"file": f"l{i:02}/{j:02}_screen_with_a_long_name.png", "src": f"raw/l{i:02}/{j:02}_screen_with_a_long_name.png",
+                      "sha": "d1ab71300024", "lang": f"l{i:02}", "chars": 208, "evidence": "ocr"} for i in range(n_locales) for j in range(n_screens)]
+            problems = [f"{s['file']}: shows en strings (5 lines) more than {s['lang']} (3)" for k_, s in enumerate(shots) if bad_every and k_ % bad_every == 0]
+            (report / "check.json").write_text(json.dumps({"screenshots": shots, "problems": problems, "notes": ["a note"]}))
+            sf.LAST_REPORT = report / "check.json"; sf.REPORTS.append(sf.LAST_REPORT)
+            return 1 if problems else 0
+        return mock.patch.object(sf, "check_any", check)
+
+    def test_check_takes_a_report_folder(self):
+        with tempfile.TemporaryDirectory() as d, self.fake_check(2, 2):
+            text, err = sf.mcp_call("check", {"folder": d, "report": str(Path(d) / "rep")})
+            self.assertFalse(err, text)
+            self.assertTrue((Path(d) / "rep/check.json").is_file())
+        self.assertIn("report", next(t for t in sf.MCP_TOOLS if t["name"] == "check")["inputSchema"]["properties"])
+
+    def test_a_big_report_comes_back_as_a_short_summary_unless_full_is_asked(self):
+        with tempfile.TemporaryDirectory() as d, self.fake_check(40, 10, bad_every=2):  # 400 screenshots, 200 problems
+            rep = str(Path(d) / "rep")
+            text, err = sf.mcp_call("check", {"folder": d, "report": rep})
+            full, err2 = sf.mcp_call("check", {"folder": d, "report": rep, "full": True})
+        self.assertFalse(err or err2)
+        self.assertLess(len(text), 20000)  # Claude Code moves a result over 50,000 characters to a file
+        self.assertGreater(len(full), 50000)
+        s = json.loads(text)
+        self.assertEqual((s["exit"], s["screenshots"], s["languages"], s["problems_total"]), (1, 400, 40, 200))
+        self.assertEqual(len(s["problems"]), sf.MCP_LINES); self.assertIn("more", s)
+        self.assertEqual(s["reports"], [str((Path(rep) / "check.json").resolve())])
+        self.assertEqual(len(json.loads(full)["screenshots"]), 400)
+
+    def test_a_run_that_wrote_no_report_returns_its_output(self):
+        with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", lambda *a: print("stopped early") or 2):
+            text, err = sf.mcp_call("run", {"config": "x.toml"})
+        self.assertFalse(err); self.assertEqual(text.strip(), "stopped early")
+
+    def test_run_skips_the_config_hooks_unless_asked(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg = Path(d) / "shotfleet.toml"
+            cfg.write_text('bundle_id = "x"\n[hooks]\nbefore_run = "touch ran"\n')
+            seen = []
+            def fake_run(config, locales):  # the hook call a real run makes first, without booting anything
+                seen.append(sf.run_hook({"before_run": "touch ran"}, "before_run", config, {})); return 0
+            with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", fake_run):
+                sf.mcp_call("run", {"config": str(cfg)})
+                self.assertFalse((Path(d) / "ran").exists())
+                sf.mcp_call("run", {"config": str(cfg), "hooks": True})
+                self.assertTrue((Path(d) / "ran").exists())
+            self.assertFalse(sf.NO_HOOKS)
+        self.assertIn("hooks: true", next(t for t in sf.MCP_TOOLS if t["name"] == "run")["description"])
+
+    def call_in_process(self, *msgs):
+        out = io.StringIO()
+        with mock.patch.object(sf.sys, "stdin", io.StringIO("\n".join(map(json.dumps, msgs)) + "\n")), \
+             mock.patch.object(sf.sys, "__stdout__", out), mock.patch.object(sf, "MCP_HEARTBEAT_S", 0.05), \
+             mock.patch.object(sf, "apply_free_tier"):
+            sf.cmd_mcp()
+        return [json.loads(l) for l in out.getvalue().splitlines()]
+
+    def test_a_long_run_sends_progress_with_its_last_line_until_it_answers(self):
+        def slow_run(config, locales):
+            for step in ("booting 4 simulators", "de: 3 of 10 screens"): print(step); time.sleep(0.2)
+            return 0
+        call = lambda i, meta: {"jsonrpc": "2.0", "id": i, "method": "tools/call", "params": {"name": "run", "arguments": {"config": "x.toml"}, **meta}}
+        with mock.patch.object(sf, "cmd_run", slow_run):
+            out = self.call_in_process(call(1, {"_meta": {"progressToken": "t1"}}), call(2, {}))
+        first = out[:out.index(next(m for m in out if m.get("id") == 1))]
+        self.assertGreaterEqual(len(first), 3)
+        self.assertTrue(all(m["method"] == "notifications/progress" and m["params"]["progressToken"] == "t1" for m in first))
+        self.assertEqual([m["params"]["progress"] for m in first], list(range(1, len(first) + 1)))  # always going up
+        self.assertIn("de: 3 of 10 screens", [m["params"]["message"] for m in first])
+        self.assertEqual([m.get("id") for m in out[len(first):]], [1, 2])  # no token: no progress, and none after a reply
+
+    def test_tool_annotations_say_what_each_tool_does(self):
+        tools = {t["name"]: t for t in sf.MCP_TOOLS}
+        for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)
+        run = tools["run"]["annotations"]
+        self.assertEqual((run["readOnlyHint"], run["destructiveHint"], run["idempotentHint"]), (False, True, False))
+        self.assertIn("hour", tools["run"]["description"])
+
 
 class Licence(unittest.TestCase):
     """Only Gumroad keys work. Nothing here may touch the network: a key from any other store is refused on its shape."""

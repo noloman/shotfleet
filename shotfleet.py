@@ -4173,42 +4173,95 @@ def main(argv=None):
         return code
     return main_cmd(a)
 
-MCP_TOOLS = [
-    {"name": "check", "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
+MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations); the descriptions say the same in words
+    {"name": "check", "title": "Check screenshots",
+     "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
      "no copies across languages, none missing, and the stores' size/count/transparency rules. Works on fastlane "
      "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
-     "folders. Returns the report as JSON (problems, notes, screenshots).",
+     "folders. It never changes a screenshot; it only writes its report (check.json, index.html) to the report folder "
+     "(default: ./shotfleet-check in the server's working folder, or the run's own folder for shotfleet output). Takes seconds to a few minutes "
+     "(text recognition of every screenshot). Returns a short JSON summary: counts, the first problem and note lines, and "
+     "the path of the full check.json. Pass full: true to get the whole report (one entry per screenshot) instead.",
+     "annotations": {"readOnlyHint": True, "openWorldHint": False},
      "inputSchema": {"type": "object", "required": ["folder"], "properties": {
          "folder": {"type": "string", "description": "folder with the screenshots"},
          "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
-         "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"}}}},
-    {"name": "doctor", "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet.",
-     "inputSchema": {"type": "object", "properties": {}}},
-    {"name": "run", "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
-     "Boots simulators or emulators and takes minutes.",
+         "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"},
+         "report": {"type": "string", "description": "where to write check.json and index.html (default: ./shotfleet-check)"},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}}}},
+    {"name": "doctor", "title": "Check the setup",
+     "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet, and say what is missing. "
+     "Changes nothing (it never installs anything over MCP). Asks shotfleet.com once for the latest version. Takes seconds.",
+     "annotations": {"readOnlyHint": True, "openWorldHint": True},
+     "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False}},
+    {"name": "run", "title": "Capture screenshots",
+     "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
+     "Boots iOS simulators or Android emulators, installs the app on them and replaces the screenshots and report "
+     "in the config's output folder. Takes several minutes, and can take an hour or more for many languages and screens. "
+     "Without a licence it captures 2 languages. The config's [hooks] shell commands do NOT run over MCP unless you pass "
+     "hooks: true. Returns the same short summary as check (full: true for the whole report).",
+     "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
      "inputSchema": {"type": "object", "required": ["config"], "properties": {
-         "config": {"type": "string"}, "locales": {"type": "array", "items": {"type": "string"}}}}},
+         "config": {"type": "string", "description": "path to shotfleet.toml"},
+         "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"},
+         "hooks": {"type": "boolean", "description": "also run the config's [hooks] shell commands (default: false)"}}}},
 ]
 
-def mcp_call(name, args):
-    """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
-    global LAST_REPORT
+MCP_LINES, MCP_LINE_CHARS = 100, 300  # a summary keeps this many problem and note lines, each cut to this length
+
+def mcp_summary(code):
+    """The default reply: counts, the first problem and note lines, and where the full check.json files are.
+    The whole report is about 150 characters per screenshot, so 40 languages x 10 screens would pass the 50,000
+    characters at which Claude Code moves a tool result to a file."""
+    rep = reports_json()
+    shots, problems, notes = rep.get("screenshots", []), rep.get("problems", []), rep.get("notes", [])
+    cut = lambda lines: [l[:MCP_LINE_CHARS] for l in lines[:MCP_LINES]]
+    out = {"exit": code, "screenshots": len(shots), "languages": len({s.get("file", "").split("/")[0] for s in shots}),
+           "problems_total": len(problems), "problems": cut(problems), "notes_total": len(notes), "notes": cut(notes),
+           "reports": [str(f.resolve()) for f in REPORTS if f.is_file()]}
+    if len(problems) > MCP_LINES or len(notes) > MCP_LINES:
+        out["more"] = f"only the first {MCP_LINES} lines are here; the report files have all of them (or call again with full: true)"
+    return out
+
+MCP_HEARTBEAT_S = 30  # with a progressToken, a progress notification this often (Claude Code drops a stdio call silent for 30 min)
+
+def mcp_call(name, args, progress=None):
+    """One tool call -> (text, is_error). Output is captured; with `progress` (a function taking a message), its last line
+    is sent every MCP_HEARTBEAT_S seconds while the tool works."""
+    global LAST_REPORT, NO_HOOKS
     LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
-    log = io.StringIO()
+    log, stop = io.StringIO(), threading.Event()
+    def beat():
+        while not stop.wait(MCP_HEARTBEAT_S):
+            progress(next((l.strip() for l in reversed(log.getvalue()[-2000:].splitlines()) if l.strip()), "working")[:200])
+    beater = threading.Thread(target=beat, daemon=True)
+    if progress: beater.start()
     try:
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             if name == "doctor": code = cmd_doctor()
             elif name == "check":
                 folder = Path(args["folder"]).expanduser()
-                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"))  # report goes to ./shotfleet-check, never into the checked folder
-            elif name == "run": apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
+                report = args.get("report") and Path(args["report"]).expanduser()  # default ./shotfleet-check (a run's output: its own folder)
+                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"), report)
+            elif name == "run":  # a config from a cloned repo could hold any shell command: hooks only when asked for
+                NO_HOOKS = args.get("hooks") is not True
+                try: apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
+                finally: NO_HOOKS = False
             else: return f"unknown tool {name}", True
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
         return f"{msg}\n\n{log.getvalue()[-2000:]}", True
-    report = reports_json() if name in ("check", "run") else None
-    text = json.dumps({"exit": code, **report}, ensure_ascii=False) if report else log.getvalue()
+    finally:  # no progress notification may follow the reply
+        stop.set()
+        if progress: beater.join()
+    if name not in ("check", "run") or not any(f.is_file() for f in REPORTS): return log.getvalue(), False
+    text = json.dumps({"exit": code, **reports_json()} if args.get("full") else mcp_summary(code), ensure_ascii=False)
     return text, False
+
+# Protocol versions this server really implements, newest first: the initialize handshake, tools, ping and progress over stdio.
+# Not 2025-03-26 (it requires JSON-RPC batches) and not 2026-07-28 (no initialize; needs server/discover and per-request _meta).
+MCP_VERSIONS = ("2025-11-25", "2025-06-18")
 
 def cmd_mcp():
     """Model Context Protocol server on stdin/stdout (JSON-RPC, one message per line)."""
@@ -4217,14 +4270,22 @@ def cmd_mcp():
         if not line.strip(): continue
         try: msg = json.loads(line)
         except ValueError: send({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}}); continue
+        if not isinstance(msg, dict):  # a JSON-RPC batch: none of our versions has them
+            send({"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request (batches are not supported)"}}); continue
         mid, method, params = msg.get("id"), msg.get("method"), msg.get("params") or {}
         if mid is None: continue  # notifications (initialized, cancelled)
         if method == "initialize":
-            result = {"protocolVersion": params.get("protocolVersion", "2025-06-18"), "capabilities": {"tools": {}},
+            asked = params.get("protocolVersion")  # the spec: the same version when we support it, else our latest
+            result = {"protocolVersion": asked if asked in MCP_VERSIONS else MCP_VERSIONS[0], "capabilities": {"tools": {}},
                       "serverInfo": {"name": "shotfleet", "version": VERSION}}
         elif method == "tools/list": result = {"tools": MCP_TOOLS}
         elif method == "tools/call":
-            text, err = mcp_call(params.get("name"), params.get("arguments") or {})
+            token, sent = (params.get("_meta") or {}).get("progressToken"), [0]
+            def progress(message):  # `progress` must go up with every notification; there is no total
+                sent[0] += 1
+                send({"jsonrpc": "2.0", "method": "notifications/progress",
+                      "params": {"progressToken": token, "progress": sent[0], "message": message}})
+            text, err = mcp_call(params.get("name"), params.get("arguments") or {}, progress if token is not None else None)
             result = {"content": [{"type": "text", "text": text}], "isError": err}
         elif method == "ping": result = {}
         else:
