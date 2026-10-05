@@ -8,6 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
+sf.USE_DEVICE_LOCK = False  # fake runs touch no device; two test suites at once must not refuse each other
 
 needs_mac = unittest.skipUnless(sys.platform == "darwin", "needs macOS tools (PlistBuddy, swiftc, xcrun, BSD sed)")
 
@@ -1935,6 +1936,20 @@ class RetryOnSlowSimulator(unittest.TestCase):
         self.assertEqual(self.calls.count("install"), 2)  # once before the run, once before the retry
         self.assertEqual(code, 0, out)
         self.assertIn("retrying 1: de", out)
+
+    @needs_mac
+    def test_when_no_simulator_answers_for_the_retry_the_first_attempts_results_are_still_reported(self):
+        calls = self.calls
+        class Dies:  # answers the first install, then stops answering
+            udid = "U1"
+            def run(self, *a, check=True):
+                if a[0] == "install" and calls.count("install"): raise RuntimeError("simctl install did not answer within 300 s")
+                calls.append(a[0]); return ""
+        self.fake_sim = Dies
+        code, out = self.run_it("1")
+        self.assertEqual(code, 1, out)  # failed locales, not a crash
+        self.assertIn("not retrying", out)
+        self.assertTrue((self.d / "out" / "run.json").is_file())
 
     @needs_mac
     def test_screenshots_end_up_in_raw_with_maestro_2_11_which_confines_them_to_its_artifact_folder(self):

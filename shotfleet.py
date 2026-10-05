@@ -1217,6 +1217,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
             raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})" + (f": {err}" if err else "") +
                                ". Set device_type (valid ones: xcrun simctl list devicetypes) or runtime in the config")
         s = Sim(udid)
+        OUR_SIMS.add(udid)  # at once: a bootstatus timeout on the 2nd of 4 must still shut the other booted ones down
         s.run("boot", udid, check=False)  # already-booted is fine
         pool.append(s)
     for s in pool:
@@ -1224,7 +1225,6 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
-        OUR_SIMS.add(s.udid)  # a failing setup command must not leave the simulator booted
         run_setup(s, "simctl", simctl)
     return pool
 
@@ -1311,14 +1311,21 @@ def run_guarded(cmd, timeout, env=None, cwd=None, progress=None, stall_s=STALL_S
     `progress` (optional) returns something that changes whenever the run gets somewhere (the newest screenshot's time); when it stays
     the same for `stall_s` seconds the run is killed and TimeoutExpired is raised with `.stalled` set. The overall `timeout` scales with
     the number of languages, so on its own a hung simulator would keep a 19-language run alive for hours (seen: 6 h with no screenshot)."""
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env, cwd=cwd)
+    # Output goes to a file, not a pipe: communicate() waits for EOF, so a helper that inherited the pipe and outlived Maestro
+    # (a daemonised driver, a reparented process that is no longer a descendant) would block us after the kill, with no watchdog left.
+    log = tempfile.TemporaryFile()
+    proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, env=env, cwd=cwd)
     done, stalled = threading.Event(), threading.Event()
+    def output():
+        log.seek(0); return log.read().decode(errors="replace")
     def watch():
         last, since = progress() if progress else None, time.monotonic()
         while not done.wait(min(5, max(0.2, stall_s / 4))):
-            ours = descendants(proc.pid)
-            for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
-                if int(line) in ours: sh(["kill", "-9", line])
+            try:  # a missing pgrep or an odd ps line must not end the thread: it is also the stall watchdog
+                ours = descendants(proc.pid)
+                for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
+                    if int(line) in ours: sh(["kill", "-9", line])
+            except (OSError, ValueError, subprocess.SubprocessError): pass
             if progress:
                 now = progress()
                 if now != last: last, since = now, time.monotonic()
@@ -1328,14 +1335,17 @@ def run_guarded(cmd, timeout, env=None, cwd=None, progress=None, stall_s=STALL_S
                     return
     threading.Thread(target=watch, daemon=True).start()
     try:
-        out, _ = proc.communicate(timeout=timeout)
+        proc.wait(timeout=timeout)
     except BaseException as e:  # timeout, Ctrl-C, SIGTERM: never leave Maestro and its drivers running
         for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
-        partial = proc.communicate()[0] or ""
-        if isinstance(e, subprocess.TimeoutExpired): e.output = partial
+        try: proc.wait(timeout=30)
+        except subprocess.TimeoutExpired: pass
+        if isinstance(e, subprocess.TimeoutExpired): e.output = output()
+        log.close()
         raise
     finally:
         done.set()
+    out = output(); log.close()
     if stalled.is_set():
         e = subprocess.TimeoutExpired(cmd, timeout, output=out); e.stalled = True
         raise e
@@ -1528,8 +1538,37 @@ def shutdown_sims():
         except subprocess.TimeoutExpired: print(f"note: simulator {udid} did not shut down within 60 s; run `xcrun simctl shutdown {udid}`", file=sys.stderr)
     OUR_SIMS.clear()
 
+USE_DEVICE_LOCK = True  # the tests that run a fake run set this False: they use no device, and two test suites at once must not refuse each other
+
+@contextlib.contextmanager
+def device_lock(key):
+    """One shotfleet run at a time per set of devices. Pool simulators are named shotfleet-<device>-N and emulators sit on fixed ports,
+    so two runs on one Mac reinstall the app under each other and give each other wrong or missing screenshots (seen 2026-10-03).
+    An flock on /tmp/shotfleet-<key>.lock: the OS drops it when the process dies, so there is no stale lock to clean up.
+    A lock file that can't be made or locked for any other reason does not stop the run."""
+    f = None
+    try:
+        if not USE_DEVICE_LOCK: raise ImportError
+        import fcntl
+        f = os.fdopen(os.open(f"/tmp/shotfleet-{key}.lock", os.O_CREAT | os.O_RDWR, 0o666), "r+")
+        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        who = f.read().strip() if f else ""
+        f.close()
+        raise Fail(f"another shotfleet run is using these devices ({key}{', ' + who if who else ''}). Two runs at once reinstall the app under each other; "
+                   "wait for it to finish, or stop it, and run again")
+    except (ImportError, OSError):
+        if f: f.close()
+        f = None
+    if f:
+        f.seek(0); f.truncate(); f.write(f"pid {os.getpid()}, since {time.strftime('%H:%M')}"); f.flush()
+    try: yield
+    finally:
+        if f: f.close()
+
 def ios_run(cfg, path, only=None, parallel=None):
-    try: return ios_run_inner(cfg, path, only, parallel)
+    try:
+        with device_lock(f"ios-{cfg.get('sim_prefix', 'shotfleet')}"): return ios_run_inner(cfg, path, only, parallel)
     finally: shutdown_sims()  # a 2nd device's pool must not boot on top of the 1st's
 
 def ios_run_inner(cfg, path, only, parallel):
@@ -1636,9 +1675,12 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
         # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
         # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
-        pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
-        n = len(pool)
-        final.update(batch(retry, 2))
+        try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
+        except RuntimeError as e:  # none answers any more: keep what the first attempt captured, check it and report the rest as failed (exit 1)
+            print(f"not retrying: {e}", flush=True)
+        else:
+            n = len(pool)
+            final.update(batch(retry, 2))
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
@@ -1761,7 +1803,10 @@ DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a s
 class Emu:
     def __init__(self, port): self.port, self.serial, self.proc = port, f"emulator-{port}", None  # proc: the emulator process shotfleet started
     def adb(self, *args, check=True, timeout=180):
-        r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
+        try: r = sh([adb_cmd(), "-s", self.serial, *args], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"adb {args[0]} did not answer within {timeout} s: emulator {self.serial} is not responding. "
+                               f"Stop it with `adb -s {self.serial} emu kill` and run again; if it stays stuck, restart the Mac")
         if check and r.returncode != 0:
             raise RuntimeError(f"adb {' '.join(args)}: {(r.stderr or r.stdout).strip()}")
         return r.stdout
@@ -1770,6 +1815,22 @@ class Emu:
         still says "Can't find service: package" (seen with two emulators on 2 cores)."""
         if sh([adb_cmd(), "-s", self.serial, "shell", "getprop", "sys.boot_completed"], timeout=15).stdout.strip() != "1": return False
         return "Service package: found" in sh([adb_cmd(), "-s", self.serial, "shell", "service", "check", "package"], timeout=15).stdout
+
+EMU_STOP_WAIT_S = 20  # how long an emulator gets to exit after `adb emu kill` before its process tree is killed
+
+def stop_emulators(pool):
+    """Stop every emulator shotfleet started. One that does not answer adb (a hung emulator is the case this is for) must not keep
+    the others running: each is asked politely with a short timeout, then its own process tree is killed (the Popen handle is ours)."""
+    for e in pool:
+        try: e.adb("emu", "kill", check=False, timeout=30)
+        except (OSError, RuntimeError, subprocess.SubprocessError): pass
+    for e in pool:
+        proc = getattr(e, "proc", None)
+        if proc is None: continue
+        try: proc.wait(timeout=EMU_STOP_WAIT_S)
+        except subprocess.TimeoutExpired:
+            for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
+        except OSError: pass
 
 SNAPSHOT = "shotfleet"
 
@@ -1928,6 +1989,10 @@ def flow_devices(debug_dir):
     return m
 
 def android_run(cfg, path, out, only, parallel):
+    with device_lock("android-emulators"):  # the emulators sit on fixed ports (5702, 5704...)
+        return android_run_inner(cfg, path, out, only, parallel)
+
+def android_run_inner(cfg, path, out, only, parallel):
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     framework_hint(apk, "strings" in cfg, path("."))
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
@@ -1948,6 +2013,7 @@ def android_run(cfg, path, out, only, parallel):
         _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
+        shutil.rmtree(out / "raw" / lp, ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])
     if not todo:
@@ -2007,17 +2073,28 @@ def android_run(cfg, path, out, only, parallel):
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
             return results
 
+        broken = []  # why the emulators stopped working, once they did
+
+        def safe_round(lps, tag):
+            """round_, except that an emulator that stops answering adb ends the capturing, not the report: what the earlier rounds took is
+            kept, checked and written to run.json, and these languages are reported as failed (rerun them with --locales)."""
+            if not broken:
+                try: return round_(lps, tag)
+                except (RuntimeError, subprocess.TimeoutExpired) as e:
+                    broken.append(str(e)); print(f"emulators stopped answering in {tag}: {e}", flush=True)
+            return {lp: {"ok": False, "error": f"not captured: {broken[0]}"[:300], "screenshots": 0} for lp in lps}
+
         t0, final = time.time(), {}
         print(f"capturing {len(todo)} locales on {n} emulators, {-(-len(todo) // n)} rounds...", flush=True)
         for i in range(0, len(todo), n):
-            final.update(round_(todo[i:i + n], f"r{i // n + 1}"))
+            final.update(safe_round(todo[i:i + n], f"r{i // n + 1}"))
         retry = [lp for lp, r_ in final.items() if not r_["ok"]]
-        if retry:
+        if retry and not broken:
             print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
             for i in range(0, len(retry), n):
-                for lp, r_ in round_(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True}
+                for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True}
     finally:
-        for e in pool: e.adb("emu", "kill", check=False)
+        stop_emulators(pool)
     for lp in todo:
         r_ = final[lp]
         print_result(lp, r_, expected)
@@ -3923,7 +4000,8 @@ def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
 
 def main_cmd(a):
-    signal.signal(signal.SIGTERM, on_sigterm)
+    for name in ("SIGTERM", "SIGHUP"):  # SIGHUP: the terminal window closed or the ssh session dropped
+        if sig := getattr(signal, name, None): signal.signal(sig, on_sigterm)
     try:
         return main_dispatch(a)
     finally:
