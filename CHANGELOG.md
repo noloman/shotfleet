@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`check` takes a flat folder:** `shotfleet check shots/ --locale en` checks a folder of PNGs with no `<locale>/` level (a hand-made single-language set); before, it failed with "no screenshots found". Without `--locale` the error says the language is needed and shows the example (shotfleet does not guess it). Exit codes and the `<locale>/` layouts are unchanged.
 - **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 - **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each; with one report nothing changes. #68.
 
