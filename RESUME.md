@@ -6,4 +6,5 @@ Done: repo reading complete; web research done (competitor prices re-read, Gumro
 Left: Funnel fixes, Product roadmap, Pricing, Distribution, Retention, Risks, 30/60/90, Decisions, Could not verify; then `python3 -m unittest tests.test_docs`; final push and reply (branch, commit, five moves, decisions).
 Key facts to reuse: public empty repo github.com/noloman/shotfleet-releases exists (1 commit); `/alternatives` live page says no real Flutter/RN run while home says wger+obytes ran; Proxyman $89 one-time 1yr updates, Team $99/seat/yr min 5; RocketSim Teams EUR10/seat/month; Gumroad Workflows + update emails exist; Discover default-on, 30% fee; CI key SHOTFLEET_KEY uses no activation slot; claims 131 rows.
 Update: section 3 (Funnel fixes, items F1-F13) written; marker now `<!-- PART3 -->`.
-Next step: write Product roadmap (ranked table), Pricing, Distribution, Retention replacing PART3.
+Update: section 4 (Product roadmap, 20 rows) and section 5 (Pricing) written; marker now `<!-- PART4 -->`. Section numbers so far: 1 Summary, 2 Evidence, 3 Funnel, 4 Product roadmap, 5 Pricing.
+Next step: write 6 Distribution, 7 Retention, 8 Risks, 9 30/60/90, 10 Decisions, 11 Could not verify replacing PART4 (check the Summary refers to the right section numbers: it mentions "sections 3 and 6" for the 30-day plan; fix to the 30/60/90 section).
