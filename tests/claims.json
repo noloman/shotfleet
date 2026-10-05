@@ -7,7 +7,7 @@
    "README.md"
   ],
   "where_text": [
-   "One English Maestro flow, every language, iOS and Android.",
+   "shotfleet runs it in every language your app has, on iOS and Android",
    "from **one English Maestro flow**"
   ],
   "status": "evidence",
@@ -43,7 +43,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "shotfleet captures them all and checks every screenshot"
+   "on iOS and Android, and checks every screenshot"
   ],
   "status": "proven",
   "proof": "G1CheckDetectors.test_a_clean_set_passes_and_every_screenshot_is_judged (one row and one language verdict per screenshot, exit 0), G1CheckDetectors.test_wrong_language_is_one_problem_naming_the_file_and_the_language_it_shows, G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files, G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing, G1CheckDetectors.test_a_size_the_store_refuses_is_one_problem_per_file, G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language, G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language; plus the older JudgeScreen.*, ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command, StuckOcrFallback.*. Real: CrossfitTracker 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes (ROADMAP.md, 2026-10-03). Limits that stay true and are documented (README.md Limits): copies are only reported for screens with 40 or more characters of text (G1CheckDetectors.test_known_blind_spot_two_short_screens_in_two_languages_are_not_called_copies), and for scripts macOS cannot read only other-language, copies and missing are checked (Tesseract fills in when installed).",
@@ -77,7 +77,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "Seven of 72 screenshots from one run on my app, WOD Tracker: 18 languages × 4 screens on an M1 Pro.",
+   "seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro.",
    "+11"
   ],
   "status": "evidence",
@@ -94,8 +94,8 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "Nothing in the app was changed to get them.",
-   "No copies of the flow, no changes to the app."
+   "I didn’t change anything in the app to get them.",
+   "You don’t keep a copy of the flow per language, and you don’t change the app."
   ],
   "status": "evidence",
   "proof": "Mechanism: LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages / -AppleLocale launch arguments), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; research/frameworks.md cites AOSP for per-app locales without the app's cooperation. Real: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01) and the 2026-10-03 fixture e2e (the fixture app has no shotfleet code; STATUS.md gate 9). It needs a Debug-iphonesimulator build and an API 33+ emulator (README.md Limits), which is a build, not a change to the app. Untested: apps that keep their own persisted in-app language picker.",
@@ -152,7 +152,7 @@
    "README.md"
   ],
   "where_text": [
-   "Every image is read back and compared with your app’s own strings.",
+   "it reads every image back and compares the text with your app’s own strings",
    "every screenshot's text is compared against your app's own strings"
   ],
   "status": "proven",
@@ -186,7 +186,7 @@
    "README.md"
   ],
   "where_text": [
-   "Then one command puts the passing App Store and Google Play screenshots into fastlane’s folders.",
+   "one command puts the passing App Store and Google Play screenshots into fastlane’s folders.",
    "Languages that failed a check are skipped, so a bad screenshot never reaches a listing."
   ],
   "status": "proven",
@@ -293,7 +293,7 @@
    "README.md"
   ],
   "where_text": [
-   "When two words clash in a language, it warns you before anything runs.",
+   "If two words clash in a language, it warns you before anything runs.",
    "Translation collisions, before anything runs"
   ],
   "status": "proven",
@@ -637,7 +637,7 @@
    "site/draft/alternatives.html"
   ],
   "where_text": [
-   "you want frames, captions or store upload. Use <a href=\"/alternatives#butterkit\">ButterKit</a> or <a href=\"/alternatives#appscreens\">AppScreens</a> for those; shotfleet does not do those.",
+   "you want frames, captions or store upload. <a href=\"/alternatives#butterkit\">ButterKit</a> and <a href=\"/alternatives#appscreens\">AppScreens</a> do that; shotfleet doesn’t.",
    "ButterKit and AppScreens specialize in that; shotfleet doesn't.",
    "ButterKit and AppScreens specialize in that; shotfleet doesn't."
   ],
@@ -673,7 +673,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "shotfleet makes the correct raw screenshots."
+   "shotfleet makes the correct raw screenshots and stops there."
   ],
   "status": "evidence",
   "proof": "What 'correct' means is what check verifies (C003, proven). Real: CrossfitTracker 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes (ROADMAP.md, 2026-10-03); Real run: the 2026-10-03 fixture end to end on iOS (SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only ios, 36 of 36 assertions, STATUS.md gate 9): iPhone 17 Pro Max and iPad 13\", de/ja/ar/tr, 2 screenshots per language, planted copy and missing screen caught, export 4 per language. The site hero images were viewed 2026-10-02; the Remoti gallery tab that showed the opposite is C040.",
