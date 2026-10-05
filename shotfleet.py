@@ -2551,8 +2551,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             rules, used = content_rules(expect[png.stem], label, lp)
             expected_used.update((png.stem, k) for k in used)
             bad, unsure = check_content(rules, r)
+            why = "text recognition can't read that script"
+            if f"{label}/{png.name}" in unread_files: bad, unsure, why = [], bad + unsure, "the text reader found nothing on this screenshot"
             problems += [f"{label}/{png.name}: {m}" for m in bad]
-            notes += [f"{label}/{png.name}: could not verify, {m} (text recognition can't read that script)" for m in unsure]
+            notes += [f"{label}/{png.name}: could not verify, {m} ({why})" for m in unsure]
             unverified += len(unsure)
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0)})

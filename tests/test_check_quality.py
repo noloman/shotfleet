@@ -57,6 +57,21 @@ class CouldNotRead(unittest.TestCase):
         self.assertTrue(any(n.startswith("ar/01_welcome.png: could not read this screenshot") and "not blank" in n for n in report["notes"]))
         self.assertNotIn("can't read the script of ar", out)  # Arabic is readable; the reader failed, which the note says
 
+    def test_expected_texts_on_an_unreadable_screenshot_are_unverified_not_missing(self):
+        d = Path(tempfile.mkdtemp())
+        for lp in ("en", "ar"):
+            f = d / "shots" / lp / "01_welcome.png"; f.parent.mkdir(parents=True); f.write_bytes(real_png(60, 300, APP))
+        ext = lambda cmd, png, lp: ENGLISH if "/en/" in str(png) else NOTHING
+        with mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "warm_up_ocr", return_value=False), \
+             mock.patch.object(sf, "readable_languages", return_value={"en", "ar"}), mock.patch.object(sf, "external_ocr", ext), \
+             mock.patch.object(sf, "tesseract_languages", return_value=frozenset({"eng", "ara"})), mock.patch.object(sf, "tesseract_script", return_value={}), \
+             mock.patch.object(sf, "store_rules", return_value=([], [])), mock.patch.object(sf.shutil, "which", return_value="/x"), \
+             contextlib.redirect_stdout(io.StringIO()):
+            code = sf.cmd_check(d / "shots", strings=STRINGS, report_dir=d / "rep", expect={"01_welcome": {"all": ["Next"]}})
+        report = json.loads((d / "rep/check.json").read_text())
+        self.assertEqual((code, report["problems"]), (0, []))  # "Next" is on the English screen; the Arabic one could not be read
+        self.assertTrue(any(n.startswith("ar/01_welcome.png: could not verify") for n in report["notes"]))
+
     def test_a_language_pack_missing_for_the_fallback_is_the_same_note(self):
         code, _, report = self.check(APP, packs=("eng",))  # no Arabic data: the screenshot is never read at all
         self.assertEqual((code, report["problems"]), (0, []))
