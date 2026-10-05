@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Kotlin Multiplatform hint:** where `init` prints the `xcodebuild` line for a KMP app it now adds that the Xcode build fails with "cannot find X in scope" unless both `:shared:assembleSharedDebugXCFramework` and `:shared:assembleSharedReleaseXCFramework` were built first (a stale release slice gives the same error). Text only.
 - **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 - **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each; with one report nothing changes. #68.
 

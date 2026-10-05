@@ -3410,6 +3410,10 @@ def project_builds(cwd, project, derived=None):
     apks = sorted(((a.stat().st_mtime, a) for pat in project.apks for a in Path(cwd).glob(pat)), reverse=True)
     return apps, apks
 
+KMP_XCFRAMEWORK_HINT = ("(Kotlin Multiplatform: Xcode fails with 'cannot find <name> in scope' unless BOTH "
+                        "`./gradlew :shared:assembleSharedDebugXCFramework` and `:shared:assembleSharedReleaseXCFramework` were built first; "
+                        "a stale release slice gives the same error. Use your shared module's name for `shared`)")
+
 def find_builds(cwd, derived=None, project=None):
     """The builds `shotfleet init` uses when none are given: the newest simulator .app for this folder's project and the
     newest APK, each announced in one line. A Flutter, React Native, ... project (`project`, from detect_project) is looked for
@@ -3440,10 +3444,11 @@ def find_builds(cwd, derived=None, project=None):
         proj = projects[0]
         ios_cmd = (f"xcodebuild {'-workspace' if proj.suffix == '.xcworkspace' else '-project'} {shlex.quote(proj.relative_to(cwd).as_posix())} "
                    f"-scheme {shlex.quote(scheme_for(proj) or '<scheme>')} -sdk iphonesimulator -configuration Debug build")
-    android_cmd = "./gradlew assembleDebug"
+    android_cmd, kmp_ios = "./gradlew assembleDebug", False
     if project:  # the framework's own build command: a plain xcodebuild or gradlew skips its code generation and bundling
         ios_cmd, android_cmd = project.build_ios or ios_cmd, project.build_android or android_cmd
         if project.name == "Kotlin Multiplatform" and not project.build_ios:
+            kmp_ios = True
             ios_cmd += " ARCHS=arm64"  # Xcode 27 also asks for x86_64, which the Gradle build does not have: "Architecture Not Configured in Gradle"
     has_gradle = any((cwd / f).is_file() for f in ("gradlew", "android/gradlew"))
     # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
@@ -3456,9 +3461,10 @@ def find_builds(cwd, derived=None, project=None):
         cmds = [c for c, _, _ in here or [(ios_cmd, 0, 0), (android_cmd, 0, 0)]]
         explain = ("\n(<scheme> is the name in Xcode's scheme menu next to the Run button; `xcodebuild -list` prints it)"
                    if any("<scheme>" in c for c in cmds) else "")  # no shared scheme on disk to read it from
+        if kmp_ios and ios_cmd in cmds: explain += "\n" + KMP_XCFRAMEWORK_HINT
         raise Fail(f"{what} {cwd}. Build one, then run shotfleet init again:\n  " + "\n  ".join(cmds) + explain)
     for cmd, what, ok in here:
-        if not ok: print(f"note: no {what} yet; to make one: {cmd}")
+        if not ok: print(f"note: no {what} yet; to make one: {cmd}" + (f"\n{KMP_XCFRAMEWORK_HINT}" if kmp_ios and cmd == ios_cmd else ""))
     return builds
 
 def keep_note(config, dest, builds, text):
