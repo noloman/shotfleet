@@ -66,3 +66,66 @@ Order inside the section: false first, then overstated, then weaker than the evi
 (No other sentence in the six public pages contradicts a fact above. Checked and fine: minimum macOS line (README:301, docs.html:60), Maestro versions (README:302; docs.html:62 says only "Maestro 2.x", see B7), prices and "once per developer", 3 Macs plus CI, 14-day refund, "about weekly, 30 days offline" (applies to an activated Mac; the CI key fails open, see D6), 9 and 15 minutes (conservative, C007 stays `evidence`), Apple silicon only.)
 
 Items in (a): 9 (A1 to A9).
+
+---
+
+## (b) MISSING
+
+What a buyer needs and does not find. Each item: where it belongs, proposed text, mark. Wording that touches price, refund or licence terms is listed again in (d) and is not for the refresh agent to decide.
+
+**B1. How to update. CONFIRMED gap; proposed text CONFIRMED against `install.sh` and `shotfleet.py`.**
+- Nothing in README, docs.html or terms.html says how to get a newer version. The only signal is `shotfleet doctor` printing `shotfleet X is out (you have Y): curl -fsSL https://shotfleet.com/install.sh | sh` (shotfleet.py ~3112). 0.1.0 buyers, who very probably cannot start it below macOS 26.3, have the most to gain (`research/0.1.2-plan.md` lists this as a 0.1.1 leftover).
+- Where: README after the Quickstart install block; docs.html "Install"; `skill/shotfleet/SKILL.md` (agents get asked).
+- Text: `Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). shotfleet doctor tells you when a newer version is out. A year of updates is included.` (INFERRED: the installer package installs over an older copy; mention only the curl line.)
+- Claims row: none today. Optional new `evidence` row (`tests/test_release_candidate.py` covers "update over an installed copy works").
+
+**B2. The iOS runtime pin and iOS 27. CONFIRMED gap.**
+- README:161 and docs.html:151 say `runtime` defaults to "newest installed". True, and it now matters: on 2026-10-05 an iOS 27.0 runtime was installed on the dev Mac by an unknown session, `latest_ios_runtime()` picked it, and the 0.1.1 gate had to pin iOS 26.4 (`research/release-0.1.1-evidence-2026-10-05.md`). Shown on iOS 27: ONE simulator and ONE language, 78 s, 0 problems, Maestro 2.0.10, quiet Mac (`research/xcode-27-ios27-attempt-2026-10-05.md`). An earlier 4-simulator run stalled for 35 minutes under load 735 and 21.6 GB of swap (memory thrash; not proven to be iOS 27). A 4-simulator iOS 27 run is untested.
+- Where: README Config (below the `runtime` line) and Limits; docs.html Config table row `runtime` and Limits; `skill/shotfleet/references/config.md:46` and `troubleshooting.md` (a row for "run behaves differently after installing an iOS 27 runtime"). `docs/handoff.md:139` already says it for agents.
+- Text (config row): `The simulator runtime. Default: the newest one installed, so installing an iOS 27 runtime changes what run uses. To stay on a runtime you have tested, pin it: runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4" (xcrun simctl list runtimes shows the ids).`
+- Text (Limits): `iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.`
+- Claims row: new row `evidence`, or extend C131's proof; no existing row quotes this.
+
+**B3. The minimum macOS (and Xcode) outside README and docs.html. CONFIRMED gap.**
+- `Built for macOS 13 or later on Apple silicon; tested on macOS 27.` is in README:301, docs.html:60 (C131) and on the Gumroad page. It is missing on index.html (price lede line 305, "Not for you if", JSON-LD `softwareRequirements` line 37), alternatives.html:89, llms.txt:16-18, SKILL.md:11 and AGENTS-snippet:12. The owner note asks to decide when the home page carries it (D3).
+- Xcode has no version anywhere except README:286 (building on Xcode 27). Shown: Xcode 27.0 with the iOS 26.4 and 27.0 runtimes. Not shown: Xcode 26.x. Older Xcode: the default `device_type` is the iPhone 17 Pro Max, which an older Xcode does not have, so `run` stops with "could not create simulator" and the buyer sets `device_type` (INFERRED from the platform note and shotfleet.py:1217; not run on an old Xcode).
+- Text for README Limits and docs.html Requirements: `Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set device_type in the config. Xcode 26.x has not been run.`
+- Text for the other places once the owner agrees (D3): the same sentence, verbatim, so C131 keeps matching; in JSON-LD `softwareRequirements` prefix `macOS 13 or later on an Apple silicon Mac, `.
+
+**B4. What a free-tier `run` prints, and which two languages. CONFIRMED (code); the order is INFERRED.**
+- README:51, docs.html:73, terms.html and index say `run` is free for up to 2 languages. None says which two. Since #69 the program prints: `free tier: capturing 2 of N languages (a, b). This run is limited to 2 languages because there is no valid licence[: the key was not accepted, <reason>]. --locales a,b picks which ones; shotfleet activate <key> unlocks every language (<buy url>)`. The two are the first two of the app's languages in list order (the product note calls it alphabetical; the code takes `locales[:2]`).
+- Where: README "Free and paid" and "In CI" (the sentence ending `run captures only 2 languages`); docs.html Install paragraph and In CI; skill `references/licence.md` already names `free tier: capturing`.
+- Text: `Without a valid licence, run captures only 2 languages (the first two of your app's languages unless you pick them with --locales de,ja) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If SHOTFLEET_KEY is set but refused, that line says why. check, doctor and init are always free.`
+- Claims rows: C049 and C032 quote existing sentences (unaffected). `tests/test_free_tier_message.py` proves the wording; a new row is optional.
+
+**B5. A licence section in the docs page. CONFIRMED gap.**
+- docs.html has no licence section: activation, `shotfleet deactivate`, the 3 activations, what a refused key prints, the 30-day offline limit and the CI key are spread over the install paragraph, the CI paragraph, terms.html and `skill/shotfleet/references/licence.md`. README never mentions `deactivate`.
+- Text (new `<h2 id="licence">Licence</h2>`; README "Free and paid" gets the first three sentences): `shotfleet activate <key> stores your key on this Mac. The key from your Gumroad receipt works on 3 Macs, and activating again on a Mac that already holds it counts nothing. shotfleet deactivate removes it from this Mac but does not give the activation back; email hello@shotfleet.com to move to a fourth Mac. The licence is checked online when you activate and about once a week after; if the server cannot be reached, the Mac keeps working for up to 30 days after the last good check. A refunded or disabled key is refused at its next check; check and the 2 free languages keep working and nothing you made is deleted. In CI, set SHOTFLEET_KEY (no activation is used).` Every clause is already public on terms.html, index.html or privacy.html; nothing is new policy. Messages to quote: `the key was disabled, as Gumroad does after a full refund`, `this licence is no longer valid`, `that key didn't activate`.
+- Do not state "0 to 7 days" or "a refunded key is refused" as something seen on a live key: STATUS gate 5 says it is unproven (D2).
+- Claims rows: C046, C047, C050 quote terms or index only; a docs.html quote is a new `where` entry, not a change.
+
+**B6. The `--json` traps. CONFIRMED (code); skill-only today.**
+- `skill/shotfleet/references/ci.md` lines 59-62: several reports give one merged document plus `reports`; a missing or invalid `SHOTFLEET_KEY` does not fail `run` (2 languages, exit 0, and the "free tier" line goes to stderr because `--json` redirects stdout). README says the second half in one clause; docs.html not at all.
+- Text for README and docs.html In CI: `With --json, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in run.json.`
+
+**B7. Tested Maestro versions, and what the timings were measured on. CONFIRMED.**
+- docs.html:62 says only `Maestro 2.x and Java 17+`; README:302 says tested with 2.0.10 and 2.11.0 and that `doctor --fix` installs 2.11.0.
+- The quiet-Mac re-measure of 2026-10-05 (iOS 404 s capture, Android phone 415 s, 0 problems, 4 devices, 19 languages) ran on Maestro **2.0.10**, load 86 at the start and 497 at the end of the iOS part (C007 proof: "not perfectly quiet"). `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's own retry for 9 of 19 languages and took 826 s of capture; Android phone on 2.11.0 took 475 s. So "9 minutes on iOS" was measured on the other version than the one the installer fetches. Not false (C007 says 4 simulators, 32 GB M1 Pro, 2026-10-01; it stays `evidence`), but unqualified.
+- Where: docs.html Requirements and a Limits bullet.
+- Text: `Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+.` and `Run times depend on the Mac and on Maestro: 18 languages took 9 minutes on iOS and 15 on Android on a 4-simulator M1 Pro with Maestro 2.0.10; on Maestro 2.11.0 shotfleet retried some iOS languages because a simulator's driver started slowly.`
+- Claims rows: C007, C105 (where_text unchanged; add the facts to the proof). The home-page wording is D5.
+
+**B8. Free memory before a run (Gradle daemons). CONFIRMED event; the advice is INFERRED to help.**
+- Today's lesson (`docs/owner-note-0.1.1.md`): idle Gradle daemons from several projects held about 21 GB; four simulators then thrashed (the 0.1.1 gate took 55 minutes instead of about 25 until seven daemons were stopped; the iOS 27 e2e stalled 35 minutes). A buyer building an Android app next to a four-simulator iOS run is in the same position. `run` already cuts the device count under memory pressure (STATUS row 10), and `troubleshooting.md:71` has the "critical memory pressure" row.
+- Where: README Tips; `skill/shotfleet/references/troubleshooting.md`.
+- Text: `Free memory before a run: idle Gradle daemons can hold gigabytes. Run ./gradlew --stop (once per Gradle version you use) before shotfleet run, and close apps you do not need. Four simulators on a loaded Mac can take many times longer.`
+
+**B9. First-run order and what to expect. CONFIRMED (the note exists); claim impact INFERRED.**
+- `research/limits-first-run-2026-10-05.md` ("Proposed README Quickstart"): README puts `activate` before `doctor`, assumes Maestro exists, and says nothing about `xcode-select -p`, a first `doctor` that can take a minute (text recognition compiles: 30 s quiet, 127 s measured loaded) or that the Android block can be ignored by iOS-only apps. The messages were fixed in 0.1.1; the README quickstart was not.
+- Text: the note's proposed block and its "Notes to add". Claims that quote quickstart lines may break: check with `python3 -m unittest tests.test_claims tests.test_cli_claims tests.test_first_run` (targeted). Changing the order of `activate` is setup advice in a public page: D7.
+
+**B10. docs.html lacks what README has. CONFIRMED (grep).**
+- README items with no counterpart on docs.html: Tips "Flutter rows and cards are one label", "A language the app only half translates", "Building the app on Xcode 27" (`expo run:ios` cannot find Simulator.app; `IPHONEOS_DEPLOYMENT_TARGET=15.1`; `ARCHS=arm64` for Kotlin Multiplatform), "Typing a password on iOS in Arabic", the Linux limit. The docs page is what a search lands on.
+- Text: copy those README sentences into docs.html "Limits" unchanged (so C121 and neighbours stay valid), and mirror A5 and B3 wording into both.
+
+Items in (b): 10 (B1 to B10).
