@@ -8,5 +8,5 @@ Done:
 - [x] tests/test_release_scripts.py class Versioned (6 tests), 32/32 green
 Next:
 - [x] docs: packaging/README.md, CHANGELOG Unreleased, docs/handoff.md note
-- [ ] staging rehearsal (staging only), in a clean export tree (publish.sh refuses a tree with RESUME.md)
+- [x] staging rehearsal: c2f48248 deployed, 5 versioned files verified, rolled back to d6be78d2; (staging only), in a clean export tree (publish.sh refuses a tree with RESUME.md)
 - [x] targeted tests (85 ran, 6 skipped): test_release_scripts test_release_consistency test_docs test_handoff_docs test_golive
