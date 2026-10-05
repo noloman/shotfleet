@@ -173,7 +173,7 @@ class AndroidTypedValuesPerDevice(unittest.TestCase):
     @unittest.skipUnless(shutil.which("node"), "node is not installed")
     def test_an_unreadable_device_id_degrades_to_the_defaults_with_a_note(self):
         js, _ = sf.android_vars(self.INPUTS, self.LANG)
-        for pre in ("", 'var MAESTRO_DEVICE_UDID = "something-else";\n'):  # variable missing (Maestro 2.0.10) or not a serial we know
+        for pre in ("", 'var MAESTRO_DEVICE_UDID = "something-else";\n'):  # variable missing (an older Maestro) or not a serial we know
             lines = self.run_js(js, pre)
             self.assertEqual(lines[-1], '{"name":"Alex"}')
             self.assertTrue(any("typing the [inputs] defaults" in l for l in lines[:-1]), lines)

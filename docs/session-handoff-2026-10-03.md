@@ -23,21 +23,19 @@ What shipped this session:
 | Compatibility | `tools/maestro-compat.py` (28 static checks; 2.0.10 and 2.11.0 pass), `tools/latest-maestro.py`, `tools/apple-specs-watch.py`, `tools/watch-upstream.sh` (run monthly and before a release), `tools/pretend-mac.py`. `docs/compat.md` is the table of what was checked and how. |
 | `check` | Knows the iPhone Duo sizes and four old-device landscape sizes (found by the Apple spec watcher). |
 | First-run fixes (#25) | Wrong builds, locale names, missing Xcode runtime, `init` keeps your config; config refuses `parallel`/`timeout_s` below 1 and an empty `locales`. Config validation lives in `check_section`. Covered by tests only, not run on a Mac. |
-| Licence | Polar code removed (#27): Gumroad is the only store. Lemon Squeezy code remains with no product id (unlocks nothing); remove it if Manu agrees. |
+| Licence | Polar code removed (#27): Gumroad is the only store. Lemon Squeezy code was removed afterwards on `main` as well (see `STATUS.md`, claim C093). |
 | Site (#20, #21) | 25 of 29 critique items and 6 of 17 SEO items fixed, CSP without `unsafe-inline`, contrast and touch targets, no-JS privacy forms, 53 audit tests, Chromium checks. |
 | Docs (#24, #22) | Documents corrected to match the program; old $79 plan marked superseded in `marketing/`; guide links that 404 flagged in `marketing/kit/README.md`. |
 | Tests | `test_claims_unit.py`, `test_claims_site.py` (+ `browser_site.cjs`), `test_first_run.py`, `test_site_audit.py`, `test_doctor_fix.py`, `test_handoff_docs.py` (every path named in the docs must exist). |
 
-## E1 (Android `run` on Linux with KVM): open, do not repeat blindly
+## E1 (Android `run` on Linux with KVM): answered after this session was archived
 
-Six GitHub-runner runs. Setup, `doctor --fix`, build, emulator snapshot boot and per-app language all work. Then Maestro fails to find the localized "Next" button in every language (`Element not found: Text matching regex: Weiter` and so on) after the first screenshot of each. Run 6 used **one** emulator (`parallel = 1`) and failed the same way, so "two emulators starve 2 vCPUs" is ruled out. `check` read the four welcome screens with 0 problems, so the app was in the right language.
-
-Open: a slow software-rendered screen, or a Linux difference in how Maestro finds the button. The evidence is in the artifact of run 37138279362 (ID 11279947777, kept 14 days, about until 2026-10-17): the screenshot at the failing step and `maestro_r*.log`. Cloud agents cannot download artifacts; Manu can. Next step: read those two things, then try on a Linux machine with 4+ cores (`docs/agent-tasks/05`). Do not dispatch the workflow again before that. Details: `docs/linux.md`.
+Update, written afterwards from the repository: the answer came in on `main` (PR #33, see `docs/linux.md` and `STATUS.md`). The screenshots of the failed runs (the run 37138279362 artifact) show Android's "System UI isn't responding" dialog over the app, with the localized button ("Weiter") visible underneath: the language switch worked, the dialog blocked Maestro's tap, and the 2-core runner is why it appeared. Emulators now hide error dialogs and turn animations off at boot, `check` reports a system dialog on a screenshot as a problem (before, it said 0 problems on those screenshots), and `run` picks the emulator count from cores and memory on Linux. Result: the fixture e2e PASSED with ONE emulator on a 2-core GitHub runner (13 of 13 assertions). Still unproven: two emulators, a machine with 4+ cores, the 18-language timing and a real app. Do not claim Linux `run` support beyond that. `docs/agent-tasks/05` is the follow-up.
 
 ## Open work, by who can do it
 
 **Manu only**
-- Download the E1 artifact (above). Delete the remote branch `e1-kvm-run` (the remote refused deletion from the cloud). Merged PR branches can be deleted too. Decide on the Python 3.13 job in `ci.yml`.
+- Delete the remote branch `e1-kvm-run` (the remote refused deletion from the cloud). Merged PR branches can be deleted too. Decide on the Python 3.13 job in `ci.yml`.
 - Money and launch: Gumroad test purchase and publish (gate 1/3), one real key end to end: activate, refund, refused (gate 5; harness `tools/release-candidate.sh`), the Dutch tax/KvK question (`research/tax-nl-2026-10.md`), go-live (`packaging/go-live.sh --dry-run <url> <id>` first), clean-Mac cold test with 2 to 3 outside developers, posting everything in `marketing/`.
 - Site: www to apex redirect, "Licence" vs "license", AI-crawler `robots.txt` choice, Search Console and Bing, HSTS, a live PageSpeed run, publish or drop the guide drafts in `site/draft/guides/` (the Google Play guide has no draft yet).
 - Confirm "joining the list does not reserve the launch price" is the intent. Re-run `check` on the real screenshots before launch to confirm the "108 of 120" figure (claim C107).

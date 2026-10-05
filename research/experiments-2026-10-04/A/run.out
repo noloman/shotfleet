@@ -1,0 +1,7 @@
+booted after ~3 s; 16 arm64-v8a
+Success
+Locales for com.shotfleet.fixture for user 0 are [ja]
+control rc=0 secs=16
+probe start at 17 s into the run
+probe-run rc=0 secs=54
+finished

@@ -1,0 +1,26 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 240,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "lproj": "ja",
+   "ok": true,
+   "seconds": 117,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  }
+ },
+ "config": "<scratch>/expC/shotfleet.toml",
+ "wall_seconds": 394,
+ "simulators": 1,
+ "app": "<scratch>/expC/../maui-samples/10.0/Fundamentals/Localization/LocalizationDemo/bin/Debug/net10.0-ios/iossimulator-arm64/LocalizationDemo.app"
+}

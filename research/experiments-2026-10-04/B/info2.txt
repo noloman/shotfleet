@@ -1,0 +1,4 @@
+runtime=com.apple.CoreSimulator.SimRuntime.iOS-26-4 udid=2AC289CA-F3E9-4C55-B168-FDD0D48DCFD9
+== 5-argonly-de: navigator.language=de-DE|Hallo|device=de|
+== 6-argonly-ja: navigator.language=ja|Hello|device=ja|
+deleted 2AC289CA-F3E9-4C55-B168-FDD0D48DCFD9

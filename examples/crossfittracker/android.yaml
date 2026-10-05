@@ -5,7 +5,7 @@ name: "Android Store Screenshots"
 - waitForAnimationToEnd:
     timeout: 5000
 
-# ── Onboarding (Android): 3 intro pages, experience, goals, equipment, summary ──
+# ── Onboarding (Android): welcome, timers, experience, first action ──
 # the disclaimer can appear late on a busy machine: dismiss it until onboarding shows
 - repeat:
     while:
@@ -18,9 +18,6 @@ name: "Android Store Screenshots"
       - waitForAnimationToEnd:
           timeout: 2000
 - assertVisible: "Welcome to WOD Tracker"
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 3000
 - tapOn: "Next"
 - waitForAnimationToEnd:
     timeout: 3000
@@ -42,29 +39,8 @@ name: "Android Store Screenshots"
       text: "3+ years of consistent training"
 - waitForAnimationToEnd:
     timeout: 3000
-- assertVisible: "Training Goals"
-- scrollUntilVisible:
-    element:
-      text: "Next"
-    direction: DOWN
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 3000
-- assertVisible: "Your Equipment"
-- scrollUntilVisible:
-    element:
-      text: "Next"
-    direction: DOWN
-- tapOn: "Next"
-- waitForAnimationToEnd:
-    timeout: 3000
-- assertVisible: "You're All Set!"
-- tapOn: "Start Training"
-- waitForAnimationToEnd:
-    timeout: 3000
-- tapOn:
-    text: "I'll explore on my own"
-    optional: true
+- assertVisible: "Pick your first step"
+- tapOn: "I'll explore on my own"
 - waitForAnimationToEnd:
     timeout: 3000
 

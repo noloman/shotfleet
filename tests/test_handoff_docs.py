@@ -17,8 +17,8 @@ class DocsPointAtRealFiles(unittest.TestCase):
 
     def test_the_promotion_checklist_names_strings_that_are_really_there(self):
         # item 1 of the hand-off says these places quote the tested version; if one stops doing so the list is wrong
-        for rel, quote in (("README.md", "Maestro (tested with 2.0.10)"), ("skill/shotfleet/SKILL.md", "tested with 2.0.10"),
-                           ("skill/shotfleet/references/troubleshooting.md", "tested with 2.0.10"), ("tests/test_agent_skills.py", "Maestro (tested with 2.0.10)"),
+        for rel, quote in (("README.md", "Maestro (tested with 2.0.10 and 2.11.0)"), ("skill/shotfleet/SKILL.md", "tested with 2.0.10 and 2.11.0"),
+                           ("skill/shotfleet/references/troubleshooting.md", "tested with 2.0.10 and 2.11.0"), ("tests/test_agent_skills.py", "Maestro (tested with 2.0.10 and 2.11.0)"),
                            ("tests/test_doctor_versions.py", "MAESTRO_TESTED"), ("shotfleet.py", "MAESTRO_TESTED = ("), ("shotfleet.py", "MAESTRO_PIN = {")):
             with self.subTest(file=rel, quote=quote):
                 self.assertIn(quote, (ROOT / rel).read_text())

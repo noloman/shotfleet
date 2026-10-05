@@ -1,0 +1,47 @@
+{
+ "screenshots": [
+  {
+   "file": "ar/01_welcome.png",
+   "src": "../../../../../../../../var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/e1art3/tmp/shotfleet-e2e.6NJg9F/proj-android/out/phone/raw/ar/01_welcome.png",
+   "sha": "7e90673bd703",
+   "lang": "en",
+   "chars": 58
+  },
+  {
+   "file": "de/01_welcome.png",
+   "src": "../../../../../../../../var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/e1art3/tmp/shotfleet-e2e.6NJg9F/proj-android/out/phone/raw/de/01_welcome.png",
+   "sha": "2f639a577ae7",
+   "lang": "en",
+   "chars": 58
+  },
+  {
+   "file": "ja/01_welcome.png",
+   "src": "../../../../../../../../var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/e1art3/tmp/shotfleet-e2e.6NJg9F/proj-android/out/phone/raw/ja/01_welcome.png",
+   "sha": "25d00119bc2d",
+   "lang": "en",
+   "chars": 54
+  },
+  {
+   "file": "tr/01_welcome.png",
+   "src": "../../../../../../../../var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/e1art3/tmp/shotfleet-e2e.6NJg9F/proj-android/out/phone/raw/tr/01_welcome.png",
+   "sha": "a0f5b33d19f2",
+   "lang": "en",
+   "chars": 57
+  }
+ ],
+ "problems": [
+  "ar/01_welcome.png: text looks like 'en', expected 'ar'",
+  "ar/01_welcome.png: an Android system dialog covers the screen (\"isn't responding\")",
+  "de/01_welcome.png: text looks like 'en', expected 'de'",
+  "de/01_welcome.png: an Android system dialog covers the screen (\"isn't responding\")",
+  "ja/01_welcome.png: text looks like 'en', expected 'ja'",
+  "ja/01_welcome.png: an Android system dialog covers the screen (\"isn't responding\")",
+  "tr/01_welcome.png: text looks like 'en', expected 'tr'",
+  "tr/01_welcome.png: an Android system dialog covers the screen (\"isn't responding\")",
+  "ar/01_welcome.png: 1080x1920 isn't an App Store screenshot size",
+  "de/01_welcome.png: 1080x1920 isn't an App Store screenshot size",
+  "ja/01_welcome.png: 1080x1920 isn't an App Store screenshot size",
+  "tr/01_welcome.png: 1080x1920 isn't an App Store screenshot size"
+ ],
+ "notes": []
+}
