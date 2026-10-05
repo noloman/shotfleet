@@ -2192,5 +2192,21 @@
   "assertion": "A command with no progress for stall_s seconds is killed within seconds of that and raises TimeoutExpired with .stalled.",
   "fix": "",
   "test": "StalledRun.test_no_progress_for_stall_s_kills_the_command"
+ },
+ {
+  "id": "C131",
+  "claim": "The release is built for macOS 13 or later on Apple silicon and tested on macOS 27",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Built for macOS 13 or later on Apple silicon; tested on macOS 27."
+  ],
+  "status": "evidence",
+  "proof": "2026-10-05, release 0.1.1 built from a standalone Python 3.14.2 and `swiftc -target arm64-apple-macos13.0`: `python3 tools/macho-minos.py dist/shotfleet` on the unpacked tarball gives 2 Mach-O files at macOS 11.0 and 1 (the ocr helper) at 13.0, none at 27.0 (the 0.1.0 folder had 52 of 56 at 27.0). Apple notarized both the program and the package (Accepted); the quarantined run, `check` on 72 real screenshots (0 problems) and a licence call over TLS all ran on macOS 27. Tests: tests/test_platform_reach.py. The Mach-O minimum is a build fact, not proof that it runs below macOS 27: no older Mac was available.",
+  "layer": "device",
+  "assertion": "On a Mac running macOS 13 to 26, the installed 0.1.1 prints `shotfleet 0.1.1` and `doctor` runs to the end; on macOS 12 and older it refuses or fails with a clear message.",
+  "fix": ""
  }
 ]
