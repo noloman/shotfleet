@@ -249,6 +249,88 @@ unless time), sampler as above (add `qemu-system-aarch64` RSS with `ps -axo rss,
 held memory hog (`memory_pressure -l warn` probably needs sudo [I]; use `python3 -c "x=bytearray(14*2**30); input()"` to hold 14 GB, kill by PID); (2) if B4 retries again at load under 20 and A4 does not, decide D1 for iOS;
 (3) if S/P cut B4 to under 500 s with no retries, build recommendation 5 or 4 in that form.
 
+## 5a. Measurement (2026-10-05)
+
+Run by the coordinator's device-slot runner under the device lock, 16:40 to 18:26 [M]. Mac: 10 cores, 32 GB, macOS 27.0 (26A428), Xcode 27.0 (27A266a),
+runtime pinned to `com.apple.CoreSimulator.SimRuntime.iOS-26-4`, device type iPhone 17 Pro Max, pool `shotfleet-1..4`. **App: the repo's fixture**
+(`tools/fixture-app`, 5 languages en/de/ja/ar/tr, one flow with 2 screenshots), not CrossfitTracker: so a case is 10 screenshots, not 19 languages, and the
+times below are mostly boot and driver start, not flow time. Config per case: `stall_s = 300`, `timeout_s = 300`, fresh `out`, `--locales en,de,ja,ar,tr`;
+Maestro chosen with `SHOTFLEET_MAESTRO` (2.0.10 = `~/.maestro`, 2.11.0 = `~/.maestro-tests/2.11.0`). Every case: quiet check at its start (all passed),
+hard kill (`perl alarm`), sampler every 10 s (`read_capacity`, Maestro JVM RSS). Scripts and raw data (not in the repo):
+`/Users/manu/Developer/shotfleet-rc-build/device-slots/job3/` (`results.jsonl`, `cap-<case>.csv`, `cases/<case>/run.log`).
+
+**The Mac was not quiet in the plan's sense.** The quiet check (load under 300, free memory 20 %+) passed at every case start, but swap in use was 10.4 to
+14.3 GB from 16:52 on (6.1 GB before my first boots; it never came back down), and 4 booted iOS 26.4 simulators alone keep load1 at 400 to 1000 here.
+
+### Case matrix (iOS, fixture, in run order)
+
+| Case | Maestro | Sims | Result | Wall (s) | Setup before capture (s) | Capture (s, `run.json`) | Retried | Peak load | Peak swap GB | Min avail GB (`vm_stat`) | Max JVM GB |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| A4_1 | 2.0.10 | 4 (pool created fresh) | **killed at 900 s** | 900 | 204 | none | 4 of 5 retried, then killed | 999 | 12.6 | 4.7 | 0.41 |
+| B4_1 | 2.11.0 | 4 | **killed at 900 s** | 900 | 187 | none | all 5 retried, then killed | 1021 | 14.3 | 4.9 | 1.28 |
+| A2_1 | 2.0.10 | 2 -> 1 | pass 5/5 | 406 | 336 | 63 | 0 | 319 | 14.0 | 9.4 | 0.53 |
+| B2_1 | 2.11.0 | 2 | pass 5/5 | 210 | 37 | 166 | 0 | 414 | 13.6 | 7.7 | 0.53 |
+| A2_2 | 2.0.10 | 2 | pass 5/5 | 196 | 87 | 103 | 0 | 348 | 13.3 | 6.3 | 0.76 |
+| B2_2 | 2.11.0 | 2 | pass 5/5 | 201 | 63 | 131 | 0 | 361 | 12.4 | 7.5 | 0.53 |
+| A1_1 | 2.0.10 | 1 | pass 5/5 | 138 | 23 | 112 | 0 | 260 | 12.4 | 8.5 | 0.59 |
+| B1_1 | 2.11.0 | 1 | pass 5/5 | 147 | 41 | 102 | 0 | 175 | 10.9 | 7.5 | 1.03 |
+| A4_2 | 2.0.10 | 4 | pass 5/5 | 280 | 93 | 173 | 0 | 844 | 10.8 | 5.3 | 0.51 |
+| B4_2 | 2.11.0 | 4 | pass 5/5 | 301 | 237 | 50 | 0 | 735 | 11.3 | 5.1 | 1.47 |
+| A4_3 | 2.0.10 | 4 | pass 5/5 | 325 | 268 | 44 | 0 | 690 | 11.9 | 4.7 | 0.86 |
+| B4_3 | 2.11.0 | 4 | pass 5/5 | 281 | 117 | 150 | 0 | 633 | 11.8 | 5.8 | 0.51 |
+
+"Setup before capture" = seconds from `shotfleet run` to its "capturing" line (pool boot, `bootstatus`, status bar, install). Memory pressure level was 1 or 2
+(never 4) in every case; no "Unknown error" or "Unable to clear state" anywhere.
+
+**What stopped answering:**
+- A4_1 (pool created in this case, i.e. four first boots at once): 3 of 4 shards hit "iOS driver not ready in time" (the 240 s
+  `MAESTRO_DRIVER_STARTUP_TIMEOUT`), one shard passed `en` in 19 s; on the retry `shotfleet-1` stopped answering (`simctl terminate` did not return in 300 s,
+  shotfleet carried on without it) and the hard kill came at 900 s. That simulator stayed broken: in A2_1 the same `terminate` hung 300 s again, and
+  shotfleet ran on 1 simulator (5/5, so the carry-on works). I deleted and recreated it between cases (a single first boot then took 32 s at load ~180).
+- B4_1: all 4 shards sat at "Waiting for flows to complete" with no screenshot for 300 s (stall stop), the retry of all 5 gave no result before the kill at 900 s. No
+  "driver not ready" line. After the kill, its orphaned Maestro driver (`xcodebuild test-without-building` for `shotfleet-1`) ran `simctl diagnose` for a
+  few seconds and then ended by itself.
+- Driver start time per shard (first screenshot per shard) was **not recorded**: shotfleet removes `.work` after collecting, and my sampler looked there.
+
+### Case M, memory per booted simulator
+
+- **M (fresh, created for the test, `shotfleet-memtest-1..4`):** baseline 10.2 GB available (`vm_stat`), swap 6.1 GB, load 7. 1 booted: 7.4 GB (-2.8 GB),
+  load 264. 2 booted: 5.8 GB (-2.2 GB per simulator), load 512. **The 3rd first boot did not finish `bootstatus` in 400 s** (load ~900, `ps` and `simctl`
+  calls took over 60 s); case aborted, the four test simulators deleted. A first boot is far heavier than a later boot.
+- **M2 (the warm pool `shotfleet-1..4`, booted one after another, 60 s settle each):** baseline 11.65 GB, swap 11.5 GB, load 109. After 1/2/3/4 booted:
+  9.70 / 9.99 / 8.29 / 8.01 GB, load 154 / 252 / 351 / 437. With the fixture installed and launched on all four: 6.38 GB, load 518, pressure level 2.
+  **Per simulator: about 0.9 GB idle (3.6 GB for 4) and 1.3 GB with the app (5.3 GB for 4)**; swap fell 1.1 GB meanwhile (macOS paging back in), so
+  the `vm_stat` figure is noisy at this swap level. The planner's 2.0 GB per iOS simulator is an upper bound for a warm pool and too low for first boots
+  (2.2 to 2.8 GB each, and they stall at three).
+- **Load, not memory, is what 4 simulators cost here:** 4 idle booted simulators = load ~440, which alone fails the quiet check (case P below).
+
+### Case P, pre-warm (2.11.0)
+
+Pool booted by `make_pool` (4), fixture installed, then `maestro --device <udid> test warm.yaml` (`launchApp`, `waitForAnimationToEnd`,
+`MAESTRO_DRIVER_STARTUP_TIMEOUT=240000`) one simulator at a time:
+- Simulator 1: **235 s** to warm (with the other 3 booted, load ~400), exit 0, and **0 driver processes alive after the call** (`pgrep` for
+  `xcodebuild test-without-building` and `maestro-driver`). Maestro 2.11.0 stops its XCTest driver at the end of each call, so a pre-warmed driver cannot
+  survive into shotfleet's run even before `kill_stale_drivers` runs. I stopped the warm-up after simulator 2 had started (the finding was settled and the
+  slot was finite).
+- The real run on the pre-booted pool (P_run) was **void**: the quiet check failed at its start (load 400 with the 4 idle simulators booted).
+
+Not run: case S (only if B4 retried for driver start; the B4 failure was a stall, not "driver not ready"); the Android matrix; the 14 GB memory-hog check.
+
+### Reading and recommendation
+
+- **No evidence that 2.11.0 is worse than 2.0.10 on iOS with this app.** At 4 simulators each version had one failed case (A4_1 cold pool, B4_1 stall)
+  and two clean passes (capture 2.0.10: 173 and 44 s; 2.11.0: 50 and 150 s); at 2 and 1 simulators both always passed with no retries and similar times
+  (at 2: 2.11.0 166 and 131 s, 2.0.10 103 s plus 63 s in A2_1, which ran on 1 simulator; at 1: 102 against 112 s). The spread between repeats of the same case (44 to 173 s)
+  is larger than any version difference. "iOS driver not ready" appeared only on 2.0.10 (A4_1, first boots).
+- **What decides a 4-simulator run on this Mac is load and swap, not the Maestro version:** both failures happened with peak load ~1000 and swap 12.6 to
+  14.3 GB; every pass at 4 had peak load 633 to 844. Setup before capture (93 to 268 s) is larger than capture itself for a short flow.
+- **Recommendation: keep 2.11.0 as the one default (no iOS pin to 2.0.10, no per-platform split)**, so D1 option (a): keep 2.11.0 and ship
+  recommendation 4 (retry on fewer simulators when attempt 1 loses half the languages), plus D2 with real numbers: count about 1.3 GB per warm iOS
+  simulator with the app and treat first boots (a fresh pool) as at least 2.5 GB each and never more than two at once. Pre-warm (recommendation 5): **drop
+  it**, 2.11.0 does not keep a driver between calls. Caveat: the fixture flow is short; the earlier CrossfitTracker data point (19 languages, 2.0.10 404 s
+  against 2.11.0 826 s with 9 retried) is not contradicted for long flows. Repeat A4/B4 with CrossfitTracker on a Mac with swap under 8 GB before
+  pinning anything.
+
 ## 6. What I could not verify
 
 - The per-device memory costs (iOS 2.0 GB, Android 3.0 GB, 1.5 GB base) and the 10 GB swap knee: estimates; case M and the CSVs settle them. No machine under 32 GB was available to test the planner's output on a small Mac.
