@@ -1175,11 +1175,15 @@ def healthy_installs(pool, k, install):
     """Install the app on the first k simulators of the pool that answer, shutting down any that don't (CoreSimulator
     wedges under heavy load; one dead simulator must not end the run while others work). Returns the pool with the k
     ready simulators first and the dead ones gone; raises when none answers."""
-    ready, dead = [], []
-    for sim in pool:
-        if len(ready) == k: break
-        try: install([sim]); ready.append(sim)
-        except RuntimeError as e:
+    ready, dead, todo = [], [], list(pool)
+    def attempt(sim):
+        try: install([sim])
+        except RuntimeError as e: return e
+    while len(ready) < k and todo:  # at once, not in turn: each wedged simulator cost its 300 s timeout in turn (0.1.2 gate: 5 of them, 1500 s)
+        group, todo = todo[:k - len(ready)], todo[k - len(ready):]
+        with ThreadPoolExecutor(len(group)) as ex: errors = list(ex.map(attempt, group))
+        for sim, e in zip(group, errors):
+            if e is None: ready.append(sim); continue
             print(f"simulator {sim.udid} stopped answering ({e}); carrying on without it", flush=True)
             dead.append(sim); OUR_SIMS.discard(sim.udid)
             try: sh(["xcrun", "simctl", "shutdown", sim.udid], timeout=60)

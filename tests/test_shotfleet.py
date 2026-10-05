@@ -8,6 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
+sys.path.insert(0, str(Path(__file__).resolve().parent)); from test_cli_claims import fake_vision  # the stubbed text recognition (shared)
 sf.USE_DEVICE_LOCK = False  # fake runs touch no device; two test suites at once must not refuse each other
 
 needs_mac = unittest.skipUnless(sys.platform == "darwin", "needs macOS tools (PlistBuddy, swiftc, xcrun, BSD sed)")
@@ -933,7 +934,7 @@ class ExternalOcr(unittest.TestCase):
                 (d / lp).mkdir()
                 (d / lp / "1.png").write_bytes(png_c(1320, 2868)); (d / lp / "1.png.txt").write_text("\n".join(words.values()))
             (d / "el" / "2.png").write_bytes(png_c(1320, 2868)); (d / "el" / "2.png.txt").write_text("\n".join(en.values()))
-            with contextlib.redirect_stdout(io.StringIO()):
+            with fake_vision(), contextlib.redirect_stdout(io.StringIO()):
                 code = sf.cmd_check(d, strings={"en": en, "el": el}, report_dir=d / "rep", ocr_command="cat {image}.txt")
             report = json.loads((d / "rep/check.json").read_text())
         langs = {r["file"]: r["lang"] for r in report["screenshots"]}
