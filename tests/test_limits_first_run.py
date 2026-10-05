@@ -25,5 +25,37 @@ class InstallerWording(unittest.TestCase):
         self.assertIn("shotfleet activate", line)
 
 
+class XcodeNotSelected(unittest.TestCase):
+    """Xcode installed but `xcode-select -p` still on the Command Line Tools: simctl is 'not found' and doctor used to say 'install Xcode'."""
+    def hint(self, apps):
+        d = Path(tempfile.mkdtemp()); self.addCleanup(__import__("shutil").rmtree, d, True)
+        paths = []
+        for name, real in apps:
+            (d / name).mkdir(); paths.append(str(d / name))
+            if real: (d / name / "Contents/Developer").mkdir(parents=True)
+        with mock.patch.object(sf.glob, "glob", lambda pat: paths):
+            return sf.xcode_hint()
+
+    def test_an_installed_xcode_is_named_with_the_command_that_selects_it(self):
+        self.assertRegex(self.hint([("Xcode.app", True)]), r"installed but not selected: sudo xcode-select -s \S+/Xcode.app/Contents/Developer")
+
+    def test_the_xcodes_manager_app_is_not_mistaken_for_xcode(self):
+        self.assertIn("install Xcode from the App Store", self.hint([("Xcodes.app", False)]))
+
+    def test_no_xcode_says_to_get_it_and_open_it_once(self):
+        out = self.hint([])
+        self.assertIn("App Store", out); self.assertIn("open it once", out)
+
+    def test_doctor_puts_the_hint_on_the_simctl_line(self):
+        out = io.StringIO()
+        fail = subprocess.CompletedProcess([], 1, "", "xcrun: error: unable to find utility \"simctl\"")
+        with mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf, "xcode_hint", lambda: "HINT-X"), mock.patch.object(sf, "sh", lambda *a, **k: fail), \
+                mock.patch.object(sf, "ocr_tool", return_value="ocr"), mock.patch.object(sf, "latest_release", lambda: None), \
+                mock.patch.object(sf, "maestro_cmd", lambda: None), mock.patch.object(sf, "find_java", lambda: (True, None)), \
+                contextlib.redirect_stdout(out):
+            sf.cmd_doctor()
+        self.assertRegex(out.getvalue(), r"MISSING xcrun simctl\s+\(iOS\)\s+-> HINT-X")
+
+
 if __name__ == "__main__":
     unittest.main()

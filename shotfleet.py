@@ -2917,6 +2917,14 @@ def ios_runtimes():
     except (ValueError, KeyError, TypeError): return None
     return None if rts is None else [r.get("name") or r.get("identifier", "iOS") for r in rts if r.get("platform") == "iOS" and r.get("isAvailable")]
 
+def xcode_hint():
+    """What to do when `xcrun simctl` does not answer on a Mac. The usual cause is Xcode installed but not selected (xcode-select still
+    points at the Command Line Tools, which have no simctl), so name the Xcode that is there instead of saying 'install Xcode'."""
+    xcodes = sorted(p for p in glob.glob("/Applications/Xcode*.app") if os.path.isdir(p + "/Contents/Developer"))
+    if xcodes: return (f"Xcode is installed but not selected: sudo xcode-select -s {shlex.quote(xcodes[-1])}/Contents/Developer "
+                       "(and once: sudo xcodebuild -license accept)")
+    return "install Xcode from the App Store, open it once to accept its licence, and let it add an iOS Simulator runtime"
+
 def cmd_doctor(fix=False, yes=False):
     """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
     have = lambda c: shutil.which(c) is not None
@@ -2937,7 +2945,7 @@ def cmd_doctor(fix=False, yes=False):
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", simctl_works() if have("xcrun") else False,
-         "install Xcode and an iOS Simulator runtime" if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
+         xcode_hint() if mac else "iOS simulators exist only on a Mac with Xcode; this system can run Android", "iOS"),
         *([("/dev/kvm (emulator speed)", os.access("/dev/kvm", os.R_OK | os.W_OK),
             "the emulator needs KVM: enable virtualization, then sudo usermod -aG kvm $USER and log in again", "Android")]
           if sys.platform.startswith("linux") and not mac else []),
