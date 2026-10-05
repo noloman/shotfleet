@@ -2278,7 +2278,7 @@
    "site/public/demo.html"
   ],
   "where_text": [
-   "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow."
+   "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each one has, and writes a config and an English flow."
   ],
   "status": "evidence",
   "proof": "The recording site/public/media/demo/c2-init.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json description), on the repo's fixture apps (tools/fixture-app, tools/fixture-app-android); init writing a starter config and flow is claim C060 (proven). The clip then copies a prepared config in, visibly (README of the demo-video branch).",
