@@ -1445,6 +1445,19 @@ def device_type_id(name):
     if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
     return match
 
+DEFAULT_IPHONE = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
+
+def default_device_type(listed=None):
+    """iPhone 17 Pro Max, the 6.9" size class. Xcode 16 and early 26 builds do not have it: then the newest 'iPhone N Pro Max' this Xcode lists
+    (the 16 Pro Max is 1320x2868 like the 17; the 15 Pro Max's 1290x2796 is also a 6.9" size). `listed` is `simctl list devicetypes -j` text, for tests."""
+    try:
+        if listed is None: listed = sh(["xcrun", "simctl", "list", "devicetypes", "-j"], timeout=60).stdout
+        types = json.loads(listed or "{}").get("devicetypes", [])
+    except (OSError, ValueError, TypeError, AttributeError, subprocess.TimeoutExpired): return DEFAULT_IPHONE  # ponytail: unreadable list -> the old default, simctl then names the problem
+    if any(t.get("identifier") == DEFAULT_IPHONE for t in types): return DEFAULT_IPHONE
+    maxes = [(int(m[1]), t["identifier"]) for t in types if (m := re.fullmatch(r"iPhone (\d+) Pro Max", t.get("name", "")))]
+    return max(maxes)[1] if maxes else DEFAULT_IPHONE
+
 def device_slug(device_type):
     """com.apple...iPad-Pro-13-inch-M5-12GB -> ipad-pro-13-inch-m5-12gb (a folder and simulator-name prefix)."""
     return device_type.rsplit(".", 1)[-1].lower()
@@ -1574,7 +1587,7 @@ def ios_run(cfg, path, only=None, parallel=None):
 def ios_run_inner(cfg, path, only, parallel):
     cfg = dict(cfg)
     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
-    cfg.setdefault("device_type", "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max")
+    if "device_type" not in cfg: cfg["device_type"] = default_device_type()  # an explicit device_type was resolved above and is never changed
     if "runtime" not in cfg: cfg["runtime"] = latest_ios_runtime()  # setdefault would ask xcrun even when the config names one
     cfg["app"] = str(path(cfg["app"]))
     framework_hint(cfg["app"], "strings" in cfg, path("."))

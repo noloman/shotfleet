@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Default iPhone type on an older Xcode:** when the config sets no `device_type` and this Xcode has no iPhone 17 Pro Max, `run` uses the newest `iPhone N Pro Max` it lists (16 Pro Max is 1320x2868 like the 17) instead of failing on a missing type. A `device_type` you set is never changed; an unreadable simulator list keeps the old default. Not run on an Xcode that lacks the 17 (tests only). `research/limits-platform-reach-2026-10-05.md`.
 - **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 - **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each; with one report nothing changes. #68.
 
