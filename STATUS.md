@@ -4,6 +4,8 @@
 
 Single source of truth for "what is left to have a sellable project". Evidence and commands behind every row: [research/sellable-audit.md](research/sellable-audit.md). Refresh the numbers with `tools/status.sh`.
 
+**2026-10-05 update: release 0.1.0 is published and the sale page is live (go-live run on Manu's approval, `tools/golive/smoke.sh` 36 checks ok, G3 device gate 65/65 on the build to ship, storefront check ok); the go-live commits are on branch `claude/friendly-aryabhata-992c23` (PR #32) until it is merged. Not yet done: the real purchase test (buy, activate, refund) and a clean-Mac install. The Sellable-when text below dates from 2026-10-03.**
+
 **As of 2026-10-03 (early, HEAD after the release-candidate run; site deploy ae0a9ffd). Sellable when:** a payment provider that accepts a person without a KvK (Gumroad, replacing Polar) has approved Manu, pays out and has a live product with a checkout link; one real key has been activated, refunded and refused on the notarized build; that build is published (`/download/VERSION` returns 200, `install.sh` works against it); and a clean Mac reaches a first screenshot in a measured time on a Maestro version we tested and pin. **Today: 0 of those 4 hold. Not sellable.** The program itself is in good shape (306 unit tests and 28 worker checks green at HEAD); what is missing is the money path, the published release and the outside proof.
 
 "In flux" = another agent is editing it right now (the Gumroad migration touches `shotfleet.py`, `packaging/go-live.sh`, `tools/golive/`, tests, and later the site, terms, privacy and LAUNCH.md). Strict rule: "done" needs evidence; anything only unit-tested against a fake API or only stated in a document is "partial".
