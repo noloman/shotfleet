@@ -57,7 +57,7 @@ do {
     try VNImageRequestHandler(url: URL(fileURLWithPath: CommandLine.arguments[2])).perform([req])
     let text = (req.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
     let ms = Int(Date().timeIntervalSince(t0) * 1000)
-    let first = String(data: try JSONSerialization.data(withJSONObject: [String(text.prefix(60))]), encoding: .utf8)!
+    let first = String(data: try JSONSerialization.data(withJSONObject: [String(text.prefix(Int(ProcessInfo.processInfo.environment["VT_CHARS"] ?? "60") ?? 60))]), encoding: .utf8)!
     print("{\"mode\":\"\(mode)\",\"ms\":\(ms),\"lines\":\((req.results ?? []).count),\"chars\":\(text.count),\"first\":\(first)}")
 } catch {
     print("{\"mode\":\"\(mode)\",\"error\":\"\(error)\"}")
