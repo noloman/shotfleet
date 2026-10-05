@@ -3658,7 +3658,8 @@ def main(argv=None):
     p = sub.add_parser("skill", help="install the Claude Code skills for shotfleet")
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills instead of ~/.claude/skills")
     p.add_argument("--dir", help="install into this skills folder (for other agents)"); p.add_argument("--force", action="store_true", help="replace skills that are already installed")
-    p = sub.add_parser("activate", help="activate your licence on this Mac"); p.add_argument("key")
+    p = sub.add_parser("activate", help="activate your licence on this Mac")
+    p.add_argument("key", help="the licence key from your Gumroad receipt email (needs internet once; run does 2 languages and check is free without one)")
     sub.add_parser("deactivate", help="remove the licence from this Mac (a Gumroad activation is not given back: email hello@shotfleet.com)")
     p = sub.add_parser("init", help="write a starter config and flow for your app")
     p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
