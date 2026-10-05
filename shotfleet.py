@@ -22,6 +22,7 @@ import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, 
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import NamedTuple, Optional
 
 HERE = Path(__file__).resolve().parent
 VERSION = "0.1.2"
@@ -1391,6 +1392,110 @@ def fit_emulators(n):
     if fit < n: print(f"this machine has {cores} cores and {gb if gb is None else round(gb, 1)} GB of free memory: using {fit} "
                       f"emulator{'s' if fit > 1 else ''} instead of {n} (each wants about 2 cores and 3 GB)")
     return fit
+
+# ---------- capacity planner (prototype, not called by `run`; research/workarounds-maestro-resources-2026-10-05.md) ----------
+# Thresholds are provisional: the swap figure is read from two 2026-10-05 gate runs, the per-device costs are estimates (not yet measured per process).
+CAPACITY_COST = {"ios": {"gb": 2.0, "cores": 1}, "android": {"gb": 3.0, "cores": 2}}  # per simulator / emulator; the 3 GB and 2 cores are fit_emulators' figures
+CAPACITY_BASE_GB = 1.5       # Maestro's JVM and the simctl/adb helpers, once per run (estimate)
+CAPACITY_HEADROOM_GB = 2.0   # memory to leave free once the pool is up
+CAPACITY_SWAP_GB = 10.0      # swap in use above this, with too little memory for the whole pool, is thrashing (6 GB: finished fine; 17-21 GB: crawled)
+
+class Reading(NamedTuple):
+    """What the Mac says before a run. None = could not be read: that rule is skipped, a run is never stopped for it."""
+    avail_gb: Optional[float] = None      # free + inactive + speculative memory
+    total_gb: Optional[float] = None
+    swap_used_gb: Optional[float] = None
+    load1: Optional[float] = None
+    cores: Optional[int] = None
+    pressure: str = ""                    # kern.memorystatus_vm_pressure_level: "1", "2", "4"
+    booted_ours: int = 0                  # pool devices already booted (a run reuses them: no extra memory)
+    booted_other: int = 0                 # other projects' simulators/emulators, already in avail_gb
+
+class Plan(NamedTuple):
+    n: int
+    level: str                            # "ok", "tight" (fewer devices), "short" (one device, memory still short), "critical" (macOS says critical)
+    notes: tuple
+
+def capacity_need_gb(n, platform, booted_ours=0):
+    """Memory a pool of n devices needs on top of what is in use: Maestro once, each device not yet booted, headroom."""
+    return CAPACITY_BASE_GB + max(0, n - booted_ours) * CAPACITY_COST[platform]["gb"] + CAPACITY_HEADROOM_GB
+
+def plan_capacity(want, platform, r):
+    """Pure: how many simulators/emulators to run at once, and why. Never below 1, never above `want`; it never refuses (the caller keeps
+    fit_parallel's refusal for level "critical"). The fewest of: cores, free memory, half under elevated pressure, one while swapping."""
+    cost, n, notes = CAPACITY_COST[platform], want, []
+    if r.cores and r.cores // cost["cores"] < n:
+        n = max(1, r.cores // cost["cores"])
+        notes.append(f"{r.cores} CPU cores: about {cost['cores']} per {'simulator' if platform == 'ios' else 'emulator'}")
+    if r.avail_gb is not None:
+        fit = max(1, int((r.avail_gb - CAPACITY_BASE_GB - CAPACITY_HEADROOM_GB) // cost["gb"]) + r.booted_ours)
+        if fit < n:
+            n = fit
+            notes.append(f"{r.avail_gb:.1f} GB of memory available, {want} devices want about {capacity_need_gb(want, platform, r.booted_ours):.1f} GB")
+    swapping = (r.swap_used_gb is not None and r.swap_used_gb >= CAPACITY_SWAP_GB
+                and (r.avail_gb is None or r.avail_gb < capacity_need_gb(want, platform, r.booted_ours)))
+    if swapping:
+        n = 1
+        notes.append(f"{r.swap_used_gb:.1f} GB of swap in use (above {CAPACITY_SWAP_GB:.0f} GB the Mac thrashes)")
+    if r.pressure == "2" and want > 1 and n > want // 2:
+        n = max(1, want // 2)
+        notes.append("macOS reports elevated memory pressure")
+    if r.pressure == "4":
+        return Plan(1, "critical", tuple(notes + ["macOS reports critical memory pressure"]))
+    if n == want: return Plan(n, "ok", tuple(notes))
+    short = n == 1 and (swapping or (r.avail_gb is not None and r.avail_gb < capacity_need_gb(1, platform, r.booted_ours)))
+    return Plan(n, "short" if short else "tight", tuple(notes))
+
+def capacity_message(plan, want, r):
+    """The warning for the buyer: what the Mac showed, what shotfleet suggests, what to close. "" when all is well."""
+    if plan.level == "ok" and not plan.notes: return ""
+    seen = ", ".join(s for s in (f"{r.avail_gb:.1f} GB memory available" if r.avail_gb is not None else "",
+                                 f"{r.swap_used_gb:.1f} GB swap in use" if r.swap_used_gb is not None else "",
+                                 f"load {r.load1:.0f} on {r.cores} cores" if r.load1 is not None and r.cores else "",
+                                 f"{r.booted_other} other simulators/emulators booted" if r.booted_other else "") if s)
+    head = f"this Mac is short of memory: running {plan.n} device{'s' if plan.n != 1 else ''} at once instead of {want}" if plan.n < want else "this Mac is busy"
+    return (f"{head} ({'; '.join(plan.notes)}). Seen: {seen or 'nothing readable'}. A loaded Mac makes flows time out and the retries add load. "
+            "Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.")
+
+def parse_vm_stat(text):
+    """Available GB from `vm_stat`: free + inactive + speculative pages; None when the text is not vm_stat's."""
+    size = re.search(r"page size of (\d+) bytes", text)
+    pages = {k: int(m.group(1)) for k in ("free", "inactive", "speculative") if (m := re.search(rf"Pages {k}:\s+(\d+)", text))}
+    if not size or len(pages) < 3: return None
+    return sum(pages.values()) * int(size.group(1)) / 2**30
+
+def parse_swap_used_gb(text):
+    """GB in use from `sysctl -n vm.swapusage` ("total = 7168.00M  used = 6383.19M  free = ..."), None if unreadable."""
+    m = re.search(r"used = ([\d.]+)([MGK])", text)
+    return float(m.group(1)) / {"K": 2**20, "M": 1024, "G": 1}[m.group(2)] if m else None
+
+def parse_load1(text):
+    """First figure of `sysctl -n vm.loadavg` ("{ 828.41 423.28 236.45 }"), None if unreadable."""
+    m = re.search(r"([\d.]+)", text)
+    return float(m.group(1)) if m else None
+
+def count_booted(text, prefix="shotfleet"):
+    """(ours, other) booted simulators in `simctl list devices booted` output; ours are named <prefix>-<device>-<n>."""
+    names = [l.strip().rsplit(" (", 2)[0] for l in text.splitlines() if "(Booted)" in l]
+    ours = sum(1 for n in names if n.startswith(prefix + "-"))
+    return ours, len(names) - ours
+
+def read_capacity(platform="ios", prefix="shotfleet"):
+    """The impure part: ask the Mac. Every reading that fails stays None. macOS only for memory and swap; Linux gets MemAvailable and cores."""
+    def run(*cmd):
+        try: return sh(list(cmd), timeout=20).stdout
+        except (OSError, subprocess.SubprocessError): return ""
+    avail, total, swap = None, None, None
+    if sys.platform == "darwin":
+        avail = parse_vm_stat(run("vm_stat"))
+        try: total = int(run("sysctl", "-n", "hw.memsize")) / 2**30
+        except ValueError: pass
+        swap = parse_swap_used_gb(run("sysctl", "-n", "vm.swapusage"))
+    else: avail = mem_available_gb()
+    ours, other = count_booted(run("xcrun", "simctl", "list", "devices", "booted"), prefix) if platform == "ios" else (0, 0)  # ponytail: emulators not counted; adb devices on 57xx ports if it matters
+    try: load = os.getloadavg()[0]
+    except OSError: load = None
+    return Reading(avail, total, swap, load, os.cpu_count(), memory_pressure(), ours, other)
 
 def overload_note(want, n):
     """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
