@@ -344,6 +344,7 @@ class WranglerConfig(unittest.TestCase):
 
 
 class StackAnswers(unittest.TestCase):
+    @unittest.skipIf(LIVE, "the sale page has no waitlist form")
     def test_every_option_of_the_what_do_you_build_with_question_is_a_stack_the_worker_keeps(self):
         # an option the worker does not know is silently dropped, so the answer would be lost
         options = set(re.findall(r'<option value="([a-z-]+)"', INDEX_HTML))
