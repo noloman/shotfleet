@@ -254,12 +254,11 @@ jobs:
 
   <h2 id="agents">With AI agents</h2>
   <p><code>shotfleet mcp</code> is an MCP server with <code>check</code>, <code>run</code> and <code>doctor</code> tools. Add it to Claude Code with <code>claude mcp add shotfleet -- shotfleet mcp</code>, or to any MCP client as the command <code>shotfleet mcp</code>.</p>
-  <p>There are also three agent skills that ship with the program: <code>shotfleet</code> (install, set up, run, check and troubleshoot), <code>shotfleet-ci</code> (add <code>shotfleet check</code> to CI) and <code>shotfleet-review</code> (turn a check report into a fix list). Copy them into a skills folder:</p>
+  <p>There are also three agent skills that ship with the program: <code>shotfleet</code> (install, set up, run, check and troubleshoot), <code>shotfleet-ci</code> (add <code>shotfleet check</code> to CI) and <code>shotfleet-review</code> (turn a check report into a fix list). Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot all load skills from a folder. One command puts them in the right folders:</p>
 <pre><code>shotfleet skill install
 shotfleet skill install --project
 shotfleet skill install --dir &lt;folder&gt;</code></pre>
-  <p><code>shotfleet skill install</code> copies them into <code>~/.claude/skills</code>, <code>--project</code> into <code>./.claude/skills</code>, and <code>--dir &lt;folder&gt;</code> into another agent's skills folder. Skills that are already there are kept unless you pass <code>--force</code>.</p>
-
+  <p><code>shotfleet skill install</code> copies them into <code>~/.claude/skills</code> (Claude Code and Cursor read it) and <code>~/.agents/skills</code> (Codex, Gemini CLI, GitHub Copilot and Cursor read it). With <code>--project</code> they go into <code>./.claude/skills</code> and <code>./.agents/skills</code> in your project, so you can commit them for your team. <code>--dir &lt;folder&gt;</code> copies them into one folder you choose. Skills that are already there are kept unless you pass <code>--force</code>. Start a new agent session after you install them.</p>
   <h2 id="limits">Limits</h2>
   <ul>
     <li><strong>Where strings come from:</strong> <code>.strings</code>, <code>.stringsdict</code> and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), <code>strings.xml</code> and <code>&lt;plurals&gt;</code> on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see above). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.</li>

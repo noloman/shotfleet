@@ -10,6 +10,7 @@
 - Exports the languages that passed into fastlane's folders. It stops there: fastlane does the upload, shotfleet never uploads to a store.
 - Commands: doctor, init, run, check, export, activate. `run`, `check` and `export` take `--json`; exit codes are 0 all good, 1 problems found, 2 setup error, 130 interrupted.
 - `shotfleet mcp` runs an MCP server with check, run and doctor tools for AI agents.
+- `shotfleet skill install` copies three agent skills into `~/.claude/skills` (Claude Code, Cursor) and `~/.agents/skills` (Codex, Gemini CLI, GitHub Copilot, Cursor); `--project` uses `.claude/skills` and `.agents/skills` in the project.
 
 ## Requirements
 

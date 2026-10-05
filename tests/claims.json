@@ -1180,7 +1180,7 @@
    "`shotfleet mcp` is an MCP server with `check`, `run` and `doctor` tools."
   ],
   "status": "proven",
-  "proof": "Mcp.test_protocol_handshake_tools_and_errors; MCP_TOOLS lists check, doctor, run (shotfleet.py:2012-2031). `claude mcp add shotfleet -- shotfleet mcp` and the skill folder skill/shotfleet/ exist (not run with Claude Code).",
+  "proof": "Mcp.test_protocol_handshake_tools_and_errors; MCP_TOOLS lists check, doctor, run (shotfleet.py:2012-2031). `claude mcp add shotfleet -- shotfleet mcp` and the skill folder skill/shotfleet/ exist (not run with Claude Code). The README's old line \"There is also a Claude Code skill in `skill/shotfleet/`\" was replaced on 2026-10-05 by the `shotfleet skill install` paragraph (C159): buyers don't have that folder.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -2528,6 +2528,27 @@
   "proof": "As C012 and C013: site/public/img/bug_zh.jpg (viewed 2026-10-02: Chinese onboarding page, no Next button, small 360x640 screen). No run log, flow or commit is kept in the repo; research/cold-test-2.md says a buyer cannot reproduce it. Only zh has an image; ja, ko, ar are asserted. The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix. 2026-10-03 review (claims-unit): left partial. The sentence is history about one real run on CrossfitTracker, which no local test can prove, and README.md:46 still sits under 'Check screenshots made by any tool' (it says 'A run also surfaces', not that check does). A wording test would only prove where the sentence is; the fix above (move it) is a docs change.",
   "layer": "device",
   "assertion": "Keep the failing build as a fixture: an Android APK with a non-scrolling onboarding page and a long CJK/Arabic string on a 360x640 emulator; assert `run` reports the locale as failed (flow cannot tap Next) for ja,ko,zh,ar and passes for en.",
+  "fix": ""
+ },
+ {
+  "id": "C159",
+  "claim": "shotfleet skill install copies the skills into ~/.claude/skills (Claude Code, Cursor) and ~/.agents/skills (Codex, Gemini CLI, GitHub Copilot, Cursor); --project into ./.claude/skills and ./.agents/skills",
+  "where": [
+   "site/public/docs.html",
+   "site/public/docs.html",
+   "README.md",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot all load skills from a folder.",
+   "<code>shotfleet skill install</code> copies them into <code>~/.claude/skills</code> (Claude Code and Cursor read it) and <code>~/.agents/skills</code> (Codex, Gemini CLI, GitHub Copilot and Cursor read it).",
+   "Gemini CLI and GitHub Copilot all load skills from a folder.",
+   "`shotfleet skill install` copies three agent skills into `~/.claude/skills` (Claude Code, Cursor) and `~/.agents/skills` (Codex, Gemini CLI, GitHub Copilot, Cursor)"
+  ],
+  "status": "proven",
+  "proof": "Commands.test_install_writes_the_claude_and_the_shared_agents_folder, Commands.test_project_writes_both_folders_in_the_project, Commands.test_each_folder_keeps_its_own_copy_without_force, Commands.test_dir_writes_only_that_folder (tests/test_agent_skills.py, temp HOME). Which agent reads which folder is from each vendor's docs, read 2026-10-05: Claude Code ~/.claude/skills and .claude/skills, not .agents/skills (code.claude.com/docs/en/skills); Cursor ~/.agents/skills, ~/.cursor/skills and also ~/.claude/skills (cursor.com/docs/context/skills); Codex $HOME/.agents/skills and .agents/skills (learn.chatgpt.com/docs/build-skills); GitHub Copilot ~/.copilot/skills, ~/.agents/skills, project .github/.claude/.agents skills (docs.github.com/en/copilot/concepts/agents/about-agent-skills); Gemini CLI ~/.gemini/skills and ~/.agents/skills (geminicli.com/docs/cli/skills). Not run with any of these agents on this Mac.",
+  "layer": "unit",
+  "assertion": "Already covered.",
   "fix": ""
  }
 ]
