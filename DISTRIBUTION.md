@@ -1,5 +1,7 @@
 # How shotfleet gets to buyers
 
+> History: written before the sale opened. The sale has been live since 2026-10-05, so the waitlist wording below (for example the waitlist as the only list to email) describes the pre-sale state.
+
 ## What a buyer's Mac has today (measured 2026-10-01)
 
 - `/usr/bin/python3` is **3.9.6**. shotfleet needs 3.11+ (`tomllib`), so `python3 shotfleet.py` fails out of the box

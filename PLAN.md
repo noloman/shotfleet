@@ -1,5 +1,7 @@
 # shotfleet: from working prototype to a few $k/year
 
+> History: written before the sale opened. The sale has been live since 2026-10-05, so the waitlist wording below (for example the Cloudflare Worker + KV waitlist) describes the pre-sale state.
+
 Goal: find out cheaply whether developers will pay $49 ($29 founder price) for shotfleet, and be ready to sell if they will.
 Success = a few thousand dollars a year. Anything less means it stays a free tool for our own apps.
 

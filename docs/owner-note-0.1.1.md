@@ -39,4 +39,4 @@ On a quiet Mac, iOS 27 with Maestro 2.0.10 captured one language in 78 s with 0 
 2. Find one older Mac or a macOS 13 to 15 VM for the first unproven item.
 3. Decide the owner items in the refund note: who makes the paid test sale, a postal address, the policy after 14 days.
 
-Sources: research/limits-platform-reach, limits-first-run, limits-capture-reliability, limits-check-quality (all 2026-10-05) and refund-process-2026-10-05, on their draft PR branches until merged.
+Sources: research/limits-platform-reach, limits-first-run, limits-capture-reliability, limits-check-quality (all 2026-10-05) and refund-process-2026-10-05, now in `research/` on main.

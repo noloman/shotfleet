@@ -65,7 +65,7 @@ About 10 minutes plus the first image download.
 3. **Android SDK:** unzip Google's "Command line tools only" into `~/Android/Sdk/cmdline-tools/latest`, then
    `yes | sdkmanager --licenses` and `sdkmanager platform-tools emulator "build-tools;36.0.0" "platforms;android-36" "system-images;android-36;google_apis;x86_64"`
    (`python3 shotfleet.py doctor` prints the exact commands for what is missing; `export ANDROID_HOME=~/Android/Sdk`).
-4. **Maestro 2.0.10:** the tested version (`curl -Ls "https://get.maestro.mobile.dev" | bash`, then `maestro --version`).
+4. **Maestro:** 2.0.10 and 2.11.0 are tested; `doctor --fix` installs 2.11.0 (`curl -Ls "https://get.maestro.mobile.dev" | bash`, then `maestro --version`).
 5. **Run:** `SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only android --keep`
 6. **Pass:** the last line is `PASS: all N assertions passed`. The script prints the machine (CPU, cores, memory, KVM) at the top and the
    seconds each phase took.
