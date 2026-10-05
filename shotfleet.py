@@ -1158,11 +1158,15 @@ def pause_after_screenshot(out, ms=1500):
 # ---------- simulators ----------
 
 SIM_TIMEOUT_S, SIM_BOOT_TIMEOUT_S = 300, 900  # a wedged simulator (CoreSimulator stops answering on a Mac under heavy load) must end the run with a fix, not hang it
+# uninstall is the first call on each simulator before a run, so a wedged one costs this long, not 300 s. A whole healthy
+# pool setup (boot, bootstatus, status bar, uninstall, install) took 23 s at 1 simulator (research/speed-2026-10-05.md 1b),
+# and the 10 wedges seen in the 0.1.2/0.1.3 gates never answered within 300 s, so 60 s drops no simulator that was going to answer.
+SIM_QUICK_TIMEOUT_S = 60
 
 class Sim:
     def __init__(self, udid): self.udid = udid
     def run(self, *args, check=True):
-        t = SIM_BOOT_TIMEOUT_S if args[:1] == ("bootstatus",) else SIM_TIMEOUT_S  # a first boot on a loaded Mac can take minutes
+        t = {"bootstatus": SIM_BOOT_TIMEOUT_S, "uninstall": SIM_QUICK_TIMEOUT_S, "terminate": SIM_QUICK_TIMEOUT_S}.get(args[0], SIM_TIMEOUT_S)  # a first boot on a loaded Mac can take minutes
         try: r = sh(["xcrun", "simctl", *args], timeout=t)
         except subprocess.TimeoutExpired:
             raise RuntimeError(f"simctl {args[0]} did not answer within {t} s: simulator {self.udid} is not responding. "
@@ -1745,8 +1749,7 @@ def ios_run_inner(cfg, path, only, parallel):
     OUR_SIMS.update(s.udid for s in pool)
     kill_stale_drivers()
     def install(sims):  # each flow's clearState gives every locale a fresh start
-        for sim in sims:
-            sim.run("terminate", sim.udid, cfg["bundle_id"], check=False)
+        for sim in sims:  # no `simctl terminate`: uninstall stops a running app (Maestro's own iOS clearState is uninstall + install, no terminate)
             sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
             sim.run("install", sim.udid, cfg["app"])
     pool[:] = healthy_installs(pool, len(pool), install)

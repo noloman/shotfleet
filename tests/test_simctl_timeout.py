@@ -23,8 +23,8 @@ class SimctlTimeout(unittest.TestCase):
         seen = []
         def ok(cmd, **kw): seen.append((cmd[2], kw.get("timeout"))); return subprocess.CompletedProcess(cmd, 0, "", "")
         with mock.patch.object(sf, "sh", side_effect=ok):
-            sf.Sim("U").run("install", "U", "/x"); sf.Sim("U").run("bootstatus", "U", "-b")
-        self.assertEqual(seen, [("install", sf.SIM_TIMEOUT_S), ("bootstatus", sf.SIM_BOOT_TIMEOUT_S)])
+            sf.Sim("U").run("install", "U", "/x"); sf.Sim("U").run("bootstatus", "U", "-b"); sf.Sim("U").run("uninstall", "U", "x.y")
+        self.assertEqual(seen, [("install", sf.SIM_TIMEOUT_S), ("bootstatus", sf.SIM_BOOT_TIMEOUT_S), ("uninstall", 60)])  # uninstall is the first call on a wedged one
 
     def test_installs_run_at_once_so_wedged_simulators_cost_one_timeout_not_one_each(self):
         sims = [sf.Sim(f"U{i}") for i in range(4)]

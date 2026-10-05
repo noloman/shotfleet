@@ -1964,6 +1964,7 @@ class RetryOnSlowSimulator(unittest.TestCase):
     def test_retry_reinstalls_the_app_first(self):
         code, out = self.run_it("1")
         self.assertEqual(self.calls.count("install"), 2)  # once before the run, once before the retry
+        self.assertEqual(self.calls, ["uninstall", "install"] * 2)  # no `terminate`: uninstall stops the app, and on a wedged simulator each call cost a timeout
         self.assertEqual(code, 0, out)
         self.assertIn("retrying 1: de", out)
 

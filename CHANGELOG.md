@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **iOS: a simulator that stops answering costs 60 s, not 300 s:** before the run shotfleet no longer sends `simctl terminate` (uninstalling the app stops it, as Maestro's own clear-state does), and the uninstall, now the first call on each simulator, gives up after 60 s. In the 0.1.3 release test each stuck simulator held the run for 300 s.
 - **iOS: the app is installed on every simulator at once:** a simulator that stops answering now costs one timeout for the whole pool instead of one each in turn (in the 0.1.2 release test, five stuck simulators cost 1500 s of the iOS step's 1872 s); a failed one is still replaced in pool order.
 - **Memory warning wording:** it said "running 1 device at once instead of 4" although the run still used 4 (the warning only warns); it now says 1 would be safer and that the run still uses 4.
 - **Text recognition waits for a compile mid-check too:** when macOS starts compiling its text-reading model while `check` is already reading screenshots (seen on a Mac at load 800), each read now waits for that compile (up to 6 minutes, only while `ANECompilerService` is using the CPU) like the warm-up does, instead of failing with "text recognition hung twice" on a Mac without Tesseract.
