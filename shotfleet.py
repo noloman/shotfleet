@@ -2151,6 +2151,12 @@ def string_tables(strings):
         tables[lp] = t
     return tables
 
+def read_nothing(ocr):
+    """True when a reader that may simply have failed found no text: Tesseract or --ocr-command (an Arabic Android screen came back
+    empty), or no reader at all (the fallback has no data for the language). Such a screenshot is unverified, not blank. An empty
+    read by macOS text recognition, or by the app's own text, is a finding and stays one."""
+    return not ocr.get("chars") and (ocr.get("ocr") == "external" or "chars" not in ocr)
+
 def judge_screen(lp, ocr, tables):
     """(locale the screen shows, problem or None) for one screenshot's OCR result.
 
@@ -2518,7 +2524,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                 return {**external_ocr(ocr_command, pngs[i][1], lp), **tesseract_script(pngs[i][1], lp)}
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
-    rows, by_hash, expected_used, unverified = [], {}, set(), 0
+    rows, by_hash, expected_used, unverified, unread_files = [], {}, set(), 0, set()
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -2526,7 +2532,13 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
-        if blank_screenshot(png):
+        blank = blank_screenshot(png)  # pixels, not OCR: only a flat frame is provably blank
+        if problem and problem.startswith("no text found") and read_nothing(r) and not blank:
+            got, problem = None, None  # the reader failed, the picture is not blank: say so, don't fail the run
+            unread_files.add(f"{label}/{png.name}")
+            notes.append(f"{label}/{png.name}: could not read this screenshot (the text reader found nothing and the picture is not blank), "
+                         "so its language is unverified")
+        if blank:
             problem = ("blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; "
                        "wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot")
         if problem: problems.append(f"{label}/{png.name}: {problem}")
@@ -2540,7 +2552,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             unverified += len(unsure)
         rows.append({"file": f"{label}/{png.name}", "src": os.path.relpath(png, report), "sha": h, "lang": got,
                      "chars": r.get("chars", 0)})
-    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None})
+    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None and r["file"] not in unread_files})
     if unread:
         who = "macOS can't read the script of" if vision_available() else "Tesseract can't read the script of"
         print(f"{who} {', '.join(unread)}: those screens were only checked for showing another "
