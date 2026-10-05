@@ -8,7 +8,7 @@ queued earlier go first), /tmp/shotfleet-quiet-check.sh passes and /tmp/shotflee
 mkdir, runs each tape with a hard kill limit, shuts down only the simulators and emulators that appeared during its own run
 (shotfleet pool names, 57xx emulator ports), and releases the lock. Run session.sh and tapes c1-c2 first (c2 writes the config).
 """
-import os, subprocess, sys, time, signal, json
+import os, re, subprocess, sys, time, signal, json
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -18,6 +18,7 @@ PROGRESS = SESSION.parent / "progress.log"
 LOCK, QUIET, GATE = Path("/tmp/shotfleet-devices.lock"), "/tmp/shotfleet-quiet-check.sh", Path("/tmp/shotfleet-rc-gate-done")
 TAPES = [("tapes/c3-run-ios.tape", 85 * 60), ("tapes/c4-run-android.tape", 45 * 60)]   # hard kill limit per step
 WAIT_H, FREE_FOR_S, EST, HARD = 10, 180, 60, 135
+SWAP_MAX_GB = 10   # coordinator, 20:17: no device job while swap use is 10 GB or more
 POOLS = ("shotfleet-iphone-17-pro-max-", "shotfleet-ipad-pro-13-inch-m5")
 ADB = Path.home() / "Library/Android/sdk/platform-tools/adb"
 
@@ -44,6 +45,10 @@ def our_shotfleet_pids():
             if c not in pids: pids.add(c); todo.append(c)
     return pids
 
+def swap_gb():
+    m = re.search(r"used = ([\d.]+)M", sh("sysctl", "-n", "vm.swapusage"))
+    return float(m.group(1)) / 1024 if m else 99.0
+
 def run_tape(tape, limit):
     t0 = time.time(); log(f"start {tape} (hard limit {limit // 60} min)")
     p = subprocess.Popen(["vhs", tape], cwd=SESSION, stdout=open(SESSION / "rec" / (Path(tape).stem + ".vhs.log"), "w"),
@@ -67,11 +72,11 @@ def child():
         else:
             free_since = free_since or time.time()
             q = subprocess.run(["sh", QUIET], capture_output=True, text=True)
-            if time.time() - free_since >= FREE_FOR_S and q.returncode == 0 and GATE.exists():
+            if time.time() - free_since >= FREE_FOR_S and q.returncode == 0 and swap_gb() < SWAP_MAX_GB and GATE.exists():
                 try: LOCK.mkdir()
                 except FileExistsError: free_since = None; continue
                 break
-            if time.time() - last_note > 600: log(f"lock free, waiting: {q.stdout.strip()}"); last_note = time.time()
+            if time.time() - last_note > 600: log(f"lock free, waiting: {q.stdout.strip()}; swap {swap_gb():.1f} GB"); last_note = time.time()
         time.sleep(30)
     (LOCK / "holder").write_text(f"Demo video recording (coordinator) | fixture run iOS+Android | started {time.strftime('%H:%M')} | "
                                  f"est. {EST} min, hard limit {HARD}\n")
