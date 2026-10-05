@@ -13,7 +13,9 @@ So 0.1.0 probably works only on macOS 26.3 and later. Buyers on anything older w
 
 ## What the fix is
 
-0.1.1 is built with a stand-alone Python (not Homebrew's) and its text-reading helper is built for macOS 13. The Expat library travels inside the download instead of coming from the Mac. On the real 0.1.1 build, the 0.1.1 session measured: 3 program files instead of 56, with minimum macOS 11 to 13 and none at 27; Apple accepted the notarization of both the zip and the pkg; the quarantined run works; `check` on the 72 CrossfitTracker screenshots in 18 languages gives 0 problems; the licence call to Gumroad works from the packaged program.
+0.1.1 is built with a stand-alone Python (not Homebrew's) and its text-reading helper is built for macOS 13. The build's declared minimum is macOS 13 (measured: the program files need macOS 11 to 13, none 27). The Expat library travels inside the download instead of coming from the Mac. On the real 0.1.1 build, the 0.1.1 session measured: 3 program files instead of 56, with minimum macOS 11 to 13 and none at 27; Apple accepted the notarization of both the zip and the pkg; the quarantined run works; `check` on the 72 CrossfitTracker screenshots in 18 languages gives 0 problems; the licence call to Gumroad works from the packaged program.
+
+**Release gate result (2026-10-05, 12:36):** PASS. On the signed standalone build, the fixture app ran end to end on iPhone, iPad and Android: 65 assertions passed (66 PASS lines, 0 FAIL). Honest detail: the iPhone run needed a second attempt for Turkish (`tr`) because the Mac was under heavy load, and the run was pinned to iOS 26.4. This is the source-of-truth for the claim that 0.1.1 works on this Mac; it says nothing about older Macs.
 
 0.1.1 also carries four earlier fixes (draft PRs #51 to #54):
 - **check:** a screenshot the text reader could not read is now "could not read", not a false problem (the Arabic case).
