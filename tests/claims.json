@@ -2214,7 +2214,8 @@
    "site/public/alternatives.html",
    "site/public/llms.txt",
    "skill/shotfleet/SKILL.md",
-   "docs/AGENTS-snippet.md"
+   "docs/AGENTS-snippet.md",
+   "site/public/demo.html"
   ],
   "where_text": [
    "Built for macOS 13 or later on Apple silicon; tested on macOS 27."
@@ -2238,6 +2239,216 @@
   "proof": "2026-10-05 fixture e2e (SHOTFLEET_E2E=1 tools/fixture-e2e.sh --platform-only android --keep, Maestro 2.11.0, one Android 16 emulator, de/ja/ar/tr): 30 of 30 assertions passed, including 'every screenshot's text came from the UI hierarchy' (check.json evidence 'hierarchy' on 8 of 8 screenshots, run.json hierarchy_markers true, .texts.json held the exact Japanese, Arabic, German and Turkish strings and no status-bar lines). The same run on Maestro 2.0.10 (markers off, note printed) passed 29 of 29 with evidence 'ocr'. Re-run on the merged branch claude/013-android-hierarchy (1709da5), 2026-10-05 16:31-16:37, quiet Mac: Maestro 2.11.0 30 of 30 (script 130 s, run step 109 s, 1 emulator because memory pressure was elevated, captured 4/4 in 87 s, 'screen text from the UI hierarchy for 8 of 8 screenshots', run.json hierarchy_markers true, check.json evidence 'hierarchy' 8 of 8, raw/ja texts ようこそ / 設定 and no status-bar lines, 0 problems); Maestro 2.0.10 29 of 29 (script 165 s, run step 148 s, 2 emulators, captured 4/4 in 53 s, the 'needs 2.7.0 ... read from pixels (OCR)' note printed, hierarchy_markers false, evidence 'ocr' 8 of 8, 0 problems). Mechanism proven earlier by experiment A (research/limits-text.md 1f). Unit: Markers.test_one_marker_after_every_screenshot_step_scalar_and_map_form, Reading.test_a_real_maestro_2_11_hierarchy_keeps_only_the_apps_lines, Reading.test_each_marker_is_paired_with_the_screenshot_before_it, Check.test_japanese_and_arabic_are_proven_from_the_hierarchy_without_ocr, Check.test_a_screenshot_without_hierarchy_falls_back_to_ocr_and_says_so (tests/test_android_hierarchy.py: canned Japanese and Arabic, one real Maestro 2.11.0 file). Limits: one emulator, four languages, one app; two shards on two emulators at once not run in this e2e; Flutter or Compose text merged into one node is only split on newlines.",
   "layer": "fixture",
   "assertion": "Fixture run on Maestro 2.11.0: every screenshot's check evidence is 'hierarchy'.",
+  "fix": ""
+ },
+ {
+  "id": "C140",
+  "claim": "The demo clips are real terminal recordings from one session on the repo's fixture apps; titles, subtitles and sped-up labels were added afterwards",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "The clips are real terminal recordings from one session on the fixture apps in shotfleet's own repository; titles, subtitles and the sped-up labels were added afterwards."
+  ],
+  "status": "evidence",
+  "proof": "marketing/demo-video/README.md on branch claude/demo-video (commit 7392e1d), section 'What is real and what is composited': every terminal frame is a VHS recording of the real command in a real shell (tapes/*.tape), screenshots in the grids are PNGs that run wrote; intro and outro cards, subtitles, the 'sped up' badge, fades and grid layout are composited with Remotion; sped-up stretches are labelled with the factor on screen and the real time in the subtitle (c1-doctor: 3x, real 5 s, manifest.json sped_up). Not live: shotfleet ran from the repo's source, not the installed program; clip 2 copies a prepared config and flow in, visibly.",
+  "layer": "device",
+  "assertion": "Read the README and the clip: every sped-up stretch carries its label.",
+  "fix": ""
+ },
+ {
+  "id": "C141",
+  "claim": "Clip c1-doctor: doctor --fix checks Maestro, Java, Xcode and the Android SDK, and fetches what is missing after asking once",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "shotfleet doctor --fix checks Maestro, Java, Xcode and the Android SDK, and fetches what is missing after asking once."
+  ],
+  "status": "partial",
+  "proof": "The recording site/public/media/demo/c1-doctor.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json description) shows the checks; on that Mac nothing was missing, so the fetch itself is not in the clip. The fetch after one question is claim C126 (doctor --fix downloads Maestro, a Java runtime and the Android tools after one question, never using sudo), status partial there.",
+  "layer": "device",
+  "assertion": "The clip shows doctor --fix checking those four; C126 covers the download.",
+  "fix": ""
+ },
+ {
+  "id": "C142",
+  "claim": "Clip c2-init: init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow."
+  ],
+  "status": "evidence",
+  "proof": "The recording site/public/media/demo/c2-init.mp4 (from marketing/demo-video/web/ on branch claude/demo-video, manifest.json description), on the repo's fixture apps (tools/fixture-app, tools/fixture-app-android); init writing a starter config and flow is claim C060 (proven). The clip then copies a prepared config in, visibly (README of the demo-video branch).",
+  "layer": "device",
+  "assertion": "The clip shows init on both builds, the language lists and the written files.",
+  "fix": ""
+ },
+ {
+  "id": "C143",
+  "claim": "Release 0.1.2: the signed build passed the device gate (fixture app on iPhone and iPad simulators and the Android emulator), 65 of 65 assertions in 37 minutes, 2026-10-05",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "The signed build ran the fixture app on iPhone and iPad simulators and an Android emulator and passed 65 of 65 assertions in 37 minutes."
+  ],
+  "status": "evidence",
+  "proof": "research/0.1.2-plan.md 'Outcome' ('Device gate on the signed build: all 65 assertions passed (37 minutes, iOS pinned to 26.4)'); docs/handoff.md section 15 ('PASS, all 65 assertions (66 PASS lines; 0 FAIL; started 15:27:29, finished 16:04:31, 37 minutes; iOS runtime pinned to 26.4; iPhone, iPad and the Android fixture)'); docs/compat.md macOS 27 row; STATUS.md 'Release state'. Log on the owner's Mac (shotfleet-rc-build/0.1.2/g3-012.log).",
+  "layer": "device",
+  "assertion": "One recorded run; re-run with tools/fixture-e2e.sh --android on the next release.",
+  "fix": ""
+ },
+ {
+  "id": "C144",
+  "claim": "In the 0.1.2 gate's iPad phase 3 of 4 simulators stopped answering under heavy load, and shotfleet finished all 4 languages on the remaining simulator with 0 problems",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "In the iPad part the Mac was heavily loaded and 3 of 4 simulators stopped answering; shotfleet finished all 4 languages on the 1 simulator left, with 0 problems."
+  ],
+  "status": "evidence",
+  "proof": "docs/handoff.md section 15: 'in the iPad phase 3 of 4 simulators \"stopped answering\" (simctl terminate over 300 s) at load 700 and above, and shotfleet recovered by itself and finished 4 of 4 languages in 100 s on one simulator with 0 problems'; research/0.1.2-plan.md 'What the plan got wrong or missed'; docs/compat.md macOS 27 row.",
+  "layer": "device",
+  "assertion": "One recorded run, 2026-10-05.",
+  "fix": ""
+ },
+ {
+  "id": "C145",
+  "claim": "The live 0.1.1 installed and ran (--version, doctor, check) on GitHub-hosted Apple silicon runners with macOS 14.8.9 and 15.7.9; no simulator or emulator there",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On GitHub's hosted Apple silicon runners with macOS 14.8.9 and 15.7.9, the installer, shotfleet --version, doctor and check all ran; no simulator or emulator was run there."
+  ],
+  "status": "evidence",
+  "proof": "research/limits-platform-reach-2026-10-05.md, section 'Hosted-runner test of the LIVE 0.1.1 on macOS 14 and 15' (runs 37303612329 and 37304115758, 2026-10-05): install.sh ok, --version 'shotfleet 0.1.1', doctor ran to the end (exit 2: no Maestro on the runner), check on 2 sample PNGs ran to a report. docs/compat.md row 'macOS 14.8.9 and 15.7.9' (the 0.1.1 build, not 0.1.2). The public platform line stays C131.",
+  "layer": "device",
+  "assertion": "Two recorded hosted runs; no simulator, no Gatekeeper.",
+  "fix": ""
+ },
+ {
+  "id": "C146",
+  "claim": "WOD Tracker (CrossfitTracker): 18 languages on iOS and Android with 0 problems on Maestro 2.0.10 (2026-10-01); 19 languages on iOS, Android phone and tablet with 0 problems on Maestro 2.11.0 (2026-10-04), 9 iOS languages retried",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "18 languages on iOS and Android, 0 problems, on Maestro 2.0.10. Then 19 languages each on iOS, an Android phone and an Android tablet, 0 problems, on Maestro 2.11.0; 9 iOS languages needed shotfleet's retry."
+  ],
+  "status": "evidence",
+  "proof": "PLAN.md (2026-10-01: CrossfitTracker iOS 18/18 in 8m54s, Android 18/18 in 15m24s, 0 problems; C007, C105). docs/compat.md Maestro 2.11.0 row: 'CrossfitTracker (app 55ad0975, 1.6.2) on 2.11.0, 2026-10-04: iOS, Android phone and Android tablet 19/19 languages each, 0 problems; the iOS run needed shotfleet's retry for 9 languages'; research/maestro-2-11.md.",
+  "layer": "device",
+  "assertion": "Recorded runs on the owner's app.",
+  "fix": ""
+ },
+ {
+  "id": "C147",
+  "claim": "Timing 2026-10-05: WOD Tracker, 19 languages, 4 simulators and 4 emulators, Maestro 2.0.10: 404 s iOS capture, 415 s Android phone, 0 problems, no retries, load 86 to 497 during iOS",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "WOD Tracker in 19 languages on 4 simulators and 4 emulators with Maestro 2.0.10: 404 s of capture on iOS and 415 s on Android phones, 0 problems, no retries. The Mac was not idle: its load went from 86 to 497 during the iOS part."
+  ],
+  "status": "evidence",
+  "proof": "docs/compat.md row 'Maestro 2.0.10 against 2.11.0 on timing' (quiet-Mac re-measure 2026-10-05, CrossfitTracker, 19 languages, 4 devices: iOS 404 s capture, Android phone 415 s, 0 problems, no retries); research/workarounds-maestro-resources-2026-10-05.md (table row 'Quiet re-measure, 2.0.10': 4 iOS simulators, 4 Android emulators); C105 proof (load 86 at the start and 497 at the end of the iOS part, 'not perfectly quiet'). The Maestro 2.11.0 comparison at 4 simulators is still to be measured (TODO comment on the page).",
+  "layer": "device",
+  "assertion": "One recorded run; machine- and load-dependent.",
+  "fix": ""
+ },
+ {
+  "id": "C148",
+  "claim": "wger (Flutter), 2026-10-03: iOS and Android in German and Japanese; German on every screenshot; Japanese about 30% translated, shows English, and check said so",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "iOS and Android, German and Japanese: German on every screenshot. wger's Japanese is about 30% translated, so those screens show English, and check said so."
+  ],
+  "status": "evidence",
+  "proof": "research/frameworks.md section 15 (table 'What passed': wger iOS and Android, de and ja; 'wger ja' row: about 30% done, check flags 'shows en strings' and 'the app has no ja translation'); screenshots and logs in research/real-apps-2026-10-03/wger-ios and wger-android; C035.",
+  "layer": "device",
+  "assertion": "Recorded runs, one app.",
+  "fix": ""
+ },
+ {
+  "id": "C149",
+  "claim": "obytes Expo template, 2026-10-03: iOS and Android in English and Arabic, Arabic right to left on Settings; onboarding and login are hard-coded English and check flagged them",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "iOS and Android, English and Arabic, with Arabic right to left on the Settings screen. Its onboarding and login screens are hard-coded English, and check flagged them."
+  ],
+  "status": "evidence",
+  "proof": "research/frameworks.md section 15 ('obytes ... en 3/3, ar 3/3; Arabic and right-to-left on the Settings screen'; 'obytes onboarding and login: hard-coded English in the template ... check flags ar/01_onboarding and ar/02_login'); research/real-apps-2026-10-03/obytes-ios and obytes-android; C035.",
+  "layer": "device",
+  "assertion": "Recorded runs, one app.",
+  "fix": ""
+ },
+ {
+  "id": "C150",
+  "claim": "KotlinConf (Compose Multiplatform): Android de and en, 6 screenshots, 0 problems; on iOS the first screen was blank and check flagged it; a clean iOS run is still to do",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Android, German and English: 6 screenshots, 0 problems. On iOS its first screen came out blank (it draws after its text is readable) and check flagged it; a clean iOS run is still to do."
+  ],
+  "status": "evidence",
+  "proof": "research/frameworks.md section 15 (kotlinconf Android de and en, 6/6, check 0 problems, 2026-10-03), section 16 (2026-10-04: Android 2/2 languages, 6 screenshots, check 0 problems; correction: the iOS first screenshot was a blank frame; with no wait both captures were blank and check said 'blank: nothing is drawn on it yet'; Compose paints after the text is readable), section 17 (the clean iOS pair did not run); research/real-apps-2026-10-04/; C127.",
+  "layer": "device",
+  "assertion": "Recorded runs, one app.",
+  "fix": ""
+ },
+ {
+  "id": "C151",
+  "claim": "Microsoft's .NET MAUI LocalizationDemo sample: 5 languages on iOS and 2 on Android, one screen, 0 untranslated selectors, 0 problems; not a real MAUI app or a Release build",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Five languages on iOS and two on Android, one screen each: 0 untranslated selectors and 0 problems. Not yet a real MAUI app or a Release build."
+  ],
+  "status": "evidence",
+  "proof": "research/frameworks.md section 5, items 6 to 8: 2026-10-04 iOS de and ja (captured 2/2, untranslated_selectors [], check 0 problems); 2026-10-05 Android de and ja (captured 2/2, untranslated_selectors [], check 0 problems plus one non-blocking Play note about fewer than 4 screenshots); 2026-10-05 iOS de, es, fr, ja, zh-Hans (captured 5/5, untranslated_selectors [], check 0 problems, no notes). Evidence in research/experiments-2026-10-04/C/ and C2/. Debug builds only.",
+  "layer": "device",
+  "assertion": "Recorded runs on Microsoft's sample.",
+  "fix": ""
+ },
+ {
+  "id": "C152",
+  "claim": "A throwaway Capacitor app: the per-app language reached the web view on iOS 26.4, iOS 18.6 and Android 16; Maestro read the web view text on iOS, not on Android; a language test, not a full shotfleet run",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "The per-app language reached its web view on iOS 26.4, iOS 18.6 and Android 16. Maestro read the web view's text on iOS but not on Android. This tested the language only, not a full shotfleet run."
+  ],
+  "status": "evidence",
+  "proof": "research/frameworks.md section 7, items 6 (2026-10-04, iOS 26.4: -AppleLanguages reaches navigator.language and @capacitor/device) and 7 (2026-10-05: same on iOS 18.6; Android 16 WebView 133 follows the per-app locale; Maestro hierarchy returned only the status bar on the Android WebView, iOS WebView text read every time but the first call after boot). Evidence in research/experiments-2026-10-04/B/ and B2/. App dev.shotfleet.capdemo, simulator and emulator only.",
+  "layer": "device",
+  "assertion": "Recorded experiments, one throwaway app.",
+  "fix": ""
+ },
+ {
+  "id": "C153",
+  "claim": "Coming in 0.1.3, not released: Android screen text from Maestro's UI hierarchy; Android fixture 30 of 30 on Maestro 2.11.0 and 29 of 29 on 2.0.10 (pixels), 2026-10-05",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On Android, shotfleet reads the screen text from Maestro's UI hierarchy instead of from pixels. On the Android fixture app it passed 30 of 30 assertions with Maestro 2.11.0, and 29 of 29 with Maestro 2.0.10, where it still reads pixels."
+  ],
+  "status": "evidence",
+  "proof": "Pull request 44, branch claude/013-android-hierarchy, tests/claims.json row C132 there (commit 3a82f88): 2026-10-05 fixture e2e (tools/fixture-e2e.sh --platform-only android --keep), Maestro 2.11.0 30 of 30 with check evidence 'hierarchy' on 8 of 8 screenshots; Maestro 2.0.10 29 of 29 with evidence 'ocr'; re-run on the merged branch 16:31 to 16:37 with the same results. Not on main and not in any release (STATUS.md: 0.1.3 candidate). When PR #44 ships, drop 'not released yet' from the page and point the record at main.",
+  "layer": "device",
+  "assertion": "Recorded on the branch; the page says it is not released.",
   "fix": ""
  }
 ]

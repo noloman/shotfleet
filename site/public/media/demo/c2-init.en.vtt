@@ -1,0 +1,30 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.000
+Point shotfleet at your app builds.
+
+2
+00:00:02.000 --> 00:00:06.500
+init reads the builds you already have:
+an iOS .app and an Android .apk.
+
+3
+00:00:06.500 --> 00:00:11.000
+It finds every language the app ships
+and writes a config and a starter flow.
+
+4
+00:00:11.000 --> 00:00:15.500
+For this demo: a prepared config
+(iPhone, iPad, Android phone).
+
+5
+00:00:15.500 --> 00:00:20.000
+One English flow, every language,
+iOS and Android.
+
+6
+00:00:20.000 --> 00:00:24.500
+You maintain one flow; shotfleet
+rewrites it for every language.

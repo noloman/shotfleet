@@ -41,7 +41,7 @@ class Page(HTMLParser):
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if "id" in a: self.ids.add(a["id"])
-        for name in ("href", "src", "data-full"):
+        for name in ("href", "src", "data-full", "poster"):
             if a.get(name) is not None: self.refs.append((tag, name, a[name]))
         for name in a:
             if name.startswith("on"): self.handlers.append((tag, name))
@@ -127,6 +127,15 @@ class Structure(unittest.TestCase):
         self.assertEqual(tabs, [("stressi", "true"), ("cairn", "false")])
         self.assertIn("show(tabs[0])", (PUB / "tabs.js").read_text())
         self.assertEqual(set(re.findall(r'data-full="img/full/(\w+?)_', INDEX)), {"stressi", "cairn"})
+
+    def test_every_demo_video_loads_nothing_until_played_and_has_a_poster_and_english_captions(self):
+        visible = re.sub(r"<!--.*?-->", "", (PUB / "demo.html").read_text(), flags=re.S)  # clips not recorded yet wait in comments
+        videos = re.findall(r"<video\b[^>]*>.*?</video>", visible, flags=re.S)
+        self.assertTrue(videos)
+        for v in videos:
+            with self.subTest(video=v[:120]):
+                for must in ('preload="none"', "muted", "playsinline", 'poster="/media/demo/', 'src="/media/demo/', '<track kind="captions" srclang="en"'):
+                    self.assertIn(must, v)
 
     def test_no_resource_comes_from_another_server(self):
         for name, page in self.pages(): self.assertEqual(page.external, [], name)

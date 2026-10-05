@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>See shotfleet work: clips and dated evidence</title>
+<meta name="description" content="Short recordings of shotfleet's commands, and a dated record of the real runs behind its claims: release gates, macOS versions and real apps.">
+<meta property="og:title" content="See shotfleet work: clips and dated evidence">
+<meta property="og:description" content="Recordings of doctor and init, and what shotfleet has really been run on, with dates.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
+<meta property="og:url" content="https://shotfleet.com/demo">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/demo">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-4.5 8L21 20H3z" fill="currentColor"/></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+  </nav>
+</header>
+
+<!--
+  HOW TO ADD A CLIP (docs/handoff.md has the same note). Files come from marketing/demo-video/web/ on branch claude/demo-video
+  (web.py writes them; titles and captions are its DESC table and manifest.json).
+  1. Copy <slug>.mp4, <slug>-poster.webp and <slug>.en.vtt into site/public/media/demo/ (not the -square.mp4).
+  2. Below, delete the two marker lines "<!- - CLIP <slug>" and "CLIP - ->" around that clip's figure (written here with a space,
+     since a comment cannot hold "- -" without it).
+  3. Add the caption sentence to a claims row in tests/claims.json (C141 and C142 are the pattern), then run
+     python3 -m unittest tests.test_site tests.test_site_audit tests.test_claims tests.test_claims_site
+-->
+
+<main class="wrap" id="main">
+  <section class="page wide">
+    <h1>See shotfleet work</h1>
+    <p class="lede">Short clips of the commands, then a dated record of what shotfleet has been run on and what happened.</p>
+
+    <h2 id="clips">Clips</h2>
+    <p>The clips are real terminal recordings from one session on the fixture apps in shotfleet's own repository; titles, subtitles and the sped-up labels were added afterwards.</p>
+
+    <figure class="clip" id="c1-doctor">
+      <h3>Is this Mac ready?</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c1-doctor-poster.webp" src="/media/demo/c1-doctor.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c1-doctor.en.vtt">
+      </video>
+      <figcaption>shotfleet doctor --fix checks Maestro, Java, Xcode and the Android SDK, and fetches what is missing after asking once.</figcaption>
+    </figure>
+
+    <figure class="clip" id="c2-init">
+      <h3>Set up a project</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c2-init-poster.webp" src="/media/demo/c2-init.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c2-init.en.vtt">
+      </video>
+      <figcaption>shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow.</figcaption>
+    </figure>
+
+    <!-- CLIP c3-run-ios
+    <figure class="clip" id="c3-run-ios">
+      <h3>Every language: iPhone and iPad</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c3-run-ios-poster.webp" src="/media/demo/c3-run-ios.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c3-run-ios.en.vtt">
+      </video>
+      <figcaption>One English Maestro flow captured in every language of the app on parallel iPhone and iPad simulators, then checked.</figcaption>
+    </figure>
+    CLIP -->
+
+    <!-- CLIP c4-run-android
+    <figure class="clip" id="c4-run-android">
+      <h3>Every language: Android</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c4-run-android-poster.webp" src="/media/demo/c4-run-android.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c4-run-android.en.vtt">
+      </video>
+      <figcaption>The same English flow captured in every language on Android emulators, then checked.</figcaption>
+    </figure>
+    CLIP -->
+
+    <!-- CLIP c5-check
+    <figure class="clip" id="c5-check">
+      <h3>Catch the wrong language</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c5-check-poster.webp" src="/media/demo/c5-check.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c5-check.en.vtt">
+      </video>
+      <figcaption>A German screenshot planted in the Japanese folder is caught by shotfleet check; the real output passes with 0 problems.</figcaption>
+    </figure>
+    CLIP -->
+
+    <!-- CLIP c6-check-existing
+    <figure class="clip" id="c6-check-existing">
+      <h3>Check the screenshots you have</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c6-check-existing-poster.webp" src="/media/demo/c6-check-existing.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c6-check-existing.en.vtt">
+      </video>
+      <figcaption>shotfleet check reads fastlane folders or a plain folder of screenshots, with no simulator.</figcaption>
+    </figure>
+    CLIP -->
+
+    <!-- CLIP c7-store-rules
+    <figure class="clip" id="c7-store-rules">
+      <h3>Store rules, checked</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c7-store-rules-poster.webp" src="/media/demo/c7-store-rules.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c7-store-rules.en.vtt">
+      </video>
+      <figcaption>shotfleet check flags screenshot sizes the stores refuse and a missing 13-inch iPad set.</figcaption>
+    </figure>
+    CLIP -->
+
+    <!-- CLIP c8-export
+    <figure class="clip" id="c8-export">
+      <h3>Export to fastlane</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c8-export-poster.webp" src="/media/demo/c8-export.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c8-export.en.vtt">
+      </video>
+      <figcaption>One command puts the passing App Store and Google Play screenshots into fastlane's folders.</figcaption>
+    </figure>
+    CLIP -->
+
+    <!-- CLIP c9-ci
+    <figure class="clip" id="c9-ci">
+      <h3>In CI</h3>
+      <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c9-ci-poster.webp" src="/media/demo/c9-ci.mp4">
+        <track kind="captions" srclang="en" label="English" src="/media/demo/c9-ci.en.vtt">
+      </video>
+      <figcaption>The GitHub Actions recipe from the docs, and check's --json result and exit code.</figcaption>
+    </figure>
+    CLIP -->
+
+    <h2 id="evidence">Evidence</h2>
+    <p>What has been run, when, and what came out. Only what is recorded is listed; the note under each line names the record in shotfleet's repository.</p>
+    <p>Built for macOS 13 or later on Apple silicon; tested on macOS 27.</p>
+
+    <h3>Releases</h3>
+    <ul class="evidence">
+      <li><b>2026-10-05, release 0.1.2.</b> The signed build ran the fixture app on iPhone and iPad simulators and an Android emulator and passed 65 of 65 assertions in 37 minutes. <span class="note">Record: research/0.1.2-plan.md (Outcome), docs/handoff.md section 15, docs/compat.md</span></li>
+      <li><b>2026-10-05, same run.</b> In the iPad part the Mac was heavily loaded and 3 of 4 simulators stopped answering; shotfleet finished all 4 languages on the 1 simulator left, with 0 problems. <span class="note">Record: docs/handoff.md section 15, research/0.1.2-plan.md</span></li>
+      <li><b>2026-10-05, release 0.1.1.</b> On GitHub's hosted Apple silicon runners with macOS 14.8.9 and 15.7.9, the installer, shotfleet --version, doctor and check all ran; no simulator or emulator was run there. <span class="note">Record: research/limits-platform-reach-2026-10-05.md, docs/compat.md</span></li>
+    </ul>
+
+    <h3>Real apps</h3>
+    <ul class="evidence">
+      <li><b>2026-10-01 and 2026-10-04, my app, WOD Tracker.</b> 18 languages on iOS and Android, 0 problems, on Maestro 2.0.10. Then 19 languages each on iOS, an Android phone and an Android tablet, 0 problems, on Maestro 2.11.0; 9 iOS languages needed shotfleet's retry. <span class="note">Record: PLAN.md, docs/compat.md, research/maestro-2-11.md</span></li>
+      <li><b>2026-10-05, timing.</b> WOD Tracker in 19 languages on 4 simulators and 4 emulators with Maestro 2.0.10: 404 s of capture on iOS and 415 s on Android phones, 0 problems, no retries. The Mac was not idle: its load went from 86 to 497 during the iOS part. <span class="note">Record: docs/compat.md, research/workarounds-maestro-resources-2026-10-05.md</span></li>
+      <!-- TODO(coordinator): the Maestro 2.11.0 vs 2.0.10 quiet-Mac measurement at 4 iOS simulators goes here once it is recorded
+           (research/workarounds-maestro-resources-2026-10-05.md section 5), with its own claims row. Not public text until then. -->
+      <li><b>2026-10-03, wger (Flutter).</b> iOS and Android, German and Japanese: German on every screenshot. wger's Japanese is about 30% translated, so those screens show English, and check said so. <span class="note">Record: research/frameworks.md section 15, research/real-apps-2026-10-03/</span></li>
+      <li><b>2026-10-03, the obytes template (Expo).</b> iOS and Android, English and Arabic, with Arabic right to left on the Settings screen. Its onboarding and login screens are hard-coded English, and check flagged them. <span class="note">Record: research/frameworks.md section 15, research/real-apps-2026-10-03/</span></li>
+      <li><b>2026-10-03 and 2026-10-04, the KotlinConf app (Compose Multiplatform).</b> Android, German and English: 6 screenshots, 0 problems. On iOS its first screen came out blank (it draws after its text is readable) and check flagged it; a clean iOS run is still to do. <span class="note">Record: research/frameworks.md sections 15 to 17, research/real-apps-2026-10-04/</span></li>
+      <li><b>2026-10-04 and 2026-10-05, Microsoft's .NET MAUI localization sample.</b> Five languages on iOS and two on Android, one screen each: 0 untranslated selectors and 0 problems. Not yet a real MAUI app or a Release build. <span class="note">Record: research/frameworks.md section 5, research/experiments-2026-10-04/C/ and C2/</span></li>
+      <li><b>2026-10-04 and 2026-10-05, a small Capacitor test app.</b> The per-app language reached its web view on iOS 26.4, iOS 18.6 and Android 16. Maestro read the web view's text on iOS but not on Android. This tested the language only, not a full shotfleet run. <span class="note">Record: research/frameworks.md section 7, research/experiments-2026-10-04/B/ and B2/</span></li>
+    </ul>
+
+    <h3>Coming in 0.1.3</h3>
+    <ul class="evidence">
+      <li><b>2026-10-05, not released yet.</b> On Android, shotfleet reads the screen text from Maestro's UI hierarchy instead of from pixels. On the Android fixture app it passed 30 of 30 assertions with Maestro 2.11.0, and 29 of 29 with Maestro 2.0.10, where it still reads pixels. <span class="note">Record: pull request 44, branch claude/013-android-hierarchy (claims row C132)</span></li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+  </div>
+</footer>
+<script src="/ga.js" defer></script>
+</body>
+</html>

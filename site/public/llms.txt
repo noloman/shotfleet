@@ -29,6 +29,7 @@
 
 - [Home](https://shotfleet.com/): what it does, sample results, price
 - [Docs](https://shotfleet.com/docs): install, quickstart, config keys, hooks, CI recipe, agent skills, requirements and limits
+- [See it work](https://shotfleet.com/demo): short clips of the commands, and a dated record of the real runs (release gates, macOS versions, real apps)
 - [Alternatives](https://shotfleet.com/alternatives): how it compares with other tools, and when not to buy it
 - [Terms](https://shotfleet.com/terms): licence and refunds
 - [Privacy](https://shotfleet.com/privacy): what the site stores and what is kept when you buy or write to me
