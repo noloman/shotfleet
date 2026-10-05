@@ -13,9 +13,12 @@
 # --dry-run runs every check (manifest hashes, versions, tree, the live version id read) and prints the plan; it stages, archives, deploys
 # and rolls back nothing and writes nothing but its own output.
 #
-# The real run: checks -> stage the files into <tree>/site/public/download -> archive the shipped bytes -> record the live Cloudflare version id
-# in a durable file -> wrangler deploy -> verify the served files, VERSION, install.sh, smoke.sh and a live install into a temp HOME ->
-# roll back to the recorded id on ANY failure (also on Ctrl-C, or when this script dies).
+# The real run: checks -> stage the files into <tree>/site/public/download -> archive the shipped bytes -> stage /download/<version>/ for this
+# release and for EVERY version kept in $SHOTFLEET_RELEASE_DIR/archive/<version>/ (a deploy replaces all static assets, so old versions only
+# survive by being staged again; each archived file must match its SHA256SUMS and kept manifest, or nothing runs) -> record the live Cloudflare
+# version id in a durable file -> wrangler deploy -> verify the served files, VERSION, every versioned file, install.sh, smoke.sh and a live
+# install into a temp HOME -> roll back to the recorded id on ANY failure (also on Ctrl-C, or when this script dies).
+# /download/<file> and /download/VERSION stay "latest" (no-cache); /download/<version>/<file> never changes (immutable, site/public/_headers).
 #
 # Variables: SHOTFLEET_RELEASE_DIR (required, not under /tmp: gets state/ and archive/), PUBLISH_BASE (https://shotfleet.com),
 # WRANGLER ("npx --yes wrangler@latest"), PUBLISH_SMOKE (command run as: env -i $PUBLISH_SMOKE <base> [<checkout>]; default tools/golive/smoke.sh),
@@ -156,6 +159,41 @@ case "$REL" in
   *) fail "SHOTFLEET_RELEASE_DIR must be an absolute path: $REL" ;;
 esac
 
+echo "-- versioned downloads /download/<version>/ (a deploy replaces ALL static assets, so every archived version is staged again each time)"
+PLAN=  # one line per versioned file: <version> <file name> <sha256>; the release itself comes from the tested artifacts, older ones from the archive
+add_plan() { PLAN="$PLAN$1 $2 $3
+"; }
+[ -z "${TAR_SHA:-}" ] || add_plan "$VERSION" shotfleet-macos-arm64.tar.gz "$TAR_SHA"
+[ -z "${PKG_SHA:-}" ] || add_plan "$VERSION" shotfleet-macos-arm64.pkg "$PKG_SHA"
+# check_archive <dir> <version>: every file named in SHA256SUMS has that sha256, and the kept manifest (the tested record) agrees
+check_archive() {
+  d=$1; v=$2; s=$1/SHA256SUMS; n0=$BAD
+  [ -f "$s" ] || { fail "archive $v: no SHA256SUMS in $d"; return; }
+  grep -q '  shotfleet-macos-arm64\.tar\.gz$' "$s" || fail "archive $v: SHA256SUMS does not list shotfleet-macos-arm64.tar.gz"
+  if [ -f "$d/manifest.txt" ] && [ "$(awk '$1 == "version" { print $2 }' "$d/manifest.txt")" != "$v" ]; then fail "archive $v: manifest.txt is for another version"; fi
+  while read -r h n; do
+    case "$n" in shotfleet-macos-arm64.tar.gz|shotfleet-macos-arm64.pkg) ;; *) fail "archive $v: unexpected name in SHA256SUMS: $n"; continue ;; esac
+    if [ ! -f "$d/$n" ]; then fail "archive $v: $n is missing"
+    elif [ "$(sha256 "$d/$n")" != "$h" ]; then fail "archive $v: $n does not match its recorded sha256 (a changed file is never published)"
+    else add_plan "$v" "$n" "$h"; fi
+    if [ -f "$d/manifest.txt" ]; then
+      m=$(awk -v n="shotfleet-$v-${n#shotfleet-}" '$1 == "file" && $4 == n { print $2 }' "$d/manifest.txt")
+      [ "$m" = "$h" ] || fail "archive $v: SHA256SUMS and manifest.txt disagree on $n"
+    fi
+  done < "$s"
+  [ "$BAD" != "$n0" ] || ok "archive $v: $(grep -c . "$s") file(s) match their recorded sha256$( [ -f "$d/manifest.txt" ] && echo ' and the kept manifest')"
+}
+PREV=0
+case "$REL" in /*) if [ -d "$REL/archive" ]; then
+  for dir in "$REL"/archive/*; do
+    v=$(basename "$dir")
+    case "$v" in [0-9]*.[0-9]*.[0-9]*) ;; *) continue ;; esac  # live-before-* folders are records, not releases
+    [ "$v" != "$VERSION" ] || continue
+    check_archive "$dir" "$v"; PREV=$((PREV + 1))
+  done
+fi ;; esac
+[ "$PREV" != 0 ] || warn "no earlier version in $REL/archive: only /download/$VERSION/ will exist"
+
 echo "-- live site (read-only)"
 live_id() { wr deployments list 2>/dev/null | grep -o 'Version(s):  *([0-9]*%) [0-9a-f-]*' | tail -1 | awk '{ print $3 }' || true; }
 OLDID=$(live_id)
@@ -174,9 +212,14 @@ if [ "$DRY" = 1 ]; then
   echo "-- plan (nothing below was done)"
   echo "  would: rm -rf $D; copy $TAR -> $D/shotfleet-macos-arm64.tar.gz, $PKG -> $D/shotfleet-macos-arm64.pkg, write the .sha256 and VERSION ($VERSION)"
   echo "  would: archive the staged bytes plus SHA256SUMS in $ARCH (and the files now live, in $REL/archive/live-before-$VERSION)"
+  printf '%s' "$PLAN" | while read -r v n h; do
+    src=$REL/archive/$v; [ "$v" != "$VERSION" ] || src="the tested artifacts"
+    extra=; [ "${n%.tar.gz}" = "$n" ] || extra=", plus $n.sha256"
+    echo "  would: stage /download/$v/$n (sha256 $(echo "$h" | cut -c1-12)...) from $src$extra"
+  done
   echo "  would: write the rollback id $OLDID to $STATE/rollback-$VERSION-$STAMP.txt"
   echo "  would: wrangler deploy$( [ "$STAGING" = 1 ] && echo " (STAGING: --config $STAGING_CONFIG --name $STAGING_NAME)" ) in $TREE/site"
-  echo "  would: verify $BASE: /download/VERSION = $VERSION, tarball, .sha256 and pkg hashes, install.sh 200, env -i $SMOKE $BASE ${CHECKOUT}, a live install into a temp HOME"
+  echo "  would: verify $BASE: /download/VERSION = $VERSION, tarball, .sha256 and pkg hashes, every /download/<version>/ file above, install.sh 200, env -i $SMOKE $BASE ${CHECKOUT}, a live install into a temp HOME"
   echo "  would, on any failure: wrangler rollback $OLDID -y in $TREE/site"
   echo "== dry run clean: every check passed; nothing was deployed =="
   exit 0
@@ -214,6 +257,15 @@ else mkdir -p "$ARCH" && cp "$D"/* "$ARCH/" && cp "$T/SHA256SUMS" "$MANIFEST" "$
 L=$REL/archive/live-before-$VERSION; mkdir -p "$L"
 for n in shotfleet-macos-arm64.tar.gz shotfleet-macos-arm64.pkg shotfleet-macos-arm64.tar.gz.sha256 VERSION; do curl -fsS --max-time 180 -o "$L/$n" "$BASE/download/$n" 2>/dev/null || rm -f "$L/$n"; done
 
+# after the archive step (it copies the flat files of $D): the versioned folders, re-hashed after the copy
+log "stage the versioned folders in $D/<version>/: $(printf '%s' "$PLAN" | awk '{ print $1 }' | sort -u | tr '\n' ' ')"
+printf '%s' "$PLAN" | while read -r v n h; do
+  src=$REL/archive/$v; [ "$v" != "$VERSION" ] || src=$D
+  mkdir -p "$D/$v" && cp "$src/$n" "$D/$v/$n"
+  [ "$(sha256 "$D/$v/$n")" = "$h" ] || { echo "  staged $v/$n differs from its recorded sha256"; exit 1; }
+  case "$n" in *.tar.gz) echo "$h  $n" > "$D/$v/$n.sha256" ;; esac
+done || bad "a versioned file differs after staging"
+
 echo "$OLDID" > "$STATE/rollback-$VERSION-$STAMP.txt"; echo "version $VERSION; live before: ${LIVE_VERSION:-unknown}; recorded $STAMP" >> "$STATE/rollback-$VERSION-$STAMP.txt"
 log "ROLLBACK TARGET $OLDID recorded in $STATE/rollback-$VERSION-$STAMP.txt"
 
@@ -235,6 +287,16 @@ curl -fsS --max-time 180 -o "$T/a.pkg" "$BASE/download/shotfleet-macos-arm64.pkg
 [ "$(sha256 "$T/a.pkg")" = "$PKG_SHA" ] || bad "served pkg hash differs"
 [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$BASE/install.sh")" = 200 ] || bad "install.sh is not 200"
 log "served files verified: VERSION $VERSION, tarball $TAR_SHA, pkg $PKG_SHA, install.sh 200"
+# ponytail: downloads every versioned file of every version (about 21 MB a release); verify only the newest two if the archive grows long
+printf '%s' "$PLAN" | while read -r v n h; do
+  curl -fsS --max-time 180 -o "$T/v" "$BASE/download/$v/$n" || { echo "  /download/$v/$n is not served"; exit 1; }
+  [ "$(sha256 "$T/v")" = "$h" ] || { echo "  served /download/$v/$n has another sha256"; exit 1; }
+  case "$n" in *.tar.gz) [ "$(curl -fsS --max-time 30 "$BASE/download/$v/$n.sha256" | cut -c1-64)" = "$h" ] || { echo "  served /download/$v/$n.sha256 differs"; exit 1; } ;; esac
+  echo "  ok    /download/$v/$n $(echo "$h" | cut -c1-12)..."
+done || bad "a versioned download is missing or differs"
+log "versioned downloads verified: $(printf '%s' "$PLAN" | awk '{ print $1 }' | sort -u | tr '\n' ' ')"
+cc=$(curl -sI --max-time 20 "$BASE/download/$VERSION/shotfleet-macos-arm64.tar.gz" | tr -d '\r' | grep -i '^cache-control:' || true)
+case "$cc" in *immutable*) log "versioned $cc" ;; *) warn "/download/$VERSION/ is not served as immutable (${cc:-no Cache-Control}): check site/public/_headers" ;; esac
 # shellcheck disable=SC2086  # $SMOKE is a command with arguments
 env -i $SMOKE_ENV $SMOKE "$BASE" ${CHECKOUT:+"$CHECKOUT"} > "$T/smoke.out" 2>&1 || { tail -5 "$T/smoke.out"; bad "smoke test failed"; }
 log "smoke passed: $(tail -1 "$T/smoke.out")"

@@ -6,6 +6,7 @@
 - **Internal tool `tools/selftest.sh`:** one script a person runs on any Mac (`sh selftest.sh --download`) that installs the release into a throwaway folder, runs `--version`, `doctor` and `check`, prints one PASS/FAIL block and deletes the folder. Not part of the product.
 - **Terms and home page: CI keys:** they now say a `SHOTFLEET_KEY` is checked online on every run (no 30-day offline limit; a refunded key stops as soon as a run reaches Gumroad). Wording only; the code is unchanged.
 - **Android reads each screenshot's text from the app** with Maestro 2.7.0 or newer (a marker step after every screenshot makes Maestro save the UI hierarchy), exact in every script instead of OCR; `check.json` says per screenshot whether the evidence was `hierarchy` or `ocr`. Older Maestro, and screenshots from other tools, keep reading pixels. Fixture e2e on Maestro 2.11.0: 8 of 8 screenshots read from the hierarchy.
+- **Permanent download URLs:** from the next release on, each release (and the earlier ones kept in the release archive) also stays at `https://shotfleet.com/download/<version>/` (for example `/download/0.1.2/shotfleet-macos-arm64.tar.gz`, its `.sha256` and the `.pkg`), and those files never change. The install line and `/download/VERSION` still give the latest.
 
 ## 0.1.2 (2026-10-05)
 - **`--json` covers every report:** with several reports (several device types, both platforms, Play phone and tablet sets) the one JSON document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each. With one report nothing changes.

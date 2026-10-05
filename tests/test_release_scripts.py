@@ -20,6 +20,7 @@ case "$1" in
   deployments) echo "Created:     now"; echo "Version(s):  (100%) $(cat "$FAKE_DIR/live")" ;;
   deploy) echo "$NEW" > "$FAKE_DIR/live"; rm -rf "$FAKE_DIR/serve"; mkdir -p "$FAKE_DIR/serve"; cp -R public/download "$FAKE_DIR/serve/download"; cp public/install.sh "$FAKE_DIR/serve/"
           [ -z "$FAKE_CORRUPT" ] || echo corrupt >> "$FAKE_DIR/serve/download/shotfleet-macos-arm64.tar.gz"
+          [ -z "$FAKE_CORRUPT_OLD" ] || echo corrupt >> "$FAKE_DIR/serve/download/9.9.8/shotfleet-macos-arm64.tar.gz"
           echo "Current Version ID: $NEW" ;;
   rollback) echo "$2" > "$FAKE_DIR/live"; echo "rolled back" ;;
 esac
@@ -182,7 +183,7 @@ class RealRunWithFakes(Fixture):
         self.assertIn("PUBLISHED 9.9.9", r.stdout)
         self.assertEqual([c for c in self.calls() if not c.startswith("deployments")], ["deploy"])  # no rollback
         d = self.tree / "site/public/download"
-        self.assertEqual(sorted(p.name for p in d.iterdir()), ["VERSION", "shotfleet-macos-arm64.pkg", "shotfleet-macos-arm64.tar.gz", "shotfleet-macos-arm64.tar.gz.sha256"])
+        self.assertEqual(sorted(p.name for p in d.iterdir()), ["9.9.9", "VERSION", "shotfleet-macos-arm64.pkg", "shotfleet-macos-arm64.tar.gz", "shotfleet-macos-arm64.tar.gz.sha256"])
         self.assertEqual(sha(d / "shotfleet-macos-arm64.tar.gz"), sha(self.tar))
         arch = self.rel / "archive/9.9.9"
         self.assertEqual(sha(arch / "shotfleet-macos-arm64.pkg"), sha(self.pkg))
@@ -216,6 +217,84 @@ class RealRunWithFakes(Fixture):
         self.assertEqual(r.returncode, 1)
         self.assertIn(f"rollback {OLD}", " ".join(self.calls()))
         self.assertEqual((self.fake / "live").read_text().strip(), OLD)
+
+
+class Versioned(Fixture):
+    """/download/<version>/: the new release plus every archived one, re-staged on each deploy because a deploy replaces all static assets."""
+
+    def archive(self, version, corrupt=False):
+        a = self.rel / "archive" / version; a.mkdir(parents=True)
+        tar, pkg = a / "shotfleet-macos-arm64.tar.gz", a / "shotfleet-macos-arm64.pkg"
+        tar.write_bytes(version.encode() * 1000); pkg.write_bytes(os.urandom(512))
+        (a / "SHA256SUMS").write_text(f"{sha(tar)}  {tar.name}\n{sha(pkg)}  {pkg.name}\n")
+        (a / "manifest.txt").write_text(f"version {version}\nfile {sha(tar)} 1 shotfleet-{version}-macos-arm64.tar.gz\nfile {sha(pkg)} 1 shotfleet-{version}-macos-arm64.pkg\n")
+        (self.rel / "archive/live-before-9.9.9").mkdir(exist_ok=True)  # a record folder, never staged
+        if corrupt:
+            tar.write_bytes(tar.read_bytes() + b"x")
+        return sha(tar), sha(pkg)
+
+    def test_two_versions_are_staged_served_and_verified(self):
+        old_tar, old_pkg = self.archive("9.9.8")
+        self.serve()
+        r = self.publish()
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        for line in ("archive 9.9.8: 2 file(s) match their recorded sha256 and the kept manifest", "ok    /download/9.9.9/shotfleet-macos-arm64.pkg",
+                     "ok    /download/9.9.8/shotfleet-macos-arm64.tar.gz", "versioned downloads verified: 9.9.8 9.9.9"):
+            self.assertIn(line, r.stdout)
+        served = self.fake / "serve/download"
+        self.assertEqual(sha(served / "9.9.9/shotfleet-macos-arm64.tar.gz"), sha(self.tar))
+        self.assertEqual(sha(served / "9.9.8/shotfleet-macos-arm64.pkg"), old_pkg)
+        self.assertEqual((served / "9.9.8/shotfleet-macos-arm64.tar.gz.sha256").read_text(), f"{old_tar}  shotfleet-macos-arm64.tar.gz\n")
+        self.assertEqual((served / "VERSION").read_text().strip(), "9.9.9")  # latest stays where it was
+        self.assertEqual(sha(served / "shotfleet-macos-arm64.tar.gz"), sha(self.tar))
+        self.assertFalse((served / "live-before-9.9.9").exists())
+        self.assertEqual(sorted(p.name for p in (self.rel / "archive/9.9.9").iterdir()),  # the flat archive is unchanged by the versioned folders
+                         ["SHA256SUMS", "VERSION", "manifest.txt", "shotfleet-macos-arm64.pkg", "shotfleet-macos-arm64.tar.gz", "shotfleet-macos-arm64.tar.gz.sha256"])
+
+    def test_dry_run_prints_every_versioned_file(self):
+        self.archive("9.9.8")
+        r = self.publish("--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout)
+        for v, n in (("9.9.9", "tar.gz"), ("9.9.9", "pkg"), ("9.9.8", "tar.gz"), ("9.9.8", "pkg")):
+            self.assertIn(f"would: stage /download/{v}/shotfleet-macos-arm64.{n}", r.stdout)
+        self.assertIn(f"would: stage /download/9.9.8/shotfleet-macos-arm64.tar.gz (sha256 {sha(self.rel / 'archive/9.9.8/shotfleet-macos-arm64.tar.gz')[:12]}...) "
+                      f"from {self.rel}/archive/9.9.8, plus shotfleet-macos-arm64.tar.gz.sha256\n", r.stdout)
+        self.assertIn("would: stage /download/9.9.9/shotfleet-macos-arm64.pkg (sha256 ", r.stdout)
+        self.assertIn("from the tested artifacts\n", r.stdout)
+        self.assertEqual(r.stderr, "")
+        self.assertFalse((self.tree / "site/public/download").exists())
+
+    def test_a_corrupted_archived_file_refuses_before_anything_is_deployed(self):
+        self.archive("9.9.8", corrupt=True)
+        self.serve()
+        r = self.publish()
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("archive 9.9.8: shotfleet-macos-arm64.tar.gz does not match its recorded sha256", r.stdout)
+        self.assertIn("REFUSED", r.stdout)
+        self.assertEqual(self.calls(), ["deployments list"])
+        self.assertFalse((self.tree / "site/public/download").exists())
+
+    def test_sha256sums_rewritten_to_match_a_changed_file_is_caught_by_the_manifest(self):
+        self.archive("9.9.8")
+        a = self.rel / "archive/9.9.8"; t = a / "shotfleet-macos-arm64.tar.gz"
+        t.write_bytes(b"other"); (a / "SHA256SUMS").write_text(f"{sha(t)}  {t.name}\n")
+        r = self.publish("--dry-run")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("SHA256SUMS and manifest.txt disagree on shotfleet-macos-arm64.tar.gz", r.stdout)
+
+    def test_a_versioned_file_served_wrong_rolls_back(self):
+        self.archive("9.9.8")
+        self.serve()
+        r = self.publish(env={"FAKE_CORRUPT_OLD": "1"})
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("served /download/9.9.8/shotfleet-macos-arm64.tar.gz has another sha256", r.stdout)
+        self.assertEqual((self.fake / "live").read_text().strip(), OLD)
+
+    def test_headers_make_versioned_files_immutable_and_latest_no_cache(self):
+        h = (ROOT / "site/public/_headers").read_text()
+        self.assertIn("/download/:file\n  Cache-Control: no-cache\n", h)
+        self.assertIn("/download/:version/*\n  Cache-Control: public, max-age=31536000, immutable\n", h)
+        self.assertNotIn("/download/*", h)  # it would also match the versioned files and join both Cache-Control values
 
 
 class Staging(Fixture):
