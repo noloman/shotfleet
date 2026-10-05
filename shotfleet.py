@@ -2210,8 +2210,11 @@ def judge_screen(lp, ocr, tables):
 # language the app text under it is in. English only (the emulator's system language), and only where text is read from the picture.
 SYSTEM_DIALOG = re.compile(r"isn.?t responding|keeps stopping|has stopped\b", re.I)
 
+DIALOG_BUTTON = re.compile(r"^\s*(close app|wait|app info)\s*$", re.I | re.M)  # Android's crash and ANR dialogs always have one
+
 def system_dialog(ocr):
-    m = SYSTEM_DIALOG.search(ocr.get("text", ""))
+    """The dialog's words alone are not enough: an app's own screen can say "Server isn't responding" or "Tracking has stopped"."""
+    m = SYSTEM_DIALOG.search(ocr.get("text", "")) if DIALOG_BUTTON.search(ocr.get("text", "")) else None
     return f'an Android system dialog covers the screen ("{m.group(0)}")' if m else None
 
 def caption_problem(lp, ocr, tables, problem):

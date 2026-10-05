@@ -115,5 +115,13 @@ class NoStringsOnTesseract(unittest.TestCase):
         self.assertTrue(any("without --app" in n and "language was not checked" in n for n in report["notes"]))
 
 
+class SystemDialogWords(unittest.TestCase):
+    def test_an_app_screen_that_says_the_same_words_is_not_an_android_dialog(self):
+        self.assertIsNone(sf.system_dialog({"text": "Server isn't responding\nTry again later\nRetry"}))  # a network error screen
+        self.assertIsNone(sf.system_dialog({"text": "Your workout has stopped\nResume"}))
+        self.assertIn("isn't responding", sf.system_dialog({"text": "Weiter\nProcess system isn't responding\nClose app\nWait"}))
+        self.assertIn("keeps stopping", sf.system_dialog({"text": "Fleet keeps stopping\nApp info\nClose app"}))
+
+
 if __name__ == "__main__":
     unittest.main()
