@@ -3776,7 +3776,8 @@ def is_gumroad_key(key):
 def gumroad_verify(key, count_use):
     """Gumroad's licence check -> (ok, uses, reason). Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
     and every check bumps it unless count_use is False. Gumroad answers success:true for a refunded or charged-back purchase
-    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict."""
+    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict.
+    Gumroad's source (Aug 2026) also disables the key itself on a full refund: that is a 404 "This license key has been disabled"."""
     if not GUMROAD_PRODUCT_ID: raise Fail("this build has no Gumroad product id (packaging/go-live.sh sets it)")
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
@@ -3790,7 +3791,10 @@ def gumroad_verify(key, count_use):
             except ValueError: raise OSError(f"Gumroad answered {e.code}")
     except (urllib.error.URLError, TimeoutError) as e:
         raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
-    if not body.get("success"): return False, 0, body.get("message", "invalid key").rstrip(".")
+    if not body.get("success"):
+        why = body.get("message", "invalid key").rstrip(".")
+        if "disabled" in why: why = "the key was disabled, as Gumroad does after a full refund"  # the buyer sees why, not Gumroad's English sentence
+        return False, 0, why
     p = body.get("purchase") or {}
     uses = body.get("uses", 0)
     if p.get("refunded"): return False, uses, "the purchase was refunded"

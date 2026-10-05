@@ -1026,6 +1026,7 @@ class GumroadLicence(unittest.TestCase):
     def setUp(self):
         import http.server, threading, urllib.parse
         self.uses, self.calls, self.flags, self.status, test = {self.GOOD: 0, self.REFUNDED: 0}, [], {self.REFUNDED: {"refunded": True}}, 200, self
+        self.disabled = set()  # keys Gumroad disabled (it does that itself on a full refund; the seller can too)
         class H(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
                 b = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
@@ -1033,6 +1034,8 @@ class GumroadLicence(unittest.TestCase):
                 key = b.get("license_key")
                 if test.status >= 500:
                     self.send_response(test.status); self.end_headers(); self.wfile.write(b'{"success":false,"message":"boom"}'); return
+                if key in test.disabled:
+                    self.send_response(404); self.end_headers(); self.wfile.write(b'{"success":false,"message":"This license key has been disabled."}'); return
                 if key not in test.uses or b.get("product_id") != "prod1":
                     self.send_response(404); self.end_headers()
                     self.wfile.write(b'{"success":false,"message":"That license does not exist for the provided product."}'); return
@@ -1095,6 +1098,16 @@ class GumroadLicence(unittest.TestCase):
                 with self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
                 with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
                 sf.LICENCE_FILE.unlink()
+
+    def test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays(self):
+        self.activate(self.GOOD); self.stale(); sf.require_licence()
+        self.disabled.add(self.GOOD); self.stale()
+        with self.assertRaisesRegex(sf.NoLicence, "disabled, as Gumroad does after a full refund"): sf.require_licence()
+        self.assertTrue(sf.LICENCE_FILE.exists())  # nothing is deleted; `deactivate` or a fresh activation is the buyer's call
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, "disabled"): sf.require_licence()
+        sf.LICENCE_FILE.unlink()
+        with self.assertRaisesRegex(sf.Fail, "didn't activate: the key was disabled"): self.activate(self.GOOD)
+        self.assertEqual(self.uses[self.GOOD], 1)  # the refused attempt burned no activation
 
     def test_a_won_dispute_keeps_the_licence(self):
         self.flags[self.GOOD] = {"disputed": True, "dispute_won": True}
