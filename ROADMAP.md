@@ -35,9 +35,9 @@ Built from: research/audit.md (code audit), research/first-run.md (cold user tes
 
 ## Still open
 - A clean 8-emulator benchmark round on an idle Mac.
-- Confirm on a freshly restarted Mac how long macOS's first text-recognition compile takes (needs Manu's restart). Without a
+- Confirm on a freshly restarted Mac how long macOS's first text-recognition compile takes (needs Manu's restart; a restart is a last resort, not the advice). Without a
   restart, verified 2026-10-03: the release-candidate build's `check` matches source on real screenshots (72 iOS + 72 Android
-  clean, planted set exactly its 2 mistakes); with recognition stuck, `check` switches to Tesseract after 90 s (137 s total).
+  clean, planted set exactly its 2 mistakes); with recognition stuck, `check` switches to Tesseract after 90 s (137 s total; since 0.1.3 it waits up to 6 minutes while the compile is working).
 
 ## 1. Every language, every localization setup (no buyer turned away)
 | # | What | Why | Effort |
