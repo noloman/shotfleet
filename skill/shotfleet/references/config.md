@@ -122,9 +122,9 @@ name = "田中"
 
 Values must be text and names letters, digits or `_`. iOS runs get the language's value as a Maestro `env:` entry in that
 language's flow. On Android a name with a per-language value is read from `shotfleet_vars.js`, which picks the emulator's
-row by `MAESTRO_DEVICE_UDID`; Maestro 2.0.10 doesn't define it (checked in its jars, no device run), so there Android
-runs type the defaults only. Unit-tested as flow text, not yet run on a device: check the first screenshots in a script
-like Japanese or Arabic.
+row by `MAESTRO_DEVICE_UDID`; Maestro 2.11.0 sets it to the emulator's serial (German and Japanese values showed up as typed in screenshots, device run
+2026-10-04: one emulator, one language after the other; two emulators at once and Arabic not run). Maestro 2.0.10 doesn't define it, so on
+2.0.10 Android runs type the defaults only. Check the first screenshots in a script like Japanese or Arabic.
 
 A failing `simctl` or `shell` command stops the run before capture (exit 2) and prints the command.
 

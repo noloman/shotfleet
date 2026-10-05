@@ -53,8 +53,9 @@ class Fakes(unittest.TestCase):
 
 
 class MaestroVersion(Fakes):
-    def test_the_tested_version_is_one_constant_and_it_is_2_0_10(self):
-        self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10",))
+    def test_the_tested_versions_are_one_constant_and_are_2_0_10_and_2_11_0(self):
+        self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10", "2.11.0"))
+        self.assertIn(sf.MAESTRO_PIN["version"], sf.MAESTRO_TESTED)  # doctor --fix installs a version that was really run
 
     def test_parsing_survives_noise_around_the_version(self):
         for text, want in (("2.0.10\n", "2.0.10"), ("v2.11.0\n", "2.11.0"), ("WARNING: illegal reflective access\n2.0.10\n", "2.0.10"),
@@ -66,17 +67,17 @@ class MaestroVersion(Fakes):
     def test_same_version_prints_it_with_the_tested_one_and_no_warning(self):
         self.maestro("echo 2.0.10")
         code, out = self.doctor()
-        self.assertIn("ok   maestro 2.0.10 (tested: 2.0.10)", out)
+        self.assertIn("ok   maestro 2.0.10 (tested: 2.0.10, 2.11.0)", out)
         self.assertNotIn("not the version shotfleet was tested with", out)
         self.assertNotIn("could not read", out)
 
     def test_a_newer_version_warns_in_one_line_that_names_the_tested_one_and_does_not_fail_doctor(self):
-        self.maestro("echo 2.11.0")
+        self.maestro("echo 2.99.0")
         code, out = self.doctor()
-        self.assertIn("ok   maestro 2.11.0 (tested: 2.0.10)", out)
+        self.assertIn("ok   maestro 2.99.0 (tested: 2.0.10, 2.11.0)", out)
         warn = [l for l in out.splitlines() if "not the version shotfleet was tested with" in l]
         self.assertEqual(len(warn), 1, out)
-        self.assertIn("(2.0.10)", warn[0]); self.assertIn("may work", warn[0]); self.assertIn("2.11.0", warn[0])
+        self.assertIn("(2.0.10, 2.11.0)", warn[0]); self.assertIn("may work", warn[0]); self.assertIn("2.99.0", warn[0])
         self.assertNotIn("MISSING maestro", out)
         # the exit code is not driven by the version: same as with the tested one
         self.maestro("echo 2.0.10")
@@ -94,7 +95,7 @@ class MaestroVersion(Fakes):
         self.maestro("echo 'Segmentation banana'")
         code, out = self.doctor()
         self.assertNotIn("MISSING maestro", out)
-        self.assertIn("maestro (version unknown; tested: 2.0.10)", out)
+        self.assertIn("maestro (version unknown; tested: 2.0.10, 2.11.0)", out)
         self.assertIn("could not read Maestro's version", out); self.assertIn("2.0.10", out); self.assertIn("may work", out)
 
     def test_no_maestro_is_still_missing_with_the_install_command(self):
@@ -115,8 +116,9 @@ class MaestroVersion(Fakes):
     def test_run_prints_the_note_once_to_stderr_only_when_the_version_differs(self):
         err = self.run_note("echo 2.5.0")
         self.assertEqual(err.count("not the version shotfleet was tested with"), 1, err)
-        self.assertIn("(2.0.10)", err); self.assertIn("may work", err)
+        self.assertIn("(2.0.10, 2.11.0)", err); self.assertIn("may work", err)
         self.assertEqual(self.run_note("echo 2.0.10"), "")
+        self.assertEqual(self.run_note("echo 2.11.0"), "")  # a real fixture e2e passed on it: no note
         self.assertIn("could not read", self.run_note("echo nonsense"))
 
 
@@ -168,20 +170,15 @@ class DoctorUnderLoad(Fakes):
         self.assertIn("PROBLEM text recognition   can't start", out.getvalue())
 
 
+class Simctl(unittest.TestCase):
+    def test_a_simctl_that_hangs_is_not_ready_instead_of_blocking_doctor(self):
+        def hang(cmd, **kw): raise subprocess.TimeoutExpired(cmd, kw["timeout"])
+        with mock.patch.object(sf, "sh", hang): self.assertFalse(sf.simctl_works())
+        seen = {}
+        def ok(cmd, **kw): seen.update(kw); return subprocess.CompletedProcess(cmd, 0, "", "")
+        with mock.patch.object(sf, "sh", ok): self.assertTrue(sf.simctl_works())
+        self.assertLessEqual(seen["timeout"], 120)
+
+
 if __name__ == "__main__":
     unittest.main()
-
-    def test_run_refuses_a_maestro_that_rejects_every_screenshot_path_and_names_the_fix(self):
-        self.maestro("echo 2.11.0")
-        args = type("A", (), {"cmd": "run", "config": "x.toml", "locales": None, "parallel": None, "platform": None, "no_hooks": False})()
-        err = io.StringIO()
-        with mock.patch.dict(os.environ, {"PATH": f"{self.bin}:{os.environ['PATH']}"}), mock.patch.object(sf, "java_env", return_value={}), \
-             mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", return_value=0) as run, contextlib.redirect_stderr(err):
-            code = sf.main_dispatch(args)
-        self.assertEqual(code, 2); run.assert_not_called()
-        self.assertIn("shotfleet doctor --fix", err.getvalue()); self.assertIn("2.11.0", err.getvalue())
-
-    def test_only_versions_from_2_11_are_blocked(self):
-        for v in ("2.0.10", "2.7.0", "2.10.9", None, "garbage"): self.assertIsNone(sf.maestro_blocked(v), v)
-        for v in ("2.11.0", "2.12.1", "3.0.0"): self.assertIn("doctor --fix", sf.maestro_blocked(v), v)
-

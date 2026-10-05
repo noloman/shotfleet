@@ -6,16 +6,14 @@ changes, into `tests/claims.json` and the README in the same commit. The rule of
 
 **Each open item that a local agent can do now has its own prompt in [docs/agent-tasks/](agent-tasks/README.md)** (start a session on your Mac and say: read the file and do it).
 
-Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, then the rest.
+Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, then the rest.
 
 | # | Item | Needs | Why not done here |
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
-| 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` | no hardware virtualization here |
+| 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
 | 3 | A real Flutter, Expo and React Native app captured end to end | **done 2026-10-03 on a Mac** (wger, obytes, kotlinconf-app; `research/frameworks.md` section 15); bare React Native and Linux/KVM runs still open | |
-| 4 | `doctor --fix` on a Mac | your Mac, a clean user | untried on macOS |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
-| 6 | Real-app regression (CrossfitTracker, Remoti) | your Mac and the apps | not on this machine |
 | 7 | Android on-screen text from the UI tree (B2) | one emulator, Maestro 2.11 | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
@@ -27,8 +25,11 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 to 5, t
 
 ## 1. Maestro 2.11.0 (and promoting it)
 
-**State:** 2.11.0 is the newest Maestro and passes all 28 static checks (`docs/compat.md`). No run on a device. `MAESTRO_TESTED` is still
-`("2.0.10",)`, so doctor says "may work". `doctor --fix` still installs 2.0.10.
+**State: done 2026-10-04.** The first device run on 2.11.0 failed (it rejects absolute `takeScreenshot` paths, `research/maestro-2-11.md`); shotfleet now
+names screenshots relative to Maestro's working directory and moves them into `raw/<locale>/` afterwards (`collect_shots`). The fixture e2e then
+passed on 2.11.0 (iOS 36/36, Android 29/29) and on 2.0.10 (36/36, 29/29). `MAESTRO_TESTED` is `("2.0.10", "2.11.0")` and `doctor --fix` installs
+2.11.0. CrossfitTracker on 2.11.0 was run on 2026-10-04 (all three targets 19/19, 0 problems; `research/maestro-2-11.md`). Still open from this item: per-flow timings on a quiet Mac (the runs were on a loaded one), why 9 iOS languages needed a retry at 4 simulators (the last bullet of this file), and the
+Android `[inputs]` check (item 5). The steps below are what was run, for repeating it on a future version.
 
 **Steps, on your Mac, no other session using simulators:**
 
@@ -65,7 +66,7 @@ flow versus 2.0.10. Then the same on CrossfitTracker (item 6).
 
 ## 2. E1: the Android fixture on Linux
 
-**State:** everything up to the emulator was run (build, `init`, `doctor`, the Linux `check` path); the emulator was not. The checklist is in
+**State (2026-10-03):** passed with one emulator (`SHOTFLEET_E2E_PARALLEL=1`) on a 2-core GitHub runner with KVM, 466 s run phase (PR #33, `docs/linux.md`). The default two emulators failed on 2 cores in every run (Android's "Process system isn't responding"); **what is left** is the same script with the default two emulators on a machine with 4 or more cores (real hardware, a larger runner, or a nested-virtualization cloud VM), and the 18-language real-app timing below (build CrossFit Tracker's Android debug app from current `origin/main` for it: older debug builds send Firebase events to the production property). The checklist is in
 `docs/linux.md` ("Experiment E1"). Short form, on a Linux machine with `/dev/kvm`:
 
 ```bash
@@ -96,39 +97,17 @@ Then the real one: `shotfleet run` of 18 languages on a real app on that machine
 - **Marketing and draft pages still say "not yet run on a real Flutter or React Native app"** (`site/draft/`, `marketing/kit/`, `site/public/alternatives.html`, `research/`): left alone on purpose, they are conservative. Update them when the posts are rewritten.
 - Xcode 27 and these three builds: see the "did not pass" table; none of it is shotfleet's, but a `doctor` or README note could save a buyer an afternoon (`expo run:ios` cannot open the Simulator; `IPHONEOS_DEPLOYMENT_TARGET=15.1`; `ARCHS=arm64` for KMP).
 
-## 4. `doctor --fix` on a Mac
-
-**State:** the Linux path was run for real (Maestro, Google's tools, platform-tools, emulator, image; the Java download separately). On macOS:
-the Temurin JRE tarball unpacks to `jdk-21.x.y+z-jre/Contents/Home/...`; `install_jre` renames that folder to `~/.shotfleet/jre`, and
-`find_java` looks at `~/.shotfleet/jre/Contents/Home`. Unverified. So is the `brew install --cask android-commandlinetools` branch, and the
-Google archive pick for `mac_arm64`.
-
-**Steps:** a clean macOS user (or `SHOTFLEET_HOME=$(mktemp -d)` plus `ANDROID_HOME=$(mktemp -d)` and a `PATH` without Java and Maestro):
-
-```bash
-python3 shotfleet.py doctor --fix --yes && python3 shotfleet.py doctor
-```
-
-**Passed when** `doctor` reports Maestro and Java as ok afterwards. **Record** in claim C126 and `STATUS.md` row D1. This is also the real
-test of `STATUS.md` gate 7 (clean-Mac cold install) once the installer exists.
-
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
-**State:** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not), and shotfleet's script already uses it (`android_vars`). Unconfirmed: what
-value Maestro gives it. shotfleet expects the adb serial (`emulator-5700`...).
+**State: done 2026-10-04, with one limit.** 2.11.0 defines `MAESTRO_DEVICE_UDID` (2.0.10 does not) and it is the adb serial (`emulator-5702`); the German
+and Japanese screenshots show their own typed values. The run used ONE emulator (memory pressure made shotfleet halve 2 to 1), so de and ja ran one after
+the other; two emulators at once and Arabic are not run. The wording was updated as described below, saying exactly that.
 
 **Steps:** the fixture (`tools/fixture-app-android`), a flow with `inputText: ${name}` and `[inputs.de]`, `[inputs.ja]` with different values,
 `shotfleet run --locales de,ja` on 2 emulators with 2.11.0 first on the PATH. **Passed when** the German screenshot shows the German value and
 the Japanese one the Japanese value (the run prints `no row for device '...'` if the value is not a serial shotfleet knows). **If it passes:**
 remove the "Maestro 2.0.10 doesn't define it" wording in `README.md` (Inputs), `site/public/docs.html`, `skill/shotfleet/references/config.md`
 and the note printed by `shotfleet.py` (search for `doesn't define it`), and drop the version caveat from `tests/test_limits_c2_c3.py`.
-
-## 6. Real-app regression
-
-`STATUS.md` plan A2: CrossfitTracker iOS (18 languages), Android phone and tablet, Remoti iPhone + iPad, on Maestro 2.0.10, after the config
-rewrite, `[inputs]`, the iOS retry and `init` discovery commits, and now after this session's changes (the `plutil`/`PlistBuddy` replacements
-only run when those tools are absent, so macOS behaviour should be unchanged, but a real run is the proof). Needs a quiet Mac and 30+ GB free.
-**Passed when** 0 problems and the timings are in the README.
 
 ## 7. Android on-screen text from the UI tree (B2)
 
@@ -181,3 +160,5 @@ Gumroad product id is not set in the source tree, so no real licence server coul
 - `tools/pretend-mac.py <test module>` runs a test module as if on an Apple-silicon Mac (platform and CPU only). It reproduced both macOS-only failures of the
   `doctor --fix` tests before CI did; use it on new tests, but it does not replace a Mac.
 - Older test modules leak a few sockets (`ResourceWarning`); harmless, not from the new tests.
+- A quiet-Mac re-measure of the README timings (iOS about 9 min, Android about 15, 4 devices) is still open: the 2026-10-04 regression passed on correctness but ran on a swapping Mac with 2 devices (`STATUS.md` row 10). Do it once with nothing else running, `parallel = 4`, and only then change the README or claim C007.
+- **iOS driver start at 4 simulators on Maestro 2.11.0:** the CrossfitTracker run of 2026-10-04 passed 19/19 but 9 of 19 languages (18 in an earlier run) needed shotfleet's retry because two of four parallel simulators did not get their XCTest driver ready within 240 s (`research/maestro-2-11.md`, last section). Open: run the same on Maestro 2.0.10 with `parallel = 4` to see whether this is new; if it is, try a longer `MAESTRO_DRIVER_STARTUP_TIMEOUT` or staggered driver starts.

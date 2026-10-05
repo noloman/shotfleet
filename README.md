@@ -31,7 +31,7 @@ After capture, every screenshot's text is compared against your app's own string
 - **Store rules:** sizes each store accepts (every App Store display class, Play's 320–3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Notes (not failures) for Play's 2:1 rule and for listings that can't be recommended by Google Play (fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9).
 - **Languages your app doesn't have:** a store listing (say Traditional Chinese) whose screenshots can't be in that language because the app isn't translated into it.
 
-### Check screenshots made by any tool
+### Check screenshots you already have (fastlane, screengrab, by hand)
 
 Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:
 
@@ -44,7 +44,7 @@ Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `n
 
 Screenshots made in other tools work too. `check` knows Apple's sizes for Apple Watch, Mac, Apple TV and Vision Pro (3840x2160 is both Apple TV and Vision Pro), takes at most 10 per size, and flags a language whose Watch screenshots differ in size from the others (Apple wants one Watch size in every language). `export` takes a plain `<locale>/*.png` folder of such a set once `shotfleet check <folder> --report <folder>` has written its `check.json` there, and copies it into `screenshots/<locale>/` next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.
 
-A run also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
+`shotfleet run` (not `check`) also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
 
 ## Free and paid
 
@@ -60,7 +60,7 @@ shotfleet init                                     # in your project folder: use
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
 
-`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first: Maestro 2.0.10 (the version every real run used, checked against a pinned SHA-256), a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools with the SDK pieces `doctor` lists (it accepts the Android SDK licences, which the plan says). It asks once, `--yes` skips the question for CI, it stops at the first step that fails, and it never uses `sudo`, edits your shell files or touches Xcode. Maestro and Java go into `~/.shotfleet` (`SHOTFLEET_HOME` changes that); Android tools go where `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) points, else into the SDK shotfleet found or Android Studio's default folder. Behind a proxy that re-signs HTTPS, point `SSL_CERT_FILE` at its CA bundle. Tried on a Linux machine with none of these installed: `doctor` then reported Maestro 2.0.10 and the Android toolchain as ok, and the Java download was run separately against Adoptium's real API (Java 21.0.12 ran). It has not been run on a Mac yet.
+`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first: Maestro 2.11.0 (a version the real runs passed on, checked against a pinned SHA-256), a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools with the SDK pieces `doctor` lists (it accepts the Android SDK licences, which the plan says). It asks once, `--yes` skips the question for CI, it stops at the first step that fails, and it never uses `sudo`, edits your shell files or touches Xcode. Maestro and Java go into `~/.shotfleet` (`SHOTFLEET_HOME` changes that); Android tools go where `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) points, else into the SDK shotfleet found or Android Studio's default folder. Behind a proxy that re-signs HTTPS, point `SSL_CERT_FILE` at its CA bundle. Tried on a Linux machine with none of these installed: `doctor` then reported Maestro 2.0.10 and the Android toolchain as ok, and the Java download was run separately against Adoptium's real API (Java 21.0.12 ran). It has not been run on a Mac yet.
 
 Prefer an installer you can double-click? Each release is also published as a signed, notarized package, `https://shotfleet.com/download/shotfleet-macos-arm64.pkg`. It puts the program in `/usr/local/lib/shotfleet` and links `shotfleet` into `/usr/local/bin`; macOS asks for your password. Use it if the `curl` line is not an option or a browser-downloaded copy shows "Apple could not verify ...".
 
@@ -229,9 +229,7 @@ name = "田中"
 
 The value goes into that language's flow as a Maestro `env:` entry. This works on iOS. Maestro hands any flow to any
 emulator, so on Android a name that has a per-language value is read from a small script (`shotfleet_vars.js`) that picks
-the emulator's row by `MAESTRO_DEVICE_UDID`. Maestro 2.0.10 doesn't define that variable (we looked in its jars; no
-device run), so there Android runs type the `[inputs]` defaults only. The values are tested as flow text, not yet
-run on a device, so check the first screenshots in a script like Japanese or Arabic.
+the emulator's row by `MAESTRO_DEVICE_UDID`. Maestro 2.11.0 sets that variable to the emulator's serial: German and Japanese values showed up as typed in screenshots (device run 2026-10-04, one emulator, one language after the other; two emulators at once and Arabic not run). Maestro 2.0.10 doesn't define it, so on 2.0.10 Android runs type the `[inputs]` defaults only. Check the first screenshots in a script like Japanese or Arabic.
 
 **Device setup** runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:
 
@@ -300,7 +298,7 @@ translation source.
 - With Tesseract installed (`brew install tesseract tesseract-lang`), `check` uses it automatically for those scripts: measured on 85 languages, 84 are then verified by reading instead of 66. Another OCR works too: `--ocr-command "<cmd> {image}"` (or `SHOTFLEET_OCR`); placeholders: `{image}`, `{lang}` (ISO code), `{tesseract}` (Tesseract's code), `{tesseract_with_english}` (e.g. `eng+ell`).
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check. With `--app`, a screen with only one or two of the app's strings is also judged by language detection.
 
-- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work, but Maestro 2.11 and newer are refused: they only accept screenshot paths inside their own output folder, so nothing can be captured. `shotfleet doctor --fix` installs the tested Maestro (support for newer versions is next).
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
 - Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac.
-- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, see above).
+- Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, which 2.11.0 does and 2.0.10 doesn't; see above).

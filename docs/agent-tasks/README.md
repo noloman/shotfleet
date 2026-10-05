@@ -8,7 +8,6 @@ The cloud session that wrote them had no Mac, no simulator, no hardware virtuali
 | # | Task | Machine | Why it is open | Blocks |
 |---|---|---|---|---|
 | 01 | [Run Maestro 2.11.0 on the fixture apps, then promote it](01-maestro-2-11.md) | Mac | no simulator or emulator in the sandbox | promoting 2.11.0 to tested; Android `[inputs]` |
-| 02 | [Try doctor --fix on this Mac, then the real-app regression](02-doctor-fix-on-mac-and-real-apps.md) | Mac | Mac half of `doctor --fix` untried; apps not in the sandbox | claim C126; the clean-Mac cold test |
 | 03 | [Capture a real Flutter, Expo and Compose app end to end](03-frameworks-real-apps.md) | Mac | no device; each framework has a build trap | README Flutter/React Native wording |
 | 04 | [Verify shotfleet on Xcode 27 final (Device Hub)](04-xcode-27-verification.md) | Mac with Xcode 27 | Device Hub replaced Simulator.app; static analysis only | selling the iOS path |
 | 05 | [Run the Android fixture on Linux with KVM (experiment E1)](05-e1-android-on-linux-kvm.md) | Linux with /dev/kvm | sandbox has no hardware virtualization | any Linux support claim |
