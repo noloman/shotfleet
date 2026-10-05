@@ -528,6 +528,30 @@ def real_png(w, h, pixel, ctype=2, interlace=0):
             + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
 
 
+class StalledRun(unittest.TestCase):
+    """A hung simulator kept a 19-language wger run alive for 6 h with no screenshot: the overall timeout scales with the languages."""
+    def test_no_progress_for_stall_s_kills_the_command(self):
+        t = time.monotonic()
+        with self.assertRaises(subprocess.TimeoutExpired) as e:
+            sf.run_guarded(["sleep", "60"], timeout=600, progress=lambda: 0, stall_s=1)
+        self.assertTrue(e.exception.stalled); self.assertLess(time.monotonic() - t, 20)
+
+    def test_a_run_that_keeps_producing_is_left_alone(self):
+        ticks = iter(range(10**6))
+        r = sf.run_guarded(["sleep", "2"], timeout=60, progress=lambda: next(ticks), stall_s=1)
+        self.assertEqual(r.returncode, 0)
+
+    def test_newest_screenshot_is_the_latest_png_at_any_depth(self):
+        d = Path(tempfile.mkdtemp()); (d / "de").mkdir()
+        self.assertEqual(sf.newest_screenshot(d), 0)
+        (d / "de" / "1.png").write_bytes(b"x"); (d / "de" / "note.txt").write_text("x")
+        self.assertGreater(sf.newest_screenshot(d), 0)
+        self.assertEqual(sf.newest_screenshot("/no/such/folder"), 0)
+
+    def test_stall_s_is_a_config_key_that_must_be_positive(self):
+        self.assertIn("stall_s", sf.KEYS["common"])
+
+
 class BlankScreenshots(unittest.TestCase):
     """A Flutter or Compose app has its text in the accessibility tree before it paints (seen on wger and kotlinconf-app), so a flow's
     wait passes and the screenshot is a white frame with a status bar."""
@@ -1872,7 +1896,7 @@ class RetryOnSlowSimulator(unittest.TestCase):
             def run(self, *a, check=True): calls.append(a[0]); return ""
         return S()
 
-    def fake_maestro(self, cmd, env=None, timeout=None):
+    def fake_maestro(self, cmd, env=None, timeout=None, **watchdog):  # progress= and stall_s= (the stall watchdog)
         self.runs += 1
         flows = Path(cmd[cmd.index("test") + 1]); out = flows.parent.parent.parent
         ok = self.runs == 2 and self.calls[-1] == "install"  # the retry only works when the app was reinstalled just before

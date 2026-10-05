@@ -259,6 +259,22 @@ Same Mac (Apple silicon, Xcode 27, iOS 26.4 simulator, Maestro 2.0.10), run insi
 
 **Code changes after this window:** none beyond the README/troubleshooting lines; the blank check, the retry, the half-translated warning and the `init` fixes behaved as designed.
 
+## 17. Follow-up window, 2026-10-04 22:45 to 2026-10-05 07:00: nothing usable, one product fix
+
+The follow-up of section 16 (clean KotlinConf iOS pair, wger Android and iOS in 19 languages, Rocket.Chat exploration) held the device lock for **8 h 15 min** and produced no screenshots. Logs in `research/real-apps-2026-10-05/`; load, memory and disk per step in `research/real-apps-2026-10-04/window.log`.
+
+| Step | What happened |
+|---|---|
+| KotlinConf iOS, 6 s pause | `captured 0/2 locales in 4425s`, `no result (see maestro log)`, whole command 6285 s. The Mac was at load 135 to 340 (the release-gate rerun and other sessions' jobs), and the simulator never answered. |
+| wger Android, 19 languages (clean timing for E1) | Refused to start in 926 s: `each emulator wants about 3 GB of free memory and 2 CPU cores` (the emulator's setup log is printed with it). Not a timing. |
+| wger iOS, 19 languages | Hung for **6 h 14 min with 0 screenshots**: Maestro (5 h 33 min old) against my `shotfleet-1` simulator, which had never finished booting. shotfleet had no way to notice: its only time limit is `timeout_s` x languages (600 s x 19 = 3 h per batch, then a retry batch). I killed my own process chain by exact PID, shut the simulators down and released the lock. |
+
+My waiter script had no maximum run time either, so I held the lock for 8 h without noticing; the next waiters (small experiments, the Play screenshots job) lost that time.
+
+**Product fix (this branch):** `run_guarded` watches progress: when no new screenshot appears for `stall_s` seconds (default 900, config key `stall_s`), Maestro and its drivers are killed and the run takes the existing retry path, printing `maestro made no new screenshot for N s and was stopped`. Unit-tested (`StalledRun.*`, claim C130). Not yet seen on a device (the situation that triggers it needs a hung simulator).
+
+**Still not run on a device:** a clean wger Android 19-language timing (needs a quiet Mac with 3 GB per emulator free), wger iOS in 19 languages, Rocket.Chat with a real flow, a clean KotlinConf iOS pair with a longer wait.
+
 ## Six-line summary
 
 1. Works today: Kotlin/Compose Multiplatform (native readers), Flutter (ARB, real wger files read fine) and RN/Expo (i18next JSON, Lingui `.po`) with Release builds, MAUI via `.resx`, NativeScript via native files (probable).

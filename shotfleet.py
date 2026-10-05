@@ -31,7 +31,7 @@ class Fail(Exception):
 
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
-KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int},
+KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
@@ -120,7 +120,7 @@ def check_section(cfg, platform, name):
             names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {name} should be a {names}, not {value!r}")
-    for key in ("parallel", "timeout_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
+    for key in ("parallel", "timeout_s", "stall_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
         if key in cfg and cfg[key] < 1: raise Fail(f"[{platform}] {key} in {name} should be 1 or more, not {cfg[key]}")
     for key in ("locales", "device_types", "devices", "strings"):
         if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
@@ -1291,17 +1291,30 @@ def capture_texts(stop, debug_dir, raw_dir, bundle_id):
             list(pool.map(read, by_port.values()))
             stop.wait(0.2)
 
-def run_guarded(cmd, timeout, env=None):
+STALL_S = 900  # default: no new screenshot for 15 minutes means Maestro or a simulator is hung (a flow takes about a minute)
+
+def run_guarded(cmd, timeout, env=None, progress=None, stall_s=STALL_S):
     """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
     Maestro dumps simulator diagnostics after every failed flow; several at once wedge CoreSimulator
-    (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed."""
+    (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed.
+    `progress` (optional) returns something that changes whenever the run gets somewhere (the newest screenshot's time); when it stays
+    the same for `stall_s` seconds the run is killed and TimeoutExpired is raised with `.stalled` set. The overall `timeout` scales with
+    the number of languages, so on its own a hung simulator would keep a 19-language run alive for hours (seen: 6 h with no screenshot)."""
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
-    done = threading.Event()
+    done, stalled = threading.Event(), threading.Event()
     def watch():
-        while not done.wait(5):
+        last, since = progress() if progress else None, time.monotonic()
+        while not done.wait(min(5, max(0.2, stall_s / 4))):
             ours = descendants(proc.pid)
             for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
                 if int(line) in ours: sh(["kill", "-9", line])
+            if progress:
+                now = progress()
+                if now != last: last, since = now, time.monotonic()
+                elif time.monotonic() - since > stall_s:
+                    stalled.set()
+                    for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
+                    return
     threading.Thread(target=watch, daemon=True).start()
     try:
         out, _ = proc.communicate(timeout=timeout)
@@ -1312,7 +1325,15 @@ def run_guarded(cmd, timeout, env=None):
         raise
     finally:
         done.set()
+    if stalled.is_set():
+        e = subprocess.TimeoutExpired(cmd, timeout, output=out); e.stalled = True
+        raise e
     return subprocess.CompletedProcess(cmd, proc.returncode, out, "")
+
+def newest_screenshot(folder):
+    """The newest PNG's modification time under folder (any depth), 0 when there is none: what `run_guarded` watches."""
+    try: return max((p.stat().st_mtime for p in Path(folder).rglob("*.png")), default=0)
+    except OSError: return 0
 
 def memory_pressure():
     """macOS's memory pressure level ("1" normal, "2" elevated, "4" critical), "" where it can't be read. A cron or CI
@@ -1539,11 +1560,13 @@ def ios_run_inner(cfg, path, only, parallel):
             r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
                              "--debug-output", str(out / ".work" / "debug" / f"attempt{attempt}")],
-                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300)
+                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300,
+                            progress=lambda: newest_screenshot(out / "raw"), stall_s=cfg.get("stall_s", STALL_S))
             (out / f"maestro{attempt}.log").write_text(r.stdout + r.stderr)
         except subprocess.TimeoutExpired as e:
             (out / f"maestro{attempt}.log").write_text(e.output or "")
-            print(f"maestro timed out (log: {out / f'maestro{attempt}.log'})")
+            print(f"maestro made no new screenshot for {cfg.get('stall_s', STALL_S)} s and was stopped (a hung simulator or flow; log: {out / f'maestro{attempt}.log'})"
+                  if getattr(e, "stalled", False) else f"maestro timed out (log: {out / f'maestro{attempt}.log'})")
         finally:
             stop.set(); reader.join(timeout=10)
             kill_stale_drivers()
@@ -1899,11 +1922,13 @@ def android_run(cfg, path, out, only, parallel):
                 r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
                                 timeout=cfg.get("timeout_s", 600) + 300,
+                                progress=lambda: newest_screenshot(out / ".work" / "tmp" / tag), stall_s=cfg.get("stall_s", STALL_S),
                                 env={**os.environ, **java_env(), **android_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
                                      "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
-            except subprocess.TimeoutExpired:
-                print(f"maestro timed out in {tag}")
+            except subprocess.TimeoutExpired as e:
+                print(f"maestro made no new screenshot for {cfg.get('stall_s', STALL_S)} s and was stopped in {tag}" if getattr(e, "stalled", False)
+                      else f"maestro timed out in {tag}")
             ran_on, res, results = flow_devices(dbg), junit_results(junit), {}
             for j in range(len(lps)):
                 fname, dev = f"{tag}_f{j}", ran_on.get(f"{tag}_f{j}")

@@ -32,6 +32,7 @@ Keys valid in `[ios]` and `[android]`:
 | `locales` | list | every language the app ships | languages to capture, as shotfleet names them (`de`, `pt-BR`, `zh-Hans`); `--locales` overrides |
 | `base_locale` | string | `en` | the language the flow is written in |
 | `strings` | string or list | read from the build | translation file globs (relative to the config) for Flutter, React Native, MAUI, Unity, exports |
+| `stall_s` | whole number | 900 | seconds without a new screenshot before a run is stopped as hung (a stuck simulator or flow) and retried once |
 | `timeout_s` | whole number | 600 | time limit in seconds for one round of flows (accepted by the config check; not described in the README) |
 
 `[ios]` only:

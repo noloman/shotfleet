@@ -2157,5 +2157,21 @@
   "assertion": "The warning names the language and its percentage; check on run.json finds the .arb files.",
   "fix": "",
   "test": "FrameworkFixes.test_asking_for_a_partly_translated_language_by_name_warns_before_the_run"
+ },
+ {
+  "id": "C130",
+  "claim": "A run that produces no new screenshot for 15 minutes (a hung simulator or flow) is stopped and retried; stall_s sets the limit",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped"
+  ],
+  "status": "proven",
+  "proof": "StalledRun.test_no_progress_for_stall_s_kills_the_command, StalledRun.test_a_run_that_keeps_producing_is_left_alone, StalledRun.test_newest_screenshot_is_the_latest_png_at_any_depth. Cause: on 2026-10-05 a 19-language wger iOS run sat 6 h 14 min with 0 screenshots on a hung simulator, because the overall timeout (600 s per language per batch, up to 3 h) only fires at the end.",
+  "layer": "unit",
+  "assertion": "A command with no progress for stall_s seconds is killed within seconds of that and raises TimeoutExpired with .stalled.",
+  "fix": "",
+  "test": "StalledRun.test_no_progress_for_stall_s_kills_the_command"
  }
 ]
