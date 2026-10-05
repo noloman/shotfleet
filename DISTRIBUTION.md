@@ -54,8 +54,8 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
 ## Status (2026-10-01)
 - Decision: no public repos. The signed, notarized program is served from the shotfleet site; buyers install with
   `curl -fsSL https://shotfleet.com/install.sh | sh` (checksum-verified; installs on the PATH).
-  `doctor` announces newer versions from `/download/VERSION`. The Homebrew formula (packaging/shotfleet.rb) is kept
-  for later if buyers ask for `brew install`; it was tested through a local tap.
+  `doctor` announces newer versions from `/download/VERSION`. A Homebrew formula was tried through a local tap and
+  removed in 0.1.2 (it was stale); if buyers ask for `brew install`, generate one from the tested tarball's SHA-256 (git history has the old file).
 - Signing and notarization: done with the existing Developer ID (2357A78TMR) and `KeysiNotary` profile. Apple accepted
   the 0.1.0 build; a quarantined copy runs without a Gatekeeper prompt.
 - Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake Gumroad licence API
