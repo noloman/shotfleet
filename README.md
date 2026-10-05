@@ -130,8 +130,16 @@ With `--json`, progress goes to stderr, including the "free tier:" line, so a CI
 ## With AI agents
 
 `shotfleet mcp` is an MCP server with `check`, `run` and `doctor` tools. Add it to Claude Code with
-`claude mcp add shotfleet -- shotfleet mcp`, or to any MCP client as the command `shotfleet mcp`. There is also a
-Claude Code skill in `skill/shotfleet/`.
+`claude mcp add shotfleet -- shotfleet mcp`, or to any MCP client as the command `shotfleet mcp`.
+
+Three agent skills ship with the program (`shotfleet`, `shotfleet-ci`, `shotfleet-review`). Claude Code, Cursor, Codex,
+Gemini CLI and GitHub Copilot all load skills from a folder. `shotfleet skill install` copies them into
+`~/.claude/skills` (Claude Code and Cursor read it) and `~/.agents/skills` (Codex, Gemini CLI, GitHub Copilot and Cursor
+read it). `shotfleet skill install --project` copies them into `./.claude/skills` and `./.agents/skills` instead.
+
+Your licence key: on your Mac, run `shotfleet activate` once yourself. After that your agent uses the CLI and never
+sees the key. In CI, use the `SHOTFLEET_KEY` secret. Don't pass the key with `claude mcp add --env`: it ends up in
+plain text in `~/.claude.json`.
 
 ## How it works
 

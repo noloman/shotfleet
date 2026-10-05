@@ -1,7 +1,9 @@
-# Paste-in block for AGENTS.md, CLAUDE.md or .cursorrules
+# Paste-in block for AGENTS.md, CLAUDE.md or GEMINI.md
 
-Copy everything between the lines into the project's agent instructions file (`AGENTS.md` for Codex and others,
-`CLAUDE.md` for Claude Code, `.cursorrules` or `.cursor/rules/shotfleet.mdc` for Cursor, `GEMINI.md` for Gemini CLI).
+Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot all load skills from a folder, so `shotfleet skill install`
+is usually all an agent needs. This block is for teams that also want the rules in the repo. Copy everything between
+the lines into the project's agent instructions file (`AGENTS.md` for Codex, Cursor, Copilot and others, `CLAUDE.md`
+for Claude Code, `GEMINI.md` for Gemini CLI).
 
 ---
 
@@ -33,6 +35,6 @@ Rules:
 5. iOS needs a Debug simulator build (not an `.ipa` or archive); Android needs a debug APK and API 33+ emulators.
 6. Do not claim Flutter or React Native work beyond reading their translation files (`strings = "<glob>"`); it was run end to end only on wger (Flutter) and the obytes template (Expo), on iOS and Android, 2026-10-03; say "not yet run" for any other app or bare React Native.
 7. Problems: count issues, not lines; say which languages to recapture and whether the cause is in the app (untranslated string, button off-screen in a long language) or in the flow.
-8. Details: the shotfleet skill (`skill/shotfleet/`) and its `references/` folder, or the README.
+8. Details: the shotfleet skill and its `references/` folder. If `.claude/skills/shotfleet/` or `.agents/skills/shotfleet/` is missing, ask the user to run `shotfleet skill install --project`.
 
 ---

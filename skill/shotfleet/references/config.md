@@ -154,5 +154,5 @@ iOS compares the app's own text (exact in any script). Android is OCR: a text in
 - `shotfleet foo` runs `shotfleet-foo` from the PATH when `foo` is not a built-in command (like `git` and `gh`).
 - `SHOTFLEET_OCR` or `--ocr-command` swaps the text reader for scripts macOS can't read: `"tesseract {image} stdout -l {tesseract}"` (`{lang}` is the language code).
 - `SHOTFLEET_KEY` is the licence key for CI (see licence.md and ci.md).
-- `shotfleet skill install` copies these skills into `~/.claude/skills` (`--project` for `./.claude/skills`, `--dir` for another agent).
+- `shotfleet skill install` copies these skills into `~/.claude/skills` (Claude Code, Cursor) and `~/.agents/skills` (Codex, Gemini CLI, GitHub Copilot, Cursor). `--project` uses `./.claude/skills` and `./.agents/skills`; `--dir` one folder you choose.
 - `shotfleet mcp` is an MCP server with `check`, `run` and `doctor`: `claude mcp add shotfleet -- shotfleet mcp`.

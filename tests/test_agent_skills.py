@@ -132,6 +132,59 @@ class Commands(unittest.TestCase):
             self.assertNotEqual((Path(d) / names[0] / "SKILL.md").read_text(), "mine")
         self.assertIn("kept", out.getvalue())
 
+    def install(self, *args):
+        """`shotfleet skill install ...` with HOME and the working folder in a temp dir; never the real home folder."""
+        import os, shutil
+        d = Path(tempfile.mkdtemp()); self.addCleanup(shutil.rmtree, d)
+        home, proj = d / "home", d / "proj"; home.mkdir(); proj.mkdir()
+        self.addCleanup(os.chdir, os.getcwd()); os.chdir(proj)
+        env = mock.patch.dict(os.environ, {"HOME": str(home)}); env.start(); self.addCleanup(env.stop)
+        self.assertEqual(Path.home(), home)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(sf.main(["skill", "install", *args]), 0)
+        return home, proj, out.getvalue()
+
+    def test_install_writes_the_claude_and_the_shared_agents_folder(self):
+        names = [p.name for p in SKILLS]
+        home, proj, out = self.install()
+        for folder in (".claude/skills", ".agents/skills"):
+            with self.subTest(folder=folder):
+                self.assertEqual(sorted(p.name for p in (home / folder).iterdir()), names)
+                self.assertFalse((proj / folder).exists())
+        lines = out.splitlines()
+        self.assertEqual(len(lines), 2, out)  # one line per folder
+        self.assertTrue(lines[0].startswith(f"{home / '.claude/skills'} (Claude Code, Cursor): installed "), out)
+        self.assertTrue(lines[1].startswith(f"{home / '.agents/skills'} (Codex, Gemini CLI, Copilot, Cursor): installed "), out)
+
+    def test_project_writes_both_folders_in_the_project(self):
+        names = [p.name for p in SKILLS]
+        home, proj, out = self.install("--project")
+        for folder in (".claude/skills", ".agents/skills"):
+            with self.subTest(folder=folder):
+                self.assertEqual(sorted(p.name for p in (proj / folder).iterdir()), names)
+                self.assertFalse((home / folder).exists())
+        self.assertEqual(len(out.splitlines()), 2, out)
+
+    def test_each_folder_keeps_its_own_copy_without_force(self):
+        home, proj, _ = self.install()
+        (home / ".agents/skills/shotfleet/SKILL.md").write_text("mine")
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            sf.main(["skill", "install"])
+        self.assertEqual((home / ".agents/skills/shotfleet/SKILL.md").read_text(), "mine")
+        lines = out.getvalue().splitlines()
+        self.assertEqual(len(lines), 2)
+        for line in lines: self.assertIn(": kept shotfleet, shotfleet-ci, shotfleet-review (already there; --force replaces it)", line)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            sf.main(["skill", "install", "--force"])
+        self.assertNotEqual((home / ".agents/skills/shotfleet/SKILL.md").read_text(), "mine")
+        self.assertNotIn("kept", out.getvalue())
+
+    def test_dir_writes_only_that_folder(self):
+        home, proj, out = self.install("--dir", "custom")
+        self.assertTrue((proj / "custom/shotfleet/SKILL.md").is_file())
+        self.assertFalse((home / ".claude").exists() or (home / ".agents").exists())
+        self.assertEqual(len(out.splitlines()), 1, out)
+
     def test_the_agents_snippet_names_the_six_commands(self):
         snippet = (ROOT / "docs/AGENTS-snippet.md").read_text()
         for c in ("doctor", "init", "run", "check", "export", "activate"):
