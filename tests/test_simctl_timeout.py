@@ -1,5 +1,5 @@
 """A simulator that stops answering ends the run with a message that names it; it must not hang the run."""
-import contextlib, io, subprocess, sys, time, unittest
+import contextlib, io, json, os, subprocess, sys, tempfile, time, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -13,6 +13,10 @@ def hang(cmd, **kw):
 
 
 class SimctlTimeout(unittest.TestCase):
+    def setUp(self):  # hung-simulator markers go to a throwaway SHOTFLEET_HOME, never the real ~/.shotfleet
+        self.home = Path(tempfile.mkdtemp())
+        p = mock.patch.dict(os.environ, {"SHOTFLEET_HOME": str(self.home)}); p.start(); self.addCleanup(p.stop)
+
     def test_a_hung_simctl_call_becomes_an_error_that_names_the_simulator_and_the_fix(self):
         with mock.patch.object(sf, "sh", side_effect=hang), self.assertRaises(RuntimeError) as cm:
             sf.Sim("UDID-1").run("install", "UDID-1", "/x/App.app")
@@ -39,6 +43,41 @@ class SimctlTimeout(unittest.TestCase):
         self.assertEqual([s.udid for s in pool], ["U2", "U3"])
         with mock.patch.object(sf, "sh"), contextlib.redirect_stdout(io.StringIO()):  # k < pool: a dead one is replaced by the next, in pool order
             self.assertEqual([s.udid for s in sf.healthy_installs(sims, 2, install)], ["U2", "U3"])
+
+    def test_a_simulator_that_stopped_answering_is_marked_and_replaced_at_the_next_run(self):
+        sims = [sf.Sim("U0"), sf.Sim("U1")]
+        def install(group):
+            if group[0].udid == "U0": raise RuntimeError("simctl uninstall did not answer within 60 s")
+        with mock.patch.object(sf, "sh"), contextlib.redirect_stdout(io.StringIO()):
+            sf.healthy_installs(sims, 2, install)
+        self.assertTrue(sf.hung_marker("U0").exists()); self.assertFalse(sf.hung_marker("U1").exists())
+        sf.mark_hung("MINE")  # a marker on someone else's simulator (not a pool name) must never get it deleted
+        devices = [{"name": n, "udid": u, "isAvailable": True, "deviceTypeIdentifier": "dt"}
+                   for n, u in (("shotfleet-1", "U0"), ("shotfleet-2", "U1"), ("My iPhone", "MINE"))]
+        calls = []
+        def fake(cmd, **kw):
+            calls.append(cmd[2:])
+            return subprocess.CompletedProcess(cmd, 0, json.dumps({"devices": {"rt": devices}}) if "-j" in cmd else "NEW", "")
+        with mock.patch.object(sf, "sh", fake), mock.patch.object(sf.Sim, "run", return_value=""), contextlib.redirect_stdout(io.StringIO()) as out:
+            pool = sf.make_pool(2, "dt", "rt")
+        self.addCleanup(sf.OUR_SIMS.clear)
+        self.assertEqual([s.udid for s in pool], ["NEW", "U1"])  # U0 deleted and recreated under its name, U1 reused
+        self.assertEqual([c for c in calls if c[0] in ("shutdown", "delete", "create")],
+                         [["shutdown", "U0"], ["delete", "U0"], ["create", "shotfleet-1", "dt", "rt"]])
+        self.assertIn("shotfleet-1 stopped answering last run", out.getvalue())
+        self.assertFalse(sf.hung_marker("U0").exists()); self.assertTrue(sf.hung_marker("MINE").exists())
+
+    def test_a_hung_simulator_that_cannot_be_deleted_is_used_as_before_and_stays_marked(self):
+        sf.mark_hung("U0")
+        devices = [{"name": "shotfleet-1", "udid": "U0", "isAvailable": True, "deviceTypeIdentifier": "dt"}]
+        def fake(cmd, **kw):
+            if "delete" in cmd: raise subprocess.TimeoutExpired(cmd, kw.get("timeout"))
+            return subprocess.CompletedProcess(cmd, 0, json.dumps({"devices": {"rt": devices}}), "")
+        with mock.patch.object(sf, "sh", fake), mock.patch.object(sf.Sim, "run", return_value=""), contextlib.redirect_stdout(io.StringIO()) as out:
+            pool = sf.make_pool(1, "dt", "rt")
+        self.addCleanup(sf.OUR_SIMS.clear)
+        self.assertEqual([s.udid for s in pool], ["U0"])
+        self.assertIn("xcrun simctl delete U0", out.getvalue()); self.assertTrue(sf.hung_marker("U0").exists())
 
     def test_shutting_down_a_wedged_simulator_does_not_hang_the_cleanup(self):
         sf.OUR_SIMS.update({"A", "B"})

@@ -1633,6 +1633,7 @@ class PlayDeviceFolders(unittest.TestCase):
 
 class Review20261003(unittest.TestCase):
     def test_a_simulator_that_stops_answering_is_dropped_and_the_run_carries_on(self):
+        p = mock.patch.dict(os.environ, {"SHOTFLEET_HOME": tempfile.mkdtemp()}); p.start(); self.addCleanup(p.stop)  # the hung-simulator marker
         sims = [sf.Sim(f"U{i}") for i in range(4)]
         sf.OUR_SIMS.update(s.udid for s in sims); self.addCleanup(sf.OUR_SIMS.clear)
         def install(group):
@@ -1925,6 +1926,7 @@ class RetryOnSlowSimulator(unittest.TestCase):
         (self.d / "flow.yaml").write_text('- launchApp\n- takeScreenshot: 01\n')
         (self.d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\nlocales = ["de"]\n')
         self.calls, self.runs = [], 0
+        p = mock.patch.dict(os.environ, {"SHOTFLEET_HOME": str(self.d / "home")}); p.start(); self.addCleanup(p.stop)  # hung-simulator markers
 
     def fake_sim(self):
         calls = self.calls

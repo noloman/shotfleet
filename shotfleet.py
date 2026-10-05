@@ -1189,11 +1189,32 @@ def healthy_installs(pool, k, install):
         for sim, e in zip(group, errors):
             if e is None: ready.append(sim); continue
             print(f"simulator {sim.udid} stopped answering ({e}); carrying on without it", flush=True)
-            dead.append(sim); OUR_SIMS.discard(sim.udid)
+            dead.append(sim); OUR_SIMS.discard(sim.udid); mark_hung(sim.udid)
             try: sh(["xcrun", "simctl", "shutdown", sim.udid], timeout=60)
             except (OSError, subprocess.TimeoutExpired): pass
     if not ready: raise RuntimeError("no simulator answers any more; restart the Mac or run `xcrun simctl shutdown all` and run again")
     return ready + [s for s in pool if s not in ready and s not in dead]
+
+def hung_marker(udid):
+    return tools_home() / "hung-simulators" / udid
+
+def mark_hung(udid):
+    """Remember a pool simulator that stopped answering: the same ones hung again run after run (0.1.3 gates), so the next make_pool replaces it."""
+    try: hung_marker(udid).parent.mkdir(parents=True, exist_ok=True); hung_marker(udid).touch()
+    except OSError: pass
+
+def replace_hung(name, udid):
+    """Delete a pool simulator that stopped answering last run, so make_pool creates a fresh one under its name. Delete, not
+    erase: a new simulator comes from make_pool's create path, gets a new UDID (the marker can't match it again) and no state
+    of the old one survives. False (it stays in use, as before) when it can't be deleted."""
+    print(f"simulator {name} stopped answering last run; replacing it with a new one", flush=True)
+    try:
+        sh(["xcrun", "simctl", "shutdown", udid], timeout=SIM_QUICK_TIMEOUT_S)  # fails harmlessly when already shut down
+        if sh(["xcrun", "simctl", "delete", udid], timeout=SIM_QUICK_TIMEOUT_S).returncode == 0:
+            hung_marker(udid).unlink(missing_ok=True); return True
+    except (OSError, subprocess.TimeoutExpired): pass
+    print(f"could not delete it, so it is used as it is; to delete it yourself: xcrun simctl delete {udid}", flush=True)
+    return False
 
 def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
@@ -1219,9 +1240,9 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
     pool = []
     for i in range(n):
         name = f"{prefix}-{i + 1}"
-        err = ""
-        if name in by_name: udid = by_name[name]["udid"]
-        else:
+        err, udid = "", by_name.get(name, {}).get("udid", "")
+        if udid and hung_marker(udid).exists() and replace_hung(name, udid): udid = ""
+        if not udid:
             made = sh(["xcrun", "simctl", "create", name, device_type, runtime])
             udid, err = made.stdout.strip(), made.stderr.strip()
         if not udid:  # e.g. an older Xcode that has no iPhone 17 Pro Max: say why, and where the valid names are
