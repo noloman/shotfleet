@@ -3,7 +3,12 @@
 # exact files, record their hashes, then publish them. The full flow is in packaging/README.md.
 #
 #   packaging/publish.sh --make-manifest <version> <tarball> <pkg>      > manifest.txt   (record what was tested)
-#   SHOTFLEET_RELEASE_DIR=<durable dir> packaging/publish.sh [--dry-run] --manifest manifest.txt --artifacts <dir> [--checkout <url>] [--tree <dir>]
+#   SHOTFLEET_RELEASE_DIR=<durable dir> packaging/publish.sh [--dry-run] --manifest manifest.txt --artifacts <dir> [--checkout <url>] [--tree <dir>] [--staging]
+#
+# --staging targets the throwaway worker shotfleet-staging (site/wrangler.staging.toml: no routes, no bindings) instead of production, for
+# rehearsals. It needs PUBLISH_BASE=https://shotfleet-staging.<account>.workers.dev, passes --config/--name to every wrangler call, keeps its
+# state under $SHOTFLEET_RELEASE_DIR/staging, and REFUSES to run when the staging target could be production: a config that names the production
+# worker, has a route, custom domain or binding or any table but [assets], or a base URL that is not the staging workers.dev address.
 #
 # --dry-run runs every check (manifest hashes, versions, tree, the live version id read) and prints the plan; it stages, archives, deploys
 # and rolls back nothing and writes nothing but its own output.
@@ -31,7 +36,7 @@ if [ "${1:-}" = --make-manifest ]; then
   exit 0
 fi
 
-DRY=0; MANIFEST=; ARTIFACTS=; CHECKOUT=; TREE=
+DRY=0; MANIFEST=; ARTIFACTS=; CHECKOUT=; TREE=; STAGING=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY=1 ;;
@@ -39,6 +44,7 @@ while [ $# -gt 0 ]; do
     --artifacts) ARTIFACTS=${2:?--artifacts needs a folder}; shift ;;
     --checkout) CHECKOUT=${2:?--checkout needs a URL}; shift ;;
     --tree) TREE=${2:?--tree needs a folder}; shift ;;
+    --staging) STAGING=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $1 (see --help)" >&2; exit 2 ;;
   esac
@@ -51,8 +57,9 @@ ARTIFACTS=$(cd "$ARTIFACTS" && pwd); MANIFEST=$(cd "$(dirname "$MANIFEST")" && p
 [ -n "$TREE" ] || TREE=$(cd "$(dirname "$0")/.." && pwd)
 [ -d "$TREE" ] || { echo "no such tree: $TREE" >&2; exit 2; }
 TREE=$(cd "$TREE" && pwd)
-BASE=${PUBLISH_BASE:-https://shotfleet.com}; BASE=${BASE%/}
+BASE=${PUBLISH_BASE:-}; BASE=${BASE%/}
 WRANGLER=${WRANGLER:-npx --yes wrangler@latest}
+STAGING_NAME=shotfleet-staging; STAGING_CONFIG=wrangler.staging.toml; SMOKE_ENV=
 SMOKE=${PUBLISH_SMOKE:-sh $TREE/tools/golive/smoke.sh}
 BAD=0
 ok() { echo "  ok    $*"; }
@@ -60,7 +67,46 @@ warn() { echo "  WARN  $*"; }
 fail() { BAD=$((BAD + 1)); echo "  FAIL  $*"; }
 log() { echo "$(date +%H:%M:%S) $*"; }
 
-echo "== publish $( [ "$DRY" = 1 ] && echo 'DRY RUN: deploys, rolls back and writes nothing' || echo 'REAL RUN') =="
+# ---- staging guard: every condition that makes --staging safe; any failure refuses before anything is read or written ----
+check_staging() {
+  C=$TREE/site/$STAGING_CONFIG
+  [ -f "$C" ] || { fail "--staging: $C does not exist"; return; }
+  prod=$(sed -n 's/^name *= *"\(.*\)".*/\1/p' "$TREE/site/wrangler.toml" | head -1); [ -n "$prod" ] || prod=shotfleet
+  body=$(sed 's/#.*//' "$C")
+  nm=$(echo "$body" | sed -n 's/^ *name *= *"\(.*\)".*/\1/p')
+  [ "$nm" = "$STAGING_NAME" ] || fail "--staging: $STAGING_CONFIG names the worker '$nm', not $STAGING_NAME"
+  [ "$nm" != "$prod" ] && [ "$STAGING_NAME" != "$prod" ] || fail "--staging: the staging name equals the production worker name '$prod'"
+  if echo "$body" | grep -Eq '^ *(routes?|zone_id|zone_name|pattern|account_id|env)[ =.]|custom_domain|shotfleet\.com|\[env\.'; then fail "--staging: $STAGING_CONFIG has a route, custom domain, zone, env or production domain"; fi
+  odd=$(echo "$body" | grep -E '^ *\[' | grep -vx ' *\[assets\] *' || true)
+  [ -z "$odd" ] || fail "--staging: $STAGING_CONFIG has tables other than [assets] (bindings or routes would be shared with production): $odd"
+  case "$BASE" in
+    https://$STAGING_NAME.*.workers.dev|http://127.0.0.1:*|http://localhost:*) ok "staging target: worker $STAGING_NAME ($C), base $BASE" ;;
+    "") fail "--staging needs PUBLISH_BASE=https://$STAGING_NAME.<account>.workers.dev (there is no default: it must never fall back to production)" ;;
+    *) fail "--staging: PUBLISH_BASE '$BASE' is not https://$STAGING_NAME.<account>.workers.dev" ;;
+  esac
+  case "$BASE" in *shotfleet.com*) fail "--staging: PUBLISH_BASE names the production domain" ;; esac
+  case "${BASE#*://}" in */*|*@*|*\?*) fail "--staging: PUBLISH_BASE must be a bare origin (no path, user or query): $BASE" ;; esac
+}
+# say_target: printed before every wrangler write (deploy, rollback), so the log shows what was about to be touched.
+say_target() {
+  if [ "$STAGING" = 1 ]; then log "WRANGLER WRITE target: worker=$STAGING_NAME config=site/$STAGING_CONFIG url=$BASE"
+  else log "WRANGLER WRITE target: PRODUCTION worker from site/wrangler.toml, url=$BASE"; fi
+}
+# wr <wrangler args>: runs wrangler in <tree>/site; in staging mode ALWAYS with the staging config and name, and refuses a write whose URL is production.
+wr() {
+  if [ "$STAGING" = 1 ]; then
+    case "$1:$BASE" in deploy:*shotfleet.com*|rollback:*shotfleet.com*) echo "ABORT: staging target is production" >&2; return 99 ;; esac
+    (cd "$TREE/site" && $WRANGLER "$@" --config "$STAGING_CONFIG" --name "$STAGING_NAME")
+  else (cd "$TREE/site" && $WRANGLER "$@"); fi
+}
+if [ "$STAGING" = 1 ]; then
+  echo "-- staging guard"
+  check_staging
+  if [ "$BAD" != 0 ]; then echo "== REFUSED: the staging target is not provably separate from production; nothing was read, staged, archived or deployed =="; exit 1; fi
+  SMOKE_ENV=SMOKE_SKIP_REDIRECT=1  # workers.dev answers plain http without redirecting to https
+else BASE=${BASE:-https://shotfleet.com}; fi
+
+echo "== publish $( [ "$STAGING" = 1 ] && echo '[STAGING shotfleet-staging] ' )$( [ "$DRY" = 1 ] && echo 'DRY RUN: deploys, rolls back and writes nothing' || echo 'REAL RUN') =="
 echo "-- manifest and files"
 VERSION=$(awk '$1 == "version" { print $2 }' "$MANIFEST")
 case "$VERSION" in [0-9]*.[0-9]*.[0-9]*) ok "manifest version $VERSION" ;; *) fail "manifest has no 'version X.Y.Z' line"; VERSION=unknown ;; esac
@@ -99,7 +145,8 @@ echo "-- durable directory"
 REL=${SHOTFLEET_RELEASE_DIR:-}
 case "$REL" in
   "") fail "SHOTFLEET_RELEASE_DIR is not set: it names where the rollback id and the shipped bytes are kept" ;;
-  /*) STATE=$REL/state; ARCH=$REL/archive/$VERSION
+  /*) [ "$STAGING" != 1 ] || REL=$REL/staging
+      STATE=$REL/state; ARCH=$REL/archive/$VERSION
       case "$REL" in
         /tmp|/tmp/*|/private/tmp|/private/tmp/*|/var/tmp/*|/private/var/tmp/*|/var/folders/*|/private/var/folders/*)
           if [ "${SHOTFLEET_ALLOW_TMP_DIR:-}" = 1 ]; then warn "$REL is a temporary directory (SHOTFLEET_ALLOW_TMP_DIR=1: only for tests)"
@@ -110,7 +157,7 @@ case "$REL" in
 esac
 
 echo "-- live site (read-only)"
-live_id() { (cd "$TREE/site" && $WRANGLER deployments list 2>/dev/null) | grep -o 'Version(s):  *([0-9]*%) [0-9a-f-]*' | tail -1 | awk '{ print $3 }' || true; }
+live_id() { wr deployments list 2>/dev/null | grep -o 'Version(s):  *([0-9]*%) [0-9a-f-]*' | tail -1 | awk '{ print $3 }' || true; }
 OLDID=$(live_id)
 case "$OLDID" in
   ????????-????-????-????-????????????) ok "live Cloudflare version id (the rollback target): $OLDID" ;;
@@ -128,9 +175,9 @@ if [ "$DRY" = 1 ]; then
   echo "  would: rm -rf $D; copy $TAR -> $D/shotfleet-macos-arm64.tar.gz, $PKG -> $D/shotfleet-macos-arm64.pkg, write the .sha256 and VERSION ($VERSION)"
   echo "  would: archive the staged bytes plus SHA256SUMS in $ARCH (and the files now live, in $REL/archive/live-before-$VERSION)"
   echo "  would: write the rollback id $OLDID to $STATE/rollback-$VERSION-$STAMP.txt"
-  echo "  would: (cd $TREE/site && $WRANGLER deploy)"
+  echo "  would: wrangler deploy$( [ "$STAGING" = 1 ] && echo " (STAGING: --config $STAGING_CONFIG --name $STAGING_NAME)" ) in $TREE/site"
   echo "  would: verify $BASE: /download/VERSION = $VERSION, tarball, .sha256 and pkg hashes, install.sh 200, env -i $SMOKE $BASE ${CHECKOUT}, a live install into a temp HOME"
-  echo "  would, on any failure: (cd $TREE/site && $WRANGLER rollback $OLDID -y)"
+  echo "  would, on any failure: wrangler rollback $OLDID -y in $TREE/site"
   echo "== dry run clean: every check passed; nothing was deployed =="
   exit 0
 fi
@@ -142,9 +189,9 @@ rollback() {
   [ -n "$OLDID" ] || { log "NO ROLLBACK TARGET"; return; }
   cur=$(live_id)
   if [ "$cur" = "$OLDID" ]; then log "live is already the recorded version $OLDID: nothing to roll back"; return; fi
-  log "ROLLING BACK to $OLDID"
-  if (cd "$TREE/site" && $WRANGLER rollback "$OLDID" --message "rollback $VERSION: ${REASON:-script stopped}" -y); then log "rolled back to $OLDID; live VERSION now: $(curl -s --max-time 20 "$BASE/download/VERSION" || echo unknown)"
-  else log "ROLLBACK COMMAND FAILED: roll back by hand: (cd site && $WRANGLER rollback $OLDID)"; fi
+  log "ROLLING BACK to $OLDID"; say_target
+  if wr rollback "$OLDID" --message "rollback $VERSION: ${REASON:-script stopped}" -y; then log "rolled back to $OLDID; live VERSION now: $(curl -s --max-time 20 "$BASE/download/VERSION" || echo unknown)"
+  else log "ROLLBACK COMMAND FAILED: roll back by hand: (cd site && $WRANGLER rollback $OLDID$( [ "$STAGING" = 1 ] && echo " --config $STAGING_CONFIG --name $STAGING_NAME"))"; fi
 }
 on_exit() { rc=$?; rm -rf "$T"; if [ "$DEPLOYED" = 1 ] && [ "$VERIFIED" != 1 ]; then rollback; [ "$rc" != 0 ] || rc=1; fi; exit "$rc"; }
 trap on_exit EXIT; trap 'exit 130' INT TERM HUP
@@ -171,8 +218,8 @@ echo "$OLDID" > "$STATE/rollback-$VERSION-$STAMP.txt"; echo "version $VERSION; l
 log "ROLLBACK TARGET $OLDID recorded in $STATE/rollback-$VERSION-$STAMP.txt"
 
 log "wrangler deploy"
-DEPLOYED=1
-OUT=$(cd "$TREE/site" && $WRANGLER deploy 2>&1) || { echo "$OUT" | tail -5; bad "wrangler deploy failed"; }
+DEPLOYED=1; say_target
+OUT=$(wr deploy 2>&1) || { echo "$OUT" | tail -5; bad "wrangler deploy failed"; }
 NEWID=$(echo "$OUT" | grep -o 'Current Version ID: [0-9a-f-]*' | awk '{ print $4 }' || true)
 log "deployed; new version id: ${NEWID:-not printed}"
 
@@ -189,7 +236,7 @@ curl -fsS --max-time 180 -o "$T/a.pkg" "$BASE/download/shotfleet-macos-arm64.pkg
 [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$BASE/install.sh")" = 200 ] || bad "install.sh is not 200"
 log "served files verified: VERSION $VERSION, tarball $TAR_SHA, pkg $PKG_SHA, install.sh 200"
 # shellcheck disable=SC2086  # $SMOKE is a command with arguments
-env -i $SMOKE "$BASE" ${CHECKOUT:+"$CHECKOUT"} > "$T/smoke.out" 2>&1 || { tail -5 "$T/smoke.out"; bad "smoke test failed"; }
+env -i $SMOKE_ENV $SMOKE "$BASE" ${CHECKOUT:+"$CHECKOUT"} > "$T/smoke.out" 2>&1 || { tail -5 "$T/smoke.out"; bad "smoke test failed"; }
 log "smoke passed: $(tail -1 "$T/smoke.out")"
 if [ "$(uname -s)-$(uname -m)" = Darwin-arm64 ]; then
   mkdir -p "$T/home"; curl -s --max-time 30 "$BASE/install.sh" | sed 's|^for DIR in .*; do|for DIR in "$HOME/.local/bin"; do|' > "$T/home/install.sh"
@@ -201,4 +248,4 @@ else warn "live install skipped: needs an Apple silicon Mac"; fi
 
 VERIFIED=1
 echo "version $VERSION; old id $OLDID; new id ${NEWID:-unknown}; tarball $TAR_SHA; pkg $PKG_SHA; verified $(date +%Y-%m-%dT%H:%M:%S)" > "$STATE/published-$VERSION-$STAMP.txt"
-log "PUBLISHED $VERSION. Old version id $OLDID (rollback: cd site && $WRANGLER rollback $OLDID). Archive: $ARCH"
+log "PUBLISHED $VERSION. Old version id $OLDID (rollback: cd site && $WRANGLER rollback $OLDID$( [ "$STAGING" = 1 ] && echo " --config $STAGING_CONFIG --name $STAGING_NAME")). Archive: $ARCH"

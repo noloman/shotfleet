@@ -45,6 +45,7 @@ class Fixture(unittest.TestCase):
         (self.tree / "CHANGELOG.md").write_text("# Changelog\n\n## Unreleased\n- x\n\n## 9.9.9 (2026-01-01)\n- y\n")
         (self.tree / "site/public/docs.html").write_text("<p>Last checked against version 9.9.9 on 2026-01-01.</p>\n")
         (self.tree / "site/wrangler.toml").write_text('name = "fake"\n')
+        shutil.copy(ROOT / "site/wrangler.staging.toml", self.tree / "site/wrangler.staging.toml")
         shutil.copy(ROOT / "site/public/install.sh", self.tree / "site/public/install.sh")
         shutil.copy(ROOT / "tools/golive/smoke.sh", self.tree / "tools/golive/smoke.sh")
         for c in (["init", "-q"], ["add", "-A"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "x"]):
@@ -67,6 +68,14 @@ class Fixture(unittest.TestCase):
     def calls(self):
         f = self.fake / "calls"
         return f.read_text().splitlines() if f.exists() else []
+
+    def serve(self):
+        (self.fake / "serve").mkdir(exist_ok=True)
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(_Quiet, directory=str(self.fake / "serve")))
+        # the server reads whatever directory exists now; the fake deploy replaces it, so serve from a path that is re-resolved on each request
+        self.addCleanup(srv.server_close); self.addCleanup(srv.shutdown)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.env["PUBLISH_BASE"] = f"http://127.0.0.1:{srv.server_address[1]}"
 
 
 class Syntax(unittest.TestCase):
@@ -166,14 +175,6 @@ class DryRun(Fixture):
 class RealRunWithFakes(Fixture):
     """The whole publish flow against a fake wrangler and a local web server that serves what the fake deploy 'uploaded'."""
 
-    def serve(self):
-        (self.fake / "serve").mkdir(exist_ok=True)
-        srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(_Quiet, directory=str(self.fake / "serve")))
-        # the server reads whatever directory exists now; the fake deploy replaces it, so serve from a path that is re-resolved on each request
-        self.addCleanup(srv.server_close); self.addCleanup(srv.shutdown)
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
-        self.env["PUBLISH_BASE"] = f"http://127.0.0.1:{srv.server_address[1]}"
-
     def test_success_stages_archives_records_deploys_and_verifies(self):
         self.serve()
         r = self.publish()
@@ -215,6 +216,84 @@ class RealRunWithFakes(Fixture):
         self.assertEqual(r.returncode, 1)
         self.assertIn(f"rollback {OLD}", " ".join(self.calls()))
         self.assertEqual((self.fake / "live").read_text().strip(), OLD)
+
+
+class Staging(Fixture):
+    """--staging: the throwaway worker only. Every wrangler call carries the staging config and name; anything that could resolve to production is refused."""
+    ARGS = "--config wrangler.staging.toml --name shotfleet-staging"
+    STG = "https://shotfleet-staging.acct.workers.dev"
+
+    def staging(self, *extra, env=None):
+        return self.publish("--staging", *extra, env=env)
+
+    def set_config(self, text):
+        (self.tree / "site/wrangler.staging.toml").write_text(text)
+
+    def test_refuses_when_the_base_url_could_be_production_or_is_missing(self):
+        for base, why in (("", "needs PUBLISH_BASE"), ("https://shotfleet.com", "is not https://shotfleet-staging"), ("https://www.shotfleet.com", "is not https://shotfleet-staging"),
+                          ("https://shotfleet-staging.x.workers.dev.shotfleet.com", "production domain"), ("https://shotfleet-staging.evil.com/a.workers.dev", "bare origin"),
+                          ("https://shotfleet.manulorenzop.workers.dev", "is not https://shotfleet-staging"), ("https://shotfleet-staging.a.workers.dev/x", "bare origin")):
+            with self.subTest(base=base):
+                r = self.staging("--dry-run", env={"PUBLISH_BASE": base})
+                self.assertEqual(r.returncode, 1, r.stdout)
+                self.assertIn(why, r.stdout)
+                self.assertIn("REFUSED: the staging target is not provably separate", r.stdout)
+                self.assertEqual(self.calls(), [])  # refused before wrangler was even asked to read
+
+    def test_refuses_a_staging_config_that_could_touch_production(self):
+        good = (ROOT / "site/wrangler.staging.toml").read_text()
+        for text, why in (('name = "shotfleet"\n', "names the worker 'shotfleet'"), ('name = "fake"\n', "names the worker 'fake'"),  # the fixture's production name is "fake"
+                          (good + 'routes = [{ pattern = "x.example.com", custom_domain = true }]\n', "has a route"),
+                          (good + '[[kv_namespaces]]\nbinding = "WAITLIST"\nid = "250f"\n', "tables other than [assets]"),
+                          (good + '[[send_email]]\nname = "ALERT"\n', "tables other than [assets]"),
+                          (good + '[env.production]\nname = "shotfleet"\n', "has a route"),
+                          (good + 'route = "shotfleet.com/*"\n', "has a route")):
+            with self.subTest(text=text[-60:]):
+                self.set_config(text)
+                r = self.staging("--dry-run", env={"PUBLISH_BASE": self.STG})
+                self.assertEqual(r.returncode, 1, r.stdout)
+                self.assertIn(why, r.stdout)
+                self.assertEqual(self.calls(), [])
+        self.set_config(good.replace('"shotfleet-staging"', '"shotfleet-staging"  # not shotfleet.com'))  # a comment is fine
+        self.assertNotIn("REFUSED: the staging target", self.staging("--dry-run", env={"PUBLISH_BASE": self.STG}).stdout)
+        (self.tree / "site/wrangler.staging.toml").unlink()
+        self.assertIn("does not exist", self.staging("--dry-run", env={"PUBLISH_BASE": self.STG}).stdout)
+
+    def test_the_real_staging_config_passes_and_a_dry_run_reads_only_with_the_staging_target(self):
+        r = self.staging("--dry-run", env={"PUBLISH_BASE": self.STG})
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("staging target: worker shotfleet-staging", r.stdout)
+        self.assertIn("[STAGING shotfleet-staging]", r.stdout)
+        self.assertEqual(self.calls(), [f"deployments list {self.ARGS}"])
+        self.assertFalse(self.rel.exists())
+
+    def test_a_real_staging_run_uses_the_staging_target_in_every_call_and_keeps_its_state_apart(self):
+        self.serve()
+        (self.fake / "smoke.sh").write_text(f'echo "$SMOKE_SKIP_REDIRECT" > {self.fake}/smoke-env\n')
+        r = self.staging(env={"PUBLISH_SMOKE": f"sh {self.fake}/smoke.sh", "PUBLISH_BASE": self.env["PUBLISH_BASE"]})
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("WRANGLER WRITE target: worker=shotfleet-staging config=site/wrangler.staging.toml", r.stdout)
+        self.assertEqual(self.calls(), [f"deployments list {self.ARGS}", f"deploy {self.ARGS}"])
+        self.assertEqual((self.fake / "smoke-env").read_text().strip(), "1")
+        self.assertEqual(len(list((self.rel / "staging/state").glob("published-9.9.9-*.txt"))), 1)
+        self.assertFalse((self.rel / "state").exists())
+
+    def test_a_failed_staging_run_rolls_back_on_staging_only(self):
+        self.serve()
+        r = self.staging(env={"FAKE_CORRUPT": "1"})
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("WRANGLER WRITE target: worker=shotfleet-staging", r.stdout)
+        rb = [c for c in self.calls() if c.startswith("rollback")]
+        self.assertEqual(len(rb), 1)
+        self.assertIn(f"rollback {OLD}", rb[0]); self.assertTrue(rb[0].endswith(self.ARGS))
+        self.assertEqual((self.fake / "live").read_text().strip(), OLD)
+
+    def test_production_mode_never_passes_the_staging_config(self):
+        self.serve()
+        r = self.publish()
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn("WRANGLER WRITE target: PRODUCTION", r.stdout)
+        self.assertFalse([c for c in self.calls() if "staging" in c])
 
 
 class _Quiet(SimpleHTTPRequestHandler):
