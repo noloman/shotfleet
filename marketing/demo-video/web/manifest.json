@@ -1,0 +1,66 @@
+{
+ "note": "Real terminal recordings (VHS) and real screenshots from one run of the repo's fixture apps; cards, subtitles, badges and grid layout composited with Remotion. Source: marketing/demo-video/README.md",
+ "clips": [
+  {
+   "slug": "c1-doctor",
+   "title": "Is this Mac ready?",
+   "description": "shotfleet doctor --fix checks Maestro, Java, Xcode and the Android SDK, and fetches what is missing after asking once.",
+   "duration_s": 15.9,
+   "files": {
+    "mp4": {
+     "path": "c1-doctor.mp4",
+     "bytes": 359901
+    },
+    "square": {
+     "path": "c1-doctor-square.mp4",
+     "bytes": 552779
+    },
+    "poster": {
+     "path": "c1-doctor-poster.webp",
+     "bytes": 47700
+    },
+    "captions": {
+     "path": "c1-doctor.en.vtt",
+     "bytes": 563
+    }
+   },
+   "sped_up": [
+    {
+     "from_s": 4.1,
+     "shown_s": 1.6,
+     "factor": 3,
+     "real_s": 5
+    }
+   ],
+   "facts": [],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c2-init",
+   "title": "Set up a project",
+   "description": "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow.",
+   "duration_s": 24.5,
+   "files": {
+    "mp4": {
+     "path": "c2-init.mp4",
+     "bytes": 423978
+    },
+    "square": {
+     "path": "c2-init-square.mp4",
+     "bytes": 631078
+    },
+    "poster": {
+     "path": "c2-init-poster.webp",
+     "bytes": 33292
+    },
+    "captions": {
+     "path": "c2-init.en.vtt",
+     "bytes": 572
+    }
+   },
+   "sped_up": [],
+   "facts": [],
+   "burned_in_subtitles": true
+  }
+ ]
+}

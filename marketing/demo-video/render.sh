@@ -24,3 +24,4 @@ fi
 for f in "$OUT"/*.mp4; do
   printf '%s  %s s  %s\n' "$(basename "$f")" "$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")" "$(du -h "$f" | cut -f1)"
 done
+python3 "$HERE/web.py" "$OUT"   # web versions + web/manifest.json
