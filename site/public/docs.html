@@ -33,7 +33,7 @@
  <div class="page docs">
   <p class="label">Docs</p>
   <h1>shotfleet documentation</h1>
-  <p class="lede">Localized App Store and Google Play screenshots from one English Maestro flow: capture, check, export to fastlane.</p>
+  <p class="lede">This page covers how to install shotfleet, take your screenshots, check them and hand them to fastlane. If something here is wrong or unclear, email me at <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
   <p class="small">Last checked against version 0.1.3 on 2026-10-05.</p>
 
   <nav class="toc" aria-label="On this page">
@@ -71,12 +71,12 @@
   <h2 id="install">Install</h2>
 <pre><code>curl -fsSL https://shotfleet.com/install.sh | sh   # then open a new Terminal window
 shotfleet doctor --fix           # checks Maestro, Java, Xcode, Android SDK; shows what is missing, asks once, then fetches Maestro and Java</code></pre>
-  <p>Xcode must be the selected one (<code>xcode-select -p</code> shows which); the Android block of <code>doctor</code> can be ignored by iOS-only apps; the first <code>doctor</code> can take a minute while macOS prepares text recognition. <code>shotfleet activate &lt;your key&gt;</code> (the key is in your Gumroad receipt email) comes after your first run, when you want every language; <code>check</code> works without a licence.</p>
+  <p>Make sure the right Xcode is selected (<code>xcode-select -p</code> shows which one). If your app is iOS only, you can ignore the Android part of <code>doctor</code>. The first <code>doctor</code> can take a minute while macOS gets its text recognition ready. You only need <code>shotfleet activate &lt;your key&gt;</code> (the key is in your Gumroad receipt email) after your first run, when you want every language. <code>check</code> works without a licence.</p>
   <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. <code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; see <a href="/terms">licence and refunds</a>. Without a valid licence, <code>run</code> captures only 2 languages (the first two of your app's languages unless you pick them with <code>--locales de,ja</code>) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If <code>SHOTFLEET_KEY</code> is set but refused, that line says why. <code>check</code>, <code>doctor</code> and <code>init</code> are always free.</p>
 
-  <p>Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). <code>shotfleet doctor</code> tells you when a newer version is out. A year of updates is included.</p>
+  <p>To update, run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). <code>shotfleet doctor</code> tells you when a newer version is out. A year of updates is included.</p>
 
-  <p>Prefer an installer you can double-click? Each release is also published as a signed, notarized package, <code>https://shotfleet.com/download/shotfleet-macos-arm64.pkg</code>. It puts the program in <code>/usr/local/lib/shotfleet</code> and links <code>shotfleet</code> into <code>/usr/local/bin</code>; macOS asks for your password. Use it if the <code>curl</code> line is not an option, or if a browser-downloaded copy shows "Apple could not verify ...".</p>
+  <p>There is also an installer you can double-click. Each release is published as a signed, notarized package, <code>https://shotfleet.com/download/shotfleet-macos-arm64.pkg</code>. It puts the program in <code>/usr/local/lib/shotfleet</code> and links <code>shotfleet</code> into <code>/usr/local/bin</code>; macOS asks for your password. Use it if you can't use the <code>curl</code> line, or if a browser-downloaded copy shows "Apple could not verify ...".</p>
 
   <h2 id="quickstart">Quickstart</h2>
   <p>Build the app once for the simulator in Xcode (Debug) first, then, in your project folder:</p>
@@ -97,7 +97,7 @@ shotfleet run --platform ios
 shotfleet export out --fastlane fastlane/</code></pre>
 
   <h3 id="uploading">Uploading</h3>
-  <p>shotfleet stops at fastlane's folders; fastlane uploads them. Screenshots only, nothing else touched:</p>
+  <p>shotfleet stops at fastlane's folders, and fastlane does the upload. These commands upload the screenshots and leave everything else alone:</p>
 <pre><code># App Store: replaces the screenshots of every language folder in fastlane/screenshots
 fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --force
 
@@ -109,12 +109,12 @@ fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --ski
   <p>shotfleet reads the translations compiled into your app and rewrites every selector in the flow to match any translation of that English label. If "Next" has two keys, German matches <code>(Nächste|Weiter)</code>. Selectors that use <code>id:</code> pass through untouched.</p>
   <ul>
     <li><strong>iOS:</strong> strings come from <code>*.lproj/*.strings</code> inside the <code>.app</code>; the language is set with launch arguments <code>-AppleLanguages (de)</code>; N simulators, iPhone 17 Pro Max (1320x2868, App Store 6.9"); the status bar is overridden with <code>simctl status_bar</code> (9:41, full battery); one sharded Maestro run.</li>
-    <li><strong>Android:</strong> strings come from <code>aapt2 dump resources</code> of the APK, keeping only languages the app itself ships; the language is a per-app locale set with <code>cmd locale set-app-locales</code> (Android 13+); N read-only emulators at 1080x1920; SystemUI demo mode (9:41, full battery, no notifications); rounds of one language per emulator.</li>
+    <li><strong>Android:</strong> strings come from <code>aapt2 dump resources</code> of the APK, keeping only languages the app itself has; the language is a per-app locale set with <code>cmd locale set-app-locales</code> (Android 13+); N read-only emulators at 1080x1920; SystemUI demo mode (9:41, full battery, no notifications); rounds of one language per emulator.</li>
   </ul>
   <p><strong>Fresh state:</strong> each language starts from a clean install. On iOS that is <code>clearState</code>; on Android shotfleet clears the app data itself, because <code>clearState</code> would also erase the app language.</p>
 
   <h2 id="check">Check screenshots you already have</h2>
-  <p>Already have screenshots from fastlane snapshot or screengrab or by hand? Check them without capturing anything:</p>
+  <p>If you already have screenshots, from fastlane snapshot, screengrab or by hand, you can check them without capturing anything:</p>
 <pre><code>shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/&lt;locale&gt;/
 shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code></pre>
   <p>Store codes are mapped back to your app's languages (<code>de-DE</code> to <code>de</code>, <code>no</code> to <code>nb</code>, <code>zh-CN</code> to <code>zh-Hans</code>). The report (<code>check.json</code> and <code>index.html</code>) goes to <code>./shotfleet-check</code> (change it with <code>--report</code>), and your fastlane folders are never touched. After capture or on an existing folder, every screenshot's text is compared against your app's own strings. On iOS, shotfleet reads the text straight from the app while each screenshot is on screen; otherwise, and for screenshots made by other tools, it uses macOS's built-in text recognition. It reports:</p>
@@ -148,7 +148,7 @@ apk = "path/to/app-debug.apk"</code></pre>
       <tr><td><code>flow</code></td><td>ios, android</td><td><code>flow.yaml</code></td><td>The English Maestro flow, shared by both platforms (an <code>appId:</code> header is set for you).</td></tr>
       <tr><td><code>out</code></td><td>ios, android</td><td><code>out</code>, or <code>out-ios</code> and <code>out-android</code> when the file has both platforms</td><td>Output folder.</td></tr>
       <tr><td><code>parallel</code></td><td>ios, android</td><td>4</td><td>Simulators (emulators on Android).</td></tr>
-      <tr><td><code>locales</code></td><td>ios, android</td><td>every language the app ships</td><td>Languages to capture, for example <code>["de", "ja"]</code>.</td></tr>
+      <tr><td><code>locales</code></td><td>ios, android</td><td>every language the app has</td><td>Languages to capture, for example <code>["de", "ja"]</code>.</td></tr>
       <tr><td><code>base_locale</code></td><td>ios, android</td><td><code>en</code></td><td>The language your flow is written in.</td></tr>
       <tr><td><code>strings</code></td><td>ios, android</td><td>read from the build</td><td>Translation files as globs, relative to the config (see below).</td></tr>
       <tr><td><code>bundle_id</code></td><td>ios</td><td>read from the app</td><td>The bundle id. On Android the package is read from the APK.</td></tr>

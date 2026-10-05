@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>See shotfleet work: clips and dated evidence</title>
-<meta name="description" content="Short recordings of shotfleet's commands, and a dated record of the real runs behind its claims: release gates, macOS versions and real apps.">
+<meta name="description" content="Short recordings of shotfleet's commands, and my dated list of the real runs behind what the site says: release tests, macOS versions and real apps.">
 <meta property="og:title" content="See shotfleet work: clips and dated evidence">
 <meta property="og:description" content="Recordings of doctor and init, and what shotfleet has really been run on, with dates.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
@@ -47,7 +47,7 @@
 <main class="wrap" id="main">
   <section class="page wide">
     <h1>See shotfleet work</h1>
-    <p class="lede">Short clips of the commands, then a dated record of what shotfleet has been run on and what happened.</p>
+    <p class="lede">First, a few short clips of the commands. Below them is my list of what I have actually run shotfleet on, with dates, and what happened.</p>
 
     <h2 id="clips">Clips</h2>
     <p>The clips are real terminal recordings from one session on the fixture apps in shotfleet's own repository; titles, subtitles and the sped-up labels were added afterwards.</p>
@@ -65,56 +65,56 @@
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c2-init-poster.webp" src="/media/demo/c2-init.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c2-init.en.vtt">
       </video>
-      <figcaption>shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow.</figcaption>
+      <figcaption>shotfleet init reads an iOS simulator build and an Android APK, lists the languages each one has, and writes a config and an English flow.</figcaption>
     </figure>
 
     <!-- CLIP c3-run-ios
     <figure class="clip" id="c3-run-ios">
-      <h3>Every language: iPhone and iPad</h3>
+      <h3>Every language on iPhone and iPad</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c3-run-ios-poster.webp" src="/media/demo/c3-run-ios.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c3-run-ios.en.vtt">
       </video>
-      <figcaption>One English Maestro flow captured in every language of the app on parallel iPhone and iPad simulators, then checked.</figcaption>
+      <figcaption>The English Maestro flow runs in every language the app has, on several iPhone and iPad simulators at once. Then every screenshot is checked.</figcaption>
     </figure>
     CLIP -->
 
     <!-- CLIP c4-run-android
     <figure class="clip" id="c4-run-android">
-      <h3>Every language: Android</h3>
+      <h3>Every language on Android</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c4-run-android-poster.webp" src="/media/demo/c4-run-android.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c4-run-android.en.vtt">
       </video>
-      <figcaption>The same English flow captured in every language on Android emulators, then checked.</figcaption>
+      <figcaption>The same English flow runs in every language on Android emulators. Then every screenshot is checked.</figcaption>
     </figure>
     CLIP -->
 
     <!-- CLIP c5-check
     <figure class="clip" id="c5-check">
-      <h3>Catch the wrong language</h3>
+      <h3>Catching the wrong language</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c5-check-poster.webp" src="/media/demo/c5-check.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c5-check.en.vtt">
       </video>
-      <figcaption>A German screenshot planted in the Japanese folder is caught by shotfleet check; the real output passes with 0 problems.</figcaption>
+      <figcaption>I put a German screenshot in the Japanese folder, and shotfleet check caught it. The real output passes with 0 problems.</figcaption>
     </figure>
     CLIP -->
 
     <!-- CLIP c6-check-existing
     <figure class="clip" id="c6-check-existing">
-      <h3>Check the screenshots you have</h3>
+      <h3>Checking screenshots you already have</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c6-check-existing-poster.webp" src="/media/demo/c6-check-existing.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c6-check-existing.en.vtt">
       </video>
-      <figcaption>shotfleet check reads fastlane folders or a plain folder of screenshots, with no simulator.</figcaption>
+      <figcaption>shotfleet check reads fastlane folders or a plain folder of screenshots. You don't need a simulator for this.</figcaption>
     </figure>
     CLIP -->
 
     <!-- CLIP c7-store-rules
     <figure class="clip" id="c7-store-rules">
-      <h3>Store rules, checked</h3>
+      <h3>Store rules</h3>
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c7-store-rules-poster.webp" src="/media/demo/c7-store-rules.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c7-store-rules.en.vtt">
       </video>
-      <figcaption>shotfleet check flags screenshot sizes the stores refuse and a missing 13-inch iPad set.</figcaption>
+      <figcaption>shotfleet check flags screenshot sizes the stores refuse. It also flags a missing 13-inch iPad set.</figcaption>
     </figure>
     CLIP -->
 
@@ -134,12 +134,12 @@
       <video controls muted playsinline preload="none" width="1280" height="720" poster="/media/demo/c9-ci-poster.webp" src="/media/demo/c9-ci.mp4">
         <track kind="captions" srclang="en" label="English" src="/media/demo/c9-ci.en.vtt">
       </video>
-      <figcaption>The GitHub Actions recipe from the docs, and check's --json result and exit code.</figcaption>
+      <figcaption>The GitHub Actions setup from the docs, with the --json result and the exit code from check.</figcaption>
     </figure>
     CLIP -->
 
     <h2 id="evidence">Evidence</h2>
-    <p>What has been run, when, and what came out. Only what is recorded is listed; the note under each line names the record in shotfleet's repository.</p>
+    <p>What I ran, when, and what came out. I only list runs that are written down. The note under each line says where to find that record in shotfleet's repository.</p>
     <p>Built for macOS 13 or later on Apple silicon; tested on macOS 27.</p>
 
     <h3>Releases</h3>

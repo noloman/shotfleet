@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>shotfleet · Localized store screenshots from one Maestro flow</title>
-<meta name="description" content="A Mac command-line tool: write one Maestro flow in English, capture App Store and Google Play screenshots in every language you ship, and check each one.">
+<meta name="description" content="A Mac command-line tool I made. Write one Maestro flow in English, and it takes your App Store and Google Play screenshots in every language, then checks them.">
 <meta property="og:title" content="shotfleet · Localized store screenshots from one Maestro flow">
-<meta property="og:description" content="One English Maestro flow. Every language your app ships, in parallel, checked.">
+<meta property="og:description" content="You write one Maestro flow in English. It runs that flow in every language your app has, at the same time, and checks the screenshots.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -31,7 +31,7 @@
  "name": "shotfleet",
  "url": "https://shotfleet.com/",
  "image": "https://shotfleet.com/og.jpg",
- "description": "A macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by other tools.",
+ "description": "A macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app has, and checks that each screenshot is in the right language. It also checks screenshots made by other tools.",
  "applicationCategory": "DeveloperApplication",
  "operatingSystem": "macOS (Apple silicon)",
  "softwareRequirements": "macOS 13 or later on an Apple silicon Mac, Maestro 2.x, Java 17 or newer. Xcode for iOS (Debug simulator build), Android SDK with API 33+ emulators for Android.",
@@ -90,8 +90,8 @@
   <div class="wrap hero">
   <div class="hero-copy">
     <span class="flag b">Mac command-line tool · Apple silicon</span>
-    <h1>Store screenshots in every language your app ships.</h1>
-    <p class="sub">One English Maestro flow, every language, iOS and Android. <b>shotfleet captures them all and checks every screenshot.</b> It makes your App Store and Google Play screenshots and works with <a href="https://maestro.mobile.dev">Maestro</a>, the UI-flow tool.</p>
+    <h1>Store screenshots in every language your app has.</h1>
+    <p class="sub">You write one Maestro flow, in English. <b>shotfleet runs it in every language your app has, on iOS and Android, and checks every screenshot.</b> It’s a command-line tool for your Mac that makes the App Store and Google Play screenshots for you, on top of <a href="https://maestro.mobile.dev">Maestro</a>, the UI-flow tool.</p>
     <p class="cta"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a><a class="btn ghost" href="#run">See a real run</a></p>
   </div>
   <div class="hero-art" role="group" aria-label="The same app screen in Arabic, Japanese and German, each checked">
@@ -136,7 +136,7 @@
       </figure>
       <div class="ship more"><p>+11</p><span>more languages in the same run</span></div>
   </div>
-  <div class="wrap"><p class="small fleet-note reveal">Seven of 72 screenshots from one run on my app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. Nothing in the app was changed to get them. shotfleet runs on your Mac, and your app and screenshots are never uploaded. Run on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps; Apple silicon Macs only.</p></div>
+  <div class="wrap"><p class="small fleet-note reveal">That’s seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. I didn’t change anything in the app to get them. It all happens on your Mac, and your app and screenshots are never uploaded. For Flutter and React Native, I’ve run it on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps. Apple silicon Macs only.</p></div>
 
   <section class="wrap section numbers" aria-label="Numbers from real runs">
     <dl class="stats">
@@ -145,15 +145,15 @@
       <div class="cell reveal"><dt>4 languages</dt><dd>shared one unreachable Next button on Android. English hid it</dd></div>
       <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: translated captions over an English UI</dd></div>
     </dl>
-    <p class="small muted">Measured on my own apps. The 9 and 15 minutes were measured on Maestro 2.0.10. <a href="/alternatives">How it compares with other tools</a>.</p>
+    <p class="small muted">All measured on my own apps. The 9 and 15 minutes were measured on Maestro 2.0.10. I also wrote up <a href="/alternatives">how it compares with other tools</a>.</p>
   </section>
 
   <section class="wrap section" id="run" data-cmd="$ shotfleet run" aria-labelledby="run-h">
     <div class="split">
       <div class="copy reveal">
-        <h2 id="run-h">Run it once. Read the result.</h2>
-        <p>18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac. Every image is read back and compared with your app’s own strings.</p>
-        <p>Then one command puts the passing App Store and Google Play screenshots into fastlane’s folders.</p>
+        <h2 id="run-h">What a run looks like.</h2>
+        <p>On my app, 18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac. It boots the simulators, sets the language on each one and takes the screenshots. Then it reads every image back and compares the text with your app’s own strings, so a screen that came out in the wrong language gets caught.</p>
+        <p>When you’re happy, one command puts the passing App Store and Google Play screenshots into fastlane’s folders.</p>
       </div>
       <div class="terminal reveal" role="img" aria-label="Terminal output of a shotfleet run: 18 of 18 locales captured in 534 seconds, 72 screenshots checked, 0 problems">
         <div class="terminal-bar" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -173,7 +173,7 @@ checked 72 screenshots in 18 languages: 0 problem(s)</span></pre>
     <div class="split flip">
       <div class="copy reveal">
         <h2 id="catch-h">The first run found a button nobody could reach.</h2>
-        <p>On Android, <b>Japanese, Korean, Chinese and Arabic</b> all got stuck on one onboarding page: taller text, no scrolling, and Next below the bottom of a small phone, so the run could not tap it. English fit, so nobody noticed.</p>
+        <p>On Android, <b>Japanese, Korean, Chinese and Arabic</b> all got stuck on one onboarding page. The text was taller, the page didn’t scroll, and Next ended up below the bottom of a small phone, so the run could not tap it. English fit, so I’d never noticed.</p>
         <p>It was a small fix in my app: I made two pages scroll.</p>
       </div>
       <figure class="catch reveal">
@@ -185,14 +185,14 @@ checked 72 screenshots in 18 languages: 0 problem(s)</span></pre>
 
   <section class="wrap section" aria-labelledby="flow-h">
     <div class="stack reveal">
-      <h2 id="flow-h">Your flow says Next. Each language gets its own word.</h2>
-      <p>shotfleet reads the translations compiled into your build and rewrites every text selector. No copies of the flow, no changes to the app. When two words clash in a language, it warns you before anything runs.</p>
+      <h2 id="flow-h">Your flow says Next. In Japanese it taps 次へ.</h2>
+      <p>shotfleet reads the translations compiled into your build and rewrites every text selector. You don’t keep a copy of the flow per language, and you don’t change the app. If two words clash in a language, it warns you before anything runs.</p>
     </div>
     <dl class="flowrow">
       <div class="cell you reveal"><dt>Your flow</dt><dd>tapOn: "Next"</dd></div>
       <div class="cell reveal"><dt>German</dt><dd>tapOn: '<em>(Nächste|Weiter)</em>'</dd></div>
       <div class="cell reveal"><dt>Japanese</dt><dd>tapOn: '<em>次へ</em>'</dd></div>
-      <div class="cell reveal"><dt>Turkish</dt><dd>tapOn: '<em>İleri</em>'<span class="warn">Warning before the run: it also means "Advanced".</span></dd></div>
+      <div class="cell reveal"><dt>Turkish</dt><dd>tapOn: '<em>İleri</em>'<span class="warn">You get a warning before the run: it also means "Advanced".</span></dd></div>
     </dl>
   </section>
 
@@ -201,29 +201,44 @@ checked 72 screenshots in 18 languages: 0 problem(s)</span></pre>
       <div class="cell a reveal">
         <div>
           <h2 class="point">One flow, not eighteen.</h2>
-          <p>After install, setup is <code>shotfleet init</code> and a two-line config. Your Maestro flow stays in English and is the only thing you maintain.</p>
+          <p>After install, setup is <code>shotfleet init</code> and a two-line config. Your Maestro flow stays in English, and it’s the only thing you have to maintain.</p>
         </div>
         <pre aria-label="The whole config"><span class="dim">shotfleet.toml</span>
 [ios]
 app = "<span class="y">MyApp.app</span>"</pre>
       </div>
       <div class="cell b reveal">
-        <h2 class="point">iOS, Android and the other sizes.</h2>
+        <h2 class="point">iOS, Android, and the bigger screens.</h2>
         <p>Both platforms from one config and one flow, plus the sets the stores ask for.</p>
         <div class="chips"><span>iPhone 6.9"</span><span>iPad 13"</span><span>Android phone</span><span>Android tablet</span></div>
       </div>
       <div class="cell c reveal">
-        <h2 class="point">Made to work with the rest.</h2>
-        <p>shotfleet makes the correct raw screenshots. Frame and upload them with the tools you already use, then check the result.</p>
+        <h2 class="point">It doesn’t try to do everything.</h2>
+        <p>shotfleet makes the correct raw screenshots and stops there. Frame and upload them with whatever you already use, then run the check on the result.</p>
         <div class="chips"><span>fastlane</span><span>frameit</span><span>ButterKit</span><span>AppScreens</span></div>
       </div>
+    </div>
+  </section>
+
+  <section class="wrap section" id="saves" aria-labelledby="saves-h">
+    <div class="notfor reveal">
+      <h2 id="saves-h">What it saves you</h2>
+      <p class="muted">There are other ways to make these screenshots, and some of them are free. This is what changes when you use shotfleet instead.</p>
+      <ul>
+        <li>Without it, you write UI-test code for fastlane snapshot and screengrab, and iOS and Android each need their own. With shotfleet, you write one Maestro flow in English, and it works on both platforms.</li>
+        <li>Without it, you add something to your project: a UI-test target for fastlane, or a few lines in the app for simshot, which is iOS only. With shotfleet, nothing in your app’s code changes.</li>
+        <li>Without it, every language you add is one more set of screenshots to make. With shotfleet, the same flow runs in every language. On my app, 18 languages × 4 screens took 9 minutes on iOS and 15 on Android, on one Mac.</li>
+        <li>Without it, a screenshot in the wrong language can reach your store listing, and you may only find out later. With shotfleet, <code>check</code> reads every screenshot before you upload. It flags the wrong language, blank screens and sizes the stores don’t accept.</li>
+        <li>On my first run, the Next button on one onboarding page was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone. The English screenshots looked fine, so I hadn’t noticed. The run got stuck on that page, and that’s how I found it.</li>
+      </ul>
+      <p class="small muted">ButterKit and AppScreens do a different job: frames and captions, not language checks. If your app has only one or two languages, you probably don’t need shotfleet. The details are on <a href="/alternatives">the comparison page</a>, along with who shouldn’t buy it.</p>
     </div>
   </section>
 
   <section class="wrap section" id="apps" aria-labelledby="apps-h">
     <div class="reveal">
       <h2 id="apps-h">What my other apps look like in five languages.</h2>
-      <p class="muted lede-small">I ship two other apps. These are their real store screenshots, not shotfleet output: one screen, five languages. They show what localized store screenshots look like, not what shotfleet can do.</p>
+      <p class="muted lede-small">I have two other apps in the stores. These are their real store screenshots, not shotfleet output: one screen in five languages. I’m showing them for what localized store screenshots look like, not what shotfleet can do.</p>
       <div class="tabs" role="tablist" aria-label="My apps">
         <button role="tab" id="tab-stressi" aria-controls="panel-stressi" aria-selected="true">Stressi <span>Android</span></button>
         <button role="tab" id="tab-cairn" aria-controls="panel-cairn" aria-selected="false" tabindex="-1">Cairn <span>iPad</span></button>
@@ -293,9 +308,9 @@ app = "<span class="y">MyApp.app</span>"</pre>
     <div class="notfor reveal">
       <h2 id="not-h">Not for you if…</h2>
       <ul>
-        <li>you don’t have an Apple silicon Mac. iOS simulators need a Mac, and so does the screenshot check; there is no Intel build yet. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
-        <li>you want frames, captions or store upload. Use <a href="/alternatives#butterkit">ButterKit</a> or <a href="/alternatives#appscreens">AppScreens</a> for those; shotfleet does not do those.</li>
-        <li>your UI tests already run in every language and you are happy with them. <a href="/alternatives#fastlane">fastlane snapshot</a> is open source and built for that.</li>
+        <li>you don’t have an Apple silicon Mac. iOS simulators need a Mac, and so does the screenshot check, and there’s no Intel build yet. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
+        <li>you want frames, captions or store upload. <a href="/alternatives#butterkit">ButterKit</a> and <a href="/alternatives#appscreens">AppScreens</a> do that; shotfleet doesn’t.</li>
+        <li>your UI tests already run in every language and you’re happy with them. <a href="/alternatives#fastlane">fastlane snapshot</a> is open source and built for that.</li>
       </ul>
     </div>
   </section>
@@ -315,7 +330,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
           <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
         </ul>
     <p><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet</a></p>
-    <p class="small">Checkout is on Gumroad, and the first 100 buyers pay the founder price. Your key arrives in the Gumroad receipt email. Then install:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
+    <p class="small">Checkout is on Gumroad, and the first 100 buyers pay the founder price. Your key comes in the Gumroad receipt email. Then install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
     <p class="small">The licence is checked online once and then about weekly, and works offline for 30 days (a CI key is checked on every run).</p>
       </div>
       <div class="plan reveal">
