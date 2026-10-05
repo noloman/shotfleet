@@ -153,3 +153,21 @@ There is **no macOS 13, 12 or 11 hosted runner**: the oldest is macOS 14. The ra
 **What such a test can prove:** the notarized tarball unpacks and `shotfleet --version` starts (the dyld, libexpat and Swift-runtime questions of the survey), `doctor` runs, `check` reads fixture PNGs through the bundled `ocr` and the Python readers, and `install.sh` works from the live URL; a VM adds Gatekeeper behaviour for a browser download. **What it cannot:** Android emulator runs, real devices, the Xcode 27 plus iOS 27 combination (guests and runners carry other Xcodes), and timing (3 vCPUs or a guest is slower than this Mac). iOS simulator runs are possible in principle in both, since the simulator needs no nested hypervisor, but need the fixture build and an Xcode on that image; they are not part of the cheap test.
 
 **Recommendation for testing:** first run `tools/macho-minos.py` and the survey scripts on the real release tarball (free, a minute); then one manual runner job each on `macos-14` and `macos-15` (about $1) that installs the 0.1.1 tarball and runs `--version`, `doctor` and `check` on the fixture's committed screenshots; a VM only if a macOS 13 result is needed and a Mac with the disk is available.
+
+## Hosted-runner test of the LIVE 0.1.1 on macOS 14 and 15 (measured 2026-10-05)
+
+Workflow `.github/workflows/macos-compat.yml` (manual only), two dispatches. Run 1 (https://github.com/noloman/shotfleet/actions/runs/37303612329) failed only because the script accepted `doctor` exit 0 or 1 and `doctor` exits 2 when the Mac is not ready; its `check` step was skipped. Run 2 (https://github.com/noloman/shotfleet/actions/runs/37304115758, after PR #65) succeeded. Cost: 4 jobs of 15 to 30 s, about 4 billed macOS minutes, roughly $0.25 for both runs. Each job installed the live `install.sh` into a temporary HOME on an Apple-silicon GitHub runner.
+
+| | macOS 14.8.9 (macos-14) | macOS 15.7.9 (macos-15) |
+|---|---|---|
+| install.sh (download, checksum, install) | ok, "installed shotfleet 0.1.1" | ok, same |
+| `shotfleet --version` | `shotfleet 0.1.1` | `shotfleet 0.1.1` |
+| `shotfleet doctor` | exit 2 (not ready: no Maestro, no Android system image; java, swiftc, simctl, adb, emulator, avdmanager, aapt2 ok), "text recognition ready in 1 s", iOS runtime 18.2 found, about 9 s | exit 2, same findings, "text recognition ready in 1 s", iOS runtime 26.2 found, 20 s |
+| `shotfleet check` on 2 sample PNGs (ca, de) | exit 1: 2 problems, both "315x560 isn't an App Store screenshot size" (the sample PNGs are downscaled copies); "macOS can't read the script of ca", so ca was only checked for another language | exit 1: 3 problems: the same two size problems plus "ca/02_advanced.png: text looks like 'en', expected 'ca'" |
+| job wall time | 16 s | 29 s |
+
+**What this proves:** the live 0.1.1 installs from the live site, starts, runs `doctor` to the end, compiles and runs the bundled `ocr` helper (text recognition ready in 1 s) and runs `check` to a report, on macOS 14.8.9 and 15.7.9 on Apple silicon, with no dyld, expat or symbol error. Together with the 0.1.0 measurements (52 of 56 files need macOS 27.0) this shows the standalone-Python rebuild removed the start-up wall on 14 and 15.
+
+**What it does not prove:** macOS 13 (no hosted runner), macOS 26.0 to 26.2 (none either, so the Expat question on 26.x for 0.1.0 stays unmeasured; 0.1.1 bundles Expat), simulators and emulators (the runner has no running simulator; Maestro is absent), Gatekeeper (curl sets no quarantine flag), the licence call from the packaged program, a real buyer's Mac, a clean user account with no Homebrew (the runner has Homebrew and Java, and install.sh used /opt/homebrew/bin).
+
+**New finding, from the OS difference:** the same Catalan screenshot is judged differently. On macOS 14 the text reader cannot read Catalan, and `check` says so and skips the language test; on macOS 15 it reads the screenshot and calls it English. That wger screen may really contain English text (not checked against the app), so this may be a true detection or a false one; either way a buyer on macOS 15 can see a language problem for a screen that macOS 14 does not judge. The sample size problem is an artefact of using downscaled sample files, not a product problem.
