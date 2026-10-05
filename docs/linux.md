@@ -56,7 +56,7 @@ runs `init`, `doctor`, `run` (de, ja, ar, tr on two emulators), `check` and `exp
 asserts they are found. Everything before the emulator was run on the test machine without KVM; the emulator steps were not.
 About 10 minutes plus the first image download.
 
-1. **Machine:** x86_64 or ARM Linux with `/dev/kvm` usable by your user (`ls -l /dev/kvm`; `sudo usermod -aG kvm $USER` and log in again),
+1. **Machine:** Linux x86_64 with `/dev/kvm` (ARM Linux has no Google emulator image, so it cannot run this) usable by your user (`ls -l /dev/kvm`; `sudo usermod -aG kvm $USER` and log in again),
    6 GB of free memory, 10 GB of disk. Not a cloud VM without nested virtualization: the emulator
    refuses x86_64 images when the CPU exposes no `vmx`/`svm`, and refuses an arm64 image on an x86_64 host ("System image must match the host
    architecture"), so there is no software fallback. (Checked 2026-10-03 on a VM without virtualization, emulator 37.2.)
@@ -127,5 +127,5 @@ This answers the "Not established" above. The second series kept the screenshots
 ## Android emulators on Linux (untried)
 
 `doctor` checks `/dev/kvm`, finds an SDK in `ANDROID_HOME`, `~/Android/Sdk` or `/usr/lib/android-sdk`, and picks the system image for your CPU
-(`x86_64`, or `arm64-v8a` on ARM). Whether `run` completes 18 languages on an emulator under KVM is the experiment E1 in STATUS.md: it needs a
+(`x86_64`; on ARM Linux it would ask for `arm64-v8a`, which Google ships no emulator for). Whether `run` completes 18 languages on an emulator under KVM is the experiment E1 in STATUS.md: it needs a
 machine with KVM, so it has not been done.
