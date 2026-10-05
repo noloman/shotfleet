@@ -1,0 +1,17 @@
+- launchApp
+- extendedWaitUntil:
+    visible: "Accept"
+    timeout: 60000
+- takeScreenshot: 01_privacy
+- tapOn: "Accept"
+- extendedWaitUntil:
+    visible: "Let’s get started!"
+    timeout: 20000
+- takeScreenshot: 02_notifications
+- tapOn: "Let’s get started!"
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "Info"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 03_info

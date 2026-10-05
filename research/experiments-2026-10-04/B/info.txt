@@ -1,0 +1,6 @@
+runtime=com.apple.CoreSimulator.SimRuntime.iOS-26-4 udid=A59F15CB-21C4-46D9-9E57-44BCAB782E79
+== 1-default-en: navigator.language=en-GB|Hello|device=en|
+== 2-arg-de: navigator.language=de-DE|Hallo|device=de|
+== 3-arg-ja: navigator.language=ja|Hello|device=ja|
+== 4-system-de: navigator.language=de-DE|Hallo|device=de|
+deleted A59F15CB-21C4-46D9-9E57-44BCAB782E79

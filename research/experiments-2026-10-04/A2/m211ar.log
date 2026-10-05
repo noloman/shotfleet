@@ -1,0 +1,35 @@
+Will split 2 flows across 2 shards (1 flows per shard)
+
+[shard 2] Waiting for flows to complete...
+
+[shard 1] Waiting for flows to complete...
+[shard 1] [shard 2] [Passed][Passed] a2-m211ar-2 (29s)
+ a2-m211ar-1 (29s)
+
+[shard 1] 1/1 Flow Passed in 30s
+
+
+[shard 2] 1/1 Flow Passed in 31s
+
+
+╭─────────────────────────────────╮
+│                                 │
+│   Passed: 2/2                   │
+│   [ shotfleet_android ] - 1/1   │
+│   [ shotfleet_android ] - 1/1   │
+│                                 │
+╰─────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                         │
+│   Try out our new Analyze with Ai feature.                                                                                              │
+│                                                                                                                                         │
+│   See what's new:                                                                                                                       │
+│   > https://maestro.mobile.dev/cli/test-suites-and-reports#analyze                                                                      │
+│   Analyze command:                                                                                                                      │
+│   $ maestro test flow-file.yaml --analyze | bash                                                                                        │
+│                                                                                                                                         │
+│   To disable this notification, set MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED environment variable to "true" before running Maestro.   │
+│                                                                                                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+

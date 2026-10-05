@@ -1,0 +1,30 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 15,
+   "error": null,
+   "screenshots": 3,
+   "device": "emulator-5702"
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 11,
+   "error": null,
+   "screenshots": 3,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/flutter/shotfleet-release.toml",
+ "strings": [
+  "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/flutter/lib/l10n/*.arb"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 69,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/flutter/build/app/outputs/flutter-apk/app-release.apk",
+ "device": "phone"
+}

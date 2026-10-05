@@ -1,0 +1,50 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_privacy.png",
+   "src": "raw/de/01_privacy.png",
+   "sha": "b96e7d4c8489",
+   "lang": "de",
+   "chars": 527
+  },
+  {
+   "file": "de/02_notifications.png",
+   "src": "raw/de/02_notifications.png",
+   "sha": "6e491acd6aaa",
+   "lang": "de",
+   "chars": 472
+  },
+  {
+   "file": "de/03_info.png",
+   "src": "raw/de/03_info.png",
+   "sha": "be9bac5d6c8f",
+   "lang": "de",
+   "chars": 96
+  },
+  {
+   "file": "en/01_privacy.png",
+   "src": "raw/en/01_privacy.png",
+   "sha": "e858566de034",
+   "lang": "en",
+   "chars": 454
+  },
+  {
+   "file": "en/02_notifications.png",
+   "src": "raw/en/02_notifications.png",
+   "sha": "20a146b05552",
+   "lang": "en",
+   "chars": 403
+  },
+  {
+   "file": "en/03_info.png",
+   "src": "raw/en/03_info.png",
+   "sha": "1b29b22363ca",
+   "lang": "en",
+   "chars": 141
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "2 listing(s) (de, en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations"
+ ]
+}

@@ -1,0 +1,13 @@
+warning ja: only 27% of the app's own strings are translated, so the ja screenshots will mostly show en; check will say so
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 2 locales on 1 emulators, 2 rounds...
+ok   de       3/3 screenshots
+ok   ja       3/3 screenshots
+captured 2/2 locales in 69s on 1 emulators
+
+checked 6 screenshots in 2 languages: 2 problem(s)
+  - ja/02_advanced.png: shows en strings (12 lines) more than ja (0)
+  - ja/03_self_hosted.png: shows en strings (11 lines) more than ja (1)
+notes (1, not blocking):
+  - 2 listing(s) (de, ja) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+exit 1 after 85s

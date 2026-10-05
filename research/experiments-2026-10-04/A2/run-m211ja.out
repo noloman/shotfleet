@@ -1,0 +1,10 @@
+emulator-5760 booted after ~24 s
+Success
+Locales for com.shotfleet.fixture for user 0 are [ja]
+emulator-5762 booted after ~3 s
+Success
+Locales for com.shotfleet.fixture for user 0 are [ja]
+run pid 53867
+probe start at 33 s into the run; shards running:        1
+m211ja rc=0 secs=169
+finished-m211ja

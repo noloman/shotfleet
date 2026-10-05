@@ -24,6 +24,7 @@ After capture, every screenshot's text is compared against your app's own string
 
 - **Wrong language:** the German folder actually shows English or Japanese strings.
 - **Copies:** the same image in two languages.
+- **Blank:** a screenshot with nothing drawn but the status bar: an app that paints its first frame after the flow's wait passed (Flutter debug builds and Compose do). `run` captures that language again once, then reports it; wait for text on the screen before `takeScreenshot` (see Tips).
 - **Missing:** a language that didn't produce every screenshot.
 - **Translation collisions, before anything runs:** for example, `tr: 'Next' -> 'İleri' also means 'Advanced'`. A tap could hit the wrong button there, so you anchor that step with `below:`.
 
@@ -39,11 +40,11 @@ shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshot
 shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/<locale>/images/phoneScreenshots/
 ```
 
-Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`). The report (`check.json` and `index.html`) goes to `./shotfleet-check` (change it with `--report`), and your fastlane folders are never touched. On CrossfitTracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform. It found one real problem: the Traditional Chinese listings have Chinese captions over an English app. When we planted English screenshots in the German folder and deleted a Japanese one, both were reported.
+Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`). The report (`check.json` and `index.html`) goes to `./shotfleet-check` (change it with `--report`), and your fastlane folders are never touched. On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform. It found one real problem: the Traditional Chinese listings have Chinese captions over an English app. When we planted English screenshots in the German folder and deleted a Japanese one, both were reported.
 
 Screenshots made in other tools work too. `check` knows Apple's sizes for Apple Watch, Mac, Apple TV and Vision Pro (3840x2160 is both Apple TV and Vision Pro), takes at most 10 per size, and flags a language whose Watch screenshots differ in size from the others (Apple wants one Watch size in every language). `export` takes a plain `<locale>/*.png` folder of such a set once `shotfleet check <folder> --report <folder>` has written its `check.json` there, and copies it into `screenshots/<locale>/` next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.
 
-`shotfleet run` (not `check`) also surfaces real localization bugs: on CrossfitTracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
+`shotfleet run` (not `check`) also surfaces real localization bugs: on WOD Tracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
 
 ## Free and paid
 
@@ -152,6 +153,7 @@ with a one-line message before anything runs.
 flow = "flow.yaml"        # default; shared by both platforms (an `appId:` header is set for you)
 out = "out"               # default "out", or "out-ios" / "out-android" when the file has both platforms
 parallel = 4              # simulators (emulators on Android); default 4
+stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped and the languages retried (default 900)
 locales = ["de", "ja"]    # default: every language the app ships
 base_locale = "de"        # the language your flow is written in (default en)
 bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
@@ -171,7 +173,7 @@ devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:1
 These frameworks don't keep their translations in a form shotfleet can read inside the built app, so point it at the
 source files instead. Add `strings` to either section (globs, relative to the config):
 
-**Run `shotfleet init` in the project folder** and it does the finding for you. It recognises a Flutter project (`pubspec.yaml`), React Native and Expo (`package.json`), Capacitor, .NET MAUI (a `.csproj` with `UseMaui`) and Kotlin Multiplatform. It looks for the build where that framework puts it (`build/ios/iphonesimulator/Runner.app` and `build/app/outputs/flutter-apk/` for Flutter; a Release simulator build and `android/app/build/outputs/apk/release/` for React Native), writes the `strings =` line for the translation files it finds (`arb-dir` from `l10n.yaml`, `src/locales/*/translation.json`, Lingui `messages.po`, `Resources/Strings/*.resx`, `app/i18n/*.ts`), and when there is no build yet it prints the framework's own command (`flutter build ios --simulator --debug`, `npx expo run:ios --configuration Release --no-bundler`) instead of a plain `xcodebuild`. Give it an EAS `.tar.gz` or a `.zip` build and it unpacks it next to the config. It also leaves a commented `[hooks] before_run` line with the framework's build command in `shotfleet.toml`; uncomment it and `shotfleet run` builds the app first. `init` has been tried on a real Flutter build and a real Expo build (Android APKs, made on Linux); nothing has been captured on a device yet.
+**Run `shotfleet init` in the project folder** and it does the finding for you. It recognises a Flutter project (`pubspec.yaml`), React Native and Expo (`package.json`), Capacitor, .NET MAUI (a `.csproj` with `UseMaui`) and Kotlin Multiplatform. It looks for the build where that framework puts it (`build/ios/iphonesimulator/Runner.app` and `build/app/outputs/flutter-apk/` for Flutter; a Release simulator build and `android/app/build/outputs/apk/release/` for React Native), writes the `strings =` line for the translation files it finds (`arb-dir` from `l10n.yaml`, `src/locales/*/translation.json`, Lingui `messages.po`, `Resources/Strings/*.resx`, `app/i18n/*.ts`), and when there is no build yet it prints the framework's own command (`flutter build ios --simulator --debug`, `npx expo run:ios --configuration Release --no-bundler`) instead of a plain `xcodebuild`. Give it an EAS `.tar.gz` or a `.zip` build and it unpacks it next to the config. It also leaves a commented `[hooks] before_run` line with the framework's build command in `shotfleet.toml`; uncomment it and `shotfleet run` builds the app first. `init` found the build and wrote the `strings` line with no arguments on wger (Flutter) and the obytes template (Expo), iOS and Android, on a Mac (2026-10-03), and `run` then captured them in German and Arabic (details in `research/frameworks.md`).
 
 ```toml
 strings = "lib/l10n/*.arb"                      # Flutter
@@ -278,13 +280,18 @@ translation source.
         all: allow
   ```
   (shotfleet adds its language arguments to your options). On Android shotfleet installs with every permission granted.
+- **A first screenshot that comes out blank** (Flutter debug builds and Compose put their text in the accessibility tree before they paint): start with `extendedWaitUntil: {visible: "<a text on that screen>", timeout: 60000}`, and if it still happens add a short pause (`extendedWaitUntil: {notVisible: {id: "none"}, timeout: 3000}`). A Flutter debug build can take 30 s to draw on a fresh emulator.
+- **Flutter rows and cards are one label:** Flutter joins a row's title and detail line into one label with a newline (`Self-hosted\nConnect to your own instance`), so tap it as `"Self-hosted.*"`; shotfleet translates the part before the `.*` (`.*Register` works too). A line like `New to wger? Register` is one label as well.
+- **A language the app only half translates** (wger's Japanese is 30%): the app shows its base language for every missing string. `run` warns when you ask for such a language by name, and `check` reports the screenshots that came out in the base language.
+- **Building the app on Xcode 27** (found on wger, the obytes template and kotlinconf-app, 2026-10-03; not shotfleet's doing, but it stops you before the first screenshot): `npx expo run:ios` ends with "Can't determine id of Simulator app" because Xcode 27 has no Simulator.app, so build the generated project yourself, `xcodebuild -workspace ios/<App>.xcworkspace -scheme <App> -configuration Release -sdk iphonesimulator -derivedDataPath ios/build build IPHONEOS_DEPLOYMENT_TARGET=15.1` (Xcode 27 refuses the old deployment targets of some pods), and `init` finds it in `ios/build`. A Kotlin Multiplatform app needs `ARCHS=arm64` on its `xcodebuild` ("Architecture Not Configured in Gradle: ios_x64"; `init` prints it).
+- **Typing a password on iOS in Arabic:** `inputText` into a secure (password) field drops Latin letters when the app runs in Arabic (seen on the Expo app, iOS 26.4: `abcdef` typed nothing, `abc123` typed only `123`, `123456` typed all six); name and e-mail fields are fine. Use digits for a demo password.
 - **Fresh state:** each language starts from a clean install. On iOS that's `clearState`; on Android shotfleet clears the app data itself, because `clearState` would also erase the app language.
 
 ## Limits
 
 - The installed program brings its own Python. Running from source needs Python 3.11+ (macOS's own `python3` is 3.9; `brew install python`).
-- Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
-- Flutter and React Native work from your translation files (tested on real translation files; not yet run on a real Flutter or React Native app).
+- Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both (run end to end on JetBrains' KotlinConf app, iOS and Android, de and en, 2026-10-03). Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
+- Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).
 - If you pass `init`, `run` or `check` a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run.
 - Text recognition is macOS's. It reads 33 languages, including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - If macOS text recognition stops answering (its `ANECompilerService` occasionally gets stuck until a restart), `check` switches to Tesseract automatically when it's installed (`brew install tesseract tesseract-lang`), and otherwise tells you to restart. iOS runs mostly aren't affected: they read the app's own text, and only screens where that text proves little go to OCR.

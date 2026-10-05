@@ -1,0 +1,36 @@
+waiting 21:57
+waiting (restarted) 23:33
+waiting 23:33
+waiting (restarted, skips DONE lines) 10:01
+waiting 10:01
+waiting (restarted, #3 is done) 13:21
+waiting 13:21
+window opened 13:21
+13:21 1 kotlinconf iOS without the pause
+   load 39.66, free memory 39%, disk free 24 GB
+13:21 2 kotlinconf Android without the pause
+   load 39.66, free memory 40%, disk free 24 GB
+13:23 3 wger Android release APK
+   load 33.02, free memory 40%, disk free 22 GB
+13:25 4 obytes iOS ar password letters
+   load 28.52, free memory 40%, disk free 21 GB
+13:25 4 obytes iOS ar password mixed
+   load 28.52, free memory 42%, disk free 21 GB
+13:25 4 obytes iOS ar password single
+   load 26.72, free memory 43%, disk free 21 GB
+13:25 5 wger iOS all languages
+   load 28.66, free memory 44%, disk free 21 GB
+13:40 6 wger Android all languages
+   load 135.52, free memory 46%, disk free 19 GB
+13:54 7 rocket.chat iOS first screen
+   load 19.18, free memory 46%, disk free 16 GB
+13:56 8 rocket.chat Android first screen
+   load 190.25, free memory 40%, disk free 16 GB
+13:58 done
+   load 54.15, free memory 45%, disk free 16 GB
+window closed 13:58
+13:58 9 kotlinconf iOS without the pause (rebuilt app)
+14:00 10 obytes iOS ar password letters
+14:02 10 obytes iOS ar password mixed
+14:03 10 obytes iOS ar password single
+window2 closed 14:05

@@ -1,0 +1,5 @@
+
+checked 6 screenshots in 2 languages: 2 problem(s)
+  - ar/01_onboarding.png: text looks like 'en', expected 'ar'
+  - ar/02_login.png: text looks like 'en', expected 'ar'
+report: /tmp/chk-o-ios/index.html

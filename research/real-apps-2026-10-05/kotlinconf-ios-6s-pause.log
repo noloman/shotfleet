@@ -1,0 +1,9 @@
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+retrying 2: de, en
+FAIL de       0/3 screenshots (retried)  no result (see maestro log)
+FAIL en       0/3 screenshots (retried)  no result (see maestro log)
+note: this Mac was short of memory, and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer. Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>
+captured 0/2 locales in 4425s on 1 simulators
+no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs
+exit 1 after 6285s

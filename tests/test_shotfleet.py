@@ -43,6 +43,14 @@ class TranslateFlow(unittest.TestCase):
         out, _, _ = sf.translate_flow('- assertVisible: "3+ years of training"\n', EN, EN)
         self.assertIn(r"'3\+ years of training'", out)
 
+    def test_wildcard_around_a_known_label_is_kept_and_the_label_translated(self):
+        # a Flutter row is one accessibility label "Title\nDetail"; `Start Training.*` and `.*Settings` are how a flow matches it
+        out, missing, _ = sf.translate_flow('- tapOn: "Start Training.*"\n- tapOn: ".*Settings"\n- tapOn: "Nope.*"\n', EN, DE)
+        self.assertIn("- tapOn: 'Training starten.*'", out)
+        self.assertIn("- tapOn: '.*Einstellungen'", out)
+        self.assertIn('- tapOn: "Nope.*"', out)
+        self.assertEqual(missing, ["Nope"])
+
     def test_unknown_selector_is_reported_and_left_alone(self):
         out, missing, _ = sf.translate_flow('- tapOn: "Benchmark WODs"\n', EN, DE)
         self.assertIn('- tapOn: "Benchmark WODs"', out)
@@ -133,6 +141,10 @@ class LocalizeFlow(unittest.TestCase):
         out, missing, _ = sf.translate_flow("appId: x\n---\n- tapOn: Allow\n- tapOn: \"Don't Allow\"\n",
                                             {"a": "Allow"}, {"a": "Erlauben"})
         self.assertIn("'(Allow|Erlauben)'", out); self.assertIn("'Don\u2019t Allow'", out); self.assertEqual(missing, [])  # curly, as iOS spells it
+
+    def test_not_now_after_a_login_form_is_a_system_button_too(self):  # iOS's "Save Password?" sheet, seen in the Expo app
+        out, missing, _ = sf.translate_flow("- tapOn: \"Not Now\"\n", {"a": "Settings"}, {"a": "Einstellungen"})
+        self.assertEqual((missing, out), ([], '- tapOn: "Not Now"\n'))
 
     def test_flow_without_header_is_rejected_clearly(self):
         with self.assertRaisesRegex(ValueError, "appId"):
@@ -507,6 +519,69 @@ def png(w, h):  # just enough of a PNG for png_size
     return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big")
 
 
+def real_png(w, h, pixel, ctype=2, interlace=0):
+    """A decodable PNG (filter 0 on every row) whose pixel at (x, y) is pixel(x, y), a tuple of channel bytes."""
+    import struct, zlib
+    raw = b"".join(b"\0" + b"".join(bytes(pixel(x, y)) for x in range(w)) for y in range(h))
+    chunk = lambda k, d: struct.pack(">I", len(d)) + k + d + b"\0\0\0\0"  # the checksum is not read
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, ctype, 0, 0, interlace))
+            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+
+class StalledRun(unittest.TestCase):
+    """A hung simulator kept a 19-language wger run alive for 6 h with no screenshot: the overall timeout scales with the languages."""
+    def test_no_progress_for_stall_s_kills_the_command(self):
+        t = time.monotonic()
+        with self.assertRaises(subprocess.TimeoutExpired) as e:
+            sf.run_guarded(["sleep", "60"], timeout=600, progress=lambda: 0, stall_s=1)
+        self.assertTrue(e.exception.stalled); self.assertLess(time.monotonic() - t, 20)
+
+    def test_a_run_that_keeps_producing_is_left_alone(self):
+        ticks = iter(range(10**6))
+        r = sf.run_guarded(["sleep", "2"], timeout=60, progress=lambda: next(ticks), stall_s=1)
+        self.assertEqual(r.returncode, 0)
+
+    def test_newest_screenshot_is_the_latest_png_at_any_depth(self):
+        d = Path(tempfile.mkdtemp()); (d / "de").mkdir()
+        self.assertEqual(sf.newest_screenshot(d), 0)
+        (d / "de" / "1.png").write_bytes(b"x"); (d / "de" / "note.txt").write_text("x")
+        self.assertGreater(sf.newest_screenshot(d), 0)
+        self.assertEqual(sf.newest_screenshot("/no/such/folder"), 0)
+
+    def test_stall_s_is_a_config_key_that_must_be_positive(self):
+        self.assertIn("stall_s", sf.KEYS["common"])
+
+
+class BlankScreenshots(unittest.TestCase):
+    """A Flutter or Compose app has its text in the accessibility tree before it paints (seen on wger and kotlinconf-app), so a flow's
+    wait passes and the screenshot is a white frame with a status bar."""
+    def write(self, data):
+        path = Path(tempfile.mkdtemp()) / "x.png"; path.write_bytes(data); return path
+
+    def test_a_flat_frame_with_a_status_bar_is_blank(self):
+        white = lambda x, y: (255, 255, 255) if y > 20 or x < 10 or x > 30 else (30, 30, 30)  # a few dark pixels at the top: the clock
+        self.assertTrue(sf.blank_screenshot(self.write(real_png(60, 300, white))))
+
+    def test_a_screen_with_content_is_not_blank(self):
+        text = lambda x, y: (0, 0, 0) if (y // 6) % 3 == 0 and x % (5 + y % 7) < 3 and 40 < y < 260 else (255, 255, 255)  # glyphs differ row to row
+        self.assertFalse(sf.blank_screenshot(self.write(real_png(60, 300, text))))
+
+    def test_what_it_cannot_read_is_not_called_blank(self):
+        self.assertFalse(sf.blank_screenshot(self.write(png(1080, 1920))))  # a header and no pixels
+        self.assertFalse(sf.blank_screenshot(self.write(real_png(60, 300, lambda x, y: (1, 1, 1), interlace=1))))
+        self.assertFalse(sf.blank_screenshot(self.write(b"not a png")))
+        self.assertFalse(sf.blank_screenshot("/no/such/file.png"))
+
+    def test_a_language_with_a_blank_frame_is_named_so_it_is_captured_again(self):
+        folder = Path(tempfile.mkdtemp())
+        (folder / "01_login.png").write_bytes(real_png(60, 300, lambda x, y: (255, 255, 255)))
+        (folder / "02_next.png").write_bytes(real_png(60, 300, lambda x, y: (x * 4 % 256, y % 256, 0)))
+        note = sf.blank_note(folder)
+        self.assertIn("01_login.png", note); self.assertNotIn("02_next.png", note)
+        (folder / "01_login.png").unlink()
+        self.assertIsNone(sf.blank_note(folder))
+
+
 class AuditFixes(unittest.TestCase):
     def test_inline_maps_relative_anchors_and_comments_are_translated(self):
         flow = ("appId: x\n---\n- tapOn: { text: \"Next\", optional: true }\n- tapOn:\n    text: Next\n"
@@ -863,6 +938,26 @@ class ExternalOcr(unittest.TestCase):
         langs = {r["file"]: r["lang"] for r in report["screenshots"]}
         self.assertEqual(langs["el/1.png"], "el")  # read and verified, not "couldn't read"
         self.assertTrue(any(p.startswith("el/2.png: shows en") for p in report["problems"]), report["problems"])
+        self.assertEqual(code, 1)
+
+    def test_check_of_a_run_folder_reads_the_translation_files_the_run_used(self):
+        # a Flutter run: the build holds no strings, run.json names the .arb files; `check <out>` on its own used to fail or check nothing
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "l10n").mkdir()
+            en = {"a": "Log in to your account", "b": "Register a new account", "c": "Advanced server options"}
+            de = {"a": "Bei deinem Konto anmelden", "b": "Ein neues Konto registrieren", "c": "Erweiterte Serveroptionen"}
+            for lp, t in (("en", en), ("de", de)): (d / "l10n" / f"app_{lp}.arb").write_text(json.dumps({"@@locale": lp, **t}))
+            out = d / "out"
+            for lp, words in (("en", en), ("de", en)):  # the German screenshot shows English
+                (out / "raw" / lp).mkdir(parents=True)
+                (out / "raw" / lp / "1.png").write_bytes(png_c(1320, 2868))
+                (out / "raw" / lp / "1.texts.json").write_text(json.dumps(list(words.values())))  # what an iOS run reads from the accessibility tree
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "app": str(d / "gone.app"), "strings": [str(d / "l10n/*.arb")],
+                                                      "locales": {"en": {"ok": True}, "de": {"ok": True}}}))
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = sf.cmd_check(out, ocr_command="cat {image}.txt")
+            report = json.loads((out / "check.json").read_text())
+        self.assertTrue(any(p.startswith("de/1.png: shows en") for p in report["problems"]), report["problems"])
         self.assertEqual(code, 1)
 
     def test_tesseract_language_names(self):
@@ -1408,6 +1503,16 @@ class FrameworkFixes(unittest.TestCase):
         self.assertIn("ja is only 30% translated", buf.getvalue()); self.assertIn('locales = [..., "ja"]', buf.getvalue())
         self.assertEqual(sf.partly_translated({"en": en, "de": de}, "en"), [])
 
+    def test_asking_for_a_partly_translated_language_by_name_warns_before_the_run(self):
+        en = {f"k{i}": f"Text {i}" for i in range(10)}
+        strings = {"en": en, "de": dict(en), "ja": {f"k{i}": "x" for i in range(3)}}
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en", ["de", "ja"])
+        self.assertIn("warning ja: only 30%", buf.getvalue()); self.assertIn("mostly show en", buf.getvalue()); self.assertNotIn("skipped", buf.getvalue())
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf): sf.note_partly_translated(strings, "en", ["de"])
+        self.assertEqual(buf.getvalue(), "")
+
 
 class FreeTier(unittest.TestCase):
     """`run` without a licence is the free tier; `export` is not."""
@@ -1771,7 +1876,7 @@ class RetryOnSlowSimulator(unittest.TestCase):
 
     layout = "2.0"  # where the fake Maestro puts `takeScreenshot: de/01`: "2.0" = relative to its working directory, "2.11" = its artifact folder
 
-    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None):
+    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None, **watchdog):  # progress= and stall_s= (the stall watchdog)
         self.runs += 1
         flows = Path(cmd[cmd.index("test") + 1]); out = flows.parent.parent.parent
         ok = self.runs == 2 and self.calls[-1] == "install"  # the retry only works when the app was reinstalled just before

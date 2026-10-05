@@ -1,0 +1,10 @@
+warning ar: only 26% of the app's own strings are translated, so the ar screenshots will mostly show en; check will say so
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 3 locales on 1 simulators...
+ok   en       1/1 screenshots
+ok   de       1/1 screenshots
+ok   ar       1/1 screenshots
+captured 3/3 locales in 73s on 1 simulators
+
+checked 3 screenshots in 3 languages: 0 problem(s)
+exit 0 after 106s

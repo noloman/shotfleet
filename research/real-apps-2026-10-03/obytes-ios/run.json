@@ -1,0 +1,34 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Not Now",
+    "Obytes Starter"
+   ],
+   "lproj": "en",
+   "ok": true,
+   "seconds": 31,
+   "error": null,
+   "screenshots": 3,
+   "attempts": 1
+  },
+  "ar": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Not Now",
+    "Obytes Starter"
+   ],
+   "lproj": "ar",
+   "ok": true,
+   "seconds": 30,
+   "error": null,
+   "screenshots": 3,
+   "attempts": 1
+  }
+ },
+ "config": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/react-native-template-obytes/shotfleet.toml",
+ "wall_seconds": 74,
+ "simulators": 1,
+ "app": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-silly-faraday-1a606a/acad7cfc-5f51-4667-9b1b-7ef12ebf43f5/scratchpad/apps/react-native-template-obytes/ios/build/Build/Products/Release-iphonesimulator/ObytesApp.app"
+}

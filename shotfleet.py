@@ -16,7 +16,7 @@ if sys.version_info < (3, 11):
     print(f"shotfleet needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable}).\n"
           "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
-import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket
+import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket, struct, zlib
 import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
@@ -31,7 +31,7 @@ class Fail(Exception):
 
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
-KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int},
+KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
@@ -120,7 +120,7 @@ def check_section(cfg, platform, name):
             names = want.__name__ if isinstance(want, type) else " or ".join(t.__name__ for t in want)
             names = names.replace("str", "string").replace("int", "whole number").replace("bool", "true/false")
             raise Fail(f"[{platform}] {key} in {name} should be a {names}, not {value!r}")
-    for key in ("parallel", "timeout_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
+    for key in ("parallel", "timeout_s", "stall_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
         if key in cfg and cfg[key] < 1: raise Fail(f"[{platform}] {key} in {name} should be 1 or more, not {cfg[key]}")
     for key in ("locales", "device_types", "devices", "strings"):
         if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
@@ -697,6 +697,13 @@ def config_strings(cfg, path):
         return load_strings(path(pats[0]))
     return load_strings_files([str(path(p)) for p in pats], cfg.get("base_locale", "en"))
 
+def run_strings(cfg, path):
+    """What run.json keeps of the config's `strings`, as absolute paths: a later `shotfleet check <out>` reads the same translation files
+    (without them it can't tell that a language the app only half-translates shows another one)."""
+    if "strings" not in cfg: return {}
+    pats = [cfg["strings"]] if isinstance(cfg["strings"], str) else cfg["strings"]
+    return {"strings": [str(path(p)) for p in pats], "base_locale": cfg.get("base_locale", "en")}
+
 def load_strings_files(patterns, base="en"):
     """{locale: {key: text}} from translation source files matched by glob patterns (relative to cwd or absolute)."""
     files = sorted({f for p in ([patterns] if isinstance(patterns, str) else patterns)
@@ -768,9 +775,14 @@ def partly_translated(strings, base="en", min_coverage=0.5):
     pct = lambda lp: 100 * sum(k in strings[lp] for k in own) / len(own) if own else 0
     return sorted((lp, round(pct(lp))) for lp in others if lp not in keep and 10 <= pct(lp) < 100 * min_coverage)
 
-def note_partly_translated(strings, base):
+def note_partly_translated(strings, base, asked=None):
+    """Languages left out because too little is translated; and, for languages the developer asked for by name, a warning up front
+    (wger's Japanese is 30%: Flutter shows the base language for every missing string, so those screenshots come out mostly English)."""
     for lp, pct in partly_translated(strings, base):
-        print(f"note: {lp} is only {pct}% translated in the app, so it is skipped; add locales = [..., \"{lp}\"] to the config to capture it anyway")
+        if asked is None:
+            print(f"note: {lp} is only {pct}% translated in the app, so it is skipped; add locales = [..., \"{lp}\"] to the config to capture it anyway")
+        elif lp in asked:
+            print(f"warning {lp}: only {pct}% of the app's own strings are translated, so the {lp} screenshots will mostly show {base}; check will say so")
 
 FRAMEWORKS = [  # (name, marker in the build's file names, candidate `strings` globs; the first is the default)
     ("Flutter", r"flutter_assets|libflutter\.so|Flutter\.framework", ["lib/l10n/*.arb", "assets/translations/*.json"]),
@@ -829,6 +841,8 @@ def regex_literal(s):
     # Maestro matches text selectors as a full Java regex; escape metacharacters
     return re.sub(r"([\\.^$|?*+()\[\]{}])", r"\\\1", s)
 
+WRAPPED_RE = re.compile(r"^(\.\*)?(.+?)(\.\*)?$", re.S)
+
 SELECTOR_RE = re.compile(r"^(\s*-?\s*(?:%s):\s*)(.+?)\s*$" % "|".join(SELECTOR_KEYS))
 
 INLINE_RE = re.compile(r"(\b(?:%s)\s*:\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
@@ -858,7 +872,7 @@ def resolve_base(strings, wanted, app=None):
 # an alternative to any translation, so "Allow" matches the system's dialog and the app's own "Erlauben" button.
 SYSTEM_BUTTONS = {"Allow", "Don’t Allow", "Allow Once", "Allow While Using App", "Always Allow", "Change to Always Allow",
                   "Keep Only While Using", "Ask App Not to Track", "Allow Full Access", "Allow All Photos", "Select Photos",
-                  "Limit Access…", "Allow Access to All Photos", "OK", "Cancel",  # iOS (TCC, CoreLocation)
+                  "Limit Access…", "Allow Access to All Photos", "OK", "Cancel", "Not Now",  # iOS (TCC, CoreLocation, "Save Password?" after a login form)
                   "While using the app", "Only this time", "Don’t allow", "Allow all", "Allow limited access"}  # Android
 
 def override_pattern(overrides, text):
@@ -891,6 +905,11 @@ def translate_flow(flow, base, target, overrides=None):
         """Translated YAML value for one selector value, or None to leave it as it is."""
         text = yaml_unquote(raw)
         if (pat := override_pattern(overrides, text)) is not None: return yaml_single_quote(pat)
+        if text not in by_text and (m := WRAPPED_RE.match(text)) and (m[1] or m[3]):
+            # ".*Register", "Self-hosted.*": Flutter and others merge a row's texts into one label ("Title\nDetail"), so a flow
+            # matches the part it knows; translate that part and keep the wildcard
+            inner = tr(yaml_single_quote(m[2]))
+            return None if inner is None else "'" + (m[1] or "") + inner[1:-1] + (m[3] or "") + "'"
         keys = by_text.get(text) or by_text.get(text.replace("'", "\u2019"))
         system = text.replace("'", "\u2019") in SYSTEM_BUTTONS
         if not keys and system:  # the OS's own dialog: stays English (iOS spells it with a curly apostrophe)
@@ -1283,17 +1302,30 @@ def collect_shots(staging, debug_dir, name, dst):
         if src.is_dir():
             for f in src.iterdir(): shutil.move(str(f), str(dst / f.name))
 
-def run_guarded(cmd, timeout, env=None, cwd=None):
+STALL_S = 900  # default: no new screenshot for 15 minutes means Maestro or a simulator is hung (a flow takes about a minute)
+
+def run_guarded(cmd, timeout, env=None, cwd=None, progress=None, stall_s=STALL_S):
     """subprocess.run, plus a watchdog that kills `simctl diagnose` started under this command.
     Maestro dumps simulator diagnostics after every failed flow; several at once wedge CoreSimulator
-    (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed."""
+    (even `simctl list` hangs). shotfleet keeps Maestro's own screenshots and logs, so they aren't needed.
+    `progress` (optional) returns something that changes whenever the run gets somewhere (the newest screenshot's time); when it stays
+    the same for `stall_s` seconds the run is killed and TimeoutExpired is raised with `.stalled` set. The overall `timeout` scales with
+    the number of languages, so on its own a hung simulator would keep a 19-language run alive for hours (seen: 6 h with no screenshot)."""
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env, cwd=cwd)
-    done = threading.Event()
+    done, stalled = threading.Event(), threading.Event()
     def watch():
-        while not done.wait(5):
+        last, since = progress() if progress else None, time.monotonic()
+        while not done.wait(min(5, max(0.2, stall_s / 4))):
             ours = descendants(proc.pid)
             for line in sh(["pgrep", "-f", "simctl diagnose"]).stdout.split():
                 if int(line) in ours: sh(["kill", "-9", line])
+            if progress:
+                now = progress()
+                if now != last: last, since = now, time.monotonic()
+                elif time.monotonic() - since > stall_s:
+                    stalled.set()
+                    for p in descendants(proc.pid) | {proc.pid}: sh(["kill", "-9", str(p)])
+                    return
     threading.Thread(target=watch, daemon=True).start()
     try:
         out, _ = proc.communicate(timeout=timeout)
@@ -1304,7 +1336,15 @@ def run_guarded(cmd, timeout, env=None, cwd=None):
         raise
     finally:
         done.set()
+    if stalled.is_set():
+        e = subprocess.TimeoutExpired(cmd, timeout, output=out); e.stalled = True
+        raise e
     return subprocess.CompletedProcess(cmd, proc.returncode, out, "")
+
+def newest_screenshot(folder):
+    """The newest PNG's modification time under folder (any depth), 0 when there is none: what `run_guarded` watches."""
+    try: return max((p.stat().st_mtime for p in Path(folder).rglob("*.png")), default=0)
+    except OSError: return 0
 
 def memory_pressure():
     """macOS's memory pressure level ("1" normal, "2" elevated, "4" critical), "" where it can't be read. A cron or CI
@@ -1504,7 +1544,7 @@ def ios_run_inner(cfg, path, only, parallel):
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
-    if not only and not cfg.get("locales"): note_partly_translated(strings, base_locale)
+    note_partly_translated(strings, base_locale, only or cfg.get("locales") or None)
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
     out = path(cfg.get("out", "out")).resolve()
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
@@ -1514,7 +1554,7 @@ def ios_run_inner(cfg, path, only, parallel):
     (out / ".work" / "flows").mkdir(parents=True)
 
     # translate every flow first, so selector problems show up before any simulator boots
-    report = {"locales": {}, "config": cfg.get("_config")}
+    report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
@@ -1562,11 +1602,14 @@ def ios_run_inner(cfg, path, only, parallel):
             r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(s.udid for s in pool[:k]), "test", str(flows_dir),
                              "--shard-split", str(k), "--format", "JUNIT", "--output", str(junit),
                              "--debug-output", str(debug)],
-                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300, cwd=staging)
+                            env=env, timeout=cfg.get("timeout_s", 600) * -(-len(lps) // k) + 300, cwd=staging,
+                            progress=lambda: max(newest_screenshot(staging), newest_screenshot(debug), newest_screenshot(out / "raw")),
+                            stall_s=cfg.get("stall_s", STALL_S))
             (out / f"maestro{attempt}.log").write_text(r.stdout + r.stderr)
         except subprocess.TimeoutExpired as e:
             (out / f"maestro{attempt}.log").write_text(e.output or "")
-            print(f"maestro timed out (log: {out / f'maestro{attempt}.log'})")
+            print(f"maestro made no new screenshot for {cfg.get('stall_s', STALL_S)} s and was stopped (a hung simulator or flow; log: {out / f'maestro{attempt}.log'})"
+                  if getattr(e, "stalled", False) else f"maestro timed out (log: {out / f'maestro{attempt}.log'})")
         finally:
             stop.set(); reader.join(timeout=10)
             kill_stale_drivers()
@@ -1579,6 +1622,8 @@ def ios_run_inner(cfg, path, only, parallel):
             r_ = res.get(lp) or {"ok": shots == expected, "error": None if shots == expected else "no result (see maestro log)"}
             if r_["ok"] and shots != expected:
                 r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {expected} screenshots"}
+            if r_["ok"] and (note := blank_note(out / "raw" / lp)):
+                r_ = {**r_, "ok": False, "error": note}
             out_[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "attempts": attempt}
         return out_
 
@@ -1960,7 +2005,7 @@ def android_run(cfg, path, out, only, parallel):
     framework_hint(apk, "strings" in cfg, path("."))
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
-    if not only and not cfg.get("locales"): note_partly_translated(strings, cfg.get("base_locale", "en"))
+    note_partly_translated(strings, cfg.get("base_locale", "en"), only or cfg.get("locales") or None)
     locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
@@ -1975,7 +2020,7 @@ def android_run(cfg, path, out, only, parallel):
               "Android screen text is read from pixels (OCR)")
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
-    report = {"locales": {}, "config": cfg.get("_config")}
+    report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
         _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
@@ -2017,11 +2062,13 @@ def android_run(cfg, path, out, only, parallel):
                 r = run_guarded([maestro_cmd() or "maestro", "--device", ",".join(e.serial for e in pool[:len(lps)]), "test", str(fdir),
                                  "--shard-split", str(len(lps)), "--format", "JUNIT", "--output", str(junit), "--debug-output", str(dbg)],
                                 timeout=cfg.get("timeout_s", 600) + 300, cwd=staging,
+                                progress=lambda: max(newest_screenshot(staging), newest_screenshot(dbg)), stall_s=cfg.get("stall_s", STALL_S),
                                 env={**os.environ, **java_env(), **android_env(), "MAESTRO_CLI_NO_ANALYTICS": "1",
                                      "MAESTRO_DRIVER_STARTUP_TIMEOUT": "240000"})  # read-only emulators reinstall the driver each boot
                 (out / f"maestro_{tag}.log").write_text(r.stdout + r.stderr)
-            except subprocess.TimeoutExpired:
-                print(f"maestro timed out in {tag}")
+            except subprocess.TimeoutExpired as e:
+                print(f"maestro made no new screenshot for {cfg.get('stall_s', STALL_S)} s and was stopped in {tag}" if getattr(e, "stalled", False)
+                      else f"maestro timed out in {tag}")
             ran_on, res, results = flow_devices(dbg), junit_results(junit), {}
             for j in range(len(lps)):
                 fname, dev = f"{tag}_f{j}", ran_on.get(f"{tag}_f{j}")
@@ -2032,6 +2079,7 @@ def android_run(cfg, path, out, only, parallel):
                 collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
+                if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
                 results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev,
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
@@ -2480,9 +2528,11 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     elif strings is None and run_json.exists():
         run = json.loads(run_json.read_text())
         src = run["apk"] if run.get("platform") == "android" else run["app"]
-        if not Path(src).exists():
+        if run.get("strings"):  # Flutter, React Native, ...: the run read translation files, so check reads them too
+            strings = config_strings({"strings": run["strings"], "base_locale": run.get("base_locale", "en")}, Path)
+        elif not Path(src).exists():
             raise Fail(f"the app this run used is gone ({src}); pass the build with --app")
-        strings = load_strings_apk(src) if run.get("platform") == "android" else load_strings(Path(src))
+        else: strings = load_strings_apk(src) if run.get("platform") == "android" else load_strings(Path(src))
     tables = string_tables(strings or {})
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
@@ -2558,6 +2608,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
+        if blank_screenshot(png):
+            problem = ("blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; "
+                       "wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot")
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if png.stem in (expect or {}):
@@ -3042,6 +3095,10 @@ FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text
 - launchApp
 - waitForAnimationToEnd:
     timeout: 5000
+# An app that draws its first frame late (a Flutter debug build, Compose) can give a blank screenshot: wait for text first.
+# - extendedWaitUntil:
+#     visible: "<a text on your first screen>"
+#     timeout: 60000
 - takeScreenshot: 01_home
 # - tapOn: "Settings"
 # - takeScreenshot: 02_settings
@@ -3237,7 +3294,7 @@ def flutter_arb_glob(cwd):
 I18N_JSON = ["src/locales/*/translation.json", "src/translations/*.json", "src/locales/*.json", "src/i18n/locales/*.json",
              "src/i18n/*.json", "src/lang/*.json", "src/assets/i18n/*.json", "locales/*/translation.json", "locales/*/*.json",
              "locales/*.json", "public/locales/*/translation.json", "assets/locales/*.json", "assets/i18n/*.json",
-             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "translations/*.json",
+             "assets/translations/*.json", "assets/lang/*.json", "assets/langs/*.json", "app/i18n/*.json", "app/i18n/locales/*.json", "app/locales/*.json", "app/translations/*.json", "translations/*.json",
              "app/i18n/*.ts", "src/i18n/*.ts", "src/i18n/locales/*.ts", "src/locales/*.ts", "src/translations/*.ts", "i18n/*.ts", "locales/*.ts"]  # .ts: Ignite and friends
 I18N_PO = ["src/locales/*/messages.po", "src/locale/locales/*/messages.po", "locales/*/messages.po", "locale/*/LC_MESSAGES/*.po"]
 
@@ -3253,6 +3310,17 @@ def kotlin_multiplatform(cwd):
         except OSError: continue
     return False
 
+def is_expo(cwd, pkg, deps):
+    """An Expo app (its builds come from `expo run`), not a bare React Native app that merely depends on the `expo` package for some native
+    modules (Rocket.Chat does). Bare means ios/ and android/ are committed and nothing says Expo: no app.config, no `expo` key in app.json,
+    no Expo entry point. A package.json with only the dependency and no native folders is an Expo app that has not been prebuilt."""
+    if "expo" not in deps: return False
+    if any((cwd / f).is_file() for f in ("app.config.ts", "app.config.js", "app.config.json")): return True
+    app_json = read_json_file(cwd / "app.json")
+    if isinstance(app_json, dict) and "expo" in app_json: return True
+    if isinstance(pkg, dict) and str(pkg.get("main", "")).startswith(("expo/", "expo-router/")): return True
+    return not ((cwd / "ios").is_dir() and (cwd / "android").is_dir())
+
 def detect_project(cwd):
     """The Project for the app whose source is in `cwd`, or None for a native Swift/Kotlin app and for anything unrecognised.
     Reads a few small files (pubspec.yaml, package.json, *.csproj, Gradle settings); never builds or runs anything.
@@ -3265,7 +3333,9 @@ def detect_project(cwd):
         return Project("Flutter", flutter_arb_glob(cwd) or first_glob(cwd, I18N_JSON),
                        apps=("build/ios/iphonesimulator/*.app",),
                        apks=("build/app/outputs/flutter-apk/*.apk", "build/app/outputs/apk/*/*.apk"),
-                       build_ios="flutter build ios --simulator --debug", build_android="flutter build apk --debug")  # framework_hint warns about the DEBUG banner
+                       build_ios="flutter build ios --simulator --debug", build_android="flutter build apk --debug",  # framework_hint warns about the DEBUG banner
+                       notes=["Flutter joins a row's texts (a ListTile's title and detail) into one label for Maestro: tap it as \"Title.*\"; "
+                              "and wait for text before the first takeScreenshot (extendedWaitUntil: visible), a debug build draws late"])
     if "@capacitor/core" in deps or any((cwd / f).is_file() for f in ("capacitor.config.ts", "capacitor.config.json", "capacitor.config.js")):
         return Project("Capacitor", first_glob(cwd, I18N_JSON), apks=("android/app/build/outputs/apk/debug/*.apk",),
                        build_ios="npm run build && npx cap sync ios && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug "
@@ -3274,7 +3344,7 @@ def detect_project(cwd):
                        apps=("ios/build/Build/Products/Debug-iphonesimulator/*.app",),
                        notes=["web layers that read navigator.language may ignore the language shotfleet sets on iOS; check the first screenshots"])
     if "react-native" in deps or "expo" in deps:
-        expo = "expo" in deps
+        expo = is_expo(cwd, pkg, deps)
         return Project("Expo" if expo else "React Native", first_glob(cwd, I18N_PO) or first_glob(cwd, I18N_JSON),
                        apps=("ios/build/Build/Products/Release-iphonesimulator/*.app", "build/Build/Products/Release-iphonesimulator/*.app"),
                        apks=("android/app/build/outputs/apk/release/*.apk",), configs=("Release",),
@@ -3291,7 +3361,9 @@ def detect_project(cwd):
     if (cwd / "ProjectSettings/ProjectVersion.txt").is_file():
         return Project("Unity", None, notes=["Unity draws its own UI, so text selectors rarely work; shotfleet is not built for games"])
     if any((cwd / n).is_file() for n in ("settings.gradle.kts", "settings.gradle")) and kotlin_multiplatform(cwd):
-        return Project("Kotlin Multiplatform", None)  # strings are compiled into native resources shotfleet reads from the build
+        return Project("Kotlin Multiplatform", None,  # strings are compiled into native resources shotfleet reads from the build
+                       notes=["Compose paints its first frame after its text is readable: start the flow with extendedWaitUntil: visible, and "
+                              "pause a moment before the first takeScreenshot (a blank screenshot is captured again once, then reported)"])
     return None
 
 def project_builds(cwd, project, derived=None):
@@ -3333,6 +3405,8 @@ def find_builds(cwd, derived=None, project=None):
     android_cmd = "./gradlew assembleDebug"
     if project:  # the framework's own build command: a plain xcodebuild or gradlew skips its code generation and bundling
         ios_cmd, android_cmd = project.build_ios or ios_cmd, project.build_android or android_cmd
+        if project.name == "Kotlin Multiplatform" and not project.build_ios:
+            ios_cmd += " ARCHS=arm64"  # Xcode 27 also asks for x86_64, which the Gradle build does not have: "Architecture Not Configured in Gradle"
     has_gradle = any((cwd / f).is_file() for f in ("gradlew", "android/gradlew"))
     # (what to build, whether it exists) for the platforms this folder has a project for; none recognised and nothing found: both
     kind = f"{project.name} " if own else ""
@@ -3521,6 +3595,36 @@ def store_rules(images, android, ipad=False, tablet=False):
                      "have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play "
                      "won't consider them for recommendations")
     return problems, notes
+
+def blank_screenshot(path):
+    """True if a PNG shows nothing but one flat area between its status bar and its bottom edge: a frame the app has not drawn yet
+    (Flutter debug builds and Compose put their text in the accessibility tree before the first paint, so a flow's wait passes).
+    Looks at the middle band only and counts its distinct rows: real UI, even a splash with a logo, has dozens; a blank frame has one or
+    two. False for anything it cannot read (interlaced, truncated, not a PNG). ponytail: counts raw rows, not colours, so a screen made of
+    flat horizontal stripes only would pass as blank; none seen."""
+    try:
+        data = Path(path).read_bytes()
+        if data[:8] != b"\x89PNG\r\n\x1a\n": return False
+        w, h, depth, ctype, _, _, interlace = struct.unpack(">IIBBBBB", data[16:29])
+        if interlace or h < 200 or ctype not in (0, 2, 4, 6): return False
+        idat, i = [], 8
+        while i + 8 <= len(data):
+            n, kind = struct.unpack(">I4s", data[i:i + 8])
+            if kind == b"IDAT": idat.append(data[i + 8:i + 8 + n])
+            i += 12 + n
+        raw = zlib.decompress(b"".join(idat))
+        row = 1 + (w * {0: 1, 2: 3, 4: 2, 6: 4}[ctype] * depth + 7) // 8
+        if len(raw) < row * h: return False
+        band = {raw[y * row:(y + 1) * row] for y in range(h * 12 // 100, h * 88 // 100)}
+        return len(band) <= 3
+    except (struct.error, zlib.error, ValueError, OSError): return False
+
+def blank_note(folder):
+    """The flow-failed text for a language whose screenshots include blank frames, or None. A blank frame is the app's first paint coming
+    after the flow's wait; the language is captured again once (that heals a one-off, not an app that always paints late: Compose
+    on iOS stays blank and is then reported, so the flow has to wait)."""
+    blank = [p.name for p in sorted(Path(folder).glob("*.png")) if blank_screenshot(p)]
+    return f"blank screenshot(s): {', '.join(blank)} (the app had not drawn its first frame; wait for text on the screen before takeScreenshot)" if blank else None
 
 def png_size(path):
     """(width, height) from a PNG header, or None if it isn't a PNG."""
@@ -3731,7 +3835,7 @@ LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
-GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh: the product ID from the License key block on the product's Content page
+GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
 MAX_MACS = 3
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages

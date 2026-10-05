@@ -1,0 +1,11 @@
+- launchApp
+- extendedWaitUntil:
+    visible: "Log in"
+    timeout: 60000
+- takeScreenshot: 01_login
+- tapOn: "Advanced"
+- waitForAnimationToEnd
+- takeScreenshot: 02_advanced
+- tapOn: "Self-hosted.*"
+- waitForAnimationToEnd
+- takeScreenshot: 03_self_hosted
