@@ -1,0 +1,22 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_home.png",
+   "src": "raw/de/01_home.png",
+   "sha": "02de233fa643",
+   "lang": "de",
+   "chars": 81
+  },
+  {
+   "file": "ja/01_home.png",
+   "src": "raw/ja/01_home.png",
+   "sha": "062093b30f7b",
+   "lang": "ja",
+   "chars": 36
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "2 listing(s) (de, ja) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations"
+ ]
+}

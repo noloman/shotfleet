@@ -1,0 +1,13 @@
+14:15:38 precheck mem=57% load=159 swap=8.3G emulators=0
+14:15:38 STARTING R2c(a) beside the lock holder (no lock taken)
+14:15:48 heartbeat t=10s mem=47% load=152 swap=8.3G run.log=1 lines
+14:15:58 heartbeat t=20s mem=51% load=147 swap=8.3G run.log=1 lines
+14:16:08 heartbeat t=30s mem=49% load=144 swap=8.3G run.log=2 lines
+14:16:18 heartbeat t=40s mem=49% load=143 swap=8.3G run.log=2 lines
+14:16:28 heartbeat t=50s mem=47% load=142 swap=8.3G run.log=2 lines
+14:16:38 heartbeat t=60s mem=50% load=145 swap=8.3G run.log=2 lines
+14:16:49 heartbeat t=71s mem=49% load=145 swap=8.3G run.log=2 lines
+14:16:59 heartbeat t=81s mem=52% load=143 swap=8.3G run.log=2 lines
+14:17:09 heartbeat t=91s mem=52% load=140 swap=8.3G run.log=10 lines
+14:17:09 R2c(a) over (reason='finished'); leftover qemu: 0
+C2ADONE
