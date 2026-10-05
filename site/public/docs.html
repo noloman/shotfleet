@@ -259,6 +259,7 @@ jobs:
 shotfleet skill install --project
 shotfleet skill install --dir &lt;folder&gt;</code></pre>
   <p><code>shotfleet skill install</code> copies them into <code>~/.claude/skills</code> (Claude Code and Cursor read it) and <code>~/.agents/skills</code> (Codex, Gemini CLI, GitHub Copilot and Cursor read it). With <code>--project</code> they go into <code>./.claude/skills</code> and <code>./.agents/skills</code> in your project, so you can commit them for your team. <code>--dir &lt;folder&gt;</code> copies them into one folder you choose. Skills that are already there are kept unless you pass <code>--force</code>. Start a new agent session after you install them.</p>
+  <p>The skills are also in a public repo, so you can install them without shotfleet first. In Claude Code: <code>/plugin marketplace add noloman/shotfleet-skills</code>, then <code>/plugin install shotfleet@shotfleet</code> (the skills plus the MCP server). For other agents: <code>gh skill install noloman/shotfleet-skills --all --scope user</code>. More in the <a href="https://github.com/noloman/shotfleet-skills">repo's README</a>.</p>
   <p>Your licence key: on your Mac, run <code>shotfleet activate</code> once yourself. After that your agent uses the CLI and never sees the key. In CI, use the <code>SHOTFLEET_KEY</code> secret. Don't pass the key with <code>claude mcp add --env</code>: it ends up in plain text in <code>~/.claude.json</code>.</p>
   <h2 id="limits">Limits</h2>
   <ul>

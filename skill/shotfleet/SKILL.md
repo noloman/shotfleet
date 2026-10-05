@@ -10,9 +10,8 @@ simulators or emulators, and checks every screenshot against the app's own strin
 or the app's own text for iOS runs). It also checks screenshots you already have (fastlane snapshot, screengrab, a plain folder per language), with no simulator.
 Needs an Apple silicon Mac, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+; iOS needs Xcode, Android needs the Android SDK. Built for macOS 13 or later on Apple silicon; tested on macOS 27.
 
-Start with `shotfleet --version`. If it is missing, the README's installer is
-`curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script. If the shell
-cannot find `shotfleet` but the user has the source, use `python3 path/to/shotfleet.py` (Python 3.11+).
+Start with `shotfleet --version`. If it is missing, the installer from https://shotfleet.com/docs is
+`curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script.
 
 Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
 

@@ -2,7 +2,7 @@
 
 Find the message with `grep -n "<fragment>"` here. Errors that stop a command print `shotfleet: <message>` on stderr
 and exit 2. The first column holds the fixed part of the message (names and numbers vary); each fragment is a
-string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
+message the program prints. Run `shotfleet doctor` first for anything about tools.
 
 ## Tools (doctor and every run)
 
@@ -12,7 +12,6 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 |---|---|---|
 | maestro (tested with 2.0.10 and 2.11.0) | run | `curl -Ls https://get.maestro.mobile.dev \| bash`. Maestro 1.x is refused by doctor. Another 2.x prints a one-line note in `doctor` and at the start of `run` (it may work). `shotfleet doctor --fix` installs 2.11.0. |
 | java 17+ | Maestro | `brew install openjdk@21`. shotfleet finds Homebrew's Java itself (it is keg-only, so `java` is not on PATH); do not edit the user's shell profile. |
-| swiftc | check (source checkout only) | `xcode-select --install` |
 | xcrun simctl | iOS | install Xcode and an iOS Simulator runtime |
 | iOS Simulator runtime | iOS | `xcodebuild -downloadPlatform iOS` (or Xcode > Settings > Components); `doctor` shows the newest one it found |
 | adb, emulator, avdmanager, aapt2, system image | Android | run the `sdkmanager` commands that `doctor` prints under `Android: to install what is missing` (it uses the sdkmanager that exists, or installs Homebrew's `android-commandlinetools` first). The SDK is found in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or beside an `adb` on the PATH; `doctor` prints `Android SDK:` with the one it chose. Any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer counts; an existing `shotfleet_android` emulator needs none. |
@@ -22,7 +21,6 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 
 | Fragment | Cause | Fix |
 |---|---|---|
-| `shotfleet needs Python 3.11 or newer` | running from source with macOS's own python3 (3.9) | `brew install python`, or use the installed program, which brings its own Python |
 | `no config at` | wrong path or no `shotfleet.toml` | `shotfleet init` (or `shotfleet init <build>`); `run` looks for `./shotfleet.toml` |
 | `no Debug simulator build or Gradle debug APK found for` | `shotfleet init` with no build found none for this folder (it only reads folders: Xcode's default DerivedData for a project here, and `app/build/outputs/apk/debug`); the message lists the exact build commands | run the printed `xcodebuild` / `./gradlew assembleDebug` command, then `init` again; or pass the build path (needed when DerivedData is in a custom location) |
 | `isn't valid TOML` | syntax error in the config | fix the line the message names |
@@ -68,7 +66,7 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `no translation files match` | `strings` glob matches nothing (globs are relative to the config) | fix the glob |
 | `Set base_locale in the config` | the app has no `en` strings (the message names its development language) | `base_locale = "<code>"`, the language the flow is written in |
 | `none of those languages are in the app` | `--locales` or `locales` names languages the app does not ship; the message lists what it ships | use those codes |
-| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun; free memory first (see "Free memory before a run" in the README Tips) |
+| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun; free memory first (see "Free memory before a run" on the docs page, https://shotfleet.com/docs#limits) |
 | a run behaves differently after an iOS 27 runtime was installed | `runtime` defaults to the newest installed one, so `run` now uses iOS 27 | pin a tested one: `runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"` (`xcrun simctl list runtimes` shows the ids). iOS 27 ran with one simulator and one language (0 problems, 2026-10-05); four simulators at once has not been tried on it |
 | `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
 | `unknown Android device` | `devices` entry other than phone, tablet, tablet-7 | use `phone`, `tablet` or `tablet-7` |
@@ -96,7 +94,6 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `macOS text recognition isn't answering` | macOS is still compiling its text model in `ANECompilerService` (first time, can take minutes on a loaded Mac), or it is stuck | wait for the first compile and re-run, close heavy apps, or `brew install tesseract` (used automatically, and named in the output); a restart is a last resort |
 | `text recognition hung twice on` | same, or an overloaded Mac | wait and rerun; restart only as a last resort |
 | `--ocr-command failed on` | the custom OCR command failed; if it says language data: `brew install tesseract-lang` | fix the command |
-| `ocr build failed` | source checkout: `swiftc` could not build `ocr.swift` | `xcode-select --install` |
 
 ## Export and licence errors
 

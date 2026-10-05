@@ -34,7 +34,7 @@ Keys valid in `[ios]` and `[android]`:
 | `base_locale` | string | `en` | the language the flow is written in |
 | `strings` | string or list | read from the build | translation file globs (relative to the config) for Flutter, React Native, MAUI, Unity, exports |
 | `stall_s` | whole number | 900 | seconds without a new screenshot before a run is stopped as hung (a stuck simulator or flow) and retried once |
-| `timeout_s` | whole number | 600 | time limit in seconds for one round of flows (accepted by the config check; not described in the README) |
+| `timeout_s` | whole number | 600 | time limit in seconds for one round of flows (accepted by the config check; not described in the docs) |
 
 `[ios]` only:
 
@@ -55,8 +55,8 @@ Keys valid in `[ios]` and `[android]`:
 | `package` | read from the APK | refused if it differs |
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots`; `"tablet-7"` adds a 7" tablet, 1080x1920 at 280 dpi, exported to `sevenInchScreenshots` |
 | `shell` | none | list of commands run as `adb -s <serial> shell <command>` once per emulator right after boot (after demo mode), e.g. `["setprop debug.myapp.demo 1"]`; not run on a real emulator yet |
-| `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the README) |
-| `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the README) |
+| `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the docs) |
+| `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the docs) |
 | `avd_tablet-7` | `shotfleet_android_tablet7` | name of the 7" tablet emulator when `devices` includes `"tablet-7"` (same note) |
 | `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
 

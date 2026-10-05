@@ -2567,5 +2567,22 @@
   "layer": "unit",
   "assertion": "Already covered for the licence path; the ~/.claude.json part is vendor documentation.",
   "fix": ""
+ },
+ {
+  "id": "C161",
+  "claim": "With AI agents: the skills are in the public repo noloman/shotfleet-skills; Claude Code installs them with /plugin marketplace add noloman/shotfleet-skills and /plugin install shotfleet@shotfleet (skills plus the MCP server); other agents with gh skill install noloman/shotfleet-skills --all --scope user",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "/plugin marketplace add noloman/shotfleet-skills",
+   "gh skill install noloman/shotfleet-skills --all --scope user"
+  ],
+  "status": "evidence",
+  "proof": "Run 2026-10-06 in a throwaway HOME (never the real ~/.claude): claude plugin validate --strict passed on the repo (Claude Code 2.1.286); claude plugin marketplace add noloman/shotfleet-skills and claude plugin install shotfleet@shotfleet succeeded, claude plugin details showed Skills (3) shotfleet, shotfleet-ci, shotfleet-review and MCP servers (1) shotfleet. gh 2.102.0: gh skill install noloman/shotfleet-skills --all --agent codex --scope user wrote the three skills to ~/.agents/skills, and --dir wrote them with references/. gemini 0.51.0: gemini skills install <repo>.git --path skills/<name> installed each one. tools/sync-public-skills.sh on a fresh clone of the repo staged no change at 0.1.3, so the public copy matches skill/.",
+  "layer": "site",
+  "assertion": "Install check by hand in a throwaway HOME, repeated when the plugin layout changes; tools/sync-public-skills.sh keeps the public copy equal to skill/ at each release.",
+  "fix": ""
  }
 ]
