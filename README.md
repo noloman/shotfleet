@@ -50,6 +50,8 @@ Screenshots made in other tools work too. `check` knows Apple's sizes for Apple 
 
 `shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
 
+`shotfleet activate <key>` stores your key on this Mac. The key from your Gumroad receipt works on 3 Macs, and activating again on a Mac that already holds it counts nothing. `shotfleet deactivate` removes it from this Mac but does not give the activation back; email hello@shotfleet.com to move to a fourth Mac. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, that line says why. `check`, `doctor` and `init` are always free.
+
 ## Quickstart (once Maestro and a simulator build exist)
 
 ```bash
@@ -59,6 +61,8 @@ shotfleet doctor                                   # checks Maestro, Java, Xcode
 shotfleet init                                     # in your project folder: uses the newest Debug simulator build and Gradle debug APK it finds
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
+
+Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
 
 `shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first: Maestro 2.11.0 (a version the real runs passed on, checked against a pinned SHA-256), a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools with the SDK pieces `doctor` lists (it accepts the Android SDK licences, which the plan says). It asks once, `--yes` skips the question for CI, it stops at the first step that fails, and it never uses `sudo`, edits your shell files or touches Xcode. Maestro and Java go into `~/.shotfleet` (`SHOTFLEET_HOME` changes that); Android tools go where `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) points, else into the SDK shotfleet found or Android Studio's default folder. Behind a proxy that re-signs HTTPS, point `SSL_CERT_FILE` at its CA bundle. Tried on a Linux machine with none of these installed: `doctor` then reported Maestro 2.0.10 and the Android toolchain as ok, and the Java download was run separately against Adoptium's real API (Java 21.0.12 ran). Run on a Mac (Apple silicon, macOS 27, 2026-10-03) in a throwaway home folder, with Maestro 2.0.10 as the pin of that day; not yet run with the 2.11.0 download, and not on a separate clean user account.
 
@@ -113,7 +117,9 @@ jobs:
             shotfleet-check/
 ```
 
-To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations; if the licence server can't be reached the job isn't failed. With an invalid key, `export` refuses and `run` captures only 2 languages.
+To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations; if the licence server can't be reached the job isn't failed. With an invalid key, `export` refuses and `run` captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with `--locales de,ja`; `run` says so on a line that starts with "free tier:", and if the key is refused that line says why.
+
+With `--json`, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in `run.json`.
 
 ## With AI agents
 
@@ -158,7 +164,9 @@ locales = ["de", "ja"]    # default: every language the app ships
 base_locale = "de"        # the language your flow is written in (default en)
 bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
 device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"   # default: 6.9" iPhone
-runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-5"                    # default: newest installed
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"                    # default: newest installed
+                          # installing an iOS 27 runtime changes what `run` uses: to stay on a runtime you have tested, pin it
+                          # (`xcrun simctl list runtimes` shows the ids)
 device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes from one flow: out/<device>/;
                           # `check out` and `export out` handle both, and the App Store takes both in one folder
 
@@ -285,6 +293,7 @@ translation source.
 - **A language the app only half translates** (wger's Japanese is 30%): the app shows its base language for every missing string. `run` warns when you ask for such a language by name, and `check` reports the screenshots that came out in the base language.
 - **Building the app on Xcode 27** (found on wger, the obytes template and kotlinconf-app, 2026-10-03; not shotfleet's doing, but it stops you before the first screenshot): `npx expo run:ios` ends with "Can't determine id of Simulator app" because Xcode 27 has no Simulator.app, so build the generated project yourself, `xcodebuild -workspace ios/<App>.xcworkspace -scheme <App> -configuration Release -sdk iphonesimulator -derivedDataPath ios/build build IPHONEOS_DEPLOYMENT_TARGET=15.1` (Xcode 27 refuses the old deployment targets of some pods), and `init` finds it in `ios/build`. A Kotlin Multiplatform app needs `ARCHS=arm64` on its `xcodebuild` ("Architecture Not Configured in Gradle: ios_x64"; `init` prints it).
 - **Typing a password on iOS in Arabic:** `inputText` into a secure (password) field drops Latin letters when the app runs in Arabic (seen on the Expo app, iOS 26.4: `abcdef` typed nothing, `abc123` typed only `123`, `123456` typed all six); name and e-mail fields are fine. Use digits for a demo password.
+- **Free memory before a run:** idle Gradle daemons can hold gigabytes. Run `./gradlew --stop` (once per Gradle version you use) before `shotfleet run`, and close apps you do not need. Four simulators on a loaded Mac can take many times longer.
 - **Fresh state:** each language starts from a clean install. On iOS that's `clearState`; on Android shotfleet clears the app data itself, because `clearState` would also erase the app language.
 
 ## Limits
@@ -299,6 +308,8 @@ translation source.
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check. With `--app`, a screen with only one or two of the app's strings is also judged by language detection.
 
 - Built for macOS 13 or later on Apple silicon; tested on macOS 27.
+- Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set `device_type` in the config. Xcode 26.x has not been run.
+- iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
 - Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac.

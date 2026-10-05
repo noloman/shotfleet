@@ -14,6 +14,8 @@ Start with `shotfleet --version`. If it is missing, the README's installer is
 `curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script. If the shell
 cannot find `shotfleet` but the user has the source, use `python3 path/to/shotfleet.py` (Python 3.11+).
 
+Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
+
 ## Which path?
 
 1. **The user has screenshots (fastlane or any folder) and wants to know if they are right** -> [Check](#check). No simulators, no licence.

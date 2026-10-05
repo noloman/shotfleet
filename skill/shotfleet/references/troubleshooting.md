@@ -68,7 +68,8 @@ string in `shotfleet.py`. Run `shotfleet doctor` first for anything about tools.
 | `no translation files match` | `strings` glob matches nothing (globs are relative to the config) | fix the glob |
 | `Set base_locale in the config` | the app has no `en` strings (the message names its development language) | `base_locale = "<code>"`, the language the flow is written in |
 | `none of those languages are in the app` | `--locales` or `locales` names languages the app does not ship; the message lists what it ships | use those codes |
-| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun |
+| `macOS reports critical memory pressure` | Mac out of memory | close apps and simulators, rerun; free memory first (see "Free memory before a run" in the README Tips) |
+| a run behaves differently after an iOS 27 runtime was installed | `runtime` defaults to the newest installed one, so `run` now uses iOS 27 | pin a tested one: `runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"` (`xcrun simctl list runtimes` shows the ids). iOS 27 ran with one simulator and one language (0 problems, 2026-10-05); four simulators at once has not been tried on it |
 | `no simulator type called` | bad `device_type`/`device_types` name | `xcrun simctl list devicetypes` |
 | `unknown Android device` | `devices` entry other than phone, tablet, tablet-7 | use `phone`, `tablet` or `tablet-7` |
 | `couldn't create the emulator` | system image not installed (shotfleet uses the config's `system_image`, else the newest installed arm64 `google_apis`/`google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a`) | run the `sdkmanager` command after `Install the image with:` in the message, or set `system_image` |

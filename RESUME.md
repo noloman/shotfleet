@@ -11,7 +11,7 @@ Coordinator follow-up (Manu approved, apply AFTER the first pass, push after eac
  Still NOT approved: terms.html, licence design, D8 founder price, marketing/**, site/draft/**.
  Also second llms.txt bullet of A8 ("when you buy or write to me") depends on D1: do it with item (1).
 
-Done: A1-A8 (A9 comes with B2); tests green for the A pass
-Left: A2-A9, B1-B8 B10, C1-C15 C17 (C15 last), C16, then follow-up (1)-(4)
+Done: A1-A9, B1-B8, B10 (README, docs.html, skill; B3 README+docs only), C16 proofs for C007 C031 C035 C066 C071 C105 C126 C131
+Left: C1-C15 C17 (C15 last), then follow-up (1)-(4)
 Skipped on purpose: section (d) items not approved
-Next step: B2 (also covers A9), B3, B7, then B1,B4,B5,B6,B8,B10
+Next step: C1 CHANGELOG
