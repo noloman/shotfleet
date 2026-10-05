@@ -4231,6 +4231,10 @@ def mcp_call(name, args):
     text = json.dumps({"exit": code, **reports_json()} if args.get("full") else mcp_summary(code), ensure_ascii=False)
     return text, False
 
+# Protocol versions this server really implements, newest first: the initialize handshake, tools, ping and progress over stdio.
+# Not 2025-03-26 (it requires JSON-RPC batches) and not 2026-07-28 (no initialize; needs server/discover and per-request _meta).
+MCP_VERSIONS = ("2025-11-25", "2025-06-18")
+
 def cmd_mcp():
     """Model Context Protocol server on stdin/stdout (JSON-RPC, one message per line)."""
     def send(msg): sys.__stdout__.write(json.dumps(msg, ensure_ascii=False) + "\n"); sys.__stdout__.flush()
@@ -4238,10 +4242,13 @@ def cmd_mcp():
         if not line.strip(): continue
         try: msg = json.loads(line)
         except ValueError: send({"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}}); continue
+        if not isinstance(msg, dict):  # a JSON-RPC batch: none of our versions has them
+            send({"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "invalid request (batches are not supported)"}}); continue
         mid, method, params = msg.get("id"), msg.get("method"), msg.get("params") or {}
         if mid is None: continue  # notifications (initialized, cancelled)
         if method == "initialize":
-            result = {"protocolVersion": params.get("protocolVersion", "2025-06-18"), "capabilities": {"tools": {}},
+            asked = params.get("protocolVersion")  # the spec: the same version when we support it, else our latest
+            result = {"protocolVersion": asked if asked in MCP_VERSIONS else MCP_VERSIONS[0], "capabilities": {"tools": {}},
                       "serverInfo": {"name": "shotfleet", "version": VERSION}}
         elif method == "tools/list": result = {"tools": MCP_TOOLS}
         elif method == "tools/call":

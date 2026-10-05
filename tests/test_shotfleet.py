@@ -1001,6 +1001,20 @@ class Mcp(unittest.TestCase):
         self.assertTrue(out[3]["result"]["isError"]); self.assertIn("no folder", out[3]["result"]["content"][0]["text"])
         self.assertEqual(out[4]["error"]["code"], -32601)
 
+    def serve(self, *msgs):
+        r = subprocess.run([sys.executable, str(Path(sf.__file__)), "mcp"], input="\n".join(map(json.dumps, msgs)) + "\n",
+                           capture_output=True, text=True, timeout=60)
+        return [json.loads(l) for l in r.stdout.splitlines()]
+
+    def test_only_versions_it_implements_are_claimed(self):
+        init = lambda i, v: {"jsonrpc": "2.0", "id": i, "method": "initialize", "params": {"protocolVersion": v}}
+        out = self.serve(init(1, "2025-11-25"), init(2, "2025-06-18"), init(3, "2026-07-28"), init(4, "2025-03-26"),
+                         init(5, "1900-01-01"), {"jsonrpc": "2.0", "id": 6, "method": "server/discover"}, [{"jsonrpc": "2.0", "id": 7, "method": "ping"}])
+        self.assertEqual([m["result"]["protocolVersion"] for m in out[:5]], ["2025-11-25", "2025-06-18"] + ["2025-11-25"] * 3)
+        self.assertEqual(out[5]["error"]["code"], -32601)  # a 2026-07-28 client's probe: any non-modern error means "use initialize"
+        self.assertEqual(out[6]["error"]["code"], -32600)  # a batch is refused, the server keeps going
+        self.assertEqual(len(out), 7)
+
     def fake_check(self, n_locales, n_screens, bad_every=0):
         """A stand-in for check_any: writes a synthetic check.json where the real one would go, reads no image."""
         def check(folder, app=None, strings=None, ocr=None, report=None, *a, **k):
