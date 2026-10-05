@@ -1,2 +1,2 @@
 # RESUME (claude/013-selftest-wording)
-A done (terms/index CI-key wording + claims). Next: B selftest, C linux.md.
+A, B, C done and pushed. Only the final report remains.

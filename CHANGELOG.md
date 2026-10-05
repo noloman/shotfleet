@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- **Internal tool `tools/selftest.sh`:** one script a person runs on any Mac (`sh selftest.sh --download`) that installs the release into a throwaway folder, runs `--version`, `doctor` and `check`, prints one PASS/FAIL block and deletes the folder. Not part of the product.
+- **Terms and home page: CI keys:** they now say a `SHOTFLEET_KEY` is checked online on every run (no 30-day offline limit; a refunded key stops as soon as a run reaches Gumroad). Wording only; the code is unchanged.
 
 ## 0.1.2 (2026-10-05)
 - **`--json` covers every report:** with several reports (several device types, both platforms, Play phone and tablet sets) the one JSON document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each. With one report nothing changes.
