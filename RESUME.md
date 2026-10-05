@@ -5,4 +5,5 @@ Branch: claude/strategy-roadmap (worktree agent-a4a777949e0ea5543). Use /usr/bin
 Done: repo reading complete; web research done (competitor prices re-read, Gumroad, Maestro, Xcode 27, asc CLI, Proxyman/RocketSim comparables); sections 1 (Summary) and 2 (Evidence) written; placeholder `<!-- PART2 -->` marks where the next sections go.
 Left: Funnel fixes, Product roadmap, Pricing, Distribution, Retention, Risks, 30/60/90, Decisions, Could not verify; then `python3 -m unittest tests.test_docs`; final push and reply (branch, commit, five moves, decisions).
 Key facts to reuse: public empty repo github.com/noloman/shotfleet-releases exists (1 commit); `/alternatives` live page says no real Flutter/RN run while home says wger+obytes ran; Proxyman $89 one-time 1yr updates, Team $99/seat/yr min 5; RocketSim Teams EUR10/seat/month; Gumroad Workflows + update emails exist; Discover default-on, 30% fee; CI key SHOTFLEET_KEY uses no activation slot; claims 131 rows.
-Next step: write section 3 (Funnel fixes) replacing the PART2 marker.
+Update: section 3 (Funnel fixes, items F1-F13) written; marker now `<!-- PART3 -->`.
+Next step: write Product roadmap (ranked table), Pricing, Distribution, Retention replacing PART3.
