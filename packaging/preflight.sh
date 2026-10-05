@@ -7,7 +7,7 @@
 # Each check prints OK or FAIL with the reason; exit 1 when any check fails.
 # Variables: DEVELOPER_ID, INSTALLER_ID, NOTARY_PROFILE (defaults as in packaging/release.sh), MIN_FREE_GB (5), MIN_CERT_DAYS (14),
 # WRANGLER ("npx --yes wrangler@latest"), PYTHON_MINOS_MAX (11).
-PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH; export PATH
+PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin; export PATH
 case "${1:-}" in -h|--help) sed -n '2,/^PATH=/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 0 ;; "") ;; *) echo "unknown argument: $1 (see --help)" >&2; exit 2 ;; esac
 cd "$(dirname "$0")/.." || exit 2
 DEVELOPER_ID=${DEVELOPER_ID:-Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)}

@@ -14,7 +14,7 @@
 #
 # Variables: SHOTFLEET_RELEASE_DIR (required, not under /tmp: gets state/ and archive/), PUBLISH_BASE (https://shotfleet.com),
 # WRANGLER ("npx --yes wrangler@latest"), PUBLISH_SMOKE (command run as: env -i $PUBLISH_SMOKE <base> [<checkout>]; default tools/golive/smoke.sh),
-# PUBLISH_ALLOW_BRANCH=1 (publish a tree whose HEAD is not origin/main), SHOTFLEET_ALLOW_TMP_DIR=1 (honoured only with --dry-run).
+# PUBLISH_ALLOW_BRANCH=1 (publish a tree whose HEAD is not origin/main), SHOTFLEET_ALLOW_TMP_DIR=1 (lets the release dir be under /tmp: tests only).
 set -eu
 PATH=$PATH:/usr/bin:/bin; export PATH
 
@@ -102,7 +102,7 @@ case "$REL" in
   /*) STATE=$REL/state; ARCH=$REL/archive/$VERSION
       case "$REL" in
         /tmp|/tmp/*|/private/tmp|/private/tmp/*|/var/tmp/*|/private/var/tmp/*|/var/folders/*|/private/var/folders/*)
-          if [ "$DRY" = 1 ] && [ "${SHOTFLEET_ALLOW_TMP_DIR:-}" = 1 ]; then warn "$REL is a temporary directory (allowed for a dry run)"
+          if [ "${SHOTFLEET_ALLOW_TMP_DIR:-}" = 1 ]; then warn "$REL is a temporary directory (SHOTFLEET_ALLOW_TMP_DIR=1: only for tests)"
           else fail "SHOTFLEET_RELEASE_DIR is under a temporary directory ($REL): /tmp is wiped; use a durable folder"; fi ;;
         *) ok "release directory $REL" ;;
       esac ;;
