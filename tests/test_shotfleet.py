@@ -954,7 +954,7 @@ class ExternalOcr(unittest.TestCase):
                 (out / "raw" / lp / "1.texts.json").write_text(json.dumps(list(words.values())))  # what an iOS run reads from the accessibility tree
             (out / "run.json").write_text(json.dumps({"platform": "ios", "app": str(d / "gone.app"), "strings": [str(d / "l10n/*.arb")],
                                                       "locales": {"en": {"ok": True}, "de": {"ok": True}}}))
-            with contextlib.redirect_stdout(io.StringIO()):
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(sf, "ocr_tool", return_value="ocr"):  # the .texts.json files make OCR unnecessary; on Linux with is_mac patched there is no Swift OCR to build
                 code = sf.cmd_check(out, ocr_command="cat {image}.txt")
             report = json.loads((out / "check.json").read_text())
         self.assertTrue(any(p.startswith("de/1.png: shows en") for p in report["problems"]), report["problems"])
