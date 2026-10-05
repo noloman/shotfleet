@@ -44,8 +44,8 @@ else fail "git tree is not clean (or this is not a git work tree): the build wou
 free_kb=$(df -k . | awk 'NR == 2 { print $4 }')
 if [ "${free_kb:-0}" -ge $((MIN_FREE_GB * 1024 * 1024)) ]; then ok "free disk $((free_kb / 1024 / 1024)) GB (need $MIN_FREE_GB)"; else fail "free disk $((${free_kb:-0} / 1024 / 1024)) GB, need $MIN_FREE_GB"; fi
 
-PY=$(uv python find 3.14 --managed-python 2>/dev/null)
-if [ -z "$PY" ] || [ ! -x "$PY" ]; then fail "no uv-managed standalone Python 3.14 (run: uv python install 3.14); Homebrew's Python would make the build need this Mac's macOS"
+PY=$(uv python find 3.14.2 --managed-python 2>/dev/null)
+if [ -z "$PY" ] || [ ! -x "$PY" ]; then fail "no uv-managed standalone Python 3.14.2 (run: uv python install 3.14.2); Homebrew's Python would make the build need this Mac's macOS"
 else
   mkdir "$T/py" && cp "$(python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$PY")" "$T/py/python"  # macho-minos reads regular files only
   if python3 tools/macho-minos.py "$T/py" --max "$MINOS_MAX" >"$T/minos.out" 2>&1; then ok "managed Python $("$PY" -c 'import sys;print(sys.version.split()[0])') at $PY needs macOS $(grep -o 'macOS [0-9.]* or newer' "$T/minos.out" | awk '{print $2}') (maximum $MINOS_MAX.0)"

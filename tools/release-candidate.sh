@@ -92,7 +92,7 @@ if [ -n "$ID" ]; then echo "== signing identity: $ID (build.sh signs; NOTARY_PRO
 else echo "== signing identity: none used (${REUSE:+reused build; }--no-sign or no 'Developer ID Application' in 'security find-identity -v -p codesigning'); the build stays unsigned"; fi
 if [ -z "$REUSE" ]; then
   echo "== build (a temp copy of the repo's shotfleet.py with GUMROAD_PRODUCT_ID = $PRODUCT_ID; the repo file is not touched)"
-  mkdir -p "$SRC" && cp "$ROOT/shotfleet.py" "$ROOT/ocr.swift" "$SRC/" && cp -R "$ROOT/skill" "$ROOT/packaging" "$SRC/" || die "can't copy the sources"
+  mkdir -p "$SRC" && cp "$ROOT/shotfleet.py" "$ROOT/ocr.swift" "$SRC/" && cp -R "$ROOT/skill" "$ROOT/packaging" "$ROOT/tools" "$SRC/" || die "can't copy the sources"
   sed -i '' "s|^GUMROAD_PRODUCT_ID = .*|GUMROAD_PRODUCT_ID = \"$PRODUCT_ID\"  # release-candidate TEST id|" "$SRC/shotfleet.py"
   grep -qF "GUMROAD_PRODUCT_ID = \"$PRODUCT_ID\"" "$SRC/shotfleet.py" || die "the test product id did not land in the copy"
   [ "$(diff "$ROOT/shotfleet.py" "$SRC/shotfleet.py" | grep -c '^[<>]')" = 2 ] && ok "the build copy differs from shotfleet.py in exactly one line (the product id)" || fail "the build copy differs from shotfleet.py in more than the product id line"
