@@ -1,0 +1,6 @@
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "Notes:"
+- assertVisible: "Add Note"
+- takeScreenshot: 01_home

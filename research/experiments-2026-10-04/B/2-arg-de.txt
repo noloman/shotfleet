@@ -1,0 +1,12 @@
+capdemo
+navigator.language=de-DE
+Hallo
+device=de
+0 %
+0 pages
+14:47
+No signal
+Mobile Service
+SSID, 3 of 3 Wi-Fi bars
+Not charging
+100% battery power

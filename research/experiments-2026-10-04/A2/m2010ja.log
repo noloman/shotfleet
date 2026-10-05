@@ -1,0 +1,24 @@
+Anonymous analytics enabled. To opt out, set MAESTRO_CLI_NO_ANALYTICS environment variable to any value before running Maestro.
+
+Will split 2 flows across 2 shards (1 flows per shard)
+
+[shard 1] Waiting for flows to complete...
+
+[shard 2] Waiting for flows to complete...
+[shard 1] [Passed] a2-m2010ja-2 (45s)
+
+[shard 1] 1/1 Flow Passed in 45s
+
+[shard 2] [Passed] a2-m2010ja-1 (48s)
+
+[shard 2] 1/1 Flow Passed in 48s
+
+
+╭─────────────────────────────────╮
+│                                 │
+│   Passed: 2/2                   │
+│   [ shotfleet_android ] - 1/1   │
+│   [ shotfleet_android ] - 1/1   │
+│                                 │
+╰─────────────────────────────────╯
+

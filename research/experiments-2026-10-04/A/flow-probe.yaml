@@ -1,0 +1,20 @@
+appId: com.shotfleet.fixture
+name: expA-probe
+---
+- launchApp
+- takeScreenshot: shots-probe/01_welcome
+- assertTrue:
+    condition: ${false}
+    label: "shotfleet:hier:01_welcome"
+    optional: true
+- extendedWaitUntil:
+    visible: "zzzz-never-visible"
+    timeout: 40000
+    optional: true
+    label: "probe-window"
+- tapOn: "次へ"
+- takeScreenshot: shots-probe/02_settings
+- assertTrue:
+    condition: ${false}
+    label: "shotfleet:hier:02_settings"
+    optional: true
