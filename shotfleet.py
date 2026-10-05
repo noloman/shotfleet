@@ -3648,7 +3648,7 @@ LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.com/#price"
 GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
-GUMROAD_PRODUCT_ID = ""  # set by packaging/go-live.sh: the product ID from the License key block on the product's Content page
+GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
 MAX_MACS = 3
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
