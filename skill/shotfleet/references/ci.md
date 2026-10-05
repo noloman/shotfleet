@@ -9,8 +9,7 @@ JSON shapes: `check` and `run` give `exit`, `screenshots`, `problems` (and `note
 ## The pull-request check
 
 Checking needs only a Mac (it uses macOS text recognition) and no simulators, so it fits a pull-request job on
-GitHub's macOS runners. `check` is free and needs no licence. This recipe has not been run on GitHub yet (README says
-so); the `check` command itself is the one tested.
+GitHub's macOS runners. `check` is free and needs no licence. The recipe as written (the build step, then check with --app) has not been run on GitHub yet. The installer, shotfleet --version, doctor and check on sample screenshots did run on GitHub's macos-14 and macos-15 runners (2026-10-05).
 
 ```yaml
 # .github/workflows/screenshots.yml

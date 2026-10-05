@@ -1,6 +1,6 @@
 # shotfleet
 
-> shotfleet is a macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots made by any other tool (fastlane snapshot, screengrab, by hand) without capturing anything.
+> shotfleet is a macOS command-line tool that captures localized App Store and Google Play screenshots from one English Maestro flow, in every language an app ships, and checks that each screenshot is in the right language. It also checks screenshots you already have (fastlane snapshot, screengrab, a plain folder per language, by hand) without capturing anything.
 
 ## What it does
 
@@ -23,7 +23,7 @@
 
 - `check` is free for everyone. `run` is free for up to 2 languages.
 - A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. It includes a year of updates and a 14-day refund. Prices are before VAT where it applies; checkout is on Gumroad, the merchant of record.
-- The home page says whether shotfleet is on sale yet or still on an early-access list.
+- The home page links to the checkout; shotfleet is on sale.
 
 ## Links
 

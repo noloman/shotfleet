@@ -294,7 +294,7 @@ class FirstScreen(unittest.TestCase):
 
     def test_the_caveat_stays_in_the_price_section_and_on_the_comparison_page(self):
         self.assertIn("other apps and bare React Native not yet run", PAGES["index.html"])
-        self.assertIn("I haven't run it on a real Flutter or React Native app yet", PAGES["alternatives.html"])
+        self.assertIn("not on other apps or on bare React Native", PAGES["alternatives.html"])
         self.assertIn("Apple silicon", PAGES["alternatives.html"])
 
     def test_the_gallery_heading_does_not_read_as_proof_of_the_tool(self):

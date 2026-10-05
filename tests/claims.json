@@ -516,12 +516,14 @@
   "where": [
    "README.md",
    "site/public/index.html",
-   "marketing/kit/show-hn.md"
+   "marketing/kit/show-hn.md",
+   "site/public/docs.html"
   ],
   "where_text": [
    "### Check screenshots you already have (fastlane, screengrab, by hand)",
    "Check any screenshots, from fastlane or by hand",
-   "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)"
+   "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)",
+   "<h2 id=\"check\">Check screenshots you already have</h2>"
   ],
   "status": "fixed",
   "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names.",
@@ -593,11 +595,13 @@
   "claim": "Flutter and React Native work from your translation files (run end to end on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android)",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "README.md",
+   "site/public/alternatives.html"
   ],
   "where_text": [
    "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
-   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run)."
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
+   "has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native."
   ],
   "status": "evidence",
   "proof": "Real runs on this Mac, 2026-10-03, Maestro 2.0.10, Xcode 27, Flutter 3.47.6 (research/frameworks.md section 15, screenshots and logs in research/real-apps-2026-10-03/): wger (Flutter, debug build) iOS and Android, de and ja: `init` with no arguments found the build and wrote strings = lib/l10n/*.arb, 0 untranslated selectors, German on every screenshot on both platforms (the DEBUG banner shows); ja falls back to English because wger's Japanese is 30% done, and check says so ('the app has no ja translation'). obytes template (Expo, Release build) iOS and Android, en and ar: init wrote strings = src/translations/*.json, Arabic and right-to-left reach the translated Settings screen on both platforms; the app's onboarding and login screens are hard-coded English, so 3 selectors are reported as untranslated and check flags those 2 screenshots (correctly). Not run: bare React Native, other Flutter or Expo apps, Maestro 2.11.",
@@ -1152,7 +1156,7 @@
    "shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json"
   ],
   "status": "fixed",
-  "proof": "A buyer installs the signed program, not shotfleet.py (README.md:229 'The installed program brings its own Python'; source is not shipped, DISTRIBUTION.md). The recipe cannot run as written; it is marked 'hasn't been run on GitHub yet' (honest) but is still the wrong command. Also needs install.sh on the runner and, for run, SHOTFLEET_KEY.",
+  "proof": "A buyer installs the signed program, not shotfleet.py (README.md:229 'The installed program brings its own Python'; source is not shipped, DISTRIBUTION.md). The recipe cannot run as written; it is marked 'hasn't been run on GitHub yet' (honest) but is still the wrong command. Also needs install.sh on the runner and, for run, SHOTFLEET_KEY. 2026-10-05: two manual GitHub runs installed the live 0.1.1 on Apple-silicon macos-14 (14.8.9) and macos-15 (15.7.9) runners; install.sh, `shotfleet --version`, `doctor` (ran to the end) and `check` on two sample screenshots worked. The recipe as written (an xcodebuild step, then check --app ... --json) still has not run on GitHub; the README, docs and skill now say exactly that.",
   "layer": "device",
   "assertion": "Run the recipe on a macos-15 runner in a private repo with the released binary: exit 0 and the artifact contains check.json.",
   "fix": "- run: curl -fsSL https://shotfleet.com/install.sh | sh  then  shotfleet check fastlane/ --app ... --json > check.json",
@@ -1230,7 +1234,7 @@
    "Text recognition is macOS's. It reads 33 languages"
   ],
   "status": "evidence",
-  "proof": ".build/ocr --langs printed 33 codes on this Mac again on 2026-10-03 (en-US fr-FR it-IT de-DE es-ES pt-BR zh-Hans zh-Hant yue ko-KR ja-JP ru-RU uk-UA th-TH vi-VT ar-SA ars tr-TR id-ID cs-CZ da-DK nl-NL no nn nb ms-MY pl-PL ro-RO sv-SE fi-FI hi-IN mr-IN; macOS 27); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer). 'Others only get the weaker checks': G1ScriptsMacosCannotRead.test_a_blank_read_of_an_unreadable_script_proves_nothing_either_way and G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language (proven), ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command. Tesseract fills in when installed (ROADMAP.md: 84/85 languages verified by reading).",
+  "proof": ".build/ocr --langs printed 33 codes on this Mac again on 2026-10-03 (en-US fr-FR it-IT de-DE es-ES pt-BR zh-Hans zh-Hant yue ko-KR ja-JP ru-RU uk-UA th-TH vi-VT ar-SA ars tr-TR id-ID cs-CZ da-DK nl-NL no nn nb ms-MY pl-PL ro-RO sv-SE fi-FI hi-IN mr-IN; macOS 27); research/all-languages.md. Depends on the buyer's macOS version (older releases read fewer): 33 is the macOS 27 number. Hosted runs 2026-10-05 (research/limits-platform-reach-2026-10-05.md, research/limits-catalan-check-macos-2026-10-05.md): the same Catalan screenshot was skipped on macOS 14.8.9 (\"macOS can't read the script of ca\") and judged \"looks like 'en'\" on 15.7.9; Catalan, Croatian and Hungarian are not among the 33. The README and docs say so. 'Others only get the weaker checks': G1ScriptsMacosCannotRead.test_a_blank_read_of_an_unreadable_script_proves_nothing_either_way and G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language (proven), ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command. Tesseract fills in when installed (ROADMAP.md: 84/85 languages verified by reading).",
   "layer": "unit",
   "assertion": "Test: judge_screen returns (None, None) for a Greek/Hebrew screen macOS cannot read and check prints 'macOS can't read the script of ...'. CI on the oldest supported macOS records len(--langs).",
   "fix": ""
@@ -2123,7 +2127,7 @@
    "`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first"
   ],
   "status": "partial",
-  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Then run on a Mac (Apple silicon, macOS 27, 2026-10-03) in throwaway HOME/SHOTFLEET_HOME/ANDROID_HOME with this Mac's Java and Android tools hidden: without Homebrew, all 5 steps (Maestro 2.0.10, Temurin 21.0.12.1 JRE at jre/Contents/Home, Google's mac_arm64 command-line tools, licences, platform-tools/emulator/build-tools/arm64 image) ran and doctor reported Maestro, Java, iOS and Android ready; with Homebrew, `brew install --cask android-commandlinetools` plus licences and packages ran (635 s) and doctor reported Android ready. Both passed; the claim stays partial because each Mac run had Maestro or the JRE from the first run reused for the second, and no clean macOS user or outside machine has run it.",
+  "proof": "Installers.test_maestro_is_installed_executable_and_found, Installers.test_a_wrong_checksum_installs_nothing, Installers.test_a_zip_with_a_path_outside_its_folder_is_refused, Plan.test_missing_things_become_steps_in_order_and_never_mention_sudo, Consent.test_anything_but_yes_runs_nothing, Consent.test_the_first_failure_stops_the_rest_and_names_what_is_left (local server, no network); also run for real on a Linux machine with none of the tools: Maestro 2.0.10, Google's command-line tools, platform-tools, emulator and system image installed, then doctor reported them ok. The Java step was run separately against Adoptium's real API (21.0.12, java -version ran, find_java found it). Then run on a Mac (Apple silicon, macOS 27, 2026-10-03) in throwaway HOME/SHOTFLEET_HOME/ANDROID_HOME with this Mac's Java and Android tools hidden: without Homebrew, all 5 steps (Maestro 2.0.10, Temurin 21.0.12.1 JRE at jre/Contents/Home, Google's mac_arm64 command-line tools, licences, platform-tools/emulator/build-tools/arm64 image) ran and doctor reported Maestro, Java, iOS and Android ready; with Homebrew, `brew install --cask android-commandlinetools` plus licences and packages ran (635 s) and doctor reported Android ready. Both passed; the claim stays partial because each Mac run had Maestro or the JRE from the first run reused for the second, and no clean macOS user or outside machine has run it. The Mac run installed Maestro 2.0.10, the pin of that day; the pin is 2.11.0 now, so the 2.11.0 download has not been run by doctor --fix on a Mac.",
   "layer": "unit",
   "assertion": "On a clean Mac, doctor --fix --yes ends with doctor reporting Maestro and Java ok. (Run on a Mac in a throwaway environment, both Android branches, 2026-10-03; not on a separate clean user.)",
   "fix": ""
