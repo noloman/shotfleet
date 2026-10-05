@@ -1,0 +1,62 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+note: cs is only 48% translated in the app, so it is skipped; add locales = [..., "cs"] to the config to capture it anyway
+note: fa is only 14% translated in the app, so it is skipped; add locales = [..., "fa"] to the config to capture it anyway
+note: he is only 42% translated in the app, so it is skipped; add locales = [..., "he"] to the config to capture it anyway
+note: hi is only 21% translated in the app, so it is skipped; add locales = [..., "hi"] to the config to capture it anyway
+note: ja is only 27% translated in the app, so it is skipped; add locales = [..., "ja"] to the config to capture it anyway
+note: ko is only 47% translated in the app, so it is skipped; add locales = [..., "ko"] to the config to capture it anyway
+note: mk is only 34% translated in the app, so it is skipped; add locales = [..., "mk"] to the config to capture it anyway
+note: nb is only 11% translated in the app, so it is skipped; add locales = [..., "nb"] to the config to capture it anyway
+note: ru is only 49% translated in the app, so it is skipped; add locales = [..., "ru"] to the config to capture it anyway
+note: sk is only 12% translated in the app, so it is skipped; add locales = [..., "sk"] to the config to capture it anyway
+note: ta is only 46% translated in the app, so it is skipped; add locales = [..., "ta"] to the config to capture it anyway
+note: tr is only 38% translated in the app, so it is skipped; add locales = [..., "tr"] to the config to capture it anyway
+note: zh is only 49% translated in the app, so it is skipped; add locales = [..., "zh"] to the config to capture it anyway
+memory pressure is elevated: using 1 devices instead of 2
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 19 locales on 1 emulators, 19 rounds...
+ok   ar       3/3 screenshots
+ok   ca       3/3 screenshots
+ok   de       3/3 screenshots
+ok   en       3/3 screenshots
+ok   es       3/3 screenshots
+ok   fr       3/3 screenshots
+ok   hr       3/3 screenshots
+ok   hu       3/3 screenshots
+ok   id       3/3 screenshots
+ok   it       3/3 screenshots
+ok   nl       3/3 screenshots
+ok   pl       3/3 screenshots
+ok   pt       3/3 screenshots
+ok   pt-BR    3/3 screenshots
+ok   pt-PT    3/3 screenshots
+ok   ro       3/3 screenshots
+ok   sl       3/3 screenshots
+ok   uk       3/3 screenshots
+ok   zh-Hant  3/3 screenshots
+captured 19/19 locales in 822s on 1 emulators
+
+checked 60 screenshots in 20 languages: 20 problem(s)
+  - ca/01_login.png: shows en strings (5 lines) more than ca (3)
+  - ca/02_advanced.png: shows en strings (13 lines) more than ca (0)
+  - ca/03_self_hosted.png: shows en strings (13 lines) more than ca (1)
+  - it/02_advanced.png: shows en strings (11 lines) more than it (1)
+  - it/03_self_hosted.png: shows en strings (11 lines) more than it (2)
+  - ja/02_advanced.png: shows en strings (12 lines) more than ja (0)
+  - ja/03_self_hosted.png: shows en strings (11 lines) more than ja (1)
+  - nl/02_advanced.png: shows en strings (10 lines) more than nl (3)
+  - nl/03_self_hosted.png: shows en strings (10 lines) more than nl (4)
+  - pl/02_advanced.png: shows en strings (11 lines) more than pl (1)
+  - pl/03_self_hosted.png: shows en strings (11 lines) more than pl (2)
+  - pt/02_advanced.png: shows en strings (11 lines) more than pt (1)
+  - pt/03_self_hosted.png: shows en strings (10 lines) more than pt (2)
+  - pt-PT/02_advanced.png: shows en strings (11 lines) more than pt-PT (1)
+  - pt-PT/03_self_hosted.png: shows en strings (10 lines) more than pt-PT (2)
+  - ro/02_advanced.png: shows en strings (11 lines) more than ro (1)
+  - ro/03_self_hosted.png: shows en strings (11 lines) more than ro (3)
+  - zh-Hant/02_advanced.png: shows en strings (11 lines) more than zh-Hant (1)
+  - zh-Hant/03_self_hosted.png: shows en strings (10 lines) more than zh-Hant (2)
+  - identical image in 2 languages: en/02_advanced.png, ja/02_advanced.png
+notes (1, not blocking):
+  - 20 listing(s) (ar, ca, de, en, es, fr, ...) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+exit 1 after 856s

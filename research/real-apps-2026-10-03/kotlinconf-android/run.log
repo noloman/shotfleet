@@ -1,0 +1,10 @@
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 2 locales on 1 emulators, 2 rounds...
+ok   de       3/3 screenshots
+ok   en       3/3 screenshots
+captured 2/2 locales in 56s on 1 emulators
+
+checked 6 screenshots in 2 languages: 0 problem(s)
+notes (1, not blocking):
+  - 2 listing(s) (de, en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+exit 0 after 68s

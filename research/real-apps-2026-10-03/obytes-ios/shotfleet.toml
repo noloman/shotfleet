@@ -1,0 +1,15 @@
+[ios]
+app = "ios/build/Build/Products/Release-iphonesimulator/ObytesApp.app"
+strings = "src/translations/*.json"   # Expo: translations are read from these files
+# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow
+# locales = ["de", "ja"]   # default: every language the app ships
+
+[android]
+apk = "android/app/build/outputs/apk/release/app-release.apk"
+strings = "src/translations/*.json"   # Expo: translations are read from these files
+# devices = ["phone", "tablet"]   # Android sets from one flow
+# locales = ["de", "ja"]   # default: every language the app ships
+
+# Build the app before every run, so `shotfleet run` goes from source to screenshots (uncomment):
+# [hooks]
+# before_run = "if [ \"$SHOTFLEET_PLATFORM\" = ios ]; then npx expo run:ios --configuration Release --no-bundler; else npx expo run:android --variant release --no-bundler; fi"

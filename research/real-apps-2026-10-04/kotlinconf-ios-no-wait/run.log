@@ -1,0 +1,13 @@
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+retrying 2: de, en
+FAIL de       3/3 screenshots (retried)  blank screenshot(s): 01_privacy.png (the app had not drawn its first frame; wait for text on the screen before takeScreenshot)
+FAIL en       3/3 screenshots (retried)  blank screenshot(s): 01_privacy.png (the app had not drawn its first frame; wait for text on the screen before takeScreenshot)
+note: this Mac was short of memory, and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer. Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>
+captured 0/2 locales in 106s on 1 simulators
+
+checked 6 screenshots in 2 languages: 3 problem(s)
+  - de/01_privacy.png: blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; wait for text that is on the screen (extendedWaitUntil: visible: "...", timeout: 60000) before takeScreenshot
+  - en/01_privacy.png: blank: nothing is drawn on it yet. The app paints its first frame after the flow's wait passed; wait for text that is on the screen (extendedWaitUntil: visible: "...", timeout: 60000) before takeScreenshot
+  - identical image in 2 languages: de/01_privacy.png, en/01_privacy.png
+exit 1 after 139s

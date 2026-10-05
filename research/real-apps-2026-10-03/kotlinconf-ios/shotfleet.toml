@@ -1,0 +1,9 @@
+[ios]
+app = "~/Library/Developer/Xcode/DerivedData/KotlinConf-dkqytcfkbvghhtcpxymjmkxcwwgc/Build/Products/Debug-iphonesimulator/KotlinConf.app"
+# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow
+# locales = ["de", "ja"]   # default: every language the app ships
+
+[android]
+apk = "app/androidApp/build/outputs/apk/debug/androidApp-debug.apk"
+# devices = ["phone", "tablet"]   # Android sets from one flow
+# locales = ["de", "ja"]   # default: every language the app ships

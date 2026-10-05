@@ -12,7 +12,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
-| 3 | A real Flutter, Expo and React Native app captured end to end | Mac (iOS) and/or KVM Linux (Android) | no device |
+| 3 | A real Flutter, Expo and React Native app captured end to end | **done 2026-10-03 on a Mac** (wger, obytes, kotlinconf-app; `research/frameworks.md` section 15); bare React Native and Linux/KVM runs still open | |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
@@ -80,26 +80,21 @@ emulator refuses x86_64 images without `vmx`/`svm` and refuses an arm64 image on
 
 Then the real one: `shotfleet run` of 18 languages on a real app on that machine, for the timing to compare with 15 min 24 s on the Mac.
 
-## 3. Real Flutter, Expo and React Native apps, end to end
+**A public app for that comparison now exists:** wger (commit `cf12708`, `flutter build apk --debug`, 19 languages, flow `research/real-apps-2026-10-03/wger-android/flow.yaml`). Mac, 2026-10-04: 19/19 captured, `wall_seconds` 822 on 1 emulator (memory pressure cut 2 to 1), with another session's emulator loading the Mac for the first ~13 minutes, so it is an upper bound, not a clean timing; a clean Mac rerun is queued (device queue line 8). The flow needs the `Title.*` selector translation from PR #29 (not in `main` before it). `research/frameworks.md` section 16.
 
-**State:** `init` finds the build and writes the `strings` line (proved on a Flutter 3.47.6 and an Expo demo app built on Linux, and on real
-repos wger and obytes by detection only). Nothing has been captured on a device. Questions only a run answers:
+## 3. Real Flutter, Expo and Compose apps, end to end
 
-- Does the language reach the app? iOS: `-AppleLanguages` launch arguments. Android: `cmd locale set-app-locales`. Flutter and React Native read
-  the process locale, so it should; Expo apps with a persisted language (AsyncStorage) may ignore it.
-- Does Maestro see the text? Flutter needs `Semantics` labels (icons need `semanticLabel`); React Native `testID` maps to `id:`; on iOS an
-  `accessibilityLabel` replaces the visible text in the tree (Maestro issue 1409).
-- The Flutter DEBUG banner (iOS simulators run debug builds only) and the React Native Release requirement.
+**Done 2026-10-03 on a Mac** (iOS and Android; evidence in `research/frameworks.md` section 15 and `research/real-apps-2026-10-03/`): wger (Flutter), the obytes template (Expo, Release) and JetBrains' kotlinconf-app (Compose Multiplatform) were built, `init`ed with no arguments, run in two languages each and checked; README, `site/public/docs.html`, `skill/` and claims C035 and C121 name those apps and nothing more. Language reached all three on both platforms; `-AppleLanguages` and `set-app-locales` need no change.
 
-**Steps (Mac for iOS, any KVM Linux or Mac for Android).** Use the three repos already checked: wger-project/flutter
-(`flutter build ios --simulator --debug`, `flutter build apk --debug`), obytes/react-native-template-obytes (`npx expo run:ios --configuration
-Release --no-bundler`, `npx expo run:android --variant release --no-bundler`), JetBrains/kotlinconf-app (`xcodebuild -workspace
-app/iosApp/KotlinConf.xcworkspace -scheme KotlinConfAppScheme ...`, `./gradlew :app:androidApp:assembleDebug`). In each: `shotfleet init`,
-write a 3-step English flow, `shotfleet run --locales de,ja`, open `out/index.html`.
-
-**Passed when** the German and Japanese screenshots show German and Japanese, 0 untranslated selectors in the run output, 0 problems from
-`check`. **Record** in `STATUS.md` row C1 and, only for what passed, in the README ("Flutter and React Native work from your translation files"
-currently says "not yet run on a real Flutter or React Native app"; claims C035, C121).
+**Still open from this item**
+- Bare React Native (Rocket.Chat or Ignite from section 12), and a Flutter or Expo app that is not one of these two.
+- The same on a KVM Linux box (Android only) for the timing.
+- **Blank screenshots: done (2026-10-04).** `check` flags a flat frame and `run` captures that language again once, then reports it. On a device (KotlinConf iOS, no wait) the second capture was blank again, so the flow must wait for text; see `research/frameworks.md` section 16.
+- **Still to run on a device** (the 2026-10-04/05 follow-up window produced nothing: `research/frameworks.md` section 17; it needs a quiet Mac, and each job a hard time limit): Rocket.Chat with a real flow (the starter flow only caught the splash); wger iOS in all 19 languages (the first try hung on a stuck simulator); a clean wger Android 19-language timing for the Linux comparison (E1; the 2026-10-04 run of 822 s on 1 emulator ran under another session's load); a clean KotlinConf iOS pair with a longer wait (the 2026-10-03 evidence image `kotlinconf-ios/en-01_privacy.png` is blank).
+- **`run` keeps stale language folders:** an earlier run's `ja` folder stayed in `out-android/raw` and was checked with the new run ("20 languages" for 19). A partial rerun keeping the other languages is deliberate, but a full default-locales run could warn about folders it did not just capture.
+- **Flutter debug builds show the DEBUG banner on iOS and, with a debug APK, on Android;** `init` already warns. A `release` APK on Android is untried with shotfleet.
+- **Marketing and draft pages still say "not yet run on a real Flutter or React Native app"** (`site/draft/`, `marketing/kit/`, `site/public/alternatives.html`, `research/`): left alone on purpose, they are conservative. Update them when the posts are rewritten.
+- Xcode 27 and these three builds: see the "did not pass" table; none of it is shotfleet's, but a `doctor` or README note could save a buyer an afternoon (`expo run:ios` cannot open the Simulator; `IPHONEOS_DEPLOYMENT_TARGET=15.1`; `ARCHS=arm64` for KMP).
 
 ## 5. Android `[inputs]` on Maestro 2.11.0
 
