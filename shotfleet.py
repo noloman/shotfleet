@@ -2385,8 +2385,10 @@ def ocr_tool():
     src = HERE / "ocr.swift"
     if not exe.exists() or exe.stat().st_mtime < src.stat().st_mtime:
         exe.parent.mkdir(exist_ok=True)
-        r = sh(["swiftc", "-O", str(src), "-o", str(exe)])
-        if r.returncode != 0: raise RuntimeError("ocr build failed:\n" + r.stderr)
+        tmp = exe.with_name(f"ocr.{os.getpid()}.{threading.get_ident()}")  # built aside, then renamed: two checks (or test processes) at once never run a half-written helper
+        r = sh(["swiftc", "-O", str(src), "-o", str(tmp)])
+        if r.returncode != 0: tmp.unlink(missing_ok=True); raise RuntimeError("ocr build failed:\n" + r.stderr)
+        os.replace(tmp, exe)
     return str(exe)
 
 TWINS = {"ms": ("id",), "id": ("ms",), "hr": ("sl",), "sl": ("hr",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
