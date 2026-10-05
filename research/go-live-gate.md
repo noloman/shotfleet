@@ -50,3 +50,7 @@ Run from a clean download, not from the build folder:
 
 Still not run (unchanged): a refunded real key being refused (needs a real paid sale), a clean macOS user or second Mac, outside developers, and the package installed by Installer.app with an administrator password.
 
+## Release 0.1.1 (2026-10-05)
+
+Live 13:27. Full evidence, hashes, the rollback id and the rebuild recipe: [research/release-0.1.1-evidence-2026-10-05.md](release-0.1.1-evidence-2026-10-05.md). Device gate 65 of 65 on the signed standalone-Python build (iOS 26.4 pinned), production smoke 36 checks and a live install test passed.
+

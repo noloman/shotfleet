@@ -104,8 +104,9 @@ Still by hand after the smoke test: open the page in a browser and click the buy
 product page showing $49 crossed out and $29), then do one real install on a clean Mac account
 (`curl -fsSL https://shotfleet.com/install.sh | sh`, `shotfleet doctor`) and one test purchase: Gumroad's own "Test card"
 checkout while logged in, or a single-use 100%-off code (never your own card; Gumroad can suspend the account for that).
-Activate the key it issues, activate again (counts nothing), refund the sale in the dashboard and check the next weekly
-check refuses it.
+Activate the key it issues, activate again (counts nothing). A 100%-off sale cannot be refunded (no refund action on a $0
+sale): disable its key under Manage license keys instead and check the next weekly check refuses it (`the key was disabled`).
+Only a paid sale by another person tests the refund itself (`docs/refund-runbook.md`).
 
 ## 7. Send the launch email (your account, your words; draft in marketing/launch-email.md)
 

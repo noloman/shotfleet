@@ -8,6 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import shotfleet as sf
+sf.USE_DEVICE_LOCK = False  # fake runs touch no device; two test suites at once must not refuse each other
 
 needs_mac = unittest.skipUnless(sys.platform == "darwin", "needs macOS tools (PlistBuddy, swiftc, xcrun, BSD sed)")
 
@@ -1026,6 +1027,8 @@ class GumroadLicence(unittest.TestCase):
     def setUp(self):
         import http.server, threading, urllib.parse
         self.uses, self.calls, self.flags, self.status, test = {self.GOOD: 0, self.REFUNDED: 0}, [], {self.REFUNDED: {"refunded": True}}, 200, self
+        self.junk = None  # bytes: answer every call with this 200 body
+        self.disabled = set()  # keys Gumroad disabled (it does that itself on a full refund; the seller can too)
         class H(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
                 b = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
@@ -1033,6 +1036,10 @@ class GumroadLicence(unittest.TestCase):
                 key = b.get("license_key")
                 if test.status >= 500:
                     self.send_response(test.status); self.end_headers(); self.wfile.write(b'{"success":false,"message":"boom"}'); return
+                if test.junk is not None:  # a captive portal answers every request with a 200 page
+                    self.send_response(200); self.end_headers(); self.wfile.write(test.junk); return
+                if key in test.disabled:
+                    self.send_response(404); self.end_headers(); self.wfile.write(b'{"success":false,"message":"This license key has been disabled."}'); return
                 if key not in test.uses or b.get("product_id") != "prod1":
                     self.send_response(404); self.end_headers()
                     self.wfile.write(b'{"success":false,"message":"That license does not exist for the provided product."}'); return
@@ -1096,6 +1103,16 @@ class GumroadLicence(unittest.TestCase):
                 with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
                 sf.LICENCE_FILE.unlink()
 
+    def test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays(self):
+        self.activate(self.GOOD); self.stale(); sf.require_licence()
+        self.disabled.add(self.GOOD); self.stale()
+        with self.assertRaisesRegex(sf.NoLicence, "disabled, as Gumroad does after a full refund"): sf.require_licence()
+        self.assertTrue(sf.LICENCE_FILE.exists())  # nothing is deleted; `deactivate` or a fresh activation is the buyer's call
+        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, "disabled"): sf.require_licence()
+        sf.LICENCE_FILE.unlink()
+        with self.assertRaisesRegex(sf.Fail, "didn't activate: the key was disabled"): self.activate(self.GOOD)
+        self.assertEqual(self.uses[self.GOOD], 1)  # the refused attempt burned no activation
+
     def test_a_won_dispute_keeps_the_licence(self):
         self.flags[self.GOOD] = {"disputed": True, "dispute_won": True}
         self.activate(self.GOOD); self.stale(); sf.require_licence()
@@ -1113,6 +1130,18 @@ class GumroadLicence(unittest.TestCase):
         sf.require_licence()  # offline grace, the licence stays
         self.assertTrue(sf.LICENCE_FILE.exists())
         with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
+
+    def test_a_200_that_is_not_json_is_offline_not_a_verdict(self):
+        self.activate(self.GOOD)
+        for junk in (b"<html>Sign in to the hotel Wi-Fi</html>", b"[1, 2]", b"\xff\xfe"):
+            with self.subTest(junk=junk):
+                self.junk = junk; self.stale()
+                with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
+                sf.require_licence()  # inside the 30 days offline grace the licence stays, and no cryptic JSON error reaches the buyer
+                self.assertTrue(sf.LICENCE_FILE.exists())
+        lic = json.loads(sf.LICENCE_FILE.read_text())
+        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 31 * 86400}))
+        with self.assertRaisesRegex(sf.Fail, "30 days"): sf.require_licence()  # and the grace still ends
 
     def test_released_build_needs_a_licence_for_run(self):
         with self.assertRaisesRegex(sf.Fail, "shotfleet activate"): sf.require_licence()
@@ -1907,6 +1936,20 @@ class RetryOnSlowSimulator(unittest.TestCase):
         self.assertEqual(self.calls.count("install"), 2)  # once before the run, once before the retry
         self.assertEqual(code, 0, out)
         self.assertIn("retrying 1: de", out)
+
+    @needs_mac
+    def test_when_no_simulator_answers_for_the_retry_the_first_attempts_results_are_still_reported(self):
+        calls = self.calls
+        class Dies:  # answers the first install, then stops answering
+            udid = "U1"
+            def run(self, *a, check=True):
+                if a[0] == "install" and calls.count("install"): raise RuntimeError("simctl install did not answer within 300 s")
+                calls.append(a[0]); return ""
+        self.fake_sim = Dies
+        code, out = self.run_it("1")
+        self.assertEqual(code, 1, out)  # failed locales, not a crash
+        self.assertIn("not retrying", out)
+        self.assertTrue((self.d / "out" / "run.json").is_file())
 
     @needs_mac
     def test_screenshots_end_up_in_raw_with_maestro_2_11_which_confines_them_to_its_artifact_folder(self):

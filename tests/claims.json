@@ -115,7 +115,7 @@
    "about 9 minutes on iOS and 15 on Android"
   ],
   "status": "evidence",
-  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced.",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged.",
   "layer": "fixture",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
   "fix": ""
@@ -815,16 +815,17 @@
   ],
   "where_text": [
    "ask for a refund within 14 days of buying and you'll get it",
-   "refunds, chargebacks and disputes are\n  refused"
+   "refunds, chargebacks and disputes are\n  refused",
+   "A refund ends the licence. The key stops unlocking every language and <code>export</code> the next time shotfleet checks it with Gumroad"
   ],
   "status": "partial",
-  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid.",
+  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid. 2026-10-05 addition: the terms now say a refund ends the licence at the next check (about weekly, up to 30 days offline) and that nothing already made is deleted. Gumroad's own source (antiwork/gumroad, app/modules/purchase/refundable.rb, added 2026-08-19, #7326) disables the key on a full refund, so a refunded key may now answer 404 'This license key has been disabled' instead of success:true with refunded:true; both are refused (GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays). Not seen against live Gumroad: see research/refund-process-2026-10-05.md.",
   "layer": "device",
   "assertion": "Real Gumroad product: buy with a test code, refund the sale in the dashboard, set licence.json 'checked' back 8 days and run `shotfleet export`: it must raise NoLicence ('refunded').",
   "fix": "",
   "fixed_by": "code",
   "fixed": "Rewritten for Gumroad 2026-10-02. gumroad_verify checks refunded, chargebacked and disputed (a won dispute keeps the licence) and treats a 5xx as an outage, not a verdict. Not run against live Gumroad: no product exists yet.",
-  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation"
+  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays"
  },
  {
   "id": "C048",
@@ -947,15 +948,17 @@
   ],
   "where_text": [
    "14-day refund.",
-   "If shotfleet doesn't work for your app, ask for a refund within 14 days of buying and you'll get it, no questions asked.",
-   "If it doesn't work for your app, reply within 14 days and I'll refund you.",
+   "You can ask for a refund within 14 days of buying and you'll get it, no questions asked",
+   "Reply within 14 days and I'll refund you, no questions asked.",
    "14-day refunds"
   ],
   "status": "partial",
-  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
+  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The conditional 'if shotfleet doesn't work for your app' was removed from terms.html and the launch email on 2026-10-05; Gumroad's live policy says 'You do not have to explain'.",
   "layer": "legal",
   "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
-  "fix": "Drop either 'if shotfleet doesn't work for your app' or 'no questions asked'."
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "2026-10-05: terms.html no longer says 'If shotfleet doesn't work for your app' before 'no questions asked'. Gumroad's live refund policy (read 2026-10-05) is unconditional: '14-day money back guarantee ... You do not have to explain.' The launch email (marketing/launch-email.md) now says 'Reply within 14 days and I'll refund you, no questions asked.'"
  },
  {
   "id": "C055",
@@ -2189,5 +2192,21 @@
   "assertion": "A command with no progress for stall_s seconds is killed within seconds of that and raises TimeoutExpired with .stalled.",
   "fix": "",
   "test": "StalledRun.test_no_progress_for_stall_s_kills_the_command"
+ },
+ {
+  "id": "C131",
+  "claim": "The release is built for macOS 13 or later on Apple silicon and tested on macOS 27",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Built for macOS 13 or later on Apple silicon; tested on macOS 27."
+  ],
+  "status": "evidence",
+  "proof": "2026-10-05, release 0.1.1 built from a standalone Python 3.14.2 and `swiftc -target arm64-apple-macos13.0`: `python3 tools/macho-minos.py dist/shotfleet` on the unpacked tarball gives 2 Mach-O files at macOS 11.0 and 1 (the ocr helper) at 13.0, none at 27.0 (the 0.1.0 folder had 52 of 56 at 27.0). Apple notarized both the program and the package (Accepted); the quarantined run, `check` on 72 real screenshots (0 problems) and a licence call over TLS all ran on macOS 27. Tests: tests/test_platform_reach.py. The Mach-O minimum is a build fact, not proof that it runs below macOS 27: no older Mac was available.",
+  "layer": "device",
+  "assertion": "On a Mac running macOS 13 to 26, the installed 0.1.1 prints `shotfleet 0.1.1` and `doctor` runs to the end; on macOS 12 and older it refuses or fails with a clear message.",
+  "fix": ""
  }
 ]

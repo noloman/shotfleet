@@ -19,6 +19,6 @@ Install: curl -fsSL https://shotfleet.com/install.sh | sh
 Then: shotfleet activate <your key>
 
 `shotfleet check` is free if you just want to see what it finds in the screenshots you already have.
-If it doesn't work for your app, reply within 14 days and I'll refund you.
+Reply within 14 days and I'll refund you, no questions asked.
 
 Manu

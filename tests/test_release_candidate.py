@@ -12,6 +12,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import shotfleet as sf
+sf.USE_DEVICE_LOCK = False  # fake runs touch no device; two test suites at once must not refuse each other
 
 SCRIPT = ROOT / "tools/release-candidate.sh"
 TEXT = SCRIPT.read_text()
