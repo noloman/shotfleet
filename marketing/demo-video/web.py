@@ -17,17 +17,20 @@ WEB = HERE / "web"
 MAX_MB, POSTER_KB = 4.0, 150
 
 # slug: (title, description). Every sentence is a site claim (tests/claims.json, site/public/*.html) or visible in the clip.
-DESC = {
+DESC = {   # same wording as site/public/demo.html (branch claude/site-human-voice); c3 and c8 differ: this run had no iPad set
     "c1-doctor": ("Is this Mac ready?", "shotfleet doctor --fix checks Maestro, Java, Xcode and the Android SDK, and fetches what is missing after asking once."),
-    "c2-init": ("Set up a project", "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow."),
-    "c3-run-ios": ("Every language on iPhone", "One English Maestro flow captured in every language of the app on parallel iPhone simulators, then checked."),
-    "c4-run-android": ("Every language: Android", "The same English flow captured in every language on Android emulators, then checked."),
-    "c5-check": ("Catch the wrong language", "A German screenshot planted in the Japanese folder is caught by shotfleet check; the real output passes with 0 problems."),
-    "c6-check-existing": ("Check the screenshots you have", "shotfleet check reads fastlane folders or a plain folder of screenshots, with no simulator."),
-    "c7-store-rules": ("Store rules, checked", "shotfleet check flags screenshot sizes the stores refuse and a missing 13\" iPad set."),
+    "c2-init": ("Set up a project", "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each one has, and writes a config and an English flow."),
+    "c3-run-ios": ("Every language on iPhone", "The English Maestro flow runs in every language the app has, on several iPhone simulators at once. Then every screenshot is checked."),
+    "c4-run-android": ("Every language on Android", "The same English flow runs in every language on Android emulators. Then every screenshot is checked."),
+    "c5-check": ("Catching the wrong language", "I put a German screenshot in the Japanese folder, and shotfleet check caught it. The real output passes with 0 problems."),
+    "c6-check-existing": ("Checking screenshots you already have", "shotfleet check reads fastlane folders or a plain folder of screenshots. You don't need a simulator for this."),
+    "c7-store-rules": ("Store rules", "shotfleet check flags screenshot sizes the stores refuse. It also flags a missing 13-inch iPad set."),
     "c8-export": ("Export to fastlane", "One command puts the passing Google Play screenshots into fastlane's folders."),
-    "c9-ci": ("In CI", "The GitHub Actions recipe from the docs, and check's --json result and exit code."),
+    "c9-ci": ("In CI", "The GitHub Actions setup from the docs, with the --json result and the exit code from check."),
 }
+# poster: the second of the clip that shows the result (not the intro card)
+POSTER_AT = {"c1-doctor": 12.0, "c2-init": 19.0, "c3-run-ios": 27.0, "c4-run-android": 26.5, "c5-check": 14.0,
+             "c6-check-existing": 18.0, "c7-store-rules": 23.0, "c8-export": 13.0, "c9-ci": 22.0}
 
 def run(*a): return subprocess.run(a, capture_output=True, text=True, check=True).stdout
 def dur(p): return float(run("ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)))
@@ -54,7 +57,7 @@ def main():
         crf = encode(master, WEB / f"{slug}.mp4", "1280:720"); files["mp4"] = f"{slug}.mp4"
         if (OUT / f"{slug}-square.mp4").is_file():
             encode(OUT / f"{slug}-square.mp4", WEB / f"{slug}-square.mp4", "1080:1080"); files["square"] = f"{slug}-square.mp4"
-        t = (m["intro"] + (c["gridFrames"] and c["body"] + c["gridFrames"] // 2 or c["body"] * 0.8)) / fps   # grid if any, else late terminal
+        t = POSTER_AT[slug]
         with tempfile.TemporaryDirectory() as tmp:
             png = Path(tmp) / "p.png"
             run("ffmpeg", "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", str(WEB / f"{slug}.mp4"), "-frames:v", "1", str(png))
@@ -68,7 +71,7 @@ def main():
         sped = []
         if c["speed"] > 1:
             sped.append(dict(from_s=round((m["intro"] - m["fade"] + c["spedFrom"]) / fps, 1), shown_s=round(c["spedFrames"] / fps, 1),
-                             factor=round(c["speed"]), real_s=c["spedReal"]))
+                             factor=int(c["speed"]), real_s=c["spedReal"]))
         items.append(dict(slug=slug, title=title, description=desc, duration_s=round(dur(WEB / f"{slug}.mp4"), 1),
                           files={k: dict(path=v, bytes=(WEB / v).stat().st_size) for k, v in files.items()},
                           sped_up=sped, facts=FACTS.get(slug, []), burned_in_subtitles=True))

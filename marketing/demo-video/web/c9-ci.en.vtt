@@ -2,24 +2,28 @@ WEBVTT
 
 1
 00:00:00.000 --> 00:00:02.000
-Check screenshots in CI.
+Checking screenshots in CI.
 
 2
 00:00:02.000 --> 00:00:08.500
-The GitHub Actions recipe from the
-docs: install, then shotfleet check.
+This is the GitHub Actions setup
+from the docs.
 
 3
-00:00:08.500 --> 00:00:11.500
-check needs only a Mac,
-no simulators.
+00:00:08.500 --> 00:00:14.500
+It installs shotfleet and runs check.
+check only needs a Mac, no simulator.
 
 4
-00:00:11.500 --> 00:00:16.000
---json puts the result on stdout;
-the exit code tells CI what happened.
+00:00:14.500 --> 00:00:19.500
+--json writes the result as JSON.
+The exit code here is 0.
 
 5
-00:00:16.000 --> 00:00:21.500
-0 all good, 1 problems found,
-2 setup error.
+00:00:19.500 --> 00:00:25.200
+0 means all good, 1 means problems,
+2 means a setup error.
+
+6
+00:00:25.200 --> 00:00:27.200
+Ready for CI.

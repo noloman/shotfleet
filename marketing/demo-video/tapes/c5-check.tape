@@ -7,10 +7,10 @@ Enter
 Sleep 300ms
 Show
 Sleep 600ms
-Type "cp -R out-ios planted"
+Type "cp -R out-android planted"
 Enter
 Sleep 800ms
-Type "cp out-ios/iphone-17-pro-max/raw/de/01_welcome.* planted/iphone-17-pro-max/raw/ja/"
+Type "cp out-android/phone/raw/de/01_welcome.* planted/phone/raw/ja/"
 Sleep 400ms
 Enter
 Sleep 1s
@@ -19,7 +19,7 @@ Sleep 400ms
 Enter
 Wait@180s /\$\s*$/
 Sleep 6s
-Type "clear; shotfleet check out-ios"
+Type "clear; shotfleet check out-android"
 Sleep 400ms
 Enter
 Wait@180s /\$\s*$/

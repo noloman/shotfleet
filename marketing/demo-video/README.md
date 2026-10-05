@@ -4,7 +4,22 @@ Nine short clips, one per feature, from one real session on the repo's fixture a
 1920x1080 and 1080x1080 MP4 (H.264, 30 fps, silent), subtitles burned in and also shipped as `.srt` next to each MP4.
 Nothing here is uploaded anywhere; the owner decides placement.
 
-CLIP_TABLE
+| Clip | Length | What it shows | Sped up |
+|---|---|---|---|
+| c1-doctor | 15.9 s | `doctor --fix`: every check ok, iOS and Android ready | 5 s wait shown 3x faster |
+| c2-init | 24.2 s | `init` on the fixture .app and .apk (5 languages each), then the prepared config and flow, copied in on screen | no |
+| c3-run-ios | 31.0 s | `run --platform ios`: 5 languages on 2 iPhone simulators (iOS 26.4) in 253 s, 0 problems, then the real screenshots | 353 s shown at 29x |
+| c4-run-android | 30.0 s | `run --platform android`: 5 languages on 2 emulators in 94 s, 0 problems, then the real screenshots | 197 s shown at 16x |
+| c5-check | 27.7 s | German screenshot planted in the Japanese folder of a copy: 2 problems; the real Android output: 0 problems | no |
+| c6-check-existing | 21.7 s | a plain folder labelled `--locale de` holding Japanese screenshots: caught, no simulator | no |
+| c7-store-rules | 27.7 s | iPhone-only output: the 13" iPad requirement; one screenshot resized to 1000x2000: refused size | no |
+| c8-export | 18.0 s | `export out-android --fastlane fastlane`: the 10 passing screenshots in Play's folders | no |
+| c9-ci | 27.3 s | the GitHub Actions recipe from the docs (shown, not run on GitHub), `check --json`, exit code 0 | no |
+
+Recorded 2026-10-05/06 on an M1 Pro. The run used the iPhone only (no iPad set): the iPad pool timed out under load in the
+first attempt, so the coordinator cut it. Export therefore shows Google Play only (export refuses an iOS set without iPad).
+Subtitles are first person, plain English (owner's voice rule), matching `site/public/demo.html`.
+Web versions for the site: `web/` (`web.py`, `web/manifest.json`).
 
 ## What is real and what is composited
 

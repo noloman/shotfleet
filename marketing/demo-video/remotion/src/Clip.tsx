@@ -117,7 +117,7 @@ const Terminal: React.FC<Props> = ({ id, clip, square }) => {
               borderRadius: 12,
             }}
           >
-            ▶▶ sped up {Math.round(clip.speed)}x
+            ▶▶ sped up {Math.floor(clip.speed)}x
           </div>
         </Sequence>
       ) : null}

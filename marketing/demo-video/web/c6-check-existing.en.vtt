@@ -2,24 +2,24 @@ WEBVTT
 
 1
 00:00:00.000 --> 00:00:02.000
-Check the screenshots you already have.
+Checking screenshots I already have.
 
 2
 00:00:02.000 --> 00:00:06.500
-Any folder of screenshots works:
-fastlane folders, or a plain folder.
+Any folder works: fastlane folders
+or a plain folder of pictures.
 
 3
 00:00:06.500 --> 00:00:11.500
-This folder is labelled German
-with --locale de. No simulator needed.
+I say this folder is German.
+No simulator is needed.
 
 4
 00:00:11.500 --> 00:00:16.000
-check compares the text with the
-app's own strings: it is Japanese.
+check compares the text with my
+app's strings. It is Japanese.
 
 5
 00:00:16.000 --> 00:00:21.600
-check is free for everyone,
-and nothing is uploaded.
+check is free for everyone.
+Nothing is uploaded.

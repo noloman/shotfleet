@@ -6,7 +6,7 @@ Type "cat .github/workflows/screenshots.yml"
 Sleep 400ms
 Enter
 Sleep 7s
-Type "clear; shotfleet check out-ios --json > check.json; echo exit code $?"
+Type "clear; shotfleet check out-android --json > check.json; echo exit code $?"
 Sleep 400ms
 Enter
 Wait@180s /\$\s*$/

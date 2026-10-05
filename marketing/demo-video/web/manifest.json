@@ -9,19 +9,19 @@
    "files": {
     "mp4": {
      "path": "c1-doctor.mp4",
-     "bytes": 359901
+     "bytes": 320612
     },
     "square": {
      "path": "c1-doctor-square.mp4",
-     "bytes": 552779
+     "bytes": 536101
     },
     "poster": {
      "path": "c1-doctor-poster.webp",
-     "bytes": 47700
+     "bytes": 48152
     },
     "captions": {
      "path": "c1-doctor.en.vtt",
-     "bytes": 563
+     "bytes": 543
     }
    },
    "sped_up": [
@@ -32,142 +32,257 @@
      "real_s": 5
     }
    ],
-   "facts": [],
+   "facts": [
+    "Run on 2026-10-05 on an Apple silicon Mac (M1 Pro): every doctor line ok, 'iOS: ready   Android: ready'."
+   ],
    "burned_in_subtitles": true
   },
   {
    "slug": "c2-init",
    "title": "Set up a project",
-   "description": "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each ships, and writes a config and an English flow.",
+   "description": "shotfleet init reads an iOS simulator build and an Android APK, lists the languages each one has, and writes a config and an English flow.",
    "duration_s": 24.2,
    "files": {
     "mp4": {
      "path": "c2-init.mp4",
-     "bytes": 403286
+     "bytes": 395456
     },
     "square": {
      "path": "c2-init-square.mp4",
-     "bytes": 614734
+     "bytes": 603101
     },
     "poster": {
      "path": "c2-init-poster.webp",
-     "bytes": 31550
+     "bytes": 31860
     },
     "captions": {
      "path": "c2-init.en.vtt",
-     "bytes": 569
+     "bytes": 564
     }
    },
    "sped_up": [],
-   "facts": [],
+   "facts": [
+    "init found 5 languages (ar, de, en, ja, tr) in the fixture app's iOS build and in its Android APK."
+   ],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c3-run-ios",
+   "title": "Every language on iPhone",
+   "description": "The English Maestro flow runs in every language the app has, on several iPhone simulators at once. Then every screenshot is checked.",
+   "duration_s": 31.0,
+   "files": {
+    "mp4": {
+     "path": "c3-run-ios.mp4",
+     "bytes": 1073685
+    },
+    "square": {
+     "path": "c3-run-ios-square.mp4",
+     "bytes": 1280515
+    },
+    "poster": {
+     "path": "c3-run-ios-poster.webp",
+     "bytes": 27052
+    },
+    "captions": {
+     "path": "c3-run-ios.en.vtt",
+     "bytes": 629
+    }
+   },
+   "sped_up": [
+    {
+     "from_s": 5.7,
+     "shown_s": 12.0,
+     "factor": 29,
+     "real_s": 353
+    }
+   ],
+   "facts": [
+    "2026-10-06: 5 of 5 languages captured on 2 iPhone 17 Pro Max simulators (iOS 26.4) in 253 s, 10 screenshots, 0 problems.",
+    "shotfleet used 2 simulators instead of 4 because the Mac was short on memory; it says so on screen.",
+    "No iPad set in this run, so check prints the App Store's 13-inch iPad requirement."
+   ],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c4-run-android",
+   "title": "Every language on Android",
+   "description": "The same English flow runs in every language on Android emulators. Then every screenshot is checked.",
+   "duration_s": 30.0,
+   "files": {
+    "mp4": {
+     "path": "c4-run-android.mp4",
+     "bytes": 668433
+    },
+    "square": {
+     "path": "c4-run-android-square.mp4",
+     "bytes": 915599
+    },
+    "poster": {
+     "path": "c4-run-android-poster.webp",
+     "bytes": 22528
+    },
+    "captions": {
+     "path": "c4-run-android.en.vtt",
+     "bytes": 541
+    }
+   },
+   "sped_up": [
+    {
+     "from_s": 5.7,
+     "shown_s": 12.0,
+     "factor": 16,
+     "real_s": 197
+    }
+   ],
+   "facts": [
+    "2026-10-06: 5 of 5 languages captured on 2 Android phone emulators (1080x1920) in 3 rounds, 94 s, 10 screenshots, 0 problems, one non-blocking Play note."
+   ],
    "burned_in_subtitles": true
   },
   {
    "slug": "c5-check",
-   "title": "Catch the wrong language",
-   "description": "A German screenshot planted in the Japanese folder is caught by shotfleet check; the real output passes with 0 problems.",
-   "duration_s": 24.8,
+   "title": "Catching the wrong language",
+   "description": "I put a German screenshot in the Japanese folder, and shotfleet check caught it. The real output passes with 0 problems.",
+   "duration_s": 27.7,
    "files": {
     "mp4": {
      "path": "c5-check.mp4",
-     "bytes": 380846
+     "bytes": 402412
     },
     "square": {
      "path": "c5-check-square.mp4",
-     "bytes": 580382
+     "bytes": 619894
     },
     "poster": {
      "path": "c5-check-poster.webp",
-     "bytes": 19238
+     "bytes": 39988
     },
     "captions": {
      "path": "c5-check.en.vtt",
-     "bytes": 605
+     "bytes": 555
     }
    },
    "sped_up": [],
-   "facts": [],
+   "facts": [
+    "A copy of the Android output with the German welcome screenshot placed in the Japanese folder: 2 problems ('shows de strings', identical image in 2 languages). The real output: 0 problems."
+   ],
    "burned_in_subtitles": true
   },
   {
    "slug": "c6-check-existing",
-   "title": "Check the screenshots you have",
-   "description": "shotfleet check reads fastlane folders or a plain folder of screenshots, with no simulator.",
+   "title": "Checking screenshots you already have",
+   "description": "shotfleet check reads fastlane folders or a plain folder of screenshots. You don't need a simulator for this.",
    "duration_s": 21.7,
    "files": {
     "mp4": {
      "path": "c6-check-existing.mp4",
-     "bytes": 350604
+     "bytes": 334039
     },
     "square": {
      "path": "c6-check-existing-square.mp4",
-     "bytes": 539287
+     "bytes": 518673
     },
     "poster": {
      "path": "c6-check-existing-poster.webp",
-     "bytes": 36270
+     "bytes": 36054
     },
     "captions": {
      "path": "c6-check-existing.en.vtt",
-     "bytes": 473
+     "bytes": 440
     }
    },
    "sped_up": [],
-   "facts": [],
+   "facts": [
+    "Two Japanese screenshots in a plain folder labelled --locale de: check reports both as showing Japanese strings. No simulator used."
+   ],
    "burned_in_subtitles": true
   },
   {
    "slug": "c7-store-rules",
-   "title": "Store rules, checked",
-   "description": "shotfleet check flags screenshot sizes the stores refuse and a missing 13\" iPad set.",
+   "title": "Store rules",
+   "description": "shotfleet check flags screenshot sizes the stores refuse. It also flags a missing 13-inch iPad set.",
    "duration_s": 27.7,
    "files": {
     "mp4": {
      "path": "c7-store-rules.mp4",
-     "bytes": 388926
+     "bytes": 388042
     },
     "square": {
      "path": "c7-store-rules-square.mp4",
-     "bytes": 589601
+     "bytes": 591383
     },
     "poster": {
      "path": "c7-store-rules-poster.webp",
-     "bytes": 30528
+     "bytes": 31580
     },
     "captions": {
      "path": "c7-store-rules.en.vtt",
-     "bytes": 539
+     "bytes": 540
     }
    },
    "sped_up": [],
-   "facts": [],
+   "facts": [
+    "iPhone-only output of an app that runs on iPad: the 13-inch iPad requirement is reported. One screenshot resized to 1000x2000: 'isn't an App Store screenshot size'."
+   ],
+   "burned_in_subtitles": true
+  },
+  {
+   "slug": "c8-export",
+   "title": "Export to fastlane",
+   "description": "One command puts the passing Google Play screenshots into fastlane's folders.",
+   "duration_s": 18.0,
+   "files": {
+    "mp4": {
+     "path": "c8-export.mp4",
+     "bytes": 322146
+    },
+    "square": {
+     "path": "c8-export-square.mp4",
+     "bytes": 488083
+    },
+    "poster": {
+     "path": "c8-export-poster.webp",
+     "bytes": 61800
+    },
+    "captions": {
+     "path": "c8-export.en.vtt",
+     "bytes": 399
+    }
+   },
+   "sped_up": [],
+   "facts": [
+    "The 10 passing Android screenshots copied into fastlane/metadata/android/<locale>/images/phoneScreenshots/. The iOS set was not exported: export needs the iPad set the App Store requires."
+   ],
    "burned_in_subtitles": true
   },
   {
    "slug": "c9-ci",
    "title": "In CI",
-   "description": "The GitHub Actions recipe from the docs, and check's --json result and exit code.",
-   "duration_s": 23.6,
+   "description": "The GitHub Actions setup from the docs, with the --json result and the exit code from check.",
+   "duration_s": 27.3,
    "files": {
     "mp4": {
      "path": "c9-ci.mp4",
-     "bytes": 427746
+     "bytes": 421450
     },
     "square": {
      "path": "c9-ci-square.mp4",
-     "bytes": 646557
+     "bytes": 636398
     },
     "poster": {
      "path": "c9-ci-poster.webp",
-     "bytes": 88414
+     "bytes": 27224
     },
     "captions": {
      "path": "c9-ci.en.vtt",
-     "bytes": 425
+     "bytes": 489
     }
    },
    "sped_up": [],
-   "facts": [],
+   "facts": [
+    "The workflow file is the recipe from site/public/docs.html, shown, not run on GitHub here. check --json on the Android output: exit code 0."
+   ],
    "burned_in_subtitles": true
   }
  ]

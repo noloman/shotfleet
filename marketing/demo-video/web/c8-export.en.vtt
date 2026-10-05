@@ -1,0 +1,24 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.000
+Into fastlane's folders.
+
+2
+00:00:02.000 --> 00:00:05.700
+I export the Android screenshots
+that passed the check.
+
+3
+00:00:05.700 --> 00:00:10.700
+One command copies them into
+fastlane's Google Play folders.
+
+4
+00:00:10.700 --> 00:00:16.000
+Every language gets its own folder.
+fastlane uploads from there.
+
+5
+00:00:16.000 --> 00:00:18.000
+Export to fastlane.
