@@ -1053,6 +1053,21 @@ class Mcp(unittest.TestCase):
             text, err = sf.mcp_call("run", {"config": "x.toml"})
         self.assertFalse(err); self.assertEqual(text.strip(), "stopped early")
 
+    def test_run_skips_the_config_hooks_unless_asked(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg = Path(d) / "shotfleet.toml"
+            cfg.write_text('bundle_id = "x"\n[hooks]\nbefore_run = "touch ran"\n')
+            seen = []
+            def fake_run(config, locales):  # the hook call a real run makes first, without booting anything
+                seen.append(sf.run_hook({"before_run": "touch ran"}, "before_run", config, {})); return 0
+            with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", fake_run):
+                sf.mcp_call("run", {"config": str(cfg)})
+                self.assertFalse((Path(d) / "ran").exists())
+                sf.mcp_call("run", {"config": str(cfg), "hooks": True})
+                self.assertTrue((Path(d) / "ran").exists())
+            self.assertFalse(sf.NO_HOOKS)
+        self.assertIn("hooks: true", next(t for t in sf.MCP_TOOLS if t["name"] == "run")["description"])
+
     def test_tool_annotations_say_what_each_tool_does(self):
         tools = {t["name"]: t for t in sf.MCP_TOOLS}
         for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)

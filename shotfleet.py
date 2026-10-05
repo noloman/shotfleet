@@ -4186,12 +4186,14 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
      "Boots iOS simulators or Android emulators, installs the app on them and replaces the screenshots and report "
      "in the config's output folder. Takes several minutes, and can take an hour or more for many languages and screens. "
-     "Without a licence it captures 2 languages. Returns the same short summary as check (full: true for the whole report).",
+     "Without a licence it captures 2 languages. The config's [hooks] shell commands do NOT run over MCP unless you pass "
+     "hooks: true. Returns the same short summary as check (full: true for the whole report).",
      "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
      "inputSchema": {"type": "object", "required": ["config"], "properties": {
          "config": {"type": "string", "description": "path to shotfleet.toml"},
          "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"},
-         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}}}},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"},
+         "hooks": {"type": "boolean", "description": "also run the config's [hooks] shell commands (default: false)"}}}},
 ]
 
 MCP_LINES, MCP_LINE_CHARS = 100, 300  # a summary keeps this many problem and note lines, each cut to this length
@@ -4212,7 +4214,7 @@ def mcp_summary(code):
 
 def mcp_call(name, args):
     """One tool call -> (text, is_error). Progress output is captured, not sent over the protocol."""
-    global LAST_REPORT
+    global LAST_REPORT, NO_HOOKS
     LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
     log = io.StringIO()
     try:
@@ -4222,7 +4224,10 @@ def mcp_call(name, args):
                 folder = Path(args["folder"]).expanduser()
                 report = args.get("report") and Path(args["report"]).expanduser()  # default ./shotfleet-check (a run's output: its own folder)
                 code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"), report)
-            elif name == "run": apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
+            elif name == "run":  # a config from a cloned repo could hold any shell command: hooks only when asked for
+                NO_HOOKS = args.get("hooks") is not True
+                try: apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
+                finally: NO_HOOKS = False
             else: return f"unknown tool {name}", True
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
