@@ -290,6 +290,15 @@ class DoctorCommand(FixTestCase):
         self.assertIn("doctor --fix would do", text); self.assertIn("download Maestro 2.0.10", text); self.assertIn("nothing was run", text)
         self.assertFalse((self.home / "maestro").exists())
 
+    def test_a_plain_doctor_never_builds_or_offers_the_fix_plan(self):
+        """The loop over the checks once reused the name `fix`, so a plain `doctor` offered the 600 MB plan (and asked on a terminal)."""
+        out = io.StringIO()
+        with mock.patch.object(sf, "maestro_cmd", lambda: None), mock.patch.object(sf, "find_java", lambda: (False, None)), \
+                mock.patch.object(sf, "fix_plan", side_effect=AssertionError("fix plan built")), \
+                mock.patch("builtins.input", side_effect=AssertionError("asked")), contextlib.redirect_stdout(out):
+            sf.cmd_doctor()
+        self.assertNotIn("would do", out.getvalue())
+
     def test_doctor_fix_yes_installs_maestro_and_the_runtime(self):
         out = io.StringIO()
         with mock.patch.object(sf, "maestro_cmd", lambda: None), mock.patch.object(sf, "find_java", lambda: (False, None)), \
