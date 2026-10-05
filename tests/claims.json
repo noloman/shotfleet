@@ -815,16 +815,17 @@
   ],
   "where_text": [
    "ask for a refund within 14 days of buying and you'll get it",
-   "refunds, chargebacks and disputes are\n  refused"
+   "refunds, chargebacks and disputes are\n  refused",
+   "A refund ends the licence. The key stops unlocking every language and <code>export</code> the next time shotfleet checks it with Gumroad"
   ],
   "status": "partial",
-  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid.",
+  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid. 2026-10-05 addition: the terms now say a refund ends the licence at the next check (about weekly, up to 30 days offline) and that nothing already made is deleted. Gumroad's own source (antiwork/gumroad, app/modules/purchase/refundable.rb, added 2026-08-19, #7326) disables the key on a full refund, so a refunded key may now answer 404 'This license key has been disabled' instead of success:true with refunded:true; both are refused (GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays). Not seen against live Gumroad: see research/refund-process-2026-10-05.md.",
   "layer": "device",
   "assertion": "Real Gumroad product: buy with a test code, refund the sale in the dashboard, set licence.json 'checked' back 8 days and run `shotfleet export`: it must raise NoLicence ('refunded').",
   "fix": "",
   "fixed_by": "code",
   "fixed": "Rewritten for Gumroad 2026-10-02. gumroad_verify checks refunded, chargebacked and disputed (a won dispute keeps the licence) and treats a 5xx as an outage, not a verdict. Not run against live Gumroad: no product exists yet.",
-  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation"
+  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays"
  },
  {
   "id": "C048",
@@ -947,15 +948,17 @@
   ],
   "where_text": [
    "14-day refund.",
-   "If shotfleet doesn't work for your app, ask for a refund within 14 days of buying and you'll get it, no questions asked.",
-   "If it doesn't work for your app, reply within 14 days and I'll refund you.",
+   "You can ask for a refund within 14 days of buying and you'll get it, no questions asked",
+   "Reply within 14 days and I'll refund you, no questions asked.",
    "14-day refunds"
   ],
   "status": "partial",
-  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The page says 'no questions asked' and also 'if shotfleet doesn't work for your app' (a condition).",
+  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The conditional 'if shotfleet doesn't work for your app' was removed from terms.html and the launch email on 2026-10-05; Gumroad's live policy says 'You do not have to explain'.",
   "layer": "legal",
   "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
-  "fix": "Drop either 'if shotfleet doesn't work for your app' or 'no questions asked'."
+  "fix": "",
+  "fixed_by": "wording",
+  "fixed": "2026-10-05: terms.html no longer says 'If shotfleet doesn't work for your app' before 'no questions asked'. Gumroad's live refund policy (read 2026-10-05) is unconditional: '14-day money back guarantee ... You do not have to explain.' The launch email (marketing/launch-email.md) now says 'Reply within 14 days and I'll refund you, no questions asked.'"
  },
  {
   "id": "C055",
