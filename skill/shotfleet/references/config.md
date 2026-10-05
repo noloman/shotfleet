@@ -5,7 +5,7 @@
 there, and says which. Only the build is required; everything else is read from
 the build or defaulted. A typo or a wrong type is refused with a one-line message before anything runs
 (`has an unknown setting 'x'; did you mean 'y'?`, `should be a whole number, not 'x'`). Paths are relative to the
-config file; absolute and `~/` paths work.
+config file; absolute and `~/` paths work. `init` writes a build inside the project folder as a relative path (commit the config) and prints a note when the build is outside it and the path is absolute or `~/`.
 
 ```toml
 [ios]

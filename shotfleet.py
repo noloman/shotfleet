@@ -151,7 +151,7 @@ def load_config(config_path, platform=None):
     missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
     if missing:
         raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
-    path = lambda p: cfg_path.parent / Path(p).expanduser()  # absolute/~ paths win, others are relative to the config
+    path = lambda p: Path(os.path.normpath(cfg_path.parent / Path(p).expanduser()))  # absolute/~ paths win, others are relative to the config; no `..` left in the path
     flow = path(cfg["flow"])
     if not flow.is_file():
         raise Fail(f"flow file not found: {flow}. `shotfleet init` writes a starter flow")
@@ -3215,6 +3215,12 @@ def config_path(target, dest):
     home = str(Path.home())
     return "~" + str(target)[len(home):] if str(target).startswith(home + "/") else str(target)
 
+def outside_note(target, spelled):
+    """The one line init prints when the config has to name a build by its place on this Mac (outside the project folder)."""
+    if not spelled.startswith(("/", "~")): return
+    print(f"note: {Path(target).name} is outside this project folder, so shotfleet.toml names it as {spelled}, which is only valid on this Mac; "
+          "build into the project folder (or edit the path) before you commit the config")
+
 def age(t):
     s = time.time() - t
     return "just now" if s < 90 else f"{s / 60:.0f} min ago" if s < 5400 else f"{s / 3600:.0f} h ago" if s < 172800 else f"{s / 86400:.0f} days ago"
@@ -3501,12 +3507,14 @@ def cmd_init(builds, dest="."):
             if not app.is_file(): raise Fail(f"no APK at {app}")
             m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
             if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
+            outside_note(app, config_path(app, dest))
             sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# devices = ["phone", "tablet"]   # Android sets from one flow\n# locales = ["de", "ja"]   # default: every language the app ships')
             found.append((m.group(1), shipped_locales(source_strings or load_strings_apk(app))))
         elif app.suffix == ".app":
             if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
             if device_build(app): raise Fail(device_build_message(app))
+            outside_note(app, config_path(app, dest))
             sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
                             '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
                             '# locales = ["de", "ja"]   # default: every language the app ships')

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`init` and the app path:** a build inside the project folder was already written relative to the config; a build outside it (DerivedData, another checkout) is written as an absolute or `~/` path and `init` now says in one line that the config cannot be committed as is. A relative path in the config is resolved from the config's folder without `..` left in it (`run.json` records a clean path). An old config with an absolute path works as before.
 - **Free-tier message says why and how to choose:** when `run` is capped to 2 languages it now says that this is because there is no valid licence, why a `SHOTFLEET_KEY` was not accepted (the reason `require_licence` already had), and that `--locales a,b` picks the two. Wording only: exit codes and who is licensed are unchanged. `research/limits-product-improvements-2026-10-05.md` finding 2.
 - **--json covers every report:** with several reports (several device_types, both platforms, Play phone and tablet sets) the document merges screenshots, problems and notes and adds `reports`, one `{report, problems}` each; with one report nothing changes. #68.
 
