@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`check` names language folders that are not from this run** (a note): a stale `ja` from an earlier run was checked as part of a 19-language wger run.
 - **Release pipeline:** `packaging/publish.sh` publishes the already tested files (manifest hashes, version, rollback id recorded, verified, automatic rollback, archived bytes), `packaging/preflight.sh` and `tools/verify-release.sh` check before and after, `tests/test_release_consistency.py` keeps `VERSION`, the CHANGELOG heading and the docs line equal; the stale `shotfleet.spec` and `packaging/shotfleet.rb` are gone. Flow in `packaging/README.md`. `research/0.1.2-plan.md` group A.
 - **`check` takes a flat folder:** `shotfleet check shots/ --locale en` checks a folder of PNGs with no `<locale>/` level (a hand-made single-language set); before, it failed with "no screenshots found". Without `--locale` the error says the language is needed and shows the example (shotfleet does not guess it). Exit codes and the `<locale>/` layouts are unchanged.
 - **Kotlin Multiplatform hint:** where `init` prints the `xcodebuild` line for a KMP app it now adds that the Xcode build fails with "cannot find X in scope" unless both `:shared:assembleSharedDebugXCFramework` and `:shared:assembleSharedReleaseXCFramework` were built first (a stale release slice gives the same error). Text only.

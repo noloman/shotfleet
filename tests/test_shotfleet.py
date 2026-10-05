@@ -941,6 +941,25 @@ class ExternalOcr(unittest.TestCase):
         self.assertTrue(any(p.startswith("el/2.png: shows en") for p in report["problems"]), report["problems"])
         self.assertEqual(code, 1)
 
+    def test_a_language_folder_from_an_earlier_run_is_named_in_a_note(self):
+        # seen on wger: a stale ja folder was checked as part of a 19-language run ("20 languages")
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "l10n").mkdir()
+            en = {"a": "Log in to your account", "b": "Register a new account"}
+            de = {"a": "Bei deinem Konto anmelden", "b": "Ein neues Konto registrieren"}
+            for lp, t in (("en", en), ("de", de), ("ja", de)): (d / "l10n" / f"app_{lp}.arb").write_text(json.dumps({"@@locale": lp, **t}))
+            out = d / "out"
+            for lp, words in (("en", en), ("de", de), ("ja", de)):
+                (out / "raw" / lp).mkdir(parents=True)
+                (out / "raw" / lp / "1.png").write_bytes(png_c(1320, 2868))
+                (out / "raw" / lp / "1.texts.json").write_text(json.dumps(list(words.values())))
+            (out / "run.json").write_text(json.dumps({"platform": "ios", "app": str(d / "gone.app"), "strings": [str(d / "l10n/*.arb")],
+                                                      "locales": {"en": {"ok": True}, "de": {"ok": True}}}))
+            with contextlib.redirect_stdout(io.StringIO()):
+                sf.cmd_check(out)
+            notes = json.loads((out / "check.json").read_text())["notes"]
+        self.assertTrue(any(n.startswith("ja is not from this run") for n in notes), notes)
+
     def test_check_of_a_run_folder_reads_the_translation_files_the_run_used(self):
         # a Flutter run: the build holds no strings, run.json names the .arb files; `check <out>` on its own used to fail or check nothing
         with tempfile.TemporaryDirectory() as d:

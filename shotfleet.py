@@ -2604,6 +2604,12 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
+    if run_json.exists():  # a rerun keeps the languages it did not capture on purpose, but a check of "this run" should say which ones those are
+        captured = set(json.loads(run_json.read_text()).get("locales", {}))
+        old_folders = sorted(l for l in images if captured and l not in captured)
+        if old_folders:
+            notes.append(f"{', '.join(old_folders)} {'is' if len(old_folders) == 1 else 'are'} not from this run (an earlier run's "
+                         f"folder{'' if len(old_folders) == 1 else 's'} was kept); delete {'it' if len(old_folders) == 1 else 'them'} for a check of this run alone")
     unmapped = sorted(l for l in images if tables and not app_locale(l, tables))
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language; translate the app into it or remove the listing" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
