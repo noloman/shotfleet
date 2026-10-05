@@ -165,6 +165,7 @@ with a one-line message before anything runs.
 flow = "flow.yaml"        # default; shared by both platforms (an `appId:` header is set for you)
 out = "out"               # default "out", or "out-ios" / "out-android" when the file has both platforms
 parallel = 4              # simulators (emulators on Android); default 4
+capacity = "warn"         # warn (default) prints a note when the Mac is short of memory or swapping; "off" silences it; the run is never changed
 stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped and the languages retried (default 900)
 locales = ["de", "ja"]    # default: every language the app ships
 base_locale = "de"        # the language your flow is written in (default en)

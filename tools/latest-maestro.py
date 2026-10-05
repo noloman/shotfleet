@@ -7,6 +7,8 @@ shotfleet needs is gone (the job that runs this weekly turns red, which is the a
 
 It prints whether that version is one shotfleet was tested with (MAESTRO_TESTED). A compatible but untested version is NOT an error: it
 means "worth a real run" (docs/handoff.md item 1). SHOTFLEET_MAESTRO_RELEASES overrides the releases URL (tests use a local server);
+The release list is read first (small); the 315 MB download happens only when the newest tag differs from the last one that passed, kept in
+tools/.latest-maestro-seen (SHOTFLEET_MAESTRO_SEEN overrides the path; delete the file to screen again). A failed screen is not remembered.
 GITHUB_TOKEN, when set, is sent to avoid the anonymous API rate limit; GITHUB_STEP_SUMMARY, when set, gets a short report.
 """
 import importlib.util, json, os, re, shutil, sys, tempfile, urllib.request
@@ -17,6 +19,15 @@ sys.path.insert(0, str(ROOT))
 import shotfleet as sf
 
 RELEASES = os.environ.get("SHOTFLEET_MAESTRO_RELEASES", "https://api.github.com/repos/mobile-dev-inc/maestro/releases?per_page=30")
+
+
+SEEN = Path(os.environ.get("SHOTFLEET_MAESTRO_SEEN") or ROOT / "tools/.latest-maestro-seen")
+
+
+def already_screened(version):
+    """True when `version` is the last one that passed (so the download can be skipped)."""
+    try: return SEEN.read_text().strip() == version
+    except OSError: return False
 
 
 def load_compat():
@@ -72,6 +83,8 @@ def main():
         print("latest-maestro: no stable cli-X.Y.Z release with a maestro.zip in the list", file=sys.stderr); return 2
     version, zip_url, sums_url = release
     print(f"newest Maestro release: {version}\n{verdict(version)}")
+    if already_screened(version):
+        print(f"{version} passed the last screen; nothing new to download (delete {SEEN} to screen it again)"); return 0
 
     work = Path(tempfile.mkdtemp(prefix="latest-maestro-"))
     try:
@@ -94,6 +107,9 @@ def main():
         if os.environ.get("GITHUB_STEP_SUMMARY"):
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
                 f.write(f"### {summary}\n\n" + "".join(f"- {l}\n" for l in lines if l.startswith(("FAIL", "INFO"))) + "\n")
+        if not failed:
+            try: SEEN.write_text(version + "\n")
+            except OSError: pass  # only costs a repeat download next time
         return 1 if failed else 0
     except sf.Fail as e:
         print(f"latest-maestro: {e}", file=sys.stderr); return 2

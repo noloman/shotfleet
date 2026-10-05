@@ -29,6 +29,7 @@ Keys valid in `[ios]` and `[android]`:
 | `flow` | string | `flow.yaml` | the English Maestro flow, shared by both platforms |
 | `out` | string | `out`, or `out-ios` / `out-android` | output folder (`raw/<locale>/`, `check.json`, `index.html`, `run.json`, logs) |
 | `parallel` | whole number | 4 | simulators (emulators on Android) at once; `--parallel` overrides |
+| `capacity` | string | `warn` | `warn` prints a warning when the Mac is short of memory or already swapping hard; `off` is silent. It never changes the run |
 | `locales` | list | every language the app ships | languages to capture, as shotfleet names them (`de`, `pt-BR`, `zh-Hans`); `--locales` overrides |
 | `base_locale` | string | `en` | the language the flow is written in |
 | `strings` | string or list | read from the build | translation file globs (relative to the config) for Flutter, React Native, MAUI, Unity, exports |

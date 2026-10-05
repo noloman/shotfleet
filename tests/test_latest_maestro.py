@@ -49,6 +49,7 @@ class PickingTheNewest(unittest.TestCase):
 class EndToEnd(unittest.TestCase):
     def setUp(self):
         self.server = Server({}); self.addCleanup(self.server.close)
+        self.seen = Path(tempfile.mkdtemp()) / "seen"
 
     def serve(self, version="2.99.0", strings=None, sums="good"):
         d = fake_maestro(version=version, strings=strings)
@@ -63,9 +64,21 @@ class EndToEnd(unittest.TestCase):
 
     def run_main(self):
         out, err = io.StringIO(), io.StringIO()
-        with mock.patch.object(lm, "RELEASES", self.server.url + "/releases"), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        with mock.patch.object(lm, "RELEASES", self.server.url + "/releases"), mock.patch.object(lm, "SEEN", self.seen), contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = lm.main()
         return code, out.getvalue(), err.getvalue()
+
+    def test_a_tag_that_already_passed_is_not_downloaded_again_but_a_new_one_is(self):
+        self.serve(version="2.99.0")
+        self.assertEqual(self.run_main()[0], 0); self.assertEqual(self.seen.read_text().strip(), "2.99.0")
+        self.server.files.pop("/maestro.zip")  # a second download would now fail with exit 2
+        code, out, _ = self.run_main()
+        self.assertEqual(code, 0); self.assertIn("nothing new to download", out)
+        self.serve(version="2.100.0")
+        self.assertEqual(self.run_main()[0], 0); self.assertEqual(self.seen.read_text().strip(), "2.100.0")
+
+    def test_a_failed_screen_is_not_remembered(self):
+        self.serve(strings=[]); self.assertEqual(self.run_main()[0], 1); self.assertFalse(self.seen.exists())
 
     def test_a_compatible_newer_maestro_passes_and_says_it_needs_a_real_run(self):
         self.serve()
