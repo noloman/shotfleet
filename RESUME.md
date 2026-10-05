@@ -2,8 +2,9 @@
 
 Delete this file before merge (publish.sh refuses a tree containing it).
 
-Findings (2026-10-05 ~14:45): worker `shotfleet-staging` did NOT exist on the account (wrangler deployments list: code 10007). Production `shotfleet` exists, workers.dev subdomain `manulorenzop`, routes shotfleet.com + www as custom domains, KV WAITLIST, ratelimit, send_email. Staging config added: site/wrangler.staging.toml (no routes, no bindings, only [assets]); URL https://shotfleet-staging.manulorenzop.workers.dev (created as a plain new worker, no production data; G9 used the same name before).
-
-Done: step 1 publish.sh --staging + guards + tests (26 green), smoke.sh SMOKE_SKIP_REDIRECT.
-Todo: step 2 bootstrap staging with 0.1.0 bytes (previous version), step 3 manifest+dry-run+real 0.1.1 deploy to staging, step 4 rollback test, step 5 README + final report.
-Rehearsal tree: scratch worktree of this branch with RESUME.md removed locally (PUBLISH_ALLOW_BRANCH=1). Release dir: /Users/manu/Developer/shotfleet-rc-build/staging-rehearsal (state under staging/).
+ALL STEPS DONE 2026-10-05 ~15:00. Only the final report to the coordinator remains (branch, commit, results below).
+- shotfleet-staging did not exist; created as a plain worker (no routes, no bindings) via site/wrangler.staging.toml; URL https://shotfleet-staging.manulorenzop.workers.dev
+- publish.sh --staging + guards, tests (26 green), smoke.sh SMOKE_SKIP_REDIRECT, README section.
+- Rehearsal: bootstrap 0.1.0 d6be78d2; publish 0.1.1 b7662280 (smoke 35/0, install ok); manual rollback to d6be78d2 ok (~7 s); auto-rollback via forced smoke failure (1c558343 -> d6be78d2) ok; deploy without download/ (8db83083) => /download/* 404, deletion theory confirmed; staging restored to d6be78d2 (0.1.0).
+- A PRODUCTION deploy b64119e0 at 12:55:12Z is NOT mine (all my writes used --name shotfleet-staging).
+- Logs: /Users/manu/Developer/shotfleet-rc-build/staging-rehearsal/{real-run.log,auto-rollback-run.log}; scratch tree staging-rehearsal-tree (git worktree, remove when done).
