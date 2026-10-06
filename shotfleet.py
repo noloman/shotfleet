@@ -2879,7 +2879,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         framework_hint(app, bool(strings_files))
-        strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+        if strings is None: strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)  # check_build read them already
         if not strings: raise Fail(f"{app.name} contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)")
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings_files:  # Flutter, React Native, .NET, Unity, exports: translations from source files
@@ -4502,24 +4502,54 @@ def main_cmd(a):
     finally:
         shutdown_sims()
 
+def check_build(folder, cwd=None):
+    """What `check` compares with when no --app or --strings is given: what `init` would use in cwd (find_builds, which never
+    builds; a Flutter, React Native, ... project's translation files), for the store the folder's layout says.
+    (app, strings_files, strings, the one line to print); app and strings_files are None when nothing fits."""
+    cwd, folder = Path(cwd or Path.cwd()).resolve(), Path(folder)
+    project = detect_project(cwd)
+    if project and project.strings and glob.glob(str(cwd / project.strings), recursive=True):
+        return None, [str(cwd / project.strings)], None, (f"no --app given: using {project.strings} for strings ({project.name} project; "
+                                                          "pass --app or --strings to choose others)")
+    try:
+        with contextlib.redirect_stdout(io.StringIO()): builds = find_builds(cwd, project=project)  # its lines are init's wording
+    except Fail: builds = []
+    android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
+    ios = (folder / "screenshots").is_dir() or folder.name == "screenshots"
+    fits = [b for b in builds if Path(b).suffix in ((".app",) if ios else (".apk",) if android else (".app", ".apk"))]
+    guess = ("no --app given and {}: checking by language detection only, which can misjudge short screens; treat a language "
+             "problem as a hint (pass --app to compare with your app's strings)")
+    if len(fits) > 1:
+        return None, None, None, guess.format(f"an iOS and an Android build found in {cwd}, so I can't tell which one these are")
+    if not fits:
+        return None, None, None, guess.format(f"no app build found in {cwd}" + (f" for these {'Android' if android and not ios else 'iOS'} screenshots"
+                                                                              if builds else ""))
+    app = Path(fits[0])
+    strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+    if not strings:
+        return None, None, None, guess.format(f"{app} holds no translations shotfleet can read")
+    return app, None, strings, f"no --app given: using {app} for strings (pass --app to choose another)"
+
 def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None):
-    """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own)."""
+    """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own).
+    No --app or --strings and no run.json: the app build (or translation files) `init` would find in the current folder."""
     if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
+    strings = None
+    if not app and not strings_files and not (Path(folder) / "run.json").exists() and not device_runs(folder):
+        app, strings_files, strings, line = check_build(folder)
+        print(line)
     if len(kinds := play_folders(folder)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
         base, codes = Path(report) if report else Path("shotfleet-check"), []
         for k in kinds:
             print(f"\n== {k}")
-            codes.append(cmd_check(folder, app=app, strings_files=strings_files, ocr_command=ocr_command,
+            codes.append(cmd_check(folder, strings=strings, app=app, strings_files=strings_files, ocr_command=ocr_command,
                                    report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect))
         return max(codes)
     if subs := device_runs(folder):
         codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=False,
                            report_dir=Path(report) / d.name if report else None, expect=expect) for d in subs]
         return max(codes + [ipad_set_missing(folder)])
-    if not app and not strings_files and not (Path(folder) / "run.json").exists():
-        print("no --app given: checking by language detection only, which can misjudge short screens; treat a language problem as "
-              "a hint (pass --app to compare with your app's strings)")
-    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
+    return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
 
 def main_dispatch(a):
     try:
