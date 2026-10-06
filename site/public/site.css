@@ -391,4 +391,5 @@ dialog#zoom img { display: block; max-width: 96vw; max-height: 92vh; width: auto
 .docs .toc ol { gap: 0; }
 @media (max-width: 560px) { .docs .toc ol { columns: 1; } }
 .docs table { min-width: 0; }
+.docs img { max-width: 100%; height: auto; border-radius: 12px; }  /* guide pages (tools/build-guides.py): the CSP allows no <style> */
 .docs td:first-child { white-space: nowrap; }

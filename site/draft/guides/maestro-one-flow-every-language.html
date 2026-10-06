@@ -25,15 +25,6 @@
 <link rel="apple-touch-icon" href="../../public/apple-touch-icon.png">
 <link rel="preload" href="../../public/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../public/site.css">
-<style>
-.docs { max-width: 760px; }
-.docs h2 { scroll-margin-top: 96px; }
-.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
-.docs pre code { background: none; padding: 0; font: inherit; }
-.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
-.docs img { max-width: 100%; height: auto; border-radius: 12px; }
-.docs table { min-width: 0; }
-</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -110,7 +101,7 @@ appId: com.example.myapp
     id: onboarding_next
 - takeScreenshot: shots/${APP_LANG}/02_onboarding</code></pre>
 <p>I ran this on Maestro 2.0.10 against an iOS 26.4 simulator. The <code>tapOn</code> before the screenshot matters: when I put a <code>takeScreenshot</code> straight after <code>launchApp</code>, the image showed the iOS home screen, not the app, in 4 of 4 runs (with and without <code>clearState</code>; the Mac was under heavy load at the time). Putting <code>extendedWaitUntil</code> with <code>visible: id: next</code> first gave the app. Wait for something on screen before the first screenshot.</p>
-<p>Everything here was run on Maestro 2.0.10 only. Newer versions can differ: where <code>takeScreenshot</code> writes is one thing to check on yours (see the note on item 2 in the TO VERIFY list).</p>
+<p>Everything here was run on Maestro 2.0.10 only. Newer versions can differ: where <code>takeScreenshot</code> writes is one thing to check on yours.</p>
 <p>Run it once per language, with the variables after <code>test</code>:</p>
 <pre><code class="language-bash">for pair in en:en_US de:de_DE ja:ja_JP; do
   maestro --device "$UDID" test \
@@ -128,19 +119,19 @@ adb -s emulator-5554 shell cmd locale set-app-locales com.example.myapp --locale
 <p><strong>2. <code>-e</code> goes after <code>test</code>.</strong> In the same PR the iOS script put <code>-e</code> before <code>test</code>, and it failed while looking like it passed. On Maestro 2.0.10 I got <code>Unknown options: '-e', 'APP_LANG=de'</code>, the usage text and exit code 2, so it only looks like a pass if your script ignores the exit code. The order is <code>maestro --device X test -e KEY=VALUE flow.yaml</code>.</p>
 <p><strong>3. On Android, clearing state clears the language.</strong> <code>clearState</code> wipes the app's data, and the per-app language goes with it. Clear first with <code>pm clear</code>, set the language, then launch without <code>clearState</code>. Otherwise you get the system language back.</p>
 <p><strong>4. Parallel runs on Android.</strong> Two separate <code>maestro test</code> processes on two devices on one Mac were unreliable for me on Maestro 2.0.10. With two emulators and two <code>maestro test</code> processes started together, one of the two failed in both attempts (a <code>TimeoutException</code>, or an exception on Maestro's own log folder), while each passed alone. A Maestro process listened on TCP 7001 while it ran, which is my guess for the shared resource; I did not prove it. Run one device at a time, or use one run that shards across devices (<code>--shard-split</code>, which I did not test), and check the images of both devices.</p>
-<p>Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this on iOS 26.4 with Maps launched in German; I did not test Android), so write those taps in English. <code>launchApp</code> also takes a <code>permissions</code> setting (see its docs page); I did not test it against a permission dialog. And long languages push buttons off the screen: use <code>scrollUntilVisible</code> before the tap, with <code>direction: DOWN</code> (<a href="https://shotfleet.com/the-button-nobody-could-reach">article 3</a> has the story).</p>
+<p>Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this on iOS 26.4 with Maps launched in German; I did not test Android), so write those taps in English. <code>launchApp</code> also takes a <code>permissions</code> setting (see its docs page); I did not test it against a permission dialog. And long languages push buttons off the screen: use <code>scrollUntilVisible</code> before the tap, with <code>direction: DOWN</code> (it happened to me: <a href="https://shotfleet.com/#catch-h">a Next button nobody could reach</a> in four languages).</p>
 <h2>Read the images, not the exit code</h2>
-<p>All four traps pass. The only way to catch them is to look at the output, or to have something look for you: <code>shotfleet check shots/ --app path/to/MyApp.app</code> reads each image back and reports wrong-language and duplicate images. It is free (no licence, no account) and works on any folder of screenshots.</p>
+<p>All four traps pass. The only way to catch them is to look at the output, or to have something look for you: <code>shotfleet check shots/ --app path/to/MyApp.app</code> reads each image back and reports wrong-language and duplicate images. It is free (no licence, no account) and works on any folder of screenshots, fastlane's too (<a href="https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english">how to check a fastlane snapshot folder</a>).</p>
 <h2>Where shotfleet fits</h2>
-<p>Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so <code>tapOn: "Next"</code> becomes <code>(Nächste|Weiter)</code> in German. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS and 15 on Android on one Mac, four simulators in parallel. That is one app and Maestro 2.0.10, so treat it as a data point. <code>run</code> is free for 2 languages; a licence unlocks every language and <code>export</code>: $29 for the first 100 buyers, then $49 once, 14-day refund.</p>
+<p>Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so <code>tapOn: "Next"</code> becomes <code>Weiter</code> in German, or <code>(Nächste|Weiter)</code> if your app has two translations for it. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac. That is one app and Maestro 2.0.10, so treat it as a data point. <code>run</code> is free for 2 languages; a licence unlocks every language and <code>export</code>: $29 for the first 100 buyers, then $49 once, 14-day refund.</p>
 <h2>When not to use shotfleet</h2>
-<p>If your app has ids on everything you tap, three or four languages, and one platform, the loop above is enough. If you test on real devices or in a device cloud, shotfleet does not help; it runs simulators and emulators on your Mac. It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. It makes no frames or captions and does not upload to the stores. For Flutter and React Native it works from your translation files; I have tested that on real translation files but not on a real Flutter or React Native app yet, so I do not claim it.</p>
+<p>If your app has ids on everything you tap, three or four languages, and one platform, the loop above is enough. If you test on real devices or in a device cloud, shotfleet does not help; it runs simulators and emulators on your Mac. It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. It makes no frames or captions and does not upload to the stores. For Flutter and React Native it works from your translation files. I have run that end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, and not yet on any other.</p>
  </div>
 </main>
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

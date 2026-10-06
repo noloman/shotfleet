@@ -1,6 +1,6 @@
 # Article 1: fastlane snapshot stuck in English
 
-Status: draft for Manu to publish on the new domain. Not published. Written 2026-10-02.
+Status: published to site/public/guides/ on 2026-10-06 at Manu's word (goes live with the 0.1.6 site deploy). Written 2026-10-02. Edits when publishing, each checked against shotfleet.py, README and research on the 0.1.6 candidate: 'needs a Mac, because' became 'runs on a Mac' (check also runs from source on Linux with Tesseract); the planted-errors sentence now names the recorded planted set (research/e2-tesseract-parity.md); 'on a busy Mac once took over half an hour' became 'once took about 40 minutes' (the one long compile was on a quiet Mac, shotfleet.py OCR_WHAT_TO_DO); 33 languages is the macOS 27 number; 'plug in Tesseract for full coverage' became the measured 84 of 85 (README limits); added a link to the Maestro guide. Claims C243-C250.
 
 | Field | Value |
 |---|---|
@@ -72,7 +72,7 @@ With 18 languages and 4 screens that is 72 images. Opening them by hand works un
 
 ## Step 2: check the folder you already have
 
-shotfleet's `check` command does that, and it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders. It needs a Mac, because it uses the text recognition built into macOS, and it needs a simulator build of your app so it knows your real strings:
+shotfleet's `check` command does that, and it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders. It runs on a Mac and reads each image with the text recognition built into macOS. Give it a simulator build of your app, so it knows your real strings:
 
 ```bash
 xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug \
@@ -94,25 +94,24 @@ It reads each image and tells you:
 
 The report (`check.json` and an `index.html` grid with a row per language and a column per screen, problems outlined in red) goes to `./shotfleet-check`.
 
-On the committed fastlane screenshots of my own workout app (252 iOS images) it found one real problem: Traditional Chinese listings with Chinese captions over an app that was still in English. When I planted English screenshots in a German folder and deleted a Japanese one, both were reported. On 220 screenshots of another of my apps (20 languages) a check took 57 to 86 seconds once macOS text recognition was warm. The first check after a restart or a macOS update is slower, because macOS compiles its text-recognition model; that can take minutes, and on a busy Mac once took over half an hour.
+On the committed fastlane screenshots of my own workout app (252 iOS images) it found one real problem: Traditional Chinese listings with Chinese captions over an app that was still in English. When I planted mistakes in a copy of a clean set (a German screen in English, a Korean screen in Japanese, two copied images), each one was reported. On 220 screenshots of another of my apps (20 languages) a check took 57 to 86 seconds once macOS text recognition was warm. The first check after a restart or a macOS update is slower, because macOS compiles its text-recognition model; that can take minutes, and once took about 40 minutes.
 
 Pass `--app`. Without it `check` falls back to language detection, which cannot judge short screens.
 
 ## What this does not tell you
 
 - If `check` says "macOS text recognition didn't answer in time" (or "isn't answering"), macOS is usually still compiling its text-reading model, which can take minutes on a busy Mac the first time (once about 40 minutes on a quiet one). `check` doesn't fail over it: it finishes and marks the screens it couldn't read as "not verified". Run it again later, or install Tesseract (`brew install tesseract tesseract-lang`) and `check` uses it automatically. No restart needed.
-
 - It says the language is wrong. It does not say why. Go back to the five causes.
-- macOS text recognition reads 33 languages. For other scripts (Greek, Hebrew, most Indic scripts) `check` still catches other-language screens, copies and missing screens, and says which screens it could not read. You can plug in Tesseract for full coverage.
+- macOS text recognition reads 33 languages on macOS 27 (older versions read fewer). For other scripts (Greek, Hebrew, most Indic scripts) `check` still catches other-language screens, copies and missing screens, and says which screens it could not read. With Tesseract installed, `check` uses it for those scripts by itself: in my test, 84 of 85 languages could then be read, against 66 without it.
 - Copies are only reported on screens with enough text. Two near-empty screens that are identical can pass.
 - It is only as good as your simulator build matching the build that made the screenshots.
 
 ## When not to use shotfleet
 
-If your screenshots are already right in every language, you do not need it. If you have only two or three languages, looking at the images yourself is fine. If you already have a maintained UI-test suite and snapshot works for you, keep snapshot; it is free and `check` can sit next to it. The tool only runs on an Apple silicon Mac (the installer refuses Intel), and capturing with `shotfleet run` is a separate step with its own requirements (Xcode, the Android SDK for Android, Maestro 2.x, Java 17+, and a Maestro flow you write). It does not make frames or captions and does not upload to the stores. I also have no data yet on how often modern fastlane versions hit the problem in this article; the issue threads are old.
+If your screenshots are already right in every language, you do not need it. If you have only two or three languages, looking at the images yourself is fine. If you already have a maintained UI-test suite and snapshot works for you, keep snapshot; it is free and `check` can sit next to it. If you would rather capture with Maestro, [one Maestro flow in every language](https://shotfleet.com/guides/maestro-one-flow-every-language) shows how, without shotfleet. The tool only runs on an Apple silicon Mac (the installer refuses Intel), and capturing with `shotfleet run` is a separate step with its own requirements (Xcode, the Android SDK for Android, Maestro 2.x, Java 17+, and a Maestro flow you write). It does not make frames or captions and does not upload to the stores. I also have no data yet on how often modern fastlane versions hit the problem in this article; the issue threads are old.
 
 ## Where to go from here
 
-If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at https://shotfleet.com/#price.
+If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at [shotfleet.com/#price](https://shotfleet.com/#price).
 
 The free part is the `check` command above. Install it, point it at your `fastlane/` folder and read the grid.

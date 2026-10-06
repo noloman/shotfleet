@@ -3967,5 +3967,225 @@
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": "",
   "test": "MemoryNote.test_a_plain_assertion_failure_gets_no_memory_note"
+ },
+ {
+  "id": "C243",
+  "claim": "Guide 1: check is free (no licence, no account), captures nothing and leaves the fastlane folders alone; the report (check.json and an index.html grid, a row per language, a column per screen, problems outlined in red) goes to ./shotfleet-check",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders.",
+   "problems outlined in red) goes to <code>./shotfleet-check</code>"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence (tests/test_claims_unit.py), CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone (tests/test_cli_claims.py); the grid: cmd_check calls write_gallery, whose docstring and README 'Review out/index.html' say one row per language, one column per screen, flagged screenshots outlined in red (C028, C032, C048).",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone"
+ },
+ {
+  "id": "C244",
+  "claim": "Guide 1: check reports wrong language, copies, missing screenshots, store rules (sizes, counts, transparency) and listings in a language the app does not have",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "folder shows English strings.",
+   "sizes, counts and transparency that App Store Connect or Play would reject.",
+   "for example Traditional Chinese screenshots when the app has no Traditional Chinese."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language, G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files, G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing, StoreRules.test_app_store_sizes_alpha_counts_and_required_class, StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (a ja screen showing en is reported). Same as C022, C024, C025, C026.",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files"
+ },
+ {
+  "id": "C245",
+  "claim": "Guide 1 real-run numbers: 252 committed WOD Tracker iOS screenshots gave one real problem (zh-Hant listings over an English app); every planted mistake in a copy of a clean set was reported; 220 AnywhereRoles screenshots in 57 to 86 s warm; the first compile can take minutes and once took about 40 minutes",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "(252 iOS images) it found one real problem: Traditional Chinese listings",
+   "When I planted mistakes in a copy of a clean set (a German screen in English, a Korean screen in Japanese, two copied images), each one was reported.",
+   "a check took 57 to 86 seconds once macOS text recognition was warm",
+   "once took about 40 minutes."
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "252 and 1 problem: research/first-run.md lines 73-74 ('checked 252 screenshots in 22 languages: 1 problem(s)', 'zh-Hant: the app has no zh-Hant translation'), README 'It found one real problem: the Traditional Chinese listings'. Planted set: research/e2-tesseract-parity.md (4 planted mistakes: de screen in English, ko screen in Japanese, two copies; macOS recognition found every one). 57 to 86 s: C030 (shotfleet-rc-build/c030-retime/retime.log, live 0.1.4, env -i, no Tesseract). About 40 minutes: shotfleet.py OCR_WHAT_TO_DO and the OCR_BUDGET_S comment (2026-10-06, quiet Mac, c030-retime), README limits. The article's TO VERIFY items 2 and 5 hold the runs. Edited 2026-10-06 when publishing: the planted sentence used to describe a scenario that is not recorded ('English in German, deleted Japanese', C030 proof), and 'on a busy Mac once took over half an hour' contradicted the record (quiet Mac, about 40 minutes).",
+  "assertion": "None beyond the recorded runs; one app per number.",
+  "fix": ""
+ },
+ {
+  "id": "C246",
+  "claim": "Guide 1: when macOS text recognition doesn't answer, check says so, does not fail over it, finishes and marks unread screens not verified; with Tesseract installed it uses it automatically; no restart needed",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "macOS text recognition didn't answer in time",
+   "it finishes and marks the screens it couldn't read as \"not verified\""
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, StuckOcrFallback.test_without_tesseract_it_says_how_to_fix (tests/test_shotfleet.py); tests/test_ocr_wait.py Budget. Messages: shotfleet.py ocr_not_answering ('didn't answer in time', 'isn't answering') and OCR_WHAT_TO_DO ('No restart needed'). Same as C072.",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "StuckOcrFallback.test_without_tesseract_it_says_how_to_fix"
+ },
+ {
+  "id": "C247",
+  "claim": "Guide 1: macOS text recognition reads 33 languages on macOS 27; other scripts still get the other-language, copy and missing checks; with Tesseract installed check uses it for them automatically, 84 of 85 languages read against 66",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "macOS text recognition reads 33 languages on macOS 27 (older versions read fewer)",
+   "in my test, 84 of 85 languages could then be read, against 66 without it."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "C071 (.build/ocr --langs printed 33 codes on macOS 27, 2026-10-03; G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language). 84 of 85 and 66: README limits ('measured on 85 languages, 84 are then verified by reading instead of 66', tools/langmatrix.py). Edited 2026-10-06 when publishing: 'plug in Tesseract for full coverage' overstated it.",
+  "assertion": "None beyond C071; the count depends on the buyer's macOS.",
+  "fix": ""
+ },
+ {
+  "id": "C248",
+  "claim": "Guide 1: copies are only reported on screens with enough text; two near-empty identical screens can pass",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "Copies are only reported on screens with enough text."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "Code read 2026-10-06: cmd_check adds a screenshot to the copy comparison only when its text has 40 or more characters (shotfleet.py, `if r.get(\"chars\", 0) >= 40`, ponytail comment: short screens can be identical across languages). No test pins the 40.",
+  "assertion": "Test: two identical screens with under 40 characters in two languages give no 'identical image' problem.",
+  "fix": ""
+ },
+ {
+  "id": "C249",
+  "claim": "Guides 1 and 2: Apple silicon Macs only (the installer refuses Intel); run is free for up to 2 languages; a licence unlocks every language and export, $29 for the first 100 buyers then $49 once, 14-day refund",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "only runs on an Apple silicon Mac (the installer refuses Intel)",
+   "$29 for the first 100 buyers, then $49 once (14-day refund)",
+   "$29 for the first 100 buyers, then $49 once, 14-day refund"
+  ],
+  "status": "evidence",
+  "layer": "site",
+  "proof": "site/public/install.sh line 6 refuses any `uname -m` but arm64 ('shotfleet needs an Apple silicon Mac'). Free tier and prices: the same statements as C048 (FreeTierOnAFrozenBuild tests) and C042 (PriceAgreement tests, which read the home page, terms, README and llms.txt, not the guides). Refund: site/public/terms.html ('within 14 days').",
+  "assertion": "Extend PriceAgreement to site/public/guides/*.html if prices change.",
+  "fix": ""
+ },
+ {
+  "id": "C250",
+  "claim": "Guide 1: causes 4 and 5 reproduced on a test app (no de.lproj gives English while ja stays Japanese; an app that saves its own language stays English until reinstalled); a String Catalog without English entries builds no en.lproj; the fastlane docs and issues #8895, #11457, #12917 say what the guide quotes",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "my test build had <code>de.lproj</code> and <code>ja.lproj</code> and no <code>en.lproj</code>",
+   "uninstalling and installing the app again gave German",
+   "All three are closed."
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "marketing/articles/01-fastlane-snapshot-stuck-in-english.md TO VERIFY items 1, 3, 4 and 6 (ran 2026-10-03: Xcode 27.0, iOS 26.4 iPhone 17 simulator, a throwaway SwiftUI app with a String Catalog; the issue pages and docs.fastlane.tools opened that day). Not run: snapshot's own reinstall_app option, a real app, current fastlane against the old issues (the guide says so).",
+  "assertion": "None beyond the recorded runs.",
+  "fix": ""
+ },
+ {
+  "id": "C251",
+  "claim": "Guide 2: shotfleet rewrites the English flow's text selectors per language: tapOn Next becomes Weiter in German, or (Nächste|Weiter) when the app has two translations",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "becomes <code>Weiter</code> in German, or <code>(Nächste|Weiter)</code> if your app has two translations for it."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "TranslateFlow.test_single_translation_is_quoted_literal, TranslateFlow.test_label_with_two_keys_matches_either_translation (tests/test_shotfleet.py). Same as C015, C016. Edited 2026-10-06 when publishing: the draft said Next becomes (Nächste|Weiter) without the two-translations condition.",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "TranslateFlow.test_label_with_two_keys_matches_either_translation"
+ },
+ {
+  "id": "C252",
+  "claim": "Guide 2: 18 languages x 4 screens (72 screenshots) took 9 minutes on iOS with four simulators and 15 on Android, on one Mac, Maestro 2.0.10",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac."
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "Same run as C007 and C105: README sample 'captured 18/18 locales in 534s on 4 simulators', the home page's '9 min · 15 min ... measured on Maestro 2.0.10'. Edited 2026-10-06 when publishing: 'four simulators' is the iOS run's, not Android's.",
+  "assertion": "None beyond C007.",
+  "fix": ""
+ },
+ {
+  "id": "C253",
+  "claim": "Guide 2: shotfleet runs simulators and emulators on your Mac, not real devices or device clouds; needs an Apple silicon Mac, Maestro 2.x, Java 17+ and API 33+ emulators; no frames, captions or store upload; Flutter and React Native from translation files, run end to end on wger and the obytes Expo template only",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "it runs simulators and emulators on your Mac",
+   "It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators.",
+   "It makes no frames or captions and does not upload to the stores.",
+   "I have run that end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, and not yet on any other."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "README limits ('macOS on Apple silicon only', 'Maestro', 'Java 17+', 'Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run)'); C073 (API 33+), C037 (no frames, captions or upload). Edited 2026-10-06 when publishing: the draft said no real Flutter or React Native app had been run, which README contradicts since 2026-10-03.",
+  "assertion": "None beyond the README limits and the named claims.",
+  "fix": ""
+ },
+ {
+  "id": "C254",
+  "claim": "Guide 2: plain-Maestro facts measured on Maestro 2.0.10: a takeScreenshot straight after launchApp showed the home screen in 4 of 4 runs; -e before test exits 2 with Unknown options; clearState drops the Android per-app language; two maestro test processes on two emulators failed one of two in both attempts",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "in 4 of 4 runs",
+   "exit code 2",
+   "the per-app language goes with it",
+   "one of the two failed in both attempts"
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "marketing/articles/02-one-maestro-flow-every-locale.md TO VERIFY items 1 to 10, every one ticked with the run (2026-10-03/04: Maestro 2.0.10, iPhone 17 iOS 26.4 simulator, API 36 emulator with tools/fixture-app-android; the Maestro docs pages and morse_app PR #216 opened). Not run: Maestro 2.11, API 33 to 35, --shard-split (the guide says so).",
+  "assertion": "None beyond the recorded runs; Maestro versions change this.",
+  "fix": ""
  }
 ]

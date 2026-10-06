@@ -2,16 +2,15 @@
 """Render the drafted articles (marketing/articles/NN-*.md) into guide pages. Stdlib only.
 
   python3 tools/build-guides.py                    draft pages and a hub in site/draft/guides/ (never served)
-  python3 tools/build-guides.py --publish          also copy the VERIFIED articles into site/public/guides/ and add them
-                                                   (and /guides) to site/public/sitemap.xml
+  python3 tools/build-guides.py --publish          also copy the VERIFIED articles into site/public/guides/, write the hub
+                                                   (site/public/guides.html) and add them all to site/public/sitemap.xml
   python3 tools/build-guides.py --publish-unverified   the same, for every article, ticked or not (your decision)
 
 An article is verified when its 'TO VERIFY BEFORE PUBLISHING' list has no item left unticked: an item counts as ticked
-when it says TICKED (and not PARTLY TICKED). A list with no items counts as unverified.
+when its last TICKED is not a PARTLY TICKED (an item can record a partial run, then the full one). A list with no items counts as unverified.
 
-Before the FIRST publish, run `wrangler dev` (cd site) and open /guides/<slug> without .html: the worker serves
-site/public with html_handling for /docs, /terms and /privacy, but nested routing (/guides/<slug>) has not been
-confirmed without a deploy.
+Routing, checked with `wrangler dev` (cd site) on 2026-10-06: /guides/<slug> serves guides/<slug>.html with a 200 and
+/guides serves guides.html; a guides/index.html would answer /guides with a redirect to /guides/, so the hub is not one.
 """
 import argparse, html, json, re, sys
 from datetime import date
@@ -31,18 +30,9 @@ NAV = '''<header class="top">
 FOOTER = '''<footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>'''
-STYLE = '''<style>
-.docs { max-width: 760px; }
-.docs h2 { scroll-margin-top: 96px; }
-.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
-.docs pre code { background: none; padding: 0; font: inherit; }
-.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
-.docs img { max-width: 100%; height: auto; border-radius: 12px; }
-.docs table { min-width: 0; }
-</style>'''
 
 
 # ---------- the Markdown subset: headings, paragraphs, lists, code fences, inline code, links, images, emphasis, tables ----------
@@ -122,7 +112,8 @@ def open_items(text):
     section = re.split(r"^(?:---|Sources\b.*)$", text[m.end():], maxsplit=1, flags=re.M)[0]
     items = re.findall(r"^(?:\d+\.|[-*])\s+(.*)$", section, re.M)
     if not items: return ["(the TO VERIFY section lists nothing)"]
-    return [t for t in items if not (re.match(r"\[[xX]\]", t) or ("TICKED" in t and "PARTLY" not in t))]
+    ticked = lambda t: (marks := re.findall(r"(PARTLY )?TICKED", t)) and not marks[-1]  # the last mark counts
+    return [t for t in items if not (re.match(r"\[[xX]\]", t) or ticked(t))]
 
 
 def page(title, description, path, body, og_type="website", ld=None, assets="/"):
@@ -155,8 +146,7 @@ def page(title, description, path, body, og_type="website", ld=None, assets="/")
 <link rel="icon" href="{assets}favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="{assets}apple-touch-icon.png">
 <link rel="preload" href="{assets}fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{assets}site.css">
-{STYLE}{ld_tag}
+<link rel="stylesheet" href="{assets}site.css">{ld_tag}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -217,7 +207,7 @@ def build(root=ROOT, publish=False, unverified=False, today=None, out=sys.stdout
         pub = root / "site/public/guides"; pub.mkdir(parents=True, exist_ok=True)
         built = (today or date.today()).isoformat()
         for a in ok: (pub / f"{a['slug']}.html").write_text(article_page(a, built)); print(f"published {a['slug']}", file=out)
-        (pub / "index.html").write_text(hub_page(ok, False))
+        (root / "site/public/guides.html").write_text(hub_page(ok, False))  # not guides/index.html: the worker would redirect /guides to /guides/
         add_to_sitemap(root, ["/guides", *(f"/guides/{a['slug']}" for a in ok)], built)
     return 1 if refused else 0
 

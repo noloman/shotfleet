@@ -85,8 +85,8 @@ def resolve(ref, page_ids):
     if u.scheme in ("http", "https", "mailto", "tel", "data"): return True
     if not u.path: return u.fragment in page_ids or not u.fragment
     path = PUB / (u.path.lstrip("/") or "index.html")
-    if path.is_dir(): path = path / "index.html"
-    if not path.exists(): path = path.with_name(path.name + ".html")
+    if not path.is_file() and path.with_name(path.name + ".html").exists(): path = path.with_name(path.name + ".html")  # /guides: guides.html beats guides/
+    elif path.is_dir(): path = path / "index.html"
     if not path.exists(): return False
     if u.fragment: return u.fragment in Page(path.read_text()).ids
     return True
