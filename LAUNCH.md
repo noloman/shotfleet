@@ -8,7 +8,7 @@
 > longer used and can be deleted or left. Why Gumroad, what it costs and what is still unverified:
 > `research/gumroad-setup.md`. Its last section is the click-by-click checklist for the Gumroad product.
 
-Everything else is done and scripted. Signing and notarization use your Developer ID and the `KeysiNotary` profile;
+Everything else is done and scripted. Signing and notarization use your Developer ID and the `ShotfleetNotary` profile;
 the program is served from the shotfleet site (no public source repo; the empty public repo `noloman/shotfleet-releases` is kept for a later Action, tap and fastlane plugin, see DISTRIBUTION.md); `packaging/go-live.sh` does the rest.
 
 Payments are on **Gumroad** (merchant of record since 2025-01-01: it charges and pays the VAT and sales tax worldwide; an
@@ -49,10 +49,16 @@ after the 100th use; whether a test purchase uses one).
   AFTER the site is live. On `main` that is already true; on any other branch run `git push -u origin <branch>` once.
   The working tree must be clean and nothing staged (the build and the commits would include it).
 - **Signing and notarization:** the Developer ID certificate is in the login keychain (`security find-identity -v -p
-  codesigning` lists `Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)`), and the `KeysiNotary` notarytool
-  profile still works: `xcrun notarytool history --keychain-profile KeysiNotary` lists past submissions (read only; it
-  needs the network, which is why the rehearsal does not run it for you). If the profile is gone, recreate it with
-  `xcrun notarytool store-credentials KeysiNotary`.
+  codesigning` lists `Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)`), and the `ShotfleetNotary` notarytool
+  profile works: `xcrun notarytool history --keychain-profile ShotfleetNotary` lists past submissions (read only; it
+  needs the network, so the rehearsal does not run it; the real run does, through `packaging/notary-check.sh`, before
+  anything else). If the profile is missing, recreate it with
+  `xcrun notarytool store-credentials ShotfleetNotary --apple-id <id> --team-id 2357A78TMR` (it prompts for the
+  app-specific password; never paste it into a command line or a chat). "No Keychain password item found" usually means
+  the Mac's screen locked: macOS locks this keychain about 5 minutes after the screen locks, so unlock the Mac and run
+  again before storing anything (research/notary-profile-2026-10-06.md). `release.sh` keeps the Mac awake while it builds
+  (`caffeinate -di`), and `build.sh`/`pkg.sh` check the profile again right before each upload. shotfleet used Keysi's
+  `KeysiNotary` profile until 2026-10-05 and now has its own.
 - **Cloudflare:** `cd site && npx wrangler whoami` shows the account that owns `shotfleet.com`.
 - Tools: python3, swiftc, xcrun, codesign, node and npx on the PATH (the rehearsal checks these).
 

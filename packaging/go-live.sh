@@ -53,7 +53,7 @@ if [ "$DRY" = 1 ]; then
     for t in python3 swiftc xcrun codesign npx node shasum; do command -v "$t" >/dev/null 2>&1 && ok "$t found" || fail "$t not found"; done
     ID="${DEVELOPER_ID:-Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)}"
     if security find-identity -v -p codesigning 2>/dev/null | grep -qF "$ID"; then ok "signing identity in the keychain: $ID"; else fail "signing identity not in the keychain: $ID"; fi
-    warn "not checked here (needs the network): xcrun notarytool history --keychain-profile ${NOTARY_PROFILE:-KeysiNotary}; (cd site && npx wrangler whoami)"
+    warn "not checked here (needs the network): xcrun notarytool history --keychain-profile ${NOTARY_PROFILE:-ShotfleetNotary}; (cd site && npx wrangler whoami)"
   fi
   W=${GOLIVE_DRYRUN_DIR:-$(mktemp -d)}
   mkdir -p "$W"; [ -n "${GOLIVE_DRYRUN_DIR:-}" ] || trap 'rm -rf "$W"' EXIT
@@ -79,6 +79,7 @@ for p in ("site/public/index.html", "site/public/alternatives.html", "site/publi
 PY
 }
 
+if [ "$DRY" = 0 ]; then NOTARY_PROFILE=${NOTARY_PROFILE:-ShotfleetNotary} packaging/notary-check.sh; fi  # before any edit, commit or build
 # The released program checks Gumroad keys against this product (and only this one).
 case "$GUMROAD_ID" in *[!A-Za-z0-9_=-]*|"") echo "go-live: the Gumroad product ID has odd characters: $GUMROAD_ID" >&2; exit 2 ;; esac
 sed -i '' "s|^GUMROAD_PRODUCT_ID = .*|GUMROAD_PRODUCT_ID = \"$GUMROAD_ID\"  # set by packaging/go-live.sh|" shotfleet.py
@@ -130,7 +131,7 @@ fi
 echo "-- the real run would, in this order"
 say "1. sed GUMROAD_PRODUCT_ID in shotfleet.py to $GUMROAD_ID and commit \"Gumroad product ID for licence checks\""
 say "2. (nothing: Gumroad needs no other edit in the program; keys check against api.gumroad.com with that product ID)"
-say "3. packaging/release.sh: tools/check-claims.sh, build $VERSION (sign with DEVELOPER_ID, notarize with ${NOTARY_PROFILE:-KeysiNotary}), copy to site/public/download, write VERSION, wrangler deploy (first deploy: still the waitlist page)"
+say "3. packaging/release.sh: tools/check-claims.sh, build $VERSION (sign with DEVELOPER_ID, notarize with ${NOTARY_PROFILE:-ShotfleetNotary}), copy to site/public/download, write VERSION, wrangler deploy (first deploy: still the waitlist page)"
 say "4. transform site/public/index.html (drop WAITLIST blocks, open SALE blocks with $CHECKOUT, Early access -> Buy shotfleet)"
 say "5. (cd site && npx wrangler deploy): the sale page goes live on shotfleet.com"
 say "6. commit \"Site: sale open\" and git push (needs the upstream the check above found)"

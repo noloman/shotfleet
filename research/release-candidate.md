@@ -180,7 +180,7 @@ Two script bugs found on the way, both fixed: killing the fake server killed onl
 
 ## 8. What could not be tested here
 
-- **Apple's notarization verdict.** The build is signed with hardened runtime and a timestamp, but nothing was submitted. Needs `NOTARY_PROFILE=KeysiNotary packaging/release.sh` (Manu's go; `release.sh` also deploys, so run `packaging/build.sh` with `DEVELOPER_ID` and `NOTARY_PROFILE=KeysiNotary` set instead, which notarizes but does not deploy), then `spctl --assess` must say `accepted source=Notarized Developer ID`.
+- **Apple's notarization verdict.** The build is signed with hardened runtime and a timestamp, but nothing was submitted. Needs `NOTARY_PROFILE=ShotfleetNotary packaging/release.sh` (Manu's go; `release.sh` also deploys, so run `packaging/build.sh` with `DEVELOPER_ID` and `NOTARY_PROFILE=ShotfleetNotary` set instead, which notarizes but does not deploy), then `spctl --assess` must say `accepted source=Notarized Developer ID`.
 - **A real Gumroad key**: activation count semantics (does `uses` really include the verify that carries `increment_uses_count=true`? is the 404 body really that message? do `refunded`/`chargebacked` really flip?), the product id format, and the License key block. Only Manu's product and one purchase plus refund can settle this (gate 5 stays partial).
 - **Polar and Lemon Squeezy paths** against their real APIs (would be real calls; unit-tested only).
 - **Gatekeeper on a notarized, browser-downloaded build**, and a clean Mac or user (Maestro, Java, no Xcode CLT, no Homebrew): cold test 3.
