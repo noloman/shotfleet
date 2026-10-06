@@ -84,8 +84,21 @@ class WarmUp(unittest.TestCase):
 class ReadText(unittest.TestCase):
     def test_vision_failure_is_an_error_not_an_empty_screen(self):
         h = fake_helper("echo 'Vision failed: Code=13' >&2; exit 2\n")
-        with self.assertRaisesRegex(RuntimeError, "Vision failed: Code=13"):
+        with mock.patch.object(sf, "ane_state", return_value=(False, 0)), self.assertRaisesRegex(RuntimeError, "Vision failed: Code=13"):
             sf.read_text(h, "x.png", timeout=5)
+
+    def test_an_error_while_macos_compiles_is_retried_until_it_answers(self):  # the 2026-10-06 e5rtError 13 after a warm-up that answered
+        flag = TMP / "read-flag"
+        h = fake_helper(f"""if [ -e {flag} ]; then echo '{{"chars": 3}}'; else touch {flag}; echo 'e5rtError 13' >&2; exit 2; fi\n""")
+        with mock.patch.object(sf, "OCR_RETRY_S", 0.2), mock.patch.object(sf, "ane_state", return_value=(True, 5)):
+            self.assertEqual(sf.read_text(h, "x.png", timeout=5, patience=20)["chars"], 3)
+
+    def test_that_retry_has_a_ceiling_and_skips_a_stuck_service(self):
+        h = fake_helper("echo 'e5rtError 13' >&2; exit 2\n")
+        with mock.patch.object(sf, "OCR_RETRY_S", 0.2):
+            for state, patience in (((True, 5), 1), ((True, 700), 20)):
+                with mock.patch.object(sf, "ane_state", return_value=state), self.assertRaisesRegex(RuntimeError, "e5rtError"):
+                    t0 = time.time(); sf.read_text(h, "x.png", timeout=5, patience=patience)
 
     def test_good_answer(self):
         h = fake_helper("""echo '{"lang": "de", "chars": 3, "text": "abc"}'\n""")

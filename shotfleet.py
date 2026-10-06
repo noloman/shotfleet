@@ -2745,13 +2745,19 @@ def usable_text(png, tables):
 def read_text(ocr, png, timeout=120, patience=OCR_COMPILE_PATIENCE_S):
     """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever;
     a model compile that is still working mid-check (seen at load 800 on 2026-10-05) is waited for like the warm-up's."""
-    for _ in range(2):
+    start, hangs = time.time(), 0
+    while hangs < 2:
         p = subprocess.Popen([ocr, str(png)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         out = wait_for_ocr(p, timeout, patience)
         if out is None:
             p.kill(); p.communicate()
+            hangs += 1
             continue
         if p.returncode != 0:  # the helper's exit 2 (Vision failed): an error, not an empty screen
+            busy, cpu_min = ane_state()  # ...unless macOS is compiling its model right now (measured 2026-10-06: e5rt error 13 mid-check, after a warm-up that answered)
+            if busy and cpu_min < OCR_STUCK_CPU_MIN and time.time() - start + OCR_RETRY_S < patience:
+                time.sleep(OCR_RETRY_S)
+                continue
             raise RuntimeError(f"text recognition failed on {png}: {out[1].strip()[-200:] or 'exit ' + str(p.returncode)}")
         return json.loads(out[0] or "{}")
     raise RuntimeError(f"text recognition hung twice on {png}. " + ocr_not_answering())
