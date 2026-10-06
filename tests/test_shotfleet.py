@@ -460,6 +460,69 @@ class CheckAnyFolder(unittest.TestCase):
         self.assertEqual(self.layout(["fr/a.png", "fr/b.png"]), {"fr": ["a.png", "b.png"]})
         self.assertEqual(self.layout(["raw/ko/a.png", "index.html"]), {"ko": ["a.png"]})
 
+    # real fastlane names and layouts (seen in subscrifi's folders, research/beyond-maestro-2026-10-06.md): snapshot writes
+    # screenshots/<locale>/<device>-<name>.png next to screenshots.html; screengrab writes
+    # metadata/android/<locale>/images/phoneScreenshots/<name>_<13-digit milliseconds>.png, a different timestamp in every language
+    SNAPSHOT = {lp: [f"screenshots/{lp}/iPhone 15 Pro Max-01Home.png", f"screenshots/{lp}/iPhone 15 Pro Max-02Categories.png"]
+                for lp in ("en-US", "de-DE")}
+    SCREENGRAB = {"en-US": ["01Home_1773696985949.png", "02Categories_1773696986518.png"],
+                  "de-DE": ["01Home_1773697012807.png", "02Categories_1773697013353.png"]}
+    WORDS = {"en": {"a": "Monthly subscriptions", "b": "Filter and sort"}, "de": {"a": "Monatliche Abonnements", "b": "Filtern und sortieren"}}
+
+    def fastlane_check(self, files, size, **kw):
+        """cmd_check on a fastlane folder made of `files` ({locale: [path]}), each screen's text in a .texts.json sidecar."""
+        sub = kw.pop("sub", "")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / "fastlane"
+            for lp, paths in files.items():
+                for rel in paths:
+                    f = root / rel; f.parent.mkdir(parents=True, exist_ok=True); f.write_bytes(png_c(*size))
+                    f.with_suffix(".texts.json").write_text(json.dumps(list(self.WORDS[lp[:2]].values())))
+            if sub == "screenshots": (root / "screenshots/screenshots.html").write_text("<html>")  # snapshot's own summary page
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(sf, "ocr_tool", return_value="ocr"):
+                code = sf.cmd_check(root / sub, strings=self.WORDS, report_dir=Path(d) / "rep", ocr_command="cat {image}.txt", **kw)
+            report = json.loads((Path(d) / "rep/check.json").read_text())
+            report["gallery"] = (Path(d) / "rep/index.html").read_text()
+        return code, report
+
+    def test_shot_key_strips_only_screengrabs_13_digit_timestamp(self):
+        self.assertEqual(sf.shot_key("01Home_1773697012807.png"), "01Home.png")
+        for name in ("iPhone 15 Pro Max-01Home.png", "01Home.png", "01_lift_list.png", "shot_177369701280.png",
+                     "shot_17736970128071.png", "1773697012807.png", "home_v2.jpg"):
+            self.assertEqual(sf.shot_key(name), name)
+
+    def test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found(self):
+        code, report = self.fastlane_check(self.SNAPSHOT, (1290, 2796), sub="screenshots")
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(len(report["screenshots"]), 4)  # screenshots.html is not a screenshot
+        files = {**self.SNAPSHOT, "de-DE": self.SNAPSHOT["de-DE"][:1]}
+        code, report = self.fastlane_check(files, (1290, 2796), sub="screenshots")
+        self.assertEqual((code, report["problems"]), (1, ["de-DE: missing iPhone 15 Pro Max-02Categories.png"]))
+
+    def test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is(self):
+        play = lambda files: {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in files.items()}
+        code, report = self.fastlane_check(play(self.SCREENGRAB), (1080, 1920))
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(report["gallery"].count('class="missing"'), 0)  # one column per screen, not one per timestamp
+        self.assertIn("de-DE/01Home_1773697012807.png", {r["file"] for r in report["screenshots"]})  # reports keep the real names
+        code, report = self.fastlane_check(play({**self.SCREENGRAB, "de-DE": self.SCREENGRAB["de-DE"][:1]}), (1080, 1920))
+        self.assertEqual((code, report["problems"]), (1, ["de-DE: missing 02Categories.png"]))
+
+    def test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match(self):
+        twice = {"en-US": ["01Home_1773696985949.png", "01Home_1773699999999.png"], "de-DE": ["01Home_1773697012807.png"]}
+        play = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in twice.items()}
+        code, report = self.fastlane_check(play, (1080, 1920))
+        self.assertEqual(code, 1)
+        self.assertEqual(report["problems"], ["en-US: 01Home_1773696985949.png, 01Home_1773699999999.png are the same screen saved 2 times "
+                                              "(only screengrab's timestamp differs); keep the newest and delete the rest"])
+
+    def test_expect_names_the_screen_without_screengrabs_timestamp(self):
+        play = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in self.SCREENGRAB.items()}
+        code, report = self.fastlane_check(play, (1080, 1920), expect={"01Home": {"all": ["Nowhere on screen"]}})
+        self.assertEqual(code, 1)
+        self.assertEqual(sorted(p.split(":")[0] for p in report["problems"]), ["de-DE/01Home_1773697012807.png", "en-US/01Home_1773696985949.png"])
+        self.assertFalse(any("matches no screenshot" in p for p in report["problems"]))
+
     def test_store_codes_map_to_app_languages(self):
         app = {"en", "de", "nb", "pt", "pt-PT", "zh-Hans", "in", "iw", "es"}
         cases = {"de-DE": "de", "no": "nb", "no-NO": "nb", "pt-BR": "pt", "pt-PT": "pt-PT", "en-US": "en",
@@ -885,6 +948,68 @@ class SourceFiles(unittest.TestCase):
 
 def png_c(w, h, color_type=2):  # PNG header with a color type: 2 = RGB, 6 = RGBA
     return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big") + bytes([8, color_type]) + b"\0" * 8 + b"IDAT"
+
+
+def png_pixels(w, h, alpha, color_type=6, depth=8, filters=(0, 1, 2, 3, 4)):
+    """A real PNG, filtered the way encoders do (each row a different filter type, in turn), with alpha(x, y) as every pixel's alpha."""
+    import zlib, struct
+    ch, n = {6: 4, 4: 2, 2: 3}[color_type], depth // 8
+    bpp, rows, prev = ch * n, [], bytes(w * ch * n)
+    for y in range(h):
+        line = bytearray()
+        for x in range(w):
+            colour = [(x * 7 + y * 3) % 256, (x * 5) % 256, y % 256][:ch - (color_type in (4, 6))]
+            a = [alpha(x, y)] if color_type in (4, 6) else []
+            for v in colour + a: line += bytes([v] * n) if v in (0, 255) else bytes([v, (v * 3) % 256][:n])
+        f = filters[y % len(filters)]
+        out = bytearray([f])
+        for i, v in enumerate(line):
+            a, b = line[i - bpp] if i >= bpp else 0, prev[i]
+            c = prev[i - bpp] if i >= bpp else 0
+            pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+            pred = (0, a, b, (a + b) // 2, a if pa <= pb and pa <= pc else b if pb <= pc else c)[f]
+            out.append((v - pred) % 256)
+        rows.append(bytes(out)); prev = bytes(line)
+    chunk = lambda k, d: struct.pack(">I", len(d)) + k + d + struct.pack(">I", zlib.crc32(k + d))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, depth, color_type, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(b"".join(rows))) + chunk(b"IEND", b""))
+
+
+class Transparency(unittest.TestCase):
+    """The alpha rule: an alpha channel whose every pixel is opaque is told apart from real transparency (both are store problems)."""
+    def test_opaque_rgba_is_opaque_whatever_the_filters_and_depth(self):
+        for ctype, depth in ((6, 8), (6, 16), (4, 8)):
+            for filters in ((0,), (1,), (2,), (3,), (4,), (0, 1, 2, 3, 4), (4, 3, 2, 1, 0)):
+                with self.subTest(ctype=ctype, depth=depth, filters=filters):
+                    self.assertEqual(sf.png_alpha(png_pixels(9, 6, lambda x, y: 255, ctype, depth, filters)), "opaque")
+
+    def test_one_pixel_below_255_anywhere_is_transparency(self):
+        for ctype, depth in ((6, 8), (6, 16), (4, 8)):
+            for filters in ((0,), (1,), (2,), (3,), (4,), (0, 1, 2, 3, 4)):
+                for spot in ((0, 0), (8, 5), (3, 2)):
+                    with self.subTest(ctype=ctype, depth=depth, filters=filters, spot=spot):
+                        png = png_pixels(9, 6, lambda x, y: 254 if (x, y) == spot else 255, ctype, depth, filters)
+                        self.assertEqual(sf.png_alpha(png), "transparent")
+        self.assertEqual(sf.png_alpha(png_pixels(9, 6, lambda x, y: 0)), "transparent")
+
+    def test_rgb_has_none_and_store_rules_word_each_case_with_the_fix(self):
+        self.assertIsNone(sf.png_alpha(png_pixels(9, 6, None, 2)))
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "de-DE").mkdir()
+            def flat(rows, ctype=6):  # a full-size PNG fast: unfiltered rows of one colour each
+                import struct, zlib
+                chunk = lambda k, b: struct.pack(">I", len(b)) + k + b + struct.pack(">I", zlib.crc32(k + b))
+                return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1320, 2868, 8, ctype, 0, 0, 0))
+                        + chunk(b"IDAT", zlib.compress(b"".join(b"\0" + px * 1320 for px in rows))) + chunk(b"IEND", b""))
+            files = {"opaque.png": flat([b"\x10\x20\x30\xff"] * 2868),
+                     "clear.png": flat([b"\x10\x20\x30\xff"] * 2000 + [b"\x10\x20\x30\x00"] * 868),
+                     "rgb.png": flat([b"\x10\x20\x30"] * 2868, 2)}
+            for name, data in files.items(): (d / "de-DE" / name).write_bytes(data)
+            problems, _ = sf.store_rules({"de-DE": sorted((d / "de-DE").iterdir())}, android=False)
+        self.assertEqual(problems, [
+            f"de-DE/clear.png: has transparency (an alpha channel); both stores reject it. {sf.FLATTEN}",
+            f"de-DE/opaque.png: has an alpha channel, though every pixel is opaque; both stores reject the channel itself. {sf.FLATTEN}"])
+        self.assertIn("sips -s format jpeg", sf.FLATTEN)
 
 
 class StoreRules(unittest.TestCase):

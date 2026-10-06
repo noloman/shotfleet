@@ -524,18 +524,19 @@
    "site/public/docs.html"
   ],
   "where_text": [
-   "### Check screenshots you already have (fastlane, screengrab, by hand)",
-   "Check any screenshots, from fastlane or by hand",
+   "### Check screenshots you already have (fastlane snapshot, screengrab, by hand)",
+   "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots",
    "works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports)",
    "<h2 id=\"check\">Check screenshots you already have</h2>"
   ],
   "status": "fixed",
-  "proof": "CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names.",
+  "proof": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match, CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names. Real, 2026-10-06 (research/beyond-maestro-2026-10-06.md E1, scratch copies only): subscrifi's 8-language screengrab folder (01Home_1773697012807.png ...) gave 8 false 'missing' lines before (origin/main bd17993) and none after; with the debug APK check found by itself, all 42 non-English screens were reported as showing English, which they do (the de-DE home screen is English). subscrifi's snapshot folder (en-US, de-DE, 'iPhone 15 Pro Max-01Home.png', screenshots.html beside them) still reports the 11 German screens that show English and the 12-per-listing limit.",
   "layer": "unit",
   "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "The README heading and the show-hn answer said 'any tool'. Only fastlane snapshot/screengrab folders, a plain folder per language and raw/ are tested; StoreScreens and other exports never were. The heading and the answer now name what is tested and say other tools' exports were not tried."
+  "fixed_by": "code",
+  "fixed": "The README heading and the show-hn answer said 'any tool'. Only fastlane snapshot/screengrab folders, a plain folder per language and raw/ are tested; StoreScreens and other exports never were. The heading and the answer now name what is tested and say other tools' exports were not tried. 2026-10-06: the screengrab half was still false with screengrab's default settings: its file names end in a 13-digit timestamp that differs per language, so every language 'missed' every other language's files and the old tests only used names like 1.png. Fixed in code (shot_key strips the timestamp when screens are matched across languages) and tested with real snapshot and screengrab names and folder layouts.",
+  "test": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is"
  },
  {
   "id": "C032",
@@ -546,7 +547,7 @@
    "LAUNCH.md"
   ],
   "where_text": [
-   "Check any screenshots, from fastlane or by hand",
+   "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots",
    "<code>shotfleet check</code> is free for everyone",
    "a free tier (`check` plus 2 languages in `run`)"
   ],
@@ -2797,6 +2798,113 @@
   "proof": "docs/handoff.md section 17 (0.1.4 outcome): shotfleet-rc-build/0.1.4/g3-014.log 2026-10-06 08:54 to 09:37, Android section 29 PASS lines and 0 FAIL (the iOS part failed: 0.5 GB of swap left at START, Maestro 'iOS driver not ready in time'); g3-014i.log 11:37 to 12:21, tools/fixture-e2e.sh --keep, 'PASS: all 36 assertions passed'; publish.log 12:26 PUBLISH VERIFIED.",
   "layer": "device",
   "assertion": "Two runs of the same signed build; the page says so.",
+  "fix": ""
+ },
+ {
+  "id": "C175",
+  "claim": "`run` needs Maestro, `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/index.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "`run` needs Maestro. `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
+   "<code>run</code> needs Maestro. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
+   "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots, no Maestro needed.",
+   "fastlane snapshot from XCUITest, fastlane screengrab from Espresso with its timestamped file names, a plain folder per language, by hand) without capturing anything and without Maestro."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match, CheckAnyFolder.test_expect_names_the_screen_without_screengrabs_timestamp, CheckAnyFolder.test_shot_key_strips_only_screengrabs_13_digit_timestamp. check never calls Maestro (only run's capture does; research/beyond-maestro-2026-10-06.md section 1.1). Real, 2026-10-06 (research/beyond-maestro-2026-10-06.md E1, scratch copies only): subscrifi's 8-language screengrab folder (01Home_1773697012807.png ...) gave 8 false 'missing' lines before (origin/main bd17993) and none after; with the debug APK check found by itself, all 42 non-English screens were reported as showing English, which they do (the de-DE home screen is English). subscrifi's snapshot folder (en-US, de-DE, 'iPhone 15 Pro Max-01Home.png', screenshots.html beside them) still reports the 11 German screens that show English and the 12-per-listing limit.",
+  "assertion": "cmd_check on fastlane/screenshots/<locale>/<device>-<name>.png with screenshots.html beside them, and on metadata/android/<locale>/images/phoneScreenshots/<name>_<13 digits>.png with a different timestamp per language, reports no missing screen; a screen really missing is still reported; two files of one language that differ only by the timestamp are reported, not matched.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is"
+ },
+ {
+  "id": "C176",
+  "claim": "Without --app, check looks for the app build the way init does, in the folder it runs from, and says in one line which build it used or that it found none",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Without `--app`, `check` looks for your app build the way `init` does, in the folder you run it from",
+   "Without <code>--app</code>, <code>check</code> looks for your app build the way <code>init</code> does, in the folder you run it from"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckFindsBuilds.test_a_snapshot_folder_uses_the_derived_data_app_and_says_so_in_one_line, CheckFindsBuilds.test_a_screengrab_folder_uses_the_apk_even_when_an_ios_app_is_newer, CheckFindsBuilds.test_nothing_found_says_so_in_one_line_and_runs_no_build_tool, CheckFindsBuilds.test_a_plain_folder_with_both_builds_around_picks_neither, CheckFindsBuilds.test_check_any_passes_the_build_it_found_and_an_explicit_app_never_looks. Real, 2026-10-06: run from ~/Developer/subscrifi on a scratch copy of its screengrab folder, check printed 'no --app given: using .../androidApp/build/outputs/apk/debug/androidApp-debug.apk for strings' and compared with the app's strings; on its snapshot folder it said no iOS build was found there (none in DerivedData).",
+  "assertion": "check_build on a fake project with a DerivedData app and a Gradle APK returns the one matching the folder's store, one line naming it, and runs no build tool.",
+  "fix": "",
+  "test": "CheckFindsBuilds.test_a_snapshot_folder_uses_the_derived_data_app_and_says_so_in_one_line"
+ },
+ {
+  "id": "C177",
+  "claim": "A ready-made fastlane lane: snapshot or screengrab, then shotfleet check, and any problem fails the lane before deliver/supply uploads",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "A lane that stops when the screenshots are wrong",
+   "Any problem makes <code>check</code> exit with 1, which fails the lane, so nothing is uploaded"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "FastlaneAndRenders.test_the_fastlane_lane_checks_the_folders_snapshot_and_screengrab_write_and_fails_on_problems (README and docs lane identical, both check calls parse with the real parser, capture then check then upload, check exits 1 on a problem). Real, 2026-10-06, no device: fastlane 2.240.1 ran the iOS lane's sh line in a scratch project holding a copy of subscrifi's snapshot set; sh ran in fastlane/ (pwd printed .../fastlane), check exited 1 and fastlane stopped with \"Exit status of command 'cd .. && shotfleet check fastlane/screenshots' was 1 instead of 0\", so the step after it never ran. snapshot and screengrab themselves were not run (they need a simulator/emulator).",
+  "assertion": "The lane's check lines parse and come between capture and upload; a fastlane run with a failing check stops the lane.",
+  "fix": "",
+  "test": "FastlaneAndRenders.test_the_fastlane_lane_checks_the_folders_snapshot_and_screengrab_write_and_fails_on_problems"
+ },
+ {
+  "id": "C178",
+  "claim": "Paparazzi, Roborazzi or Compose preview renders: copy each language into its own folder (same names) and check the parent; --locale for one flat folder; check can't judge whether a drawn screen looks like the app on a phone; not tried on a real Paparazzi folder",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Give each language's images their own folder, with the same names in every language, and check the parent folder.",
+   "Give each language's images their own folder, with the same names in every language, and check the parent folder."
+  ],
+  "status": "partial",
+  "layer": "unit",
+  "proof": "FastlaneAndRenders.test_the_render_copy_loop_makes_language_folders_with_the_same_names_that_check_reads (the docs' loop, run with sh on Paparazzi-style names <package>_<Class>_<test>_<lang>.png, gives <lang>/ folders with matching names; check finds the English ja render and no missing screen), FastlaneAndRenders.test_a_flat_folder_of_renders_takes_one_language_with_locale. Partial: no real Paparazzi or Roborazzi output exists on this Mac (searched ~/Developer), so experiment E3 (colour type and names of a real render) is still open; the docs say so. Why not parse the language out of flat file names: Paparazzi's name is <package>_<Class>_<method>[_<name you choose>] and Roborazzi's default has no language either, so there is no standard place to read it from, and the names must match across languages anyway for the missing-screen check.",
+  "assertion": "A real Paparazzi folder in 2 locales, copied with the docs' loop, checks with no false problem.",
+  "fix": "Run E3 (research/beyond-maestro-2026-10-06.md) and then drop 'I haven't tried it on a real Paparazzi folder yet'."
+ },
+ {
+  "id": "C179",
+  "claim": "Keep your fastlane UI tests and run shotfleet check on the folder they write; on a real fastlane snapshot set it found a German listing whose app was still in English",
+  "where": [
+   "site/public/alternatives.html"
+  ],
+  "where_text": [
+   "I ran it on a real fastlane snapshot set and it found a German listing whose app was still in English."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is. Real: research/beyond-maestro-2026-10-06.md section 1.4 [M], rerun 2026-10-06 on a scratch copy of subscrifi's snapshot set (en-US, de-DE): 'checked 24 screenshots in 2 languages: 13 problem(s)', 11 German screens 'text looks like en'; the German home screen shows the app's English UI.",
+  "assertion": "None beyond the recorded run.",
+  "fix": ""
+ },
+ {
+  "id": "C180",
+  "claim": "fastlane users don't need export: snapshot and screengrab already write into fastlane's folders",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "You don't need `export` with fastlane: snapshot and screengrab already write into fastlane's folders.",
+   "You don't need <code>export</code> with fastlane: snapshot and screengrab already write into fastlane's folders."
+  ],
+  "status": "evidence",
+  "layer": "legal",
+  "proof": "Third-party defaults: snapshot's output_directory is fastlane/screenshots and screengrab's is fastlane/metadata/android (subscrifi's real folders are laid out that way: iosApp/fastlane/screenshots/<locale>/, androidApp/fastlane/metadata/android/<locale>/images/phoneScreenshots/). export's own comment in cmd_export says it is for shotfleet runs.",
+  "assertion": "None.",
   "fix": ""
  }
 ]

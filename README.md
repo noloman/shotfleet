@@ -31,17 +31,56 @@ After capture, every screenshot's text is compared against your app's own string
 - **Store rules:** sizes each store accepts (every App Store display class, Play's 320–3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Notes (not failures) for Play's 2:1 rule and for listings that can't be recommended by Google Play (fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9).
 - **Languages your app doesn't have:** a store listing (say Traditional Chinese) whose screenshots can't be in that language because the app isn't translated into it.
 
-### Check screenshots you already have (fastlane, screengrab, by hand)
+### Check screenshots you already have (fastlane snapshot, screengrab, by hand)
 
-Already have screenshots from fastlane snapshot/screengrab or by hand? Check them without capturing anything:
+`run` needs Maestro. `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free. Point it at your fastlane folder and your app build:
 
 ```bash
-shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/<locale>/
-shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/<locale>/images/phoneScreenshots/
+shotfleet check fastlane/screenshots                       # snapshot: screenshots/<locale>/
+shotfleet check fastlane/metadata/android                  # screengrab: <locale>/images/phoneScreenshots/
+shotfleet check fastlane/ --app path/to/MyApp.app          # a fastlane folder with both: the build picks its half
 shotfleet check shots/ --locale en --app path/to/MyApp.app # a flat folder of one language's PNGs, no <locale>/ level
 ```
 
+Without `--app`, `check` looks for your app build the way `init` does, in the folder you run it from: the newest Debug simulator build of your Xcode project, or your Gradle debug APK. It says in one line which build it used, or that it found none and only judges the language by detection.
+
+screengrab puts a timestamp at the end of every file name (`01Home_1773697012807.png`), different in every language. `check` ignores it when it matches screens across languages, and the report keeps the real names. If one language has the same screen twice with two timestamps (say, left over from an earlier run), that's a problem.
+
 A flat folder of PNGs needs `--locale <code>` because shotfleet does not guess the language of a folder; without it `check` says so and exits 2. `<locale>/` folders ignore `--locale`.
+
+You don't need `export` with fastlane: snapshot and screengrab already write into fastlane's folders. `export` is for screenshots from `shotfleet run`.
+
+A lane that stops when the screenshots are wrong (in `fastlane/Fastfile`; fastlane runs `sh` from the `fastlane/` folder, hence the `cd ..`):
+
+```ruby
+platform :ios do
+  lane :screenshots do
+    snapshot
+    sh("cd .. && shotfleet check fastlane/screenshots")      # any problem fails the lane, so nothing is uploaded
+    deliver(skip_binary_upload: true, skip_metadata: true, overwrite_screenshots: true, force: true)
+  end
+end
+
+platform :android do
+  lane :screenshots do
+    screengrab
+    sh("cd .. && shotfleet check fastlane/metadata/android")
+    supply(skip_upload_apk: true, skip_upload_aab: true, skip_upload_metadata: true, skip_upload_changelogs: true, skip_upload_images: true)
+  end
+end
+```
+
+Paparazzi, Roborazzi or Compose preview tests: their file names don't carry the language unless you put it there (Paparazzi writes `<package>_<Class>_<test>.png`, plus a name you can add), so `check` can't sort one flat folder into languages. Give each language's images their own folder, with the same names in every language, and check the parent folder. If your test names end in the language (`..._home_de.png`):
+
+```bash
+for lp in en de ja; do
+  mkdir -p shots/$lp
+  for f in src/test/snapshots/images/*_$lp.png; do b=$(basename "$f"); cp "$f" "shots/$lp/${b%_$lp.png}.png"; done
+done
+shotfleet check shots/ --app app/build/outputs/apk/debug/app-debug.apk
+```
+
+For one language, `check <folder> --locale de` works on the flat folder as it is, but then there's nothing to compare it with, so copies and missing screens aren't checked. These tools draw your screens without a device, so there's no real status bar. Neither store asks for a device, only for screens that show your app. `check` reads the text, the sizes and the alpha channel, but it can't tell you whether a drawn screen looks like your app on a phone (fonts can differ, mostly in Chinese, Japanese, Arabic and Indic scripts). I haven't tried it on a real Paparazzi folder yet.
 
 Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`). The report (`check.json` and `index.html`) goes to `./shotfleet-check` (change it with `--report`), and your fastlane folders are never touched. On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform. It found one real problem: the Traditional Chinese listings have Chinese captions over an English app. When we planted English screenshots in the German folder and deleted a Japanese one, both were reported.
 

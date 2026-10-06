@@ -2599,6 +2599,14 @@ def play_folders(folder):
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
 LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
 
+SCREENGRAB_STAMP = re.compile(r"_\d{13}$")
+
+def shot_key(name):
+    """The screen a file shows, the same in every language: its name without fastlane screengrab's millisecond timestamp
+    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set."""
+    p = Path(name)
+    return SCREENGRAB_STAMP.sub("", p.stem) + p.suffix
+
 def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
@@ -2871,7 +2879,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         framework_hint(app, bool(strings_files))
-        strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+        if strings is None: strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)  # check_build read them already
         if not strings: raise Fail(f"{app.name} contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)")
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings_files:  # Flutter, React Native, .NET, Unity, exports: translations from source files
@@ -2982,9 +2990,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
-        if png.stem in (expect or {}):
-            rules, used = content_rules(expect[png.stem], label, lp)
-            expected_used.update((png.stem, k) for k in used)
+        if (stem := Path(shot_key(png.name)).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
+            rules, used = content_rules(expect[stem], label, lp)
+            expected_used.update((stem, k) for k in used)
             bad, unsure = check_content(rules, r)
             why = "text recognition can't read that script"
             if f"{label}/{png.name}" in unread_files: bad, unsure, why = [], bad + unsure, "the text reader found nothing on this screenshot"
@@ -3006,15 +3014,21 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
         if len(langs) > 1:  # en-GB and en-US both showing the app's English is fine
             problems.append(f"identical image in {len(langs)} languages: {', '.join(files)}")
-    names = {r["file"].split("/")[1] for r in rows}  # expected set = union across languages
+    names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
     for label in sorted(set(images) - set(unmapped)):
-        have = {p.name for p in images[label]}
-        if have != names:
-            problems.append(f"{label}: missing {', '.join(sorted(names - have))}")
+        have, seen = {}, {}
+        for p in images[label]: seen.setdefault(shot_key(p.name), []).append(p.name)
+        for key, files in sorted(seen.items()):  # 01Home_<t1>.png and 01Home_<t2>.png: one screen saved twice, not two screens
+            if len(files) > 1:
+                problems.append(f"{label}: {', '.join(files)} are the same screen saved {len(files)} times (only screengrab's timestamp "
+                                "differs); keep the newest and delete the rest")
+        if missing := names - set(seen):
+            problems.append(f"{label}: missing {', '.join(sorted(missing))}")
+    stems = {Path(shot_key(r["file"])).stem for r in rows}
     for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
-        if name not in {Path(r["file"]).stem for r in rows}:
+        if name not in stems:
             import difflib
-            near = difflib.get_close_matches(name, sorted({Path(r["file"]).stem for r in rows}), n=1)
+            near = difflib.get_close_matches(name, sorted(stems), n=1)
             problems.append(f"[expect.{name}] matches no screenshot" + (f"; did you mean [expect.{near[0]}]?" if near else ""))
         notes += [f"[expect.{name}.{k}] matches none of the languages checked" for k, v in expect[name].items()
                   if isinstance(v, dict) and k not in EXPECT_KEYS and (name, k) not in expected_used]
@@ -3024,7 +3038,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
-    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(r['file']).stem in expect})} screens, "
+    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(shot_key(r['file'])).stem in expect})} screens, "
                      f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
     if notes:
@@ -3046,13 +3060,14 @@ def write_gallery(out, rows, problems):
     def locate(rel):  # relative to the report; an absolute file: URL when the image lives outside it, so moving the report keeps the images
         return (Path(out) / rel).resolve().as_uri() if rel.startswith("..") else rel
     src = {r["file"]: locate(r.get("src", f"raw/{r['file']}")) for r in rows}
-    names = sorted({r["file"].split("/")[1] for r in rows})
+    cell = {(r["file"].split("/")[0], shot_key(r["file"].split("/")[1])): r["file"] for r in rows}  # screengrab timestamps aside
+    names = sorted({k for _, k in cell})
     locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
     for lp in locales:
         tds = []
         for nm in names:
-            f = f"{lp}/{nm}"
+            f = cell.get((lp, nm), "")
             if f in src:
                 url = html.escape(src[f], quote=True)
                 reason = html.escape("; ".join(why.get(f, [])), quote=True)
@@ -3939,13 +3954,42 @@ def apple_class(size):
         if size in sizes or rotate and size and (size[1], size[0]) in sizes: return cls
     return None
 
+def png_alpha(data):
+    """None when a PNG has no alpha channel; "opaque" when it has one but every pixel's alpha is the maximum (XCUITest attachments
+    and design tools save these); "transparent" when some pixel is see-through, or when this can't tell.
+    Reads the alpha bytes still filtered: PNG filters work byte by byte on the same byte of the pixel before/above, so an all-opaque
+    alpha channel filters to one fixed pattern per filter type, and any row that differs holds a pixel below the maximum.
+    ponytail: a tRNS chunk (palette or colour-key transparency) and interlaced PNGs count as transparent without looking closer."""
+    try:
+        w, h, depth, ctype, _, _, interlace = struct.unpack(">IIBBBBB", data[16:29])
+        if ctype not in (4, 6): return "transparent" if b"tRNS" in data[:data.find(b"IDAT")] else None
+        if interlace or depth not in (8, 16): return "transparent"
+        idat, i = [], 8
+        while i + 8 <= len(data):
+            n, kind = struct.unpack(">I4s", data[i:i + 8])
+            if kind == b"IDAT": idat.append(data[i + 8:i + 8 + n])
+            i += 12 + n
+        raw = zlib.decompress(b"".join(idat))
+    except (struct.error, zlib.error, ValueError): return "transparent"
+    bpp, ab = (2 if ctype == 4 else 4) * depth // 8, depth // 8  # bytes per pixel, alpha bytes per pixel (the last ones)
+    row = 1 + w * bpp
+    if w == 0 or len(raw) < row * h: return "transparent"
+    ff, top0, rest0, avg = b"\xff" * w, b"\xff" + b"\0" * (w - 1), b"\0" * w, b"\x80" + b"\0" * (w - 1)
+    want = {0: (ff, ff), 1: (top0, top0), 2: (ff, rest0), 3: (b"\xff" + b"\x80" * (w - 1), avg), 4: (top0, rest0)}  # filter: (first row, others)
+    for y in range(h):
+        r = raw[y * row:(y + 1) * row]
+        if r[0] not in want: return "transparent"
+        pattern = want[r[0]][y > 0]
+        if any(r[1 + bpp - ab + k::bpp] != pattern for k in range(ab)): return "transparent"
+    return "opaque"
+
 def image_info(path):
-    """((width, height), has_alpha) for a PNG or JPEG; (None, False) if unreadable."""
+    """((width, height), alpha) for a PNG or JPEG, alpha as png_alpha says (None, "opaque" or "transparent");
+    JPEGs have none. (None, False) if unreadable."""
     data = Path(path).read_bytes()
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         size = (int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big"))
-        alpha = data[25] in (4, 6) or b"tRNS" in data[:data.find(b"IDAT")]  # color type with alpha, or a tRNS chunk
-        return size, alpha
+        return size, png_alpha(data)
     if data[:2] == b"\xff\xd8":  # JPEG: size from the first SOFn marker
         i = 2
         while i + 9 < len(data):
@@ -3955,6 +3999,8 @@ def image_info(path):
                 return (int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")), False
             i += 2 + length
     return None, False
+
+FLATTEN = "Save it as a JPEG or a PNG without alpha (on a Mac: sips -s format jpeg in.png --out out.jpg)"
 
 def store_rules(images, android, ipad=False, tablet=False):
     """(problems, notes) against the stores' published screenshot rules (research/store-specs.md).
@@ -3966,7 +4012,9 @@ def store_rules(images, android, ipad=False, tablet=False):
         for p, (size, alpha) in info.items():
             name = f"{label}/{p.name}"
             if size is None: problems.append(f"{name}: not a PNG or JPEG the stores accept"); continue
-            if alpha: problems.append(f"{name}: has transparency (an alpha channel); both stores reject it")
+            if alpha == "opaque":  # Apple: "Images can't include alpha channels or transparencies"; Play: "24-bit PNG (no alpha)"
+                problems.append(f"{name}: has an alpha channel, though every pixel is opaque; both stores reject the channel itself. {FLATTEN}")
+            elif alpha: problems.append(f"{name}: has transparency (an alpha channel); both stores reject it. {FLATTEN}")
             if android:
                 if min(size) < 320 or max(size) > 3840:
                     problems.append(f"{name}: {size[0]}x{size[1]} is outside Google Play's 320-3840 px")
@@ -4487,24 +4535,54 @@ def main_cmd(a):
     finally:
         shutdown_sims()
 
+def check_build(folder, cwd=None):
+    """What `check` compares with when no --app or --strings is given: what `init` would use in cwd (find_builds, which never
+    builds; a Flutter, React Native, ... project's translation files), for the store the folder's layout says.
+    (app, strings_files, strings, the one line to print); app and strings_files are None when nothing fits."""
+    cwd, folder = Path(cwd or Path.cwd()).resolve(), Path(folder)
+    project = detect_project(cwd)
+    if project and project.strings and glob.glob(str(cwd / project.strings), recursive=True):
+        return None, [str(cwd / project.strings)], None, (f"no --app given: using {project.strings} for strings ({project.name} project; "
+                                                          "pass --app or --strings to choose others)")
+    try:
+        with contextlib.redirect_stdout(io.StringIO()): builds = find_builds(cwd, project=project)  # its lines are init's wording
+    except Fail: builds = []
+    android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
+    ios = (folder / "screenshots").is_dir() or folder.name == "screenshots"
+    fits = [b for b in builds if Path(b).suffix in ((".app",) if ios else (".apk",) if android else (".app", ".apk"))]
+    guess = ("no --app given and {}: checking by language detection only, which can misjudge short screens; treat a language "
+             "problem as a hint (pass --app to compare with your app's strings)")
+    if len(fits) > 1:
+        return None, None, None, guess.format(f"an iOS and an Android build found in {cwd}, so I can't tell which one these are")
+    if not fits:
+        return None, None, None, guess.format(f"no app build found in {cwd}" + (f" for these {'Android' if android and not ios else 'iOS'} screenshots"
+                                                                              if builds else ""))
+    app = Path(fits[0])
+    strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+    if not strings:
+        return None, None, None, guess.format(f"{app} holds no translations shotfleet can read")
+    return app, None, strings, f"no --app given: using {app} for strings (pass --app to choose another)"
+
 def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None):
-    """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own)."""
+    """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own).
+    No --app or --strings and no run.json: the app build (or translation files) `init` would find in the current folder."""
     if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
+    strings = None
+    if not app and not strings_files and not (Path(folder) / "run.json").exists() and not device_runs(folder):
+        app, strings_files, strings, line = check_build(folder)
+        print(line)
     if len(kinds := play_folders(folder)) > 1 or kinds[:1] in (["sevenInchScreenshots"], ["tenInchScreenshots"]):
         base, codes = Path(report) if report else Path("shotfleet-check"), []
         for k in kinds:
             print(f"\n== {k}")
-            codes.append(cmd_check(folder, app=app, strings_files=strings_files, ocr_command=ocr_command,
+            codes.append(cmd_check(folder, strings=strings, app=app, strings_files=strings_files, ocr_command=ocr_command,
                                    report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect))
         return max(codes)
     if subs := device_runs(folder):
         codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=False,
                            report_dir=Path(report) / d.name if report else None, expect=expect) for d in subs]
         return max(codes + [ipad_set_missing(folder)])
-    if not app and not strings_files and not (Path(folder) / "run.json").exists():
-        print("no --app given: checking by language detection only, which can misjudge short screens; treat a language problem as "
-              "a hint (pass --app to compare with your app's strings)")
-    return cmd_check(folder, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
+    return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
 
 def main_dispatch(a):
     try:

@@ -114,9 +114,14 @@ fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --ski
   <p><strong>Fresh state:</strong> each language starts from a clean install. On iOS that is <code>clearState</code>; on Android shotfleet clears the app data itself, because <code>clearState</code> would also erase the app language.</p>
 
   <h2 id="check">Check screenshots you already have</h2>
-  <p>If you already have screenshots, from fastlane snapshot, screengrab or by hand, you can check them without capturing anything:</p>
-<pre><code>shotfleet check fastlane/ --app path/to/MyApp.app          # deliver: screenshots/&lt;locale&gt;/
-shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code></pre>
+  <p><code>run</code> needs Maestro. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
+<pre><code>shotfleet check fastlane/screenshots                       # snapshot: screenshots/&lt;locale&gt;/
+shotfleet check fastlane/metadata/android                  # screengrab: &lt;locale&gt;/images/phoneScreenshots/
+shotfleet check fastlane/ --app path/to/MyApp.app          # a fastlane folder with both: the build picks its half
+shotfleet check shots/ --locale en --app path/to/MyApp.app # a flat folder of one language's PNGs</code></pre>
+  <p>Without <code>--app</code>, <code>check</code> looks for your app build the way <code>init</code> does, in the folder you run it from: the newest Debug simulator build of your Xcode project, or your Gradle debug APK. It says in one line which build it used, or that it found none.</p>
+  <p>screengrab puts a timestamp at the end of every file name (<code>01Home_1773697012807.png</code>), different in every language. <code>check</code> ignores it when it matches screens across languages, and the report keeps the real names. If one language has the same screen twice with two timestamps (say, left over from an earlier run), that's a problem.</p>
+  <p>You don't need <code>export</code> with fastlane: snapshot and screengrab already write into fastlane's folders. <code>export</code> is for screenshots from <code>shotfleet run</code>.</p>
   <p>Store codes are mapped back to your app's languages (<code>de-DE</code> to <code>de</code>, <code>no</code> to <code>nb</code>, <code>zh-CN</code> to <code>zh-Hans</code>). The report (<code>check.json</code> and <code>index.html</code>) goes to <code>./shotfleet-check</code> (change it with <code>--report</code>), and your fastlane folders are never touched. After capture or on an existing folder, every screenshot's text is compared against your app's own strings. On iOS, shotfleet reads the text straight from the app while each screenshot is on screen; otherwise, and for screenshots made by other tools, it uses macOS's built-in text recognition. It reports:</p>
   <ul>
     <li><strong>Wrong language:</strong> the German folder actually shows English or Japanese strings.</li>
@@ -127,8 +132,35 @@ shotfleet check fastlane/ --app path/to/app-release.apk    # supply: metadata/an
     <li><strong>Store rules:</strong> sizes each store accepts (every App Store display class, Play's 320 to 3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Screenshots made in other tools work too: Apple Watch, Mac, Apple TV and Vision Pro sizes are known (3840x2160 is both Apple TV and Vision Pro), and one Watch size is required in every language.</li>
     <li><strong>Languages your app does not have:</strong> a store listing (say Traditional Chinese) whose screenshots cannot be in that language because the app is not translated into it.</li>
   </ul>
-  <p><code>check</code> without <code>--app</code> relies on language detection, which cannot judge short screens; pass <code>--app</code> for the full check.</p>
+  <p>When <code>check</code> has no build (no <code>--app</code>, and none found where you run it), it relies on language detection, which cannot judge short screens; pass <code>--app</code> for the full check.</p>
   <p><code>export</code> also takes a plain <code>&lt;locale&gt;/*.png</code> folder of such a set (Apple Watch, Mac, Apple TV, Vision Pro) once <code>shotfleet check &lt;folder&gt; --report &lt;folder&gt;</code> has written its <code>check.json</code> there; it copies the set into <code>screenshots/&lt;locale&gt;/</code> next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.</p>
+
+  <h3 id="fastlane-lane">A fastlane lane that stops on wrong screenshots</h3>
+  <p>Put this in <code>fastlane/Fastfile</code>. fastlane runs <code>sh</code> from the <code>fastlane/</code> folder, hence the <code>cd ..</code>. Any problem makes <code>check</code> exit with 1, which fails the lane, so nothing is uploaded:</p>
+<pre><code>platform :ios do
+  lane :screenshots do
+    snapshot
+    sh("cd .. &amp;&amp; shotfleet check fastlane/screenshots")
+    deliver(skip_binary_upload: true, skip_metadata: true, overwrite_screenshots: true, force: true)
+  end
+end
+
+platform :android do
+  lane :screenshots do
+    screengrab
+    sh("cd .. &amp;&amp; shotfleet check fastlane/metadata/android")
+    supply(skip_upload_apk: true, skip_upload_aab: true, skip_upload_metadata: true, skip_upload_changelogs: true, skip_upload_images: true)
+  end
+end</code></pre>
+
+  <h3 id="renders">Paparazzi, Roborazzi and Compose preview tests</h3>
+  <p>Their file names don't carry the language unless you put it there (Paparazzi writes <code>&lt;package&gt;_&lt;Class&gt;_&lt;test&gt;.png</code>, plus a name you can add), so <code>check</code> can't sort one flat folder into languages. Give each language's images their own folder, with the same names in every language, and check the parent folder. If your test names end in the language (<code>..._home_de.png</code>):</p>
+<pre><code>for lp in en de ja; do
+  mkdir -p shots/$lp
+  for f in src/test/snapshots/images/*_$lp.png; do b=$(basename "$f"); cp "$f" "shots/$lp/${b%_$lp.png}.png"; done
+done
+shotfleet check shots/ --app app/build/outputs/apk/debug/app-debug.apk</code></pre>
+  <p>For one language, <code>shotfleet check &lt;folder&gt; --locale de</code> works on the flat folder as it is, but then there's nothing to compare it with, so copies and missing screens aren't checked. These tools draw your screens without a device, so there's no real status bar. Neither store asks for a device, only for screens that show your app. <code>check</code> reads the text, the sizes and the alpha channel, but it can't tell you whether a drawn screen looks like your app on a phone (fonts can differ, mostly in Chinese, Japanese, Arabic and Indic scripts). I haven't tried it on a real Paparazzi folder yet.</p>
 
   <h2 id="config">Config</h2>
   <p>The whole config can be this (<code>shotfleet init</code> writes it):</p>

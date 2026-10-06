@@ -132,7 +132,8 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 | `keeps its translations inside compiled code` | `hint:` a Flutter, React Native, MAUI or Unity build | add the `strings = "<glob>"` line it prints |
 | `Flutter debug build` | `hint:` the DEBUG banner will show | `debugShowCheckedModeBanner: false`; Android: `flutter build apk --release` |
 | `has no JavaScript bundle` | `hint:` React Native Debug build needs Metro | build Release |
-| `no --app given: checking by language detection only` | weaker check | pass `--app` or `--strings` |
+| `no --app given: using` | check found the app build (or translation files) in the current folder the way `init` does | nothing; pass `--app` to choose another build |
+| `checking by language detection only` | weaker check: no `--app`, and no build found in the current folder | pass `--app` or `--strings`, or run check from the project folder |
 | `macOS can't read the script of` | those screens only got the weaker checks | optional Tesseract via `--ocr-command` |
 | `no text found (blank or still loading?)` | problem line: the screenshot is blank, or captured before the screen loaded | add `waitForAnimationToEnd` or an assert before `takeScreenshot` |
 | `has no listing in that language` | export skipped a language the store has no listing for | nothing to do |

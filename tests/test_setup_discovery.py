@@ -191,6 +191,57 @@ class InitFindsBuilds(Tree):
         self.assertEqual([c.args for c in init.call_args_list], [([], "."), (["A.app"], "d")])
 
 
+class CheckFindsBuilds(Tree):
+    """`check` without --app looks for the build the way `init` does and says in one line which one it used, or that it found none."""
+    def ios_app(self):
+        xcodeproj = self.proj / "iosApp/MyApp.xcodeproj"; xcodeproj.mkdir(parents=True)
+        app = self.build("MyApp-aaa", xcodeproj, mtime=time.time() - 600)
+        touch(app / "de.lproj/Localizable.strings", text='"home" = "Monatliche Abonnements";')
+        touch(app / "en.lproj/Localizable.strings", text='"home" = "Monthly subscriptions";')
+        return app
+
+    def shots(self, rel):
+        touch(self.proj / rel / "x.png"); return self.proj / rel.split("/de-DE")[0]
+
+    def test_a_snapshot_folder_uses_the_derived_data_app_and_says_so_in_one_line(self):
+        app = self.ios_app()
+        got, files, strings, line = sf.check_build(self.shots("fastlane/screenshots/de-DE"), self.proj)
+        self.assertEqual((got, files), (app, None))
+        self.assertEqual(set(strings), {"de", "en"})
+        self.assertEqual(line, f"no --app given: using {app} for strings (pass --app to choose another)")
+
+    def test_a_screengrab_folder_uses_the_apk_even_when_an_ios_app_is_newer(self):
+        self.ios_app()
+        apk = touch(self.proj / "androidApp/build/outputs/apk/debug/androidApp-debug.apk", time.time() - 3600)
+        with mock.patch.object(sf, "load_strings_apk", return_value={"en": {"a": "Home"}, "de": {"a": "Start"}}) as read:
+            got, _, _, line = sf.check_build(self.shots("fastlane/metadata/android/de-DE/images/phoneScreenshots"), self.proj)
+        self.assertEqual(got, apk); read.assert_called_once_with(apk)
+        self.assertIn(f"using {apk} for strings", line)
+
+    def test_nothing_found_says_so_in_one_line_and_runs_no_build_tool(self):
+        with mock.patch.object(subprocess, "run", side_effect=AssertionError("check must not run anything to find a build")):
+            got, files, strings, line = sf.check_build(self.shots("fastlane/screenshots/de-DE"), self.proj)
+        self.assertEqual((got, files, strings), (None, None, None))
+        self.assertTrue(line.startswith(f"no --app given and no app build found in {self.proj}: checking by language detection only"), line)
+        self.assertNotIn("\n", line)
+
+    def test_a_plain_folder_with_both_builds_around_picks_neither(self):
+        self.ios_app(); touch(self.proj / "app/build/outputs/apk/debug/app-debug.apk")
+        got, _, _, line = sf.check_build(self.shots("shots/de-DE"), self.proj)
+        self.assertIsNone(got)
+        self.assertIn("an iOS and an Android build found", line)
+
+    def test_check_any_passes_the_build_it_found_and_an_explicit_app_never_looks(self):
+        app = self.ios_app(); folder = self.shots("fastlane/screenshots/de-DE")
+        out = io.StringIO()
+        with mock.patch.object(sf, "cmd_check", return_value=0) as check, contextlib.redirect_stdout(out), mock.patch.object(Path, "cwd", return_value=self.proj):
+            sf.check_any(folder)
+        self.assertEqual(check.call_args.kwargs["app"], app)
+        self.assertEqual(out.getvalue().count("\n"), 1, out.getvalue())
+        with mock.patch.object(sf, "cmd_check", return_value=0), mock.patch.object(sf, "check_build", side_effect=AssertionError("looked")):
+            sf.check_any(folder, app=app)
+
+
 class AndroidSdkDiscovery(Tree):
     def sdk(self, where, *parts):
         for part in parts or ("platform-tools",): (Path(where) / part).mkdir(parents=True, exist_ok=True)
