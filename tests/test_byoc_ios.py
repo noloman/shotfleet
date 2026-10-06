@@ -513,5 +513,35 @@ class InitCapture(unittest.TestCase):
         self.assertEqual(code, 2)
 
 
+
+ROOT = Path(__file__).resolve().parent.parent
+E2E = ROOT / "tools/fixture-byoc-e2e.sh"
+
+
+class DeviceTestScript(unittest.TestCase):
+    """tools/fixture-byoc-e2e.sh boots simulators, so here it is only run where it refuses or explains itself."""
+    def run_script(self, *args, env=None):
+        return sf.subprocess.run(["sh", str(E2E), *args], capture_output=True, text=True, env={**os.environ, "SHOTFLEET_E2E": "", **(env or {})}, timeout=60)
+
+    def test_it_refuses_without_the_opt_in_before_touching_anything(self):
+        fake = Path(tempfile.mkdtemp()); (fake / "xcrun").write_text("#!/bin/sh\necho called >> \"$0.log\"\n"); (fake / "xcrun").chmod(0o755)
+        r = self.run_script(env={"PATH": f"{fake}:{os.environ['PATH']}"})
+        self.assertEqual(r.returncode, 2); self.assertIn("SHOTFLEET_E2E=1", r.stderr)
+        self.assertFalse((fake / "xcrun.log").exists())
+
+    def test_help_and_unknown_options(self):
+        r = self.run_script("--help"); self.assertEqual(r.returncode, 0); self.assertIn("Hard limit", r.stdout)
+        self.assertEqual(self.run_script("--nope").returncode, 2)
+
+    def test_the_tests_it_names_exist_in_the_fixture(self):
+        script, tests = E2E.read_text(), (ROOT / "tools/fixture-app/UITests/ScreenshotTests.swift").read_text()
+        for cls in ("ScreenshotTests", "SnapshotStyleTests", "NoKeepTests"):
+            self.assertIn(f" {cls} ", script); self.assertIn(f"final class {cls}: XCTestCase", tests)
+        self.assertIn("a.lifetime = .keepAlways", tests)
+
+    def test_init_capture_finds_the_fixtures_ui_test_scheme(self):
+        self.assertEqual(sf.ui_test_scheme(ROOT / "tools/fixture-app/FleetFixture.xcodeproj"), ("FleetFixture", "FleetFixtureUITests"))
+
+
 if __name__ == "__main__":
     unittest.main()
