@@ -904,7 +904,7 @@
  },
  {
   "id": "C051",
-  "claim": "A year of updates: a licence covers every version released within 365 days of the purchase; later versions run as the free tier with a message",
+  "claim": "A year of updates: a licence covers every version released within a calendar year of the purchase (up to the same date a year later); later versions run as the free tier with a message",
   "where": [
    "site/public/index.html",
    "site/public/terms.html",
