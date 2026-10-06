@@ -36,10 +36,14 @@ KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "b
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
-TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect")  # the optional tables [hooks], [overrides.<locale>], [inputs] and [expect.<screenshot>] are documented in the README
+TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not")
 EXAMPLE_SETUP = {"shell": '"setprop debug.myapp.demo 1"', "simctl": '"ui $UDID appearance dark"'}
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
+# [capture] (iOS): run the team's own XCUITest screenshot tests instead of a Maestro flow (research/byoc-ios-experiment-2026-10-06.md)
+CAPTURE_KEYS = {"build": str, "xctestrun": str, "only_testing": list, "screenshots": str, "timeout": int}
+CAPTURE_SHOTS = ("attachments", "fastlane", "auto")
+CAPTURE_TIMEOUT_S = 900
 
 def check_tables(doc, name):
     """Refuse an unknown top-level table (a typo like [hook] would otherwise be ignored silently) and malformed hooks/overrides."""
@@ -65,6 +69,28 @@ def check_tables(doc, name):
         if not isinstance(table, dict) or not all(isinstance(v, str) for v in table.values()):
             raise Fail(f"[overrides.{locale}] in {name} should map English texts to text in that language, e.g. \"Next\" = \"İleri\"")
     check_expect(doc.get("expect", {}), name)
+    if "capture" in doc: check_capture(doc["capture"], name)
+
+def check_capture(cap, name):
+    """[capture] build/xctestrun/only_testing/screenshots/timeout: refuse typos, wrong types and missing settings before anything builds."""
+    import difflib
+    example = ("e.g.\n  [capture]\n  build = \"xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' "
+               "-derivedDataPath .shotfleet/build\"\n  xctestrun = \".shotfleet/build/Build/Products/*.xctestrun\"")
+    if not isinstance(cap, dict): raise Fail(f"[capture] in {name} should be a table, {example}")
+    words = {str: "string", int: "whole number", list: "list"}
+    for key, value in cap.items():
+        if key not in CAPTURE_KEYS:
+            near = difflib.get_close_matches(key, CAPTURE_KEYS, n=1)
+            raise Fail(f"[capture] in {name} has an unknown setting '{key}'" + (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(CAPTURE_KEYS)}"))
+        if not isinstance(value, CAPTURE_KEYS[key]) or isinstance(value, bool):
+            raise Fail(f"[capture] {key} in {name} should be a {words[CAPTURE_KEYS[key]]}, not {value!r}")
+    for key in ("build", "xctestrun"):
+        if not cap.get(key, "").strip(): raise Fail(f"[capture] in {name} is missing {key}, {example}")
+    if not all(isinstance(t, str) and t.strip() for t in cap.get("only_testing", [])):
+        raise Fail(f"[capture] only_testing in {name} should be a list of test names, e.g. only_testing = [\"MyAppUITests/ScreenshotTests\"]")
+    if cap.get("screenshots", "auto") not in CAPTURE_SHOTS:
+        raise Fail(f"[capture] screenshots in {name} should be \"attachments\" (XCTAttachment), \"fastlane\" (SnapshotHelper) or \"auto\" (both), not {cap['screenshots']!r}")
+    if cap.get("timeout", 1) < 1: raise Fail(f"[capture] timeout in {name} should be 1 or more seconds, not {cap['timeout']}")
 
 def check_expect(expect, name):
     """[expect.<screenshot>] any/all/not = ["text", ...], with [expect.<screenshot>.<locale>] for one language: refuse typos."""
@@ -147,18 +173,24 @@ def load_config(config_path, platform=None):
     if platform not in doc: raise Fail(f"{cfg_path.name} has no [{platform}] section")
     cfg = doc[platform]
     check_section(cfg, platform, cfg_path.name)
+    if "capture" in doc and "ios" not in doc:
+        raise Fail(f"[capture] in {cfg_path.name} runs your XCUITest tests on iOS simulators, so it needs an [ios] section (Android still uses a Maestro flow)")
+    capture = doc.get("capture") if platform == "ios" else None
+    if capture and "flow" in cfg:
+        raise Fail(f"{cfg_path.name} has both flow = in [ios] and a [capture] table. Use one: a Maestro flow, or your own XCUITest tests in [capture]")
+    cfg["_capture"] = capture
     cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
     cfg["_inputs"], cfg["_expect"] = doc.get("inputs", {}), doc.get("expect", {})
-    cfg.setdefault("flow", "flow.yaml")
+    if not capture: cfg.setdefault("flow", "flow.yaml")
     cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
-    missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
+    missing = [k for k in REQUIRED[platform] if not cfg.get(k) and not capture]  # capture: the app is found next to the .xctestrun after the build
     if missing:
         raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
     path = lambda p: Path(os.path.normpath(cfg_path.parent / Path(p).expanduser()))  # absolute/~ paths win, others are relative to the config; no `..` left in the path
-    flow = path(cfg["flow"])
-    if not flow.is_file():
+    if not capture and not (flow := path(cfg["flow"])).is_file():
         raise Fail(f"flow file not found: {flow}. `shotfleet init` writes a starter flow")
-    if platform == "ios":
+    if platform == "ios" and capture and not cfg.get("app"): pass
+    elif platform == "ios":
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
             if app.exists() and app.suffix != ".app": raise Fail(f"{app} isn't a simulator app: {not_a_build(app, 'ios')}")
@@ -181,7 +213,7 @@ def load_config(config_path, platform=None):
         cfg["package"] = cfg.get("package") or (m and m.group(1))
         if not cfg["package"]: raise Fail(f"can't read the package name of {apk.name}; set package in the config")
         cfg["apk"] = str(apk)
-    if not maestro_cmd():
+    if not capture and not maestro_cmd():
         raise Fail("Maestro isn't installed. Run shotfleet doctor --fix, or install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
 # lproj code -> App Store Connect / fastlane locale
