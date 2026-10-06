@@ -2858,11 +2858,15 @@ class G1StatusBar(unittest.TestCase):
         self.assertEqual(bar[2], "override")
         for flag, value in (("--time", "9:41"), ("--batteryState", "charged"), ("--batteryLevel", "100")):
             self.assertEqual(bar[bar.index(flag) + 1], value)
+        ai = next(c for c in calls if c[0] == "spawn")  # no "Ready for Apple Intelligence" banner over a screenshot
+        self.assertEqual(ai[1:5], ("U1", "defaults", "write", "com.apple.generativeexperiences.corefollowup"))
+        self.assertEqual(ai[5:7], ("DateOfLastAppleIntelligenceReadinessCFU", "-date"))
 
     def test_android_demo_mode_fixes_the_clock_and_battery(self):
         joined = "\n".join(sf.DEMO_MODE)
         self.assertIn("clock -e hhmm 0941", joined); self.assertIn("battery -e level 100 -e plugged false", joined)
         self.assertIn("notifications -e visible false", joined)
+        self.assertIn("settings put global heads_up_notifications_enabled 0", sf.DEMO_MODE)  # icons hidden is not banners hidden
 
 
 class G1NothingLeavesTheMac(unittest.TestCase):

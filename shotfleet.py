@@ -1260,6 +1260,11 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
+        # the status bar override doesn't cover banners. iOS 26 posts "Ready for Apple Intelligence" a few minutes after a
+        # simulator's first boot (seen over a 2026-10-06 screenshot) and records it in this key; say it was just posted.
+        # ponytail: suppresses that one banner only (INFERENCE from the key's name, not verified on a device); add others as seen
+        s.run("spawn", s.udid, "defaults", "write", "com.apple.generativeexperiences.corefollowup",
+              "DateOfLastAppleIntelligenceReadinessCFU", "-date", time.strftime("%Y-%m-%d %H:%M:%S +0000", time.gmtime()), check=False)
         run_setup(s, "simctl", simctl)
     return pool
 
@@ -1949,6 +1954,7 @@ DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a s
     "settings put global window_animation_scale 0",
     "settings put global transition_animation_scale 0",
     "settings put global animator_duration_scale 0",
+    "settings put global heads_up_notifications_enabled 0",  # demo mode hides notification icons, not heads-up banners
     "settings put global sysui_demo_allowed 1",
     "am broadcast -a com.android.systemui.demo -e command enter",
     "am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941",

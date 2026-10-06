@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **No "Ready for Apple Intelligence" banner over your screenshots:** on an iOS 26 simulator that banner popped up a few minutes after the first boot and landed on top of a Turkish screenshot in one of my runs. shotfleet now tells the simulator it was already shown, right after boot. On Android, heads-up notification banners are now switched off too (demo mode only hid the notification icons).
 - **Site: all nine demo clips on /demo:** doctor, init, a run on iPhone, a run on Android, catching the wrong language, checking screenshots you already have, store rules, export to fastlane, and CI. Real recordings on the fixture apps, with subtitles; sped-up parts are labelled.
 - **Text recognition retries a helper that quit:** on a very busy Mac the macOS text reader sometimes quits without an answer while it is still getting ready. `check` used to stop right there and blame the compile; now it tries again every 10 seconds within the same time limit.
 
