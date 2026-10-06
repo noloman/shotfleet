@@ -2969,5 +2969,114 @@
   "proof": "The owner's decision, 2026-10-06 (approved in the coordination session from research/reach-roadmap-2026-10-06.md item 3). Gumroad is the merchant of record and generates the invoice from the receipt (name, address, VAT number), see research/reach-roadmap-2026-10-06.md section 2.8 and research/gumroad-setup.md; the terms' Payment section already says Gumroad sends the receipt.",
   "assertion": "None: a policy, not program behaviour.",
   "fix": ""
+ },
+ {
+  "id": "C187",
+  "claim": "check runs on Linux in the Docker image ghcr.io/noloman/shotfleet-check: free, no licence, amd64 and arm64, with the compiled program, Tesseract and aapt2",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check`. It's free, needs no licence, and is built for amd64 and arm64.",
+   "It holds the compiled program, Tesseract and aapt2 (for <code>--app app.apk</code>).",
+   "(free, no licence, amd64 and arm64)"
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "2026-10-06, Docker Desktop 29.8.2 on this Mac: `docker buildx build --platform linux/amd64,linux/arm64` of the Dockerfile (logs build1.log, build2.log). In both images: `--version` prints shotfleet 0.1.4, `id` is uid 1000 (shotfleet), no shotfleet .py file in the image, /opt/shotfleet 23-24 MB, tesseract 5.5.0 with 35 data sets (34 languages + osd), aapt2 2.19-debian. `check` ran with no licence file (logs linux-arm64-*.log, linux-amd64-*.log; amd64 emulated by Docker Desktop). Data: CrossfitTracker's 0.1.2-gate Android capture (18 languages x 4 screens, 1080x1920) copied as <locale>/ folders; planted = en/01_train.png over de/01_train.png and ja/02_log.png deleted; app = the 66 MiB CrossfitTracker APK (copy of shotfleet-rc-build/0.1.4/mcp-test/app.apk). Script: shotfleet-rc-build/docker-check/run-tests.sh. Logs in /Users/manu/Developer/shotfleet-rc-build/docker-check/logs/",
+  "assertion": "A CI smoke job: the image's check on the 72-screenshot set with --app gives 0 problems clean and 3 planted.",
+  "fix": ""
+ },
+ {
+  "id": "C188",
+  "claim": "The GitHub Action noloman/shotfleet-check-action runs check on ubuntu-latest, fails the job on a problem (warn-only turns them into warnings), outputs the problem count, report folder and JSON; tested locally only",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "It fails the job when `check` finds a problem (`warn-only: true` turns problems into warnings), and its outputs are the problem count, the report folder and the JSON from `check --json`. I tested it locally with `docker run` and the same inputs GitHub passes; it hasn't run on GitHub's runners yet.",
+   "I tested it locally with <code>docker run</code> and the same inputs GitHub passes; it hasn't run on GitHub's runners yet."
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "2026-10-06: shotfleet-rc-build/docker-check/action-test.sh runs the Action's image like a runner runs a Docker action (workspace at /github/workspace as workdir, GITHUB_OUTPUT and GITHUB_STEP_SUMMARY files, the action.yml SF_* env). planted+app: exit 1, problems=3, three ::error:: lines; same with warn-only true: exit 0, ::warning:: lines; clean+app: exit 0, problems=0; planted without app: the no-app ::warning::, exit 1, problems=73; a missing folder: exit 2, json={\"exit\":2}. report=shotfleet-check and json=<one line> in every case (logs/action-test.log). Never run on GitHub's runners (owner's rule: no Actions minutes).",
+  "assertion": "None until a real run on ubuntu-latest is allowed.",
+  "fix": ""
+ },
+ {
+  "id": "C189",
+  "claim": "In the Docker image, run and export stop with one line saying the image only runs check",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "The image only runs `check`, and it says so in one line if you try the others.",
+   "The image only runs <code>check</code>, and it says so in one line if you try the others."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckOnlyImage.test_run_and_export_refuse_in_one_line_and_check_still_runs (SHOTFLEET_IMAGE=check: exit 2, one stderr line, before the licence check; check is not refused). Real image, both CPUs: logs/run-export-after.log (`shotfleet: `run` doesn't work in the shotfleet-check Docker image: ...`, exit 2).",
+  "test": "CheckOnlyImage.test_run_and_export_refuse_in_one_line_and_check_still_runs",
+  "assertion": "",
+  "fix": ""
+ },
+ {
+  "id": "C184",
+  "claim": "No macOS text recognition on Linux: Tesseract reads fewer scripts; the image has Tesseract data for 34 common languages",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "The image has Tesseract data for 34 common languages.",
+   "The image has Tesseract data for 34 common languages.",
+   "the image has data for 34 common languages"
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "vision_available() is is_mac() (shotfleet.py). Dockerfile LANGS lists 34 Debian language packs; `tesseract --list-langs` in the image prints 35 (those 34 + osd) on amd64 and arm64 (2026-10-06). Fewer scripts: Tesseract has no data in the image for scripts outside those 34 languages, and docs/linux.md records that Tesseract names no language.",
+  "assertion": "",
+  "fix": ""
+ },
+ {
+  "id": "C185",
+  "claim": "Without --app or --strings the wrong-language check is much weaker on Linux; copies, missing screens and store rules are still checked",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.",
+   "the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.",
+   "the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked."
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "2026-10-06, the image on both CPUs, planted set without --app: exit 1, 73 problems = the copy, the missing ja screen and 71 size problems; the English screen in de/ NOT found; note '64 screenshot(s) ... were read by Tesseract without --app: it names no language, so their language was not checked' (logs linux-*-planted-noapp.log). With --app the same set gives the de/ problem. Same as the roadmap's Linux-mode run (research/reach-roadmap-2026-10-06.md, Measurements). Data: CrossfitTracker's 0.1.2-gate Android capture (18 languages x 4 screens, 1080x1920) copied as <locale>/ folders; planted = en/01_train.png over de/01_train.png and ja/02_log.png deleted; app = the 66 MiB CrossfitTracker APK (copy of shotfleet-rc-build/0.1.4/mcp-test/app.apk). Script: shotfleet-rc-build/docker-check/run-tests.sh. ",
+  "assertion": "",
+  "fix": ""
+ },
+ {
+  "id": "C186",
+  "claim": "On a real 72-screenshot, 18-language Android set the image with --app gave the Mac's verdict: 0 problems clean, all 3 planted faults found; without --app the English screen in de/ was missed",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "the image with `--app` gave the same verdict as the Mac: 0 problems on the clean set, and all 3 planted faults found",
+   "Without <code>--app</code> it found the copy and the missing screen, but not the English screen in <code>de/</code>."
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "2026-10-06, arm64 (twice: build1 and the final build2 image) and amd64 (emulated): clean --app exit 0 'checked 72 screenshots in 18 languages: 0 problem(s)'; planted --app exit 1, 3 problems: 'de/01_train.png: shows en strings (20 lines) more than de (6)', 'identical image in 2 languages: de/01_train.png, en/01_train.png', 'ja: missing 02_log.png' (logs linux-*-*-app.log, summary.txt). The Mac's verdict: the 0.1.2 gate's Vision run on the same set gave 0 problems (shotfleet-rc-build/0.1.2/home-d-source-apk/log); the roadmap's Linux-mode run gave the same 3 lines. Data: CrossfitTracker's 0.1.2-gate Android capture (18 languages x 4 screens, 1080x1920) copied as <locale>/ folders; planted = en/01_train.png over de/01_train.png and ja/02_log.png deleted; app = the 66 MiB CrossfitTracker APK (copy of shotfleet-rc-build/0.1.4/mcp-test/app.apk). Script: shotfleet-rc-build/docker-check/run-tests.sh. ",
+  "assertion": "",
+  "fix": ""
  }
 ]

@@ -168,6 +168,31 @@ To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it
 
 With `--json`, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in `run.json`.
 
+## Linux and CI
+
+`check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check`. It's free, needs no licence, and is built for amd64 and arm64. It holds the compiled program, Tesseract and aapt2 (for `--app app.apk`).
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk
+```
+
+On GitHub there's an Action for it, [noloman/shotfleet-check-action](https://github.com/noloman/shotfleet-check-action), that runs on `ubuntu-latest`. It fails the job when `check` finds a problem (`warn-only: true` turns problems into warnings), and its outputs are the problem count, the report folder and the JSON from `check --json`. I tested it locally with `docker run` and the same inputs GitHub passes; it hasn't run on GitHub's runners yet.
+
+```yaml
+- uses: noloman/shotfleet-check-action@v1
+  with:
+    folder: fastlane/metadata/android
+    app: app/build/outputs/apk/release/app-release.apk
+```
+
+What doesn't work on Linux:
+
+- `run` and `export`. The image only runs `check`, and it says so in one line if you try the others. Capturing and exporting need a Mac.
+- macOS text recognition (Vision). Tesseract reads the screenshots instead, and it can read fewer scripts. The image has Tesseract data for 34 common languages.
+- Without `--app` (or `--strings`) the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.
+
+On a real 72-screenshot, 18-language Android set, the image with `--app` gave the same verdict as the Mac: 0 problems on the clean set, and all 3 planted faults found (an English screen in `de/`, a copied image, a missing `ja` screen). Without `--app` it found the copy and the missing screen, but not the English screen in `de/`.
+
 ## With AI agents
 
 `shotfleet mcp` is an MCP server with `check`, `run` and `doctor` tools. Add it to Claude Code with
@@ -385,5 +410,5 @@ translation source.
 - iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
-- Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac.
+- Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac. For `check` there is also a Docker image (see Linux and CI).
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, which 2.11.0 does and 2.0.10 doesn't; see above).

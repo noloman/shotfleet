@@ -25,6 +25,13 @@
 - `curl -fsSL https://shotfleet.com/install.sh | sh` is the main way: the signed, notarized Apple silicon build, checked against its SHA-256.
 - Or with Homebrew: `brew install noloman/tap/shotfleet` (a cask in my own tap, the same build). Homebrew doesn't install Maestro or Java; `shotfleet doctor --fix` does.
 
+## Linux and CI
+
+- `check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check` (free, no licence, amd64 and arm64): `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk`
+- GitHub Action: `uses: noloman/shotfleet-check-action@v1` with `folder:` and `app:` (also `locale:`, `args:`, `warn-only:`), on `ubuntu-latest`. Outputs: the problem count, the report folder and the JSON from `check --json`. Tested locally with `docker run`; not yet run on GitHub's runners.
+- What doesn't work on Linux: `run` and `export` (the image only runs `check`; capturing and exporting need a Mac), and macOS text recognition (Tesseract reads fewer scripts; the image has data for 34 common languages).
+- Without `--app` (or `--strings`) the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.
+
 ## Price and licence
 
 - `check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence.
