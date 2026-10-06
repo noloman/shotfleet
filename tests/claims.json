@@ -3606,5 +3606,125 @@
   "layer": "site",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": ""
+ },
+ {
+  "id": "C222",
+  "claim": "AnywhereRoles showcase: the 8 home-page frames are shotfleet's own raw output from the 2026-10-06 run, only resized to 360 px wide WebP",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "these are real shotfleet output, only made smaller for the web"
+  ],
+  "status": "evidence",
+  "proof": "Source frames (2026-10-06): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/{ja/1_jobs-list,hi/4_salary,ru/7_status,zh-CN/2_filters}.png and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/raw/{en/iphone-69-01-jobs-list,de/iphone-69-02-fit-trust,ko/iphone-69-03-saved-pipeline,ja/iphone-69-04-application-tracker}.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/ (no frames, captions or edits). Only slots the owner reviewed as public-safe: no iPhone slot 05, no slot 06 paywall, no iPad frame.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C223",
+  "claim": "AnywhereRoles, 2026-10-06, shotfleet 0.1.4: 120 Android screenshots (15 languages x 8) on 1 emulator in 1826 s with 0 retries",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "On 2026-10-06 I ran shotfleet 0.1.4 on AnywhereRoles, also my app: 120 Android screenshots (15 languages × 8 screens) on 1 emulator in 1826 s with 0 retries"
+  ],
+  "status": "evidence",
+  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/run.json (2026-10-06 16:55): 15 locales, each ok with screenshots 8, emulators 1, wall_seconds 1826; /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/and-run11.log: run by shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet, 'booting 1 emulators (shotfleet_android, 1080x1920)', no 'retrying' line, 'captured 15/15 locales in 1826s on 1 emulators'; docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C224",
+  "claim": "AnywhereRoles, 2026-10-06, shotfleet 0.1.4: 108 iPhone screenshots (18 languages x 6) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "108 iPhone screenshots (18 languages × 6 screens) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s"
+  ],
+  "status": "evidence",
+  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/run.json (2026-10-06 18:17): 18 locales, each ok with screenshots 6, simulators 2, wall_seconds 3420; /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/ios-run2.log: 'booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)', 'captured 18/18 locales in 3420s on 2 simulators'; maestro1.log shows iOS 26.4; docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C225",
+  "claim": "AnywhereRoles iPhone run: the Mac was loaded and short of memory, shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each passed on a second try",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "My Mac was heavily loaded and short of memory, so shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each needed a second try."
+  ],
+  "status": "evidence",
+  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/ios-run2.log: 'memory pressure is elevated: using 2 devices instead of 4', 'load 234 on 10 cores', 'retrying 3: ja, tr, zh-Hans'; /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/run.json: attempts 2 for ja, tr and zh-Hans, 1 for the other 15, all ok.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C226",
+  "claim": "AnywhereRoles, 2026-10-06: check found 0 problems in the 120 Android and the 108 iPhone screenshots",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Check found 0 problems in both."
+  ],
+  "status": "evidence",
+  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/check.json (120 screenshots, 0 problems, 0 notes) and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/check.json (108 screenshots, 0 problems, 0 notes), both 2026-10-06; and-run11.log and ios-run2.log end with 'checked 120 screenshots in 15 languages: 0 problem(s)' and 'checked 108 screenshots in 18 languages: 0 problem(s)'.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C227",
+  "claim": "Before the recapture, check on AnywhereRoles' old Google Play screenshots found 127 problems, 103 of them translated captions over an English UI (one English capture with translated captions)",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions."
+  ],
+  "status": "evidence",
+  "proof": "docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2), finding F1: shotfleet check fastlane/metadata/android with 0.1.3 and 0.1.4, 'checked 120 screenshots in 15 languages: 127 problem(s)'; 103 lines 'the caption is in X but the app UI shows en strings'; cause: one English capture set with localized captions. After the recapture the same check gives 16 (all false, F2 and F7): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/check/android/check.json (2026-10-06 18:46).",
+  "layer": "device",
+  "assertion": "Recorded check output on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C228",
+  "claim": "Writing and debugging AnywhereRoles' Android flow took several failed runs before the final one",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "writing and debugging the Android flow took me several failed runs before this one"
+  ],
+  "status": "evidence",
+  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/and-run1.log to and-run10.log (each ends in FAIL, for example 'FAIL en 3/8 screenshots (retried)  Element not found: Text matching regex: Salary Insights') and the kept folders /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android-run2-failed to out-android-run10-es-fail; docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2) ('failed Android runs while the flow was being fixed', 9 failed runs).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C229",
+  "claim": "Demo evidence: 2026-10-06, AnywhereRoles, shotfleet 0.1.4: Android 120 on 1 emulator with 0 retries, iPhone 108 on 2 simulators with 3 languages retried once, 0 problems; the old Play screenshots had 127 problems, 103 translated captions over English",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "shotfleet 0.1.4, a full run on both platforms: Android, 15 languages × 8 screens = 120 screenshots on 1 emulator, 0 retries; iPhone, 18 languages × 6 screens = 108 screenshots on 2 simulators, 3 languages retried once. Check found 0 problems in both. Before it, check on the app’s old Google Play screenshots found 127 problems, 103 of them translated captions over English screens."
+  ],
+  "status": "evidence",
+  "proof": "Same records as C211 to C215: out-android/run.json and check.json, out-iphone/run.json and check.json, logs/and-run11.log and ios-run2.log, and docs/dogfood-shotfleet-2026-10.md (F1) in the app's repository, all 2026-10-06.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
  }
 ]

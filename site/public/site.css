@@ -226,7 +226,7 @@ code { font: 0.88em var(--mono); background: var(--tray); padding: 2px 6px; bord
 .tabs button[aria-selected="true"] span { color: color-mix(in srgb, var(--paper) 72%, transparent); }
 .tabpanel { margin-top: 28px; }
 .tabpanel[hidden] { display: none; }
-.tabpanel .fleet { padding-inline: 0; scroll-padding-inline: 0; }
+.tabpanel .fleet, #showcase .fleet { padding-inline: 0; scroll-padding-inline: 0; }
 @media (max-width: 520px) {
   .tabs { flex-wrap: nowrap; }
   .tabs button { flex: 1 1 0; min-width: 0; padding: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.25; }

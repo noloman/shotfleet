@@ -331,15 +331,55 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
-  <!-- SHOWCASE-PENDING: AnywhereRoles real-app showcase. Not public text yet: fill it in only once the run is recorded and every sentence
-       has a claims row in tests/claims.json, then delete these comment markers.
   <section class="wrap section" id="showcase" aria-labelledby="showcase-h">
     <div class="reveal">
-      <h2 id="showcase-h">TODO heading</h2>
-      <p class="muted lede-small">TODO: what the run was (date, platforms, languages, devices) and what check found.</p>
+      <h2 id="showcase-h">A real app: AnywhereRoles.</h2>
+      <p class="muted lede-small">Unlike the store screenshots just above, these are real shotfleet output, only made smaller for the web. On 2026-10-06 I ran shotfleet 0.1.4 on AnywhereRoles, also my app: 120 Android screenshots (15 languages × 8 screens) on 1 emulator in 1826 s with 0 retries, and 108 iPhone screenshots (18 languages × 6 screens) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s. My Mac was heavily loaded and short of memory, so shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each needed a second try. Check found 0 problems in both.</p>
+      <p class="muted lede-small">Before this run, check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions. That was my mistake, and it’s why I recaptured every language. To be fair, writing and debugging the Android flow took me several failed runs before this one.</p>
+    </div>
+    <div class="fleet small" role="group" aria-label="AnywhereRoles in eight languages on Android and iPhone, each checked" tabindex="0">
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_ja_jobs.webp" alt="AnywhereRoles on Android, the jobs list in Japanese, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ja">日本語</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>hi</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_hi_salary.webp" alt="AnywhereRoles on Android, the salary screen in Hindi, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="hi">हिन्दी</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ru</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_ru_status.webp" alt="AnywhereRoles on Android, the application status screen in Russian, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ru">Русский</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>zh-CN</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_zh_filters.webp" alt="AnywhereRoles on Android, the filters screen in Chinese, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="zh-CN">简体中文</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>en</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_en_jobs.webp" alt="AnywhereRoles on iPhone, the jobs list in English, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="en">English</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>de</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_de_fit.webp" alt="AnywhereRoles on iPhone, the job detail screen in German, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="de">Deutsch</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ko</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_ko_saved.webp" alt="AnywhereRoles on iPhone, the saved jobs screen in Korean, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ko">한국어</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_ja_tracker.webp" alt="AnywhereRoles on iPhone, the application tracker in Japanese, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ja">日本語</figcaption>
+        </figure>
     </div>
   </section>
-  SHOWCASE-PENDING -->
 
   <section class="wrap section" aria-labelledby="not-h">
     <div class="notfor reveal">
