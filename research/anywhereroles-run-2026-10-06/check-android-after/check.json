@@ -1,0 +1,986 @@
+{
+ "screenshots": [
+  {
+   "file": "de-DE/1_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/1_de-DE.png",
+   "sha": "875978c8b939",
+   "lang": "de",
+   "chars": 454,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/2_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/2_de-DE.png",
+   "sha": "3ac15aa15fe9",
+   "lang": "de",
+   "chars": 503,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/3_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/3_de-DE.png",
+   "sha": "c81e5c7969f1",
+   "lang": "de",
+   "chars": 465,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/4_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/4_de-DE.png",
+   "sha": "35c8a0a97842",
+   "lang": "de",
+   "chars": 463,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/5_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/5_de-DE.png",
+   "sha": "574864162d2c",
+   "lang": "de",
+   "chars": 353,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/6_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/6_de-DE.png",
+   "sha": "8b949b1bcd59",
+   "lang": "de",
+   "chars": 414,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/7_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/7_de-DE.png",
+   "sha": "3dfbdda66391",
+   "lang": "de",
+   "chars": 593,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de-DE/8_de-DE.png",
+   "src": "../../../../fastlane/metadata/android/de-DE/images/phoneScreenshots/8_de-DE.png",
+   "sha": "f53ef46369e4",
+   "lang": "de",
+   "chars": 550,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/1_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.png",
+   "sha": "033a01b63fa3",
+   "lang": "en",
+   "chars": 400,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/2_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.png",
+   "sha": "56977566b6f7",
+   "lang": "en",
+   "chars": 474,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/3_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.png",
+   "sha": "39438cbe8e8a",
+   "lang": "en",
+   "chars": 371,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/4_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/4_en-US.png",
+   "sha": "0d80df2e32ec",
+   "lang": "en",
+   "chars": 455,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/5_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/5_en-US.png",
+   "sha": "38df52d39837",
+   "lang": "en",
+   "chars": 302,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/6_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/6_en-US.png",
+   "sha": "2390aad88d2b",
+   "lang": "en",
+   "chars": 354,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/7_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/7_en-US.png",
+   "sha": "ada459921f13",
+   "lang": "en",
+   "chars": 525,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en-US/8_en-US.png",
+   "src": "../../../../fastlane/metadata/android/en-US/images/phoneScreenshots/8_en-US.png",
+   "sha": "3bbdfc6c1025",
+   "lang": "en",
+   "chars": 467,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/1_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/1_es-ES.png",
+   "sha": "1ef1a27b71a6",
+   "lang": "es",
+   "chars": 485,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/2_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/2_es-ES.png",
+   "sha": "4ce0b534d33c",
+   "lang": "es",
+   "chars": 471,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/3_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/3_es-ES.png",
+   "sha": "d8dbde6ed610",
+   "lang": "es",
+   "chars": 342,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/4_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/4_es-ES.png",
+   "sha": "7fe5f757ceba",
+   "lang": "es",
+   "chars": 504,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/5_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/5_es-ES.png",
+   "sha": "eaf93bf3a75a",
+   "lang": "es",
+   "chars": 360,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/6_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/6_es-ES.png",
+   "sha": "bb6f2b0ccb76",
+   "lang": "es",
+   "chars": 416,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/7_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/7_es-ES.png",
+   "sha": "15c2a8cba446",
+   "lang": "es",
+   "chars": 567,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es-ES/8_es-ES.png",
+   "src": "../../../../fastlane/metadata/android/es-ES/images/phoneScreenshots/8_es-ES.png",
+   "sha": "f8fec005111d",
+   "lang": "es",
+   "chars": 553,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/1_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/1_fr-FR.png",
+   "sha": "b781b7ba9d9d",
+   "lang": "fr",
+   "chars": 509,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/2_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/2_fr-FR.png",
+   "sha": "dd40030aba7f",
+   "lang": "fr",
+   "chars": 500,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/3_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/3_fr-FR.png",
+   "sha": "73de36f1f63d",
+   "lang": "fr",
+   "chars": 398,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/4_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/4_fr-FR.png",
+   "sha": "84fc4347ccbb",
+   "lang": "fr",
+   "chars": 531,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/5_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/5_fr-FR.png",
+   "sha": "fef1924f58dd",
+   "lang": "fr",
+   "chars": 383,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/6_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/6_fr-FR.png",
+   "sha": "85ad2ad458bb",
+   "lang": "fr",
+   "chars": 446,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/7_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/7_fr-FR.png",
+   "sha": "15a843c58563",
+   "lang": "fr",
+   "chars": 617,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr-FR/8_fr-FR.png",
+   "src": "../../../../fastlane/metadata/android/fr-FR/images/phoneScreenshots/8_fr-FR.png",
+   "sha": "b772bd42546d",
+   "lang": "fr",
+   "chars": 563,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/1_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/1_hi-IN.png",
+   "sha": "de319cc69182",
+   "lang": "hi",
+   "chars": 303,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/2_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/2_hi-IN.png",
+   "sha": "9a571d5cede8",
+   "lang": "hi",
+   "chars": 365,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/3_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/3_hi-IN.png",
+   "sha": "60a72c1dee4d",
+   "lang": "hi",
+   "chars": 296,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/4_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/4_hi-IN.png",
+   "sha": "f8994dfc31f8",
+   "lang": "hi",
+   "chars": 367,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/5_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/5_hi-IN.png",
+   "sha": "2ff5fe85a5e8",
+   "lang": "hi",
+   "chars": 216,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/6_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/6_hi-IN.png",
+   "sha": "0c92a299e169",
+   "lang": "hi",
+   "chars": 307,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/7_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/7_hi-IN.png",
+   "sha": "321cec441543",
+   "lang": "hi",
+   "chars": 393,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi-IN/8_hi-IN.png",
+   "src": "../../../../fastlane/metadata/android/hi-IN/images/phoneScreenshots/8_hi-IN.png",
+   "sha": "6a20c2579ae9",
+   "lang": "hi",
+   "chars": 341,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/1_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/1_it-IT.png",
+   "sha": "133956f5aa65",
+   "lang": "it",
+   "chars": 471,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/2_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/2_it-IT.png",
+   "sha": "d8fbeb9a635d",
+   "lang": "it",
+   "chars": 489,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/3_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/3_it-IT.png",
+   "sha": "5b9651c571fc",
+   "lang": "it",
+   "chars": 441,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/4_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/4_it-IT.png",
+   "sha": "dff4c8947d18",
+   "lang": "it",
+   "chars": 543,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/5_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/5_it-IT.png",
+   "sha": "67d211264cac",
+   "lang": "it",
+   "chars": 326,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/6_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/6_it-IT.png",
+   "sha": "a9135b055e61",
+   "lang": "it",
+   "chars": 409,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/7_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/7_it-IT.png",
+   "sha": "282e660d79f9",
+   "lang": "it",
+   "chars": 609,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it-IT/8_it-IT.png",
+   "src": "../../../../fastlane/metadata/android/it-IT/images/phoneScreenshots/8_it-IT.png",
+   "sha": "903503e0fccf",
+   "lang": "it",
+   "chars": 548,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/1_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/1_ja-JP.png",
+   "sha": "6010eed592cf",
+   "lang": "ja",
+   "chars": 231,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/2_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/2_ja-JP.png",
+   "sha": "909daa1fa849",
+   "lang": "ja",
+   "chars": 247,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/3_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/3_ja-JP.png",
+   "sha": "368af6c3c227",
+   "lang": "ja",
+   "chars": 288,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/4_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/4_ja-JP.png",
+   "sha": "68034830013b",
+   "lang": "ja",
+   "chars": 299,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/5_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/5_ja-JP.png",
+   "sha": "615b3754d319",
+   "lang": "ja",
+   "chars": 170,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/6_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/6_ja-JP.png",
+   "sha": "6ef76ed087eb",
+   "lang": "ja",
+   "chars": 243,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/7_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/7_ja-JP.png",
+   "sha": "7261e745665a",
+   "lang": "ja",
+   "chars": 321,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja-JP/8_ja-JP.png",
+   "src": "../../../../fastlane/metadata/android/ja-JP/images/phoneScreenshots/8_ja-JP.png",
+   "sha": "ac10e7d29d5a",
+   "lang": "ja",
+   "chars": 314,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/1_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/1_ko-KR.png",
+   "sha": "ade693689bdc",
+   "lang": "ko",
+   "chars": 229,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/2_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/2_ko-KR.png",
+   "sha": "f29472853a03",
+   "lang": "ko",
+   "chars": 261,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/3_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/3_ko-KR.png",
+   "sha": "0a98979478b7",
+   "lang": "ko",
+   "chars": 266,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/4_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/4_ko-KR.png",
+   "sha": "ea5f62dfcab4",
+   "lang": "ko",
+   "chars": 313,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/5_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/5_ko-KR.png",
+   "sha": "961d9b0f6e11",
+   "lang": "ko",
+   "chars": 177,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/6_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/6_ko-KR.png",
+   "sha": "6b7350255f3c",
+   "lang": "ko",
+   "chars": 251,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/7_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/7_ko-KR.png",
+   "sha": "11aafbc7f77b",
+   "lang": "ko",
+   "chars": 325,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko-KR/8_ko-KR.png",
+   "src": "../../../../fastlane/metadata/android/ko-KR/images/phoneScreenshots/8_ko-KR.png",
+   "sha": "beac4fa4dd34",
+   "lang": "ko",
+   "chars": 300,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/1_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/1_nl-NL.png",
+   "sha": "7c36afc16519",
+   "lang": "nl",
+   "chars": 468,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/2_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/2_nl-NL.png",
+   "sha": "f55e7fce7ad7",
+   "lang": "nl",
+   "chars": 512,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/3_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/3_nl-NL.png",
+   "sha": "5c412d386b59",
+   "lang": "nl",
+   "chars": 469,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/4_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/4_nl-NL.png",
+   "sha": "eba4d0bbd2df",
+   "lang": "nl",
+   "chars": 503,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/5_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/5_nl-NL.png",
+   "sha": "fbd3bf29cc10",
+   "lang": "nl",
+   "chars": 335,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/6_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/6_nl-NL.png",
+   "sha": "5bd4519fb356",
+   "lang": "nl",
+   "chars": 417,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/7_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/7_nl-NL.png",
+   "sha": "bee0b080ccca",
+   "lang": "nl",
+   "chars": 575,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl-NL/8_nl-NL.png",
+   "src": "../../../../fastlane/metadata/android/nl-NL/images/phoneScreenshots/8_nl-NL.png",
+   "sha": "d3f631e8ce95",
+   "lang": "nl",
+   "chars": 539,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/1_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/1_pl-PL.png",
+   "sha": "216660febc63",
+   "lang": "pl",
+   "chars": 442,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/2_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/2_pl-PL.png",
+   "sha": "9d501200716f",
+   "lang": "pl",
+   "chars": 475,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/3_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/3_pl-PL.png",
+   "sha": "f9ac06d59e28",
+   "lang": "pl",
+   "chars": 389,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/4_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/4_pl-PL.png",
+   "sha": "86c904ea78d1",
+   "lang": "pl",
+   "chars": 542,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/5_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/5_pl-PL.png",
+   "sha": "0ab86e2d9028",
+   "lang": "pl",
+   "chars": 312,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/6_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/6_pl-PL.png",
+   "sha": "db0952cf35ef",
+   "lang": "pl",
+   "chars": 403,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/7_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/7_pl-PL.png",
+   "sha": "40fc7d09465a",
+   "lang": "pl",
+   "chars": 578,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl-PL/8_pl-PL.png",
+   "src": "../../../../fastlane/metadata/android/pl-PL/images/phoneScreenshots/8_pl-PL.png",
+   "sha": "0573510c1c9f",
+   "lang": "pl",
+   "chars": 504,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/1_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/1_pt-BR.png",
+   "sha": "d8fa7db2e7ac",
+   "lang": "pt-BR",
+   "chars": 438,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/2_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/2_pt-BR.png",
+   "sha": "bfe76c5f2fd5",
+   "lang": "pt-BR",
+   "chars": 472,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/3_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/3_pt-BR.png",
+   "sha": "4d4924316872",
+   "lang": "pt-BR",
+   "chars": 338,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/4_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/4_pt-BR.png",
+   "sha": "218380334dc6",
+   "lang": "pt-BR",
+   "chars": 501,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/5_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/5_pt-BR.png",
+   "sha": "d4777a92dcdb",
+   "lang": "pt-BR",
+   "chars": 340,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/6_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/6_pt-BR.png",
+   "sha": "89113e4217b6",
+   "lang": "pt-BR",
+   "chars": 411,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/7_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/7_pt-BR.png",
+   "sha": "62d52e69a9f9",
+   "lang": "pt-BR",
+   "chars": 622,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/8_pt-BR.png",
+   "src": "../../../../fastlane/metadata/android/pt-BR/images/phoneScreenshots/8_pt-BR.png",
+   "sha": "fd601af3f0f2",
+   "lang": "pt-BR",
+   "chars": 537,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/1_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/1_ru-RU.png",
+   "sha": "fba1f2b28855",
+   "lang": "ru",
+   "chars": 472,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/2_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/2_ru-RU.png",
+   "sha": "7ed67f24730e",
+   "lang": "ru",
+   "chars": 488,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/3_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/3_ru-RU.png",
+   "sha": "0f4e18d51594",
+   "lang": "ru",
+   "chars": 344,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/4_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/4_ru-RU.png",
+   "sha": "8ba5321bae8a",
+   "lang": "ru",
+   "chars": 510,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/5_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/5_ru-RU.png",
+   "sha": "df52300fc0dd",
+   "lang": "ru",
+   "chars": 368,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/6_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/6_ru-RU.png",
+   "sha": "aa96f64f320e",
+   "lang": "ru",
+   "chars": 385,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/7_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/7_ru-RU.png",
+   "sha": "3c29f27d2667",
+   "lang": "ru",
+   "chars": 549,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru-RU/8_ru-RU.png",
+   "src": "../../../../fastlane/metadata/android/ru-RU/images/phoneScreenshots/8_ru-RU.png",
+   "sha": "ae9a69994b0a",
+   "lang": "kk",
+   "chars": 523,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/1_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/1_sv-SE.png",
+   "sha": "bdbed514dafe",
+   "lang": "sv",
+   "chars": 392,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/2_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/2_sv-SE.png",
+   "sha": "b2d532debadc",
+   "lang": "sv",
+   "chars": 462,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/3_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/3_sv-SE.png",
+   "sha": "890a11b21e3c",
+   "lang": "sv",
+   "chars": 341,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/4_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/4_sv-SE.png",
+   "sha": "402285267be2",
+   "lang": "sv",
+   "chars": 486,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/5_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/5_sv-SE.png",
+   "sha": "bec3d9be3e48",
+   "lang": "sv",
+   "chars": 339,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/6_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/6_sv-SE.png",
+   "sha": "5071e9e74be5",
+   "lang": "sv",
+   "chars": 369,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/7_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/7_sv-SE.png",
+   "sha": "134a711ba3ce",
+   "lang": "sv",
+   "chars": 554,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv-SE/8_sv-SE.png",
+   "src": "../../../../fastlane/metadata/android/sv-SE/images/phoneScreenshots/8_sv-SE.png",
+   "sha": "406411a67f29",
+   "lang": "sv",
+   "chars": 515,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/1_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/1_tr-TR.png",
+   "sha": "43bab43ab6f9",
+   "lang": "tr",
+   "chars": 422,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/2_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/2_tr-TR.png",
+   "sha": "a5a786727ca9",
+   "lang": "tr",
+   "chars": 462,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/3_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/3_tr-TR.png",
+   "sha": "9d1d9481aa4b",
+   "lang": "tr",
+   "chars": 321,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/4_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/4_tr-TR.png",
+   "sha": "9d6b772797b2",
+   "lang": "tr",
+   "chars": 485,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/5_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/5_tr-TR.png",
+   "sha": "3689b9fe879b",
+   "lang": "tr",
+   "chars": 312,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/6_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/6_tr-TR.png",
+   "sha": "6ab1ae4546f9",
+   "lang": "tr",
+   "chars": 389,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/7_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/7_tr-TR.png",
+   "sha": "4333cd349deb",
+   "lang": "tr",
+   "chars": 561,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr-TR/8_tr-TR.png",
+   "src": "../../../../fastlane/metadata/android/tr-TR/images/phoneScreenshots/8_tr-TR.png",
+   "sha": "547963f31cb3",
+   "lang": "tr",
+   "chars": 525,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/1_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/1_zh-CN.png",
+   "sha": "6f51e5882eef",
+   "lang": "zh-CN",
+   "chars": 178,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/2_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/2_zh-CN.png",
+   "sha": "e9e988596f55",
+   "lang": "zh-CN",
+   "chars": 217,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/3_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/3_zh-CN.png",
+   "sha": "7cadcc76fae2",
+   "lang": "zh-CN",
+   "chars": 291,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/4_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/4_zh-CN.png",
+   "sha": "1f3d4cb8901b",
+   "lang": "zh-CN",
+   "chars": 275,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/5_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/5_zh-CN.png",
+   "sha": "8e3674e0f197",
+   "lang": "zh-CN",
+   "chars": 144,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/6_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/6_zh-CN.png",
+   "sha": "a905e579f42e",
+   "lang": "zh-CN",
+   "chars": 205,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/7_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/7_zh-CN.png",
+   "sha": "d6dfc297cc4c",
+   "lang": "zh-CN",
+   "chars": 305,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/8_zh-CN.png",
+   "src": "../../../../fastlane/metadata/android/zh-CN/images/phoneScreenshots/8_zh-CN.png",
+   "sha": "b4afba9f6fa8",
+   "lang": "zh-CN",
+   "chars": 293,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [
+  "ru-RU/8_ru-RU.png: text looks like 'kk', expected 'ru'",
+  "de-DE: missing 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "en-US: missing 1_de-DE.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "es-ES: missing 1_de-DE.png, 1_en-US.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "fr-FR: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "hi-IN: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "it-IT: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "ja-JP: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "ko-KR: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "nl-NL: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "pl-PL: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "pt-BR: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "ru-RU: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_sv-SE.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_sv-SE.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_sv-SE.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_sv-SE.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_sv-SE.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_sv-SE.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_sv-SE.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_sv-SE.png, 8_tr-TR.png, 8_zh-CN.png",
+  "sv-SE: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_tr-TR.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_tr-TR.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_tr-TR.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_tr-TR.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_tr-TR.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_tr-TR.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_tr-TR.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_tr-TR.png, 8_zh-CN.png",
+  "tr-TR: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_zh-CN.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_zh-CN.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_zh-CN.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_zh-CN.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_zh-CN.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_zh-CN.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_zh-CN.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_zh-CN.png",
+  "zh-CN: missing 1_de-DE.png, 1_en-US.png, 1_es-ES.png, 1_fr-FR.png, 1_hi-IN.png, 1_it-IT.png, 1_ja-JP.png, 1_ko-KR.png, 1_nl-NL.png, 1_pl-PL.png, 1_pt-BR.png, 1_ru-RU.png, 1_sv-SE.png, 1_tr-TR.png, 2_de-DE.png, 2_en-US.png, 2_es-ES.png, 2_fr-FR.png, 2_hi-IN.png, 2_it-IT.png, 2_ja-JP.png, 2_ko-KR.png, 2_nl-NL.png, 2_pl-PL.png, 2_pt-BR.png, 2_ru-RU.png, 2_sv-SE.png, 2_tr-TR.png, 3_de-DE.png, 3_en-US.png, 3_es-ES.png, 3_fr-FR.png, 3_hi-IN.png, 3_it-IT.png, 3_ja-JP.png, 3_ko-KR.png, 3_nl-NL.png, 3_pl-PL.png, 3_pt-BR.png, 3_ru-RU.png, 3_sv-SE.png, 3_tr-TR.png, 4_de-DE.png, 4_en-US.png, 4_es-ES.png, 4_fr-FR.png, 4_hi-IN.png, 4_it-IT.png, 4_ja-JP.png, 4_ko-KR.png, 4_nl-NL.png, 4_pl-PL.png, 4_pt-BR.png, 4_ru-RU.png, 4_sv-SE.png, 4_tr-TR.png, 5_de-DE.png, 5_en-US.png, 5_es-ES.png, 5_fr-FR.png, 5_hi-IN.png, 5_it-IT.png, 5_ja-JP.png, 5_ko-KR.png, 5_nl-NL.png, 5_pl-PL.png, 5_pt-BR.png, 5_ru-RU.png, 5_sv-SE.png, 5_tr-TR.png, 6_de-DE.png, 6_en-US.png, 6_es-ES.png, 6_fr-FR.png, 6_hi-IN.png, 6_it-IT.png, 6_ja-JP.png, 6_ko-KR.png, 6_nl-NL.png, 6_pl-PL.png, 6_pt-BR.png, 6_ru-RU.png, 6_sv-SE.png, 6_tr-TR.png, 7_de-DE.png, 7_en-US.png, 7_es-ES.png, 7_fr-FR.png, 7_hi-IN.png, 7_it-IT.png, 7_ja-JP.png, 7_ko-KR.png, 7_nl-NL.png, 7_pl-PL.png, 7_pt-BR.png, 7_ru-RU.png, 7_sv-SE.png, 7_tr-TR.png, 8_de-DE.png, 8_en-US.png, 8_es-ES.png, 8_fr-FR.png, 8_hi-IN.png, 8_it-IT.png, 8_ja-JP.png, 8_ko-KR.png, 8_nl-NL.png, 8_pl-PL.png, 8_pt-BR.png, 8_ru-RU.png, 8_sv-SE.png, 8_tr-TR.png"
+ ],
+ "notes": [
+  "1080x2424 screenshots in 15 listing(s) are longer than 2:1, which Google's rules say isn't allowed (Play has accepted 20:9 phone screenshots in practice)",
+  "15 listing(s) (de-DE, en-US, es-ES, fr-FR, hi-IN, it-IT, ...) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations"
+ ]
+}

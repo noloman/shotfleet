@@ -1,0 +1,131 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 111,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "en": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 103,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "es": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 109,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "fr": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 129,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "hi": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 106,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "it": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 102,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 107,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "ko": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 104,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "nl": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 105,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "pl": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 107,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "pt-BR": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 105,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "ru": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 105,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "sv": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 105,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "tr": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 105,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  },
+  "zh-CN": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 106,
+   "error": null,
+   "screenshots": 8,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/scripts/shotfleet/shotfleet.toml",
+ "wall_seconds": 1826,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/androidApp/build/outputs/apk/dev/debug/androidApp-dev-debug.apk",
+ "device": "phone",
+ "hierarchy_markers": false
+}

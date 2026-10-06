@@ -1,0 +1,13 @@
+== 13:55:05 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform android --locales en
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 1 locales on 1 emulators, 1 rounds...
+retrying 1: en
+FAIL en       3/8 screenshots (retried)  Element not found: Text matching regex: Salary Insights
+captured 0/1 locales in 310s on 1 emulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+macOS text recognition isn't answering (is the Mac overloaded?). The fallback reader was used: using Tesseract instead of macOS text recognition; it reads fewer scripts and names no language, so some screens may be reported as unverified. Run check again later for the full reader
+
+checked 3 screenshots in 1 languages: 0 problem(s)
+notes (1, not blocking):
+  - 1 listing(s) (en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations

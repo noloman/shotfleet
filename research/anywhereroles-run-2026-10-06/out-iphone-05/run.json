@@ -1,0 +1,170 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 46,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 2
+  },
+  "en": {
+   "untranslated_selectors": [],
+   "lproj": "en",
+   "ok": true,
+   "seconds": 15,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "es": {
+   "untranslated_selectors": [],
+   "lproj": "es",
+   "ok": true,
+   "seconds": 19,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "fr": {
+   "untranslated_selectors": [],
+   "lproj": "fr",
+   "ok": true,
+   "seconds": 18,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "hi": {
+   "untranslated_selectors": [],
+   "lproj": "hi",
+   "ok": true,
+   "seconds": 21,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "id": {
+   "untranslated_selectors": [],
+   "lproj": "id",
+   "ok": true,
+   "seconds": 33,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 2
+  },
+  "it": {
+   "untranslated_selectors": [],
+   "lproj": "it",
+   "ok": true,
+   "seconds": 16,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "lproj": "ja",
+   "ok": true,
+   "seconds": 18,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "ko": {
+   "untranslated_selectors": [],
+   "lproj": "ko",
+   "ok": true,
+   "seconds": 18,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "nl": {
+   "untranslated_selectors": [],
+   "lproj": "nl",
+   "ok": true,
+   "seconds": 64,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "pl": {
+   "untranslated_selectors": [],
+   "lproj": "pl",
+   "ok": true,
+   "seconds": 23,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "pt-BR": {
+   "untranslated_selectors": [],
+   "lproj": "pt-BR",
+   "ok": true,
+   "seconds": 24,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "ro": {
+   "untranslated_selectors": [],
+   "lproj": "ro",
+   "ok": true,
+   "seconds": 32,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "ru": {
+   "untranslated_selectors": [],
+   "lproj": "ru",
+   "ok": true,
+   "seconds": 26,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "sv": {
+   "untranslated_selectors": [],
+   "lproj": "sv",
+   "ok": true,
+   "seconds": 22,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "tr": {
+   "untranslated_selectors": [],
+   "lproj": "tr",
+   "ok": true,
+   "seconds": 16,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "uk": {
+   "untranslated_selectors": [],
+   "lproj": "uk",
+   "ok": true,
+   "seconds": 18,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  },
+  "zh-Hans": {
+   "untranslated_selectors": [],
+   "lproj": "zh-Hans",
+   "ok": true,
+   "seconds": 23,
+   "error": null,
+   "screenshots": 1,
+   "attempts": 1
+  }
+ },
+ "config": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/scripts/shotfleet/shotfleet-iphone-05.toml",
+ "wall_seconds": 544,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/DerivedData/Build/Products/Debug-iphonesimulator/remoti.app"
+}

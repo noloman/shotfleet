@@ -1,0 +1,966 @@
+{
+ "screenshots": [
+  {
+   "file": "de/1_jobs-list.png",
+   "src": "raw/de/1_jobs-list.png",
+   "sha": "5cd343f95e91",
+   "lang": "de",
+   "chars": 429,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/2_filters.png",
+   "src": "raw/de/2_filters.png",
+   "sha": "ea95ee92d20d",
+   "lang": "de",
+   "chars": 477,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/3_fit-trust.png",
+   "src": "raw/de/3_fit-trust.png",
+   "sha": "d5679701ac87",
+   "lang": "de",
+   "chars": 448,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/4_salary.png",
+   "src": "raw/de/4_salary.png",
+   "sha": "ef79be45f4b4",
+   "lang": "de",
+   "chars": 441,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/5_alerts.png",
+   "src": "raw/de/5_alerts.png",
+   "sha": "3672a907921d",
+   "lang": "de",
+   "chars": 321,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/6_saved.png",
+   "src": "raw/de/6_saved.png",
+   "sha": "be4f8b6692ed",
+   "lang": "de",
+   "chars": 394,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/7_status.png",
+   "src": "raw/de/7_status.png",
+   "sha": "dfef7c9ae890",
+   "lang": "de",
+   "chars": 572,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/8_saved-searches.png",
+   "src": "raw/de/8_saved-searches.png",
+   "sha": "3e9541e7e2c7",
+   "lang": "de",
+   "chars": 508,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/1_jobs-list.png",
+   "src": "raw/en/1_jobs-list.png",
+   "sha": "0e8e7a55b62a",
+   "lang": "en",
+   "chars": 361,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/2_filters.png",
+   "src": "raw/en/2_filters.png",
+   "sha": "25ddbf447b5b",
+   "lang": "en",
+   "chars": 463,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/3_fit-trust.png",
+   "src": "raw/en/3_fit-trust.png",
+   "sha": "ab964c2fc779",
+   "lang": "en",
+   "chars": 351,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/4_salary.png",
+   "src": "raw/en/4_salary.png",
+   "sha": "b1bf03bec0cb",
+   "lang": "en",
+   "chars": 449,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/5_alerts.png",
+   "src": "raw/en/5_alerts.png",
+   "sha": "139f3756d482",
+   "lang": "en",
+   "chars": 275,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/6_saved.png",
+   "src": "raw/en/6_saved.png",
+   "sha": "93d4b1b5ec47",
+   "lang": "en",
+   "chars": 334,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/7_status.png",
+   "src": "raw/en/7_status.png",
+   "sha": "ddaa8e6573d3",
+   "lang": "en",
+   "chars": 502,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/8_saved-searches.png",
+   "src": "raw/en/8_saved-searches.png",
+   "sha": "1be2709a880f",
+   "lang": "en",
+   "chars": 436,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/1_jobs-list.png",
+   "src": "raw/es/1_jobs-list.png",
+   "sha": "aa48557eee1b",
+   "lang": "es",
+   "chars": 451,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/2_filters.png",
+   "src": "raw/es/2_filters.png",
+   "sha": "b71061683532",
+   "lang": "es",
+   "chars": 445,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/3_fit-trust.png",
+   "src": "raw/es/3_fit-trust.png",
+   "sha": "7495d4b94ccf",
+   "lang": "es",
+   "chars": 322,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/4_salary.png",
+   "src": "raw/es/4_salary.png",
+   "sha": "7a9114e0d537",
+   "lang": "es",
+   "chars": 484,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/5_alerts.png",
+   "src": "raw/es/5_alerts.png",
+   "sha": "2d130e8f2eee",
+   "lang": "es",
+   "chars": 334,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/6_saved.png",
+   "src": "raw/es/6_saved.png",
+   "sha": "0f9e1c1de405",
+   "lang": "es",
+   "chars": 393,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/7_status.png",
+   "src": "raw/es/7_status.png",
+   "sha": "85b276dfad98",
+   "lang": "es",
+   "chars": 547,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/8_saved-searches.png",
+   "src": "raw/es/8_saved-searches.png",
+   "sha": "7ed71601f94c",
+   "lang": "es",
+   "chars": 510,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/1_jobs-list.png",
+   "src": "raw/fr/1_jobs-list.png",
+   "sha": "d590657fdcc8",
+   "lang": "fr",
+   "chars": 482,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/2_filters.png",
+   "src": "raw/fr/2_filters.png",
+   "sha": "49f04ccdffce",
+   "lang": "fr",
+   "chars": 480,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/3_fit-trust.png",
+   "src": "raw/fr/3_fit-trust.png",
+   "sha": "5b09bda4886d",
+   "lang": "fr",
+   "chars": 378,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/4_salary.png",
+   "src": "raw/fr/4_salary.png",
+   "sha": "90d04e3bdc40",
+   "lang": "fr",
+   "chars": 512,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/5_alerts.png",
+   "src": "raw/fr/5_alerts.png",
+   "sha": "5f03d3895f6b",
+   "lang": "fr",
+   "chars": 345,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/6_saved.png",
+   "src": "raw/fr/6_saved.png",
+   "sha": "2c4282c745dd",
+   "lang": "fr",
+   "chars": 423,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/7_status.png",
+   "src": "raw/fr/7_status.png",
+   "sha": "96d0c90fd4b6",
+   "lang": "fr",
+   "chars": 598,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/8_saved-searches.png",
+   "src": "raw/fr/8_saved-searches.png",
+   "sha": "b0186e030a38",
+   "lang": "fr",
+   "chars": 530,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/1_jobs-list.png",
+   "src": "raw/hi/1_jobs-list.png",
+   "sha": "9f56705559f3",
+   "lang": "hi",
+   "chars": 281,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/2_filters.png",
+   "src": "raw/hi/2_filters.png",
+   "sha": "049028e64d94",
+   "lang": "hi",
+   "chars": 348,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/3_fit-trust.png",
+   "src": "raw/hi/3_fit-trust.png",
+   "sha": "2fad270e182a",
+   "lang": "hi",
+   "chars": 313,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/4_salary.png",
+   "src": "raw/hi/4_salary.png",
+   "sha": "93f639be5821",
+   "lang": "hi",
+   "chars": 351,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/5_alerts.png",
+   "src": "raw/hi/5_alerts.png",
+   "sha": "fa1dc42e51f3",
+   "lang": "hi",
+   "chars": 199,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/6_saved.png",
+   "src": "raw/hi/6_saved.png",
+   "sha": "9c64f6288ce9",
+   "lang": "hi",
+   "chars": 291,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/7_status.png",
+   "src": "raw/hi/7_status.png",
+   "sha": "0792e85c7eb9",
+   "lang": "hi",
+   "chars": 372,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/8_saved-searches.png",
+   "src": "raw/hi/8_saved-searches.png",
+   "sha": "906373ff5d0f",
+   "lang": "hi",
+   "chars": 316,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/1_jobs-list.png",
+   "src": "raw/it/1_jobs-list.png",
+   "sha": "79b8c4a0e28a",
+   "lang": "it",
+   "chars": 430,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/2_filters.png",
+   "src": "raw/it/2_filters.png",
+   "sha": "fd39b6829647",
+   "lang": "it",
+   "chars": 461,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/3_fit-trust.png",
+   "src": "raw/it/3_fit-trust.png",
+   "sha": "6de99c495436",
+   "lang": "it",
+   "chars": 419,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/4_salary.png",
+   "src": "raw/it/4_salary.png",
+   "sha": "1f1d07f66363",
+   "lang": "it",
+   "chars": 517,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/5_alerts.png",
+   "src": "raw/it/5_alerts.png",
+   "sha": "ad53313a5ae8",
+   "lang": "it",
+   "chars": 300,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/6_saved.png",
+   "src": "raw/it/6_saved.png",
+   "sha": "12220878f83b",
+   "lang": "it",
+   "chars": 385,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/7_status.png",
+   "src": "raw/it/7_status.png",
+   "sha": "7744cb3339da",
+   "lang": "it",
+   "chars": 585,
+   "evidence": "ocr"
+  },
+  {
+   "file": "it/8_saved-searches.png",
+   "src": "raw/it/8_saved-searches.png",
+   "sha": "772e358d75c7",
+   "lang": "it",
+   "chars": 515,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/1_jobs-list.png",
+   "src": "raw/ja/1_jobs-list.png",
+   "sha": "3fa3c919afd5",
+   "lang": "ja",
+   "chars": 220,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/2_filters.png",
+   "src": "raw/ja/2_filters.png",
+   "sha": "42c077246060",
+   "lang": "ja",
+   "chars": 233,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/3_fit-trust.png",
+   "src": "raw/ja/3_fit-trust.png",
+   "sha": "0d794a20545b",
+   "lang": "ja",
+   "chars": 282,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/4_salary.png",
+   "src": "raw/ja/4_salary.png",
+   "sha": "b507f0dd0363",
+   "lang": "ja",
+   "chars": 286,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/5_alerts.png",
+   "src": "raw/ja/5_alerts.png",
+   "sha": "2a901c5d05f6",
+   "lang": "ja",
+   "chars": 159,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/6_saved.png",
+   "src": "raw/ja/6_saved.png",
+   "sha": "ab085ae8ed64",
+   "lang": "ja",
+   "chars": 231,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/7_status.png",
+   "src": "raw/ja/7_status.png",
+   "sha": "70f9eb264866",
+   "lang": "ja",
+   "chars": 305,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/8_saved-searches.png",
+   "src": "raw/ja/8_saved-searches.png",
+   "sha": "11bdcea20b74",
+   "lang": "ja",
+   "chars": 306,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/1_jobs-list.png",
+   "src": "raw/ko/1_jobs-list.png",
+   "sha": "e9255a08b6ab",
+   "lang": "ko",
+   "chars": 212,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/2_filters.png",
+   "src": "raw/ko/2_filters.png",
+   "sha": "64eea63f3e55",
+   "lang": "ko",
+   "chars": 246,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/3_fit-trust.png",
+   "src": "raw/ko/3_fit-trust.png",
+   "sha": "306ad0c3ad78",
+   "lang": "ko",
+   "chars": 249,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/4_salary.png",
+   "src": "raw/ko/4_salary.png",
+   "sha": "2b73b331ce3d",
+   "lang": "ko",
+   "chars": 302,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/5_alerts.png",
+   "src": "raw/ko/5_alerts.png",
+   "sha": "622c6c552490",
+   "lang": "ko",
+   "chars": 166,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/6_saved.png",
+   "src": "raw/ko/6_saved.png",
+   "sha": "d2fe21220eca",
+   "lang": "ko",
+   "chars": 239,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/7_status.png",
+   "src": "raw/ko/7_status.png",
+   "sha": "3ef11ab1cad5",
+   "lang": "ko",
+   "chars": 339,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/8_saved-searches.png",
+   "src": "raw/ko/8_saved-searches.png",
+   "sha": "588514de5c3d",
+   "lang": "ko",
+   "chars": 282,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/1_jobs-list.png",
+   "src": "raw/nl/1_jobs-list.png",
+   "sha": "c7643c462470",
+   "lang": "nl",
+   "chars": 439,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/2_filters.png",
+   "src": "raw/nl/2_filters.png",
+   "sha": "34a5c29a9346",
+   "lang": "nl",
+   "chars": 488,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/3_fit-trust.png",
+   "src": "raw/nl/3_fit-trust.png",
+   "sha": "588fd572e176",
+   "lang": "nl",
+   "chars": 451,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/4_salary.png",
+   "src": "raw/nl/4_salary.png",
+   "sha": "0f5d25008c27",
+   "lang": "nl",
+   "chars": 476,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/5_alerts.png",
+   "src": "raw/nl/5_alerts.png",
+   "sha": "48ecddf4720d",
+   "lang": "nl",
+   "chars": 306,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/6_saved.png",
+   "src": "raw/nl/6_saved.png",
+   "sha": "29f7e6c03528",
+   "lang": "nl",
+   "chars": 391,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/7_status.png",
+   "src": "raw/nl/7_status.png",
+   "sha": "b7090966563d",
+   "lang": "nl",
+   "chars": 552,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/8_saved-searches.png",
+   "src": "raw/nl/8_saved-searches.png",
+   "sha": "f76204f1fcf5",
+   "lang": "nl",
+   "chars": 504,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/1_jobs-list.png",
+   "src": "raw/pl/1_jobs-list.png",
+   "sha": "90c21a60b383",
+   "lang": "pl",
+   "chars": 410,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/2_filters.png",
+   "src": "raw/pl/2_filters.png",
+   "sha": "4360cda39e9e",
+   "lang": "pl",
+   "chars": 448,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/3_fit-trust.png",
+   "src": "raw/pl/3_fit-trust.png",
+   "sha": "6ca0b46718de",
+   "lang": "pl",
+   "chars": 351,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/4_salary.png",
+   "src": "raw/pl/4_salary.png",
+   "sha": "92b499f0c9b7",
+   "lang": "pl",
+   "chars": 523,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/5_alerts.png",
+   "src": "raw/pl/5_alerts.png",
+   "sha": "aceb303fd822",
+   "lang": "pl",
+   "chars": 284,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/6_saved.png",
+   "src": "raw/pl/6_saved.png",
+   "sha": "fdbede79648e",
+   "lang": "pl",
+   "chars": 380,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/7_status.png",
+   "src": "raw/pl/7_status.png",
+   "sha": "17cdb1a7dca5",
+   "lang": "pl",
+   "chars": 557,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/8_saved-searches.png",
+   "src": "raw/pl/8_saved-searches.png",
+   "sha": "bf9b84ed5f22",
+   "lang": "pl",
+   "chars": 460,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/1_jobs-list.png",
+   "src": "raw/pt-BR/1_jobs-list.png",
+   "sha": "1aa98990110d",
+   "lang": "pt-BR",
+   "chars": 402,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/2_filters.png",
+   "src": "raw/pt-BR/2_filters.png",
+   "sha": "844646c69912",
+   "lang": "pt-BR",
+   "chars": 446,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/3_fit-trust.png",
+   "src": "raw/pt-BR/3_fit-trust.png",
+   "sha": "ed304a10de11",
+   "lang": "pt-BR",
+   "chars": 320,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/4_salary.png",
+   "src": "raw/pt-BR/4_salary.png",
+   "sha": "405bf1117753",
+   "lang": "pt-BR",
+   "chars": 483,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/5_alerts.png",
+   "src": "raw/pt-BR/5_alerts.png",
+   "sha": "f3894f3c4588",
+   "lang": "pt-BR",
+   "chars": 317,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/6_saved.png",
+   "src": "raw/pt-BR/6_saved.png",
+   "sha": "7a3e615de136",
+   "lang": "pt-BR",
+   "chars": 391,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/7_status.png",
+   "src": "raw/pt-BR/7_status.png",
+   "sha": "3039058f5ec0",
+   "lang": "pt-BR",
+   "chars": 595,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/8_saved-searches.png",
+   "src": "raw/pt-BR/8_saved-searches.png",
+   "sha": "b6982ef105c0",
+   "lang": "pt-BR",
+   "chars": 503,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/1_jobs-list.png",
+   "src": "raw/ru/1_jobs-list.png",
+   "sha": "81125cbde206",
+   "lang": "ru",
+   "chars": 444,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/2_filters.png",
+   "src": "raw/ru/2_filters.png",
+   "sha": "851f1bd3d598",
+   "lang": "ru",
+   "chars": 470,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/3_fit-trust.png",
+   "src": "raw/ru/3_fit-trust.png",
+   "sha": "7b7b41c42337",
+   "lang": "ru",
+   "chars": 319,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/4_salary.png",
+   "src": "raw/ru/4_salary.png",
+   "sha": "85d42f8d7179",
+   "lang": "ru",
+   "chars": 484,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/5_alerts.png",
+   "src": "raw/ru/5_alerts.png",
+   "sha": "759f89f61b67",
+   "lang": "ru",
+   "chars": 339,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/6_saved.png",
+   "src": "raw/ru/6_saved.png",
+   "sha": "41dc84e3fa5b",
+   "lang": "ru",
+   "chars": 366,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/7_status.png",
+   "src": "raw/ru/7_status.png",
+   "sha": "4636e293ca92",
+   "lang": "ru",
+   "chars": 528,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ru/8_saved-searches.png",
+   "src": "raw/ru/8_saved-searches.png",
+   "sha": "126851798820",
+   "lang": "ru",
+   "chars": 481,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/1_jobs-list.png",
+   "src": "raw/sv/1_jobs-list.png",
+   "sha": "a33c4eb7b527",
+   "lang": "sv",
+   "chars": 373,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/2_filters.png",
+   "src": "raw/sv/2_filters.png",
+   "sha": "ec26e766089d",
+   "lang": "sv",
+   "chars": 432,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/3_fit-trust.png",
+   "src": "raw/sv/3_fit-trust.png",
+   "sha": "9951dcdaa243",
+   "lang": "sv",
+   "chars": 321,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/4_salary.png",
+   "src": "raw/sv/4_salary.png",
+   "sha": "9e049e9df77a",
+   "lang": "sv",
+   "chars": 464,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/5_alerts.png",
+   "src": "raw/sv/5_alerts.png",
+   "sha": "0c4c47aed9e4",
+   "lang": "sv",
+   "chars": 317,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/6_saved.png",
+   "src": "raw/sv/6_saved.png",
+   "sha": "e166086b5fc7",
+   "lang": "sv",
+   "chars": 350,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/7_status.png",
+   "src": "raw/sv/7_status.png",
+   "sha": "1f0b06c78bac",
+   "lang": "sv",
+   "chars": 532,
+   "evidence": "ocr"
+  },
+  {
+   "file": "sv/8_saved-searches.png",
+   "src": "raw/sv/8_saved-searches.png",
+   "sha": "9e94503d0d22",
+   "lang": "sv",
+   "chars": 482,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/1_jobs-list.png",
+   "src": "raw/tr/1_jobs-list.png",
+   "sha": "dea611f425db",
+   "lang": "tr",
+   "chars": 385,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/2_filters.png",
+   "src": "raw/tr/2_filters.png",
+   "sha": "40b6490e72b9",
+   "lang": "tr",
+   "chars": 435,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/3_fit-trust.png",
+   "src": "raw/tr/3_fit-trust.png",
+   "sha": "521d2b14bca4",
+   "lang": "tr",
+   "chars": 300,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/4_salary.png",
+   "src": "raw/tr/4_salary.png",
+   "sha": "638fba59ad9d",
+   "lang": "tr",
+   "chars": 487,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/5_alerts.png",
+   "src": "raw/tr/5_alerts.png",
+   "sha": "994d351acd58",
+   "lang": "tr",
+   "chars": 285,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/6_saved.png",
+   "src": "raw/tr/6_saved.png",
+   "sha": "0888908f4ea1",
+   "lang": "tr",
+   "chars": 361,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/7_status.png",
+   "src": "raw/tr/7_status.png",
+   "sha": "a0af12ce770b",
+   "lang": "tr",
+   "chars": 534,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/8_saved-searches.png",
+   "src": "raw/tr/8_saved-searches.png",
+   "sha": "75651f92697c",
+   "lang": "tr",
+   "chars": 485,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/1_jobs-list.png",
+   "src": "raw/zh-CN/1_jobs-list.png",
+   "sha": "24e71c8479b0",
+   "lang": "zh-CN",
+   "chars": 164,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/2_filters.png",
+   "src": "raw/zh-CN/2_filters.png",
+   "sha": "c4a5c128c971",
+   "lang": "zh-CN",
+   "chars": 208,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/3_fit-trust.png",
+   "src": "raw/zh-CN/3_fit-trust.png",
+   "sha": "e0a38def5aa5",
+   "lang": "zh-CN",
+   "chars": 283,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/4_salary.png",
+   "src": "raw/zh-CN/4_salary.png",
+   "sha": "65eb94c47d6c",
+   "lang": "zh-CN",
+   "chars": 269,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/5_alerts.png",
+   "src": "raw/zh-CN/5_alerts.png",
+   "sha": "42fc5bf69c35",
+   "lang": "zh-CN",
+   "chars": 137,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/6_saved.png",
+   "src": "raw/zh-CN/6_saved.png",
+   "sha": "39f8bb074c7b",
+   "lang": "zh-CN",
+   "chars": 198,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/7_status.png",
+   "src": "raw/zh-CN/7_status.png",
+   "sha": "752e957c24aa",
+   "lang": "zh-CN",
+   "chars": 310,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/8_saved-searches.png",
+   "src": "raw/zh-CN/8_saved-searches.png",
+   "sha": "c19905b72955",
+   "lang": "zh-CN",
+   "chars": 269,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": []
+}

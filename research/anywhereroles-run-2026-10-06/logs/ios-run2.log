@@ -1,0 +1,30 @@
+== 17:16:57 iphone-run2 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform ios
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   'Senior iOS Engineer'
+memory pressure is elevated: using 2 devices instead of 4
+warning: this Mac is short of memory: 1 device at once would be safer than 4 (this run still uses 4) (6.7 GB of memory available, 4 devices want about 11.5 GB; 11.9 GB of swap in use (above 10 GB the Mac thrashes)). Seen: 6.7 GB memory available, 11.9 GB swap in use, load 234 on 10 cores. A loaded Mac makes flows time out and the retries add load. Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.
+booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)
+simulator shotfleet-1 stopped answering last run; replacing it with a new one
+capturing 18 locales on 2 simulators...
+retrying 3: ja, tr, zh-Hans
+ok   de       6/6 screenshots
+ok   en       6/6 screenshots
+ok   es       6/6 screenshots
+ok   fr       6/6 screenshots
+ok   hi       6/6 screenshots
+ok   id       6/6 screenshots
+ok   it       6/6 screenshots
+ok   ja       6/6 screenshots (retried)
+ok   ko       6/6 screenshots
+ok   nl       6/6 screenshots
+ok   pl       6/6 screenshots
+ok   pt-BR    6/6 screenshots
+ok   ro       6/6 screenshots
+ok   ru       6/6 screenshots
+ok   sv       6/6 screenshots
+ok   tr       6/6 screenshots (retried)
+ok   uk       6/6 screenshots
+ok   zh-Hans  6/6 screenshots (retried)
+captured 18/18 locales in 3420s on 2 simulators
+
+checked 108 screenshots in 18 languages: 0 problem(s)

@@ -1,0 +1,12 @@
+== 16:06:58 run9 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform android --locales es --parallel 1
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+warning es: 'Insights' -> 'Estadísticas' also means 'Statistics'; anchor that step (below:/above:) if it taps the wrong element
+warning es: 'Weekly briefing' -> 'Resumen semanal' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 1 locales on 1 emulators, 1 rounds...
+retrying 1: es
+FAIL es       0/8 screenshots (retried)  io.grpc.StatusRuntimeException: UNAVAILABLE: io exception
+	at io.grpc.stub.ClientCalls.toStatusRuntimeException(ClientCalls.java:275)
+	at io.grpc.stub.ClientC
+captured 0/1 locales in 23s on 1 emulators
+no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs

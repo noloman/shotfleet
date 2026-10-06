@@ -1,0 +1,206 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 83,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "en": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "en",
+   "ok": true,
+   "seconds": 787,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "es": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "es",
+   "ok": true,
+   "seconds": 43,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "fr": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "fr",
+   "ok": true,
+   "seconds": 53,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "hi": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "hi",
+   "ok": true,
+   "seconds": 52,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "id": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "id",
+   "ok": true,
+   "seconds": 42,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "it": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "it",
+   "ok": true,
+   "seconds": 58,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "ja": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "ja",
+   "ok": true,
+   "seconds": 58,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 2
+  },
+  "ko": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "ko",
+   "ok": true,
+   "seconds": 67,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "nl": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "nl",
+   "ok": true,
+   "seconds": 145,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "pl": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "pl",
+   "ok": true,
+   "seconds": 924,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "pt-BR": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "pt-BR",
+   "ok": true,
+   "seconds": 99,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "ro": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "ro",
+   "ok": true,
+   "seconds": 80,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "ru": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "ru",
+   "ok": true,
+   "seconds": 65,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "sv": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "sv",
+   "ok": true,
+   "seconds": 60,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "tr": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "tr",
+   "ok": true,
+   "seconds": 58,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 2
+  },
+  "uk": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "uk",
+   "ok": true,
+   "seconds": 732,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "zh-Hans": {
+   "untranslated_selectors": [
+    "Senior iOS Engineer"
+   ],
+   "lproj": "zh-Hans",
+   "ok": true,
+   "seconds": 56,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 2
+  }
+ },
+ "config": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/scripts/shotfleet/shotfleet.toml",
+ "wall_seconds": 3420,
+ "simulators": 2,
+ "app": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/DerivedData/Build/Products/Debug-iphonesimulator/remoti.app"
+}
