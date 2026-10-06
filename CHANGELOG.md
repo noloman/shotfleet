@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Memory warning names the real device count:** when shotfleet had already cut the run to 2 devices because of memory pressure, the warning still said "this run still uses 4". It now says how many this run really uses.
 - **Site: all nine demo clips on /demo:** doctor, init, a run on iPhone, a run on Android, catching the wrong language, checking screenshots you already have, store rules, export to fastlane, and CI. Real recordings on the fixture apps, with subtitles; sped-up parts are labelled.
 - **Text recognition retries a helper that quit:** on a very busy Mac the macOS text reader sometimes quits without an answer while it is still getting ready. `check` used to stop right there and blame the compile; now it tries again every 10 seconds within the same time limit.
 

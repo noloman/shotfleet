@@ -79,9 +79,13 @@ class Message(unittest.TestCase):
     def test_it_names_the_numbers_it_saw_and_what_to_close(self):
         r = R(avail_gb=4.2, swap_used_gb=17.0, load1=284, cores=10, pressure="2", booted_other=3)
         m = sf.capacity_message(sf.plan_capacity(4, "ios", r), 4, r)
-        for part in ("short of memory", "1 device at once would be safer than 4 (this run still uses 4)", "4.2 GB memory available", "17.0 GB swap", "load 284 on 10 cores",
+        for part in ("short of memory", "1 device at once would be safer than 4 (this run uses 4)", "4.2 GB memory available", "17.0 GB swap", "load 284 on 10 cores",
                      "3 other simulators/emulators booted", "Close Xcode, Android Studio", "./gradlew --stop", "lower `parallel`"):
             self.assertIn(part, m)
+
+    def test_it_names_the_devices_this_run_really_uses(self):  # fit_parallel had already halved 4 to 2 (0.1.4 gate, 2026-10-06)
+        r = R(avail_gb=4.2, swap_used_gb=17.0, load1=284, cores=10, pressure="2")
+        self.assertIn("would be safer than 4 (this run uses 2)", sf.capacity_message(sf.plan_capacity(4, "ios", r), 4, r, 2))
 
     def test_a_busy_mac_with_no_reduction_gets_a_gentler_head(self):
         r = R(avail_gb=30, cores=10, pressure="1", swap_used_gb=0, load1=5)
