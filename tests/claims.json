@@ -499,17 +499,17 @@
  },
  {
   "id": "C030",
-  "claim": "On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) check took about 25 seconds per platform and found one real problem (Chinese captions over an English app); planted errors were reported",
+  "claim": "On 220 real AnywhereRoles iOS screenshots (20 languages) check took 57 to 86 seconds warm, 2026-10-06; earlier, on WOD Tracker's committed fastlane screenshots, it found one real problem (Chinese captions over an English app); planted errors were reported",
   "where": [
    "README.md",
    "README.md"
   ],
   "where_text": [
-   "On WOD Tracker's committed fastlane screenshots (252 iOS, 126 Android) it took about 25 seconds per platform.",
+   "On 220 real iOS screenshots of another of my apps (AnywhereRoles, 20 languages) it took 57 to 86 seconds with macOS text recognition already warmed up. The first check after macOS updates its text model can take much longer.",
    "When we planted English screenshots in the German folder and deleted a Japanese one, both were reported."
   ],
   "status": "evidence",
-  "proof": "PLAN.md:23 (2026-10-01); research/first-run.md (252, ~30 s); research/cold-test-2.md #18 (28 s; planted copy and deleted file both reported). 126 Android screenshots and the exact 'English in German, deleted Japanese' scenario are not recorded. First `check` after a restart takes ~4 min while macOS compiles OCR (ROADMAP.md 'Still open'). The planted-error behaviour is now also a unit test: G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files and G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing. ROADMAP.md 2026-10-03 adds 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes.",
+  "proof": "2026-10-06 re-time (OCR retry session, shotfleet-rc-build/c030-retime/retime.log): live 0.1.4 binary, env -i, no Tesseract, `check fastlane/screenshots --app remoti.app`, 220 screenshots, 20 languages: 86.1 s and 86.0 s at load 38-73 with ANECompilerService idle; 57 s (14:24, load 100-170) and 65 s (15:06, load ~90) earlier the same day; 0 problems each. The old 'about 25 seconds per platform' (2026-10-01, 252 WOD Tracker screenshots, older build) could not be reproduced and was removed. PLAN.md:23 (2026-10-01); research/first-run.md (252, ~30 s); research/cold-test-2.md #18 (28 s; planted copy and deleted file both reported). 126 Android screenshots and the exact 'English in German, deleted Japanese' scenario are not recorded. First `check` after a restart takes ~4 min while macOS compiles OCR (ROADMAP.md 'Still open'). The planted-error behaviour is now also a unit test: G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files and G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing. ROADMAP.md 2026-10-03 adds 72 iOS + 72 Android real screenshots, 0 false problems, the planted set exactly its 2 mistakes.",
   "layer": "fixture",
   "assertion": "Plant errors in the fixture's output (copy de->ja, delete ar/02) and assert both reported; time `check` on the 10 fixture images (< 60 s warm).",
   "fix": ""
