@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **New logo:** three phones fanned like a hand of cards, the front one yellow with a check (one flow, many devices, every screenshot checked). Replaces the flag in the favicon, the Apple touch icon, every page's header, the link preview image and the Gumroad icon, thumbnail and covers. `marketing/logo/build.py` rebuilds them all.
 - **Site: all nine demo clips on /demo:** doctor, init, a run on iPhone, a run on Android, catching the wrong language, checking screenshots you already have, store rules, export to fastlane, and CI. Real recordings on the fixture apps, with subtitles; sped-up parts are labelled.
 - **Text recognition retries a helper that quit:** on a very busy Mac the macOS text reader sometimes quits without an answer while it is still getting ready. `check` used to stop right there and blame the compile; now it tries again every 10 seconds within the same time limit.
 

@@ -9,7 +9,7 @@ Screenshots: only the real ones in site/public/img (see README.md next to this f
 Palette: the tokens of site/public/site.css.
 icon-*.png and icon.svg come from ../icon.svg with rsvg-convert (see README.md).
 """
-import os
+import io, os, re, subprocess
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -18,6 +18,7 @@ REPO = os.path.abspath(os.path.join(HERE, "../../../.."))
 IMG = os.path.join(REPO, "site/public/img")
 FONTS = os.path.join(REPO, "site/public/fonts")
 S = 2  # supersampling
+ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../logo/shotfleet-icon.svg")
 
 INK, BLUE, YELLOW, PAPER = "#0b1220", "#1b3fd1", "#f5c400", "#f1f2f4"
 LINE, MUTED, WHITE = "#cfd5de", "#55627a", "#ffffff"
@@ -113,11 +114,14 @@ class Canvas:
         layer = Image.new("RGB", (sw, sh), color)
         self.im.paste(layer, (int((x0 - pad) * S), int((y0 + dy - pad) * S)), m)
 
-    def mark(self, x, y, w, fill):
-        """The shotfleet glyph (24-unit path M3 4h18l-4.5 8L21 20H3z), bbox 18 x 16, scaled to width w, top-left at x, y."""
-        k = w / 18 * S
-        pts = [(0, 0), (18, 0), (13.5, 8), (18, 16), (0, 16)]
-        self.d.polygon([(x * S + px * k, y * S + py * k) for px, py in pts], fill=fill)
+    def mark(self, x, y, w, fill=None):
+        """The shotfleet mark in colour: the cards of marketing/logo/shotfleet-icon.svg without the tile.
+        A square as tall as the old 18 x 16 flag (w * 16 / 18), top-left at x, y. fill is unused (kept for old callers)."""
+        side = round(w * 16 / 18 * S)
+        svg = re.sub(r'<rect width="512" height="512"[^>]*/>', "", open(ICON).read()).replace('viewBox="0 0 512 512"', 'viewBox="46 46 420 420"')
+        png = subprocess.run(["rsvg-convert", "-w", str(side), "-h", str(side)], input=svg.encode(), capture_output=True, check=True).stdout
+        g = Image.open(io.BytesIO(png)).convert("RGBA")
+        self.im.paste(g, (round(x * S), round(y * S)), g)
 
     def shot(self, name, x, y, w, bezel=4, stamp=None, flat_border=None, crop_h=None):
         """A screenshot in a simple rounded device-like frame. Returns (w, h)."""
