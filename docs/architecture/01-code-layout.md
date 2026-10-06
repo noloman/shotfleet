@@ -28,7 +28,7 @@ There is no written decision record for this. What the repo does show is a set o
 that would each need changing if it were split:
 
 - **Tests import it as a module** (`import shotfleet as sf`) and patch module-level names (`mock.patch.object(sf, "GUMROAD_API", ...)`,
-  `sf.USE_DEVICE_LOCK = False`, `sf.LICENCE_FILE`). Almost all 51 test modules depend on that.
+  `sf.USE_DEVICE_LOCK = False`, `sf.LICENCE_FILE`). Almost all 49 test modules depend on that.
 - **Release scripts edit and read it with `sed` and regexes.** `packaging/go-live.sh:85` and `tools/release-candidate.sh:96` rewrite the
   `GUMROAD_PRODUCT_ID = ...` line; `packaging/build.sh`, `pkg.sh` and `publish.sh` read `VERSION = "..."`. The release-candidate script builds a
   temp **copy** of the file with a test product id so the licence gate is on without touching the repo.
@@ -38,35 +38,35 @@ that would each need changing if it were split:
   folder, and lazy imports would then fail (seen 2026-10-01).
 - The project's style (the `ponytail:` comments) prefers the smallest thing that works with a named ceiling over structure for its own sake.
 
-The cost is real: 5,000 lines in one namespace, long functions (`ios_run_inner` is about 190 lines with nested closures, `cmd_check` about 230), and
+The cost is real: 5,400 lines in one namespace, long functions (`ios_run_inner` is about 190 lines with nested closures, `cmd_check` about 230), and
 module-level mutable state (see "Global state" below). If you split it, keep `import shotfleet` working and keep every name the tests patch.
 
 ## How `shotfleet.py` is organised
 
-Order in the file, with the section banners (`# ---------- name ----------`) and what lives there. Lines are for `c18473f`.
+Order in the file, with the section banners (`# ---------- name ----------`) and what lives there. Lines are for `origin/main` `285e099`.
 
 | Lines | Section | Key contents |
 |---|---|---|
-| 1-47 | Header | usage docstring (lists only 5 of the 9 commands, see the appendix), Python 3.11 guard (`:15`), imports, `VERSION` (`:28`), `Fail` (`:30`), config schema constants `KEYS`, `REQUIRED`, `TABLES`, `HOOK_EVENTS`, `CAPTURE_KEYS` (`:35-46`) |
-| 48-218 | Config validation and loading | `check_tables` (`:48`), `check_capture` (`:74`), `check_expect` (`:95`), `read_doc` (`:112`), `platforms_in`, `check_section` (`:136`), `load_config` (`:166`) |
-| 219-279 | Locale tables | `APP_STORE`, `PLAY` (store listing codes), `PRIMARY`, `CANON`, `canon` (`:236`), `store_code` (`:241`), `SELECTOR_KEYS` (`:266`), `sh` (`:270`), `aapt2` (`:273`) |
-| 281-450 | `strings` | `parse_strings_text` (`:297`, a `.strings` parser so Linux needs no `plutil`), `plist_to_json`, `load_strings` (`:363`), `stringsdict_forms`, `add_cvr` (Compose Multiplatform) |
-| 451-880 | `strings from source files` | `locale_from_path` (`:455`), `icu_forms`, `parse_js_translations` (`:527`, reads `.ts`/`.js` translation objects as data, never runs them), `read_translation_file` (`:615`), `load_strings_apk` (`:763`), `partly_translated`, `FRAMEWORKS`, `framework_hint` (`:831`), `shipped_locales` (`:854`) |
-| 872-1192 | Flow rewriting | `with_fallback` (`:885`), `resolve_base`, `SYSTEM_BUTTONS` (`:908`), `translate_flow` (`:918`), `redirect_screenshot`, `with_app_id`, `inputs_for`, `flow_mapping_lines`, `localize_flow` (`:1127`), `pause_after_screenshot` (`:1186`) |
-| 1193-1306 | `simulators` | timeouts, `Sim` (`:1201`), `healthy_installs` (`:1214`), `mark_hung` / `replace_hung`, `run_setup` (`:1258`), `make_pool` (`:1272`) |
-| 1307-1470 | `host safety` | `descendants`, `ios_screen_texts` (`:1320`), `capture_texts` (`:1335`), `collect_shots`, `run_guarded` (`:1383`), `fit_parallel` (`:1443`), `fit_emulators` |
-| 1471-1604 | `capacity planner` | `Reading`, `Plan`, `plan_capacity` (`:1498`, pure), `read_capacity` (`:1558`, impure), `capacity_warn`, `overload_note`, `flow_parse_note` |
-| 1605-1682 | Failure details | `flow_steps`, `landscape_tap_hint`, `failed_hierarchy`, `failure_details` (`:1663`) |
-| 1683-2050 | `run` | `kill_stale_drivers`, `device_type_id`, `default_device_type`, `cmd_run` (`:1738`), `run_hook` (`:1749`), `run_platform` (`:1766`), `capture_platform` (`:1783`), `device_lock` (`:1827`), `ios_run` (`:1852`), `ios_run_inner` (`:1857`) |
-| 2051-2177 | `bring your own capture` | `xcresult_pngs`, `fastlane_cache` (`:2081`), `capture_build` (`:2103`), `find_xctestrun`, `xctestrun_with_language`, `set_sim_language`, `capture_result` (`:2163`), `fastlane_pngs` |
-| 2178-2687 | `android` | SDK discovery `find_sdk` (`:2197`), `find_image`, `sdkmanager_commands`, `DEMO_MODE` (`:2266`), `Emu` (`:2281`), `start_emu`, `wait_booted`, `ANDROID_DEVICES` (`:2361`), `android_pool` (`:2386`), `android_vars`, `android_flow` (`:2465`), `hierarchy_texts`, `android_run` / `android_run_inner` (`:2556`, `:2560`) |
-| 2688-3538 | `check` | OCR plumbing (`ocr_tool` `:2701`, `ane_state`, `warm_up_ocr` `:3064`, `read_text` `:3142`, Tesseract helpers), text normalisation `norm` (`:2749`), format strings (`SPEC`, `format_regex`), `string_tables` (`:2807`), `judge_screen` (`:2828`), system dialog and banner detection, `find_screenshots` (`:2949`), `cmd_check` (`:3267`), `write_gallery` (`:3495`) |
-| 3539-4130 | `doctor / init / export` and `doctor --fix` | `latest_release`, `find_java`, Maestro pin and interface (`MAESTRO_INTERFACE` `:3579`, `MAESTRO_TESTED` `:3592`, `MAESTRO_PIN` `:3628`), `download`, `install_maestro`, `install_jre`, `fix_plan`, `cmd_doctor` (`:3873`), `unpack_build`, `FLOW_TEMPLATE` |
-| 4131-4442 | `project detection` and init | `Project`, `detect_project` (`:4210`), `find_builds` (`:4265`), `cmd_init` (`:4329`), `cmd_init_capture` (`:4403`) |
-| 4443-4682 | Store rules and export | `APPLE_SIZES` (`:4447`), `png_alpha`, `image_info`, `store_rules` (`:4521`), `blank_screenshot` (`:4581`), `device_runs`, `cmd_export` (`:4629`) |
-| 4683-4770 | Entry | `COMMANDS`, `cmd_skill`, `main` (`:4707`) |
-| 4771-4890 | MCP | `MCP_TOOLS` (`:4771`), `mcp_summary`, `mcp_call` (`:4824`), `cmd_mcp` (`:4861`) |
-| 4891-5143 | `licence`, dispatch | licence constants, `gumroad_verify` (`:4921`), `cmd_activate`, `require_licence` (`:4992`), `apply_free_tier`, `main_cmd` (`:5055`), `check_build`, `check_any` (`:5092`), `main_dispatch` (`:5113`) |
+| 1-72 | Header | usage docstring (lists only 5 of the 9 commands, see the appendix), Python 3.11 guard (`:15`), imports, `VERSION` (`:28`), `Fail` (`:30`), config schema constants `KEYS`, `REQUIRED`, `TABLES`, `HOOK_EVENTS`, `CAPTURE_KEYS` (`:60-71`) |
+| 73-249 | Config validation and loading | `check_tables` (`:73`), `check_capture` (`:99`), `check_expect` (`:120`), `read_doc` (`:137`), `platforms_in`, `check_section` (`:161`), `load_config` (`:197`) |
+| 250-310 | Locale tables | `APP_STORE`, `PLAY` (store listing codes), `PRIMARY`, `CANON`, `canon` (`:267`), `store_code` (`:272`), `SELECTOR_KEYS` (`:297`), `sh` (`:301`), `aapt2` (`:304`) |
+| 312-481 | `strings` | `parse_strings_text` (`:328`, a `.strings` parser so Linux needs no `plutil`), `plist_to_json`, `load_strings` (`:394`), `stringsdict_forms`, `add_cvr` (Compose Multiplatform) |
+| 482-911 | `strings from source files` | `locale_from_path` (`:486`), `icu_forms`, `parse_js_translations` (`:558`, reads `.ts`/`.js` translation objects as data, never runs them), `read_translation_file` (`:646`), `load_strings_apk` (`:794`), `partly_translated`, `FRAMEWORKS`, `framework_hint` (`:862`), `shipped_locales` (`:885`) |
+| 903-1223 | Flow rewriting | `with_fallback` (`:916`), `resolve_base`, `SYSTEM_BUTTONS` (`:939`), `translate_flow` (`:949`), `redirect_screenshot`, `with_app_id`, `inputs_for`, `flow_mapping_lines`, `localize_flow` (`:1158`), `pause_after_screenshot` (`:1217`) |
+| 1224-1338 | `simulators` | timeouts, `Sim` (`:1232`), `healthy_installs` (`:1245`), `mark_hung` / `replace_hung`, `run_setup` (`:1289`), `make_pool` (`:1304`) |
+| 1339-1502 | `host safety` | `descendants`, `ios_screen_texts` (`:1352`), `capture_texts` (`:1367`), `collect_shots`, `run_guarded` (`:1415`), `fit_parallel` (`:1475`), `fit_emulators` |
+| 1503-1636 | `capacity planner` | `Reading`, `Plan`, `plan_capacity` (`:1530`, pure), `read_capacity` (`:1590`, impure), `capacity_warn`, `overload_note`, `flow_parse_note` |
+| 1637-1714 | Failure details | `flow_steps`, `landscape_tap_hint`, `failed_hierarchy`, `failure_details` (`:1695`) |
+| 1715-2111 | `run` | `kill_stale_drivers`, `device_type_id`, `default_device_type`, `cmd_run` (`:1770`), `run_hook` (`:1797`), `run_platform` (`:1814`), `capture_platform` (`:1831`), `device_lock` (`:1887`), `ios_run` (`:1912`), `ios_run_inner` (`:1917`) |
+| 2112-2239 | `bring your own capture` | `xcresult_pngs`, `fastlane_cache` (`:2142`), `capture_build` (`:2164`), `find_xctestrun`, `xctestrun_with_language`, `set_sim_language`, `capture_result` (`:2225`), `fastlane_pngs` |
+| 2240-2749 | `android` | SDK discovery `find_sdk` (`:2259`), `find_image`, `sdkmanager_commands`, `DEMO_MODE` (`:2328`), `Emu` (`:2343`), `start_emu`, `wait_booted`, `ANDROID_DEVICES` (`:2423`), `android_pool` (`:2448`), `android_vars`, `android_flow` (`:2527`), `hierarchy_texts`, `android_run` / `android_run_inner` (`:2618`, `:2622`) |
+| 2750-3600 | `check` | OCR plumbing (`ocr_tool` `:2763`, `ane_state`, `warm_up_ocr` `:3126`, `read_text` `:3204`, Tesseract helpers), text normalisation `norm` (`:2811`), format strings (`SPEC`, `format_regex`), `string_tables` (`:2869`), `judge_screen` (`:2890`), system dialog and banner detection, `find_screenshots` (`:3011`), `cmd_check` (`:3329`), `write_gallery` (`:3557`) |
+| 3601-4192 | `doctor / init / export` and `doctor --fix` | `latest_release`, `find_java`, Maestro pin and interface (`MAESTRO_INTERFACE` `:3641`, `MAESTRO_TESTED` `:3654`, `MAESTRO_PIN` `:3690`), `download`, `install_maestro`, `install_jre`, `fix_plan`, `cmd_doctor` (`:3935`), `unpack_build`, `FLOW_TEMPLATE` |
+| 4193-4504 | `project detection` and init | `Project`, `detect_project` (`:4272`), `find_builds` (`:4327`), `cmd_init` (`:4391`), `cmd_init_capture` (`:4465`) |
+| 4505-4744 | Store rules and export | `APPLE_SIZES` (`:4509`), `png_alpha`, `image_info`, `store_rules` (`:4583`), `blank_screenshot` (`:4643`), `device_runs`, `cmd_export` (`:4691`) |
+| 4745-4832 | Entry | `COMMANDS`, `cmd_skill`, `main` (`:4769`) |
+| 4833-4978 | MCP | `MCP_TOOLS` (`:4833`), `mcp_summary`, `mcp_call` (`:4898`), `cmd_mcp` (`:4949`) |
+| 4979-5387 | `licence`, dispatch | licence constants, `gumroad_api` (`:5006`), `baked_release_date` (`:5012`), `check_update_window` (`:5042`), `write_json_atomic` (`:5061`), `gumroad_fetch` (`:5091`), `gumroad_verify` (`:5109`), `cmd_activate` (`:5145`), `key_licence` (`:5199`), `mac_licence` (`:5220`), `require_licence` (`:5255`), `apply_free_tier` (`:5286`), `main_cmd` (`:5299`), `check_build`, `check_any` (`:5336`), `main_dispatch` (`:5357`) |
 
 The file is organised by feature, not by layer. There is no class hierarchy: the only classes are tiny (`Fail`, `Sim`, `Emu`, `Table`, `Reading`,
 `Plan`, `Project`, `OcrBusy`, `NoLicence`).
@@ -79,18 +79,18 @@ The file is organised by feature, not by layer. There is no class hierarchy: the
   asks the Mac. `translate_flow`, `judge_screen`, `store_rules` and the parsers are pure functions of their inputs. New logic should follow it, because
   tests run with no devices.
 - **User-facing errors are `Fail`.** `raise Fail("one sentence that says how to fix it")` ends in `shotfleet: <message>` on stderr and exit 2
-  (`main_dispatch`, `:5136`). `RuntimeError`, `ValueError`, `OSError` and `subprocess.TimeoutExpired` get the same treatment, so low-level helpers
+  (`main_dispatch`, `:5380`). `RuntimeError`, `ValueError`, `OSError` and `subprocess.TimeoutExpired` get the same treatment, so low-level helpers
   raise `RuntimeError` with a worded message. Every message names the fix: a command to run, a config key to set. The tests check wording.
 - **Never a traceback for a known failure.** `tests/test_shotfleet.py` has tests that assert "Traceback" is absent. A bare `Exception` in the MCP
-  server is caught per call (`mcp_call`, `:4847`) so one bad call cannot kill the server.
+  server is caught per call (`mcp_call`, `:4935`) so one bad call cannot kill the server.
 - **Subprocesses are argv lists, never `shell=True` on untrusted input.** The one `/bin/sh -c` is the user's own `[hooks]` and `[capture] build`
   strings (see [11](11-security-and-privacy.md)).
-- **Output goes to a file, not a pipe, when a child can outlive its parent.** `run_guarded` (`:1383`) sends Maestro's output to a temp file because a
+- **Output goes to a file, not a pipe, when a child can outlive its parent.** `run_guarded` (`:1415`) sends Maestro's output to a temp file because a
   daemonised helper that inherited the pipe would block `communicate()` after the kill.
-- **Timeouts everywhere a device or the OS can hang.** Every `simctl` call has a timeout (`Sim.run`, `:1204`); every `adb` call has one (`Emu.adb`,
-  `:2283`); Maestro runs under a stall watchdog (`run_guarded`); text recognition under a budget. See [02](02-capture.md).
-- **Locale spellings are normalised through `canon()`** (`:236`): `zh-CN` is `zh-Hans`, `iw` is `he`, `nb` stays `nb`. Always compare after `canon`.
-- **Text is compared after `norm()`** (`:2749`): NFKD without accents, casefolded, bidi marks removed, native digits to ASCII, single spaces.
+- **Timeouts everywhere a device or the OS can hang.** Every `simctl` call has a timeout (`Sim.run`, `:1235`); every `adb` call has one (`Emu.adb`,
+  `:2345`); Maestro runs under a stall watchdog (`run_guarded`); text recognition under a budget. See [02](02-capture.md).
+- **Locale spellings are normalised through `canon()`** (`:267`): `zh-CN` is `zh-Hans`, `iw` is `he`, `nb` stays `nb`. Always compare after `canon`.
+- **Text is compared after `norm()`** (`:2811`): NFKD without accents, casefolded, bidi marks removed, native digits to ASCII, single spaces.
 - **Wording rules.** No em dashes in any public text or in these docs (tests enforce it for the site, the skills and the docs page); no emoji.
   Plain English, first person where the author speaks.
 
@@ -102,11 +102,11 @@ Defined by behaviour, not by constants:
 |---|---|---|
 | 0 | Everything worked and nothing is wrong | return value of the `cmd_*` function |
 | 1 | The work ran and found problems: check problems, a failed language in `run`, a failing `after_*` hook, `--strict` with unverified screens, `doctor --fix` step failed, `export` skipped a bad language | `cmd_check` returns `1 if problems or (strict and not_verified) else 0`; `ios_run_inner` returns `max(cmd_check(...), 1 if failed else 0)`; `cmd_export` returns `0 if not bad else 1` |
-| 2 | Setup error: bad config, missing tool, no licence for `export`, a `before_*` hook failed, device lock held | any `Fail`/`RuntimeError`/`ValueError`/`OSError`/`TimeoutExpired` reaching `main_dispatch` (`:5136`); `doctor` returns 2 when neither platform is ready |
-| 130 | Interrupted (Ctrl-C) | `KeyboardInterrupt` handler (`:5138`); SIGTERM and SIGHUP are turned into `KeyboardInterrupt` by `main_cmd` (`:5055`) so CI cancellation cleans up |
-| 124 | Only inside the hook runner: a hook timed out. It becomes exit 2 (`before_*`) or 1 (`after_*`) | `run_hook` (`:1761`) |
+| 2 | Setup error: bad config, missing tool, no licence for `export`, a `before_*` hook failed, device lock held | any `Fail`/`RuntimeError`/`ValueError`/`OSError`/`TimeoutExpired` reaching `main_dispatch` (`:5380`); `doctor` returns 2 when neither platform is ready |
+| 130 | Interrupted (Ctrl-C) | `KeyboardInterrupt` handler (`:5382`); SIGTERM and SIGHUP are turned into `KeyboardInterrupt` by `main_cmd` (`:5299`) so CI cancellation cleans up |
+| 124 | Only inside the hook runner: a hook timed out. It becomes exit 2 (`before_*`) or 1 (`after_*`) | `run_hook` (`:1809`) |
 
-`--json` wraps this: `main()` (`:4764`) redirects stdout to stderr while the command runs, then prints one JSON object
+`--json` wraps this: `main()` (`:4826`) redirects stdout to stderr while the command runs, then prints one JSON object
 `{"exit": code, ...report}` on stdout. Progress text therefore never pollutes the JSON.
 
 ### Logging
@@ -118,7 +118,7 @@ There is no logging framework. Everything is `print`:
   the `HINTED` set so a run over many devices says each hint once.
 - Maestro's and xcodebuild's own output is written to files in the output folder (`maestro1.log`, `maestro_r1.log`, `build.log`, per-language
   `.work/capture/attemptN/<lp>.log`). `run` prints the path when something failed.
-- Emulator output goes to `$TMPDIR/shotfleet-emulator-logs/emulator-<port>.log` (`EMU_LOG_DIR`, `:2327`) and its tail is printed when an emulator
+- Emulator output goes to `$TMPDIR/shotfleet-emulator-logs/emulator-<port>.log` (`EMU_LOG_DIR`, `:2389`) and its tail is printed when an emulator
   dies before booting.
 - Over MCP all of this is captured into a `StringIO` and returned (`mcp_call`).
 
@@ -128,13 +128,14 @@ Module-level mutable state exists and tests reset it. Know it before adding more
 
 | Name | Purpose |
 |---|---|
-| `OUR_SIMS` (`:1685`) | UDIDs of simulators shotfleet booted, so cleanup and `kill_stale_drivers` never touch anyone else's |
-| `NO_HOOKS`, `NO_BUILD` (`:1746`) | set from `--no-hooks` / `--no-build` or by MCP |
-| `USE_DEVICE_LOCK` (`:1824`) | tests that run a fake `run` set it False so two test suites never refuse each other |
-| `LOCALE_CAP`, `LOCALE_CAP_WHY` (`:4900`) | the free-tier cap, set by `apply_free_tier` |
-| `REPORTS`, `LAST_REPORT` (`:3253`) | every `check.json` this call wrote, for `--json` and MCP summaries |
-| `OCR_DEADLINE` (`:3019`) | the running check's text-recognition budget |
-| `HINTED` (`:829`), `EXPORT_RESULT` (`:4627`) | dedupe hints; what `export --json` prints |
+| `OUR_SIMS` (`:1717`) | UDIDs of simulators shotfleet booted, so cleanup and `kill_stale_drivers` never touch anyone else's |
+| `NO_HOOKS`, `NO_BUILD`, `CONFIG_COMMANDS` (`:1779-1781`) | set from `--no-hooks` / `--no-build` or by MCP; `CONFIG_COMMANDS` is False during an MCP `run` without `hooks: true` (see [06](06-mcp-and-skills.md)) |
+| `USE_DEVICE_LOCK` (`:1884`) | tests that run a fake `run` set it False so two test suites never refuse each other |
+| `LOCALE_CAP` (`:4989`) | the free-tier cap, set by `apply_free_tier`, which resets it to None first (the MCP server calls it on every `run`) |
+| `RELEASE_DATE` (`:5023`) | the build day from the frozen `_release` module, or None from source; read once at import |
+| `REPORTS`, `LAST_REPORT` (`:3315`) | every `check.json` this call wrote, for `--json` and MCP summaries |
+| `OCR_DEADLINE` (`:3081`) | the running check's text-recognition budget |
+| `HINTED` (`:860`), `EXPORT_RESULT` (`:4689`) | dedupe hints; what `export --json` prints |
 | `functools.cache` on `vision_languages`, `tesseract_languages`, `locale_tags`, `java_env`; `lru_cache` on `norm` | safe to clear in tests (`java_env.cache_clear()` is called after installing a JRE) |
 
 MCP runs several commands in one long-lived process, so `mcp_call` resets `LAST_REPORT` and `REPORTS` at the start of each call and restores
@@ -142,24 +143,24 @@ MCP runs several commands in one long-lived process, so `mcp_call` resets `LAST_
 
 ## The config file: `shotfleet.toml`
 
-Parsed with `tomllib` (`read_doc`, `:112`). The schema is enforced in code, so the code is the reference; the README "Config" section is the
+Parsed with `tomllib` (`read_doc`, `:137`). The schema is enforced in code, so the code is the reference; the README "Config" section is the
 buyer-facing copy.
 
-Top-level tables (`TABLES`, `:39`): `ios`, `android`, `hooks`, `overrides`, `inputs`, `expect`, `capture`. An unknown table is refused with a
+Top-level tables (`TABLES`, `:64`): `ios`, `android`, `hooks`, `overrides`, `inputs`, `expect`, `capture`. An unknown table is refused with a
 "did you mean" suggestion (`difflib.get_close_matches`), because a typo like `[hook]` would otherwise be ignored for a multi-minute run.
 
-`[ios]` and `[android]` keys (`KEYS`, `:35-37`), type-checked by `check_section` (`:136`):
+`[ios]` and `[android]` keys (`KEYS`, `:60-62`), type-checked by `check_section` (`:161`):
 
 | Key | Type | Platform | Meaning |
 |---|---|---|---|
 | `flow` | str | both | Maestro flow, default `flow.yaml`. Forbidden together with `[capture]`. |
-| `out` | str | both | Output folder; default `out`, or `out-ios` / `out-android` when the file has both platforms (`:185`) |
+| `out` | str | both | Output folder; default `out`, or `out-ios` / `out-android` when the file has both platforms (`:216`) |
 | `parallel` | int >= 1 | both | Devices at once, default 4 |
 | `locales` | list of str | both | Restrict languages; an empty list is refused (it would silently capture everything) |
 | `base_locale` | str | both | Language the flow is written in, default `en` |
 | `strings` | str or list | both | Glob(s) of translation files, or one folder of `.lproj`, instead of reading the build |
 | `timeout_s`, `stall_s` | int >= 1 | both | Per-batch timeout (default 600) and no-new-screenshot watchdog (default 900, `STALL_S`) |
-| `capacity` | `"warn"` or `"off"` | both | The memory warning. `"adjust"` is refused as not available yet (`:152`) |
+| `capacity` | `"warn"` or `"off"` | both | The memory warning. `"adjust"` is refused as not available yet (`:177`) |
 | `app`, `bundle_id`, `device_type`, `device_types`, `runtime`, `simctl` | str / list | iOS | Simulator `.app`, override of the id read from `Info.plist`, device type(s), runtime id, per-simulator `xcrun simctl` commands |
 | `apk`, `package`, `avd`, `avd_tablet`, `avd_tablet-7`, `system_image`, `devices`, `shell` | str / list | Android | APK, package override, emulator names, system image, `["phone", "tablet", "tablet-7"]`, per-emulator `adb shell` commands |
 
@@ -192,7 +193,7 @@ screenshots = "auto"                 # attachments | fastlane | auto
 timeout = 900
 ```
 
-Hook behaviour (`run_hook`, `:1749`): each command is `["/bin/sh", "-c", cmd]` with `cwd` = the config's folder, stdout redirected to stderr so
+Hook behaviour (`run_hook`, `:1797`): each command is `["/bin/sh", "-c", cmd]` with `cwd` = the config's folder, stdout redirected to stderr so
 `--json` keeps stdout clean, a per-command timeout, and these variables: `SHOTFLEET_EVENT`, `_VERSION`, `_CONFIG` on every event; `before_run` and
 `after_run` also get `_PLATFORM`, `_OUT`, `_BUNDLE_ID`, `_LOCALES`; `after_run` adds `_EXIT`, `_PROBLEMS`, `_REPORT`; export hooks get `_FASTLANE`,
 `_REPORT`, `_PLATFORM`, `_OUT` (and `_EXIT` after). A failing `before_*` hook raises `Fail` (exit 2); a failing `after_*` hook prints a line and
@@ -221,11 +222,11 @@ out/
 ```
 
 Multi-device runs (`device_types = [...]` on iOS, `devices = [...]` on Android) write `out/<device-slug>/` each (for example
-`out/iphone-17-pro-max/` and `out/ipad-pro-13-inch-m5-12gb/`), and `clear_single_run` (`:1733`) removes an older single-device `run.json` first
-because `device_runs()` (`:4616`) decides "single or multi" by whether `out/run.json` exists. `check` and `export` accept the parent folder and loop
+`out/iphone-17-pro-max/` and `out/ipad-pro-13-inch-m5-12gb/`), and `clear_single_run` (`:1765`) removes an older single-device `run.json` first
+because `device_runs()` (`:4678`) decides "single or multi" by whether `out/run.json` exists. `check` and `export` accept the parent folder and loop
 over the sub-folders.
 
-`run.json` (written at the end of `ios_run_inner`, `:2043`, and `android_run_inner`, `:2681`):
+`run.json` (written at the end of `ios_run_inner`, `:2104`, and `android_run_inner`, `:2743`):
 
 ```json
 {
@@ -237,9 +238,9 @@ over the sub-folders.
 ```
 
 Per-language results also carry `retried` (Android), `device` (the emulator that ran it) and `hierarchy_texts` (how many screenshots got app text).
-`check` re-derives the right strings from `run.json` (`cmd_check`, `:3301`): `strings` globs if present, else the `app` or `apk` path.
+`check` re-derives the right strings from `run.json` (`cmd_check`, `:3363`): `strings` globs if present, else the `app` or `apk` path.
 
-`check.json` (`cmd_check`, `:3473`):
+`check.json` (`cmd_check`, `:3535`):
 
 ```json
 {"screenshots": [{"file": "de/01_home.png", "src": "raw/de/01_home.png", "sha": "<12 hex>", "lang": "de", "chars": 812, "evidence": "hierarchy|ocr"}],

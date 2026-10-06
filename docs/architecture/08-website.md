@@ -67,7 +67,7 @@ placeholder `G-XXXXXXXXXX` the file does nothing at all. `analytics.js` is separ
 (`research/claims-audit.md`) found 12 false and 38 only partly tested claims across 104. The fix was to make every promise a row in `tests/claims.json` and make the test suite fail when
 the words and the proof drift apart.
 
-**Schema** (`tests/test_claims.py`, 247 rows on main at `c18473f`, ids `C001` to `C2xx`): `id` (`C\d{3}`), `claim` (what is promised, in plain words), `where` (files), `where_text`
+**Schema** (`tests/test_claims.py`, 250 rows on main at `285e099`, ids `C001` to `C257`): `id` (`C\d{3}`), `claim` (what is promised, in plain words), `where` (files), `where_text`
 (the **exact quoted words** as they appear in those files), `status`, `proof` (what shows it true), `layer` (`unit`, `site`, `fixture`, `device`, `legal`), `assertion` (what a test or
 run must show), `fix`. Fixed and removed rows add `fixed_by` (`code`, `wording`, `removed`), `fixed`, and `test` for a code fix.
 

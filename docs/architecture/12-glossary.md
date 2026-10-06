@@ -4,7 +4,7 @@ Back to the [index](../ARCHITECTURE.md).
 
 | Term | Meaning |
 |---|---|
-| **Activation** | one count on a Gumroad key's `uses` counter, made by `shotfleet activate` on a Mac that did not hold the key. A lifetime counter, not a Mac count. |
+| **Activation** | one count on a Gumroad key's `uses` counter, made by `shotfleet activate` on a Mac that did not hold the key. A lifetime counter, not a Mac count; a key allows 5 (`MAX_MACS`: 3 Macs promised, 2 spare for reinstalls). |
 | **ANECompilerService** | the root macOS service that compiles Vision's text model on first use; the cause of "text recognition isn't answering". |
 | **App text / app's own text** | the labels read from the running app's accessibility tree or Maestro's saved hierarchy, stored as `<shot>.texts.json`. Exact, any script. |
 | **Base locale** | the language the flow is written in (default `en`); `base_locale` in the config. |
@@ -48,7 +48,7 @@ Back to the [index](../ARCHITECTURE.md).
 | **Table** | a locale's normalised strings plus its format regex, used by `judge_screen`. |
 | **Texts.json** | `<shot>.texts.json`, the app text for one screenshot. |
 | **Twins** | language pairs detection cannot separate (`ms`/`id`, `hr`/`sl`). |
-| **Update window** | the planned "a year of updates" enforcement (0.1.6 branch). |
+| **Update window** | the "a year of updates" rule: a build covers a purchase when its baked-in release date (`RELEASE_DATE`, from the frozen `_release` module) is on or before the same calendar date a year after Gumroad's sale date (`check_update_window`, `shotfleet.py:5042`). See [05](05-licensing.md#the-update-window). |
 | **Versioned downloads** | permanent `/download/<version>/` files, immutable. |
 | **Vision** | Apple's text recognition framework, used through `ocr.swift`. |
 | **XCUITest / xctestrun** | Apple's UI test framework / the file describing a prebuilt test run. |

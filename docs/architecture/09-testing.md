@@ -10,7 +10,7 @@ check, and commits say `[skip ci]`. `tools/watch-upstream.sh` runs the two sched
 
 | Layer | What | Needs | Where |
 |---|---|---|---|
-| Unit | the program's functions and CLI, with fakes for simulators, emulators, Maestro, Xcode, Gradle, the network | Python 3.11+; nothing else (Mac-only tests skip elsewhere) | `tests/test_*.py` (51 modules, 1,127 `def test_` at `c18473f`) |
+| Unit | the program's functions and CLI, with fakes for simulators, emulators, Maestro, Xcode, Gradle, the network | Python 3.11+; nothing else (Mac-only tests skip elsewhere) | `tests/test_*.py` (49 modules, 1,173 `def test_` at `285e099`; more run than are defined, because a test class that subclasses another, like `UpdateWindow(GumroadLicence)`, runs the parent's tests too) |
 | Site and claims | pages, docs, skills, the claims register, release scripts against fakes | Python, Node 22 for the worker tests, optionally Playwright with Chromium | `test_site*.py`, `test_docs.py`, `test_claims*.py`, `test_agent_skills.py`, `test_release_scripts.py`, `site/worker.test.mjs`, `tests/browser_site.cjs` |
 | Fixture end-to-end | the real program on real simulators and emulators against `tools/fixture-app` and `tools/fixture-app-android` | a quiet Mac, Xcode, the Android SDK, `SHOTFLEET_E2E=1`, the device lock | `tools/fixture-e2e.sh`, `tools/fixture-byoc-e2e.sh` |
 | Release proofs | the frozen, signed build: quarantined run, `env -i` start, TLS, licence against a fake Gumroad, `install.sh` | a build and a Mac | `tools/release-candidate.sh`, `tools/verify-release.sh`, `tools/selftest.sh` |
@@ -24,8 +24,8 @@ sh tools/check-claims.sh > /Users/manu/Developer/shotfleet-rc-build/some-check.o
 
 What it does (`tools/check-claims.sh`): runs each `tests/test_*.py` module as **its own process** (`python3 -m unittest discover -s tests -p <module>.py`), largest file first, `xargs -P` at half the
 cores (`CHECK_JOBS=n` to choose), because most test time is waiting on subprocesses, not CPU; then `node site/worker.test.mjs`; prints **one line** (`check-claims: ok (python: Ran
-1121 tests in 101s OK (skipped=21) ; worker: 59 checks ok)`) and the full output only on failure. Exit 0 or 1. Measured on 2026-10-06 at `c18473f` on a 10-core Mac under a load average of about 370 from other
-sessions: 101 s. (`TESTING.md` says about 15 seconds; that was an earlier, smaller suite on a quiet machine.)
+1184 tests in 91s OK (skipped=21) ; worker: 59 checks ok)`) and the full output only on failure. Exit 0 or 1. Measured on 2026-10-06 at `285e099` on a 10-core Mac under a load average of about 500 from other
+sessions: 91 s (it was 101 s for 1,121 tests at `c18473f` under a load of about 370). (`TESTING.md` says about 15 seconds; that was an earlier, smaller suite on a quiet machine.)
 
 Rules for the people running it:
 
@@ -41,15 +41,15 @@ Rules for the people running it:
 
 ## 9.3 What the unit tests look like
 
-- `tests/test_shotfleet.py` (3,183 lines) is the main suite, in many small classes (`TranslateFlow`, `LocalizeFlow`, `AndroidFlow`, `Locales`, `JudgeScreen`, `Export`, `StoreRules`,
-  `Mcp`, `Licence`, `GumroadLicence`, `CheckAnyFolder`, `MultiDevice`, ...). The `G1...` classes are the "gate 1" detector and exit-code proofs.
+- `tests/test_shotfleet.py` (3,514 lines) is the main suite, in many small classes (`TranslateFlow`, `LocalizeFlow`, `AndroidFlow`, `Locales`, `JudgeScreen`, `Export`, `StoreRules`,
+  `Mcp`, `Licence`, `GumroadLicence`, `LicenceHardening` (atomic files, refusals remembered, odd replies, the 20 s limit, the CI offline rule), `UpdateWindow` (the year of updates, `RELEASE_DATE` patched), `CorruptLicenceFile`, `CheckAnyFolder`, `MultiDevice`, ...). The `G1...` classes are the "gate 1" detector and exit-code proofs.
 - Tests import the program as a module (`import shotfleet as sf`) and patch module names. Typical patches: `sf.LICENCE_FILE` to a temp file, `sf.GUMROAD_API` to a local server,
   `sf.USE_DEVICE_LOCK = False`, `sys.frozen` to True to turn the licence gate on, `sf.sh` or `sf.run_guarded` to a fake that returns canned `CompletedProcess` objects, `sf.make_pool` and
   `sf.android_pool` to fakes that return fake devices, `sf.read_text` to a fake OCR (`fake_vision()` in `tests/test_cli_claims.py`).
 - **Pure functions get number-in, verdict-out tests**: the capacity planner (`test_capacity_planner.py`), `judge_screen`, `store_rules`, `translate_flow`.
 - **Fixtures** live in `tests/fixtures/`: `strings-fixture.apk` (a 5 KB APK with strings in several locales, so the `aapt2` reader is tested for real where `aapt2` exists), Maestro failure log excerpts
   (`maestro-failure/ipad-landscape.log`, a real iPad log with the app id replaced), Android hierarchy samples.
-- Specialised modules: `test_byoc_ios.py` (547 lines: `[capture]` with a fake `xcodebuild`, result-bundle manifests, the fastlane cache dance), `test_ocr_wait.py` (warm-up, lock, budget, with
+- Specialised modules: `test_security.py` (16 tests, four classes: `McpRunRunsNoConfigCommandUnlessAsked`, `McpCheckRunsNoProgram`, `LocalesAreNeverPaths`, `LockFilesInTmp`; each fails on `c18473f`, so a regression of the 0.1.6 security fixes shows up here), `test_byoc_ios.py` (547 lines: `[capture]` with a fake `xcodebuild`, result-bundle manifests, the fastlane cache dance), `test_ocr_wait.py` (warm-up, lock, budget, with
   scripts standing in for the Swift helper), `test_doctor_fix.py` (downloads against a local HTTP server, checksum refusal, zip-slip refusal), `test_release_scripts.py`
   (`publish.sh`, `verify-release.sh`, `preflight.sh`, `notary-check.sh` against a fake `wrangler`, a fake `notarytool` and a local web server), `test_golive.py` (`go-live.sh --dry-run`,
   `smoke.sh`), `test_portable.py` (readers that must work with Apple tools hidden).
