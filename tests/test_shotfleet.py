@@ -2398,10 +2398,10 @@ class RetryOnSlowSimulator(unittest.TestCase):
 
     def test_overload_note_only_when_the_mac_was_loaded(self):
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "2", "")):
-            self.assertIn("used 1 simulators instead of 2", sf.overload_note(2, 1))
-            self.assertIn("short of memory", sf.overload_note(1, 1))
+            self.assertIn("used 1 simulators instead of 2", sf.overload_note(2, 1, ["Unknown error"]))
+            self.assertIn("short of memory", sf.overload_note(1, 1, ["Unable to clear state for app x"]))
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "1", "")):
-            self.assertEqual(sf.overload_note(2, 2), "")
+            self.assertEqual(sf.overload_note(2, 2, ["Unknown error"]), "")
 
     def test_a_flow_that_does_not_parse_is_named_instead_of_blamed_on_memory(self):
         with tempfile.TemporaryDirectory() as d:

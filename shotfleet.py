@@ -1542,8 +1542,12 @@ def capacity_warn(cfg, want, platform, using=None):
     r = read_capacity(platform, cfg.get("sim_prefix", "shotfleet"))
     if m := capacity_message(plan_capacity(want, platform, r), want, r, using): print("warning: " + m, flush=True)
 
-def overload_note(want, n):
-    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
+SLOW_SIM_ERRORS = ("Unknown error", "Unable to clear state")
+
+def overload_note(want, n, errors=()):
+    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out.
+    Only when a failed flow's error is one of SLOW_SIM_ERRORS: a plain assertion failure is the flow's or the app's, not the Mac's."""
+    if not any(e in (err or "") for err in errors for e in SLOW_SIM_ERRORS): return ""
     level = memory_pressure()
     if n >= want and level not in ("2", "4"): return ""
     return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
@@ -1561,6 +1565,84 @@ def flow_parse_note(out):
             return (f"note: Maestro could not read a flow ({m.group(1) if m else 'see the log'}: 'Parsing Failed', {log}). "
                     "Fix that YAML; this is not a slow-simulator problem.\n")
     return ""
+
+LANDSCAPE_HINT = ("Maestro taps at portrait coordinates in iOS landscape (a Maestro issue): capture iPad in portrait, "
+                  "or open the screen with a launch argument or deep link.")
+STEP_LINE = re.compile(r"TestSuiteInteractor\.runFlow\S*: (?:\[shard (\d+)\] )?\s*(.*?) (RUNNING|COMPLETED|FAILED)\s*$")
+FAIL_TEXTS = 12  # visible texts named for a failed flow's last screen
+
+def flow_steps(debug, flow):
+    """(lines, steps) of the maestro.log under `debug` that ran `flow`: steps = [(line index, description, status)] of that flow only.
+    Sharded runs share one log and tag each step line with [shard N]; Maestro's own tap lines carry no tag. ([], []) if no log ran it."""
+    run = re.compile(r"runFlow: (?:\[shard (\d+)\] )?\s*Running flow " + re.escape(flow) + r"\s*$")
+    for log in Path(debug).glob("**/maestro.log"):
+        try: lines = log.read_text(errors="replace").splitlines()
+        except OSError: continue
+        shard = next((m.groups() for l in lines if (m := run.search(l))), None)
+        if shard is None: continue
+        return lines, [(i, m[2], m[3]) for i, l in enumerate(lines) if (m := STEP_LINE.search(l)) and m[1] == shard[0]]
+    return [], []
+
+def landscape_tap_hint(lines, steps, flow_text):
+    """LANDSCAPE_HINT when the log shows Maestro's iOS landscape bug: the flow turned the screen to landscape, Maestro still reports a
+    portrait-sized frame (widthPoints < heightPoints), and the last tap before the failure went to the middle of the element's bounds in
+    that portrait frame (seen: bounds [54,656][141,698], tap (97,677), while the element sat 344 = 1376 - 1032 points off on screen).
+    "" unless all of it is in the log; a tap window that another shard's tap lines make ambiguous gives "" too."""
+    if not re.search(r"setOrientation:\s*(?:\{?\s*orientation:\s*)?['\"]?LANDSCAPE", flow_text): return ""
+    fail = next((i for i, _, st in reversed(steps) if st == "FAILED"), None)
+    turned = next((i for i, d, st in steps if st == "COMPLETED" and d.startswith("Set orientation LANDSCAPE")), None)
+    if fail is None or turned is None or turned > fail: return ""
+    taps = [k for k, (i, d, st) in enumerate(steps) if st == "RUNNING" and d.startswith("Tap on") and turned < i < fail]
+    if not taps: return ""
+    start, end = steps[taps[-1]][0], steps[taps[-1] + 1][0]  # the tap's RUNNING line to this flow's next step line
+    window = lines[start:end]
+    el = [m for l in window if (m := re.search(r"Tapping on element:.*?bounds=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]", l))]
+    at = [m for l in window if (m := re.search(r"Tapping at \((-?\d+), (-?\d+)\)", l))]
+    size = [m for l in lines[turned:fail] if (m := re.search(r"widthPoints=(\d+), heightPoints=(\d+)", l))]
+    if len(el) != 1 or len(at) != 1 or not size: return ""
+    (x1, y1, x2, y2), (x, y), (w, h) = (map(int, m.groups()) for m in (el[0], at[0], size[-1]))
+    return LANDSCAPE_HINT if w < h and x1 <= x <= x2 and y1 <= y <= y2 and 0 <= x < w and 0 <= y < h else ""
+
+def failed_hierarchy(debug, flow):
+    """The screen hierarchy Maestro saved with the failed step of `flow` (commands json: metadata.error.hierarchyRoot), or None."""
+    for cj in sorted([*Path(debug).glob(f"**/commands-*({flow}).json"), *Path(debug).glob(f"**/{flow}/commands.json")],
+                     key=lambda p: p.stat().st_mtime, reverse=True):
+        try: cmds = json.loads(cj.read_text())
+        except (OSError, ValueError): continue
+        for e in cmds if isinstance(cmds, list) else []:
+            err = (e.get("metadata") or {}).get("error") if isinstance(e, dict) else None
+            if isinstance(err, dict) and isinstance(err.get("hierarchyRoot"), dict): return err["hierarchyRoot"]
+    return None
+
+def screenshot_texts(png):
+    """Text lines macOS text recognition reads on one failure screenshot, for a flow with no saved hierarchy. Cheap or nothing: [] off a Mac,
+    while macOS is compiling its text model (ANECompilerService busy), or when it doesn't answer within 20 s (twice) or the OCR budget."""
+    # ponytail: Mac only; on Linux (Docker, Android) the failure screen's hierarchy is what names its texts
+    try:
+        if not vision_available() or ane_state()[0]: return []
+        with ocr_budget(): got = read_text(ocr_tool(), png, timeout=20, patience=0)
+    except (RuntimeError, OSError, ValueError): return []  # OcrBusy is a RuntimeError
+    return [l.get("text", "") for l in got.get("lines") or []] or str(got.get("text", "")).splitlines()
+
+def failure_details(debug, flow, flow_text="", platform="ios"):
+    """Lines that say where a failed flow stopped: the failing step and its selector as Maestro's log names it, the failure screenshot,
+    up to FAIL_TEXTS texts on that screen (from the hierarchy Maestro saved, else one OCR of the screenshot), and the iOS landscape hint.
+    Called once per failed language, after the retry."""
+    out, (lines, steps) = [], flow_steps(debug, flow)
+    if step := next((d for _, d, st in reversed(steps) if st == "FAILED"), None): out.append(f"failed step: {step[:160]}")
+    pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
+    png = max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
+    if png: out.append(f"failure screenshot: {png}")
+    tree = failed_hierarchy(debug, flow)
+    texts = hierarchy_lines(tree) if tree else []
+    if not texts and png: texts = screenshot_texts(png)
+    texts = [t[:40] for t in dict.fromkeys(" ".join(t.split()) for t in texts) if len(t) > 1][:FAIL_TEXTS]
+    if texts: out.append("on screen: " + " | ".join(texts))
+    if platform == "ios" and (hint := landscape_tap_hint(lines, steps, flow_text)): out.append(hint)
+    return out
+
+def print_failure(debug, flow, flow_text="", platform="ios"):
+    for line in failure_details(debug, flow, flow_text, platform): print(f"     {line}")
 
 # ---------- run ----------
 
@@ -1847,8 +1929,10 @@ def ios_run_inner(cfg, path, only, parallel):
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
+        if not r_["ok"]: print_failure(out / ".work" / "debug" / f"attempt{r_.get('attempts', 1)}", lp, flow, "ios")
         results.append({"lproj": lp, **r_})
-    if not all(r["ok"] for r in results): print(flow_parse_note(out) or overload_note(want, n), end="")
+    if not all(r["ok"] for r in results):
+        print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
@@ -2326,7 +2410,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
                 if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev,
+                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname),
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
@@ -2355,8 +2439,9 @@ def android_run_inner(cfg, path, out, only, parallel):
     finally:
         stop_emulators(pool)
     for lp in todo:
-        r_ = final[lp]
+        r_ = final[lp]; where = r_.pop("_maestro", None)
         print_result(lp, r_, expected)
+        if not r_["ok"] and where: print_failure(*where, flow, "android")
         report["locales"][lp].update(r_)
     if hier:
         got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())

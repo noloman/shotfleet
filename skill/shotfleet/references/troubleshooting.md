@@ -122,7 +122,11 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 | Maestro: `Element not found: Text matching regex` on a Flutter row | Flutter joins a row's title and detail into one label (`Title\nDetail`) | tap it as `"Title.*"` |
 | `free tier: capturing` | no licence: 2 languages captured | see licence.md |
 | `memory pressure is elevated` | shotfleet halved the simulators | close apps |
-| `this Mac was short of memory` | failures with `Unknown error` or `Unable to clear state` are usually a slow simulator | close other simulators, `shotfleet run --locales <failed codes>` |
+| `this Mac was short of memory` | printed only when a failed flow's error is `Unknown error` or `Unable to clear state` on a loaded Mac: usually a slow simulator, not the app | close other simulators, `shotfleet run --locales <failed codes>` |
+| `failed step:` | under a `FAIL <lang>` line: the step Maestro stopped on, with its selector, as Maestro's log names it | compare the selector with what `on screen:` shows |
+| `failure screenshot:` | under a `FAIL <lang>` line: the screenshot Maestro took when the step failed | open it |
+| `on screen:` | under a `FAIL <lang>` line: up to 12 texts on the failure screen, from the screen hierarchy Maestro saved (else read once from the screenshot; left out while macOS text recognition is busy) | the selector should match one of them; if the screen is a different one, an earlier step went somewhere else |
+| `Maestro taps at portrait coordinates in iOS landscape` | iOS flow with `setOrientation: LANDSCAPE*`: Maestro's log shows a portrait-sized frame and the tap went to the element's portrait position, so it missed on the landscape screen (a Maestro issue, seen on iPad) | capture iPad in portrait, or open the screen with a launch argument or deep link instead of tapping there |
 | `maestro made no new screenshot for` | no screenshot for `stall_s` (default 900 s): a simulator or flow hung; shotfleet stopped Maestro and the languages go to the retry | usually load: close other simulators; raise `stall_s` only if a flow really takes longer between screenshots |
 | `maestro timed out` | one round exceeded `timeout_s` (default 600) | raise `timeout_s`, shorten the flow, or fewer `parallel` |
 | `flow passed but took` | fewer screenshots than `takeScreenshot` steps (an optional step skipped?) | check the flow, the maestro log in the output folder |
