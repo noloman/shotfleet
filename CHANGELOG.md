@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 0.1.5 (2026-10-06)
 - **`check` with Tesseract or `--ocr-command` no longer burns minutes of CPU:** matching each screen's text against the app's strings built a fresh regex for every string, every language, every screenshot, which on 220 screenshots cost 3 to 5 minutes of CPU on top of the reading itself. It now looks for the plain text first and only runs the regex when it's there. Same verdicts, a couple of hundred times faster.
 - **README: honest check timing:** the old "about 25 seconds" could not be reproduced. On 220 real screenshots it now says 57 to 86 seconds with text recognition warmed up, measured on 2026-10-06.
 - **`doctor` tells Homebrew users to run `brew upgrade`:** when a new version is out, a copy installed with Homebrew now shows `brew upgrade --cask noloman/tap/shotfleet` instead of the install line.
