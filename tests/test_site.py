@@ -24,7 +24,7 @@ LIVE = "<!-- WAITLIST -->" not in INDEX  # go-live.sh already ran: the waitlist 
 # Phrases that were true once, or never were. None may come back on the site, in the README or in the launch email.
 BANNED = ["tested on sample projects", "tested with sample files", "works with every", "works with any app", "ai-powered", "ai powered",
           "guarantee", "first 100 on the list", "first 100 people", "before anyone else", "permission dialogs are translated",
-          "permission prompts are translated", "two-line fix", "universal binary", "brew install noloman", "the thing every listing has to get right",
+          "permission prompts are translated", "two-line fix", "universal binary", "brew install noloman/shotfleet", "the thing every listing has to get right",
           "630 lines"]
 # The launch posts get the claims that were wrong in them (not "guarantee" etc.: the notes there quote what not to say).
 BANNED_IN_POSTS = ["first 100 on the list", "before anyone else", "two-line fix", "tested on sample projects", "android tablets."]

@@ -1593,7 +1593,7 @@
   ],
   "where_text": [
    "Apple silicon only (arm64)",
-   "No Homebrew formula is published"
+   "Also a Homebrew cask in the public tap `noloman/homebrew-tap`"
   ],
   "status": "fixed",
   "proof": "DISTRIBUTION.md's own Status (line 61-65) says 'Apple silicon only for now', no public repos, curl install; install.sh:6 refuses x86_64. The table above it was never updated.",
@@ -1601,7 +1601,7 @@
   "assertion": "Doc test: DISTRIBUTION.md recommendation table equals its Status section (no 'universal', no brew line).",
   "fix": "arm64 only; curl install.sh (Homebrew formula kept for later)",
   "fixed_by": "wording",
-  "fixed": "Intel support is not being built (decided). DISTRIBUTION.md now says Apple silicon only (arm64), curl install, no Homebrew formula published; install.sh refuses non-arm64 and the site, terms and README say Apple silicon.",
+  "fixed": "Intel support is not being built (decided). DISTRIBUTION.md now says Apple silicon only (arm64), curl install, no Homebrew formula published; install.sh refuses non-arm64 and the site, terms and README say Apple silicon. 2026-10-06: a Homebrew cask now exists, but in noloman/homebrew-tap (brew install noloman/tap/shotfleet), still arm64 only; the old noloman/shotfleet tap name stays banned (C181).",
   "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides, Style.test_banned_phrases_are_absent"
  },
  {
@@ -2905,6 +2905,67 @@
   "layer": "legal",
   "proof": "Third-party defaults: snapshot's output_directory is fastlane/screenshots and screengrab's is fastlane/metadata/android (subscrifi's real folders are laid out that way: iosApp/fastlane/screenshots/<locale>/, androidApp/fastlane/metadata/android/<locale>/images/phoneScreenshots/). export's own comment in cmd_export says it is for shotfleet runs.",
   "assertion": "None.",
+  "fix": ""
+ },
+ {
+  "id": "C181",
+  "claim": "brew install noloman/tap/shotfleet installs the same signed, notarized build; Homebrew links it into /opt/homebrew/bin; brew upgrade updates it; Homebrew doesn't install Maestro or Java (doctor --fix does); install.sh stays the main way",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Prefer Homebrew? `brew install noloman/tap/shotfleet` installs the same signed, notarized build from my own tap.",
+   "Prefer Homebrew? <code>brew install noloman/tap/shotfleet</code> installs the same signed, notarized build from my own tap.",
+   "Or with Homebrew: `brew install noloman/tap/shotfleet` (a cask in my own tap, the same build)."
+  ],
+  "status": "evidence",
+  "layer": "site",
+  "proof": "2026-10-06 on this Mac (Homebrew 7.0.8): Casks/shotfleet.rb in github.com/noloman/homebrew-tap points at https://shotfleet.com/download/0.1.4/shotfleet-macos-arm64.tar.gz with sha256 112f2d76...4f29, equal to the published .sha256 and to shasum of the downloaded file. brew style and brew audit --new --strict --cask: no offenses, exit 0. brew install noloman/tap/shotfleet from GitHub: linked /opt/homebrew/bin/shotfleet -> /opt/homebrew/Caskroom/shotfleet/0.1.4/shotfleet/shotfleet; shotfleet --version printed 'shotfleet 0.1.4' with the quarantine attribute set; codesign -R 'anchor apple generic and certificate leaf[subject.OU] = \"2357A78TMR\" and notarized' exit 0. brew uninstall and brew untap removed everything. The cask has no depends_on for Maestro or Java. A cask has no test block (brew test is formula-only); the --version run stands in for it. Not tested: brew upgrade across two real versions (needs 0.1.5).",
+  "assertion": "None beyond the quoted words; tools/bump-homebrew.sh is exercised by hand at each release (packaging/README.md step 7).",
+  "fix": ""
+ },
+ {
+  "id": "C182",
+  "claim": "Open-source maintainers and students can email hello@shotfleet.com for a free 100%-off code, with a repo link or student proof",
+  "where": [
+   "site/public/index.html",
+   "site/public/docs.html",
+   "site/public/terms.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Maintain an open-source project, or a student?",
+   "Maintain an open-source project, or a student? Email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> with a link to your open-source repo or proof that you're a student, and I'll send you a 100%-off code.",
+   "Open-source maintainers and students can email me for a free licence: a 100%-off code for the same licence.",
+   "Open-source maintainers and students can email hello@shotfleet.com"
+  ],
+  "status": "policy",
+  "layer": "legal",
+  "proof": "The owner's decision, 2026-10-06 (approved in the coordination session from research/reach-roadmap-2026-10-06.md item 3). Gumroad offer codes can be 100% off with a quantity of 1 (research/gumroad-setup.md); a code is made by hand per request. The terms' one-developer, 3-activation licence is unchanged: the code buys the same product.",
+  "assertion": "None: a policy, not program behaviour.",
+  "fix": ""
+ },
+ {
+  "id": "C183",
+  "claim": "Gumroad makes an invoice from the receipt; no purchase orders",
+  "where": [
+   "site/public/index.html",
+   "site/public/docs.html",
+   "site/public/terms.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Need an invoice? Gumroad makes one from your receipt. I don’t take purchase orders.",
+   "Need an invoice? Gumroad makes one from your receipt. I don't take purchase orders.",
+   "Gumroad makes an invoice from your receipt if you need one. I don't take purchase orders.",
+   "Gumroad makes an invoice from the receipt; there are no purchase orders."
+  ],
+  "status": "policy",
+  "layer": "legal",
+  "proof": "The owner's decision, 2026-10-06 (approved in the coordination session from research/reach-roadmap-2026-10-06.md item 3). Gumroad is the merchant of record and generates the invoice from the receipt (name, address, VAT number), see research/reach-roadmap-2026-10-06.md section 2.8 and research/gumroad-setup.md; the terms' Payment section already says Gumroad sends the receipt.",
+  "assertion": "None: a policy, not program behaviour.",
   "fix": ""
  }
 ]
