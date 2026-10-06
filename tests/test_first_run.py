@@ -220,6 +220,7 @@ class OcrWait(Tree):
         p = self.d / "ocr"; p.write_text(f"#!/bin/sh\nsleep {seconds}\necho Ready\n"); p.chmod(0o755); return str(p)
 
     def test_a_slow_first_recognition_says_so_once_and_a_fast_one_stays_quiet(self):
+        lock = mock.patch.object(sf, "OCR_LOCK", str(self.d / "lock")); lock.start(); self.addCleanup(lock.stop)  # not the Mac's real warm-up lock
         out = io.StringIO()
         with mock.patch.object(sf, "OCR_NOTE_AFTER_S", 0.05), contextlib.redirect_stdout(out):
             self.assertTrue(sf.warm_up_ocr(self.script(0.5)))

@@ -46,7 +46,7 @@ class JsonMultiReport(unittest.TestCase):
     def test_a_single_report_keeps_its_exact_shape(self):
         code, doc = self.run_json({"iphone": self.BAD})
         self.assertEqual(code, 1)
-        self.assertEqual(list(doc), ["exit", "screenshots", "problems", "notes"])
+        self.assertEqual(list(doc), ["exit", "screenshots", "problems", "notes", "unverified"])
         self.assertTrue(doc["problems"])
 
 

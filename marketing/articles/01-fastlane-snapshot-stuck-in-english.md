@@ -99,7 +99,7 @@ Pass `--app`. Without it `check` falls back to language detection, which cannot 
 
 ## What this does not tell you
 
-- If `check` says "macOS text recognition didn't answer in time" (or "isn't answering"), macOS is usually still compiling its text-reading model, which can take minutes on a busy Mac the first time. Wait a few minutes and run it again, or install Tesseract (`brew install tesseract tesseract-lang`) and `check` uses it automatically. Restarting the Mac is a last resort.
+- If `check` says "macOS text recognition didn't answer in time" (or "isn't answering"), macOS is usually still compiling its text-reading model, which can take minutes on a busy Mac the first time (once about 40 minutes on a quiet one). `check` doesn't fail over it: it finishes and marks the screens it couldn't read as "not verified". Run it again later, or install Tesseract (`brew install tesseract tesseract-lang`) and `check` uses it automatically. No restart needed.
 
 - It says the language is wrong. It does not say why. Go back to the five causes.
 - macOS text recognition reads 33 languages. For other scripts (Greek, Hebrew, most Indic scripts) `check` still catches other-language screens, copies and missing screens, and says which screens it could not read. You can plug in Tesseract for full coverage.

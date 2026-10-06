@@ -13,7 +13,7 @@ licence. It takes `--json`: stdout is only JSON, progress goes to stderr.
 | Code | Meaning | CI result |
 |---|---|---|
 | 0 | all good | pass |
-| 1 | problems found | fail, show `problems` |
+| 1 | problems found (with `--strict`, also screenshots left `unverified`) | fail, show `problems` and `unverified` |
 | 2 | setup error, stderr says what to fix | fail, show stderr |
 | 130 | interrupted | fail |
 
