@@ -67,7 +67,7 @@
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
 
-    <h2 id="v0-1-6">0.1.6, <!-- RELEASE_DATE --></h2>
+    <h2 id="v0-1-6">0.1.6, 2026-10-06</h2>
     <ul>
       <li>New in 0.1.6, on iOS: <code>run</code> can run your own XCUITest screenshot tests (<code>XCTAttachment</code> or fastlane’s <code>SnapshotHelper</code>) instead of a Maestro flow, on several simulators at once, one language each, and then checks what they saved. For that you need neither Maestro nor Java. I tried it by hand first, but the finished feature is new in 0.1.6 and not run end to end on a device yet. The <a href="/docs#xcuitest">docs</a> show how to set it up.</li>
       <li>Over MCP, <code>run</code> now refuses a config with a <code>[capture]</code> build, <code>[ios] simctl</code> or <code>[android] shell</code> commands unless you pass <code>hooks: true</code>, the same opt-in as for <code>[hooks]</code>. <code>check</code> over MCP no longer takes <code>ocr_command</code>; use <code>--ocr-command</code> in your terminal.</li>
