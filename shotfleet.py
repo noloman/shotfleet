@@ -1485,14 +1485,14 @@ def plan_capacity(want, platform, r):
     short = n == 1 and (swapping or (r.avail_gb is not None and r.avail_gb < capacity_need_gb(1, platform, r.booted_ours)))
     return Plan(n, "short" if short else "tight", tuple(notes))
 
-def capacity_message(plan, want, r):
+def capacity_message(plan, want, r, using=None):
     """The warning for the buyer: what the Mac showed, what shotfleet suggests, what to close. "" when all is well."""
     if plan.level == "ok" and not plan.notes: return ""
     seen = ", ".join(s for s in (f"{r.avail_gb:.1f} GB memory available" if r.avail_gb is not None else "",
                                  f"{r.swap_used_gb:.1f} GB swap in use" if r.swap_used_gb is not None else "",
                                  f"load {r.load1:.0f} on {r.cores} cores" if r.load1 is not None and r.cores else "",
                                  f"{r.booted_other} other simulators/emulators booted" if r.booted_other else "") if s)
-    head = f"this Mac is short of memory: {plan.n} device{'s' if plan.n != 1 else ''} at once would be safer than {want} (this run still uses {want})" if plan.n < want else "this Mac is busy"
+    head = f"this Mac is short of memory: {plan.n} device{'s' if plan.n != 1 else ''} at once would be safer than {want} (this run uses {want if using is None else using})" if plan.n < want else "this Mac is busy"
     return (f"{head} ({'; '.join(plan.notes)}). Seen: {seen or 'nothing readable'}. A loaded Mac makes flows time out and the retries add load. "
             "Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.")
 
@@ -1536,11 +1536,11 @@ def read_capacity(platform="ios", prefix="shotfleet"):
     except OSError: load = None
     return Reading(avail, total, swap, load, os.cpu_count(), memory_pressure(), ours, other)
 
-def capacity_warn(cfg, want, platform):
+def capacity_warn(cfg, want, platform, using=None):
     """Warn-only (config `capacity`: "warn" default, "off" silent): print the planner's message when the Mac looks short of memory."""
     if cfg.get("capacity", "warn") == "off": return
     r = read_capacity(platform, cfg.get("sim_prefix", "shotfleet"))
-    if m := capacity_message(plan_capacity(want, platform, r), want, r): print("warning: " + m, flush=True)
+    if m := capacity_message(plan_capacity(want, platform, r), want, r, using): print("warning: " + m, flush=True)
 
 def overload_note(want, n):
     """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
@@ -1772,7 +1772,7 @@ def ios_run_inner(cfg, path, only, parallel):
                    "(write them as listed; case and region matter)")
     want = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
     n = fit_parallel(want)
-    capacity_warn(cfg, want, "ios")
+    capacity_warn(cfg, want, "ios", n)
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
     pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()))
     OUR_SIMS.update(s.udid for s in pool)
@@ -2277,7 +2277,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                    "(write them as listed; case and region matter)")
     want = min(parallel or cfg.get("parallel", 4), len(todo))
     n = fit_emulators(fit_parallel(want))
-    capacity_warn(cfg, want, "android")
+    capacity_warn(cfg, want, "android", n)
     kind = ANDROID_DEVICES[cfg.get("device", "phone")]
     name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
     print(f"booting {n} emulators ({name}, {kind['size'][0]}x{kind['size'][1]})", flush=True)
