@@ -1472,10 +1472,10 @@
    "site/public/privacy.html"
   ],
   "where_text": [
-   "The installed program checks your licence key with Gumroad when you activate it and about once a week after. It sends Gumroad your key, the product ID, and whether the call should count as an activation (only the first call on a new Mac does); it sends no Mac name, no activation id and no program version, and the request carries your IP address and Python's standard user-agent string."
+   "It sends Gumroad your key, the product ID, and whether the call should count as an activation. Activating makes two calls: the first only looks at the key, and the second counts it, and that second call is made only when this Mac doesn't have the key saved yet. The weekly check never counts. It sends no Mac name, no activation id and no program version, and the request carries your IP address and Python's standard user-agent string."
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_nothing_counts_a_use_except_one_activation records the raw form fields the fake server receives: exactly product_id, license_key and increment_uses_count (no label, no hostname, no activation id), and the request has no custom User-Agent (Python's default is sent). The CLI's `doctor` also asks this site for /download/VERSION (said on the page).",
+  "proof": "GumroadLicence.test_nothing_counts_a_use_except_one_activation records the raw form fields the fake server receives: exactly product_id, license_key and increment_uses_count (no label, no hostname, no activation id), and the request has no custom User-Agent (Python's default is sent). The CLI's `doctor` also asks this site for /download/VERSION (said on the page). 2026-10-06 (research/site-claims-audit-2026-10-06.md item 9): the page said 'only the first call on a new Mac' counts; it is the second call of an activation (GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag: the first is increment_uses_count=false, the second true).",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": "",
@@ -2749,6 +2749,22 @@
   "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. A CI key that can't reach Gumroad is let through (fails open), which docs.html says.",
   "layer": "unit",
   "assertion": "As the tests named.",
+  "fix": ""
+ },
+ {
+  "id": "C171",
+  "claim": "doctor --fix downloads Maestro from GitHub, Java through Adoptium and the Android tools from Google (or Homebrew); shotfleet's own downloads carry its version in the user-agent and nothing about the app",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "If you let <code>shotfleet doctor --fix</code> download what's missing, it gets Maestro from GitHub, and asks Adoptium for Java and downloads it from the link Adoptium gives.",
+   "The downloads shotfleet makes itself carry your IP address and shotfleet's version number (in the user-agent string), and nothing about your app."
+  ],
+  "status": "evidence",
+  "proof": "Code: MAESTRO_PIN url on github.com, ADOPTIUM_ASSETS on api.adoptium.net (install_jre downloads the link the API gives), ANDROID_REPOSITORY on dl.google.com (install_cmdline_tools; fix_plan uses `brew install --cask android-commandlinetools` when Homebrew is there); download() and fetch_text() send headers={'User-Agent': f'shotfleet/{VERSION}'} and no body; the rest of the Android SDK is installed by Google's sdkmanager, through `android --no-metrics sdk install` when that tool is present (sdkmanager_invocation). research/site-claims-audit-2026-10-06.md item 10. No test pins the user-agent header.",
+  "layer": "unit",
+  "assertion": "Unit: with urlopen patched, download() and fetch_text() send exactly one header, User-Agent shotfleet/<VERSION>, and no data.",
   "fix": ""
  }
 ]
