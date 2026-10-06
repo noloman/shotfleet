@@ -483,15 +483,15 @@
  },
  {
   "id": "C029",
-  "claim": "Index grid: a row per language, a column per screen, problems outlined in red",
+  "claim": "Index grid: a row per language, a column per screen, problems outlined in red and marked \"problem\" in words; alt text (language, screen, verdict) on every screenshot",
   "where": [
    "README.md"
   ],
   "where_text": [
-   "It's a grid with a row per language and a column per screen, and problems are outlined in red."
+   "It's a grid with a row per language and a column per screen, and problems are outlined in red and marked \"problem\" in words. Every screenshot has alt text (language, screen, verdict) for screen readers."
   ],
   "status": "proven",
-  "proof": "write_gallery (shotfleet.py:1653) reads that way; no test. cold-test-2.md #19: images are linked relative to the report so a moved report breaks. Proven 2026-10-02: one row per language, one column per screen name, bad images get the red outline class, missing screens a red cell.",
+  "proof": "write_gallery (shotfleet.py:1653) reads that way; no test. cold-test-2.md #19: images are linked relative to the report so a moved report breaks. Proven 2026-10-02: one row per language, one column per screen name, bad images get the red outline class, missing screens a red cell. 2026-10-06: the words and alt text are pinned by ReportAccessibility.test_lang_alt_and_a_text_marker_for_every_problem (parses the page: html lang, alt on every img, a \"problem:\" marker in every flagged cell).",
   "layer": "unit",
   "assertion": "Call write_gallery with 2 locales x 2 screens and one problem; parse the HTML: 2 data rows, 2 screen columns, exactly one cell with the 'bad' class.",
   "fix": "",

@@ -2060,6 +2060,67 @@ class ReviewGrid(unittest.TestCase):
         self.assertNotIn('src="../shots', page)
 
 
+class PlainFolderStore(unittest.TestCase):
+    """Plain <locale>/ folders with no --app: the sizes say which store's rules apply, and a mix is judged against both."""
+    def sizes(self, **by_label):
+        return g1_check({lp: {"01.png": (G1_SHOWS[lp], size), "02.png": (G1_SHOWS[lp], size)} for lp, size in by_label.items()})
+
+    def test_android_sizes_get_play_rules_not_app_store_sizes(self):
+        code, report, _ = self.sizes(de=(1080, 1920), en=(1080, 1920))
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertFalse([n for n in report["notes"] if "both stores" in n])
+
+    def test_iphone_sizes_are_still_judged_by_app_store_rules(self):
+        code, report, _ = self.sizes(de=(1179, 2556), en=(1179, 2556))  # a 6.3" set alone: the App Store wants 6.9" or 6.5"
+        self.assertEqual(code, 1)
+        self.assertTrue(all('need a 6.9" or 6.5" set' in p for p in report["problems"]), report["problems"])
+
+    def test_a_mix_is_judged_against_both_stores_and_says_so_once(self):
+        code, report, _ = self.sizes(de=(1080, 1920), en=(1320, 2868))
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(len([n for n in report["notes"] if "judged against both stores' rules" in n]), 1)
+        code, report, _ = self.sizes(de=(200, 400), en=(1320, 2868))  # fits neither store
+        self.assertEqual(report["problems"], [f"de/{n}: 200x400 fits neither store: it isn't an App Store screenshot size and is outside "
+                                              "Google Play's 320-3840 px" for n in ("01.png", "02.png")])
+
+
+class ReportAccessibility(unittest.TestCase):
+    def test_lang_alt_and_a_text_marker_for_every_problem(self):
+        from html.parser import HTMLParser
+        rows = [{"file": f, "src": f} for f in ("de/01.png", "de/02.png", "en/01.png", "en/02.png", "ja/01.png")]
+        problems = ["de/01.png: shows en (expected de)", "identical image in 2 languages: en/02.png, de/02.png", "ja: missing 02.png"]
+        with tempfile.TemporaryDirectory() as d:
+            sf.write_gallery(Path(d), rows, problems); page = (Path(d) / "index.html").read_text()
+
+        class Page(HTMLParser):
+            def __init__(self):
+                super().__init__(); self.stack, self.cells, self.headings, self.html_lang, self.caption_langs = [], [], [], None, []
+            def handle_starttag(self, tag, attrs):
+                a = dict(attrs)
+                if tag == "html": self.html_lang = a.get("lang")
+                if tag == "td": self.cells.append({"imgs": [], "text": "", "class": a.get("class")})
+                if tag == "img" and self.cells: self.cells[-1]["imgs"].append(a)
+                if tag == "figcaption": self.caption_langs.append(a.get("lang"))
+                if tag in ("h1", "h2", "h3", "h4"): self.headings.append(int(tag[1]))
+            def handle_data(self, data):
+                if self.cells: self.cells[-1]["text"] += data
+
+        p = Page(); p.feed(page)
+        self.assertEqual(p.html_lang, "en")
+        self.assertEqual(p.caption_langs, ["de", "de", "en", "en", "ja"])
+        self.assertEqual(p.headings, [1, 2])
+        imgs = [(c, i) for c in p.cells for i in c["imgs"]]
+        self.assertEqual(len(imgs), 5)
+        for cell, img in imgs:
+            self.assertTrue(img.get("alt"), img)
+            self.assertIn(("problem" if "bad" in img["class"] else "no problem found"), img["alt"])
+            if "bad" in img["class"]: self.assertIn("problem:", cell["text"])  # a text marker, not only the red border
+        flagged = sorted(i["alt"].split(":")[0] for _, i in imgs if "bad" in i["class"])
+        self.assertEqual(flagged, ["de, 01", "de, 02", "en, 02"])  # every screenshot a problem names
+        self.assertEqual([c["text"] for c in p.cells if c["class"] == "missing"], ["missing"])  # the missing screen, in words
+        self.assertIn('<th scope="row">de</th>', page)
+
+
 class FrameworkHints(unittest.TestCase):
     """Flutter, React Native and the like keep their translations in compiled code: tell the user the `strings =` line to add."""
     def setUp(self):
@@ -2534,14 +2595,14 @@ def g1_image(salt, size=(1320, 2868)):
     return png_c(*size) + salt.encode()
 
 
-def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, **kw):
+def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, folder="shots", **kw):
     """Run cmd_check on {label: {name: lines | (lines, size) | (lines, size, salt)}}. Lines are the app's own text (.texts.json, as an iOS
     run saves them) unless `ocr` is True: then a fake text recognition reads them from <name>.png.txt. -> (code, report, stdout)."""
     d = Path(tempfile.mkdtemp())
     for label, screens in spec.items():
         for name, shot in screens.items():
             lines, size, salt = (shot, (1320, 2868), f"{label}/{name}") if isinstance(shot, list) else (shot + (f"{label}/{name}",))[:3]
-            png = d / "shots" / label / name; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(g1_image(salt, size))
+            png = d / folder / label / name; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(g1_image(salt, size))
             if ocr: Path(f"{png}.txt").write_text("\n".join(lines))
             else: png.with_suffix(".texts.json").write_text(json.dumps(lines, ensure_ascii=False))
     def fake_ocr(_ocr, png, timeout=120):
@@ -2550,7 +2611,7 @@ def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, **
     with mock.patch.object(sf, "warm_up_ocr", return_value=True), mock.patch.object(sf, "ocr_tool", return_value="ocr"), \
          mock.patch.object(sf, "readable_languages", return_value=set(readable)), mock.patch.object(sf, "read_text", fake_ocr), \
          mock.patch.object(sf, "tesseract_languages", return_value=set()), contextlib.redirect_stdout(io.StringIO()) as out:
-        code = sf.cmd_check(d / "shots", strings=strings, report_dir=d / "rep", **kw)
+        code = sf.cmd_check(d / folder, strings=strings, report_dir=d / "rep", **kw)
     return code, json.loads((d / "rep/check.json").read_text()), out.getvalue()
 
 
@@ -2620,7 +2681,7 @@ class G1CheckDetectors(unittest.TestCase):
 
     def test_a_size_the_store_refuses_is_one_problem_per_file(self):  # C003, C100 (the size half)
         spec = {**self.CLEAN, "de": {"01.png": (G1_SHOWS["de"], (1000, 2000)), "02.png": G1_SHOWS["de"]}}
-        code, report, _ = g1_check(spec)
+        code, report, _ = g1_check(spec, folder="screenshots")  # fastlane deliver's folder: App Store screenshots
         self.assertEqual((code, report["problems"]), (1, ["de/01.png: 1000x2000 isn't an App Store screenshot size"]))
 
     def test_a_translated_caption_over_an_english_ui_is_named_as_such(self):  # C100 (the caption half)

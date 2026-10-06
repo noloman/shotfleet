@@ -118,7 +118,7 @@ Prefer an installer you can double-click? Each release is also published as a si
 2. Try one language: `shotfleet run --locales en`.
 3. When you want every language: `shotfleet activate <your key>` (from your Gumroad receipt email; `check` and 2 languages in `run` work without one).
 4. Run them all: `shotfleet run` (finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one).
-5. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red.
+5. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red and marked "problem" in words. Every screenshot has alt text (language, screen, verdict) for screen readers.
 6. Export to fastlane: `shotfleet export out --fastlane fastlane/` (`out-ios` or `out-android` if the config has both). That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
 
 ## Uploading

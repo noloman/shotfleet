@@ -32,6 +32,7 @@ fastlane folder. `check.json` is `{"screenshots": [{"file", "src", "sha", "lang"
 | `has transparency (an alpha channel); both stores reject it` | store rule: some pixels are see-through | the images: flatten the PNG (no alpha channel), e.g. `sips -s format jpeg in.png --out out.jpg` |
 | `has an alpha channel, though every pixel is opaque` | store rule: the file has an alpha channel even though nothing is see-through; both stores' rules forbid the channel | the images: save without alpha, same fix |
 | `isn't an App Store screenshot size`, `is outside Google Play's 320-3840 px` | store rule | capture at a store size |
+| `fits neither store` | store rule (a plain folder whose sizes don't say which store): neither store takes this size | capture at a store size, or pass `--app` |
 | `the App Store takes at most 10`, `Google Play takes at most 8` | too many screenshots in a listing | remove extras |
 | `iPhone screenshots need a 6.9" or 6.5" set` | wrong iPhone size set | capture on a 6.9" device |
 | `the app runs on iPad, so the App Store requires 13" iPad screenshots` | missing iPad set | add `"iPad Pro 13-inch (M5)"` to `device_types` |
