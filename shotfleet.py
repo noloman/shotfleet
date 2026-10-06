@@ -1624,7 +1624,7 @@ def landscape_tap_hint(lines, steps, flow_text):
     portrait-sized frame (widthPoints < heightPoints), and the last tap before the failure went to the middle of the element's bounds in
     that portrait frame (seen: bounds [54,656][141,698], tap (97,677), while the element sat 344 = 1376 - 1032 points off on screen).
     "" unless all of it is in the log; a tap window that another shard's tap lines make ambiguous gives "" too."""
-    if not re.search(r"setOrientation:\s*(?:\{?\s*orientation:\s*)?['\"]?LANDSCAPE", flow_text): return ""
+    if not re.search(r"setOrientation:\s*(?:\{?\s*orientation:\s*)?['\"]?LANDSCAPE", flow_text or ""): return ""
     fail = next((i for i, _, st in reversed(steps) if st == "FAILED"), None)
     turned = next((i for i, d, st in steps if st == "COMPLETED" and d.startswith("Set orientation LANDSCAPE")), None)
     if fail is None or turned is None or turned > fail: return ""
@@ -2032,7 +2032,7 @@ def ios_run_inner(cfg, path, only, parallel):
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
-        if not r_["ok"]: print_failure(out / ".work" / "debug" / f"attempt{r_.get('attempts', 1)}", lp, flow, "ios")
+        if not r_["ok"] and not capture: print_failure(out / ".work" / "debug" / f"attempt{r_.get('attempts', 1)}", lp, flow, "ios")  # Maestro's logs; [capture] runs keep xcodebuild's log instead
         results.append({"lproj": lp, **r_})
     if not all(r["ok"] for r in results):
         print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
