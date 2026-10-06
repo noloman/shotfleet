@@ -1,0 +1,8 @@
+started Tue Oct  6 15:30:50 CEST 2026 load { 175.21 142.35 108.45 }
+vision base start Tue Oct  6 15:31:41 CEST 2026 load { 202.64 154.37 114.97 }
+vision base done Tue Oct  6 15:38:16 CEST 2026 load { 259.55 241.04 173.63 }
+coordinator msg: new branch claude/ocr-cpu-reader-measure from origin/main at Tue Oct  6 15:39:35 CEST 2026; load rule <300
+cpu batch 2 (no line merging) start Tue Oct  6 15:52:55 CEST 2026 load { 100.91 161.37 180.02 }
+vision sens start Tue Oct  6 15:54:50 CEST 2026 load { 140.69 154.90 174.98 }
+vision sens retry start Tue Oct  6 16:30:03 CEST 2026 load { 38.35 39.76 65.87 }
+freeze start 16:31:56 load { 68.46 47.02 65.19 }

@@ -1,0 +1,222 @@
+# iOS base folder (220 screenshots): Vision binary vs PP-OCRv5
+problems: A 0, B 0
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| Latin | 154 | 154 | 100% | 154 |
+| hi | 11 | 11 | 100% | 11 |
+| ja | 11 | 11 | 100% | 11 |
+| ko | 11 | 11 | 100% | 11 |
+| Cyrillic | 22 | 22 | 100% | 22 |
+| zh-Hans | 11 | 11 | 100% | 11 |
+| all | 220 | 220 | 100% | |
+DISAGREE:
+
+# iOS base: Vision vs Tesseract psm 6
+problems: A 0, B 0
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| Latin | 154 | 154 | 100% | 154 |
+| hi | 11 | 11 | 100% | 11 |
+| ja | 11 | 11 | 100% | 11 |
+| ko | 11 | 11 | 100% | 11 |
+| Cyrillic | 22 | 22 | 100% | 22 |
+| zh-Hans | 11 | 11 | 100% | 11 |
+| all | 220 | 220 | 100% | |
+DISAGREE:
+
+# iOS base: Vision vs PP-OCRv6 Latin
+problems: A 0, B 0
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| Latin | 154 | 154 | 100% | 154 |
+| hi | 11 | 11 | 100% | 11 |
+| ja | 11 | 11 | 100% | 11 |
+| ko | 11 | 11 | 100% | 11 |
+| Cyrillic | 22 | 22 | 100% | 22 |
+| zh-Hans | 11 | 11 | 100% | 11 |
+| all | 220 | 220 | 100% | |
+DISAGREE:
+
+# iOS sens: live Vision vs PP-OCRv5
+problems: A 21, B 20
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| Latin | 154 | 153 | 99% | 149 |
+| hi | 11 | 11 | 100% | 10 |
+| ja | 10 | 10 | 100% | 9 |
+| ko | 11 | 11 | 100% | 10 |
+| Cyrillic | 22 | 22 | 100% | 20 |
+| zh-Hans | 11 | 11 | 100% | 11 |
+| all | 219 | 218 | 100% | |
+DISAGREE:
+   fr-FR/iphone-69-03-saved-pipeline.png problem: shows ru strings (9 lines) more than fr (0) ok
+
+# iOS sens: live Vision vs PP-OCRv6 Latin
+problems: A 21, B 20
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| Latin | 154 | 153 | 99% | 149 |
+| hi | 11 | 11 | 100% | 10 |
+| ja | 10 | 10 | 100% | 9 |
+| ko | 11 | 11 | 100% | 10 |
+| Cyrillic | 22 | 22 | 100% | 20 |
+| zh-Hans | 11 | 11 | 100% | 11 |
+| all | 219 | 218 | 100% | |
+DISAGREE:
+   fr-FR/iphone-69-03-saved-pipeline.png problem: shows ru strings (9 lines) more than fr (0) ok
+
+# iOS sens: live Vision vs Tesseract
+problems: A 21, B 17
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| Latin | 154 | 153 | 99% | 149 |
+| hi | 11 | 10 | 91% | 10 |
+| ja | 10 | 9 | 90% | 9 |
+| ko | 11 | 10 | 91% | 10 |
+| Cyrillic | 22 | 22 | 100% | 20 |
+| zh-Hans | 11 | 11 | 100% | 11 |
+| all | 219 | 215 | 98% | |
+DISAGREE:
+   fr-FR/iphone-69-03-saved-pipeline.png problem: shows ru strings (9 lines) more than fr (0) ok
+   hi/iphone-69-06-paywall.png problem: shows en strings (7 lines) more than hi (1) ok
+   ja/iphone-69-05-weekly-briefing.png problem: shows zh-Hans strings (20 lines) more than ja (0) ok
+   ko/iphone-69-02-fit-trust.png problem: shows ja strings (13 lines) more than ko (0) ok
+
+# iOS planted cases
+| planted wrong-language screenshot | vis_sens | cpu_sens | cpu_v6_sens | tess6_sens |
+|---|---|---|---|---|
+| de-DE/iphone-69-01-jobs-list.png | FLAGGED: shows en strings (4 lines) more than de (1) | FLAGGED: shows en strings (11 lines) more than de (2) | FLAGGED: shows en strings (9 lines) more than de (2) | FLAGGED: shows en strings (6 lines) more than de (1) |
+| de-DE/iphone-69-03-saved-pipeline.png | FLAGGED: shows en strings (9 lines) more than de (1) | FLAGGED: shows en strings (13 lines) more than de (2) | FLAGGED: shows en strings (13 lines) more than de (2) | FLAGGED: shows en strings (7 lines) more than de (1) |
+| de-DE/ipad-13-02-fit-trust.png | FLAGGED: shows en strings (17 lines) more than de (1) | FLAGGED: shows en strings (40 lines) more than de (3) | FLAGGED: shows en strings (39 lines) more than de (3) | FLAGGED: shows en strings (26 lines) more than de (2) |
+| uk/iphone-69-02-fit-trust.png | FLAGGED: shows ru strings (13 lines) more than uk (0) | FLAGGED: shows ru strings (23 lines) more than uk (2) | FLAGGED: shows ru strings (23 lines) more than uk (2) | FLAGGED: shows ru strings (12 lines) more than uk (1) |
+| uk/iphone-69-05-weekly-briefing.png | FLAGGED: shows ru strings (16 lines) more than uk (1) | FLAGGED: shows ru strings (22 lines) more than uk (0) | FLAGGED: shows ru strings (22 lines) more than uk (0) | FLAGGED: shows ru strings (14 lines) more than uk (0) |
+| fr-FR/iphone-69-03-saved-pipeline.png | FLAGGED: shows ru strings (9 lines) more than fr (0) | ok | ok | ok |
+| nl-NL/iphone-69-04-application-tracker.png | FLAGGED: shows de strings (12 lines) more than nl (0) | FLAGGED: shows de strings (21 lines) more than nl (1) | FLAGGED: shows de strings (21 lines) more than nl (1) | FLAGGED: shows de strings (14 lines) more than nl (1) |
+| ja/iphone-69-05-weekly-briefing.png | FLAGGED: shows zh-Hans strings (20 lines) more than ja (0) | FLAGGED: shows zh-Hans strings (22 lines) more than ja (0) | FLAGGED: shows zh-Hans strings (22 lines) more than ja (0) | ok |
+| ko/iphone-69-02-fit-trust.png | FLAGGED: shows ja strings (13 lines) more than ko (0) | FLAGGED: shows en strings (2 lines) more than ko (0) | FLAGGED: shows en strings (2 lines) more than ko (0) | ok |
+| hi/iphone-69-06-paywall.png | FLAGGED: shows en strings (7 lines) more than hi (1) | FLAGGED: shows en strings (18 lines) more than hi (2) | FLAGGED: shows en strings (18 lines) more than hi (2) | ok |
+| flagged of 10 | 10 | 9 | 9 | 6 |
+
+# Android base: Vision vs PP-OCRv5
+problems: A 0, B 0
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| ar | 4 | 4 | 100% | 4 |
+| Latin | 48 | 48 | 100% | 48 |
+| hi | 4 | 4 | 100% | 4 |
+| ja | 4 | 4 | 100% | 4 |
+| ko | 4 | 4 | 100% | 4 |
+| Cyrillic | 4 | 4 | 100% | 4 |
+| zh-Hans | 4 | 4 | 100% | 4 |
+| all | 72 | 72 | 100% | |
+DISAGREE:
+
+# Android base: Vision vs Tesseract
+problems: A 0, B 0
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| ar | 4 | 4 | 100% | 4 |
+| Latin | 48 | 48 | 100% | 48 |
+| hi | 4 | 4 | 100% | 4 |
+| ja | 4 | 4 | 100% | 4 |
+| ko | 4 | 4 | 100% | 4 |
+| Cyrillic | 4 | 4 | 100% | 4 |
+| zh-Hans | 4 | 4 | 100% | 4 |
+| all | 72 | 72 | 100% | |
+DISAGREE:
+
+# Android sens verdict: Vision vs PP-OCRv5
+problems: A 16, B 12
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| ar | 4 | 4 | 100% | 3 |
+| Latin | 48 | 46 | 96% | 46 |
+| hi | 4 | 4 | 100% | 3 |
+| ja | 4 | 4 | 100% | 4 |
+| ko | 4 | 3 | 75% | 3 |
+| Cyrillic | 4 | 4 | 100% | 3 |
+| zh-Hans | 4 | 4 | 100% | 4 |
+| all | 72 | 69 | 96% | |
+DISAGREE:
+   de/02_log.png problem: shows ar strings (6 lines) more than de (0) ok
+   fr/03_progress.png problem: shows ru strings (10 lines) more than fr (0) ok
+   ko/02_log.png problem: shows ja strings (7 lines) more than ko (1) ok
+
+# Android sens verdict: Vision vs Tesseract
+problems: A 16, B 8
+| script | screens | same verdict (ok / unverified / problem) | agreement | identical reason too |
+|---|---|---|---|---|
+| ar | 4 | 2 | 50% | 2 |
+| Latin | 48 | 46 | 96% | 46 |
+| hi | 4 | 3 | 75% | 3 |
+| ja | 4 | 3 | 75% | 3 |
+| ko | 4 | 3 | 75% | 3 |
+| Cyrillic | 4 | 3 | 75% | 3 |
+| zh-Hans | 4 | 4 | 100% | 4 |
+| all | 72 | 64 | 89% | |
+DISAGREE:
+   ar/03_progress.png problem: shows en strings (11 lines) more than ar (0) ok
+   ar/04_profile.png problem: shows de strings (14 lines) more than ar (1) ok
+   de/02_log.png problem: shows ar strings (6 lines) more than de (0) ok
+   fr/03_progress.png problem: shows ru strings (10 lines) more than fr (0) ok
+   hi/04_profile.png problem: shows en strings (14 lines) more than hi (1) ok
+   ja/01_train.png problem: shows zh-CN strings (17 lines) more than ja (4) ok
+   ko/02_log.png problem: shows ja strings (7 lines) more than ko (1) ok
+   ru/01_train.png problem: shows pl strings (16 lines) more than ru (4) ok
+
+# Android per-locale lines PP-OCRv5
+| locale | screens | Vision lines | reader lines | equal after norm() | equal / Vision | app-string lines Vision | app-string lines reader |
+|---|---|---|---|---|---|---|---|
+| ar | 4 | 74 | 76 | 55 | 74% | 47 | 48 |
+| da | 4 | 80 | 80 | 67 | 84% | 45 | 48 |
+| de | 4 | 80 | 99 | 64 | 80% | 44 | 51 |
+| en | 4 | 78 | 83 | 67 | 86% | 46 | 47 |
+| es | 4 | 83 | 94 | 69 | 83% | 47 | 47 |
+| fr | 4 | 82 | 96 | 70 | 85% | 43 | 45 |
+| hi | 4 | 76 | 96 | 54 | 71% | 47 | 39 |
+| it | 4 | 82 | 87 | 68 | 83% | 46 | 46 |
+| ja | 4 | 78 | 79 | 63 | 81% | 43 | 42 |
+| ko | 4 | 75 | 74 | 62 | 83% | 48 | 48 |
+| nb | 4 | 80 | 83 | 66 | 82% | 47 | 47 |
+| nl | 4 | 82 | 89 | 69 | 84% | 50 | 52 |
+| pl | 4 | 83 | 91 | 56 | 67% | 46 | 44 |
+| pt | 4 | 82 | 101 | 64 | 78% | 44 | 47 |
+| ru | 4 | 80 | 101 | 54 | 68% | 47 | 47 |
+| sv | 4 | 80 | 82 | 65 | 81% | 45 | 48 |
+| tr | 4 | 81 | 90 | 47 | 58% | 44 | 32 |
+| zh-CN | 4 | 73 | 72 | 63 | 86% | 47 | 48 |
+| all | 72 | 1429 | 1573 | 1123 | 79% | 826 | 826 |
+
+| script | screens | Vision lines | reader lines | equal | equal / Vision | string lines V | string lines R |
+|---|---|---|---|---|---|---|---|
+| ar | 4 | 74 | 76 | 55 | 74% | 47 | 48 |
+| Latin | 48 | 973 | 1075 | 772 | 79% | 547 | 554 |
+| hi | 4 | 76 | 96 | 54 | 71% | 47 | 39 |
+| ja | 4 | 78 | 79 | 63 | 81% | 43 | 42 |
+| ko | 4 | 75 | 74 | 62 | 83% | 48 | 48 |
+| Cyrillic | 4 | 80 | 101 | 54 | 68% | 47 | 47 |
+| zh-Hans | 4 | 73 | 72 | 63 | 86% | 47 | 48 |
+
+# iOS per-script lines PP-OCRv5
+
+| script | screens | Vision lines | reader lines | equal | equal / Vision | string lines V | string lines R |
+|---|---|---|---|---|---|---|---|
+| Latin | 154 | 4733 | 5169 | 3311 | 70% | 1838 | 2210 |
+| hi | 11 | 312 | 358 | 171 | 55% | 121 | 152 |
+| ja | 11 | 341 | 344 | 238 | 70% | 135 | 173 |
+| ko | 11 | 335 | 355 | 137 | 41% | 137 | 107 |
+| Cyrillic | 22 | 679 | 744 | 466 | 69% | 247 | 297 |
+| zh-Hans | 11 | 332 | 339 | 226 | 68% | 137 | 185 |
+
+# Android planted cases
+| planted wrong-language screenshot | replay_android_sens | cpu_android_sens | tess6_android_sens |
+|---|---|---|---|
+| de/02_log.png | FLAGGED: shows ar strings (6 lines) more than de (0) | ok | ok |
+| ar/03_progress.png | FLAGGED: shows en strings (11 lines) more than ar (0) | FLAGGED: shows en strings (11 lines) more than ar (0) | ok |
+| ru/01_train.png | FLAGGED: shows pl strings (16 lines) more than ru (4) | FLAGGED: shows pl strings (16 lines) more than ru (5) | ok |
+| ja/01_train.png | FLAGGED: shows zh-CN strings (17 lines) more than ja (4) | FLAGGED: shows zh-CN strings (17 lines) more than ja (4) | ok |
+| ko/02_log.png | FLAGGED: shows ja strings (7 lines) more than ko (1) | ok | ok |
+| hi/04_profile.png | FLAGGED: shows en strings (14 lines) more than hi (1) | FLAGGED: shows en strings (17 lines) more than hi (1) | ok |
+| fr/03_progress.png | FLAGGED: shows ru strings (10 lines) more than fr (0) | ok | ok |
+| ar/04_profile.png | FLAGGED: shows de strings (14 lines) more than ar (1) | FLAGGED: shows de strings (16 lines) more than ar (1) | ok |
+| flagged of 8 | 8 | 5 | 0 |

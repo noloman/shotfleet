@@ -1,0 +1,4 @@
+15:56-15:58 natural ANE episode (not triggered by me; a docker-check agent's and my own `shotfleet check` warm-up helpers both waited on it)
+ANECompilerService pid 16500 CPU time 48:23.85 at 15:57:08 -> 48:54.47 at 15:57:52 (+30.6 s in 44 s; top: 50.9% then 43.0%)
+Vision warm-up helpers 20545 (mine, started 15:55) / 21855 / 25749 still waiting in `ps` at 15:57:08 (1:55 old) and 15:57:52
+During the window, 3 uncached CPU reads (ru, ja, hi iPhone screenshots, fresh python process each, nice 10, load 136-147): wall 12.29 s, 9.87 s, 12.17 s
