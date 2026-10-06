@@ -1029,8 +1029,8 @@
    "curl -fsSL https://shotfleet.com/install.sh | sh",
    "Install: curl -fsSL https://shotfleet.com/install.sh | sh"
   ],
-  "status": "untested",
-  "proof": "install.sh is live (curl 2026-10-02: 200 text/plain) but https://shotfleet.com/download/VERSION is 404: no release is published, so the one-liner fails today (expected before launch; packaging/release.sh publishes it). DISTRIBUTION.md Status 2026-10-01: install tested incl. quarantine. install.sh honours SHOTFLEET_BASE for testing.",
+  "status": "evidence",
+  "proof": "2026-10-06: https://shotfleet.com/download/VERSION answers 0.1.3; install.sh, download/shotfleet-macos-arm64.tar.gz, its .sha256 and the versioned download/0.1.3/ tarball all answer 200 (HEAD requests). The one-liner ran for real: in a throwaway HOME for 0.1.2 (docs/compat.md macOS 27 row, shotfleet-rc-build/0.1.2/proofs.out), as the live install after the 0.1.3 publish ('shotfleet 0.1.3', publish.log), and from the live URL on GitHub's macOS 14.8.9 and 15.7.9 runners for 0.1.1 (research/limits-platform-reach-2026-10-05.md). install.sh refuses a checksum mismatch and Intel Macs (its own code). Not run: install.sh into this Mac's real PATH (it can link into /opt/homebrew/bin; that is why the proofs use a throwaway HOME). install.sh honours SHOTFLEET_BASE for testing.",
   "layer": "device",
   "assertion": "Release gate: serve dist tarball + .sha256 locally, run `SHOTFLEET_BASE=http://127.0.0.1:8000 sh install.sh` under a throwaway HOME, assert `shotfleet --version` runs, a tampered checksum is refused, and Intel Macs get the message.",
   "fix": ""
@@ -1386,15 +1386,13 @@
   "id": "C080",
   "claim": "I send one email when shotfleet is available; I don't share, sell it or add you to any other list",
   "where": [
-   "site/public/privacy.html",
-   "site/public/index.html"
+   "site/public/privacy.html"
   ],
   "where_text": [
-   "To send you one email when shotfleet is available to buy",
-   "I’ll email you once, when it’s ready."
+   "To send you one email when shotfleet is available to buy"
   ],
   "status": "unverifiable",
-  "proof": "A commitment, not a fact. The waitlist exists (worker.test.mjs: signup 200, stored, honeypot not stored).",
+  "proof": "A commitment, not a fact. The waitlist exists (worker.test.mjs: signup 200, stored, honeypot not stored). 2026-10-06: the index.html sentence ('I'll email you once, when it's ready.') went with the waitlist form at go-live; only the privacy page part is left.",
   "layer": "legal",
   "assertion": "Process: the launch email goes only to email: keys; contact-form reply addresses (msg: keys) are never added.",
   "fix": "Keep as a commitment."
@@ -1526,11 +1524,13 @@
    "You’re on the list.",
    "One more thing, if you like: what do you build with?"
   ],
-  "status": "proven",
+  "status": "removed",
   "proof": "2026-10-03: BrowserBehaviour.test_c088_signup_shows_you_are_on_the_list_then_the_optional_question and BrowserBehaviour.test_c088_errors_validation_and_the_honeypot drive index.html in Chromium with /api stubbed: success hides the form and shows 'You're on the list.' then the optional 'what do you build with?' question (a second request with the stack only when answered); 429, 400, 500 and a network failure show the server's text or the generic text; an empty or malformed address stops in the page without a request; the honeypot is sent as website. Worker side: worker.test.mjs signup checks. StackAnswers.test_every_option_of_the_what_do_you_build_with_question_is_a_stack_the_worker_keeps. Needs Node with Playwright and Chromium; the browser tests skip where they are missing. Not run: the live site.",
   "layer": "site",
   "assertion": "jsdom or Playwright-less script test of forms.js: submit success shows #signup-done, 429/500 show the error text, honeypot field is sent.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "The waitlist form and its 'You're on the list' message were taken off index.html at go-live (2026-10-05); neither sentence is on the site now (research/site-claims-audit-2026-10-06.md item 18)."
  },
  {
   "id": "C089",
@@ -2737,6 +2737,22 @@
   "fix": ""
  },
  {
+  "id": "C171",
+  "claim": "doctor --fix downloads Maestro from GitHub, Java through Adoptium and the Android tools from Google (or Homebrew); shotfleet's own downloads carry its version in the user-agent and nothing about the app",
+  "where": [
+   "site/public/privacy.html"
+  ],
+  "where_text": [
+   "If you let <code>shotfleet doctor --fix</code> download what's missing, it gets Maestro from GitHub, and asks Adoptium for Java and downloads it from the link Adoptium gives.",
+   "The downloads shotfleet makes itself carry your IP address and shotfleet's version number (in the user-agent string), and nothing about your app."
+  ],
+  "status": "evidence",
+  "proof": "Code: MAESTRO_PIN url on github.com, ADOPTIUM_ASSETS on api.adoptium.net (install_jre downloads the link the API gives), ANDROID_REPOSITORY on dl.google.com (install_cmdline_tools; fix_plan uses `brew install --cask android-commandlinetools` when Homebrew is there); download() and fetch_text() send headers={'User-Agent': f'shotfleet/{VERSION}'} and no body; the rest of the Android SDK is installed by Google's sdkmanager, through `android --no-metrics sdk install` when that tool is present (sdkmanager_invocation). research/site-claims-audit-2026-10-06.md item 10. No test pins the user-agent header.",
+  "layer": "unit",
+  "assertion": "Unit: with urlopen patched, download() and fetch_text() send exactly one header, User-Agent shotfleet/<VERSION>, and no data.",
+  "fix": ""
+ },
+ {
   "id": "C172",
   "claim": "The price card names the licence check: at activation, then about weekly when run or export is used; offline for 30 days; a CI key every run; refused or 30 days unreachable means the free tier",
   "where": [
@@ -2752,19 +2768,20 @@
   "fix": ""
  },
  {
-  "id": "C171",
-  "claim": "doctor --fix downloads Maestro from GitHub, Java through Adoptium and the Android tools from Google (or Homebrew); shotfleet's own downloads carry its version in the user-agent and nothing about the app",
+  "id": "C173",
+  "claim": "Flutter (wger) and Expo (obytes) ran end to end on iOS and Android on 2026-10-03 (docs/compat.md)",
   "where": [
-   "site/public/privacy.html"
+   "docs/compat.md",
+   "docs/compat.md"
   ],
   "where_text": [
-   "If you let <code>shotfleet doctor --fix</code> download what's missing, it gets Maestro from GitHub, and asks Adoptium for Java and downloads it from the link Adoptium gives.",
-   "The downloads shotfleet makes itself carry your IP address and shotfleet's version number (in the user-agent string), and nothing about your app."
+   "works end to end on wger, iOS and Android (de and ja), see research/frameworks.md section 15; other Flutter apps not run.",
+   "works end to end on the obytes template, iOS and Android (en and ar), see research/frameworks.md section 15; other Expo apps and bare React Native not run"
   ],
   "status": "evidence",
-  "proof": "Code: MAESTRO_PIN url on github.com, ADOPTIUM_ASSETS on api.adoptium.net (install_jre downloads the link the API gives), ANDROID_REPOSITORY on dl.google.com (install_cmdline_tools; fix_plan uses `brew install --cask android-commandlinetools` when Homebrew is there); download() and fetch_text() send headers={'User-Agent': f'shotfleet/{VERSION}'} and no body; the rest of the Android SDK is installed by Google's sdkmanager, through `android --no-metrics sdk install` when that tool is present (sdkmanager_invocation). research/site-claims-audit-2026-10-06.md item 10. No test pins the user-agent header.",
-  "layer": "unit",
-  "assertion": "Unit: with urlopen patched, download() and fetch_text() send exactly one header, User-Agent shotfleet/<VERSION>, and no data.",
+  "proof": "research/frameworks.md section 15 (2026-10-03), the same runs as C035; the two compat rows still said 'works up to the build; no device run' (research/site-claims-audit-2026-10-06.md item 22).",
+  "layer": "device",
+  "assertion": "Recorded runs, one app each.",
   "fix": ""
  }
 ]
