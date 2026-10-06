@@ -20,6 +20,13 @@
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
 - Text typed into fields by the flow is not translated by itself: it stays the same in every language unless you set per-language `[inputs]` (iOS; on Android that needs a Maestro that sets MAESTRO_DEVICE_UDID).
 
+## Linux and CI
+
+- `check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check` (free, no licence, amd64 and arm64): `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk`
+- GitHub Action: `uses: noloman/shotfleet-check-action@v1` with `folder:` and `app:` (also `locale:`, `args:`, `warn-only:`), on `ubuntu-latest`. Outputs: the problem count, the report folder and the JSON from `check --json`. Tested locally with `docker run`; not yet run on GitHub's runners.
+- What doesn't work on Linux: `run` and `export` (the image only runs `check`; capturing and exporting need a Mac), and macOS text recognition (Tesseract reads fewer scripts; the image has data for 34 common languages).
+- Without `--app` (or `--strings`) the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.
+
 ## Price and licence
 
 - `check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence.

@@ -51,6 +51,7 @@
       <li><a href="#expect">Expected content</a></li>
       <li><a href="#licence">Licence</a></li>
       <li><a href="#ci">In CI</a></li>
+      <li><a href="#linux">Linux and CI</a></li>
       <li><a href="#agents">With AI agents</a></li>
       <li><a href="#limits">Limits</a></li>
     </ol>
@@ -284,6 +285,22 @@ jobs:
   <p>To use <code>run</code> or <code>export</code> in CI, set <code>SHOTFLEET_KEY</code> to your licence key (keep it in a secret). It is checked online on each run and uses none of your 3 activations. This check fails open on purpose: if the licence server cannot be reached, the run counts as licensed, so a CI job never fails because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good key. A Mac where you ran <code>shotfleet activate</code> is different: it re-checks about weekly and stops after 30 days offline. With an invalid key, <code>export</code> refuses and <code>run</code> captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with <code>--locales de,ja</code>; <code>run</code> says so on a line that starts with "free tier:", and if the key is refused that line says why.</p>
   <p>With <code>--json</code>, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in <code>run.json</code>.</p>
 
+  <h2 id="linux">Linux and CI</h2>
+  <p><code>check</code> also runs on Linux, in a Docker image with Tesseract inside: <code>ghcr.io/noloman/shotfleet-check</code>. It's free, needs no licence, and is built for amd64 and arm64. It holds the compiled program, Tesseract and aapt2 (for <code>--app app.apk</code>).</p>
+<pre><code>docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk</code></pre>
+  <p>On GitHub there's an Action for it, <a href="https://github.com/noloman/shotfleet-check-action">noloman/shotfleet-check-action</a>, that runs on <code>ubuntu-latest</code>. It fails the job when <code>check</code> finds a problem (<code>warn-only: true</code> turns problems into warnings), and its outputs are the problem count, the report folder and the JSON from <code>check --json</code>. I tested it locally with <code>docker run</code> and the same inputs GitHub passes; it hasn't run on GitHub's runners yet.</p>
+<pre><code>- uses: noloman/shotfleet-check-action@v1
+  with:
+    folder: fastlane/metadata/android
+    app: app/build/outputs/apk/release/app-release.apk</code></pre>
+  <p>What doesn't work on Linux:</p>
+  <ul>
+    <li><code>run</code> and <code>export</code>. The image only runs <code>check</code>, and it says so in one line if you try the others. Capturing and exporting need a Mac.</li>
+    <li>macOS text recognition (Vision). Tesseract reads the screenshots instead, and it can read fewer scripts. The image has Tesseract data for 34 common languages.</li>
+    <li>Without <code>--app</code> (or <code>--strings</code>) the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.</li>
+  </ul>
+  <p>On a real 72-screenshot, 18-language Android set, the image with <code>--app</code> gave the same verdict as the Mac: 0 problems on the clean set, and all 3 planted faults found (an English screen in <code>de/</code>, a copied image, a missing <code>ja</code> screen). Without <code>--app</code> it found the copy and the missing screen, but not the English screen in <code>de/</code>.</p>
+
   <h2 id="agents">With AI agents</h2>
   <p><code>shotfleet mcp</code> is an MCP server with <code>check</code>, <code>run</code> and <code>doctor</code> tools. Add it to Claude Code with <code>claude mcp add shotfleet -- shotfleet mcp</code>, or to any MCP client as the command <code>shotfleet mcp</code>.</p>
   <p>There are also three agent skills that ship with the program: <code>shotfleet</code> (install, set up, run, check and troubleshoot), <code>shotfleet-ci</code> (add <code>shotfleet check</code> to CI) and <code>shotfleet-review</code> (turn a check report into a fix list). Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot all load skills from a folder. One command puts them in the right folders:</p>
@@ -308,7 +325,7 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
     <li><strong>A language the app only half translates</strong> (wger's Japanese is 30%): the app shows its base language for every missing string. <code>run</code> warns when you ask for such a language by name, and <code>check</code> reports the screenshots that came out in the base language.</li>
     <li><strong>Building the app on Xcode 27</strong> (found on wger, the obytes template and kotlinconf-app, 2026-10-03; not shotfleet's doing, but it stops you before the first screenshot): <code>npx expo run:ios</code> ends with "Can't determine id of Simulator app" because Xcode 27 has no Simulator.app, so build the generated project yourself, <code>xcodebuild -workspace ios/<App>.xcworkspace -scheme <App> -configuration Release -sdk iphonesimulator -derivedDataPath ios/build build IPHONEOS_DEPLOYMENT_TARGET=15.1</code> (Xcode 27 refuses the old deployment targets of some pods), and <code>init</code> finds it in <code>ios/build</code>. A Kotlin Multiplatform app needs <code>ARCHS=arm64</code> on its <code>xcodebuild</code> ("Architecture Not Configured in Gradle: ios_x64"; <code>init</code> prints it).</li>
     <li><strong>Typing a password on iOS in Arabic:</strong> <code>inputText</code> into a secure (password) field drops Latin letters when the app runs in Arabic (seen on the Expo app, iOS 26.4: <code>abcdef</code> typed nothing, <code>abc123</code> typed only <code>123</code>, <code>123456</code> typed all six); name and e-mail fields are fine. Use digits for a demo password.</li>
-    <li>Linux: <code>check</code> and the Android readers run from source on Linux: they need Tesseract, there is no Linux installer yet, and <code>run</code> on a Linux emulator has not been tried. iOS needs a Mac.</li>
+    <li>Linux: <code>check</code> and the Android readers run from source on Linux: they need Tesseract, there is no Linux installer yet, and <code>run</code> on a Linux emulator has not been tried. iOS needs a Mac. For <code>check</code> there is also a <a href="#linux">Docker image</a>.</li>
     <li>iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.</li>
     <li>Run times depend on the Mac and on Maestro: in one run of my app on my M1 Pro with 4 simulators and Maestro 2.0.10, 18 languages took 9 minutes on iOS and 15 on Android; on Maestro 2.11.0 shotfleet retried some iOS languages because a simulator's driver started slowly.</li>
     <li>shotfleet uploads nothing to a store: fastlane does that (see Uploading above).</li>

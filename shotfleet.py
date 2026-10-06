@@ -4592,6 +4592,9 @@ def main_dispatch(a):
         if a.cmd == "init": return cmd_init(a.builds, a.dir)
         global NO_HOOKS
         NO_HOOKS = bool(getattr(a, "no_hooks", False))
+        if a.cmd in ("run", "export") and os.environ.get("SHOTFLEET_IMAGE") == "check":  # set by the Dockerfile
+            raise Fail(f"`{a.cmd}` doesn't work in the shotfleet-check Docker image: it has no simulators, emulators or Maestro, "
+                       "so it only runs `check`. Use `run` and `export` on a Mac")
         if a.cmd == "export": require_licence()
         if a.cmd == "run":
             apply_free_tier()
