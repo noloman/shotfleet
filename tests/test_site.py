@@ -335,8 +335,23 @@ class DockerPending(unittest.TestCase):
         self.assertGreater(seen, 0, "no mention found at all: is this test still looking at the right files?")
 
 
-if __name__ == "__main__":
-    unittest.main()
+class ByocPending(unittest.TestCase):
+    """Bring your own capture ([capture], your own XCUITest tests on iOS) has not run end to end on a device yet. Until site/BYOC_DEVICE_PROVEN
+    exists, every public line that offers it carries CAVEAT. After tools/fixture-byoc-e2e.sh passes on a device: drop the caveats, add the flag."""
+    CAVEAT = "not run end to end on a device yet"
+    FILES = [ROOT / "README.md"] + [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt")]
+    PROVEN = (ROOT / "site/BYOC_DEVICE_PROVEN").exists()
+
+    def test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven(self):
+        seen = 0
+        for p in self.FILES:
+            for n, line in enumerate(p.read_text().splitlines(), 1):
+                with self.subTest(file=p.name, line=n):
+                    if self.PROVEN: self.assertNotIn(self.CAVEAT, line, "BYOC_DEVICE_PROVEN exists: remove the caveat")
+                    elif "your own XCUITest" in line:
+                        seen += 1
+                        self.assertIn(self.CAVEAT, line, "BYOC is not device-proven yet: say so on this line")
+        if not self.PROVEN: self.assertGreaterEqual(seen, 10, "fewer BYOC lines than expected: is this test still looking at the right files?")
 
 
 class Hsts(unittest.TestCase):
@@ -344,3 +359,7 @@ class Hsts(unittest.TestCase):
         block = (ROOT / "site/public/_headers").read_text().split("\n\n")[0]
         self.assertIn("Strict-Transport-Security: max-age=15552000", block)
         self.assertNotIn("includeSubDomains", block); self.assertNotIn("preload", block)
+
+
+if __name__ == "__main__":
+    unittest.main()

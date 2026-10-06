@@ -15,7 +15,7 @@
 ## Requirements
 
 - An Apple silicon Mac. The installer refuses Intel Macs. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
-- Maestro 2.x and Java 17+ (Maestro needs it). On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. Android still needs a Maestro flow.
+- Maestro 2.x and Java 17+ (Maestro needs it). On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet. Android still needs a Maestro flow.
 - Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
 - Text typed into fields by the flow is not translated by itself: it stays the same in every language unless you set per-language `[inputs]` (iOS; on Android that needs a Maestro that sets MAESTRO_DEVICE_UDID).
@@ -50,7 +50,7 @@ DOCKER-PENDING -->
 ## Common questions
 
 - Why are my localized screenshots in English? Usually the app never got the language (with fastlane snapshot, `setupSnapshot(app)` must run before `app.launch()`), or the app has no translation for it. `check --app` reports both: screenshots whose text is in another language, and store listings in a language the app doesn't have.
-- Can Maestro take screenshots in every language? Maestro sets the language for the whole device when it starts it (`maestro start-device --device-locale de_DE`); there is no place inside a flow to set it, and a flow's text selectors (`tapOn: "Next"`) don't change with it. shotfleet keeps one English flow, rewrites its text selectors for each language from the app's own translations, and runs the languages in parallel.
+- Can Maestro take screenshots in every language? Maestro's own setting for it is the device locale, chosen when the device starts (`maestro start-device --device-locale de_DE`); its docs have no flow command for it, and a flow's text selectors (`tapOn: "Next"`) don't change with it. shotfleet keeps one English flow, passes the app's language as launch arguments (iOS) or per-app language (Android), rewrites the text selectors for each language from the app's own translations, and runs the languages in parallel.
 - Does it check screenshot sizes? Yes: every App Store display class, Play's 320 to 3840 px, at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, and a 13" iPad set when the app runs on iPad.
 
 ## Links

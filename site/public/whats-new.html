@@ -57,8 +57,8 @@
 </header>
 
 <!--
-  RELEASE STEP: the 0.1.5 heading holds the marker RELEASE_DATE (in a comment) until release day. Replace the whole comment with the date
-  from the CHANGELOG heading (YYYY-MM-DD). tests/test_site.py WhatsNew and packaging/publish.sh both refuse a release that still has it.
+  RELEASE STEP: the 0.1.6 heading holds the marker RELEASE_DATE (in a comment) until release day. Replace the whole comment with the date
+  the CHANGELOG heading gets on release day (it waits as "## 0.1.6 (RELEASE_DATE marker)" too). tests/test_site.py WhatsNew and packaging/publish.sh both refuse a release that still has it.
   Every bullet here has a row in tests/claims.json; add one for each new bullet.
 -->
 
@@ -66,6 +66,16 @@
   <section class="page">
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
+
+    <h2 id="v0-1-6">0.1.6, <!-- RELEASE_DATE --></h2>
+    <ul>
+      <li>New in 0.1.6, on iOS: <code>run</code> can run your own XCUITest screenshot tests (<code>XCTAttachment</code> or fastlane’s <code>SnapshotHelper</code>) instead of a Maestro flow, on several simulators at once, one language each, and then checks what they saved. For that you need neither Maestro nor Java. I tried it by hand first, but the finished feature is new in 0.1.6 and not run end to end on a device yet. The <a href="/docs#xcuitest">docs</a> show how to set it up.</li>
+      <li><code>check</code> understands fastlane supply’s file names, like <code>1_de-DE.png</code>. Before, it said every language was missing every other language’s screenshots. On a real Google Play set in 15 languages, 15 false “missing” lines are gone.</li>
+      <li>A Russian screen with English job titles in it is no longer called Kazakh when the app’s own Russian strings match it. A Ukrainian screen in the Russian folder is still caught.</li>
+      <li>When a language fails, <code>run</code> now says where it stopped: the step, the path to the failure screenshot, and up to 12 texts that were on that screen.</li>
+      <li>iPad in landscape: when Maestro taps at the portrait position and misses, <code>run</code> says so in one line and tells you what to do instead.</li>
+      <li>The “this Mac was short of memory” note only shows up when a failure really looks like that, not on every failed flow.</li>
+    </ul>
 
     <h2 id="v0-1-5">0.1.5, 2026-10-06</h2>
 

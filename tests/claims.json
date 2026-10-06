@@ -1839,7 +1839,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "store screenshots of another of my apps flagged by <code>shotfleet check</code>"
+   "old App Store screenshots of AnywhereRoles, another of my apps, flagged by <code>shotfleet check</code>"
   ],
   "status": "evidence",
   "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
@@ -2804,7 +2804,7 @@
  },
  {
   "id": "C175",
-  "claim": "`run` needs Maestro (or, on iOS, the team's own XCUITest tests), `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included",
+  "claim": "`run` needs Maestro, `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included (the iOS clause 'or your own XCUITest tests' of the same sentences is C235)",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -2812,8 +2812,8 @@
    "site/public/llms.txt"
   ],
   "where_text": [
-   "`run` needs Maestro, or on iOS your own XCUITest tests (see below). `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
-   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a>. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
+   "`check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
+   "<code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
    "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots, no Maestro needed.",
    "fastlane snapshot from XCUITest, fastlane screengrab from Espresso with its timestamped file names, a plain folder per language, by hand) without capturing anything and without Maestro."
   ],
@@ -3448,14 +3448,14 @@
  },
  {
   "id": "C212",
-  "claim": "Docs FAQ: only run needs Maestro 2.x; check works on fastlane snapshot and screengrab folders and on a plain folder per language",
+  "claim": "Docs FAQ: run needs Maestro 2.x (on iOS it can use the team's own XCUITest tests instead, C235); check doesn't need Maestro and works on fastlane snapshot and screengrab folders and on a plain folder per language",
   "where": [
    "site/public/docs.html",
    "site/public/llms.txt"
   ],
   "where_text": [
-   "Only for <code>run</code>, which drives your app with Maestro 2.x. <code>check</code> doesn't need Maestro",
-   "Keep them, and if you want, run the free `check` on the folder they write."
+   "<code>check</code> doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language.",
+   "without capturing anything and without Maestro."
   ],
   "status": "proven",
   "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C175 (CheckAnyFolder tests) and C048 (check is free). The plain folder per language: C178 and the docs check section.",
@@ -3563,15 +3563,15 @@
  },
  {
   "id": "C219",
-  "claim": "llms.txt: Maestro sets the locale for the whole device at start (maestro start-device --device-locale), not inside a flow, and text selectors don't change with it; shotfleet rewrites the selectors per language and runs the languages in parallel",
+  "claim": "llms.txt: Maestro's own language setting is the device locale chosen when the device starts (maestro start-device --device-locale); its docs have no flow command for it and text selectors don't change with it; shotfleet passes the language as launch arguments (iOS) or per-app language (Android), rewrites the selectors per language and runs the languages in parallel",
   "where": [
    "site/public/llms.txt"
   ],
   "where_text": [
-   "Maestro sets the language for the whole device when it starts it (`maestro start-device --device-locale de_DE`); there is no place inside a flow to set it"
+   "Maestro's own setting for it is the device locale, chosen when the device starts (`maestro start-device --device-locale de_DE`); its docs have no flow command for it"
   ],
   "status": "evidence",
-  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Maestro's docs page 'Test in different locales' (docs.maestro.dev/maestro-flows/flow-control-and-logic/test-in-different-locales), read 2026-10-06: the locale is a device setting given with --device-locale to start-device or cloud, 'there is no place within a Flow itself' to define it, and maestro test cannot set it. The rewrite: C015 (proven); parallel runs: C001.",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Maestro's docs page 'Test in different locales' (docs.maestro.dev/maestro-flows/flow-control-and-logic/test-in-different-locales), read 2026-10-06: the locale is a device setting given with --device-locale to start-device or cloud, 'there is no place within a Flow itself' to define it, and maestro test cannot set it. The rewrite: C015 (proven); parallel runs: C001. Wording fixed 2026-10-06 (review finding 9): the old 'there is no place inside a flow to set it' contradicted shotfleet itself, which sets the language inside the flow: localize_flow adds AppleLanguages/AppleLocale launch arguments to every launchApp (iOS), and Android uses per-app language (cmd locale set-app-locales, API 33+).",
   "layer": "unit",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": ""
@@ -3617,7 +3617,7 @@
    "these are real shotfleet output, only made smaller for the web"
   ],
   "status": "evidence",
-  "proof": "Source frames (2026-10-06): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/{ja/1_jobs-list,hi/4_salary,ru/7_status,zh-CN/2_filters}.png and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/raw/{en/iphone-69-01-jobs-list,de/iphone-69-02-fit-trust,ko/iphone-69-03-saved-pipeline,ja/iphone-69-04-application-tracker}.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/ (no frames, captions or edits). Only slots the owner reviewed as public-safe: no iPhone slot 05, no slot 06 paywall, no iPad frame.",
+  "proof": "Source frames (2026-10-06): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/{ja/1_jobs-list,hi/4_salary,ru/7_status,zh-CN/2_filters}.png and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/raw/{en/iphone-69-01-jobs-list,de/iphone-69-02-fit-trust,ko/iphone-69-03-saved-pipeline,ja/iphone-69-04-application-tracker}.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/ (no frames, captions or edits). Only slots the owner reviewed as public-safe: no iPhone slot 05, no slot 06 paywall, no iPad frame. Re-encoding the source with that command gives slightly different bytes (mean pixel difference about 1/255): same resized frames, other encoder settings (review 2026-10-06, finding 19).",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3632,7 +3632,7 @@
    "On 2026-10-06 I ran shotfleet 0.1.4 on AnywhereRoles, also my app: 120 Android screenshots (15 languages × 8 screens) on 1 emulator in 1826 s with 0 retries"
   ],
   "status": "evidence",
-  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/run.json (2026-10-06 16:55): 15 locales, each ok with screenshots 8, emulators 1, wall_seconds 1826; /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/and-run11.log: run by shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet, 'booting 1 emulators (shotfleet_android, 1080x1920)', no 'retrying' line, 'captured 15/15 locales in 1826s on 1 emulators'; docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
+  "proof": "research/anywhereroles-run-2026-10-06/out-android/run.json (2026-10-06 16:55): 15 locales, each ok with screenshots 8, emulators 1, wall_seconds 1826; research/anywhereroles-run-2026-10-06/logs/and-run11.log: run by shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet, 'booting 1 emulators (shotfleet_android, 1080x1920)', no 'retrying' line, 'captured 15/15 locales in 1826s on 1 emulators'; docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3647,7 +3647,7 @@
    "108 iPhone screenshots (18 languages × 6 screens) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s"
   ],
   "status": "evidence",
-  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/run.json (2026-10-06 18:17): 18 locales, each ok with screenshots 6, simulators 2, wall_seconds 3420; /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/ios-run2.log: 'booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)', 'captured 18/18 locales in 3420s on 2 simulators'; maestro1.log shows iOS 26.4; docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
+  "proof": "research/anywhereroles-run-2026-10-06/out-iphone/run.json (2026-10-06 18:17): 18 locales, each ok with screenshots 6, simulators 2, wall_seconds 3420; research/anywhereroles-run-2026-10-06/logs/ios-run2.log: 'booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)', 'captured 18/18 locales in 3420s on 2 simulators'; maestro1.log shows iOS 26.4; docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3662,7 +3662,7 @@
    "My Mac was heavily loaded and short of memory, so shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each needed a second try."
   ],
   "status": "evidence",
-  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/ios-run2.log: 'memory pressure is elevated: using 2 devices instead of 4', 'load 234 on 10 cores', 'retrying 3: ja, tr, zh-Hans'; /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/run.json: attempts 2 for ja, tr and zh-Hans, 1 for the other 15, all ok.",
+  "proof": "research/anywhereroles-run-2026-10-06/logs/ios-run2.log: 'memory pressure is elevated: using 2 devices instead of 4', 'load 234 on 10 cores', 'retrying 3: ja, tr, zh-Hans'; research/anywhereroles-run-2026-10-06/out-iphone/run.json: attempts 2 for ja, tr and zh-Hans, 1 for the other 15, all ok.",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3677,22 +3677,22 @@
    "Check found 0 problems in both."
   ],
   "status": "evidence",
-  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/check.json (120 screenshots, 0 problems, 0 notes) and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/check.json (108 screenshots, 0 problems, 0 notes), both 2026-10-06; and-run11.log and ios-run2.log end with 'checked 120 screenshots in 15 languages: 0 problem(s)' and 'checked 108 screenshots in 18 languages: 0 problem(s)'.",
+  "proof": "research/anywhereroles-run-2026-10-06/out-android/check.json (120 screenshots, 0 problems, 0 notes) and research/anywhereroles-run-2026-10-06/out-iphone/check.json (108 screenshots, 0 problems, 0 notes), both 2026-10-06; and-run11.log and ios-run2.log end with 'checked 120 screenshots in 15 languages: 0 problem(s)' and 'checked 108 screenshots in 18 languages: 0 problem(s)'.",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
  },
  {
   "id": "C227",
-  "claim": "Before the recapture, check on AnywhereRoles' old Google Play screenshots found 127 problems, 103 of them translated captions over an English UI (one English capture with translated captions)",
+  "claim": "Before the recapture, check on AnywhereRoles' old Google Play screenshots found 127 problems: 103 translated captions over an English UI (one English capture with translated captions), 15 false 'missing' lines from 0.1.4's reading of fastlane supply's file names (fixed in 0.1.6), and 9 others",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions."
+   "check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions. Of the other 24, 15 were false “missing” lines from a bug in how 0.1.4 read fastlane supply’s file names (fixed in 0.1.6), and 9 were others."
   ],
   "status": "evidence",
-  "proof": "docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2), finding F1: shotfleet check fastlane/metadata/android with 0.1.3 and 0.1.4, 'checked 120 screenshots in 15 languages: 127 problem(s)'; 103 lines 'the caption is in X but the app UI shows en strings'; cause: one English capture set with localized captions. After the recapture the same check gives 16 (all false, F2 and F7): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/check/android/check.json (2026-10-06 18:46).",
+  "proof": "docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2), finding F1: shotfleet check fastlane/metadata/android with 0.1.3 and 0.1.4, 'checked 120 screenshots in 15 languages: 127 problem(s)'; 103 lines 'the caption is in X but the app UI shows en strings'; cause: one English capture set with localized captions. After the recapture the same check gives 16 (all false, F2 and F7): research/anywhereroles-run-2026-10-06/check-android-after/check.json (2026-10-06 18:46). The 15: dogfood F2 (one false 'missing 1_en-US.png, ...' line per locale, research/anywhereroles-run-2026-10-06/dogfood-excerpt.md), fixed in 0.1.6 by CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is (C031). The other 9 (127 - 103 - 15) are not explained in the record: the 127-line output was not saved as a file.",
   "layer": "device",
   "assertion": "Recorded check output on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3707,22 +3707,24 @@
    "writing and debugging the Android flow took me several failed runs before this one"
   ],
   "status": "evidence",
-  "proof": "/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/logs/and-run1.log to and-run10.log (each ends in FAIL, for example 'FAIL en 3/8 screenshots (retried)  Element not found: Text matching regex: Salary Insights') and the kept folders /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android-run2-failed to out-android-run10-es-fail; docs/dogfood-shotfleet-2026-10.md in the app's repository (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2) ('failed Android runs while the flow was being fixed', 9 failed runs).",
+  "proof": "research/anywhereroles-run-2026-10-06/logs/and-run1.log to and-run10.log (nine of and-run1 to and-run10 ended in FAIL, run3 was a one-language success; for example 'FAIL en 3/8 screenshots (retried)  Element not found: Text matching regex: Salary Insights') and the kept folders /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android-run2-failed to out-android-run10-es-fail; docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2) ('failed Android runs while the flow was being fixed', 9 failed runs).",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
  },
  {
   "id": "C229",
-  "claim": "Demo evidence: 2026-10-06, AnywhereRoles, shotfleet 0.1.4: Android 120 on 1 emulator with 0 retries, iPhone 108 on 2 simulators with 3 languages retried once, 0 problems; the old Play screenshots had 127 problems, 103 translated captions over English",
+  "claim": "Demo evidence: 2026-10-06, AnywhereRoles, shotfleet 0.1.4: Android 120 on 1 emulator with 0 retries, iPhone 108 on 2 simulators with 3 languages retried once, 0 problems; the old Play screenshots had 127 problems: 103 translated captions over English, 15 false 'missing' lines from a 0.1.4 bug (fixed in 0.1.6), 9 others",
   "where": [
+   "site/public/demo.html",
    "site/public/demo.html"
   ],
   "where_text": [
-   "shotfleet 0.1.4, a full run on both platforms: Android, 15 languages × 8 screens = 120 screenshots on 1 emulator, 0 retries; iPhone, 18 languages × 6 screens = 108 screenshots on 2 simulators, 3 languages retried once. Check found 0 problems in both. Before it, check on the app’s old Google Play screenshots found 127 problems, 103 of them translated captions over English screens."
+   "shotfleet 0.1.4, a full run on both platforms: Android, 15 languages × 8 screens = 120 screenshots on 1 emulator, 0 retries; iPhone, 18 languages × 6 screens = 108 screenshots on 2 simulators, 3 languages retried once. Check found 0 problems in both. Before it, check on the app’s old Google Play screenshots found 127 problems: 103 translated captions over English screens, 15 false “missing” lines from a 0.1.4 bug with fastlane supply’s file names (fixed in 0.1.6), and 9 others.",
+   "Record: research/anywhereroles-run-2026-10-06/"
   ],
   "status": "evidence",
-  "proof": "Same records as C211 to C215: out-android/run.json and check.json, out-iphone/run.json and check.json, logs/and-run11.log and ios-run2.log, and docs/dogfood-shotfleet-2026-10.md (F1) in the app's repository, all 2026-10-06.",
+  "proof": "Same records as C222 to C228, copied into this repository on 2026-10-06: research/anywhereroles-run-2026-10-06/out-android/run.json and check.json, research/anywhereroles-run-2026-10-06/out-iphone/run.json and check.json, research/anywhereroles-run-2026-10-06/logs/and-run11.log and ios-run2.log, and the run report's F1 and F2 (research/anywhereroles-run-2026-10-06/dogfood-excerpt.md, from docs/dogfood-shotfleet-2026-10.md in the app's repository).",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3756,9 +3758,9 @@
    "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.",
    "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix."
   ],
-  "status": "proven",
+  "status": "partial",
   "layer": "unit",
-  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half (NoKeepTests in tools/fixture-byoc-e2e.sh) has not run yet.",
+  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half (NoKeepTests in tools/fixture-byoc-e2e.sh) has not run yet. Partial: every test fakes xcodebuild; the page describes real behaviour on a simulator, which is device-untested until tools/fixture-byoc-e2e.sh passes (C235).",
   "assertion": "A [capture] run whose xcodebuild passes but collects 0 PNGs for a language reports that language failed with the .keepAlways / setupSnapshot hint and exits 1; a language missing a name another language has fails with 'missing <name>'.",
   "fix": "",
   "test": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed"
@@ -3774,9 +3776,9 @@
    "shotfleet sets each simulator's language itself and also passes",
    "shotfleet sets each simulator's language itself and also passes"
   ],
-  "status": "proven",
+  "status": "partial",
   "layer": "unit",
-  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature has not run on a simulator yet.",
+  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature has not run on a simulator yet. Partial: every test fakes xcodebuild and simctl; the language mechanism ran only by hand (E4/E5), not as the built feature, until tools/fixture-byoc-e2e.sh passes (C235).",
   "assertion": "set_sim_language runs simctl spawn <udid> defaults write -g AppleLanguages -array <lp> and AppleLocale -string <locale>; the .xctestrun copy sits beside the original (formats 1 and 2) with the arguments; language.txt/locale.txt/snapshot-launch_arguments.txt are back after the run and after an exception or Ctrl-C.",
   "fix": "",
   "test": "FastlaneCollector.test_settings_files_come_back_when_the_run_fails"
@@ -3801,14 +3803,14 @@
  },
  {
   "id": "C234",
-  "claim": "init --capture writes the [capture] table from the shared scheme with UI tests, and doctor stops asking for Maestro for iOS when the config has [capture]",
+  "claim": "init --capture writes the [capture] table from the shared scheme with UI tests, and doctor stops asking for Maestro for iOS when the config has [capture] (doctor reads ./shotfleet.toml, or the config path given as its argument)",
   "where": [
    "README.md",
    "site/public/docs.html"
   ],
   "where_text": [
-   "`shotfleet doctor` sees the `[capture]` table and stops asking for Maestro for iOS.",
-   "<code>shotfleet doctor</code> sees the <code>[capture]</code> table and stops asking for Maestro for iOS."
+   "`shotfleet doctor` (run in the config's folder, or `shotfleet doctor path/to/shotfleet.toml`) sees the `[capture]` table and stops asking for Maestro for iOS.",
+   "<code>shotfleet doctor</code> (run in the config's folder, or <code>shotfleet doctor path/to/shotfleet.toml</code>) sees the <code>[capture]</code> table and stops asking for Maestro for iOS."
   ],
   "status": "proven",
   "layer": "unit",
@@ -3819,22 +3821,34 @@
  },
  {
   "id": "C235",
-  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots",
+  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6 and not run end to end on a device yet",
   "where": [
    "README.md",
    "site/public/docs.html",
    "site/public/index.html",
-   "site/public/llms.txt"
+   "site/public/llms.txt",
+   "site/public/alternatives.html",
+   "site/public/docs.html",
+   "README.md",
+   "site/public/docs.html",
+   "README.md",
+   "site/public/docs.html"
   ],
   "where_text": [
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
-   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither.",
-   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither."
+   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
+   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
+   "(on iOS, your own XCUITest tests can stand in for Maestro, but that part is new in 0.1.6 and not run end to end on a device yet)",
+   "can use <a href=\"#xcuitest\">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
+   "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6 and not run end to end on a device yet, see below).",
+   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6 and not run end to end on a device yet).",
+   "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6 and not run end to end on a device yet) needs neither.",
+   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet)"
   ],
   "status": "untested",
   "layer": "device",
-  "proof": "Pending: the device test tools/fixture-byoc-e2e.sh (de and ja on 2 simulators, attachments, a SnapshotHelper-style writer, and a test without .keepAlways) has not run; the coordinator schedules it under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md).",
+  "proof": "Pending: the device test tools/fixture-byoc-e2e.sh (de and ja on 2 simulators, attachments, a SnapshotHelper-style writer, and a test without .keepAlways) has not run; the coordinator schedules it under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending.test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'not run end to end on a device yet'. After the device test passes, the coordinator removes the caveats and adds the flag file.",
   "assertion": "SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh prints 'PASS: all N assertions passed'.",
   "fix": ""
  },
@@ -3854,5 +3868,104 @@
   "proof": "research/byoc-ios-experiment-2026-10-06.md (branch claude/byoc-ios-experiment, b2b95da), 2026-10-06: E4 fixture, byoc-e4-de and byoc-e4-ja in parallel, check confirmed de/ja on every screen; E5 subscrifi's unchanged SnapshotHelper test, 12 screenshots collected, check: every German screen shows English (LocalizationHelper defaults to 'en'). Evidence in ~/Developer/shotfleet-rc-build/byoc-ios/.",
   "assertion": "The research note's E4 and E5 sections say so, with logs in byoc-ios/.",
   "fix": ""
+ },
+ {
+  "id": "C237",
+  "claim": "What's new 0.1.6: on iOS, run can run the team's own XCUITest screenshot tests instead of a Maestro flow, several simulators at once, one language each, then checks them; needs neither Maestro nor Java; tried by hand, the finished feature not run end to end on a device yet",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>run</code> can run your own XCUITest screenshot tests",
+   "the finished feature is new in 0.1.6 and not run end to end on a device yet"
+  ],
+  "status": "untested",
+  "layer": "device",
+  "proof": "Same as C235 (device test pending) and C236 (tried by hand, E4/E5). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C238",
+  "claim": "What's new 0.1.6: check understands fastlane supply's <n>_<locale>.png names; the 15 false 'missing' lines on a real 15-language Play set are gone",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>check</code> understands fastlane supply’s file names",
+   "On a real Google Play set in 15 languages, 15 false “missing” lines are gone."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is. Real set: AnywhereRoles' committed Play folder, 16 problems = 15 F2 lines + ru-RU/8 before the fix (research/anywhereroles-run-2026-10-06/check-android-after/check.json, research/anywhereroles-run-2026-10-06/dogfood-excerpt.md F2); C031. CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is"
+ },
+ {
+  "id": "C239",
+  "claim": "What's new 0.1.6: a Russian screen read as Kazakh passes when the app's Russian strings match it; a Ukrainian screen in the Russian folder is still caught",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "A Russian screen with English job titles in it is no longer called Kazakh"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckAnyFolder.test_russian_screen_detection_calls_kazakh_passes_when_the_apps_russian_strings_match, CheckAnyFolder.test_ukrainian_screen_in_the_russian_folder_is_still_caught (C026). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_russian_screen_detection_calls_kazakh_passes_when_the_apps_russian_strings_match"
+ },
+ {
+  "id": "C240",
+  "claim": "What's new 0.1.6: a failed language names the step it stopped on, the failure screenshot's path and up to 12 texts on that screen",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "When a language fails, <code>run</code> now says where it stopped"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "FailureLine.test_names_the_step_the_screenshot_and_up_to_12_texts_from_the_hierarchy, FailureLine.test_without_a_hierarchy_the_screenshot_is_read_once (tests/test_failure_messages.py). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "FailureLine.test_names_the_step_the_screenshot_and_up_to_12_texts_from_the_hierarchy"
+ },
+ {
+  "id": "C241",
+  "claim": "What's new 0.1.6: when Maestro taps an iPad in landscape at the portrait position, run says so in one line with what to do instead",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "when Maestro taps at the portrait position and misses, <code>run</code> says so in one line"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "LandscapeHint.test_the_real_ipad_failure_gets_the_hint, LandscapeHint.test_no_hint_on_android (tests/test_failure_messages.py), from the real iPad log of the AnywhereRoles run (dogfood F12). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "LandscapeHint.test_the_real_ipad_failure_gets_the_hint"
+ },
+ {
+  "id": "C242",
+  "claim": "What's new 0.1.6: the short-of-memory note only shows with the errors it explains, not on every failed flow",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "note only shows up when a failure really looks like that"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "MemoryNote.test_a_plain_assertion_failure_gets_no_memory_note, MemoryNote.test_the_note_comes_with_the_errors_it_explains (tests/test_failure_messages.py). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "MemoryNote.test_a_plain_assertion_failure_gets_no_memory_note"
  }
 ]

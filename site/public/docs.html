@@ -76,7 +76,7 @@
      "name": "Do I need Maestro?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Only for run, which drives your app with Maestro 2.x. check doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language."
+      "text": "Only for run, which drives your app with Maestro 2.x (on iOS, run can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet). check doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language."
      }
     },
     {
@@ -84,7 +84,7 @@
      "name": "I already use fastlane snapshot. Do I have to switch?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "No. Keep your UI tests and point check at the folder they write. It finds screenshots that came out in the wrong language, copies, missing screens and store-rule problems."
+      "text": "No. Keep your UI tests and point check at the folder they write (see Check screenshots you already have). With --app it finds screenshots that came out in the wrong language, copies, missing screens and store-rule problems."
      }
     },
     {
@@ -92,7 +92,7 @@
      "name": "Does it work with Flutter or React Native?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Yes, from your translation files (the strings key). I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
+      "text": "Yes, from your translation files (the strings key), in the cases I ran: I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
      }
     },
     {
@@ -108,7 +108,7 @@
      "name": "Does it add device frames or marketing captions?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens."
+      "text": "No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens (how they compare)."
      }
     },
     {
@@ -140,7 +140,7 @@
   <p class="label">Docs</p>
   <h1>shotfleet documentation</h1>
   <p class="lede">shotfleet is a macOS command-line tool that takes your localized App Store and Google Play screenshots from one English Maestro flow, in every language your app has, and checks that each one is in the right language. This page covers how to install shotfleet, take your screenshots, check them and hand them to fastlane. If something here is wrong or unclear, email me at <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
-  <p class="small">Last checked against version 0.1.5 on 2026-10-06.</p>
+  <p class="small">Last checked against version 0.1.6 on 2026-10-06.</p>
 
   <nav class="toc" aria-label="On this page">
     <ol>
@@ -172,7 +172,7 @@
     <li>Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</li>
     <li>Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set <code>device_type</code> in the config. Xcode 26.x has not been run.</li>
     <li>macOS on Apple silicon only. The installer refuses Intel Macs.</li>
-    <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, <code>run</code> can use <a href="#xcuitest">your own XCUITest tests</a> instead, and then needs neither.</li>
+    <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, <code>run</code> can use <a href="#xcuitest">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.</li>
     <li>Xcode for iOS, the Android SDK for Android.</li>
     <li><code>shotfleet doctor --fix</code> downloads what <code>doctor</code> found missing (Maestro 2.11.0, a Java 21 runtime, the Android command-line tools) after showing the plan and asking once; it never uses <code>sudo</code> and does not touch Xcode.</li>
     <li>Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in <code>ANDROID_HOME</code>, <code>ANDROID_SDK_ROOT</code>, <code>~/Library/Android/sdk</code>, Homebrew's <code>android-commandlinetools</code>, or next to an <code>adb</code> on your PATH, and uses any installed arm64 <code>google_apis</code> or <code>google_apis_playstore</code> image of API 33 or newer (or the <code>system_image</code> from the config). <code>shotfleet doctor</code> prints the <code>sdkmanager</code> commands for whatever is missing. The first Android run creates its own emulator, <code>shotfleet_android</code>, from that image; your other emulators are not touched.</li>
@@ -227,7 +227,7 @@ fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --ski
   <p><strong>Fresh state:</strong> each language starts from a clean install. On iOS that is <code>clearState</code>; on Android shotfleet clears the app data itself, because <code>clearState</code> would also erase the app language.</p>
 
   <h2 id="check">Check screenshots you already have</h2>
-  <p><code>run</code> needs Maestro, or on iOS <a href="#xcuitest">your own XCUITest tests</a>. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
+  <p><code>run</code> needs Maestro, or on iOS <a href="#xcuitest">your own XCUITest tests</a> (new in 0.1.6 and not run end to end on a device yet). <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
 <pre><code>shotfleet check fastlane/screenshots                       # snapshot: screenshots/&lt;locale&gt;/
 shotfleet check fastlane/metadata/android                  # screengrab: &lt;locale&gt;/images/phoneScreenshots/
 shotfleet check fastlane/ --app path/to/MyApp.app          # a fastlane folder with both: the build picks its half
@@ -249,7 +249,7 @@ shotfleet check shots/ --locale en --app path/to/MyApp.app # a flat folder of on
   <p><code>export</code> also takes a plain <code>&lt;locale&gt;/*.png</code> folder of such a set (Apple Watch, Mac, Apple TV, Vision Pro) once <code>shotfleet check &lt;folder&gt; --report &lt;folder&gt;</code> has written its <code>check.json</code> there; it copies the set into <code>screenshots/&lt;locale&gt;/</code> next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.</p>
 
   <h3 id="xcuitest">Use your existing XCUITest screenshot tests (iOS)</h3>
-  <p>Already have XCUITest tests that take your screenshots, with <code>XCTAttachment</code> or fastlane's <code>SnapshotHelper</code>? <code>run</code> can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. You don't change your test code, and you don't need Maestro or Java for this.</p>
+  <p>Already have XCUITest tests that take your screenshots, with <code>XCTAttachment</code> or fastlane's <code>SnapshotHelper</code>? <code>run</code> can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an <code>XCTAttachment</code> needs a name and <code>lifetime = .keepAlways</code>, see below), and you don't need Maestro or Java for this.</p>
 <pre><code>[ios]
 locales = ["de", "ja", "ar"]      # default: every language the app ships
 
@@ -259,7 +259,7 @@ xctestrun = ".shotfleet/build/Build/Products/*.xctestrun"   # has to match exact
 only_testing = ["MyAppUITests/ScreenshotTests"]             # optional
 screenshots = "auto"              # "attachments" (XCTAttachment), "fastlane" (SnapshotHelper) or "auto" (both)
 timeout = 900                     # seconds per language</code></pre>
-  <p><code>shotfleet init --capture</code> writes this for you, with the shared scheme that has your UI tests. Then <code>shotfleet run</code> as usual. <code>run --no-build</code> skips the build and uses the <code>.xctestrun</code> that's already there. <code>shotfleet doctor</code> sees the <code>[capture]</code> table and stops asking for Maestro for iOS.</p>
+  <p><code>shotfleet init --capture</code> writes this for you, with the shared scheme that has your UI tests. Then <code>shotfleet run</code> as usual. <code>run --no-build</code> skips the build and uses the <code>.xctestrun</code> that's already there. <code>shotfleet doctor</code> (run in the config's folder, or <code>shotfleet doctor path/to/shotfleet.toml</code>) sees the <code>[capture]</code> table and stops asking for Maestro for iOS.</p>
   <p>How it works, and what your tests need:</p>
   <ul>
     <li>The build is your own command, so whatever your project needs (<code>ARCHS=arm64</code>, a shared scheme, <code>CODE_SIGNING_ALLOWED=NO</code>) goes in there. It runs once, in the config's folder, and its output goes to <code>out/build.log</code>.</li>
@@ -474,11 +474,11 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
   <h3>Does shotfleet upload my screenshots to App Store Connect or Google Play?</h3>
   <p>No. <code>export</code> copies the languages that passed into fastlane's folders, and fastlane does the upload (<code>deliver</code> for the App Store, <code>supply</code> for Google Play).</p>
   <h3>Do I need Maestro?</h3>
-  <p>Only for <code>run</code>, which drives your app with Maestro 2.x. <code>check</code> doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language.</p>
+  <p>Only for <code>run</code>, which drives your app with Maestro 2.x (on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet). <code>check</code> doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language.</p>
   <h3>I already use fastlane snapshot. Do I have to switch?</h3>
-  <p>No. Keep your UI tests and point <code>check</code> at the folder they write (see <a href="#check">Check screenshots you already have</a>). It finds screenshots that came out in the wrong language, copies, missing screens and store-rule problems.</p>
+  <p>No. Keep your UI tests and point <code>check</code> at the folder they write (see <a href="#check">Check screenshots you already have</a>). With <code>--app</code> it finds screenshots that came out in the wrong language, copies, missing screens and store-rule problems.</p>
   <h3>Does it work with Flutter or React Native?</h3>
-  <p>Yes, from your translation files (<a href="#strings">the <code>strings</code> key</a>). I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet.</p>
+  <p>Yes, from your translation files (<a href="#strings">the <code>strings</code> key</a>), in the cases I ran: I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet.</p>
   <h3>Does it work on an Intel Mac?</h3>
   <p>No. It needs an Apple silicon Mac, and the installer refuses Intel Macs.</p>
   <h3>Does it add device frames or marketing captions?</h3>

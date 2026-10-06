@@ -139,6 +139,13 @@ class DryRun(Fixture):
         subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "y"], check=True)
         self.assertIn("docs page '9.9.8'", self.publish("--dry-run").stdout)
 
+    def test_refuses_a_changelog_whose_top_release_heading_is_still_the_placeholder(self):
+        (self.tree / "CHANGELOG.md").write_text("# Changelog\n\n## 9.9.9 (<!-- RELEASE_DATE -->)\n- x\n\n## 9.9.8 (2026-01-01)\n- y\n")
+        subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "y"], check=True)
+        r = self.publish("--dry-run")
+        self.assertEqual(r.returncode, 1); self.assertIn("top release heading still has <!-- RELEASE_DATE -->", r.stdout)
+        self.assertIn("VERSION agrees", r.stdout)  # the placeholder heading still names the version
+
     def test_refuses_a_whats_new_page_whose_release_date_is_still_the_placeholder(self):
         page = self.tree / "site/public/whats-new.html"
         page.write_text("<h2 id=\"v9-9-9\">9.9.9, <!-- RELEASE_DATE --></h2>\n")
