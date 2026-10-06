@@ -1,0 +1,34 @@
+# shotfleet on older macOS in Tart VMs (2026-10-05) — IN PROGRESS
+
+Status: partial. macOS 26.2 run 1 done (one script bug, see below); 26.2 rerun, 26.0 and 13.6 not run.
+
+Why not: the VM runs were queued behind the device jobs (Job 3, demo video, icon check, 0.1.3 gate runs 1 to 4, Flutter re-run, Kuokka check) from 18:29 to past 00:30. A second 26.2 pull at 00:21 was aborted by hand at 00:32: the line had dropped to about 3 MB/s (1.7 of 23.3 GB in 10 min; the first pull at 18:28 took 8 min for all of it), and free disk had fallen from 102 GB (18:25) to 46 GB because of other jobs. A pulled 26.x image takes about 25 to 30 GB of real disk (my estimate: 23.3 GB compressed; `du` showed 51 GB, which counts the APFS clone twice), so with the 40 GB floor a VM needs about 70 GB free before it starts.
+Release tested: the LIVE one from https://shotfleet.com (0.1.2 at the time of the run).
+
+Setup: Tart 2.32.1 (Cirrus Labs, notarized; the GitHub release the Homebrew formula points to, sha256 8554ab4f...4529 matches the formula; `brew install cirruslabs/cli/tart` fails on Homebrew 7 with a `depends_on macos:` error in the tap). Cirrus "vanilla" images (no Homebrew, no Xcode or Command Line Tools, no Java), 4 CPUs, 6 GB, headless, image default login admin/admin. Scripts: `vm-older-macos-2026-10-05/host-run.sh` (gate, pull, run, SSH, delete) and `guest-test.sh` (the tests inside the VM).
+
+## macOS 26.2 (25C56), run 1, 18:28 to 18:37
+
+`tools/selftest.sh --download --licence-probe` inside the VM: **PASS** (raw: `vm-older-macos-2026-10-05/macos-26.2-run1.txt`)
+
+| Test | Result | Key line |
+|---|---|---|
+| download + checksum + install into a throwaway HOME | PASS | `install into a throwaway HOME: ok` |
+| live `install.sh` into a throwaway HOME | PASS | `installed shotfleet 0.1.2 to .../.local/bin` |
+| `--version` | PASS | `shotfleet 0.1.2` (no dyld / Expat error on 26.2) |
+| `doctor` (150 s limit) | PASS | exit 2 (Java, Maestro, Xcode missing, as expected); `ok text recognition ready in 2 s` |
+| `check` on 2 drawn screenshots | PASS | `checked 2 screenshots in 2 languages: 0 problem(s)` |
+| licence: made-up key | PASS | refused by Gumroad (`licence probe: ok`) |
+| Gatekeeper, .pkg (quarantined, assessments re-enabled) | **rejected by `spctl -t install`** (host 27.0: accepted); `installer -pkg` installed it and `/usr/local/lib/shotfleet/shotfleet --version` printed `shotfleet 0.1.2` | `rejected source=Notarized Developer ID` |
+| Gatekeeper, quarantined program from the tarball | not run (script bug) | `spctl -t exec`: `rejected` (same as on the host for a bare command-line program: "does not seem to be an app") |
+
+My own per-test steps (two real wger PNGs, explicit licence.json check, quarantined run) did not run in run 1: the time-limit helper was a shell function called through `env`. Fixed; rerun pending. The Cirrus 26.2 image starts with `assessments disabled`; `sudo spctl --global-enable` turned it on.
+
+## What this proves and what not
+
+Proven, for the live 0.1.2 on macOS 26.2 in a VM with nothing installed: it downloads, installs, starts (so the Expat/dyld problem of the 0.1.0 folder does not affect 0.1.2 on 26.2), `doctor` runs to the end, the bundled text recognition works, `check` runs, and the packaged program reaches Gumroad over TLS and a made-up key is refused.
+Not proven: macOS 13.x and 26.0/26.1 (not run); simulators and Android (a VM can run neither); a real buyer's Mac (a VM is not one); the Gatekeeper path for a browser download (the .pkg assessment was rejected in the VM, the quarantined tarball program was not run in run 1).
+
+## Recommendation for the public macOS line (proposal only)
+
+Keep "Built for macOS 13 or later on Apple silicon" (a build fact). The "tested on" part could widen to "tested on macOS 14, 15, 26.2 and 27" only after one more check, because the 14 and 15 evidence is for 0.1.1, not 0.1.2. Do not claim macOS 13 until the 13.6 VM (or a person's Mac) has run. Before any wider claim, explain the .pkg `spctl` rejection on 26.2 (rerun with the extra diagnostics already in `guest-test.sh`: `spctl -a -vvv`, the rule list, `syspolicy_check`, the syspolicyd log). The coordinator and owner decide.

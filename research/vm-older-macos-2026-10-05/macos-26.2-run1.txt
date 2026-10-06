@@ -1,0 +1,92 @@
+== facts
+ProductName:		macOS
+ProductVersion:		26.2
+BuildVersion:		25C56
+arm64
+assessments disabled
+R OS=26.2 (25C56) arm64
+R CLT=none brew=none java=none
+== install.sh (live) into a throwaway HOME
+installed shotfleet 0.1.2 to /tmp/sfvm.PFW9Ek/home/.local/bin
+next: shotfleet doctor (add --fix to fetch Maestro and Java), then shotfleet init in your app's folder. Your key: shotfleet activate <key> (check is free without one)
+R INSTALL=PASS installed shotfleet 0.1.2 to /tmp/sfvm.PFW9Ek/home/.local/bin
+== --version
+env: lim: No such file or directory
+R VERSION=FAIL rc=127 env: lim: No such file or directory
+== doctor (150 s limit, never --fix)
+env: lim: No such file or directory
+R DOCTOR=FAIL exit 127; env: lim: No such file or directory
+== check on two real PNGs (wger, de + ca)
+env: lim: No such file or directory
+R CHECK=FAIL exit 127; env: lim: No such file or directory
+== licence: activate with a made-up key in Gumroad's format
+env: lim: No such file or directory
+R LICENCE=FAIL exit 127 licence.json=absent; env: lim: No such file or directory
+== Gatekeeper: enable assessments, quarantine downloads, run
+before: assessments disabled
+after: assessments enabled
+quarantine on program: 0083;6ac3d230;Safari;6D288FAE-470C-4B23-B65F-661D9FF3EDDA
+/tmp/sfvm.PFW9Ek/gk/shotfleet/shotfleet: rejected
+source=Notarized Developer ID
+origin=Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)
+env: lim: No such file or directory
+R GK_TARBALL=FAIL rc=127 env: lim: No such file or directory; spctl: /tmp/sfvm.PFW9Ek/gk/shotfleet/shotfleet: rejected source=Notarized Developer ID origin=Developer ID Application: Manuel 
+/tmp/sfvm.PFW9Ek/gk/shotfleet-macos-arm64.pkg: rejected
+source=Notarized Developer ID
+origin=Developer ID Installer: Manuel Lorenzo Parejo (2357A78TMR)
+installer: Package name is shotfleet-macos-arm64
+installer: Installing at base path /
+installer: The install was successful.
+shotfleet 0.1.2
+R GK_PKG=FAIL spctl rc=3 installer rc=0 run rc=0; /tmp/sfvm.PFW9Ek/gk/shotfleet-macos-arm64.pkg: rejected source=Notarized Developer ID origin=Develop
+R GATEKEEPER_STATUS=assessments enabled
+== cross-check: tools/selftest.sh --download --licence-probe
+== shotfleet --version
+shotfleet 0.1.2
+== shotfleet doctor (never --fix; exit 2 means 'not ready yet', which is expected on a clean Mac)
+MISSING maestro              (both)  -> shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)
+MISSING java 17+             (both)  -> shotfleet doctor --fix  (downloads a Java runtime), or brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)
+ok   swiftc (OCR checks)  (both)
+MISSING xcrun simctl         (iOS)  -> install Xcode from the App Store, open it once to accept its licence, and let it add an iOS Simulator runtime
+MISSING adb                  (Android)  -> sdkmanager platform-tools (command below)
+MISSING emulator             (Android)  -> sdkmanager emulator (command below)
+MISSING avdmanager           (Android)  -> sdkmanager command-line tools (command below)
+MISSING aapt2                (Android)  -> sdkmanager build-tools (command below)
+MISSING system image (API 33+) (Android)  -> sdkmanager a system image of API 33 or newer for arm64-v8a (command below)
+Android SDK: /tmp/shotfleet-selftest.1aZHgX/home/android  (nothing found there; set ANDROID_HOME if it lives elsewhere)
+Android (skip this if you only capture iOS): to install what is missing, run (the image is a large download):
+  brew install --cask android-commandlinetools
+  yes | /opt/homebrew/share/android-commandlinetools/cmdline-tools/latest/bin/sdkmanager --licenses
+  /opt/homebrew/share/android-commandlinetools/cmdline-tools/latest/bin/sdkmanager platform-tools emulator 'build-tools;36.0.0' 'system-images;android-36;google_apis;arm64-v8a'
+  No Homebrew on this Mac, so the brew line will not work: `shotfleet doctor --fix` downloads Google's command-line tools itself.
+...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most 60 s)
+ok   text recognition   ready in 2 s
+
+iOS: not ready   Android: not ready
+  iOS still needs: maestro, java 17+, xcrun simctl
+  Android still needs: maestro, java 17+, adb, emulator, avdmanager, aapt2, system image (API 33+)
+next: fix the MISSING lines above (shotfleet doctor --fix fetches Maestro, Java and the Android tools), then run shotfleet doctor again
+== shotfleet check on two screenshots drawn here
+drawn: 1290 2796 pixels, 2 files
+no --app given: checking by language detection only, which can misjudge short screens; treat a language problem as a hint (pass --app to compare with your app's strings)
+
+checked 2 screenshots in 2 languages: 0 problem(s)
+report: /tmp/shotfleet-selftest.1aZHgX/report/index.html
+== licence probe: shotfleet activate with a made-up key
+shotfleet: that key didn't activate: That license does not exist for the provided product. Your key is in the Gumroad receipt email: https://shotfleet.com/#price
+
+===== shotfleet selftest: PASS =====
+macOS 26.2 (25C56), arm64, hw.optional.arm64=1, VirtualMac2,1, 6 GB
+Gatekeeper: assessments enabled   quarantine flag on the program: no   hidden tools: no
+your own PATH had: brew=no java=yes maestro=no xcodebuild=yes python3=yes; Xcode path: none
+source: download   
+install into a throwaway HOME: ok
+--version: ok   shotfleet 0.1.2
+doctor: ok (exit 2)   ok   text recognition   ready in 2 s
+doctor, iOS: MISSING xcrun simctl         (iOS)  -> install Xcode from the App Store, open it once to accept its licence, a
+check on 2 drawn screenshots: ok (exit 0)   checked 2 screenshots in 2 languages: 0 problem(s)
+licence probe: ok
+paste everything between the two ===== lines into your reply (no file names or user name are printed)
+===== end =====
+R SELFTEST====== shotfleet selftest: PASS =====
+R TOTAL=32s
