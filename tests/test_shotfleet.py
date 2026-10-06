@@ -950,6 +950,68 @@ def png_c(w, h, color_type=2):  # PNG header with a color type: 2 = RGB, 6 = RGB
     return b"\x89PNG\r\n\x1a\n" + b"\0\0\0\rIHDR" + w.to_bytes(4, "big") + h.to_bytes(4, "big") + bytes([8, color_type]) + b"\0" * 8 + b"IDAT"
 
 
+def png_pixels(w, h, alpha, color_type=6, depth=8, filters=(0, 1, 2, 3, 4)):
+    """A real PNG, filtered the way encoders do (each row a different filter type, in turn), with alpha(x, y) as every pixel's alpha."""
+    import zlib, struct
+    ch, n = {6: 4, 4: 2, 2: 3}[color_type], depth // 8
+    bpp, rows, prev = ch * n, [], bytes(w * ch * n)
+    for y in range(h):
+        line = bytearray()
+        for x in range(w):
+            colour = [(x * 7 + y * 3) % 256, (x * 5) % 256, y % 256][:ch - (color_type in (4, 6))]
+            a = [alpha(x, y)] if color_type in (4, 6) else []
+            for v in colour + a: line += bytes([v] * n) if v in (0, 255) else bytes([v, (v * 3) % 256][:n])
+        f = filters[y % len(filters)]
+        out = bytearray([f])
+        for i, v in enumerate(line):
+            a, b = line[i - bpp] if i >= bpp else 0, prev[i]
+            c = prev[i - bpp] if i >= bpp else 0
+            pa, pb, pc = abs(b - c), abs(a - c), abs(a + b - 2 * c)
+            pred = (0, a, b, (a + b) // 2, a if pa <= pb and pa <= pc else b if pb <= pc else c)[f]
+            out.append((v - pred) % 256)
+        rows.append(bytes(out)); prev = bytes(line)
+    chunk = lambda k, d: struct.pack(">I", len(d)) + k + d + struct.pack(">I", zlib.crc32(k + d))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, depth, color_type, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(b"".join(rows))) + chunk(b"IEND", b""))
+
+
+class Transparency(unittest.TestCase):
+    """The alpha rule: an alpha channel whose every pixel is opaque is told apart from real transparency (both are store problems)."""
+    def test_opaque_rgba_is_opaque_whatever_the_filters_and_depth(self):
+        for ctype, depth in ((6, 8), (6, 16), (4, 8)):
+            for filters in ((0,), (1,), (2,), (3,), (4,), (0, 1, 2, 3, 4), (4, 3, 2, 1, 0)):
+                with self.subTest(ctype=ctype, depth=depth, filters=filters):
+                    self.assertEqual(sf.png_alpha(png_pixels(9, 6, lambda x, y: 255, ctype, depth, filters)), "opaque")
+
+    def test_one_pixel_below_255_anywhere_is_transparency(self):
+        for ctype, depth in ((6, 8), (6, 16), (4, 8)):
+            for filters in ((0,), (1,), (2,), (3,), (4,), (0, 1, 2, 3, 4)):
+                for spot in ((0, 0), (8, 5), (3, 2)):
+                    with self.subTest(ctype=ctype, depth=depth, filters=filters, spot=spot):
+                        png = png_pixels(9, 6, lambda x, y: 254 if (x, y) == spot else 255, ctype, depth, filters)
+                        self.assertEqual(sf.png_alpha(png), "transparent")
+        self.assertEqual(sf.png_alpha(png_pixels(9, 6, lambda x, y: 0)), "transparent")
+
+    def test_rgb_has_none_and_store_rules_word_each_case_with_the_fix(self):
+        self.assertIsNone(sf.png_alpha(png_pixels(9, 6, None, 2)))
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); (d / "de-DE").mkdir()
+            def flat(rows, ctype=6):  # a full-size PNG fast: unfiltered rows of one colour each
+                import struct, zlib
+                chunk = lambda k, b: struct.pack(">I", len(b)) + k + b + struct.pack(">I", zlib.crc32(k + b))
+                return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1320, 2868, 8, ctype, 0, 0, 0))
+                        + chunk(b"IDAT", zlib.compress(b"".join(b"\0" + px * 1320 for px in rows))) + chunk(b"IEND", b""))
+            files = {"opaque.png": flat([b"\x10\x20\x30\xff"] * 2868),
+                     "clear.png": flat([b"\x10\x20\x30\xff"] * 2000 + [b"\x10\x20\x30\x00"] * 868),
+                     "rgb.png": flat([b"\x10\x20\x30"] * 2868, 2)}
+            for name, data in files.items(): (d / "de-DE" / name).write_bytes(data)
+            problems, _ = sf.store_rules({"de-DE": sorted((d / "de-DE").iterdir())}, android=False)
+        self.assertEqual(problems, [
+            f"de-DE/clear.png: has transparency (an alpha channel); both stores reject it. {sf.FLATTEN}",
+            f"de-DE/opaque.png: has an alpha channel, though every pixel is opaque; both stores reject the channel itself. {sf.FLATTEN}"])
+        self.assertIn("sips -s format jpeg", sf.FLATTEN)
+
+
 class StoreRules(unittest.TestCase):
     def images(self, spec):
         d = Path(tempfile.mkdtemp()); out = {}

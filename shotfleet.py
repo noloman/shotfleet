@@ -3954,13 +3954,42 @@ def apple_class(size):
         if size in sizes or rotate and size and (size[1], size[0]) in sizes: return cls
     return None
 
+def png_alpha(data):
+    """None when a PNG has no alpha channel; "opaque" when it has one but every pixel's alpha is the maximum (XCUITest attachments
+    and design tools save these); "transparent" when some pixel is see-through, or when this can't tell.
+    Reads the alpha bytes still filtered: PNG filters work byte by byte on the same byte of the pixel before/above, so an all-opaque
+    alpha channel filters to one fixed pattern per filter type, and any row that differs holds a pixel below the maximum.
+    ponytail: a tRNS chunk (palette or colour-key transparency) and interlaced PNGs count as transparent without looking closer."""
+    try:
+        w, h, depth, ctype, _, _, interlace = struct.unpack(">IIBBBBB", data[16:29])
+        if ctype not in (4, 6): return "transparent" if b"tRNS" in data[:data.find(b"IDAT")] else None
+        if interlace or depth not in (8, 16): return "transparent"
+        idat, i = [], 8
+        while i + 8 <= len(data):
+            n, kind = struct.unpack(">I4s", data[i:i + 8])
+            if kind == b"IDAT": idat.append(data[i + 8:i + 8 + n])
+            i += 12 + n
+        raw = zlib.decompress(b"".join(idat))
+    except (struct.error, zlib.error, ValueError): return "transparent"
+    bpp, ab = (2 if ctype == 4 else 4) * depth // 8, depth // 8  # bytes per pixel, alpha bytes per pixel (the last ones)
+    row = 1 + w * bpp
+    if w == 0 or len(raw) < row * h: return "transparent"
+    ff, top0, rest0, avg = b"\xff" * w, b"\xff" + b"\0" * (w - 1), b"\0" * w, b"\x80" + b"\0" * (w - 1)
+    want = {0: (ff, ff), 1: (top0, top0), 2: (ff, rest0), 3: (b"\xff" + b"\x80" * (w - 1), avg), 4: (top0, rest0)}  # filter: (first row, others)
+    for y in range(h):
+        r = raw[y * row:(y + 1) * row]
+        if r[0] not in want: return "transparent"
+        pattern = want[r[0]][y > 0]
+        if any(r[1 + bpp - ab + k::bpp] != pattern for k in range(ab)): return "transparent"
+    return "opaque"
+
 def image_info(path):
-    """((width, height), has_alpha) for a PNG or JPEG; (None, False) if unreadable."""
+    """((width, height), alpha) for a PNG or JPEG, alpha as png_alpha says (None, "opaque" or "transparent");
+    JPEGs have none. (None, False) if unreadable."""
     data = Path(path).read_bytes()
     if data[:8] == b"\x89PNG\r\n\x1a\n":
         size = (int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big"))
-        alpha = data[25] in (4, 6) or b"tRNS" in data[:data.find(b"IDAT")]  # color type with alpha, or a tRNS chunk
-        return size, alpha
+        return size, png_alpha(data)
     if data[:2] == b"\xff\xd8":  # JPEG: size from the first SOFn marker
         i = 2
         while i + 9 < len(data):
@@ -3970,6 +3999,8 @@ def image_info(path):
                 return (int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")), False
             i += 2 + length
     return None, False
+
+FLATTEN = "Save it as a JPEG or a PNG without alpha (on a Mac: sips -s format jpeg in.png --out out.jpg)"
 
 def store_rules(images, android, ipad=False, tablet=False):
     """(problems, notes) against the stores' published screenshot rules (research/store-specs.md).
@@ -3981,7 +4012,9 @@ def store_rules(images, android, ipad=False, tablet=False):
         for p, (size, alpha) in info.items():
             name = f"{label}/{p.name}"
             if size is None: problems.append(f"{name}: not a PNG or JPEG the stores accept"); continue
-            if alpha: problems.append(f"{name}: has transparency (an alpha channel); both stores reject it")
+            if alpha == "opaque":  # Apple: "Images can't include alpha channels or transparencies"; Play: "24-bit PNG (no alpha)"
+                problems.append(f"{name}: has an alpha channel, though every pixel is opaque; both stores reject the channel itself. {FLATTEN}")
+            elif alpha: problems.append(f"{name}: has transparency (an alpha channel); both stores reject it. {FLATTEN}")
             if android:
                 if min(size) < 320 or max(size) > 3840:
                     problems.append(f"{name}: {size[0]}x{size[1]} is outside Google Play's 320-3840 px")
