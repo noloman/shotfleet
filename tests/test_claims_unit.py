@@ -317,8 +317,7 @@ class GumroadLicenceShape(unittest.TestCase):
         terms = re.sub(r"<[^>]+>", "", (ROOT / "site/public/terms.html").read_text())
         self.assertIn("The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run: "
                       "it asks Gumroad about once a week, and works offline for up to 30 days", terms)
-        self.assertIn("your licence covers every shotfleet version released within 365 days of your purchase", terms)
-        self.assertEqual(sf.UPDATE_DAYS, 365)
+        self.assertIn("your licence covers every shotfleet version released within a year of your purchase", terms)
         self.assertEqual((sf.LICENCE_RECHECK_DAYS, sf.LICENCE_OFFLINE_DAYS), (7, 30))
 
 

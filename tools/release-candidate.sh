@@ -318,6 +318,9 @@ chk "export unlocked by SHOTFLEET_KEY" 0 "exported 1 listings"
 [ ! -e "$H5/Library/Application Support/shotfleet/licence.json" ] && ok "SHOTFLEET_KEY wrote no licence file" || fail "SHOTFLEET_KEY wrote a licence file"
 SFX="SHOTFLEET_KEY=$REFUNDED"; sfrun "$H5" export "$RUN/ex/out" --fastlane "$RUN/ex/fastlane"
 chk "a refunded SHOTFLEET_KEY is refused" 2 "SHOTFLEET_KEY isn't a valid licence (the purchase was refunded)"
+ctl "sale=2020-01-01T00:00:00Z"; SFX="SHOTFLEET_KEY=$GOOD"; sfrun "$H5" export "$RUN/ex/out" --fastlane "$RUN/ex/fastlane"
+chk "the build has a release date baked in: a purchase from 2020 does not cover it (a build without a date is not covered either)" 2 "your licence covers every shotfleet version released until 2021-01-01"
+ctl "sale="
 SFX="SHOTFLEET_KEY=$GOOD"; sfrun "$H5" run "$RUN/ft/shotfleet.toml"
 chk "run with SHOTFLEET_KEY has no cap" 2 "none of those languages are in the app"
 nothas "no cap with SHOTFLEET_KEY" "free tier:"
@@ -421,7 +424,7 @@ class FakeGumroad:
     key that is not this product's; 200 + {success, uses, purchase: {refunded, chargebacked, disputed, dispute_won}} otherwise;
     `uses` counts every verify unless increment_uses_count is "false". outage = a 503 from every verify."""
     def __init__(self, product_id):
-        self.product_id, self.outage, self.calls = product_id, False, []
+        self.product_id, self.outage, self.calls, self.sale = product_id, False, [], ""
         self.uses = {k: 0 for k in (GOOD, *FLAGS)}
         self.flags = {k: dict(v) for k, v in FLAGS.items()}
 
@@ -433,11 +436,13 @@ class FakeGumroad:
             return 404, {"success": False, "message": "That license does not exist for the provided product."}
         if form.get("increment_uses_count") != "false": self.uses[key] += 1
         purchase = {"refunded": False, "chargebacked": False, "disputed": False, "dispute_won": False, **self.flags.get(key, {})}
+        if self.sale: purchase["sale_timestamp"] = self.sale
         return 200, {"success": True, "uses": self.uses[key], "purchase": purchase}
 
     def control(self, form):
         if "outage" in form: self.outage = form["outage"] == "1"
         if "refund" in form: self.flags.setdefault(form["refund"], {})["refunded"] = True
+        if "sale" in form: self.sale = form["sale"]  # purchase.sale_timestamp of every key ("" = Gumroad sends none)
         if "unrefund" in form: self.flags.setdefault(form["unrefund"], {})["refunded"] = False
 
 

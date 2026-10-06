@@ -38,7 +38,7 @@ The licence is checked online once at activation and about weekly after that, an
 last good check (`couldn't reach the licence server for 30 days` after that; this applies to an activated Mac, not to `SHOTFLEET_KEY`). A refunded or revoked key stops
 working (`this licence is no longer valid`).
 
-A key covers every shotfleet version released within 365 days of the purchase. A version released later runs as the free tier
+A key covers every shotfleet version released within a year of the purchase. A version released later runs as the free tier
 with that key and says `your licence covers every shotfleet version released until <date>`; the versions the user already has
 keep working. A renewal is not on sale yet: the user emails hello@shotfleet.com.
 
