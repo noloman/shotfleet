@@ -1,6 +1,6 @@
 """What `run` says when it is capped to the free tier (research/limits-product-improvements-2026-10-05.md, finding 2): that there is no
 valid licence, why a SHOTFLEET_KEY was refused, which languages were captured, and that --locales picks others. Wording only: the exit
-code and who is licensed are unchanged (0 for the capped run; an unreachable licence server is not a refusal, so no cap).
+code and who is licensed are unchanged (0 for the capped run; an unreachable licence server caps only a key that never passed a check on this machine).
 
 Fake tools and a stubbed licence server (urlopen): no network, simulator, emulator or Maestro.
 Run: python3 -m unittest tests.test_free_tier_message   (or: cd tests && python3 -m unittest test_free_tier_message)
@@ -52,11 +52,21 @@ class FreeTierMessage(FleetCase):
         self.assertIn("the key was not accepted", out)
         self.assertIn("(not a shotfleet key)", out)
 
-    def test_an_unreachable_licence_server_is_not_a_refusal_so_there_is_no_cap_and_no_message(self):
+    def test_an_unreachable_licence_server_caps_a_key_this_machine_never_checked_and_says_why(self):
         def offline(*a, **k): raise urllib.error.URLError("offline")
         code, out, err = self.run_cli(GUMROAD_KEY, offline)
         self.assertEqual(code, 0, err)
-        self.assertEqual(list(self.ios.values()), [["de", "en", "fr", "ja"]])  # every language: today's behaviour, kept
+        self.assertEqual(list(self.ios.values()), [["de", "en"]])  # 0.1.6: no longer licensed just because Gumroad is unreachable
+        self.assertIn("SHOTFLEET_KEY couldn't be checked", out)
+        self.assertIn("passed a check in the last 30 days", out)
+
+    def test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here(self):
+        def ok(*a, **k): return Reply(gumroad_answer())
+        def offline(*a, **k): raise urllib.error.URLError("offline")
+        self.run_cli(GUMROAD_KEY, ok); self.ios.clear()
+        code, out, err = self.run_cli(GUMROAD_KEY, offline)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(list(self.ios.values()), [["de", "en", "fr", "ja"]])
         self.assertNotIn("free tier", out + err)
 
     def test_locales_picks_which_two_and_the_message_names_them(self):

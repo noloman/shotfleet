@@ -259,7 +259,7 @@ class GumroadLicenceShape(unittest.TestCase):
         return mock.patch.object(sf.urllib.request, "urlopen", urlopen)
 
     def test_a_success_answer_is_valid_and_its_use_count_is_read(self):
-        with self.answer(gumroad_answer()): self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False), (True, 1, None))
+        with self.answer(gumroad_answer()): self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (True, 1, None))
 
     def test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag(self):
         import urllib.parse
@@ -275,12 +275,12 @@ class GumroadLicenceShape(unittest.TestCase):
                                   ({"disputed": True}, False, "the purchase is disputed"), ({"disputed": True, "dispute_won": True}, True, None),
                                   ({}, True, None)):
             with self.subTest(flags=flags), self.answer(gumroad_answer(**flags)):
-                self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False), (valid, 1, why))
+                self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (valid, 1, why))
 
     def test_an_unknown_key_is_a_404_with_a_message_and_is_invalid(self):
         gone = {"success": False, "message": "That license does not exist for the provided product."}
         with self.answer(error=http_error(404, gone)):
-            self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False), (False, 0, "That license does not exist for the provided product"))
+            self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (False, 0, "That license does not exist for the provided product"))
         with self.answer(gone):  # the same answer with a 200 status
             self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[0], False)
 
@@ -294,12 +294,13 @@ class GumroadLicenceShape(unittest.TestCase):
         for days in (0, 800, 3650):
             stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - days * 86400))
             with self.subTest(days_old=days), self.answer(gumroad_answer(created_at=stamp, sale_timestamp=stamp)):
-                self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False), (True, 1, None))
+                self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (True, 1, None))
 
     def test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check(self):
         old = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 800 * 86400))
         sf.LICENCE_FILE.write_text(json.dumps({"key": GUMROAD_KEY, "store": "gumroad", "checked": time.time() - 8 * 86400}))  # the recheck is due
-        with self.answer(gumroad_answer(created_at=old, sale_timestamp=old)):
+        built = sf.datetime.date.fromtimestamp(time.time() - 700 * 86400)  # this version came out 100 days after the purchase: it keeps working
+        with self.answer(gumroad_answer(created_at=old, sale_timestamp=old)), mock.patch.object(sf, "RELEASE_DATE", built):
             sf.require_licence()
         self.assertEqual(len(self.sent), 1)  # it asked Gumroad (weekly) and Gumroad said yes
         self.assertLess(time.time() - json.loads(sf.LICENCE_FILE.read_text())["checked"], 60)
@@ -314,8 +315,10 @@ class GumroadLicenceShape(unittest.TestCase):
 
     def test_the_terms_say_what_the_code_does(self):
         terms = re.sub(r"<[^>]+>", "", (ROOT / "site/public/terms.html").read_text())
-        self.assertIn("the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run: "
+        self.assertIn("The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run: "
                       "it asks Gumroad about once a week, and works offline for up to 30 days", terms)
+        self.assertIn("your licence covers every shotfleet version released within 365 days of your purchase", terms)
+        self.assertEqual(sf.UPDATE_DAYS, 365)
         self.assertEqual((sf.LICENCE_RECHECK_DAYS, sf.LICENCE_OFFLINE_DAYS), (7, 30))
 
 

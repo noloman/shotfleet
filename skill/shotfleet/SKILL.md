@@ -13,7 +13,7 @@ Needs an Apple silicon Mac, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+
 Start with `shotfleet --version`. If it is missing, the installer from https://shotfleet.com/docs is
 `curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script.
 
-Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
+Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.
 
 ## Which path?
 

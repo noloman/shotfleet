@@ -16,7 +16,7 @@ if sys.version_info < (3, 11):
     print(f"shotfleet needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable}).\n"
           "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
-import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket, struct, zlib
+import base64, contextlib, csv, datetime, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket, struct, zlib
 import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
@@ -4893,9 +4893,10 @@ def cmd_mcp():
 LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json"
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
 BUY_URL = "https://shotfleet.com/#price"
-GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
+GUMROAD_API = "https://api.gumroad.com/v2/licenses"
 GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
-MAX_MACS = 3
+MAX_MACS = 5  # activations per key: the promise is 3 of your Macs, the other 2 are spare for reinstalls (then an email resets the count)
+UPDATE_DAYS = 365  # a licence covers every version released within this many days of the purchase
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
 LOCALE_CAP_WHY = None  # with LOCALE_CAP: why a SHOTFLEET_KEY was refused (None when no key is set); only worded, never decides anything
@@ -4914,12 +4915,63 @@ def cap_locales(locales):
 # The licence calls use tls_context(): certifi's CA bundle (the released build can't count on the Mac's), unless the environment names
 # one (SSL_CERT_FILE...), as a corporate proxy that re-signs HTTPS needs.
 
+def gumroad_api():
+    """SHOTFLEET_GUMROAD_API points the check at a test server. Honoured from source and in release-candidate test builds (a TEST product
+    id baked in by tools/release-candidate.sh), never in a released build: there it would let anyone point the check at a fake server."""
+    if getattr(sys, "frozen", False) and not GUMROAD_PRODUCT_ID.startswith("RCTEST"): return GUMROAD_API
+    return os.environ.get("SHOTFLEET_GUMROAD_API", GUMROAD_API)
+
+def baked_release_date():
+    """The day this build was made (packaging/build.sh bakes it in as `release-date`; a build is published days later, never earlier, so this
+    errs in the buyer's favour). None from source, or when missing or unreadable: then no update window applies."""
+    try: return datetime.date.fromisoformat((Path(sys._MEIPASS) / "release-date").read_text().strip())
+    except (AttributeError, OSError, ValueError): return None
+
+RELEASE_DATE = baked_release_date()
+
+def sale_time(stamp):
+    """Gumroad's purchase.sale_timestamp ("2026-10-05T12:34:56Z") as unix time, or None when it is missing or unreadable."""
+    try: return datetime.datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp() if stamp else None
+    except ValueError: return None
+
+def is_time(t):
+    return isinstance(t, (int, float)) and not isinstance(t, bool)
+
+def updates_until(sale):
+    """The last release day this purchase covers, or None when the sale date isn't known."""
+    return datetime.datetime.fromtimestamp(sale, datetime.timezone.utc).date() + datetime.timedelta(days=UPDATE_DAYS) if is_time(sale) else None
+
+def check_update_window(sale):
+    """A licence covers every version released within a year of the purchase. Compares the build's baked-in release date with Gumroad's sale
+    date, never with today's date, so moving the clock changes nothing. Without either date (source run, Gumroad sent none) it passes."""
+    end = updates_until(sale)
+    if RELEASE_DATE is None or end is None or RELEASE_DATE <= end: return
+    raise NoLicence(f"your licence covers every shotfleet version released until {end} (a year from your purchase), and this one, {VERSION}, "
+                    f"came out on {RELEASE_DATE}, so it runs as the free tier. The versions you already have keep working with your key "
+                    f"(every version is at https://shotfleet.com/download/<version>/). To get a year of new versions, email hello@shotfleet.com. "
+                    "`check` is free, and `run` captures up to 2 languages without a licence.")
+
+def ci_record_file():
+    return LICENCE_FILE.with_name("ci-checked.json")
+
+def key_hash(key):
+    return hashlib.sha256(key.strip().encode()).hexdigest()
+
+def ci_seen(key):
+    """The last good online check of this key on this machine, {"checked", "sale"}, or None. A CI key's checks are recorded (a hash of the
+    key, never the key); an activated Mac's licence.json with the same key counts too."""
+    for f, match in ((ci_record_file(), lambda r: r.get("key_sha256") == key_hash(key)), (LICENCE_FILE, lambda r: r.get("key") == key.strip())):
+        try: r = json.loads(f.read_text())
+        except (OSError, ValueError): continue
+        if isinstance(r, dict) and match(r) and is_time(r.get("checked")): return r
+    return None
+
 def is_gumroad_key(key):
     """Gumroad keys are four groups of 8 (ABCDEF12-34567890-...)."""
     return bool(re.fullmatch(r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{8}){3}", key.strip()))
 
 def gumroad_verify(key, count_use):
-    """Gumroad's licence check -> (ok, uses, reason). Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
+    """Gumroad's licence check -> (ok, uses, reason, sale): sale is the purchase time (unix) or None. Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
     and every check bumps it unless count_use is False. Gumroad answers success:true for a refunded or charged-back purchase
     ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict.
     Gumroad's source (Aug 2026) also disables the key itself on a full refund: that is a 404 "This license key has been disabled"."""
@@ -4927,7 +4979,7 @@ def gumroad_verify(key, count_use):
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
     try:
-        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15, context=tls_context()) as r:
+        with urllib.request.urlopen(urllib.request.Request(f"{gumroad_api()}/verify", data=data), timeout=15, context=tls_context()) as r:
             body = json.loads(r.read() or b"{}")
     except urllib.error.HTTPError as e:  # an unknown key is a 404 with a JSON message
         with e:
@@ -4942,30 +4994,32 @@ def gumroad_verify(key, count_use):
     if not body.get("success"):
         why = body.get("message", "invalid key").rstrip(".")
         if "disabled" in why: why = "the key was disabled, as Gumroad does after a full refund"  # the buyer sees why, not Gumroad's English sentence
-        return False, 0, why
+        return False, 0, why, None
     p = body.get("purchase") or {}
-    uses = body.get("uses", 0)
-    if p.get("refunded"): return False, uses, "the purchase was refunded"
-    if p.get("chargebacked"): return False, uses, "the purchase was charged back"
-    if p.get("disputed") and not p.get("dispute_won"): return False, uses, "the purchase is disputed"  # a won dispute keeps the licence
-    return True, uses, None
+    uses, sale = body.get("uses", 0), sale_time(p.get("sale_timestamp"))
+    if p.get("refunded"): return False, uses, "the purchase was refunded", sale
+    if p.get("chargebacked"): return False, uses, "the purchase was charged back", sale
+    if p.get("disputed") and not p.get("dispute_won"): return False, uses, "the purchase is disputed", sale  # a won dispute keeps the licence
+    return True, uses, None, sale
 
 def cmd_activate(key):
     if not is_gumroad_key(key):
         raise Fail("that doesn't look like a shotfleet key (four groups of 8 letters and digits, like ABCDEF12-34567890-ABCDEF12-34567890). "
                    f"Your key is in the Gumroad receipt email: {BUY_URL}")
-    # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
-    ok, uses, why = gumroad_verify(key, count_use=False)
+    # Look first without counting: a refused key, or one with all its activations used, must not burn another.
+    ok, uses, why, sale = gumroad_verify(key, count_use=False)
     if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
     known = (read_licence() or {}).get("key") == key.strip()  # this Mac already holds it: no new activation
     if not known:
         if uses >= MAX_MACS:
             raise Fail(f"this key has used all {MAX_MACS} activations. Email hello@shotfleet.com and I'll reset the count")
-        ok, uses, why = gumroad_verify(key, count_use=True)  # ponytail: two people activating at once can pass 3; I reset by hand
+        ok, uses, why, sale = gumroad_verify(key, count_use=True)  # ponytail: two people activating at once can pass the limit; I reset by hand
         if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
     LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
+    LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time(), "sale": sale}))
     print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
+    try: check_update_window(sale)
+    except NoLicence as e: print(f"note: {e}")
     return 0
 
 def read_licence():
@@ -4984,7 +5038,7 @@ def cmd_deactivate():
     LICENCE_FILE.unlink()
     if lic.get("store") == "gumroad":  # freeing an activation takes a Gumroad access token, which can't ship in the program
         print(f"removed from this Mac. Gumroad can't give the activation back from here: "
-              f"if all {MAX_MACS} are used, email hello@shotfleet.com and I'll reset the count")
+              f"if all {MAX_MACS} activations are used, email hello@shotfleet.com and I'll reset the count")
     else:
         print("removed from this Mac (it was a licence from a store shotfleet no longer uses)")
     return 0
@@ -4993,12 +5047,21 @@ def require_licence():
     """`run` and `export` need a licence in released builds; `check`, `doctor` and `init` are free.
     Checked online at most weekly; works offline for 30 days after the last good check."""
     if not getattr(sys, "frozen", False): return  # running from source
-    if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
-        try:
-            valid, why = gumroad_verify(key, count_use=False)[::2] if is_gumroad_key(key) else (False, "not a shotfleet key")
-        except OSError: return  # don't fail a build because the licence server is unreachable
+    if key := os.environ.get("SHOTFLEET_KEY"):  # CI: checked online on every run, no activation used
+        if not is_gumroad_key(key): raise NoLicence("SHOTFLEET_KEY isn't a valid licence (not a shotfleet key)")
+        try: valid, _, why, sale = gumroad_verify(key, count_use=False)
+        except OSError as e:  # offline: only a key that passed a check on this machine in the last 30 days
+            seen = ci_seen(key)
+            if seen is None or not 0 <= time.time() - seen["checked"] < LICENCE_OFFLINE_DAYS * 86400:
+                raise NoLicence(f"SHOTFLEET_KEY couldn't be checked ({e}). Offline, a key only works on a machine where it passed a check in the "
+                                "last 30 days, and this one has none. Run again once Gumroad can be reached")
+            return check_update_window(seen.get("sale"))
         if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
-        return
+        try:
+            ci_record_file().parent.mkdir(parents=True, exist_ok=True)
+            ci_record_file().write_text(json.dumps({"key_sha256": key_hash(key), "checked": time.time(), "sale": sale}))
+        except OSError: pass  # a read-only home only loses the offline grace
+        return check_update_window(sale)
     if not LICENCE_FILE.exists():
         raise NoLicence(f"`export` and every language in `run` need a licence: shotfleet activate <key> (buy one at {BUY_URL}; checkout is on Gumroad). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
@@ -5013,15 +5076,16 @@ def require_licence():
     if age < -1:  # dated in the future: a hand-edited file would otherwise never be rechecked
         raise NoLicence("the saved licence on this Mac has a date in the future: activate again with `shotfleet activate <key>`. "
                         "`check` is free, and `run` captures up to 2 languages without one.")
-    if age < LICENCE_RECHECK_DAYS: return
+    if age < LICENCE_RECHECK_DAYS: return check_update_window(lic.get("sale"))  # a file from before 0.1.6 has no sale date: it gets one at the weekly check
     try:
-        valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
+        valid, _, why, sale = gumroad_verify(lic["key"], count_use=False)
     except OSError:
-        if age < LICENCE_OFFLINE_DAYS: return
+        if age < LICENCE_OFFLINE_DAYS: return check_update_window(lic.get("sale"))
         raise NoLicence("couldn't reach the licence server for 30 days; connect once to keep using every language in `run`")
     if not valid:
         raise NoLicence(f"this licence is no longer valid ({why}). {BUY_URL}")
-    LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time()}))
+    LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time(), "sale": sale}))  # Gumroad's sale date replaces whatever the file said
+    check_update_window(sale)
 
 def export_with_hooks(out, fastlane):
     """`export`, with the config's before_export / after_export hooks (found through run.json) around it."""

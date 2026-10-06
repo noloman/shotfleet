@@ -43,11 +43,9 @@ Notes:
 ## run and export in CI
 
 Set `SHOTFLEET_KEY` to the licence key, kept in the CI system's secret store (GitHub: repository secret, exposed as an
-env var of the step). It is checked online on each run and uses none of the 3 activations. The check fails open on purpose: if the licence
-server can't be reached (no network, a Gumroad 5xx, an unreadable answer), the run counts as licensed, so a CI job never fails
-because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is
-not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good
-key. A key that is not four groups of 8 hex characters is refused without contacting Gumroad. A Mac where `shotfleet activate`
+env var of the step). It is checked online on each run and uses no activation. With the licence server unreachable (no network, a Gumroad 5xx, an unreadable answer), the run still counts as licensed
+on a machine where that key passed a check in the last 30 days (shotfleet notes a hash of the key and the date there, never the
+key); on a fresh machine it can't be checked, so it is refused (`SHOTFLEET_KEY couldn't be checked`) until Gumroad answers. A key that is not four groups of 8 hex characters is refused without contacting Gumroad. A Mac where `shotfleet activate`
 was run is different: it re-checks about weekly and stops after 30 days offline. With an invalid key `export` refuses (exit 2) and `run` captures only 2 languages.
 `run` in CI also needs simulators and Maestro on the runner; the docs do not document a recipe for that.
 

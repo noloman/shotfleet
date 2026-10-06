@@ -37,7 +37,7 @@ DOCKER-PENDING -->
 ## Price and licence
 
 - `check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence.
-- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. Gumroad applies the $29 by itself at checkout; there is no public count of how many are left. It includes a year of updates and a 14-day refund. Prices are before VAT or sales tax, which Gumroad adds where it applies; checkout is on Gumroad, the merchant of record.
+- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. Gumroad applies the $29 by itself at checkout; there is no public count of how many are left. It includes a year of updates (every version released within a year of the purchase; versions you have keep working) and a 14-day refund. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset. CI uses no activation. Prices are before VAT or sales tax, which Gumroad adds where it applies; checkout is on Gumroad, the merchant of record.
 - Open-source maintainers and students can email hello@shotfleet.com with a link to their open-source repo or proof that they're a student for a 100%-off code. Gumroad makes an invoice from the receipt; there are no purchase orders.
 - The home page links to the checkout; shotfleet is on sale.
 

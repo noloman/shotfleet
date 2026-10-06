@@ -98,23 +98,23 @@ class FakeServerContract(unittest.TestCase):
             return json.loads(r.read() or b"{}")
 
     def test_a_good_key_and_the_use_counter(self):
-        self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=False), (True, 0, None))
-        self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=True), (True, 1, None))
-        self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=False), (True, 1, None))  # looking does not count
+        self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=False)[:3], (True, 0, None))
+        self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=True)[:3], (True, 1, None))
+        self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=False)[:3], (True, 1, None))  # looking does not count
         self.assertEqual([c["increment_uses_count"] for c in self.fake.calls], ["false", "true", "false"])
         self.assertTrue(all(set(c) == {"product_id", "license_key", "increment_uses_count"} for c in self.fake.calls))
 
     def test_refunded_chargebacked_and_disputed_keys_are_refused_but_a_won_dispute_is_not(self):
-        self.assertEqual(sf.gumroad_verify(rc.REFUNDED, count_use=False), (False, 0, "the purchase was refunded"))
-        self.assertEqual(sf.gumroad_verify(rc.CHARGEBACK, count_use=False), (False, 0, "the purchase was charged back"))
-        self.assertEqual(sf.gumroad_verify(rc.DISPUTED, count_use=False), (False, 0, "the purchase is disputed"))
-        self.assertEqual(sf.gumroad_verify(rc.WON, count_use=False), (True, 0, None))
+        self.assertEqual(sf.gumroad_verify(rc.REFUNDED, count_use=False)[:3], (False, 0, "the purchase was refunded"))
+        self.assertEqual(sf.gumroad_verify(rc.CHARGEBACK, count_use=False)[:3], (False, 0, "the purchase was charged back"))
+        self.assertEqual(sf.gumroad_verify(rc.DISPUTED, count_use=False)[:3], (False, 0, "the purchase is disputed"))
+        self.assertEqual(sf.gumroad_verify(rc.WON, count_use=False)[:3], (True, 0, None))
 
     def test_unknown_key_and_another_products_id_are_a_404_with_gumroads_message(self):
         want = (False, 0, "That license does not exist for the provided product")
-        self.assertEqual(sf.gumroad_verify("00000000-00000000-00000000-00000001", count_use=False), want)
+        self.assertEqual(sf.gumroad_verify("00000000-00000000-00000000-00000001", count_use=False)[:3], want)
         with mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "someoneelse=="):
-            self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=False), want)
+            self.assertEqual(sf.gumroad_verify(rc.GOOD, count_use=False)[:3], want)
 
     def test_an_outage_is_an_oserror_not_a_verdict(self):
         self.post("/_ctl", outage="1")
@@ -139,18 +139,18 @@ class FakeServerContract(unittest.TestCase):
         self.assertEqual(s["uses"][rc.GOOD], 1); self.assertEqual(len(s["calls"]), 1); self.assertFalse(s["outage"])
 
     def test_activation_through_the_program_against_the_fake(self):
-        """cmd_activate end to end: three Macs, the 4th refused without burning a use, a refunded key refused for free."""
-        homes = [Path(tempfile.mkdtemp()) / "licence.json" for _ in range(4)]
+        """cmd_activate end to end: five activations, the 6th refused without burning a use, a refunded key refused for free."""
+        homes = [Path(tempfile.mkdtemp()) / "licence.json" for _ in range(6)]
         for i, lic in enumerate(homes):
             with mock.patch.object(sf, "LICENCE_FILE", lic), contextlib.redirect_stdout(io.StringIO()):
-                if i < 3: self.assertEqual(sf.cmd_activate(rc.GOOD), 0)
+                if i < 5: self.assertEqual(sf.cmd_activate(rc.GOOD), 0)
                 else:
-                    with self.assertRaisesRegex(sf.Fail, "used all 3 activations. Email hello@shotfleet.com"): sf.cmd_activate(rc.GOOD)
-        self.assertEqual(self.fake.uses[rc.GOOD], 3)
+                    with self.assertRaisesRegex(sf.Fail, "used all 5 activations. Email hello@shotfleet.com"): sf.cmd_activate(rc.GOOD)
+        self.assertEqual(self.fake.uses[rc.GOOD], 5)
         with mock.patch.object(sf, "LICENCE_FILE", homes[0]), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(sf.cmd_activate(rc.GOOD), 0)  # already on this Mac: nothing counted
             with self.assertRaisesRegex(sf.Fail, "the purchase was refunded"): sf.cmd_activate(rc.REFUNDED)
-        self.assertEqual((self.fake.uses[rc.GOOD], self.fake.uses[rc.REFUNDED]), (3, 0))
+        self.assertEqual((self.fake.uses[rc.GOOD], self.fake.uses[rc.REFUNDED]), (5, 0))
 
 
 class Fixtures(unittest.TestCase):

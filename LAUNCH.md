@@ -136,8 +136,8 @@ Put a reminder in your calendar the day you send the email.
 
 ## 9. Support: moving a key to another Mac
 
-A key has 3 activations; Gumroad has no per-Mac record and the program cannot give one back (that needs your Gumroad
-token). When a buyer writes for a fourth Mac: Gumroad, Sales, the sale, License key section, Uses row, minus or Reset. That
+A key has 5 activations (3 Macs plus 2 spare for reinstalls); Gumroad has no per-Mac record and the program cannot give one back (that needs your Gumroad
+token). When a buyer writes because they ran out: Gumroad, Sales, the sale, License key section, Uses row, minus or Reset. That
 is the whole job. The terms say exactly this.
 
 ## Open items (not done, because they need something only you can give)
