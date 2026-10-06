@@ -62,7 +62,7 @@
 
     <h3 id="shotfleet">shotfleet</h3>
     <p>It takes one English Maestro flow and rewrites it for every language your app has. It uses the translations built into your app to do that. Then it runs the flow on several simulators and emulators at the same time. It checks each screenshot for the wrong language, copies, missing screens and store size rules. Last, it exports the screenshots to fastlane's folders.</p>
-    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
+    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured once on my M1 Pro, with my app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android. Your Mac and your app will give other times.</p>
 
     <h3 id="fastlane">fastlane snapshot / screengrab</h3>
     <p>This is the one most people use. You write UI-test code (XCUITest on iOS, Espresso on Android) that taps buttons and takes screenshots, and it runs once per language. You add a test target to your app, and iOS and Android need separate code. It's free, lots of people use it, and it works in CI.</p>

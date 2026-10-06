@@ -136,14 +136,14 @@
       </figure>
       <div class="ship more"><p>+11</p><span>more languages in the same run</span></div>
   </div>
-  <div class="wrap"><p class="small fleet-note reveal">That’s seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. I didn’t change anything in the app to get them. It all happens on your Mac, and your app and screenshots are never uploaded. For Flutter and React Native, I’ve run it on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps. Apple silicon Macs only.</p></div>
+  <div class="wrap"><p class="small fleet-note reveal">That’s seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. I didn’t add any code to the app for shotfleet. The one fix I made in it came from what the run found (further down). It all happens on your Mac, and your app and screenshots are never uploaded. For Flutter and React Native, I’ve run it on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps. Apple silicon Macs only.</p></div>
 
   <section class="wrap section numbers" aria-label="Numbers from real runs">
     <dl class="stats">
       <div class="cell reveal"><dt>18 &times; 4</dt><dd>languages times screens in one run: 72 screenshots, one English flow, one Mac</dd></div>
-      <div class="cell reveal"><dt>9 min &middot; 15 min</dt><dd>for that run on iOS and on Android</dd></div>
+      <div class="cell reveal"><dt>9 min &middot; 15 min</dt><dd>for that one run on iOS and on Android, on my M1 Pro with my app</dd></div>
       <div class="cell reveal"><dt>4 languages</dt><dd>shared one unreachable Next button on Android. English hid it</dd></div>
-      <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: translated captions over an English UI</dd></div>
+      <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: the captions were translated, but the app under them was still in English</dd></div>
     </dl>
     <p class="small muted">All measured on my own apps. The 9 and 15 minutes were measured on Maestro 2.0.10. I also wrote up <a href="/alternatives">how it compares with other tools</a>.</p>
   </section>
@@ -152,7 +152,7 @@
     <div class="split">
       <div class="copy reveal">
         <h2 id="run-h">What a run looks like.</h2>
-        <p>On my app, 18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac. It boots the simulators, sets the language on each one and takes the screenshots. Then it reads every image back and compares the text with your app’s own strings, so a screen that came out in the wrong language gets caught.</p>
+        <p>On my M1 Pro, with my app, one run of 18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>. Your Mac and your app will give other times. It boots the simulators, sets the language on each one and takes the screenshots. Then it reads every image back and compares the text with your app’s own strings, so a screen that came out in the wrong language gets caught.</p>
         <p>When you’re happy, one command puts the passing App Store and Google Play screenshots into fastlane’s folders.</p>
       </div>
       <div class="terminal reveal" role="img" aria-label="Terminal output of a shotfleet run: 18 of 18 locales captured in 534 seconds, 72 screenshots checked, 0 problems">
@@ -227,7 +227,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
       <ul>
         <li>Without it, you write UI-test code for fastlane snapshot and screengrab, and iOS and Android each need their own. With shotfleet, you write one Maestro flow in English, and it works on both platforms.</li>
         <li>Without it, you add something to your project: a UI-test target for fastlane, or a few lines in the app for simshot, which is iOS only. With shotfleet, nothing in your app’s code changes.</li>
-        <li>Without it, every language you add is one more set of screenshots to make. With shotfleet, the same flow runs in every language. On my app, 18 languages × 4 screens took 9 minutes on iOS and 15 on Android, on one Mac.</li>
+        <li>Without it, every language you add is one more set of screenshots to make. With shotfleet, the same flow runs in every language. On my M1 Pro, with my app, one run of 18 languages × 4 screens took 9 minutes on iOS and 15 on Android.</li>
         <li>Without it, a screenshot in the wrong language can reach your store listing, and you may only find out later. With shotfleet, <code>check</code> reads every screenshot before you upload. It flags the wrong language, blank screens and sizes the stores don’t accept.</li>
         <li>On my first run, the Next button on one onboarding page was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone. The English screenshots looked fine, so I hadn’t noticed. The run got stuck on that page, and that’s how I found it.</li>
       </ul>

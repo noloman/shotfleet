@@ -278,7 +278,7 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
     <li><strong>Typing a password on iOS in Arabic:</strong> <code>inputText</code> into a secure (password) field drops Latin letters when the app runs in Arabic (seen on the Expo app, iOS 26.4: <code>abcdef</code> typed nothing, <code>abc123</code> typed only <code>123</code>, <code>123456</code> typed all six); name and e-mail fields are fine. Use digits for a demo password.</li>
     <li>Linux: <code>check</code> and the Android readers run from source on Linux: they need Tesseract, there is no Linux installer yet, and <code>run</code> on a Linux emulator has not been tried. iOS needs a Mac.</li>
     <li>iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.</li>
-    <li>Run times depend on the Mac and on Maestro: 18 languages took 9 minutes on iOS and 15 on Android on a 4-simulator M1 Pro with Maestro 2.0.10; on Maestro 2.11.0 shotfleet retried some iOS languages because a simulator's driver started slowly.</li>
+    <li>Run times depend on the Mac and on Maestro: in one run of my app on my M1 Pro with 4 simulators and Maestro 2.0.10, 18 languages took 9 minutes on iOS and 15 on Android; on Maestro 2.11.0 shotfleet retried some iOS languages because a simulator's driver started slowly.</li>
     <li>shotfleet uploads nothing to a store: fastlane does that (see Uploading above).</li>
   </ul>
 

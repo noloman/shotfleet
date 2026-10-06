@@ -88,17 +88,17 @@
  },
  {
   "id": "C006",
-  "claim": "Nothing in the app was changed to get the screenshots / no changes to the app",
+  "claim": "No code was added to the app for shotfleet; the one fix in the app came from what the run found",
   "where": [
    "site/public/index.html",
    "site/public/index.html"
   ],
   "where_text": [
-   "I didn’t change anything in the app to get them.",
+   "I didn’t add any code to the app for shotfleet. The one fix I made in it came from what the run found (further down).",
    "You don’t keep a copy of the flow per language, and you don’t change the app."
   ],
   "status": "evidence",
-  "proof": "Mechanism: LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages / -AppleLocale launch arguments), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; research/frameworks.md cites AOSP for per-app locales without the app's cooperation. Real: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01) and the 2026-10-03 fixture e2e (the fixture app has no shotfleet code; STATUS.md gate 9). It needs a Debug-iphonesimulator build and an API 33+ emulator (README.md Limits), which is a build, not a change to the app. Untested: apps that keep their own persisted in-app language picker.",
+  "proof": "Mechanism: LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages / -AppleLocale launch arguments), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; research/frameworks.md cites AOSP for per-app locales without the app's cooperation. Real: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01) and the 2026-10-03 fixture e2e (the fixture app has no shotfleet code; STATUS.md gate 9). It needs a Debug-iphonesimulator build and an API 33+ emulator (README.md Limits), which is a build, not a change to the app. Untested: apps that keep their own persisted in-app language picker. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 4): the hero said 'I didn't change anything in the app', while the same page says the run's finding led to a fix (two onboarding pages made to scroll, CrossfitTracker commit 687ffccd, C106); these screenshots were taken after that fix. The sentence now says no code was added for shotfleet, and names the one fix.",
   "layer": "fixture",
   "assertion": "tools/fixture-app contains no shotfleet code: `run` on it produces German 'Willkommen' (accessibility text) - proves iOS needs no change. Add an Android fixture for `cmd locale set-app-locales`.",
   "fix": ""
@@ -113,13 +113,13 @@
    "site/public/alternatives.html"
   ],
   "where_text": [
-   "took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac",
+   "took <b>9 minutes on iOS</b> and <b>15 on Android</b>. Your Mac and your app will give other times.",
    "about 9 minutes on iOS and 15 on Android",
    "The 9 and 15 minutes were measured on Maestro 2.0.10.",
-   "Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac."
+   "Measured once on my M1 Pro, with my app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android. Your Mac and your app will give other times."
   ],
   "status": "evidence",
-  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro.",
+  "proof": "PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 14): worded as one run on my M1 Pro with my app; a later run gave 404 s and 415 s for 19 languages (C147), so the times are not stable from run to run.",
   "layer": "fixture",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
   "fix": ""
@@ -1795,7 +1795,7 @@
   ],
   "where_text": [
    "languages times screens in one run: 72 screenshots, one English flow, one Mac",
-   "for that run on iOS and on Android",
+   "for that one run on iOS and on Android, on my M1 Pro with my app",
    "The 9 and 15 minutes were measured on Maestro 2.0.10."
   ],
   "status": "evidence",
@@ -2491,7 +2491,7 @@
   ],
   "where_text": [
    "With shotfleet, the same flow runs in every language.",
-   "On my app, 18 languages × 4 screens took 9 minutes on iOS and 15 on Android, on one Mac."
+   "On my M1 Pro, with my app, one run of 18 languages × 4 screens took 9 minutes on iOS and 15 on Android."
   ],
   "status": "evidence",
   "proof": "As C007 (same measurement, Maestro 2.0.10, stated next to the stats on the same page): PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro.",
