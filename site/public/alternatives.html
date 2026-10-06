@@ -67,6 +67,7 @@
     <h3 id="fastlane">fastlane snapshot / screengrab</h3>
     <p>This is the one most people use. You write UI-test code (XCUITest on iOS, Espresso on Android) that taps buttons and takes screenshots, and it runs once per language. You add a test target to your app, and iOS and Android need separate code. It's free, lots of people use it, and it works in CI.</p>
     <p>If you already have UI tests that run in every language, you may not need shotfleet. shotfleet is for when you don't want test code in your app, or you want one flow for both platforms and a check of the results. fastlane still does the upload and the framing.</p>
+    <p>You don't have to pick one. If your fastlane UI tests already run in every language, keep them and run <code>shotfleet check</code> on the folder they write (snapshot or screengrab). It's free. It tells you which languages show the wrong strings, which are copies and which miss a screen. I ran it on a real fastlane snapshot set and it found a German listing whose app was still in English.</p>
 
     <h3 id="simshot">simshot</h3>
     <p>Free, MIT-licensed, iOS only. It opens the app in each language with launch arguments and takes the screenshots. You need to add a few lines to your app. It's a very new project.</p>

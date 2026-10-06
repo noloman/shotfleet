@@ -106,7 +106,8 @@ class DocumentedCommands(unittest.TestCase):
     """Every `shotfleet ...` command the README and the site show parses with the real argument parser."""
     def commands(self):
         found = []
-        for block in re.findall(r"```(?:bash|sh)?\n(.*?)```", README, flags=re.S):
+        for lang, block in re.findall(r"```(\w*)\n(.*?)```", README, flags=re.S):  # every block, so a ```ruby one doesn't shift the pairs
+            if lang not in ("", "bash", "sh"): continue
             for line in block.splitlines():
                 line = line.strip()
                 if line.startswith("shotfleet ") and "<" not in line and "|" not in line and "..." not in line:
@@ -203,6 +204,72 @@ class CheckPromises(unittest.TestCase):
             self.assertEqual(sf.main(["check", d]), 0)
             self.assertEqual(sf.main(["doctor"]), 0)
             self.assertEqual(sf.main(["init", "My.app"]), 0)
+
+
+class FastlaneAndRenders(unittest.TestCase):
+    """The fastlane lane and the Paparazzi/Roborazzi copy loop in README and docs.html do what the text around them says."""
+    DOCS = (ROOT / "site/public/docs.html").read_text()
+
+    @staticmethod
+    def blocks(text):
+        import html as h
+        return [h.unescape(b) for b in re.findall(r"```\w*\n(.*?)```", text, re.S) + re.findall(r"<pre><code>(.*?)</code></pre>", text, re.S)]
+
+    def block(self, text, marker):
+        found = [b for b in self.blocks(text) if marker in b]
+        self.assertEqual(len(found), 1, marker); return found[0]
+
+    def test_the_fastlane_lane_checks_the_folders_snapshot_and_screengrab_write_and_fails_on_problems(self):
+        lane = self.block(README, "lane :screenshots")
+        code = lambda b: re.sub(r"\s+#.*", "", b).strip()  # the README's lane has comments, the docs page says it in prose
+        self.assertEqual(code(lane), code(self.block(self.DOCS, "lane :screenshots")))
+        calls = re.findall(r'sh\("cd \.\. && (shotfleet [^"]+)"\)', lane)
+        self.assertEqual(calls, ["shotfleet check fastlane/screenshots", "shotfleet check fastlane/metadata/android"])
+        sys.path.insert(0, str(ROOT / "tests")); from test_agent_skills import parse  # the real parser
+        for c in calls: self.assertEqual(parse(shlex.split(c)[1:]).cmd, "check")
+        self.assertLess(lane.index("snapshot"), lane.index("check fastlane/screenshots"))  # capture, check, then upload
+        self.assertLess(lane.index("check fastlane/screenshots"), lane.index("deliver("))
+        self.assertLess(lane.index("screengrab"), lane.index("check fastlane/metadata/android"))
+        self.assertLess(lane.index("check fastlane/metadata/android"), lane.index("supply("))
+        # fastlane's sh raises on any exit but 0; check exits 1 on problems, so the lane stops before the upload
+        with tempfile.TemporaryDirectory() as d:
+            shots = fixture(Path(d))
+            with fake_vision(), contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(sf.cmd_check(shots, strings=STRINGS, report_dir=Path(d) / "rep", ocr_command="cat {image}.txt"), 1)
+
+    def test_the_render_copy_loop_makes_language_folders_with_the_same_names_that_check_reads(self):
+        import subprocess
+        loop = self.block(README, "src/test/snapshots/images")
+        self.assertEqual(loop.strip(), self.block(self.DOCS, "src/test/snapshots/images").strip())
+        script = "\n".join(l for l in loop.splitlines() if not l.startswith("shotfleet "))
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d); images = d / "src/test/snapshots/images"; images.mkdir(parents=True)
+            for lp, words in (("en", EN), ("de", {"a": "Weiter", "b": "Einstellungen", "c": "Training starten"}), ("ja", EN)):
+                for screen in ("home", "settings"):  # Paparazzi: <package>_<Class>_<test>_<name>.png
+                    f = images / f"com.example_HomeTest_{screen}_{lp}.png"
+                    f.write_bytes(png(1080, 1920)); f.with_suffix(".texts.json").write_text(json.dumps(list(words.values())))
+            subprocess.run(["sh", "-c", script], cwd=d, check=True)
+            self.assertEqual(sorted(p.relative_to(d / "shots").as_posix() for p in (d / "shots").rglob("*.png")),
+                             [f"{lp}/com.example_HomeTest_{s}.png" for lp in ("de", "en", "ja") for s in ("home", "settings")])
+            for f in (d / "shots").rglob("*.png"):  # the screen texts go with them, as OCR would read them
+                lp = f.parent.name; f.with_suffix(".texts.json").write_text((images / f"{f.stem}_{lp}.texts.json").read_text())
+            strings = {"en": EN, "de": {"a": "Weiter", "b": "Einstellungen", "c": "Training starten"}, "ja": {"a": "次へ", "b": "設定", "c": "トレーニング開始"}}
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(sf, "ocr_tool", return_value="ocr"):
+                code = sf.cmd_check(d / "shots", strings=strings, report_dir=d / "rep", ocr_command="cat {image}.txt")
+            problems = json.loads((d / "rep/check.json").read_text())["problems"]
+        self.assertEqual(code, 1)
+        self.assertFalse([p for p in problems if "missing" in p], problems)  # same names in every language: screens match up
+        self.assertEqual(sorted(p.split(":")[0] for p in problems if "shows en" in p),
+                         ["ja/com.example_HomeTest_home.png", "ja/com.example_HomeTest_settings.png"])  # the ja render is English
+
+    def test_a_flat_folder_of_renders_takes_one_language_with_locale(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            for screen in ("home", "settings"): (d / f"com.example_HomeTest_{screen}.png").write_bytes(png(1080, 1920))
+            self.assertEqual({k: len(v) for k, v in sf.find_screenshots(d, locale="de").items()}, {"de": 2})
+            with self.assertRaises(sf.Fail) as e, contextlib.redirect_stdout(io.StringIO()):
+                sf.cmd_check(d, report_dir=d / "rep")
+        self.assertIn("--locale", str(e.exception))
 
 
 class Versions(unittest.TestCase):
