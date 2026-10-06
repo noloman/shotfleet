@@ -1260,6 +1260,11 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
+        # the status bar override doesn't cover banners. iOS 26 posts "Ready for Apple Intelligence" a few minutes after a
+        # simulator's first boot (seen over a 2026-10-06 screenshot) and records it in this key; say it was just posted.
+        # ponytail: suppresses that one banner only (INFERENCE from the key's name, not verified on a device); add others as seen
+        s.run("spawn", s.udid, "defaults", "write", "com.apple.generativeexperiences.corefollowup",
+              "DateOfLastAppleIntelligenceReadinessCFU", "-date", time.strftime("%Y-%m-%d %H:%M:%S +0000", time.gmtime()), check=False)
         run_setup(s, "simctl", simctl)
     return pool
 
@@ -1480,14 +1485,14 @@ def plan_capacity(want, platform, r):
     short = n == 1 and (swapping or (r.avail_gb is not None and r.avail_gb < capacity_need_gb(1, platform, r.booted_ours)))
     return Plan(n, "short" if short else "tight", tuple(notes))
 
-def capacity_message(plan, want, r):
+def capacity_message(plan, want, r, using=None):
     """The warning for the buyer: what the Mac showed, what shotfleet suggests, what to close. "" when all is well."""
     if plan.level == "ok" and not plan.notes: return ""
     seen = ", ".join(s for s in (f"{r.avail_gb:.1f} GB memory available" if r.avail_gb is not None else "",
                                  f"{r.swap_used_gb:.1f} GB swap in use" if r.swap_used_gb is not None else "",
                                  f"load {r.load1:.0f} on {r.cores} cores" if r.load1 is not None and r.cores else "",
                                  f"{r.booted_other} other simulators/emulators booted" if r.booted_other else "") if s)
-    head = f"this Mac is short of memory: {plan.n} device{'s' if plan.n != 1 else ''} at once would be safer than {want} (this run still uses {want})" if plan.n < want else "this Mac is busy"
+    head = f"this Mac is short of memory: {plan.n} device{'s' if plan.n != 1 else ''} at once would be safer than {want} (this run uses {want if using is None else using})" if plan.n < want else "this Mac is busy"
     return (f"{head} ({'; '.join(plan.notes)}). Seen: {seen or 'nothing readable'}. A loaded Mac makes flows time out and the retries add load. "
             "Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.")
 
@@ -1531,11 +1536,11 @@ def read_capacity(platform="ios", prefix="shotfleet"):
     except OSError: load = None
     return Reading(avail, total, swap, load, os.cpu_count(), memory_pressure(), ours, other)
 
-def capacity_warn(cfg, want, platform):
+def capacity_warn(cfg, want, platform, using=None):
     """Warn-only (config `capacity`: "warn" default, "off" silent): print the planner's message when the Mac looks short of memory."""
     if cfg.get("capacity", "warn") == "off": return
     r = read_capacity(platform, cfg.get("sim_prefix", "shotfleet"))
-    if m := capacity_message(plan_capacity(want, platform, r), want, r): print("warning: " + m, flush=True)
+    if m := capacity_message(plan_capacity(want, platform, r), want, r, using): print("warning: " + m, flush=True)
 
 def overload_note(want, n):
     """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
@@ -1767,7 +1772,7 @@ def ios_run_inner(cfg, path, only, parallel):
                    "(write them as listed; case and region matter)")
     want = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
     n = fit_parallel(want)
-    capacity_warn(cfg, want, "ios")
+    capacity_warn(cfg, want, "ios", n)
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
     pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()))
     OUR_SIMS.update(s.udid for s in pool)
@@ -1949,6 +1954,7 @@ DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a s
     "settings put global window_animation_scale 0",
     "settings put global transition_animation_scale 0",
     "settings put global animator_duration_scale 0",
+    "settings put global heads_up_notifications_enabled 0",  # demo mode hides notification icons, not heads-up banners
     "settings put global sysui_demo_allowed 1",
     "am broadcast -a com.android.systemui.demo -e command enter",
     "am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941",
@@ -2271,7 +2277,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                    "(write them as listed; case and region matter)")
     want = min(parallel or cfg.get("parallel", 4), len(todo))
     n = fit_emulators(fit_parallel(want))
-    capacity_warn(cfg, want, "android")
+    capacity_warn(cfg, want, "android", n)
     kind = ANDROID_DEVICES[cfg.get("device", "phone")]
     name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
     print(f"booting {n} emulators ({name}, {kind['size'][0]}x{kind['size'][1]})", flush=True)
@@ -2560,6 +2566,14 @@ def system_dialog(ocr):
     """The dialog's words alone are not enough: an app's own screen can say "Server isn't responding" or "Tracking has stopped"."""
     m = SYSTEM_DIALOG.search(ocr.get("text", "")) if DIALOG_BUTTON.search(ocr.get("text", "")) else None
     return f'an Android system dialog covers the screen ("{m.group(0)}")' if m else None
+
+SYSTEM_BANNER = re.compile(r"Ready for Apple Intelligence", re.I)  # banners seen over real screenshots; add more as seen
+
+def system_banner(ocr):
+    """A system notification banner over the top of the screen. Needs OCR's line positions (macOS text recognition), so a
+    screen read from the app's own texts (.texts.json, which never holds the banner) or by Tesseract isn't checked."""
+    hit = next((l["text"] for l in ocr.get("lines") or [] if l.get("top", 1) < 0.2 and SYSTEM_BANNER.search(l.get("text", ""))), None)
+    return f'a system notification banner covers the top of the screen ("{hit}")' if hit else None
 
 def caption_problem(lp, ocr, tables, problem):
     """Framed screenshots carry a marketing caption above the device. Name the common failure plainly
@@ -2967,6 +2981,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                        "wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot")
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
+        if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
         if png.stem in (expect or {}):
             rules, used = content_rules(expect[png.stem], label, lp)
             expected_used.update((png.stem, k) for k in used)

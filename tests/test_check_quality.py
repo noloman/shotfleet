@@ -138,5 +138,14 @@ class SystemDialogWords(unittest.TestCase):
         self.assertIn("keeps stopping", sf.system_dialog({"text": "Fleet keeps stopping\nApp info\nClose app"}))
 
 
+class SystemBanner(unittest.TestCase):
+    """The 2026-10-06 Turkish iPhone screenshot: "Ready for Apple Intelligence" over the top of the app."""
+    def test_the_banner_in_the_top_band_is_flagged_and_the_same_words_lower_down_are_not(self):
+        top = {"lines": [{"text": "09:41", "top": 0.02}, {"text": "Ready for Apple Intelligence", "top": 0.07}, {"text": "Hoş geldiniz", "top": 0.5}]}
+        self.assertIn("Ready for Apple Intelligence", sf.system_banner(top))
+        self.assertIsNone(sf.system_banner({"lines": [{"text": "Ready for Apple Intelligence", "top": 0.5}]}))  # the app's own text
+        self.assertIsNone(sf.system_banner({"text": "Ready for Apple Intelligence", "ocr": "app", "lines": []}))  # no positions: not judged
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -408,13 +408,64 @@ class VerifyRelease(Fixture):
 class Preflight(Fixture):
     def test_fails_with_a_reason_when_checks_fail(self):
         fakebin = self.tmp / "bin"; fakebin.mkdir()
-        for n in ("security", "uv"):
+        for n in ("security", "uv", "xcrun"):  # a fake xcrun: the real notarytool is never called
             (fakebin / n).write_text("#!/bin/sh\nexit 1\n"); (fakebin / n).chmod(0o755)
         r = run(["sh", PREFLIGHT], env={"PATH": f"{fakebin}:{os.environ['PATH']}", "NOTARY_PROFILE": "no-such-profile-xyz", "WRANGLER": "false", "MIN_FREE_GB": "99999999"})
         self.assertEqual(r.returncode, 1, r.stdout)
-        for line in ("FAIL  Developer ID Application certificate", "FAIL  Developer ID Installer certificate", "FAIL  wrangler whoami", "FAIL  free disk", "FAIL  no uv-managed standalone Python"):
+        for line in ("FAIL  Developer ID Application certificate", "FAIL  Developer ID Installer certificate", "FAIL  wrangler whoami", "FAIL  free disk", "FAIL  notarytool history failed", "FAIL  no uv-managed standalone Python"):
             self.assertIn(line, r.stdout)
         self.assertIn("preflight: ", r.stdout)
+
+
+FAKE_XCRUN = '#!/bin/sh\n[ -z "$FAKE_XCRUN_ERR" ] && { echo "Successfully received submission history."; exit 0; }\necho "$FAKE_XCRUN_ERR$4" >&2; exit 69\n'
+LOCKED = "Error: No Keychain password item found for profile: "
+
+
+class NotaryCheck(Fixture):
+    """A fake xcrun on the PATH stands in for notarytool; the real one is never called."""
+    def check(self, err, profile=""):
+        fakebin = self.tmp / "bin"; fakebin.mkdir(exist_ok=True)
+        (fakebin / "xcrun").write_text(FAKE_XCRUN); (fakebin / "xcrun").chmod(0o755)
+        return run(["sh", ROOT / "packaging/notary-check.sh"], env={"PATH": f"{fakebin}:{os.environ['PATH']}", "NOTARY_PROFILE": profile, "FAKE_XCRUN_ERR": err})
+
+    def test_not_found_names_the_screen_lock_first_then_store_credentials(self):
+        r = self.check(LOCKED)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn(LOCKED + "ShotfleetNotary", r.stderr)  # the default, and notarytool's reason kept
+        self.assertIn("macOS locks this keychain about 5 minutes after the screen locks. Unlock the Mac and run again.\n"
+                      "Only if it still fails: xcrun notarytool store-credentials ShotfleetNotary --apple-id <your Apple ID> --team-id 2357A78TMR", r.stderr)
+
+    def test_env_override_and_other_failures(self):
+        r = self.check(LOCKED, profile="OtherProfile")
+        self.assertIn("store-credentials OtherProfile ", r.stderr)
+        r = self.check("Error: network unreachable ")
+        self.assertEqual(r.returncode, 1)
+        self.assertNotIn("screen locks", r.stderr); self.assertIn("No network", r.stderr)
+        self.assertEqual(self.check("").returncode, 0)
+
+    def test_scripts_check_first_and_right_before_each_submit(self):
+        release, golive = (ROOT / "packaging/release.sh").read_text(), (ROOT / "packaging/go-live.sh").read_text()
+        self.assertLess(release.index("packaging/notary-check.sh"), release.index("packaging/build.sh  #"))
+        self.assertLess(golive.index("packaging/notary-check.sh"), golive.index("sed -i ''"))
+        for f in ("build.sh", "pkg.sh"):
+            code = (ROOT / "packaging" / f).read_text()
+            submit = code.index("(set -o pipefail; xcrun notarytool submit")
+            self.assertIn("packaging/notary-check.sh", code[code.rindex("\n", 0, code.rindex("\n", 0, submit)):submit])  # the line before
+            self.assertNotIn("log <id>", code)
+
+    def test_release_keeps_the_mac_awake_and_keeps_the_build_exit_status(self):
+        t = self.tmp / "rel"
+        for d in ("packaging", "tools", "bin"): (t / d).mkdir(parents=True)
+        shutil.copy(ROOT / "packaging/release.sh", t / "packaging/release.sh")
+        stubs = {"packaging/notary-check.sh": "exit 0", "tools/check-claims.sh": "exit 0",
+                 "packaging/build.sh": 'echo "build out $NOTARY_PROFILE"; echo "build err" >&2; exit 7',
+                 "bin/caffeinate": 'echo "caffeinate $*" >> "$(dirname "$0")/calls"; shift; exec "$@"'}
+        for f, body in stubs.items():
+            (t / f).write_text("#!/bin/sh\n" + body + "\n"); (t / f).chmod(0o755)
+        r = run(["sh", t / "packaging/release.sh"], env={"PATH": f"{t / 'bin'}:{os.environ['PATH']}", "NOTARY_PROFILE": ""})
+        self.assertEqual(r.returncode, 7)
+        self.assertIn("build out ShotfleetNotary", r.stdout); self.assertIn("build err", r.stderr)
+        self.assertEqual((t / "bin/calls").read_text(), "caffeinate -di packaging/build.sh\n")
 
 
 if __name__ == "__main__":
