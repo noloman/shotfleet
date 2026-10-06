@@ -112,7 +112,7 @@ def parse_article(path):
     slug = (field("Slug") or "").strip("`/ ")
     if not slug: return None
     head, _, body = text.partition("\n---\n")
-    return {"slug": slug, "title": field("Title") or "", "description": field("Meta description") or "", "body": body.strip(), "open_items": open_items(head), "file": path.name}
+    return {"slug": slug, "title": field("Title") or "", "title_tag": field("Title tag"), "description": field("Meta description") or "", "body": body.strip(), "open_items": open_items(head), "file": path.name}
 
 
 def open_items(text):
@@ -126,8 +126,8 @@ def open_items(text):
 
 
 def page(title, description, path, body, og_type="website", ld=None, assets="/"):
-    ld_json = json.dumps(ld, indent=2, ensure_ascii=False).replace("</", "<\\/") if ld else ""  # no "</script>" inside the tag
-    ld_tag = f'\n<script type="application/ld+json">\n{ld_json}\n</script>' if ld else ""
+    blocks = ld if isinstance(ld, list) else [ld] if ld else []  # no "</script>" inside a tag
+    ld_tag = "".join(f'\n<script type="application/ld+json">\n{json.dumps(b, indent=2, ensure_ascii=False).replace("</", "<\\/")}\n</script>' for b in blocks)
     e = lambda s: html.escape(s, quote=True)
     return f'''<!doctype html>
 <html lang="en">
@@ -142,12 +142,19 @@ def page(title, description, path, body, og_type="website", ld=None, assets="/")
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(description)}">
 <meta property="og:image" content="{SITE}/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="{SITE}{path}">
 <meta property="og:type" content="{og_type}">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="{SITE}{path}">
 <link rel="icon" href="{assets}favicon.svg" type="image/svg+xml">
+<link rel="icon" href="{assets}favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="{assets}apple-touch-icon.png">
+<link rel="preload" href="{assets}fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{assets}site.css">
 {STYLE}{ld_tag}
 </head>
@@ -169,7 +176,11 @@ def page(title, description, path, body, og_type="website", ld=None, assets="/")
 def article_page(a, built, assets="/"):
     ld = {"@context": "https://schema.org", "@type": "Article", "headline": a["title"], "description": a["description"], "author": {"@type": "Person", "name": AUTHOR},
           "datePublished": built, "mainEntityOfPage": f"{SITE}/guides/{a['slug']}"}
-    return page(a["title"], a["description"], f"/guides/{a['slug']}", render_markdown(a["body"]), "article", ld, assets)
+    crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": n, "name": name, "item": f"{SITE}{url}"}
+        for n, (name, url) in enumerate([("Home", "/"), ("Guides", "/guides"), (a["title"], f"/guides/{a['slug']}")], 1)]}
+    # the title tag can be shorter than the h1 (a "Title tag" row in the article's table); search results cut titles at about 60 characters
+    return page(a["title_tag"] or a["title"], a["description"], f"/guides/{a['slug']}", render_markdown(a["body"]), "article", [ld, crumbs], assets)
 
 
 def hub_page(arts, drafts, assets="/"):
@@ -179,11 +190,11 @@ def hub_page(arts, drafts, assets="/"):
     return page("shotfleet guides: localized screenshots", "Guides on localized App Store and Google Play screenshots: fastlane snapshot, Maestro locales and what a check finds.", "/guides", body, assets=assets)
 
 
-def add_to_sitemap(root, paths):
+def add_to_sitemap(root, paths, built):
     p = root / "site/public/sitemap.xml"
     text = p.read_text()
     for path in paths:
-        loc = f"  <url><loc>{SITE}{path}</loc></url>\n"
+        loc = f"  <url><loc>{SITE}{path}</loc><lastmod>{built}</lastmod></url>\n"  # tests/test_site_audit wants a lastmod on every entry
         if f"<loc>{SITE}{path}</loc>" not in text: text = text.replace("</urlset>", loc + "</urlset>")
     p.write_text(text)
 
@@ -207,7 +218,7 @@ def build(root=ROOT, publish=False, unverified=False, today=None, out=sys.stdout
         built = (today or date.today()).isoformat()
         for a in ok: (pub / f"{a['slug']}.html").write_text(article_page(a, built)); print(f"published {a['slug']}", file=out)
         (pub / "index.html").write_text(hub_page(ok, False))
-        add_to_sitemap(root, ["/guides", *(f"/guides/{a['slug']}" for a in ok)])
+        add_to_sitemap(root, ["/guides", *(f"/guides/{a['slug']}" for a in ok)], built)
     return 1 if refused else 0
 
 

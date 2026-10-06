@@ -14,6 +14,7 @@
 <meta property="og:url" content="https://shotfleet.com/alternatives">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/alternatives">
 <meta name="color-scheme" content="light dark">
@@ -22,6 +23,27 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Home",
+   "item": "https://shotfleet.com/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "Alternatives",
+   "item": "https://shotfleet.com/alternatives"
+  }
+ ]
+}
+</script>
+<link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -62,12 +84,12 @@
 
     <h3 id="shotfleet">shotfleet</h3>
     <p>It takes one English Maestro flow and rewrites it for every language your app has. It uses the translations built into your app to do that. Then it runs the flow on several simulators and emulators at the same time. It checks each screenshot for the wrong language, copies, missing screens and store size rules. Last, it exports the screenshots to fastlane's folders.</p>
-    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured once on my M1 Pro, with my app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android. Your Mac and your app will give other times.</p>
+    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured once on my M1 Pro, with my app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android. Your Mac and your app will give other times. You can watch the main commands in the clips on <a href="/demo">See it work</a>.</p>
 
     <h3 id="fastlane">fastlane snapshot / screengrab</h3>
     <p>This is the one most people use. You write UI-test code (XCUITest on iOS, Espresso on Android) that taps buttons and takes screenshots, and it runs once per language. You add a test target to your app, and iOS and Android need separate code. It's free, lots of people use it, and it works in CI.</p>
     <p>If you already have UI tests that run in every language, you may not need shotfleet. shotfleet is for when you don't want test code in your app, or you want one flow for both platforms and a check of the results. fastlane still does the upload and the framing.</p>
-    <p>You don't have to pick one. If your fastlane UI tests already run in every language, keep them and run <code>shotfleet check</code> on the folder they write (snapshot or screengrab). It's free. It tells you which languages show the wrong strings, which are copies and which miss a screen. I ran it on a real fastlane snapshot set and it found a German listing whose app was still in English.</p>
+    <p>You don't have to pick one. If your fastlane UI tests already run in every language, keep them and run <a href="/docs#check"><code>shotfleet check</code></a> on the folder they write (snapshot or screengrab). It's free. It tells you which languages show the wrong strings, which are copies and which miss a screen. I ran it on a real fastlane snapshot set and it found a German listing whose app was still in English.</p>
 
     <h3 id="simshot">simshot</h3>
     <p>Free, MIT-licensed, iOS only. It opens the app in each language with launch arguments and takes the screenshots. You need to add a few lines to your app. It's a very new project.</p>

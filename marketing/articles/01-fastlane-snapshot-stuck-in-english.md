@@ -5,6 +5,7 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 | Field | Value |
 |---|---|
 | Title (H1) | Why your fastlane snapshot screenshots are all in English (and how to check every language) |
+| Title tag (under 60 chars, the search-result title) | fastlane snapshot screenshots all in English: 5 causes |
 | Meta description (under 160 chars) | Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app's own strings. |
 | Slug | `/fastlane-snapshot-screenshots-all-english` |
 | Target query | fastlane snapshot wrong language / fastlane snapshot not changing language / fastlane screenshots all english |

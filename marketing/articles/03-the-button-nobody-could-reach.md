@@ -5,6 +5,7 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 | Field | Value |
 |---|---|
 | Title (H1) | The button nobody could reach: how translated text broke my Android onboarding |
+| Title tag (under 60 chars, the search-result title) | The button nobody could reach: translated text on Android |
 | Meta description (under 160 chars) | In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it. |
 | Slug | `/the-button-nobody-could-reach` |
 | Target query | android button off screen translation / next button not visible small phone / text overflow localization android onboarding / jetpack compose verticalScroll long translations |

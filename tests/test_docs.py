@@ -239,7 +239,7 @@ class Renderer(unittest.TestCase):
     @staticmethod
     def articles():
         found = [a for p in sorted((ROOT / "marketing/articles").glob("[0-9][0-9]-*.md")) if (a := bg.parse_article(p))]
-        assert len(found) == 3, [a["slug"] for a in found]  # 04-ideas.md has no Slug row and is skipped
+        assert len(found) == 5, [a["slug"] for a in found]  # 04-ideas.md has no Slug row and is skipped
         return found
 
 

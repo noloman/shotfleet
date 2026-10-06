@@ -383,6 +383,19 @@ class JsonLd(unittest.TestCase):
             for banned in ("aggregateRating", "review", "softwareVersion", "downloadUrl", "FAQPage", "HowTo"):
                 self.assertNotIn(banned, text)
 
+    def test_every_json_ld_block_on_every_page_parses_and_uses_schema_org(self):
+        for name, h in PAGES.items():
+            for text in re.findall(r'<script type="application/ld\+json">(.*?)</script>', strip_comments(h) if name != "index.html" else h, flags=re.S):
+                with self.subTest(page=name): self.assertEqual(json.loads(text)["@context"], "https://schema.org")
+
+    def test_the_docs_faq_markup_is_the_visible_faq_and_its_date_is_the_last_checked_date(self):
+        docs = PAGES["docs.html"]
+        (d,) = self.blocks(docs)
+        graph = {n["@type"]: n for n in d["@graph"]}
+        visible = re.findall(r"<h3>(.*?)</h3>", docs.split('<h2 id="faq">', 1)[1])
+        self.assertEqual([q["name"] for q in graph["FAQPage"]["mainEntity"]], [re.sub(r"<[^>]+>", "", v) for v in visible])
+        self.assertEqual(graph["TechArticle"]["dateModified"], re.search(r"Last checked against version [\d.]+ on (\d{4}-\d\d-\d\d)\.", docs).group(1))
+
     def test_json_ld_is_a_data_block_so_the_csp_needs_no_inline_script_allowance(self):
         for name, h in PAGES.items():
             for m in re.finditer(r"<script([^>]*)>", strip_comments(h) if name != "index.html" else h):
@@ -448,6 +461,7 @@ class RobotsAndSitemap(unittest.TestCase):
 
     def test_the_sitemap_lists_exactly_the_indexable_pages_with_a_real_date(self):
         pages = {"https://shotfleet.com/" + ("" if n == "index.html" else n[:-5]) for n in PAGES if n != "404.html"}
+        pages |= {"https://shotfleet.com/guides" + ("" if g.name == "index.html" else "/" + g.stem) for g in (PUB / "guides").glob("*.html")}  # tools/build-guides.py --publish adds these
         locs = self.locs()
         self.assertEqual({l for l, _ in locs}, pages)
         for loc, last in locs:

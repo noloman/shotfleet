@@ -3414,5 +3414,197 @@
   "layer": "site",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": ""
+ },
+ {
+  "id": "C210",
+  "claim": "Docs lede: shotfleet is a macOS command-line tool that takes localized App Store and Google Play screenshots from one English Maestro flow, in every language the app has, and checks each one",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "shotfleet is a macOS command-line tool that takes your localized App Store and Google Play screenshots from one English Maestro flow, in every language your app has, and checks that each one is in the right language."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same definition as llms.txt's summary and the home JSON-LD description. One flow in every language: C001 (evidence) and C015 (proven); the language check: C026 (proven). macOS and Apple silicon only: C113, C131.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C211",
+  "claim": "Docs FAQ: shotfleet does not upload; export copies the passing languages into fastlane's folders and fastlane uploads (deliver, supply)",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "No. <code>export</code> copies the languages that passed into fastlane's folders, and fastlane does the upload"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Nothing is uploaded: C004 (NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to). The deliver and supply recipes: C075 and C177. The docs Limits line 'shotfleet uploads nothing to a store' says the same.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to"
+ },
+ {
+  "id": "C212",
+  "claim": "Docs FAQ: only run needs Maestro 2.x; check works on fastlane snapshot and screengrab folders and on a plain folder per language",
+  "where": [
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Only for <code>run</code>, which drives your app with Maestro 2.x. <code>check</code> doesn't need Maestro",
+   "Keep them, and if you want, run the free `check` on the folder they write."
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C175 (CheckAnyFolder tests) and C048 (check is free). The plain folder per language: C178 and the docs check section.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is"
+ },
+ {
+  "id": "C213",
+  "claim": "Docs FAQ: keep fastlane UI tests and point check at their folder; it finds the wrong language, copies, missing screens and store-rule problems",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Keep your UI tests and point <code>check</code> at the folder they write"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Wrong language C026, copies and missing C025, store rules C022, all proven; fastlane folders C175.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files"
+ },
+ {
+  "id": "C214",
+  "claim": "Docs FAQ: Flutter and React Native work from translation files; run end to end on wger and the obytes template on iOS and Android on 2026-10-03; other apps and bare React Native not run",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same runs as C035 (research/frameworks.md section 15, research/real-apps-2026-10-03/).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C215",
+  "claim": "Docs FAQ and llms.txt: needs an Apple silicon Mac; the installer refuses Intel Macs",
+  "where": [
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "No. It needs an Apple silicon Mac, and the installer refuses Intel Macs.",
+   "- You don't have an Apple silicon Mac."
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). InstallScript.test_install_sh_refuses_an_intel_mac (C113); Offer.test_apple_silicon_is_said_where_a_buyer_decides.",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "InstallScript.test_install_sh_refuses_an_intel_mac"
+ },
+ {
+  "id": "C216",
+  "claim": "Docs FAQ and llms.txt: no device frames, captions or store upload; ButterKit and AppScreens do frames and captions",
+  "where": [
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens",
+   "- You want frames, captions or store upload. ButterKit and AppScreens do that; shotfleet doesn't."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same statement as C037 on the home page (frames, captions and upload are absent from the program; research/pricing-2026-10.md 'Not offered'). What ButterKit and AppScreens do: /alternatives, checked 2026-10-02 (C108).",
+  "layer": "device",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C217",
+  "claim": "Docs FAQ: check, doctor and init free for everyone; run free for up to 2 languages; a licence unlocks every language and export",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "<code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C048 (FreeTierOnAFrozenBuild tests) and C044; sf.FREE_LANGUAGES is 2. The docs name no price (DocsPage.test_it_does_not_promise_an_upload_or_a_price).",
+  "layer": "fixture",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so"
+ },
+ {
+  "id": "C218",
+  "claim": "llms.txt: localized screenshots in English usually mean the app never got the language (fastlane: setupSnapshot before app.launch) or has no translation; check --app reports both",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Usually the app never got the language (with fastlane snapshot, `setupSnapshot(app)` must run before `app.launch()`), or the app has no translation for it."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). fastlane's snapshot docs (setupSnapshot(app) before app.launch() in setUp()), read 2026-10-03 for article 01 item 6; the missing-translation fallback reproduced on an iOS 26.4 simulator (article 01 item 3, 2026-10-03). check reports the wrong language (C026) and a listing in a language the app does not have (C024).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C219",
+  "claim": "llms.txt: Maestro sets the locale for the whole device at start (maestro start-device --device-locale), not inside a flow, and text selectors don't change with it; shotfleet rewrites the selectors per language and runs the languages in parallel",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Maestro sets the language for the whole device when it starts it (`maestro start-device --device-locale de_DE`); there is no place inside a flow to set it"
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Maestro's docs page 'Test in different locales' (docs.maestro.dev/maestro-flows/flow-control-and-logic/test-in-different-locales), read 2026-10-06: the locale is a device setting given with --device-locale to start-device or cloud, 'there is no place within a Flow itself' to define it, and maestro test cannot set it. The rewrite: C015 (proven); parallel runs: C001.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C220",
+  "claim": "llms.txt: check checks screenshot sizes: every App Store display class, Play 320 to 3840 px, at most 10 or 8 per listing, no transparency, a 6.9 or 6.5 inch iPhone set, a 13 inch iPad set when the app runs on iPad",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Yes: every App Store display class, Play's 320 to 3840 px, at most 10 (App Store) or 8 (Play) per listing, no transparency"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C022 (StoreRules.test_app_store_sizes_alpha_counts_and_required_class, test_google_play_limits_and_notes); the docs check section lists the same rules.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "StoreRules.test_app_store_sizes_alpha_counts_and_required_class"
+ },
+ {
+  "id": "C221",
+  "claim": "Comparison page: the clips on See it work show the main commands",
+  "where": [
+   "site/public/alternatives.html"
+  ],
+  "where_text": [
+   "You can watch the main commands in the clips on <a href=\"/demo\">See it work</a>."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). site/public/demo.html has clips of doctor, init, run on iPhone and Android, check, check on existing screenshots, store rules, export and CI (C162 to C169, C209).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
  }
 ]

@@ -337,3 +337,10 @@ class DockerPending(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Hsts(unittest.TestCase):
+    def test_every_page_sends_hsts_for_six_months_without_subdomains_or_preload(self):
+        block = (ROOT / "site/public/_headers").read_text().split("\n\n")[0]
+        self.assertIn("Strict-Transport-Security: max-age=15552000", block)
+        self.assertNotIn("includeSubDomains", block); self.assertNotIn("preload", block)
