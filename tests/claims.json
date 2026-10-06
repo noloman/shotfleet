@@ -2804,7 +2804,7 @@
  },
  {
   "id": "C175",
-  "claim": "`run` needs Maestro, `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included",
+  "claim": "`run` needs Maestro (or, on iOS, the team's own XCUITest tests), `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -2812,8 +2812,8 @@
    "site/public/llms.txt"
   ],
   "where_text": [
-   "`run` needs Maestro. `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
-   "<code>run</code> needs Maestro. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
+   "`run` needs Maestro, or on iOS your own XCUITest tests (see below). `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
+   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a>. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
    "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots, no Maestro needed.",
    "fastlane snapshot from XCUITest, fastlane screengrab from Espresso with its timestamped file names, a plain folder per language, by hand) without capturing anything and without Maestro."
   ],
@@ -3725,6 +3725,134 @@
   "proof": "Same records as C211 to C215: out-android/run.json and check.json, out-iphone/run.json and check.json, logs/and-run11.log and ios-run2.log, and docs/dogfood-shotfleet-2026-10.md (F1) in the app's repository, all 2026-10-06.",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C230",
+  "claim": "[capture] replaces flow for iOS: a config has one or the other, and build/xctestrun/only_testing/screenshots/timeout are checked before anything builds",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "instead of flow = \"flow.yaml\": a config has one or the other",
+   "instead of flow = \"flow.yaml\": a config has one or the other"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CaptureConfig.test_flow_and_capture_together_are_refused, CaptureConfig.test_capture_needs_build_and_xctestrun, CaptureConfig.test_bad_screenshots_value_typo_and_types_are_refused, CaptureConfig.test_capture_without_flow_or_app_loads_and_needs_no_maestro, CaptureConfig.test_capture_is_ios_only (tests/test_byoc_ios.py).",
+  "assertion": "load_config refuses flow plus [capture], a missing build or xctestrun, an unknown key, a wrong type and a screenshots value outside attachments/fastlane/auto, with a one-line message; a [capture] config loads without a flow, an app or Maestro.",
+  "fix": "",
+  "test": "CaptureConfig.test_flow_and_capture_together_are_refused"
+ },
+ {
+  "id": "C231",
+  "claim": "With [capture], a language that saved no screenshots, or lacks a screen another language saved, fails even when the test passed",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.",
+   "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half (NoKeepTests in tools/fixture-byoc-e2e.sh) has not run yet.",
+  "assertion": "A [capture] run whose xcodebuild passes but collects 0 PNGs for a language reports that language failed with the .keepAlways / setupSnapshot hint and exits 1; a language missing a name another language has fails with 'missing <name>'.",
+  "fix": "",
+  "test": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed"
+ },
+ {
+  "id": "C232",
+  "claim": "With [capture], shotfleet sets each simulator's language itself, adds -AppleLanguages/-AppleLocale to a copy of the .xctestrun, and moves fastlane's language files aside and back, also when the run fails",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "shotfleet sets each simulator's language itself and also passes",
+   "shotfleet sets each simulator's language itself and also passes"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature has not run on a simulator yet.",
+  "assertion": "set_sim_language runs simctl spawn <udid> defaults write -g AppleLanguages -array <lp> and AppleLocale -string <locale>; the .xctestrun copy sits beside the original (formats 1 and 2) with the arguments; language.txt/locale.txt/snapshot-launch_arguments.txt are back after the run and after an exception or Ctrl-C.",
+  "fix": "",
+  "test": "FastlaneCollector.test_settings_files_come_back_when_the_run_fails"
+ },
+ {
+  "id": "C233",
+  "claim": "[capture] runs are paid like any run: 2 languages without a licence; check stays free",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "It's paid like any `run`: 2 languages without a licence, and `check` stays free.",
+   "It's paid like any <code>run</code>: 2 languages without a licence, and <code>check</code> stays free."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CaptureRun.test_without_a_licence_three_languages_become_two_like_a_maestro_run, CaptureRun.test_two_languages_without_a_licence_are_free, CaptureRun.test_check_stays_free_on_capture_output.",
+  "assertion": "A released build without a licence runs 2 of 3 [capture] languages and prints the free-tier line; 2 languages run without it; check never asks for a licence.",
+  "fix": "",
+  "test": "CaptureRun.test_without_a_licence_three_languages_become_two_like_a_maestro_run"
+ },
+ {
+  "id": "C234",
+  "claim": "init --capture writes the [capture] table from the shared scheme with UI tests, and doctor stops asking for Maestro for iOS when the config has [capture]",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "`shotfleet doctor` sees the `[capture]` table and stops asking for Maestro for iOS.",
+   "<code>shotfleet doctor</code> sees the <code>[capture]</code> table and stops asking for Maestro for iOS."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "Doctor.test_capture_config_makes_ios_ready_without_maestro_or_java, Doctor.test_a_flow_config_or_none_still_needs_maestro_for_ios, Doctor.test_fix_offers_no_maestro_for_an_ios_capture_config_but_does_for_its_android_section, InitCapture.test_writes_a_capture_config_from_the_shared_scheme_with_ui_tests, DeviceTestScript.test_init_capture_finds_the_fixtures_ui_test_scheme.",
+  "assertion": "doctor with a [capture] config prints 'iOS: ready' with Maestro and Java missing (they become Android lines); init --capture writes a config load_config accepts, with the scheme and UI test target read from the scheme files.",
+  "fix": "",
+  "test": "Doctor.test_capture_config_makes_ios_ready_without_maestro_or_java"
+ },
+ {
+  "id": "C235",
+  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/index.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
+   "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
+   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither.",
+   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither."
+  ],
+  "status": "untested",
+  "layer": "device",
+  "proof": "Pending: the device test tools/fixture-byoc-e2e.sh (de and ja on 2 simulators, attachments, a SnapshotHelper-style writer, and a test without .keepAlways) has not run; the coordinator schedules it under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md).",
+  "assertion": "SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh prints 'PASS: all N assertions passed'.",
+  "fix": ""
+ },
+ {
+  "id": "C236",
+  "claim": "Bring your own capture was tried by hand first: fixture app on 2 simulators at once in German and Japanese, and a real app's SnapshotHelper test where check found a real bug",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug.",
+   "I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's <code>SnapshotHelper</code> test, where <code>check</code> found a real bug."
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "research/byoc-ios-experiment-2026-10-06.md (branch claude/byoc-ios-experiment, b2b95da), 2026-10-06: E4 fixture, byoc-e4-de and byoc-e4-ja in parallel, check confirmed de/ja on every screen; E5 subscrifi's unchanged SnapshotHelper test, 12 screenshots collected, check: every German screen shows English (LocalizationHelper defaults to 'en'). Evidence in ~/Developer/shotfleet-rc-build/byoc-ios/.",
+  "assertion": "The research note's E4 and E5 sections say so, with logs in byoc-ios/.",
   "fix": ""
  }
 ]

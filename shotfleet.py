@@ -36,10 +36,14 @@ KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "b
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
-TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect")  # the optional tables [hooks], [overrides.<locale>], [inputs] and [expect.<screenshot>] are documented in the README
+TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not")
 EXAMPLE_SETUP = {"shell": '"setprop debug.myapp.demo 1"', "simctl": '"ui $UDID appearance dark"'}
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
+# [capture] (iOS): run the team's own XCUITest screenshot tests instead of a Maestro flow (research/byoc-ios-experiment-2026-10-06.md)
+CAPTURE_KEYS = {"build": str, "xctestrun": str, "only_testing": list, "screenshots": str, "timeout": int}
+CAPTURE_SHOTS = ("attachments", "fastlane", "auto")
+CAPTURE_TIMEOUT_S = 900
 
 def check_tables(doc, name):
     """Refuse an unknown top-level table (a typo like [hook] would otherwise be ignored silently) and malformed hooks/overrides."""
@@ -65,6 +69,28 @@ def check_tables(doc, name):
         if not isinstance(table, dict) or not all(isinstance(v, str) for v in table.values()):
             raise Fail(f"[overrides.{locale}] in {name} should map English texts to text in that language, e.g. \"Next\" = \"İleri\"")
     check_expect(doc.get("expect", {}), name)
+    if "capture" in doc: check_capture(doc["capture"], name)
+
+def check_capture(cap, name):
+    """[capture] build/xctestrun/only_testing/screenshots/timeout: refuse typos, wrong types and missing settings before anything builds."""
+    import difflib
+    example = ("e.g.\n  [capture]\n  build = \"xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' "
+               "-derivedDataPath .shotfleet/build\"\n  xctestrun = \".shotfleet/build/Build/Products/*.xctestrun\"")
+    if not isinstance(cap, dict): raise Fail(f"[capture] in {name} should be a table, {example}")
+    words = {str: "string", int: "whole number", list: "list"}
+    for key, value in cap.items():
+        if key not in CAPTURE_KEYS:
+            near = difflib.get_close_matches(key, CAPTURE_KEYS, n=1)
+            raise Fail(f"[capture] in {name} has an unknown setting '{key}'" + (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(CAPTURE_KEYS)}"))
+        if not isinstance(value, CAPTURE_KEYS[key]) or isinstance(value, bool):
+            raise Fail(f"[capture] {key} in {name} should be a {words[CAPTURE_KEYS[key]]}, not {value!r}")
+    for key in ("build", "xctestrun"):
+        if not cap.get(key, "").strip(): raise Fail(f"[capture] in {name} is missing {key}, {example}")
+    if not all(isinstance(t, str) and t.strip() for t in cap.get("only_testing", [])):
+        raise Fail(f"[capture] only_testing in {name} should be a list of test names, e.g. only_testing = [\"MyAppUITests/ScreenshotTests\"]")
+    if cap.get("screenshots", "auto") not in CAPTURE_SHOTS:
+        raise Fail(f"[capture] screenshots in {name} should be \"attachments\" (XCTAttachment), \"fastlane\" (SnapshotHelper) or \"auto\" (both), not {cap['screenshots']!r}")
+    if cap.get("timeout", 1) < 1: raise Fail(f"[capture] timeout in {name} should be 1 or more seconds, not {cap['timeout']}")
 
 def check_expect(expect, name):
     """[expect.<screenshot>] any/all/not = ["text", ...], with [expect.<screenshot>.<locale>] for one language: refuse typos."""
@@ -147,18 +173,24 @@ def load_config(config_path, platform=None):
     if platform not in doc: raise Fail(f"{cfg_path.name} has no [{platform}] section")
     cfg = doc[platform]
     check_section(cfg, platform, cfg_path.name)
+    if "capture" in doc and "ios" not in doc:
+        raise Fail(f"[capture] in {cfg_path.name} runs your XCUITest tests on iOS simulators, so it needs an [ios] section (Android still uses a Maestro flow)")
+    capture = doc.get("capture") if platform == "ios" else None
+    if capture and "flow" in cfg:
+        raise Fail(f"{cfg_path.name} has both flow = in [ios] and a [capture] table. Use one: a Maestro flow, or your own XCUITest tests in [capture]")
+    cfg["_capture"] = capture
     cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
     cfg["_inputs"], cfg["_expect"] = doc.get("inputs", {}), doc.get("expect", {})
-    cfg.setdefault("flow", "flow.yaml")
+    if not capture: cfg.setdefault("flow", "flow.yaml")
     cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
-    missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
+    missing = [k for k in REQUIRED[platform] if not cfg.get(k) and not capture]  # capture: the app is found next to the .xctestrun after the build
     if missing:
         raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
     path = lambda p: Path(os.path.normpath(cfg_path.parent / Path(p).expanduser()))  # absolute/~ paths win, others are relative to the config; no `..` left in the path
-    flow = path(cfg["flow"])
-    if not flow.is_file():
+    if not capture and not (flow := path(cfg["flow"])).is_file():
         raise Fail(f"flow file not found: {flow}. `shotfleet init` writes a starter flow")
-    if platform == "ios":
+    if platform == "ios" and capture and not cfg.get("app"): pass
+    elif platform == "ios":
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
             if app.exists() and app.suffix != ".app": raise Fail(f"{app} isn't a simulator app: {not_a_build(app, 'ios')}")
@@ -181,7 +213,7 @@ def load_config(config_path, platform=None):
         cfg["package"] = cfg.get("package") or (m and m.group(1))
         if not cfg["package"]: raise Fail(f"can't read the package name of {apk.name}; set package in the config")
         cfg["apk"] = str(apk)
-    if not maestro_cmd():
+    if not capture and not maestro_cmd():
         raise Fail("Maestro isn't installed. Run shotfleet doctor --fix, or install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
 # lproj code -> App Store Connect / fastlane locale
@@ -1087,6 +1119,11 @@ def flow_mapping_lines(text, indent=4):
         return lines
     return emit(tree, indent)
 
+def apple_locale(lproj):
+    """The AppleLocale that goes with an app language: number and date formats follow the store locale (de -> de_DE, zh-Hans -> zh_CN)."""
+    store = store_code(lproj, APP_STORE) or lproj
+    return {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
+
 def localize_flow(flow, lproj, shots_dir, env=None):
     """Make a translated flow self-contained for one locale.
 
@@ -1094,9 +1131,7 @@ def localize_flow(flow, lproj, shots_dir, env=None):
     any flow to any device. So the language travels with the flow, as launch arguments, not with
     the simulator.
     """
-    store = store_code(lproj, APP_STORE) or lproj  # number/date formats follow the store locale
-    locale = {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
-    args = [f'      AppleLanguages: "({lproj})"', f'      AppleLocale: "{locale}"']
+    args = [f'      AppleLanguages: "({lproj})"', f'      AppleLocale: "{apple_locale(lproj)}"']
 
     def launch(clear, opts=()):
         """A launchApp step with the user's own options (permissions, appId...) plus the language arguments."""
@@ -1164,6 +1199,7 @@ SIM_TIMEOUT_S, SIM_BOOT_TIMEOUT_S = 300, 900  # a wedged simulator (CoreSimulato
 SIM_QUICK_TIMEOUT_S = 60
 
 class Sim:
+    name = None  # make_pool sets it: SnapshotHelper names its files after the simulator
     def __init__(self, udid): self.udid = udid
     def run(self, *args, check=True):
         t = {"bootstatus": SIM_BOOT_TIMEOUT_S, "uninstall": SIM_QUICK_TIMEOUT_S, "terminate": SIM_QUICK_TIMEOUT_S}.get(args[0], SIM_TIMEOUT_S)  # a first boot on a loaded Mac can take minutes
@@ -1251,7 +1287,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         if not udid:  # e.g. an older Xcode that has no iPhone 17 Pro Max: say why, and where the valid names are
             raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})" + (f": {err}" if err else "") +
                                ". Set device_type (valid ones: xcrun simctl list devicetypes) or runtime in the config")
-        s = Sim(udid)
+        s = Sim(udid); s.name = name
         OUR_SIMS.add(udid)  # at once: a bootstatus timeout on the 2nd of 4 must still shut the other booted ones down
         s.run("boot", udid, check=False)  # already-booted is fine
         pool.append(s)
@@ -1708,6 +1744,7 @@ def cmd_run(config_path, only=None, parallel=None, platform=None):
     return max(codes)
 
 NO_HOOKS = False
+NO_BUILD = False  # `run --no-build`: skip the [capture] build
 
 def run_hook(hooks, event, config, env_extra):
     """Run the user's commands for one event (strings run by /bin/sh in the config's folder, output to stderr).
@@ -1757,6 +1794,7 @@ def capture_platform(platform, cfg, path, only, parallel):
                 codes.append(android_run({**cfg, "device": d}, path, out / d, only, parallel))
             return max(codes)
         return android_run(cfg, path, out, only, parallel)
+    if cfg.get("_capture") and not NO_BUILD: capture_build(cfg["_capture"], cfg["_config"], path(cfg.get("out", "out")).resolve())
     if devices := cfg.get("device_types"):  # iPhone and iPad sets from one flow: out/<device>/ each
         codes = []
         clear_single_run(path(cfg.get("out", "out")).resolve())
@@ -1821,11 +1859,20 @@ def ios_run_inner(cfg, path, only, parallel):
     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
     if "device_type" not in cfg: cfg["device_type"] = default_device_type()  # an explicit device_type was resolved above and is never changed
     if "runtime" not in cfg: cfg["runtime"] = latest_ios_runtime()  # setdefault would ask xcrun even when the config names one
+    if capture := cfg.get("_capture"):  # the team's own XCUITest bundle: the app under test sits next to the .xctestrun
+        xctestrun = find_xctestrun(capture["xctestrun"], path)
+        if not cfg.get("app"):
+            app = xctestrun_app(xctestrun)
+            if not app or not (app / "Info.plist").is_file():
+                raise Fail(f"can't find the app under test next to {xctestrun}; set app = \"path/to/App.app\" in [ios]")
+            cfg["app"] = str(app)
+        cfg["bundle_id"] = cfg.get("bundle_id") or plist_value(Path(cfg["app"]) / "Info.plist", "CFBundleIdentifier")
+        if not cfg["bundle_id"]: raise Fail(f"can't read the bundle id of {Path(cfg['app']).name}; set bundle_id in [ios]")
     cfg["app"] = str(path(cfg["app"]))
     framework_hint(cfg["app"], "strings" in cfg, path("."))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = config_strings(cfg, path) or load_strings(Path(cfg["app"]))
-    flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
+    flow = None if capture else with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
     note_partly_translated(strings, base_locale, only or cfg.get("locales") or None)
@@ -1842,6 +1889,9 @@ def ios_run_inner(cfg, path, only, parallel):
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
+        if capture:
+            shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
+            report["locales"][lp] = {"untranslated_selectors": []}; continue
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
@@ -1862,11 +1912,11 @@ def ios_run_inner(cfg, path, only, parallel):
     def install(sims):  # each flow's clearState gives every locale a fresh start
         for sim in sims:  # no `simctl terminate`: uninstall stops a running app (Maestro's own iOS clearState is uninstall + install, no terminate)
             sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
-            sim.run("install", sim.udid, cfg["app"])
+            if not capture: sim.run("install", sim.udid, cfg["app"])  # capture: xcodebuild installs it; the uninstall only proves the simulator answers
     pool[:] = healthy_installs(pool, len(pool), install)
     n = len(pool)
 
-    expected = count_screenshots(flow)
+    expected = None if capture else count_screenshots(flow)  # capture: every screen any language saved (counted after the run)
 
     def batch(lps, attempt):
         """Run these locales in one sharded Maestro process; return {lproj: result}."""
@@ -1911,21 +1961,74 @@ def ios_run_inner(cfg, path, only, parallel):
             out_[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "attempts": attempt}
         return out_
 
+    def capture_step(sim, lp, work):
+        """One language on one simulator: set its language, run the team's tests with xcodebuild, collect what they saved.
+        Returns the error, None when xcodebuild passed (what was saved is judged by capture_result)."""
+        dst, bundle, log = out / "raw" / lp, work / f"{lp}.xcresult", work / f"{lp}.log"
+        shutil.rmtree(dst, ignore_errors=True); dst.mkdir(parents=True)
+        shutil.rmtree(bundle, ignore_errors=True)  # xcodebuild refuses a result bundle that exists
+        error = None
+        try:
+            set_sim_language(sim, lp)
+            sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)  # a fresh install per language, like a flow's clearState
+            if cache and sim.name:
+                for f in cache.glob(glob.escape(sim.name) + "-*.png"): f.unlink()  # an earlier, interrupted run's files
+            cmd = ["xcodebuild", "test-without-building", "-xctestrun", str(xctestrun_with_language(xctestrun, lp)),
+                   "-destination", f"id={sim.udid}", "-resultBundlePath", str(bundle), *[f"-only-testing:{t}" for t in capture.get("only_testing", [])]]
+            # ponytail: progress is a file changing in the result bundle or a new SnapshotHelper file; a test that writes neither for
+            # stall_s seconds is stopped like a hung simulator. Read xcodebuild's own output if that ever stops a healthy test.
+            r = run_guarded(cmd, timeout=capture.get("timeout", CAPTURE_TIMEOUT_S), stall_s=cfg.get("stall_s", STALL_S),
+                            progress=lambda: max(newest_file(bundle), newest_screenshot(cache) if cache else 0))
+            log.write_text(r.stdout)
+            if r.returncode: error = f"xcodebuild failed (exit {r.returncode}; log: {log})"
+        except subprocess.TimeoutExpired as e:
+            log.write_text(e.output or "")
+            error = (f"no progress for {cfg.get('stall_s', STALL_S)} s, stopped (a hung simulator or test; log: {log})" if getattr(e, "stalled", False)
+                     else f"timed out after {capture.get('timeout', CAPTURE_TIMEOUT_S)} s ([capture] timeout; log: {log})")
+        except RuntimeError as e:  # simctl stopped answering
+            error = str(e)
+        if capture.get("screenshots", "auto") != "fastlane": xcresult_pngs(bundle, dst)
+        if cache and sim.name: fastlane_pngs(cache, sim.name, dst)
+        return error
+
+    def capture_batch(lps, attempt):
+        """Every language once: each simulator takes the next language as soon as it is free (one xcodebuild per simulator at a time)."""
+        work = out / ".work" / "capture" / f"attempt{attempt}"; work.mkdir(parents=True, exist_ok=True)
+        todo, errors, lock = list(lps), {}, threading.Lock()
+        def worker(sim):
+            while True:
+                with lock:
+                    if not todo: return
+                    lp = todo.pop(0)
+                errors[lp] = capture_step(sim, lp, work)
+        k = min(n, len(lps))
+        with ThreadPoolExecutor(k) as ex: list(ex.map(worker, pool[:k]))
+        return {lp: capture_result(out, lp, errors[lp], report["locales"], attempt) for lp in lps}
+
     print(f"capturing {len(report['locales'])} locales on {n} simulators...", flush=True)
     t0 = time.time()
-    final = batch(list(report["locales"]), 1)
-    retry = [lp for lp, r_ in final.items() if not r_["ok"]]
-    if retry:  # simulators and drivers flake; one retry of just the failures is cheap
-        print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
-        for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
-        # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
-        # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
-        try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
-        except RuntimeError as e:  # none answers any more: keep what the first attempt captured, check it and report the rest as failed (exit 1)
-            print(f"not retrying: {e}", flush=True)
-        else:
-            n = len(pool)
-            final.update(batch(retry, 2))
+    step = capture_batch if capture else batch
+    try:
+        with fastlane_cache() if capture and capture.get("screenshots", "auto") != "attachments" else contextlib.nullcontext() as cache:
+            final = step(list(report["locales"]), 1)
+            retry = [lp for lp, r_ in final.items() if not r_["ok"]]
+            if retry:  # simulators and drivers flake; one retry of just the failures is cheap
+                print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
+                for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
+                # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
+                # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
+                try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
+                except RuntimeError as e:  # none answers any more: keep what the first attempt captured, check it and report the rest as failed (exit 1)
+                    print(f"not retrying: {e}", flush=True)
+                else:
+                    n = len(pool)
+                    final.update(step(retry, 2))
+    finally:
+        if capture:
+            for f in xctestrun.parent.glob("*.shotfleet-*.xctestrun"): f.unlink(missing_ok=True)
+    if capture:  # a language that failed first can make another look complete: count again against every screen the run saved
+        final = {lp: capture_result(out, lp, None if r_["ok"] else r_["error"], report["locales"], r_["attempts"]) for lp, r_ in final.items()}
+        expected = len(capture_names(out, report["locales"]))
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
@@ -1941,9 +2044,136 @@ def ios_run_inner(cfg, path, only, parallel):
     print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
     failed = [r["lproj"] for r in results if not r["ok"]]
     if not any((out / "raw").glob("*/*.png")):
-        print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
+        print(f"no screenshots were captured, so there's nothing to check; see the errors above and the {'xcodebuild' if capture else 'maestro'} logs")
         return 1
     return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device"), expect=cfg.get("_expect")), 1 if failed else 0)
+
+# ---------- bring your own capture (iOS): the team's XCUITest screenshot tests on the pool ----------
+# research/byoc-ios-experiment-2026-10-06.md: the language is set on the simulator (xcodebuild's -testLanguage is ignored with
+# -xctestrun), and screenshots come from two places: XCTAttachments in the result bundle, and fastlane SnapshotHelper's cache folder.
+
+FASTLANE_CACHE = Path.home() / "Library/Caches/tools.fastlane/screenshots"  # SnapshotHelper writes here ($SIMULATOR_HOST_HOME), for every simulator
+FASTLANE_SETTINGS = ("language.txt", "locale.txt", "snapshot-launch_arguments.txt")  # SnapshotHelper reads these and would force their language
+
+def xcresult_pngs(bundle, dst):
+    """Copy a result bundle's PNG attachments into dst as <XCTAttachment.name>.png; returns the file names written.
+    `export attachments` names files <UUID>.png; the real name is in manifest.json as <name>_<n>_<UUID>.png. Two attachments
+    with one name are both kept (<name>-2.png) with a warning."""
+    dst, written = Path(dst), []
+    with tempfile.TemporaryDirectory() as tmp:
+        r = sh(["xcrun", "xcresulttool", "export", "attachments", "--path", str(bundle), "--output-path", tmp, "--filter", "*.png"], timeout=300)
+        manifest = Path(tmp) / "manifest.json"
+        if r.returncode or not manifest.is_file():
+            if Path(bundle).exists(): print(f"warning: could not read the screenshots in {bundle}: {(r.stderr or r.stdout).strip()[-200:]}")
+            return written
+        for test in json.loads(manifest.read_text() or "[]"):
+            for a in test.get("attachments", []):
+                src = Path(tmp) / a.get("exportedFileName", "")
+                if not src.is_file(): continue
+                stem = Path(re.sub(r"_\d+_[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}(?=\.\w+$)", "", a.get("suggestedHumanReadableName") or src.name)).stem
+                target, i = dst / f"{stem}.png", 2
+                while target.exists(): target, i = dst / f"{stem}-{i}.png", i + 1
+                if i > 2: print(f"warning: two screenshots are named {stem} in {Path(bundle).name}; kept both ({target.name}). Give each XCTAttachment its own name")
+                dst.mkdir(parents=True, exist_ok=True); shutil.copy(src, target); written.append(target.name)
+    return written
+
+@contextlib.contextmanager
+def fastlane_cache(folder=None):
+    """SnapshotHelper's folder for the length of a run: made if missing (SnapshotHelper never makes it, and a test passes with 0
+    screenshots without it), with fastlane's language.txt/locale.txt/snapshot-launch_arguments.txt moved aside (a leftover one forces
+    its language on every simulator) and put back afterwards, also on an error or Ctrl-C. A folder shotfleet made is removed again."""
+    folder = Path(folder or FASTLANE_CACHE)
+    made = next((d for d in (folder.parent, folder) if not d.exists()), None)
+    folder.mkdir(parents=True, exist_ok=True)
+    aside = folder / ".shotfleet-aside"
+    for f in aside.glob("*") if aside.is_dir() else ():  # a run that was killed (SIGKILL) left them aside: put them back first
+        if not (folder / f.name).exists(): os.replace(f, folder / f.name)
+    moved = []
+    try:
+        for n in FASTLANE_SETTINGS:
+            if (folder / n).exists(): aside.mkdir(exist_ok=True); os.replace(folder / n, aside / n); moved.append(n)
+        yield folder
+    finally:
+        for n in moved: os.replace(aside / n, folder / n)
+        with contextlib.suppress(OSError): aside.rmdir()
+        if made: shutil.rmtree(made, ignore_errors=True)
+
+CAPTURE_BUILD_TIMEOUT_S = 3600  # a first build with a Kotlin Multiplatform framework took 5 min in E5; an hour means it hangs
+
+def capture_build(cap, config, out):
+    """The team's build-for-testing command, once per `run`, in the config's folder; its output goes to out/build.log."""
+    out.mkdir(parents=True, exist_ok=True)
+    print(f"building for testing (once; --no-build skips it): {cap['build']}", flush=True)
+    log = out / "build.log"
+    try: r = run_guarded(["/bin/sh", "-c", cap["build"]], timeout=CAPTURE_BUILD_TIMEOUT_S, cwd=Path(config).parent)
+    except subprocess.TimeoutExpired as e:
+        log.write_text(e.output or ""); raise Fail(f"the [capture] build ran for {CAPTURE_BUILD_TIMEOUT_S // 60} min and was stopped (log: {log})")
+    log.write_text(r.stdout)
+    if r.returncode:
+        tail = "\n  ".join(r.stdout.strip().splitlines()[-15:])
+        raise Fail(f"the [capture] build failed (exit {r.returncode}), so nothing ran. Last lines of {log}:\n  {tail}")
+
+def find_xctestrun(pattern, path):
+    """The one .xctestrun the build made (shotfleet's own per-language copies don't count)."""
+    found = sorted(p for p in glob.glob(str(path(pattern))) if ".shotfleet-" not in Path(p).name)
+    if not found:
+        raise Fail(f"no .xctestrun matches {pattern} (in {path('.')}). Check that the build's -derivedDataPath matches it, and run without --no-build")
+    if len(found) > 1:
+        raise Fail(f"{len(found)} .xctestrun files match {pattern}: " + ", ".join(Path(p).name for p in found) + ". Make the glob match one")
+    return Path(found[0])
+
+def xctestrun_targets(plist):
+    """The test targets of an .xctestrun: format 1 has them at the top level, format 2 in TestConfigurations[].TestTargets[]."""
+    if "TestConfigurations" in plist: return [t for c in plist["TestConfigurations"] for t in c.get("TestTargets", [])]
+    return [v for k, v in plist.items() if not k.startswith("__") and isinstance(v, dict)]
+
+def xctestrun_app(xctestrun):
+    """The app under test: UITargetAppPath, else the first .app the tests depend on that isn't the test runner. None if neither."""
+    for t in xctestrun_targets(plistlib.loads(Path(xctestrun).read_bytes())):
+        for p in [t.get("UITargetAppPath"), *t.get("DependentProductPaths", [])]:
+            if p and p.endswith(".app") and not p.endswith("-Runner.app"): return Path(p.replace("__TESTROOT__", str(Path(xctestrun).parent)))
+
+def xctestrun_with_language(src, lproj):
+    """A copy of the .xctestrun whose UI tests launch the app in lproj (-AppleLanguages/-AppleLocale, as a Maestro run passes them).
+    It sits beside the original: the paths inside are relative to its folder, and a moved copy fails (exit 70)."""
+    plist = plistlib.loads(Path(src).read_bytes())
+    for t in xctestrun_targets(plist):
+        t["UITargetAppCommandLineArguments"] = [*t.get("UITargetAppCommandLineArguments", []), "-AppleLanguages", f"({lproj})", "-AppleLocale", apple_locale(lproj)]
+    dst = Path(src).with_name(f"{Path(src).stem}.shotfleet-{lproj}.xctestrun")
+    dst.write_bytes(plistlib.dumps(plist))
+    return dst
+
+def set_sim_language(sim, lproj):
+    """The simulator's own language, which every app launch gets however the test starts the app (no reboot needed)."""
+    sim.run("spawn", sim.udid, "defaults", "write", "-g", "AppleLanguages", "-array", lproj)
+    sim.run("spawn", sim.udid, "defaults", "write", "-g", "AppleLocale", "-string", apple_locale(lproj))
+
+def newest_file(folder):
+    """The newest file's modification time under folder, 0 when there is none."""
+    try: return max((p.stat().st_mtime for p in Path(folder).rglob("*") if p.is_file()), default=0)
+    except OSError: return 0
+
+NO_SHOTS_HINT = ("the test passed but saved no screenshots, which proves nothing. An XCTAttachment needs lifetime = .keepAlways; "
+                 "fastlane's SnapshotHelper needs setupSnapshot(app) before app.launch(); check [capture] screenshots and only_testing")
+
+def capture_names(out, locales):
+    """Every screen name any language of this run saved."""
+    return {p.stem for lp in locales for p in (out / "raw" / lp).glob("*.png")}
+
+def capture_result(out, lp, error, locales, attempt):
+    """A language's result: failed when xcodebuild failed, when it saved no screenshot, or when it lacks a screen another language has."""
+    have = {p.stem for p in (out / "raw" / lp).glob("*.png")}
+    if not error and not have: error = NO_SHOTS_HINT
+    elif not error and (missing := capture_names(out, locales) - have): error = f"missing {', '.join(sorted(missing))} (other languages saved them)"
+    elif not error: error = blank_note(out / "raw" / lp)
+    return {"ok": error is None, "error": error, "screenshots": len(have), "attempts": attempt}
+
+def fastlane_pngs(folder, sim_name, dst):
+    """Move this simulator's SnapshotHelper screenshots (<simulator name>-<shot>.png, one folder for all simulators) into dst as <shot>.png."""
+    dst, written = Path(dst), []
+    for f in sorted(Path(folder).glob(glob.escape(sim_name) + "-*.png")):
+        dst.mkdir(parents=True, exist_ok=True); shutil.move(str(f), str(dst / f.name[len(sim_name) + 1:])); written.append(f.name[len(sim_name) + 1:])
+    return written
 
 # ---------- android ----------
 
@@ -3634,9 +3864,18 @@ def update_command(exe=None):
     exe = exe or os.path.realpath(sys.executable if getattr(sys, "frozen", False) else __file__)
     return "brew upgrade --cask noloman/tap/shotfleet" if "/Caskroom/" in exe else "curl -fsSL https://shotfleet.com/install.sh | sh"
 
-def cmd_doctor(fix=False, yes=False):
-    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
+def capture_mode(config="shotfleet.toml"):
+    """(uses [capture] for iOS, has an [android] section) for the config doctor looks at; (False, True) when there is none or it can't be read."""
+    try: doc = tomllib.loads(Path(config).read_text())
+    except (OSError, ValueError): return False, True  # tomllib.TOMLDecodeError and UnicodeDecodeError are ValueErrors
+    return "capture" in doc and "ios" in doc, "android" in doc
+
+def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
+    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan).
+    A config with [capture] (the team's XCUITest tests on iOS) needs Maestro and Java only for its Android section."""
     have = lambda c: shutil.which(c) is not None
+    capture, android = capture_mode(config)
+    maestro_for = "Android" if capture else "both"
     mac = is_mac()
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
@@ -3648,9 +3887,9 @@ def cmd_doctor(fix=False, yes=False):
     tested = ", ".join(MAESTRO_TESTED)
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if has_maestro else "maestro", maestro_ok,
-         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", "both"),
+         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", maestro_for),
         ("java 17+", find_java()[0], ("shotfleet doctor --fix  (downloads a Java runtime), or brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
-                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
+                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), maestro_for),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", simctl_works() if have("xcrun") else False,
@@ -3670,6 +3909,7 @@ def cmd_doctor(fix=False, yes=False):
     for name, ok, how, platform in checks:  # not `fix`: that is the --fix flag, and shadowing it made a plain `doctor` run the fix plan
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
+    if capture: print(f"note: {config} runs your XCUITest tests on iOS ([capture]), so iOS needs Xcode, not Maestro or Java")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -3716,7 +3956,8 @@ def cmd_doctor(fix=False, yes=False):
     if fix:
         print()
         fix_pkgs = [pk for pk in pkgs if not (pk == "cmdline-tools;latest" and not sdkmanager)]  # sdkmanager can't install itself
-        plan = fix_plan(maestro_ok, find_java()[0], fix_pkgs, bool(sdkmanager))
+        ios_only_capture = capture and not android  # nothing here needs Maestro or Java
+        plan = fix_plan(maestro_ok or ios_only_capture, find_java()[0] or ios_only_capture, fix_pkgs, bool(sdkmanager))
         if mac and not any(ok for n, ok, _, _ in checks if n == "xcrun simctl"):
             print("not fixable here: iOS needs Xcode and an iOS Simulator runtime (App Store, then Xcode > Settings > Components)")
         if not mac and not have("tesseract"):
@@ -4149,6 +4390,45 @@ def cmd_init(builds, dest="."):
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
 
+def ui_test_scheme(project):
+    """(shared scheme, UI test target) of a project's first scheme that tests a *UITests* bundle, read from the files on disk; None if none."""
+    for d in (project / "xcshareddata/xcschemes", project.with_suffix(".xcodeproj") / "xcshareddata/xcschemes"):
+        for f in sorted(d.glob("*.xcscheme")):
+            try: root = ET.parse(f).getroot()
+            except (ET.ParseError, OSError): continue
+            for r in root.iterfind("TestAction//TestableReference/BuildableReference"):
+                name = r.get("BlueprintName") or r.get("BuildableName", "").removesuffix(".xctest")
+                if r.get("BuildableName", "").endswith(".xctest") and "UITest" in name: return f.stem, name
+
+def cmd_init_capture(builds, dest="."):
+    """`init --capture`: a config whose [capture] runs the project's own XCUITest screenshot tests (no flow.yaml)."""
+    if builds: raise Fail("init --capture takes no build: the [capture] build command makes it. Run it in your Xcode project's folder")
+    dest, cwd = Path(dest), Path.cwd()
+    project = next(iter(xcode_projects(cwd)), None)
+    found = ui_test_scheme(project) if project else None
+    scheme, target = found or (project and scheme_for(project) or "<scheme>", None)
+    where = f"-{'workspace' if project.suffix == '.xcworkspace' else 'project'} {shlex.quote(config_path(project, dest))} " if project else ""
+    build = (f"xcodebuild build-for-testing {where}-scheme {shlex.quote(scheme)} -destination 'generic/platform=iOS Simulator' "
+             "-derivedDataPath .shotfleet/build CODE_SIGNING_ALLOWED=NO")
+    text = ("[ios]\n# locales = [\"de\", \"ja\"]   # default: every language the app ships\n"
+            "# app = \"path/to/MyApp.app\"   # default: the app next to the .xctestrun\n\n"
+            "# Your own XCUITest screenshot tests instead of a Maestro flow: shotfleet builds once, then runs them on several\n"
+            "# simulators at once, one language each, and checks the screenshots they save.\n"
+            f"[capture]\nbuild = {json.dumps(build)}\n"
+            "xctestrun = \".shotfleet/build/Build/Products/*.xctestrun\"   # exactly one match after the build\n"
+            + (f"only_testing = [{json.dumps(target)}]\n" if target else "# only_testing = [\"MyAppUITests/ScreenshotTests\"]\n")
+            + "screenshots = \"auto\"   # \"attachments\" (XCTAttachment, needs lifetime = .keepAlways), \"fastlane\" (SnapshotHelper) or \"auto\"\n"
+            f"timeout = {CAPTURE_TIMEOUT_S}   # seconds per language\n")
+    if not project: print(f"note: no Xcode project or workspace found in {cwd}; edit the build command in the config")
+    elif not found: print(f"note: no shared scheme in {project.name} tests a UI test target; set -scheme in the build command to the one that runs your screenshot tests")
+    else: print(f"{project.name}: scheme {scheme}, UI tests {target}")
+    dest.mkdir(parents=True, exist_ok=True)
+    if (dest / "shotfleet.toml").exists():
+        print(f"keeping existing {dest / 'shotfleet.toml'}. To use your XCUITest tests, put this in it (and remove flow = from [ios]):\n{text}"); return 0
+    (dest / "shotfleet.toml").write_text(text); print(f"wrote {dest / 'shotfleet.toml'}")
+    print(f"next: try one language (builds once, boots simulators, takes a few minutes):\n  shotfleet run {dest / 'shotfleet.toml'} --locales de")
+    return 0
+
 NO_XCRUN = "xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing"
 
 def latest_ios_runtime():
@@ -4435,6 +4715,7 @@ def main(argv=None):
     p = sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
     p.add_argument("--fix", action="store_true", help="offer to download what is missing (Maestro, Java, the Android tools); never uses sudo")
     p.add_argument("--yes", action="store_true", help="with --fix: don't ask before running the steps")
+    p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config to check for (default: ./shotfleet.toml); with [capture], iOS needs no Maestro")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
     p = sub.add_parser("skill", help="install the shotfleet skills for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Copilot)")
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills and ./.agents/skills instead of ~/.claude/skills and ~/.agents/skills")
@@ -4446,6 +4727,7 @@ def main(argv=None):
     p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
                    "none: use the newest Debug build found for the project in this folder")
     p.add_argument("--dir", default=".", help="where to write them (default: here)")
+    p.add_argument("--capture", action="store_true", help="iOS: write a [capture] config that runs your existing XCUITest screenshot tests instead of a Maestro flow")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
     p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config file (default: ./shotfleet.toml)")
     p.add_argument("--platform", choices=("ios", "android"), help="only this platform when the config has both")
@@ -4453,6 +4735,7 @@ def main(argv=None):
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
+    p.add_argument("--no-build", action="store_true", help="with [capture]: don't run the build command, use the .xctestrun that is there")
     p = sub.add_parser("check", help="check screenshots from shotfleet, fastlane or any tool")
     p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
     p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
@@ -4829,12 +5112,12 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
 
 def main_dispatch(a):
     try:
-        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes)
+        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes, a.config)
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "skill": return cmd_skill(a.dir, a.project, a.force)
-        if a.cmd == "init": return cmd_init(a.builds, a.dir)
-        global NO_HOOKS
-        NO_HOOKS = bool(getattr(a, "no_hooks", False))
+        if a.cmd == "init": return cmd_init_capture(a.builds, a.dir) if a.capture else cmd_init(a.builds, a.dir)
+        global NO_HOOKS, NO_BUILD
+        NO_HOOKS, NO_BUILD = bool(getattr(a, "no_hooks", False)), bool(getattr(a, "no_build", False))
         if a.cmd in ("run", "export") and os.environ.get("SHOTFLEET_IMAGE") == "check":  # set by the Dockerfile
             raise Fail(f"`{a.cmd}` doesn't work in the shotfleet-check Docker image: it has no simulators, emulators or Maestro, "
                        "so it only runs `check`. Use `run` and `export` on a Mac")

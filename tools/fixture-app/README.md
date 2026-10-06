@@ -24,3 +24,15 @@ SHOTFLEET_E2E=1 tools/fixture-e2e.sh            # about 10 minutes; --keep keeps
 
 `init` gets the built `.app` explicitly (its no-argument mode finds Xcode and Gradle builds only). Android is skipped: there
 is no Android fixture yet. `python3 -m unittest tests.test_fixture_e2e` tests the script against fakes, with no devices.
+
+## XCUITest target (bring your own capture)
+
+`project.yml` describes the same app as an Xcode project with a UI test target, `UITests/ScreenshotTests.swift`: the kind of
+screenshot tests a team already has (XCTAttachment with `.keepAlways`, a SnapshotHelper-style writer to fastlane's cache
+folder, and a test that forgets `.keepAlways`). `FleetFixture.xcodeproj` is generated from it with `xcodegen` and committed.
+`tools/fixture-byoc-e2e.sh` runs them through `shotfleet run` with a `[capture]` config on 2 simulators (de, ja). It boots
+simulators, so it needs the same opt-in and a quiet Mac:
+
+```sh
+SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh       # about 5 minutes, stopped after 30 at the latest
+```
