@@ -23,4 +23,4 @@ python3 marketing/gumroad/images/src/build.py   # Gumroad thumbnail and covers
 
 The header glyph is inlined in `site/public/*.html`, `site/draft/*.html` and `tools/build-guides.py`; if the glyph changes, replace the `<svg viewBox="46 46 420 420" ...>` there too.
 
-`site/public/og.jpg` was patched in place (only the mark, at 72,66, 32 x 32, `#1e48c9`) because `site/draft/og.html` no longer matches the live site's fonts. `marketing/gumroad/video` still shows the old flag until it is re-rendered (`marketing/gumroad/video/src/build.py` reads `site/public/favicon.svg`).
+`site/public/og.jpg` was patched in place (only the mark, at 72,66, 32 x 32, `#1e48c9`) because `site/draft/og.html` no longer matches the live site's fonts. The Gumroad video (`marketing/gumroad/video`) was re-rendered with the new mark; its build reads `site/public/favicon.svg`.
