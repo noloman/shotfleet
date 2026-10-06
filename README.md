@@ -121,7 +121,7 @@ iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by 
 
 `shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT or sales tax where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
 
-`shotfleet activate <key>` stores your key on this Mac. The key from your Gumroad receipt has 3 activations. Activating again on a Mac that still has the key saved counts nothing; after `shotfleet deactivate`, a new macOS install or a new user account, the same Mac counts again. `shotfleet deactivate` removes it from this Mac but does not give the activation back; if you run out, email hello@shotfleet.com and I'll reset the count. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, that line says why. A `SHOTFLEET_KEY` in CI is never refused just because the licence server is down (see "In CI" below). `check`, `doctor` and `init` are always free, and the 2 free languages work on both platforms and every device size.
+`shotfleet activate <key>` stores your key on this Mac. Use it on up to 3 of your Macs; there are spare activations for reinstalls (the key has 5), and if you run out, email hello@shotfleet.com for a reset. Activating again on a Mac that still has the key saved counts nothing; after `shotfleet deactivate`, a new macOS install or a new user account, the same Mac counts again. `shotfleet deactivate` removes it from this Mac but does not give the activation back. Your key covers every version released within a year of your purchase; a later version runs as the free tier and says which versions your key covers, and the ones you have keep working. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, `run` stops with exit 2 instead (the key is a CI gate). A `SHOTFLEET_KEY` in CI keeps working while the licence server is down only on a machine where it passed a check in the last 30 days (see "In CI" below). `check`, `doctor` and `init` are always free, and the 2 free languages work on both platforms and every device size.
 
 ## Quickstart (build the app once for the simulator first)
 
@@ -135,7 +135,7 @@ shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator b
 
 Notes: Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition. After `init`, try `shotfleet run --locales en`, and run `shotfleet activate <your key>` when you want every language (steps below).
 
-Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
+Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.
 
 `shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first: Maestro 2.11.0 (a version the real runs passed on, checked against a pinned SHA-256), a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools with the SDK pieces `doctor` lists (it accepts the Android SDK licences, which the plan says). It asks once, `--yes` skips the question for CI, it stops at the first step that fails, and it never uses `sudo`, edits your shell files or touches Xcode. Maestro and Java go into `~/.shotfleet` (`SHOTFLEET_HOME` changes that); Android tools go where `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) points, else into the SDK shotfleet found or Android Studio's default folder. Behind a proxy that re-signs HTTPS, point `SSL_CERT_FILE` at its CA bundle. Tried on a Linux machine with none of these installed: `doctor` then reported Maestro 2.0.10 and the Android toolchain as ok, and the Java download was run separately against Adoptium's real API (Java 21.0.12 ran). Run on a Mac (Apple silicon, macOS 27, 2026-10-03) in a throwaway home folder, with Maestro 2.0.10 as the pin of that day; not yet run with the 2.11.0 download, and not on a separate clean user account.
 
@@ -193,9 +193,9 @@ jobs:
             shotfleet-check/
 ```
 
-To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations. This check fails open on purpose: if the licence server can't be reached, the run counts as licensed, so a CI job never fails because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good key. A Mac where you ran `shotfleet activate` is different: it re-checks about weekly and stops after 30 days offline. With an invalid key, `export` refuses and `run` captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with `--locales de,ja`; `run` says so on a line that starts with "free tier:", and if the key is refused that line says why.
+To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your activations. If the licence server can't be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days (shotfleet notes a hash of the key and the date there, never the key itself). On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers. A Mac where you ran `shotfleet activate` re-checks about weekly and stops after 30 days offline. If the key is refused or can't be checked, `export` and `run` both stop with exit 2 and say why, so a CI job never goes green on 2 languages by accident (unset `SHOTFLEET_KEY` to get the free tier). On hosted CI runners, which start fresh every time, cache `~/Library/Application Support/shotfleet/ci-checked.json` between jobs to keep that 30-day grace during a Gumroad outage; it holds a hash and a date, no secret.
 
-With `--json`, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in `run.json`.
+With `--json`, progress goes to stderr, including the "free tier:" line (only when no `SHOTFLEET_KEY` is set; with one, a refused key stops `run`).
 
 ## Linux and CI
 
@@ -242,12 +242,16 @@ plain text in `~/.claude.json`.
 
 ### What the MCP tools do
 
-- `check` and `doctor` only look. `check` never changes a screenshot; it writes its report to `./shotfleet-check`, or
-  to the folder you pass as `report`.
+- `doctor` only looks. `check` never changes a screenshot; it writes its report (`check.json` and `index.html`, replacing
+  those two files if they are there) to `./shotfleet-check`, or to the folder you pass as `report`. Over MCP `check` takes no
+  `ocr_command`: a program to run is for `--ocr-command` in your own terminal (or `SHOTFLEET_OCR` where the server starts).
 - `run` boots simulators or emulators and replaces the screenshots in the config's output folder. On a big app that can
   take an hour or more, so if your client asks for progress, the server sends it a line every 30 seconds.
-- Over MCP, `run` skips the `[hooks]` commands in your config unless you pass `hooks: true`. A config in a repo you just
-  cloned can hold any shell command, and here you wouldn't see it the way you see a command in your terminal.
+- Over MCP, no command written in your config runs unless you pass `hooks: true`. Without it, `run` skips the `[hooks]`
+  commands and refuses a config that has a `[capture]` build, `[ios] simctl` or `[android] shell` commands, and says which.
+  A config in a repo you just cloned can hold any shell command, and here you wouldn't see it the way you see a command in
+  your terminal. `run` still installs and runs the config's app (and with `[capture]`, its test bundle) on the simulators,
+  so only point it at a project you trust.
 - I keep the answers short: counts, the first 100 problems and notes, and the path to the full `check.json`. Pass
   `full: true` to get the whole report. For 40 languages with 10 screens each, the whole report is about 67,000
   characters, and Claude Code moves anything over 50,000 to a file instead of showing it.

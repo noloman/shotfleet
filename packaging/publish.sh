@@ -112,7 +112,12 @@ else BASE=${BASE:-https://shotfleet.com}; fi
 echo "== publish $( [ "$STAGING" = 1 ] && echo '[STAGING shotfleet-staging] ' )$( [ "$DRY" = 1 ] && echo 'DRY RUN: deploys, rolls back and writes nothing' || echo 'REAL RUN') =="
 echo "-- manifest and files"
 VERSION=$(awk '$1 == "version" { print $2 }' "$MANIFEST")
-case "$VERSION" in [0-9]*.[0-9]*.[0-9]*) ok "manifest version $VERSION" ;; *) fail "manifest has no 'version X.Y.Z' line"; VERSION=unknown ;; esac
+# strictly X.Y.Z (digits only): the version goes into file names and paths below, so no space or shell character may pass
+case "$VERSION" in
+  *[!0-9.]*|*..*|.*|*.|*.*.*.*) fail "manifest has no 'version X.Y.Z' line (digits only)"; VERSION=unknown ;;
+  [0-9]*.[0-9]*.[0-9]*) ok "manifest version $VERSION" ;;
+  *) fail "manifest has no 'version X.Y.Z' line (digits only)"; VERSION=unknown ;;
+esac
 TAR=shotfleet-$VERSION-macos-arm64.tar.gz; PKG=shotfleet-$VERSION-macos-arm64.pkg
 [ "$(grep -c '^file ' "$MANIFEST")" = 2 ] || fail "the manifest must list exactly two files: $TAR and $PKG"
 for n in "$TAR" "$PKG"; do

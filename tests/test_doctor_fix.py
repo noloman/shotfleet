@@ -328,7 +328,7 @@ class LicenceCallsUseTheSameCaBundle(unittest.TestCase):
             status = 200
             def __enter__(self): return self
             def __exit__(self, *a): return False
-            def read(self): return b"{}"
+            def read(self): return b'{"success": false}'
         def fake_urlopen(req, timeout=None, context=None): seen.append(context); return Resp()
         marker = object()
         with mock.patch.object(sf, "tls_context", lambda: marker), mock.patch.object(sf.urllib.request, "urlopen", fake_urlopen), \

@@ -101,7 +101,9 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 | `hasn't been checked` | no `check.json` in it | `shotfleet check <out>` |
 | `need a licence` | `export`, or `run` past 2 languages, without a licence | the user runs `shotfleet activate <key>`; see licence.md |
 | `that key didn't activate` | wrong, disabled (`the key was disabled`), refunded or charged-back key | the user checks the key in the Gumroad receipt email |
-| `activations. Email hello@shotfleet.com` | the key has used all 3 activations (Gumroad keys); `deactivate` does not give one back | the user emails hello@shotfleet.com to have the count reset |
+| `activations. Email hello@shotfleet.com` | the key has used all 5 activations (3 Macs plus 2 spare for reinstalls); `deactivate` does not give one back | the user emails hello@shotfleet.com to have the count reset |
+| `SHOTFLEET_KEY couldn't be checked` | Gumroad unreachable and the key never passed a check on this machine in the last 30 days | run again once the network reaches Gumroad |
+| `your licence covers every shotfleet version released until` | this version came out more than a year after the purchase | keep using a version from within the year, or email hello@shotfleet.com about a renewal |
 | `SHOTFLEET_KEY isn't a valid licence` | bad key in CI | fix the secret |
 | `this licence is no longer valid` | refunded, charged back or disabled (the reason is in the parentheses) | the user contacts support |
 | `couldn't reach the licence server for 30 days` | offline too long | connect once |

@@ -175,7 +175,7 @@ class Offer(unittest.TestCase):
 
     def test_refund_window_is_14_days_everywhere(self):
         for name, text in self.DOCS.items():
-            found = set(re.findall(r"(\d+)[- ]day refund", text)) | set(re.findall(r"within (\d+) days", text))
+            found = set(re.findall(r"(\d+)[- ]day refund", text)) | set(re.findall(r"within (\d+) days(?! of (?:your|the) purchase)", text))
             if name in ("index.html", "terms.html", "launch-email.md", "README.md"): self.assertEqual(found, {"14"}, name)
 
     def test_free_tier_wording_matches_the_code_on_every_page(self):
@@ -187,7 +187,9 @@ class Offer(unittest.TestCase):
         self.assertIn("`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`", README)
 
     def test_limits_match_the_code(self):
-        self.assertEqual(sf.MAX_MACS, 3); self.assertIn("3 activations per key", INDEX); self.assertIn("The key has 3 activations", TERMS)
+        self.assertEqual(sf.MAX_MACS, 5); self.assertIn(f"A key can be activated {sf.MAX_MACS} times: 3 Macs and 2 spare for reinstalls", TERMS)
+        for text in (INDEX, TERMS): self.assertIn("there are spare activations for reinstalls, and if you run out, email", text)
+        self.assertNotRegex(INDEX + TERMS + README, r"\b3 activations")
         self.assertIn(f"works offline for {sf.LICENCE_OFFLINE_DAYS} days", INDEX); self.assertIn(f"up to {sf.LICENCE_OFFLINE_DAYS} days", TERMS)
         self.assertIn("about once a week", TERMS); self.assertEqual(sf.LICENCE_RECHECK_DAYS, 7)
 
@@ -197,9 +199,10 @@ class Offer(unittest.TestCase):
         self.assertIn("arm64", (PUB / "install.sh").read_text())  # and the installer really refuses anything else
 
     def test_the_updates_promise_is_not_an_unconditional_forever(self):
-        self.assertIn("not available yet", TERMS)  # renewal
+        self.assertIn("The renewal isn't on sale yet, so for now email", TERMS)  # renewal
         self.assertNotIn("you can renew", TERMS)
-        self.assertIn("keeps working while macOS and your tools allow", INDEX)
+        self.assertIn("Versions you have keep working while macOS and your tools allow", INDEX)
+        self.assertIn("keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run", TERMS)
 
 
 @unittest.skipIf(LIVE, "the site is already live; the waitlist blocks are gone")

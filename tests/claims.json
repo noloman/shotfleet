@@ -783,21 +783,23 @@
  },
  {
   "id": "C045",
-  "claim": "3 activations per key for your own Macs, CI uses none, unlimited apps; one licence per developer; a Mac without the key saved uses one each time",
+  "claim": "Use it on up to 3 of your Macs, with spare activations for reinstalls (5 per key), and an email for a reset; CI uses none, unlimited apps; one licence per developer",
   "where": [
    "site/public/index.html",
    "site/public/terms.html",
-   "site/public/terms.html"
+   "site/public/terms.html",
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "3 activations per key, for your own Apple silicon Macs. One is used each time you activate on a Mac that doesn’t have the key saved, so also after <code>deactivate</code>, a new macOS install or a new user account. Your CI uses none.",
-   "One licence is for one developer. The key has 3 activations, for your own Macs, and your CI uses none.",
-   "Unlimited apps and projects, including client and commercial work."
+   "Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none. Unlimited apps.",
+   "One licence is for one developer. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none.",
+   "Unlimited apps and projects, including client and commercial work.",
+   "From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset."
   ],
   "status": "partial",
-  "proof": "Client: GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing (the 4th activation is refused and spends nothing), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does).",
+  "proof": "Client: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (the 6th activation is refused and spends nothing; 0.1.5 and earlier stop at the 4th), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does). 2026-10-06 (0.1.6, L2, owner decision): '3 activations' made a reinstall burn one of the 3 Macs. MAX_MACS is now 5 and every page says 'use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset' (the terms, docs and README also say the key has 5). Exact limit: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (activations 1 to 5 work, the 6th is refused and burns nothing); the wording: GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email; pages and code agree: Offer.test_limits_match_the_code. The device assertion below now means: the 6th is refused with 'all 5 activations' and Uses reads 5. Gumroad's own product description must say the same (licence-review/gumroad-description-new.txt; Manu edits Gumroad).",
   "layer": "device",
-  "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key from 4 different Macs (or by clearing licence.json): the 4th is refused with 'all 3 activations' and the Gumroad Uses row still reads 3; SHOTFLEET_KEY validates and the Uses row does not move.",
+  "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key 6 times (or by clearing licence.json): the 6th is refused with 'all 5 activations' and the Gumroad Uses row still reads 5; SHOTFLEET_KEY validates and the Uses row does not move.",
   "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8)."
  },
  {
@@ -811,10 +813,10 @@
   "where_text": [
    "It works offline for 30 days, and a CI key is checked on every run.",
    "re-checks at most weekly, works offline for 30 days",
-   "This check fails open on purpose: if the licence server can't be reached, the run counts as licensed"
+   "If the licence server can't be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online and documented in README, docs.html, DISTRIBUTION.md and the skill. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the separate line under the button was folded into the updates line on the price card, which now says when the key is checked (at activation, then about once a week when run or export is used: require_licence is only called by those), the 30 days offline, the CI key on every run, and that a refused key or 30 days without an answer means the free tier.",
+  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days and documented in README, docs.html, DISTRIBUTION.md and the skill. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the separate line under the button was folded into the updates line on the price card, which now says when the key is checked (at activation, then about once a week when run or export is used: require_licence is only called by those), the 30 days offline, the CI key on every run, and that a refused key or 30 days without an answer means the free tier. 2026-10-06 (0.1.6, L1b, owner decision): the CI key no longer fails open. Offline it counts only where it passed a check in the last 30 days (a hash of the key and the date are noted in ci-checked.json next to licence.json; an activated Mac's licence.json with the same key counts too); otherwise NoLicence with 'couldn't be checked'. GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days, FreeTierMessage.test_an_unreachable_licence_server_stops_run_for_a_key_this_machine_never_checked_and_says_why, FreeTierMessage.test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -887,52 +889,54 @@
  },
  {
   "id": "C050",
-  "claim": "A key has 3 activations: deactivate removes it from a Mac but cannot give one back; a fourth Mac means an email and a manual reset; don't share your key",
+  "claim": "A key can be activated 5 times (3 Macs, 2 spare for reinstalls): deactivate removes it from a Mac but cannot give one back; running out means an email and a manual reset; don't share your key",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "A key can be activated 3 times. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again."
+   "A key can be activated 5 times: 3 Macs and 2 spare for reinstalls. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again."
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 13): 'a Mac that already holds it' was true only while licence.json has the key; the terms, docs and README now say when the same Mac counts again.",
+  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 13): 'a Mac that already holds it' was true only while licence.json has the key; the terms, docs and README now say when the same Mac counts again. 2026-10-06 (0.1.6): 5 activations, GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing and GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email.",
   "layer": "unit",
   "assertion": "Already covered; add: a human resets a Uses row once in the real dashboard.",
   "fix": ""
  },
  {
   "id": "C051",
-  "claim": "A year of updates is included",
+  "claim": "A year of updates: a licence covers every version released within 365 days of the purchase; later versions run as the free tier with a message",
   "where": [
    "site/public/index.html",
    "site/public/terms.html",
-   "DISTRIBUTION.md"
+   "DISTRIBUTION.md",
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "A year of updates. After that, your version keeps working while macOS and your tools allow, and while it can check the key with Gumroad",
-   "A year of updates is included.",
-   "A year of updates is part of the $49"
+   "A year of updates: your key covers every version released within a year of your purchase.",
+   "A year of updates is included: your licence covers every shotfleet version released within a year of your purchase.",
+   "A year of updates is part of the $49: a key covers every version released within a year of the purchase (the same date a year later)",
+   "“A year of updates” now means exactly that: your key covers every shotfleet version released within a year of your purchase. A version that comes out later runs as the free tier and says which versions your key covers; the versions you have keep working. If you bought in October 2026, every version released until October 2027 is covered."
   ],
-  "status": "partial",
-  "proof": "No mechanism enforces or even defines the year: installs are an open download (site/public/download is served without a key; install.sh), the licence key 'never expires' (LAUNCH.md:12) and the client never compares a release date with a purchase date. As a promise it holds trivially for the first year; it only matters at renewal. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the price card now names the licence check as a condition, as the terms already did (GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot).",
+  "status": "proven",
+  "proof": "2026-10-06 (0.1.6, L3, owner decision): enforced. packaging/build.sh bakes the build day (UTC) into a module `_release` that PyInstaller freezes into the program's code (not a loose file); shotfleet.py baked_release_date reads it (None from source; a released build without a usable date warns on stderr, still runs, and with a known sale date is NOT treated as covered). gumroad_verify reads purchase.sale_timestamp; activate, the weekly check and a CI key's check store it in licence.json / ci-checked.json as `sale`, so offline use works; check_update_window raises NoLicence (export refuses, run is the free tier) when the release date is after the same date a year after the sale (calendar year; 29 February counts to 1 March), and `activate` refuses such a key before it spends an activation, with a message naming the last release day the key covers, this version and its date, that the versions you have keep working, and 'email hello@shotfleet.com' for a renewal. The clock is never used: UpdateWindow.test_moving_the_clock_back_does_not_stretch_the_window. Edges: UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not, UpdateWindow.test_a_missing_sale_date_or_no_release_date_decides_nothing, UpdateWindow.test_the_release_date_is_baked_into_the_frozen_code_by_the_build_and_a_missing_or_bad_one_warns_and_means_none, UpdateWindow.test_a_released_build_without_a_release_date_is_not_covered_but_a_source_run_is, UpdateWindow.test_bad_sale_dates_never_crash_and_a_year_is_a_calendar_year, UpdateWindow.test_a_refunded_key_is_still_refused_inside_and_outside_the_window, UpdateWindow.test_a_hand_edited_sale_date_is_overwritten_from_gumroad_at_the_next_online_check, UpdateWindow.test_offline_the_stored_sale_date_decides_and_the_30_days_still_apply, UpdateWindow.test_october_2026_builds_work_for_every_current_buyer, UpdateWindow.test_an_out_of_window_key_is_refused_before_it_spends_an_activation_and_a_new_version_runs_as_the_free_tier. Limits: the build day is a few days before the publish day, which errs in the buyer's favour; licence.json is unsigned, so a hand-edited sale date holds until the next online check (about weekly); downloads stay public, so the check is the only enforcement. Not run on a real build or against the real Gumroad (the sale_timestamp field is from Gumroad's docs and the live purchase object, not a verify call made today).",
   "layer": "legal",
-  "assertion": "Decide the rule (updates after 12 months need a renewal key) before the first buyer's anniversary: until then there is nothing to test.",
+  "assertion": "Unit: as the tests named. Device: a release-candidate build with a release date more than 365 days after a fake sale is the free tier with the message.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "Reworded to what the code does: nothing enforces the year (the install is an open download, the key never expires). It is a promise to ship updates for a year; afterwards your version keeps working while macOS and your tools allow and the licence check can run. Not built: an 'updates until' date, because the product does not yet define what the year counts from.",
-  "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
+  "fixed_by": "code",
+  "fixed": "0.1.6: the year is now enforced against the build's baked-in release date and Gumroad's sale date (it was wording only, with nothing enforcing it). The terms, price card, docs, README, llms.txt and skill say what the code does.",
+  "test": "UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not"
  },
  {
   "id": "C052",
-  "claim": "After the year, the version you have keeps working as long as macOS, Xcode and Maestro let it",
+  "claim": "The versions you already have keep working as long as macOS, Xcode and Maestro let them, and the licence check can run",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run"
+   "The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run"
   ],
   "status": "proven",
-  "proof": "GumroadLicenceShape.test_a_success_answer_is_valid_and_its_use_count_is_read, GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag, GumroadLicenceShape.test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not, GumroadLicenceShape.test_an_unknown_key_is_a_404_with_a_message_and_is_invalid, GumroadLicenceShape.test_an_outage_is_not_a_verdict, GumroadLicenceShape.test_the_age_of_the_purchase_decides_nothing, GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check, GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicenceShape.test_the_terms_say_what_the_code_does (tests/test_claims_unit.py). Pins the answers the code reads (Gumroad: success, uses, message, purchase.refunded/chargebacked/disputed/dispute_won) as fixtures and the decision made from each; a purchase of any age stays valid, the check runs about weekly, an outage never invalidates, 30 days offline stops it, and the Terms sentence matches (Offer.test_limits_match_the_code). The fixtures follow Gumroad's licence-key documentation and are not captured from the live API: if Gumroad changes the shape, or unpublishes the product, the promise as worded in the Terms ('as long as the licence check can run') is the disclosed limit. Earlier: GumroadLicence.test_a_gumroad_outage_is_not_a_verdict.",
+  "proof": "GumroadLicenceShape.test_a_success_answer_is_valid_and_its_use_count_is_read, GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag, GumroadLicenceShape.test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not, GumroadLicenceShape.test_an_unknown_key_is_a_404_with_a_message_and_is_invalid, GumroadLicenceShape.test_an_outage_is_not_a_verdict, GumroadLicenceShape.test_the_age_of_the_purchase_decides_nothing, GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check, GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicenceShape.test_the_terms_say_what_the_code_does (tests/test_claims_unit.py). Pins the answers the code reads (Gumroad: success, uses, message, purchase.refunded/chargebacked/disputed/dispute_won) as fixtures and the decision made from each; a purchase of any age stays valid, the check runs about weekly, an outage never invalidates, 30 days offline stops it, and the Terms sentence matches (Offer.test_limits_match_the_code). The fixtures follow Gumroad's licence-key documentation and are not captured from the live API: if Gumroad changes the shape, or unpublishes the product, the promise as worded in the Terms ('as long as the licence check can run') is the disclosed limit. Earlier: GumroadLicence.test_a_gumroad_outage_is_not_a_verdict. 2026-10-06 (0.1.6): reworded with L3; a version released within the year keeps passing for a purchase 800 days old (GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check now sets the release date 100 days after the sale).",
   "layer": "unit",
   "assertion": "Release gate that pins the Gumroad licence answer shape used (success, uses, purchase.refunded/chargebacked/disputed).",
   "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Gumroad) is reachable at least once every 30 days.'",
@@ -942,20 +946,20 @@
  },
  {
   "id": "C053",
-  "claim": "You can renew for another year of updates",
+  "claim": "Versions released more than a year after the purchase need a renewal; the renewal isn't on sale yet, so email",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "I plan to offer an optional renewal for further updates after the first year; it is not available yet."
+   "The renewal isn't on sale yet, so for now email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a>."
   ],
   "status": "fixed",
-  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic.",
+  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic. 2026-10-06 (0.1.6): the window is enforced (C051), so the terms now say a later version needs a renewal that isn't on sale yet, and to email; the program's message says the same (UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not).",
   "layer": "legal",
   "assertion": "A Gumroad product 'shotfleet renewal' exists and its key extends the update window.",
   "fix": "After a year, I plan to offer an optional renewal for further updates (not available yet).",
   "fixed_by": "wording",
-  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.'",
+  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.' 0.1.6: 'email hello@shotfleet.com' for now, as the program says.",
   "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
  },
  {
@@ -1608,15 +1612,15 @@
  },
  {
   "id": "C093",
-  "claim": "Licence: only Gumroad keys work (3 activations, one count per key); a key from any other store, and a saved licence from one, are refused; refunded, charged-back and disputed Gumroad keys are refused",
+  "claim": "Licence: only Gumroad keys work (5 activations, one count per key); a key from any other store, and a saved licence from one, are refused; refunded, charged-back and disputed Gumroad keys are refused",
   "where": [
    "DISTRIBUTION.md"
   ],
   "where_text": [
-   "Gumroad is the store: its licence keys count activations (3 per key;"
+   "Gumroad is the store: its licence keys count activations (5 per key, for 3 Macs plus reinstalls;"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call and Licence.test_a_saved_licence_from_another_store_is_refused_and_can_be_removed (no network call in either). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK; the Lemon Squeezy code was removed 2026-10-03.",
+  "proof": "GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call and Licence.test_a_saved_licence_from_another_store_is_refused_and_can_be_removed (no network call in either). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK; the Lemon Squeezy code was removed 2026-10-03.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -2765,7 +2769,7 @@
    "when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier."
   ],
   "status": "proven",
-  "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. A CI key that can't reach Gumroad is let through (fails open), which docs.html says.",
+  "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. Since 0.1.6 a CI key that can't reach Gumroad counts only where it passed a check in the last 30 days, which docs.html says.",
   "layer": "unit",
   "assertion": "As the tests named.",
   "fix": ""
@@ -4186,6 +4190,67 @@
   "layer": "device",
   "proof": "marketing/articles/02-one-maestro-flow-every-locale.md TO VERIFY items 1 to 10, every one ticked with the run (2026-10-03/04: Maestro 2.0.10, iPhone 17 iOS 26.4 simulator, API 36 emulator with tools/fixture-app-android; the Maestro docs pages and morse_app PR #216 opened). Not run: Maestro 2.11, API 33 to 35, --shard-split (the guide says so).",
   "assertion": "None beyond the recorded runs; Maestro versions change this.",
+  "fix": ""
+ },
+ {
+  "id": "C255",
+  "claim": "A released build ignores SHOTFLEET_GUMROAD_API: the licence check can't be pointed at another server",
+  "where": [
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "no secret in the app, one use count per key, 5 activations"
+  ],
+  "status": "proven",
+  "proof": "0.1.6 (L1a, 'Defect 2' in research/review-2026-10-03.md): shotfleet.py gumroad_api honours SHOTFLEET_GUMROAD_API only from source (tests) or in a build whose product id starts with RCTEST (tools/release-candidate.sh's test build, which needs its fake server); a released build always asks api.gumroad.com. GumroadLicence.test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source (frozen, real product id, override at a dead host: activation still reaches the configured server, and a made-up SHOTFLEET_KEY is refused). Not tried on the binary itself.",
+  "layer": "unit",
+  "assertion": "As the test named.",
+  "fix": "",
+  "fixed_by": "code",
+  "fixed": "Pointing the override at a dead host plus any well-formed SHOTFLEET_KEY was a full licence. Fixed in code: the override is read at call time and ignored when frozen with a real product id.",
+  "test": "GumroadLicence.test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source"
+ },
+ {
+  "id": "C256",
+  "claim": "A CI key is checked online on every run, uses no activation, and works offline only on a machine where it passed a check in the last 30 days",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "It's checked online on each run and uses none of your activations.",
+   "On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers.",
+   "works offline only on a machine where it passed a check in the last 30 days"
+  ],
+  "status": "proven",
+  "proof": "0.1.6 (L1b, 'Defect 3'): GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days (offline and never checked: refused with 'couldn't be checked'; a made-up key with Gumroad blocked: refused; online: no use counted, no licence.json, the record holds a hash, not the key; offline after a check: fine at 29 days, refused at 31 days and with a future date; an activated Mac with the same key counts as checked), GumroadLicence.test_nothing_counts_a_use_except_one_activation, FreeTierMessage.test_an_unreachable_licence_server_stops_run_for_a_key_this_machine_never_checked_and_says_why, FreeTierMessage.test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here. tools/release-candidate.sh also checks a fresh HOME is refused during an outage (not run in this change). Limit: a CI job on a fresh runner fails to license during a Gumroad outage (run captures 2 languages, export exits 2).",
+  "layer": "unit",
+  "assertion": "As the tests named.",
+  "fix": "",
+  "fixed_by": "code",
+  "fixed": "Was fail-open with no limit (owner decision 2026-10-05), so any well-formed key passed with Gumroad blocked. Owner decision 2026-10-06: offline only after a good check on that machine, for 30 days.",
+  "test": "GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days"
+ },
+ {
+  "id": "C257",
+  "claim": "Over MCP no command written in the config runs without hooks: true: run skips [hooks] and refuses a config with a [capture] build, [ios] simctl or [android] shell commands; check takes no ocr_command (README, docs, What's new 0.1.6)",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "Over MCP, no command written in your config runs unless you pass `hooks: true`.",
+   "Over MCP, no command written in your config runs unless you pass <code>hooks: true</code> to <code>run</code>.",
+   "<code>[android] shell</code> commands unless you pass <code>hooks: true</code>, the same opt-in as for <code>[hooks]</code>.",
+   "<code>check</code> over MCP no longer takes <code>ocr_command</code>"
+  ],
+  "status": "proven",
+  "proof": "McpRunRunsNoConfigCommandUnlessAsked.test_a_capture_build_does_not_run_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_simctl_and_shell_setup_commands_are_refused_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_the_last_guard_stops_setup_commands_and_the_build_even_past_mcp_call, McpCheckRunsNoProgram.test_ocr_command_is_refused_and_never_runs (security review S1/S2, 2026-10-07: shotfleet-rc-build/code-review-2026-10-07/security.md). CHANGELOG 0.1.6.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the pages.",
   "fix": ""
  }
 ]
