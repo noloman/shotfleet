@@ -72,7 +72,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 
 `stdout` is only JSON; progress goes to stderr. Read `exit` first.
 
-- `check` and `run`: `{"exit", "screenshots": [{"file": "<locale>/<name>.png", "src", "sha", "lang", "chars", "evidence"}], "problems": ["<locale>/<file>: <what>", ...], "notes": [...]}`. `problems` fail the check; `notes` are worth knowing and do not. `lang` is the language the screen shows (null when macOS can't read that script). `evidence` is `"hierarchy"` when the screen's text came from the app's own UI tree (saved next to the screenshot as `<name>.texts.json`), `"ocr"` when it was read from pixels. `src` is relative to the report folder.
+- `check` and `run`: `{"exit", "screenshots": [{"file": "<locale>/<name>.png", "src", "sha", "lang", "chars", "evidence"}], "problems": ["<locale>/<file>: <what>", ...], "notes": [...], "unverified": ["<locale>/<file>", ...]}`. `problems` fail the check; `notes` are worth knowing and do not. `unverified` lists screenshots nobody read because macOS text recognition was busy (it can prepare for about 40 minutes) and no Tesseract was installed: tell the user to run `check` again later or `brew install tesseract`; no restart is needed. They exit 0 unless `check --strict` (then 1). `lang` is the language the screen shows (null when macOS can't read that script). `evidence` is `"hierarchy"` when the screen's text came from the app's own UI tree (saved next to the screenshot as `<name>.texts.json`), `"ocr"` when it was read from pixels. `src` is relative to the report folder.
 - `export`: `{"exit", "exported": ["<listing folder>", ...], "skipped": ["<locale>", ...]}`. A skipped language failed a check.
 - With `exit` 2 the JSON has only `exit`.
 - With several reports (several `device_types`, both platforms, a folder of device runs, Play phone and tablet sets) `screenshots`, `problems` and `notes` hold all of them, plus `reports`: `[{"report": "<path of check.json>", "problems": [...]}]`. With one report there is no `reports` key.
@@ -82,7 +82,7 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 
 - What you ran, the exit code, the number of problems, and the path of `index.html` (open it for the grid: a row per language, a column per screen, problems outlined in red).
 - For each problem group: which locale to recapture and whether the cause is in the app (untranslated string, button off-screen in a long language) or in the flow.
-- What was not covered: scripts macOS can't read, `check` without `--app`, Android screens on Maestro older than 2.7.0 (read by text recognition only).
+- What was not covered: `unverified` screenshots, scripts macOS can't read, `check` without `--app`, Android screens on Maestro older than 2.7.0 (read by text recognition only).
 
 ## Do not
 

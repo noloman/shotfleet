@@ -2669,22 +2669,79 @@ def ocr_not_answering():
                 "A first-time compile on a busy Mac can take minutes, and the result is kept for next time")
     return "macOS text recognition isn't answering (is the Mac overloaded?)"
 
-OCR_WHAT_TO_DO = ("Wait a few minutes and run check again, close heavy apps, or install Tesseract for a fallback reader "
-                  "(brew install tesseract). Restarting the Mac is a last resort.")
+OCR_WHAT_TO_DO = ("Run check again later (macOS finishes preparing it by itself; on a quiet Mac that took about 40 minutes once), "
+                  "close heavy apps, or install Tesseract for a fallback reader (brew install tesseract). No restart needed.")
+
+# One budget for all of a check's waiting on macOS text recognition (warm-up, waiting for another shotfleet's warm-up, retries
+# in every read). Measured: a healthy cold compile takes 17 to 188 s, and the warm-up's 6-minute patience covers that twice over;
+# 8 minutes is that plus 2 for mid-check retries and the lock. A compile episode can run about 40 minutes (2026-10-06, quiet Mac,
+# c030-retime), which no check should sit through: past the budget, the screens left unread are marked not verified instead.
+OCR_BUDGET_S = 480
+OCR_DEADLINE = None  # time.time() at which the running check's budget ends; None outside a check
+OCR_LOCK = "/tmp/shotfleet-ocr-warmup.lock"  # /tmp like device_lock: one Mac, one ANECompilerService, whoever runs shotfleet
+OCR_BUSY = "macOS text recognition was busy"
+
+class OcrBusy(RuntimeError):
+    """macOS text recognition is still preparing (compiling) and the check's budget, or the read's patience, ran out."""
+
+def ocr_left():
+    """Seconds left of the running check's text-recognition budget (no limit outside a check)."""
+    return float("inf") if OCR_DEADLINE is None else max(0.0, OCR_DEADLINE - time.time())
+
+@contextlib.contextmanager
+def ocr_budget():
+    """The check-wide budget. Nested checks (several device folders, Play's phone and tablet sets) share the outer one."""
+    global OCR_DEADLINE
+    own = OCR_DEADLINE is None
+    if own: OCR_DEADLINE = time.time() + OCR_BUDGET_S
+    try: yield
+    finally:
+        if own: OCR_DEADLINE = None
+
+def ocr_warmup_lock(limit):
+    """One shotfleet per Mac warms up macOS text recognition at a time, so concurrent checks don't pile compiles onto
+    ANECompilerService. Returns the open, flocked file; None to go on without it (no lock file possible, or nothing is compiling,
+    so the holder is not waiting on a compile and there is nothing to pile onto); False if the holder's compile went past `limit`
+    seconds or looks stuck. The OS drops an flock when its holders exit, so a lock is never stale."""
+    import fcntl
+    try: f = os.fdopen(os.open(OCR_LOCK, os.O_CREAT | os.O_RDWR, 0o666), "r+")
+    except OSError: return None
+    start, said, look = time.time(), False, time.time() + 10
+    while True:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB); return f
+        except BlockingIOError: pass
+        except OSError: f.close(); return None
+        waited = time.time() - start
+        if not said:
+            print("another shotfleet is preparing macOS text recognition; waiting", flush=True); said = True
+        if waited >= limit: f.close(); return False
+        if time.time() >= look:  # every 10 s, like wait_for_ocr
+            busy, cpu_min = ane_state(); look += 10
+            if not busy or cpu_min >= OCR_STUCK_CPU_MIN:
+                f.close(); return None if not busy else False
+        time.sleep(min(1, limit - waited))
 
 def warm_up_ocr(ocr, timeout=600, patience=0):
     """One recognition on its own before the parallel ones, so macOS compiles its model once (minutes after a restart).
     False if it doesn't answer in time: macOS's recognition service (ANECompilerService) is stuck or still compiling.
     It is left running then, so a slow first compile still finishes for the next check. With `patience`, waits past `timeout`
     (up to `patience` seconds in all) as long as that service is using the CPU: a compile that is making progress, not a stuck Mac.
-    Killing and retrying does not help (measured: the retry waited behind the first compile, 76 s after a kill at 15 s)."""
+    Killing and retrying does not help (measured: the retry waited behind the first compile, 76 s after a kill at 15 s).
+    All its waiting, the wait for another shotfleet's warm-up included (ocr_warmup_lock), counts against the check's budget.
+    The helper inherits the lock, so one left running keeps it until its compile ends."""
+    start = time.time()
+    timeout, patience = min(timeout, ocr_left()), min(patience, ocr_left())
+    if ocr_left() < 1: return False  # the check's budget is used up
+    lock = ocr_warmup_lock(max(timeout, patience))
+    if lock is False: return False
     note = threading.Timer(OCR_NOTE_AFTER_S, print, ["macOS is preparing its text recognition, a one-off wait of about 30 seconds "
                                                     "(a few minutes on a busy Mac). Nothing is wrong if this stays quiet."], {"flush": True})
     note.daemon = True; note.start()
-    start = time.time()
     try:
         while True:  # a helper that exits without an answer (seen at load 800: a Vision error while the model compiles) is started again
-            p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+            p = subprocess.Popen([ocr, "--warmup"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True,
+                                 pass_fds=(lock.fileno(),) if lock else ())
             spent = time.time() - start
             out = wait_for_ocr(p, max(1, timeout - spent), max(0, patience - spent))
             if out is None: return False  # no answer in time: left running
@@ -2693,6 +2750,7 @@ def warm_up_ocr(ocr, timeout=600, patience=0):
             time.sleep(OCR_RETRY_S)
     finally:
         note.cancel()
+        if lock: lock.close()
 
 def wait_for_ocr(p, timeout, patience=0):
     """p.communicate()'s (stdout, stderr), or None if p gives no answer in `timeout` s. With `patience`, waits past `timeout`
@@ -2744,21 +2802,27 @@ def usable_text(png, tables):
 
 def read_text(ocr, png, timeout=120, patience=OCR_COMPILE_PATIENCE_S):
     """OCR one image. Vision can hang on an overloaded Mac, so time out and retry once instead of waiting forever;
-    a model compile that is still working mid-check (seen at load 800 on 2026-10-05) is waited for like the warm-up's."""
+    a model compile that is still working mid-check (seen at load 800 on 2026-10-05) is waited for like the warm-up's.
+    Every wait is cut to what is left of the check's budget; OcrBusy when that (or `patience`) runs out during a compile."""
     start, hangs = time.time(), 0
     while hangs < 2:
+        if ocr_left() < 1:
+            raise OcrBusy(f"{OCR_BUSY} for longer than this check waits ({OCR_BUDGET_S // 60} minutes in all); {png} was not read. " + ocr_not_answering())
         p = subprocess.Popen([ocr, str(png)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        out = wait_for_ocr(p, timeout, patience)
+        out = wait_for_ocr(p, min(timeout, ocr_left()), min(patience, ocr_left()))
         if out is None:
             p.kill(); p.communicate()
-            hangs += 1
+            hangs += ocr_left() >= 1  # cut short by the budget: the loop's first line says so
             continue
         if p.returncode != 0:  # the helper's exit 2 (Vision failed): an error, not an empty screen
             busy, cpu_min = ane_state()  # ...unless macOS is compiling its model right now (measured 2026-10-06: e5rt error 13 mid-check, after a warm-up that answered)
-            if busy and cpu_min < OCR_STUCK_CPU_MIN and time.time() - start + OCR_RETRY_S < patience:
-                time.sleep(OCR_RETRY_S)
-                continue
-            raise RuntimeError(f"text recognition failed on {png}: {out[1].strip()[-200:] or 'exit ' + str(p.returncode)}")
+            failed = f"text recognition failed on {png}: {out[1].strip()[-200:] or 'exit ' + str(p.returncode)}"
+            if busy and cpu_min < OCR_STUCK_CPU_MIN:
+                if time.time() - start + OCR_RETRY_S < patience and OCR_RETRY_S < ocr_left():
+                    time.sleep(OCR_RETRY_S)
+                    continue
+                raise OcrBusy(failed)
+            raise RuntimeError(failed)
         return json.loads(out[0] or "{}")
     raise RuntimeError(f"text recognition hung twice on {png}. " + ocr_not_answering())
 
@@ -2857,14 +2921,18 @@ def reports_json():
     return {"screenshots": [r for _, d in docs for r in d.get("screenshots", [])],
             "problems": [x for _, d in docs for x in d.get("problems", [])],
             "notes": [x for _, d in docs for x in d.get("notes", [])],
+            "unverified": [x for _, d in docs for x in d.get("unverified", [])],
             "reports": [{"report": str(f), "problems": d.get("problems", [])} for f, d in docs]}
 
+@ocr_budget()
 def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
-              play_folder="phoneScreenshots", expect=None, locale=None):
+              play_folder="phoneScreenshots", expect=None, locale=None, strict=False):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder.
     `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen.
-    `locale`: the language of a flat folder of screenshots (no <locale>/ folders)."""
+    `locale`: the language of a flat folder of screenshots (no <locale>/ folders).
+    When macOS text recognition stays busy past OCR_BUDGET_S (or fails) and no other reader is installed, the screens it had to
+    read are listed as `unverified` and the rest of the check goes on; `strict` makes those exit 1."""
     folder = Path(folder)
     if locale is not None and not (LOCALE_LABEL.fullmatch(locale) or locale in CANON):
         raise Fail(f"--locale {locale!r} is not a language code (examples: en, de, pt-BR, zh-Hans)")
@@ -2938,7 +3006,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     problems = [f"{l}: the app has no {l} translation, so this listing shows another language; translate the app into it or remove the listing" for l in unmapped]
     pngs = [(label, png) for label in sorted(images) if label not in unmapped for png in images[label]]
     ocr_command = ocr_command or os.environ.get("SHOTFLEET_OCR")
-    user_gave_command = bool(ocr_command)
+    user_gave_command, gave_up = bool(ocr_command), None  # gave_up: why macOS text recognition was given up on with no other reader
     use_vision = vision_available()
     ocr = ocr_tool() if use_vision else None
     texts = [usable_text(png, tables) for _, png in pngs]
@@ -2948,20 +3016,25 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             raise Fail("reading screenshots needs Tesseract on this system (macOS text recognition is Mac-only): " + install_hint())
         ocr_command = ocr_command or TESSERACT_COMMAND
     elif not all(texts) and not warm_up_ocr(ocr, timeout=90 if fallback else 600, patience=OCR_COMPILE_PATIENCE_S):  # a compile that is still working is waited for, with or without another OCR at hand
-        if not fallback:
-            raise Fail(ocr_not_answering() + ". " + OCR_WHAT_TO_DO)
-        print(ocr_not_answering() + ". The fallback reader was used: using " + ("your --ocr-command" if ocr_command else "Tesseract") + " instead of macOS text recognition; "
-              "it reads fewer scripts and names no language, so some screens may be reported as unverified. Run check again later for the full reader")
-        use_vision, ocr_command = False, ocr_command or TESSERACT_COMMAND
+        if not fallback:  # no other reader: go on, and list the screens left unread as not verified
+            print(ocr_not_answering() + ". Going on without it: the screens it had to read are marked not verified", flush=True)
+            use_vision, gave_up = False, OCR_BUSY
+        else:
+            print(ocr_not_answering() + ". The fallback reader was used: using " + ("your --ocr-command" if ocr_command else "Tesseract") + " instead of macOS text recognition; "
+                  "it reads fewer scripts and names no language, so some screens may be reported as unverified. Run check again later for the full reader")
+            use_vision, ocr_command = False, ocr_command or TESSERACT_COMMAND
     # ponytail: 4 at a time; 10 parallel first-use requests are the likely trigger of macOS's text-recognition
     # service wedging (seen twice); raise it if that turns out to be unrelated
     with ThreadPoolExecutor(max_workers=4) as ex:  # each OCR is its own process
         def read(t, png):
-            nonlocal use_vision
+            nonlocal use_vision, gave_up
             if t or not use_vision: return t or {}
             try: return read_text(ocr, png)
-            except RuntimeError:  # macOS's OCR hung mid-check: the rest goes to Tesseract
-                if not ocr_command and not shutil.which("tesseract"): raise
+            except RuntimeError as e:  # macOS's OCR hung mid-check: the rest goes to Tesseract
+                if not ocr_command and not shutil.which("tesseract"):  # none: the rest is not verified
+                    if use_vision: print(f"{e}. Going on without it: the screens it had not read are marked not verified", flush=True)
+                    use_vision, gave_up = False, gave_up or (OCR_BUSY if isinstance(e, OcrBusy) else "macOS text recognition failed")
+                    return {}
                 print("macOS text recognition stopped answering; using " + ("your --ocr-command" if ocr_command else "Tesseract") + " for the rest")
                 use_vision = False
                 return {}
@@ -2980,17 +3053,24 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                 return {**external_ocr(ocr_command, pngs[i][1], lp), **tesseract_script(pngs[i][1], lp)}
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
-    rows, by_hash, expected_used, unverified, unread_files, no_language = [], {}, set(), 0, set(), []
+    rows, by_hash, expected_used, unverified, unread_files, no_language, not_verified, busy_hash = [], {}, set(), 0, set(), [], [], {}
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
+        busy = gave_up is not None and not r  # macOS text recognition was given up on before it read this screen
+        key = (lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}")
         if r.get("chars", 0) >= 40:  # ponytail: short screens (a watch button) can be identical across languages
-            by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
+            by_hash.setdefault(h, []).append(key)
+        elif busy: busy_hash.setdefault(h, []).append(key)  # unread: its text can't prove a copy (games, no-text screens), so a note
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
         if not tables and r.get("ocr") == "external" and r.get("chars") and "osd_script" not in r: no_language.append(f"{label}/{png.name}")
         blank = blank_screenshot(png)  # pixels, not OCR: only a flat frame is provably blank
-        if problem and problem.startswith("no text found") and read_nothing(r) and not blank:
+        if busy:  # not judged at all: no language, no "no text found"
+            got, problem = None, None
+            not_verified.append(f"{label}/{png.name}")
+            notes.append(f"{label}/{png.name}: not verified ({gave_up})")
+        elif problem and problem.startswith("no text found") and read_nothing(r) and not blank:
             got, problem = None, None  # the reader failed, the picture is not blank: say so, don't fail the run
             unread_files.add(f"{label}/{png.name}")
             notes.append(f"{label}/{png.name}: could not read this screenshot (the text reader found nothing and the picture is not blank), "
@@ -3007,6 +3087,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             bad, unsure = check_content(rules, r)
             why = "text recognition can't read that script"
             if f"{label}/{png.name}" in unread_files: bad, unsure, why = [], bad + unsure, "the text reader found nothing on this screenshot"
+            if busy: bad, unsure, why = [], bad + unsure, gave_up
             problems += [f"{label}/{png.name}: {m}" for m in bad]
             notes += [f"{label}/{png.name}: could not verify, {m} ({why})" for m in unsure]
             unverified += len(unsure)
@@ -3016,7 +3097,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if no_language:  # without strings only language detection judges the language, and Tesseract has none (macOS does)
         notes.append(f"{len(no_language)} screenshot(s) ({', '.join(no_language[:3])}{', ...' if len(no_language) > 3 else ''}) were read by "
                      "Tesseract without --app: it names no language, so their language was not checked (pass --app or --strings)")
-    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None and r["file"] not in unread_files})
+    unread = sorted({r["file"].split("/")[0] for r in rows if r["lang"] is None and r["file"] not in unread_files and r["file"] not in not_verified})
     if unread:
         who = "macOS can't read the script of" if vision_available() else "Tesseract can't read the script of"
         print(f"{who} {', '.join(unread)}: those screens were only checked for showing another "
@@ -3025,6 +3106,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
         if len(langs) > 1:  # en-GB and en-US both showing the app's English is fine
             problems.append(f"identical image in {len(langs)} languages: {', '.join(files)}")
+    if same := [f for hits in busy_hash.values() if len({lp for lp, _ in hits}) > 1 for _, f in hits]:
+        notes.append(f"{len(same)} unverified screens are identical across languages; run check again when text recognition answers "
+                     f"to tell whether they're copies ({', '.join(same)})")
     names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
     for label in sorted(set(images) - set(unmapped)):
         have, seen = {}, {}
@@ -3046,9 +3130,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     global LAST_REPORT; LAST_REPORT = report / "check.json"
     if LAST_REPORT not in REPORTS: REPORTS.append(LAST_REPORT)
     problems += store_problems
-    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
+    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes, "unverified": not_verified},
+                                                  indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
-    print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
+    loud = (f"{len(not_verified)} screenshot(s) not verified, because {gave_up}: their language and [expect] texts were not checked "
+            "(store sizes and missing screens were). " + OCR_WHAT_TO_DO) if not_verified else ""
+    if loud:  # at the top of the report, whatever the gallery looks like
+        page = (report / "index.html").read_text()
+        items = "".join(f"<li>{html.escape(f)}: not verified ({html.escape(gave_up)})</li>" for f in not_verified)
+        (report / "index.html").write_text(page.replace("<table>", f"<h3>Not verified ({len(not_verified)})</h3><p>{html.escape(loud)}</p><ul>{items}</ul><table>", 1))
+    print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)"
+          + (f", {len(not_verified)} not verified" if not_verified else ""))
     if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(shot_key(r['file'])).stem in expect})} screens, "
                      f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
@@ -3057,7 +3149,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         for n in notes[:12]: print(f"  - {n}")
         if len(notes) > 12: print(f"  ... {len(notes) - 12} more in {report / 'check.json'}")
     if report != folder: print(f"report: {report / 'index.html'}")
-    return 1 if problems else 0
+    if loud: print(("--strict: exit 1. " if strict and not problems else "") + "NOT VERIFIED: " + loud)
+    return 1 if problems or (strict and not_verified) else 0
 
 def write_gallery(out, rows, problems):
     """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red and marked
@@ -3489,11 +3582,12 @@ def cmd_doctor(fix=False, yes=False):
             read, r = None, e
         if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
             print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
-                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it. Now: {ocr_not_answering()}")
+                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it, then finishes and marks screens it couldn't read "
+                  f"as not verified. Now: {ocr_not_answering()}")
         elif isinstance(r, Exception):
-            print(f"PROBLEM text recognition   can't start ({r}); wait a few minutes and run doctor again (a restart is a last resort)")
+            print(f"PROBLEM text recognition   can't start ({r}); wait a few minutes and run doctor again, or install Tesseract for a fallback reader (brew install tesseract). No restart needed: `shotfleet check` still finishes and marks screens it couldn't read as not verified")
         elif r.returncode != 0:
-            print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; wait a few minutes and run doctor again (a restart is a last resort)")
+            print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; wait a few minutes and run doctor again, or install Tesseract for a fallback reader (brew install tesseract). No restart needed: `shotfleet check` still finishes and marks screens it couldn't read as not verified")
         elif read == "Ready":
             print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
         else:
@@ -4263,6 +4357,7 @@ def main(argv=None):
     p.add_argument("--content", nargs="?", const="shotfleet.toml", metavar="CONFIG",
                    help="also check the [expect.<screenshot>] texts of this config (default: ./shotfleet.toml) are on screen; put it after the folder")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
+    p.add_argument("--strict", action="store_true", help="exit 1, not 0, when screenshots were left unverified because macOS text recognition was busy")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
     p.add_argument("--json", action="store_true", help="print the result as JSON on stdout (progress goes to stderr)")
@@ -4599,7 +4694,8 @@ def check_build(folder, cwd=None):
         return None, None, None, guess.format(f"{app} holds no translations shotfleet can read")
     return app, None, strings, f"no --app given: using {app} for strings (pass --app to choose another)"
 
-def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None):
+@ocr_budget()  # one text-recognition budget for every folder this check covers
+def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None, strict=False):
     """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own).
     No --app or --strings and no run.json: the app build (or translation files) `init` would find in the current folder."""
     if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
@@ -4612,13 +4708,13 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
         for k in kinds:
             print(f"\n== {k}")
             codes.append(cmd_check(folder, strings=strings, app=app, strings_files=strings_files, ocr_command=ocr_command,
-                                   report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect))
+                                   report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect, strict=strict))
         return max(codes)
     if subs := device_runs(folder):
         codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=False,
-                           report_dir=Path(report) / d.name if report else None, expect=expect) for d in subs]
+                           report_dir=Path(report) / d.name if report else None, expect=expect, strict=strict) for d in subs]
         return max(codes + [ipad_set_missing(folder)])
-    return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale)
+    return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale, strict=strict)
 
 def main_dispatch(a):
     try:
@@ -4638,7 +4734,7 @@ def main_dispatch(a):
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
-        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale)
+        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale, a.strict)
         if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2

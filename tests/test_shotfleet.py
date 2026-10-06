@@ -1520,11 +1520,14 @@ class StuckOcrFallback(unittest.TestCase):
 
     @needs_mac
 
-    def test_without_tesseract_it_says_how_to_fix(self):
+    def test_without_tesseract_it_says_how_to_fix(self):  # and finishes: the screens nobody read are listed as not verified
         (self.bin / "tesseract").unlink()
-        with mock.patch.object(sf.shutil, "which", return_value=None):
-            with self.assertRaisesRegex(sf.Fail, "brew install tesseract"):
-                self.check()
+        with mock.patch.object(sf.shutil, "which", return_value=None), mock.patch.object(sf, "tesseract_languages", return_value=frozenset()):
+            code, out, report = self.check()
+        self.assertEqual(report["unverified"], ["de/1.png", "ja/1.png"])
+        self.assertEqual((code, report["problems"]), (0, []))  # identical, but unread: a note, not a copy problem
+        self.assertTrue(any(n.startswith("2 unverified screens are identical across languages") for n in report["notes"]), report["notes"])
+        self.assertIn("brew install tesseract", out); self.assertIn("No restart needed", out)
 
 
 class SimpleConfig(unittest.TestCase):
@@ -1885,7 +1888,7 @@ class Review20261003(unittest.TestCase):
             self.assertEqual(sf.judge_screen("ja", scr("Korean", 2.0), tables)[0], None)
         r = sf.tesseract_script("x.png", "de"); self.assertEqual(r, {})  # only ja, ko, th are asked
     def test_a_slow_warm_up_times_out_but_keeps_running_so_a_first_compile_can_finish(self):
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "OCR_LOCK", f"{d}/lock"):  # not the Mac's real warm-up lock
             done, ocr = Path(d) / "done", Path(d) / "ocr"
             ocr.write_text(f'#!/bin/sh\nsleep 2; touch {done}; echo Ready\n'); ocr.chmod(0o755)
             t = time.time()
@@ -2485,7 +2488,7 @@ class ContentExpect(unittest.TestCase):
             code = sf.main(["check", str(d / "shots"), "--strings", str(d / "locales/*/translation.json"), "--content", str(cfg),
                             "--report", str(d / "rep"), "--json"])
         report = json.loads(out.getvalue())
-        self.assertEqual((code, set(report)), (1, {"exit", "screenshots", "problems", "notes"}))
+        self.assertEqual((code, set(report)), (1, {"exit", "screenshots", "problems", "notes", "unverified"}))
         self.assertEqual(report["problems"], ['en/01_home.png: expected "Steinmännchen" on screen'])
         self.assertIn("content: [expect] checked on 2 screens", err.getvalue())
         with contextlib.redirect_stderr(io.StringIO()) as e2:
@@ -2876,7 +2879,7 @@ class G1ExitCodes(unittest.TestCase):
         self.assertEqual(code, 1)
         report = json.loads(out)
         self.assertEqual({k: report[k] for k in ("exit", "problems")}, {"exit": 1, "problems": ["de/01.png: shows en strings (4 lines) more than de (0)"]})
-        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes"})
+        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes", "unverified"})
 
     def test_two_for_a_setup_error_with_one_line_on_stderr(self):
         err = io.StringIO()

@@ -199,7 +199,7 @@ class AgainstTheProgram(unittest.TestCase):
                 code, out, err = run_main("check", str(shots), "--strings", str(d / "locales/*/translation.json"),
                                           "--ocr-command", "cat {image}.txt", "--report", str(d / "rep"), "--json")
         report = json.loads(out)
-        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes"})
+        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes", "unverified"})
         self.assertEqual(set(report["screenshots"][0]), {"file", "src", "sha", "lang", "chars", "evidence"})
         skill = (ROOT / "skill/shotfleet/SKILL.md").read_text()
         for key in [*report, *report["screenshots"][0]]: self.assertIn(f'"{key}"', skill)

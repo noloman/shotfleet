@@ -91,8 +91,6 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 | `screenshots but --app is` | an iOS folder with an `.apk` or the reverse | pass the matching build |
 | `contains no translations shotfleet can read` | the build has no `.lproj`, String Catalog or resources (typical for Flutter, React Native, Unity, MAUI) | use `--strings '<glob>'` |
 | `the app this run used is gone` | a shotfleet output folder whose `.app` or `.apk` moved | pass `--app` |
-| `macOS text recognition isn't answering` | macOS is still compiling its text model in `ANECompilerService` (first time, can take minutes on a loaded Mac), or it is stuck | wait for the first compile and re-run, close heavy apps, or `brew install tesseract` (used automatically, and named in the output); a restart is a last resort |
-| `text recognition hung twice on` | same, or an overloaded Mac | wait and rerun; restart only as a last resort |
 | `--ocr-command failed on` | the custom OCR command failed; if it says language data: `brew install tesseract-lang` | fix the command |
 
 ## Export and licence errors
@@ -112,6 +110,8 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 
 | Fragment | Meaning | Fix |
 |---|---|---|
+| `screenshot(s) not verified, because` | the per-screen note is `not verified (macOS text recognition was busy)`: macOS was still compiling its text model in `ANECompilerService` (first time, can take minutes on a loaded Mac and about 40 minutes on a quiet one) past `check`'s 8-minute budget, and no Tesseract is installed. `check` finished anyway: the app's own texts, store sizes and missing screens were checked (identical unread screens are a note, not a copy problem); these screenshots are listed in `unverified` and exit 0 (1 with `--strict`) | run `check` again later, close heavy apps, or `brew install tesseract` (used automatically); no restart needed |
+| `another shotfleet is preparing macOS text recognition; waiting` | another shotfleet on this Mac is warming up text recognition; they take turns, and the wait counts against the 8 minutes | nothing |
 | `selectors not found in the app's strings` | the flow taps a label that is not in the app's strings, left as-is, may fail outside English | write the label exactly as the English string, use `id:`, or add `[overrides.<lang>]` |
 | `also means` | `warning <lang>: 'Next' -> 'İleri' also means 'Advanced'`: a tap could hit the wrong element | anchor with `below:`/`above:`, or override |
 | `translated in the app, so it is skipped` | `note: <lang> is only N% translated`; below 50% of the app's own strings it is not captured | add the code to `locales` to capture it anyway |

@@ -3,7 +3,7 @@
 `run`, `check` and `export` take `--json`: the result goes to stdout as JSON and progress goes to stderr. Exit
 codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
 
-JSON shapes: `check` and `run` give `exit`, `screenshots`, `problems` (and `notes`); `export` gives `exit`,
+JSON shapes: `check` and `run` give `exit`, `screenshots`, `problems` (and `notes`, and `unverified`: screenshots not read because macOS text recognition was busy, exit 0 unless `--strict`); `export` gives `exit`,
 `exported`, `skipped`. With exit 2 the JSON holds only `exit`; the reason is on stderr.
 
 ## The pull-request check
