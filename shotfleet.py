@@ -2519,7 +2519,9 @@ def judge_screen(lp, ocr, tables):
     if ocr.get("ocr") == "external":  # Tesseract joins labels on one visual line ("Alle Übungen WODs"): find them inside
         text = " | ".join(lines)
         for o, vals in tables.items():
-            score[o] += sum(1 for v in vals - lines if len(v) >= 5 and re.search(rf"(?<!\w){re.escape(v)}(?!\w)", text))
+            # `v in text` first: same answer (the regex needs v verbatim), and it skips compiling a regex for each of the thousands
+            # of strings, which overflowed re's cache and cost 190 to 290 CPU seconds per 220 screenshots
+            score[o] += sum(1 for v in vals - lines if len(v) >= 5 and v in text and re.search(rf"(?<!\w){re.escape(v)}(?!\w)", text))
     best = max(score.values(), default=0)
     got = lp if score.get(lp, 0) == best else max(score, key=score.get)
     if not ocr.get("chars"):

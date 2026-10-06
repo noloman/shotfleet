@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **`check` with Tesseract or `--ocr-command` no longer burns minutes of CPU:** matching each screen's text against the app's strings built a fresh regex for every string, every language, every screenshot, which on 220 screenshots cost 3 to 5 minutes of CPU on top of the reading itself. It now looks for the plain text first and only runs the regex when it's there. Same verdicts, a couple of hundred times faster.
 - **README: honest check timing:** the old "about 25 seconds" could not be reproduced. On 220 real screenshots it now says 57 to 86 seconds with text recognition warmed up, measured on 2026-10-06.
 - **`doctor` tells Homebrew users to run `brew upgrade`:** when a new version is out, a copy installed with Homebrew now shows `brew upgrade --cask noloman/tap/shotfleet` instead of the install line.
 - **No more false "isn't an App Store screenshot size" on Android screenshots:** a plain folder of language folders with no `--app` was always judged as App Store screenshots, so 72 Android screenshots gave 72 size problems. Now fastlane's folder layout or your build decides first. If neither does, the sizes do: all App Store sizes means App Store rules, no App Store size means Google Play rules. If it's a mix, each screenshot is judged against both stores (a problem only when neither store takes it), and a note says so.

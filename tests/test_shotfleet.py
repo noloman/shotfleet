@@ -294,6 +294,39 @@ class JudgeScreen(unittest.TestCase):
         self.assertEqual(got, "en")
         self.assertIn("shows en strings", problem)
 
+    def test_substring_shortcut_keeps_every_verdict(self):
+        # judge_screen's Tesseract branch checks `v in text` before its regex (it was compiling one regex per string per screen).
+        # The old code, rebuilt from the current source minus that shortcut, must give the same verdict on every screen below.
+        import inspect, random, textwrap
+        src = textwrap.dedent(inspect.getsource(sf.judge_screen))
+        self.assertIn("v in text and ", src)
+        old_ns = dict(vars(sf)); exec(src.replace("v in text and ", ""), old_ns); old = old_ns["judge_screen"]
+        words = {"de": ["Weiter", "Einstellungen", "Training starten", "Alle Übungen", "Tag %d von 15", "Straße", "Verlauf"],
+                 "nl": ["Volgende", "Instellingen", "Training starten", "Alle oefeningen", "Dag %d van 15", "Geschiedenis"],
+                 "en": ["Next", "Settings", "Start Training", "All Exercises", "Day %d of 15", "History", "Colour", "Log"],
+                 "en-US": ["Next", "Settings", "Start Training", "All Exercises", "Day %d of 15", "History", "Color", "Log"],
+                 "ru": ["Далее", "Настройки", "Начать тренировку", "История", "День %d из 15"],
+                 "uk": ["Далі", "Налаштування", "Почати тренування", "Історія", "День %d з 15"],
+                 "ja": ["次へ", "設定", "トレーニング開始", "履歴", "%d日目"], "zh-Hans": ["下一步", "设置", "开始训练", "历史"],
+                 "ko": ["다음", "설정", "훈련 시작", "기록"], "ar": ["التالي", "الإعدادات", "ابدأ التمرين", "السجل"],
+                 "th": ["ถัดไป", "การตั้งค่า", "เริ่มฝึก"], "hi": ["अगला", "सेटिंग्स", "प्रशिक्षण शुरू करें", "इतिहास"],
+                 "he": ["הבא", "הגדרות", "התחל אימון"], "el": ["Επόμενο", "Ρυθμίσεις", "Έναρξη προπόνησης"]}
+        tables = sf.string_tables({lp: dict(enumerate(v)) for lp, v in words.items()})
+        pool = [w.replace("%d", str(n)) for ws in words.values() for w in ws for n in (3,)] + ["9:41", "AMRAP", "ok", "|", "€9.99"]
+        rnd, screens = random.Random(15), []
+        for _ in range(600):
+            picks = [rnd.choice(pool) for _ in range(rnd.randint(0, 9))]
+            picks = [p.upper() if rnd.random() < .1 else p[:rnd.randint(1, len(p))] if rnd.random() < .15 else p for p in picks]
+            sep = rnd.choice(["\n", " ", " | ", "\n", "", ", "])  # Tesseract joins labels on one line, sometimes with no gap
+            text = sep.join(picks)
+            screens.append({"text": text, "chars": len(text), "lang": None, "langs": {}, "ocr": rnd.choice(["external", None])})
+        with mock.patch.object(sf, "readable_languages", return_value={"en", "de", "nl", "ru", "uk", "ja", "zh", "ko", "ar", "th", "hi"}), \
+             mock.patch.object(sf, "vision_available", return_value=False):
+            got = [(lp, sf.judge_screen(lp, s, tables)) for s in screens for lp in words]
+            want = [(lp, old(lp, s, tables)) for s in screens for lp in words]
+        self.assertEqual(got, want)
+        self.assertGreater(sum(1 for _, (_, p) in got if p and p.startswith("shows ")), 100)  # the corpus does exercise the scoring
+
     def test_shared_words_count_for_the_expected_locale(self):
         tables = sf.string_tables({"de": {"a": "Training", "b": "Log"}, "en": {"a": "Training", "b": "Log"}})
         self.assertEqual(sf.judge_screen("de", {"chars": 10, "text": "Training\nLog"}, tables), ("de", None))
