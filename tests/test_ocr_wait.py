@@ -246,9 +246,13 @@ class WarmUpLock(unittest.TestCase):
     """One warm-up per Mac at a time, across processes (real processes, fake helpers)."""
     def test_two_warm_ups_take_turns(self):
         log = TMP / "turns.log"
-        h = fake_helper(f'echo start >> {log}; sleep 1.5; echo end >> {log}; echo Ready\n')
-        kids = [subprocess.Popen([sys.executable, "-c", LOCK_CHILD, str(ROOT / "shotfleet.py"), sf.OCR_LOCK, h],
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True) for _ in range(2)]
+        h = fake_helper(f'echo start >> {log}; sleep 3; echo end >> {log}; echo Ready\n')
+        start = lambda: subprocess.Popen([sys.executable, "-c", LOCK_CHILD, str(ROOT / "shotfleet.py"), sf.OCR_LOCK, h],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        first = start()
+        deadline = time.time() + 30  # start the second only once the first holds the lock and its helper runs, so it must wait
+        while not (log.exists() and "start" in log.read_text()) and time.time() < deadline: time.sleep(0.05)
+        kids = [first, start()]
         outs = [k.communicate(timeout=60)[0] for k in kids]
         self.assertTrue(all("warm True" in o for o in outs), outs)
         self.assertEqual(log.read_text().split(), ["start", "end", "start", "end"])  # never two helpers at once
