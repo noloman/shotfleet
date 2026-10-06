@@ -20,7 +20,7 @@ With both, output goes to `out-ios/` and `out-android/`; with one, to `out/`.
 
 ## Keys
 
-Tables allowed: `[ios]`, `[android]`, `[hooks]`, `[overrides.<locale>]`, `[inputs]`, `[expect.<screenshot>]`. Any other table is refused.
+Tables allowed: `[ios]`, `[android]`, `[hooks]`, `[overrides.<locale>]`, `[inputs]`, `[expect.<screenshot>]`, `[capture]`. Any other table is refused.
 
 Keys valid in `[ios]` and `[android]`:
 
@@ -59,6 +59,33 @@ Keys valid in `[ios]` and `[android]`:
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the docs) |
 | `avd_tablet-7` | `shotfleet_android_tablet7` | name of the 7" tablet emulator when `devices` includes `"tablet-7"` (same note) |
 | `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
+
+## Your own XCUITest screenshot tests (iOS, `[capture]`)
+
+Instead of a Maestro flow, `run` can run the team's existing XCUITest screenshot tests (XCTAttachment or fastlane's
+`SnapshotHelper`) on its simulators, one language per simulator. `[capture]` and `flow` are refused together; `app` is
+optional (default: the app next to the `.xctestrun`). Maestro is not needed for this.
+
+```toml
+[ios]
+locales = ["de", "ja", "ar"]
+
+[capture]
+build = "xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' -derivedDataPath .shotfleet/build"
+xctestrun = ".shotfleet/build/Build/Products/*.xctestrun"   # glob, exactly one match after the build
+only_testing = ["MyAppUITests/ScreenshotTests"]             # optional, passed as -only-testing
+screenshots = "auto"     # "attachments" (XCTAttachment), "fastlane" (SnapshotHelper) or "auto" (both)
+timeout = 900            # seconds per language
+```
+
+- `build` runs once per `run`, with `/bin/sh` in the config's folder (output in `<out>/build.log`); `run --no-build` skips it.
+- shotfleet sets each simulator's language itself (`simctl spawn <udid> defaults write -g AppleLanguages`/`AppleLocale`) and
+  adds `-AppleLanguages (<lang>) -AppleLocale <locale>` to a copy of the `.xctestrun` next to the original. Don't pass `-testLanguage`.
+- An XCTAttachment needs `lifetime = .keepAlways`, or a passing test keeps none. `SnapshotHelper` writes to
+  `~/Library/Caches/tools.fastlane/screenshots`; shotfleet makes it if missing and moves fastlane's `language.txt`,
+  `locale.txt` and `snapshot-launch_arguments.txt` aside during the run.
+- A language that saved no screenshot, or lacks a screen another language saved, fails (exit 1), even when the test passed.
+- Paid like any `run`: 2 languages without a licence. `check` stays free.
 
 A language with under 50% of the app's own strings translated is skipped with a `note:`; list it in `locales` to
 capture it anyway.

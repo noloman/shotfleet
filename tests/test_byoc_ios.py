@@ -1,6 +1,6 @@
 """Bring your own capture on iOS ([capture]): shotfleet runs a team's own XCUITest screenshot tests on its simulator pool.
 No simulator, xcodebuild or Maestro is used: every xcrun call is faked. The device test is tools/fixture-byoc-e2e.sh (opt-in)."""
-import contextlib, io, json, os, plistlib, sys, tempfile, unittest
+import contextlib, io, json, os, plistlib, sys, tempfile, time, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -160,6 +160,255 @@ class FastlaneCollector(unittest.TestCase):
             cache = Path(d) / "screenshots"; (cache / ".shotfleet-aside").mkdir(parents=True); (cache / ".shotfleet-aside/language.txt").write_text("ja")
             with sf.fastlane_cache(cache): self.assertFalse((cache / "language.txt").exists())
             self.assertEqual((cache / "language.txt").read_text(), "ja")
+
+
+
+def xctestrun_plist(fmt=1, app="__TESTROOT__/Debug-iphonesimulator/My.app"):
+    target = {"BlueprintName": "MyUITests", "IsUITestBundle": True, "UITargetAppPath": app, "UITargetAppCommandLineArguments": ["-demo"],
+              "DependentProductPaths": ["__TESTROOT__/Debug-iphonesimulator/MyUITests-Runner.app", app]}
+    if fmt == 2:
+        target.pop("UITargetAppPath")  # subscrifi's format-2 file had none: the app comes from DependentProductPaths
+        return {"TestConfigurations": [{"Name": "Test Scheme Action", "TestTargets": [target]}], "__xctestrun_metadata__": {"FormatVersion": 2}}
+    return {"MyUITests": target, "__xctestrun_metadata__": {"FormatVersion": 1}}
+
+
+class XctestrunCopy(unittest.TestCase):
+    def test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats(self):
+        for fmt in (1, 2):
+            with tempfile.TemporaryDirectory() as d:
+                src = Path(d) / "Build/Products/My_iphonesimulator27.0-arm64.xctestrun"; src.parent.mkdir(parents=True)
+                src.write_bytes(plistlib.dumps(xctestrun_plist(fmt)))
+                copy = sf.xctestrun_with_language(src, "pt-BR")
+                self.assertEqual(copy.parent, src.parent)  # a moved .xctestrun fails: __TESTROOT__ is its own folder
+                self.assertEqual(copy.name, "My_iphonesimulator27.0-arm64.shotfleet-pt-BR.xctestrun")
+                target = sf.xctestrun_targets(plistlib.loads(copy.read_bytes()))[0]
+                self.assertEqual(target["UITargetAppCommandLineArguments"], ["-demo", "-AppleLanguages", "(pt-BR)", "-AppleLocale", "pt_BR"])
+                self.assertEqual(sf.xctestrun_targets(plistlib.loads(src.read_bytes()))[0]["UITargetAppCommandLineArguments"], ["-demo"])  # original untouched
+                self.assertEqual(sf.xctestrun_app(src), src.parent / "Debug-iphonesimulator/My.app")
+
+    def test_the_glob_must_match_one_file_and_ignores_shotfleets_copies(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = lambda p: Path(d) / p
+            with self.assertRaises(sf.Fail) as cm: sf.find_xctestrun("P/*.xctestrun", path)
+            self.assertIn("no .xctestrun matches P/*.xctestrun", str(cm.exception))
+            (Path(d) / "P").mkdir(); (Path(d) / "P/A.xctestrun").write_bytes(b""); (Path(d) / "P/A.shotfleet-de.xctestrun").write_bytes(b"")
+            self.assertEqual(sf.find_xctestrun("P/*.xctestrun", path).name, "A.xctestrun")
+            (Path(d) / "P/B.xctestrun").write_bytes(b"")
+            with self.assertRaises(sf.Fail) as cm: sf.find_xctestrun("P/*.xctestrun", path)
+            self.assertIn("2 .xctestrun files match", str(cm.exception))
+
+
+class SimulatorLanguage(unittest.TestCase):
+    def test_the_simulators_global_language_and_locale_are_written(self):
+        calls = []
+        class S:
+            udid = "U1"
+            def run(self, *a, check=True): calls.append(a)
+        for lp in ("pt-BR", "de", "zh-Hans"): sf.set_sim_language(S(), lp)
+        self.assertEqual(calls, [
+            ("spawn", "U1", "defaults", "write", "-g", "AppleLanguages", "-array", "pt-BR"), ("spawn", "U1", "defaults", "write", "-g", "AppleLocale", "-string", "pt_BR"),
+            ("spawn", "U1", "defaults", "write", "-g", "AppleLanguages", "-array", "de"), ("spawn", "U1", "defaults", "write", "-g", "AppleLocale", "-string", "de_DE"),
+            ("spawn", "U1", "defaults", "write", "-g", "AppleLanguages", "-array", "zh-Hans"), ("spawn", "U1", "defaults", "write", "-g", "AppleLocale", "-string", "zh_CN")])
+
+    def test_simctl_goes_through_the_timed_simulator_wrapper(self):  # a wedged simulator must raise, not hang
+        seen = []
+        def sh(cmd, **kw): seen.append((cmd, kw.get("timeout"))); return sf.subprocess.CompletedProcess(cmd, 0, "", "")
+        with mock.patch.object(sf, "sh", sh): sf.set_sim_language(sf.Sim("U9"), "ja")
+        self.assertEqual(seen[0][0][:4], ["xcrun", "simctl", "spawn", "U9"]); self.assertEqual(seen[0][1], sf.SIM_TIMEOUT_S)
+
+
+WORDS = {"en": "Next", "de": "Weiter", "ja": "次へ", "tr": "İleri"}
+
+
+class CaptureRun(unittest.TestCase):
+    """`shotfleet run` with [capture], every device and xcrun call faked."""
+    def setUp(self):
+        self.d = Path(tempfile.mkdtemp()).resolve()
+        products = self.d / "build/Build/Products"; app = products / "Debug-iphonesimulator/My.app"
+        for lp, word in WORDS.items():
+            (app / f"{lp}.lproj").mkdir(parents=True); (app / f"{lp}.lproj/Localizable.strings").write_text(f'"next" = "{word}";\n')
+        (app / "Info.plist").write_bytes(plistlib.dumps({"CFBundleIdentifier": "com.example.my", "CFBundleLocalizations": list(WORDS)}))
+        self.xctestrun = products / "My_iphonesimulator27.0-arm64.xctestrun"; self.xctestrun.write_bytes(plistlib.dumps(xctestrun_plist()))
+        self.cache = self.d / "home/Library/Caches/tools.fastlane/screenshots"
+        self.shots = {"de": ["01Welcome", "02Settings"], "ja": ["01Welcome", "02Settings"], "tr": ["01Welcome", "02Settings"]}
+        self.sim_calls, self.xcodebuild, self.builds, self.mode = [], [], [], "attachments"
+        for p in (mock.patch.object(sf, "make_pool", side_effect=self.fake_make_pool), mock.patch.object(sf, "run_guarded", side_effect=self.fake_run),
+                  mock.patch.object(sf, "xcresult_pngs", side_effect=self.fake_attachments), mock.patch.object(sf, "FASTLANE_CACHE", self.cache),
+                  mock.patch.object(sf, "fit_parallel", side_effect=lambda n: n), mock.patch.object(sf, "capacity_warn"),
+                  mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "shutdown_sims"), mock.patch.object(sf, "OUR_SIMS", set()),
+                  mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"),
+                  mock.patch.object(sf, "default_device_type", return_value=sf.DEFAULT_IPHONE), mock.patch.object(sf, "maestro_cmd", return_value=None),
+                  mock.patch.object(sf, "cmd_check", return_value=0), mock.patch.object(sf, "LOCALE_CAP", None), mock.patch.object(sf, "NO_BUILD", False),
+                  mock.patch.dict(os.environ, {"SHOTFLEET_HOME": str(self.d / "sfhome")})):
+            p.start(); self.addCleanup(p.stop)
+
+    def config(self, extra="", ios='locales = ["de", "ja"]\nparallel = 2\n'):
+        return write(self.d, f'[ios]\n{ios}\n[capture]\nbuild = "make screenshots-build"\nxctestrun = "build/Build/Products/*.xctestrun"\n'
+                             f'only_testing = ["MyUITests/ScreenshotTests"]\nscreenshots = "{self.mode}"\n{extra}')
+
+    def fake_make_pool(self, n, device_type, runtime, prefix="shotfleet", simctl=()):
+        calls = self.sim_calls
+        class S:
+            def __init__(self, i): self.udid, self.name = f"U{i}", f"{prefix}-{i}"
+            def run(self, *a, check=True): calls.append((self.udid, *a)); return ""
+        return [S(i + 1) for i in range(n)]
+
+    def fake_run(self, cmd, timeout=None, env=None, cwd=None, progress=None, stall_s=None):
+        if cmd[0] == "/bin/sh":
+            self.builds.append((cmd[2], cwd)); return sf.subprocess.CompletedProcess(cmd, 0, "built", "")
+        run_file = Path(cmd[cmd.index("-xctestrun") + 1]); udid = cmd[cmd.index("-destination") + 1][3:]
+        args = sf.xctestrun_targets(plistlib.loads(run_file.read_bytes()))[0]["UITargetAppCommandLineArguments"]
+        lp = args[args.index("-AppleLanguages") + 1].strip("()")
+        self.xcodebuild.append({"udid": udid, "lp": lp, "cmd": cmd, "run_file": run_file, "timeout": timeout, "started": time.monotonic()})
+        time.sleep(0.05)  # long enough for two simulators to overlap
+        if self.mode != "attachments":  # SnapshotHelper: <simulator name>-<shot>.png in the one shared folder
+            for shot in self.shots.get(lp, []): (self.cache / f"shotfleet-{udid[1:]}-{shot}.png").write_bytes(f"{lp}/{shot}".encode())
+        Path(cmd[cmd.index("-resultBundlePath") + 1]).mkdir(parents=True)
+        return sf.subprocess.CompletedProcess(cmd, 0, "** TEST SUCCEEDED **", "")
+
+    def fake_attachments(self, bundle, dst):
+        names = [] if self.mode == "fastlane" else self.shots.get(Path(bundle).stem, [])
+        for n in names: Path(dst).mkdir(parents=True, exist_ok=True); (Path(dst) / f"{n}.png").write_bytes(f"{Path(bundle).stem}/{n}".encode())
+        return [f"{n}.png" for n in names]
+
+    def run_it(self, *args):
+        with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(io.StringIO()) as err:
+            code = sf.main(["run", self.config(), *args])
+        return code, out.getvalue() + err.getvalue()
+
+    def test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel(self):
+        code, out = self.run_it()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.builds, [("make screenshots-build", self.d)])
+        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja"])
+        self.assertEqual(len({r["udid"] for r in self.xcodebuild}), 2)
+        a, b = self.xcodebuild
+        self.assertLess(abs(a["started"] - b["started"]), 0.05)  # at once, not one after the other
+        for r in self.xcodebuild:
+            cmd = r["cmd"]
+            self.assertEqual(cmd[:2], ["xcodebuild", "test-without-building"])
+            self.assertEqual(r["run_file"].parent, self.xctestrun.parent)
+            self.assertIn("-only-testing:MyUITests/ScreenshotTests", cmd)
+            self.assertTrue(cmd[cmd.index("-resultBundlePath") + 1].endswith(f"attempt1/{r['lp']}.xcresult"))
+            self.assertEqual(r["timeout"], sf.CAPTURE_TIMEOUT_S)
+            # the simulator's own language was set before its test ran, and the app uninstalled for a fresh start
+            mine = [c[1:] for c in self.sim_calls if c[0] == r["udid"]]
+            self.assertIn(("spawn", r["udid"], "defaults", "write", "-g", "AppleLanguages", "-array", r["lp"]), mine)
+            self.assertIn(("uninstall", r["udid"], "com.example.my"), mine)
+        self.assertNotIn("-testLanguage", sum((r["cmd"] for r in self.xcodebuild), []))  # ignored with -xctestrun (experiment E4)
+        for lp in ("de", "ja"):
+            self.assertEqual(sorted(p.name for p in (self.d / "out/raw" / lp).iterdir()), ["01Welcome.png", "02Settings.png"])
+        self.assertEqual(sorted(p.name for p in self.xctestrun.parent.glob("*.xctestrun")), [self.xctestrun.name])  # copies removed
+        run = json.loads((self.d / "out/run.json").read_text())
+        self.assertEqual(run["app"], str(self.xctestrun.parent / "Debug-iphonesimulator/My.app"))
+        self.assertTrue(all(v["ok"] and v["screenshots"] == 2 for v in run["locales"].values()))
+        sf.cmd_check.assert_called_once()
+
+    def test_more_languages_than_simulators_take_turns(self):
+        code, out = self.run_it("--locales", "de,ja,tr", "--parallel", "2")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja", "tr"])
+        self.assertEqual(len({r["udid"] for r in self.xcodebuild}), 2)
+
+    def test_no_build_skips_the_build(self):
+        code, out = self.run_it("--no-build")
+        self.assertEqual(code, 0, out); self.assertEqual(self.builds, [])
+
+    def test_a_failing_build_stops_before_any_simulator(self):
+        def fail(cmd, **kw): return sf.subprocess.CompletedProcess(cmd, 65, "error: no such module 'RevenueCat'\n** TEST BUILD FAILED **", "")
+        with mock.patch.object(sf, "run_guarded", side_effect=fail): code, out = self.run_it()
+        self.assertEqual(code, 2); self.assertIn("the [capture] build failed (exit 65)", out); self.assertIn("no such module", out)
+        self.assertEqual(self.sim_calls, [])
+
+    def test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed(self):
+        self.shots = {"de": [], "ja": ["01Welcome"]}
+        code, out = self.run_it()
+        self.assertEqual(code, 1, out)
+        self.assertIn("FAIL de", out); self.assertIn("saved no screenshots", out)
+        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "de", "ja"])  # retried once, like a failed flow
+        run = json.loads((self.d / "out/run.json").read_text())
+        self.assertFalse(run["locales"]["de"]["ok"]); self.assertIn(".keepAlways", run["locales"]["de"]["error"])
+        self.assertTrue(run["locales"]["ja"]["ok"])
+
+    def test_nothing_at_all_says_so_and_does_not_check(self):
+        self.shots = {}
+        code, out = self.run_it()
+        self.assertEqual(code, 1); self.assertIn("see the errors above and the xcodebuild logs", out); sf.cmd_check.assert_not_called()
+
+    def test_a_screen_missing_in_one_language_fails_that_language(self):
+        self.shots = {"de": ["01Welcome", "02Settings"], "ja": ["01Welcome"]}
+        code, out = self.run_it()
+        self.assertEqual(code, 1, out)
+        run = json.loads((self.d / "out/run.json").read_text())
+        self.assertTrue(run["locales"]["de"]["ok"])
+        self.assertEqual(run["locales"]["ja"]["error"], "missing 02Settings (other languages saved them)")
+
+    def test_a_failing_test_fails_the_language_and_keeps_its_log(self):
+        real = self.fake_run
+        def fails_for_ja(cmd, **kw):
+            r = real(cmd, **kw)
+            return sf.subprocess.CompletedProcess(cmd, 65, "** TEST FAILED **", "") if cmd[0] == "xcodebuild" and "shotfleet-ja" in cmd[3] else r
+        with mock.patch.object(sf, "run_guarded", side_effect=fails_for_ja): code, out = self.run_it()
+        self.assertEqual(code, 1, out)
+        self.assertIn("xcodebuild failed (exit 65", out)
+        self.assertIn("TEST FAILED", (self.d / "out/.work/capture/attempt2/ja.log").read_text())
+
+    def test_a_hung_simulator_is_stopped_and_the_language_retried(self):
+        real, hung = self.fake_run, []
+        def stalls_once(cmd, **kw):
+            if cmd[0] == "xcodebuild" and not hung:
+                hung.append(cmd); e = sf.subprocess.TimeoutExpired(cmd, 900, output="Testing started"); e.stalled = True; raise e
+            return real(cmd, **kw)
+        with mock.patch.object(sf, "run_guarded", side_effect=stalls_once): code, out = self.run_it()
+        self.assertEqual(code, 0, out)
+        self.assertIn("retrying 1", out)
+        self.assertEqual(len(self.xcodebuild), 2)  # the stalled call never reached the fake
+
+    def test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored(self):
+        self.mode = "fastlane"
+        self.cache.mkdir(parents=True); (self.cache / "language.txt").write_text("en-US")
+        (self.cache / "shotfleet-1-old.png").write_bytes(b"from an interrupted run")
+        code, out = self.run_it()
+        self.assertEqual(code, 0, out)
+        for lp in ("de", "ja"):
+            self.assertEqual(sorted(p.name for p in (self.d / "out/raw" / lp).iterdir()), ["01Welcome.png", "02Settings.png"])
+            self.assertEqual((self.d / "out/raw" / lp / "01Welcome.png").read_bytes(), f"{lp}/01Welcome".encode())
+        self.assertEqual(sorted(p.name for p in self.cache.iterdir()), ["language.txt"])
+        self.assertEqual((self.cache / "language.txt").read_text(), "en-US")
+
+    def test_auto_collects_both_and_removes_the_fastlane_folder_it_made(self):
+        self.mode = "auto"
+        self.shots = {"de": ["01Welcome"], "ja": ["01Welcome"]}  # the fake writes both an attachment and a SnapshotHelper file
+        code, out = self.run_it()
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sorted(p.name for p in (self.d / "out/raw/de").iterdir()), ["01Welcome.png"])  # same name: the fastlane file replaces the attachment
+        self.assertFalse(self.cache.parent.exists())
+
+    def test_attachments_only_never_touches_the_fastlane_folder(self):
+        code, out = self.run_it()
+        self.assertEqual(code, 0, out); self.assertFalse(self.cache.parent.exists())
+
+    def test_without_a_licence_three_languages_become_two_like_a_maestro_run(self):
+        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", self.d / "no-licence.json"), \
+             mock.patch.dict(os.environ, {"SHOTFLEET_KEY": ""}):
+            code, out = self.run_it("--locales", "de,ja,tr")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES)
+        self.assertIn("free tier: capturing 2 of 3 languages", out)
+        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja"])
+
+    def test_two_languages_without_a_licence_are_free(self):
+        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", self.d / "no-licence.json"), \
+             mock.patch.dict(os.environ, {"SHOTFLEET_KEY": ""}):
+            code, out = self.run_it()
+        self.assertEqual(code, 0, out); self.assertNotIn("free tier: capturing", out)
+        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja"])
+
+    def test_check_stays_free_on_capture_output(self):
+        self.run_it()
+        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", self.d / "no-licence.json"), \
+             mock.patch.object(sf, "require_licence", side_effect=AssertionError("check must not ask for a licence")):
+            with contextlib.redirect_stdout(io.StringIO()): self.assertEqual(sf.main(["check", str(self.d / "out")]), 0)
 
 
 if __name__ == "__main__":
