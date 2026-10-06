@@ -541,6 +541,30 @@ class CheckAnyFolder(unittest.TestCase):
         code, report = self.fastlane_check(play({**self.SCREENGRAB, "de-DE": self.SCREENGRAB["de-DE"][:1]}), (1080, 1920))
         self.assertEqual((code, report["problems"]), (1, ["de-DE: missing 02Categories.png"]))
 
+    # fastlane supply's own names (remoti's committed Play set, 2026-10-06 dogfood): <n>_<locale>.png, the locale in every name
+    SUPPLY = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}_{lp}.png" for n in (1, 2)] for lp in ("en-US", "de-DE")}
+
+    def test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is(self):
+        code, report = self.fastlane_check(self.SUPPLY, (1080, 1920))
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(report["gallery"].count('class="missing"'), 0)
+        self.assertIn("de-DE/1_de-DE.png", {r["file"] for r in report["screenshots"]})  # reports keep the real names
+        code, report = self.fastlane_check({**self.SUPPLY, "de-DE": self.SUPPLY["de-DE"][:1]}, (1080, 1920))
+        self.assertEqual((code, report["problems"]), (1, ["de-DE: missing 2.png"]))
+        # names without a locale, and one folder with and one without, are the same screens
+        plain = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}.png" for n in (1, 2)] for lp in ("en-US", "de-DE")}
+        self.assertEqual(self.fastlane_check(plain, (1080, 1920))[:1], (0,))
+        self.assertEqual(self.fastlane_check({**plain, "de-DE": self.SUPPLY["de-DE"]}, (1080, 1920))[:1], (0,))
+
+    def test_shot_key_cuts_only_the_folders_own_locale_and_never_merges_two_screens(self):
+        self.assertEqual(sf.shot_key("1_en-US.png", "en-US", ["1_en-US.png", "2_en-US.png"]), "1.png")
+        self.assertEqual(sf.shot_key("1_ru-RU.png", "ru", ["1_ru-RU.png"]), "1.png")  # a plain ru/ folder, Play's ru-RU in the name
+        self.assertEqual(sf.shot_key("1_en-US.png", "de-DE", ["1_en-US.png"]), "1_en-US.png")  # another language's name stays
+        self.assertEqual(sf.shot_key("home_v2.png", "en-US", ["home_v2.png"]), "home_v2.png")
+        # 1.png and 1_en-US.png in one folder are two files: neither is cut, so they can't become one screen
+        both = ["1.png", "1_en-US.png"]
+        self.assertEqual(len({sf.shot_key(n, "en-US", both) for n in both}), 2)
+
     def test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match(self):
         twice = {"en-US": ["01Home_1773696985949.png", "01Home_1773699999999.png"], "de-DE": ["01Home_1773697012807.png"]}
         play = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in twice.items()}
@@ -576,6 +600,37 @@ class CheckAnyFolder(unittest.TestCase):
         tables = sf.string_tables({"de": {"s": "Training starten"}, "nl": {"b": "Begin"}})
         ocr = {"chars": 21, "text": "9:41\nTraining starten", "lang": "nl", "langs": {"nl": 0.6}}
         self.assertEqual(sf.judge_screen("nl", ocr, tables), ("nl", None))
+
+    # remoti's ru-RU/8_ru-RU.png (2026-10-06 dogfood), as macOS read it: Russian UI, invented English job titles, OCR's "З" for "3"
+    RU8 = ("Сохраните поиск.\nПовторите.\n9:41\n+ Сохранённые поиски\nЗ сохранённых поиска\nDesign contracts • Europe\n"
+           "Design, Европа\n• Design\n• Европа\n①\nДобавьте фильтр качества, чтобы было\nменьше нерелевантных совпадений.\n→\n"
+           "Product leadership • Americas\nProduct, Выбрано 2 источника, Америка\n• Product\n• Америка\nВыбрано 2 источника\n①\n"
+           "Добавьте фильтр качества, чтобы было\nменьше нерелевантных совпадений.\n→\nSenior Android • Worldwide\n"
+           "Software Development, Весь мир, Фильтр по\nзарплате включен, Качество 60+\n• Software Development\n• Весь мир")
+    KK = {"lang": "kk", "langs": {"ru": 0.008, "uk": 0.00002, "kk": 0.992}}
+
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
+    def test_russian_screen_detection_calls_kazakh_passes_when_the_apps_russian_strings_match(self):
+        tables = sf.string_tables({"en": {"n": "Selected %d sources"}, "ru": {"n": "Выбрано %d источника"},
+                                   "uk": {"n": "Вибрано %d джерела", "t": "Збережені пошуки", "a": "Додайте фільтр якості"}})
+        ocr = {"chars": 523, "text": self.RU8, "ocr": "vision", **self.KK}
+        self.assertEqual(sf.judge_screen("ru", ocr, tables), ("ru", None))
+        # without the app's Russian strings behind it, detection's verdict stands as before
+        self.assertEqual(sf.judge_screen("ru", ocr, sf.string_tables({"en": {"n": "Selected %d sources"}}))[1],
+                         "text looks like 'kk', expected 'ru'")
+        # a line both languages share proves neither
+        shared = sf.string_tables({"ru": {"n": "Выбрано %d источника"}, "uk": {"n": "Выбрано %d источника"}})
+        self.assertEqual(sf.judge_screen("ru", ocr, shared)[1], "text looks like 'kk', expected 'ru'")
+
+    @mock.patch.object(sf, "readable_languages", lambda: MAC_READS)
+    def test_ukrainian_screen_in_the_russian_folder_is_still_caught(self):
+        tables = sf.string_tables({"ru": {"n": "Выбрано %d источника", "t": "Сохранённые поиски"},
+                                   "uk": {"n": "Вибрано %d джерела", "t": "Збережені пошуки"}})
+        many = {"chars": 60, "text": "Збережені пошуки\nВибрано 2 джерела", "lang": "uk", "langs": {"uk": 0.95}, "ocr": "vision"}
+        self.assertEqual(sf.judge_screen("ru", many, tables), ("uk", "shows uk strings (2 lines) more than ru (0)"))
+        one = {**many, "text": "Вибрано 2 джерела\nDesign contracts"}
+        self.assertEqual(sf.judge_screen("ru", one, tables), ("uk", "text looks like 'uk', expected 'ru'"))
+
     def test_json_mode_keeps_stdout_machine_readable(self):
         r = subprocess.run([sys.executable, str(Path(sf.__file__)), "check", "/no/such/folder", "--json"],
                            capture_output=True, text=True)
@@ -2343,10 +2398,10 @@ class RetryOnSlowSimulator(unittest.TestCase):
 
     def test_overload_note_only_when_the_mac_was_loaded(self):
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "2", "")):
-            self.assertIn("used 1 simulators instead of 2", sf.overload_note(2, 1))
-            self.assertIn("short of memory", sf.overload_note(1, 1))
+            self.assertIn("used 1 simulators instead of 2", sf.overload_note(2, 1, ["Unknown error"]))
+            self.assertIn("short of memory", sf.overload_note(1, 1, ["Unable to clear state for app x"]))
         with mock.patch.object(sf, "sh", lambda c, **k: subprocess.CompletedProcess(c, 0, "1", "")):
-            self.assertEqual(sf.overload_note(2, 2), "")
+            self.assertEqual(sf.overload_note(2, 2, ["Unknown error"]), "")
 
     def test_a_flow_that_does_not_parse_is_named_instead_of_blamed_on_memory(self):
         with tempfile.TemporaryDirectory() as d:

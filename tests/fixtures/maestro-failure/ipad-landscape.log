@@ -1,0 +1,26 @@
+18:20:56.532 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow:  Running flow en
+18:20:56.687 [ INFO] ios.xctest.XCTestIOSDevice.deviceInfo$lambda$0: Device info DeviceInfo(widthPixels=2064, heightPixels=2752, widthPoints=1032, heightPoints=1376)
+18:20:56.737 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$6: Launch app "com.example.app" with clear state (launch arguments: {AppleLanguages=(en), AppleLocale=en_US}) RUNNING
+18:21:01.736 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$8: Launch app "com.example.app" with clear state (launch arguments: {AppleLanguages=(en), AppleLocale=en_US}) COMPLETED
+18:21:01.737 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$6: Set orientation LANDSCAPE_LEFT RUNNING
+18:21:03.344 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$8: Set orientation LANDSCAPE_LEFT COMPLETED
+18:21:03.346 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$6: Assert that id: jobs.search is visible RUNNING
+18:21:06.896 [ INFO] ios.xctest.XCTestIOSDevice.deviceInfo$lambda$0: Device info DeviceInfo(widthPixels=2064, heightPixels=2752, widthPoints=1032, heightPoints=1376)
+18:21:07.433 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$8: Assert that id: jobs.search is visible COMPLETED
+18:21:07.434 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$6: Assert that "Senior iOS Engineer" is visible RUNNING
+18:21:07.444 [ INFO] ios.xctest.XCTestIOSDevice.deviceInfo$lambda$0: Device info DeviceInfo(widthPixels=2064, heightPixels=2752, widthPoints=1032, heightPoints=1376)
+18:21:07.725 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$8: Assert that "Senior iOS Engineer" is visible COMPLETED
+18:21:07.726 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$6: Tap on "Senior iOS Engineer" RUNNING
+18:21:07.741 [ INFO] ios.xctest.XCTestIOSDevice.deviceInfo$lambda$0: Device info DeviceInfo(widthPixels=2064, heightPixels=2752, widthPoints=1032, heightPoints=1376)
+18:21:07.742 [ INFO] device.IOSDevice.viewHierarchy: Requesting view hierarchy of the screen
+18:21:08.115 [TRACE] ios.xctest.XCTestIOSDevice.viewHierarchy$lambda$1: Depth received: 31
+18:21:08.115 [ INFO] device.IOSDevice.viewHierarchy: Depth of the screen is 31
+18:21:08.125 [ INFO] maestro.Maestro.tap-BUbHBYE: Tapping on element:  UiElement(treeNode=TreeNode(attributes={accessibilityText=Senior iOS Engineer, title=, value=, text=, hintText=, resource-id=, bounds=[54,656][141,698], enabled=true, focused=false, selected=false, checked=false}, children=[], clickable=null, enabled=true, focused=false, checked=false, selected=false), bounds=Bounds(x=54, y=656, width=87, height=42))
+18:21:08.545 [ INFO] maestro.Maestro.tap-BUbHBYE: Refreshed element
+18:21:08.547 [ INFO] maestro.Maestro.screenshotBasedTap-hbl3e4M: Tapping at (97, 677) using screenshot based logic for wait
+18:21:09.456 [ INFO] maestro.Maestro.screenshotBasedTap-hbl3e4M: Something has changed in the UI judging by view hierarchy. Proceed.
+18:21:09.457 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$8: Tap on "Senior iOS Engineer" COMPLETED
+18:21:09.457 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$6: Assert that id: jobDecision.title is visible RUNNING
+18:21:09.468 [ INFO] ios.xctest.XCTestIOSDevice.deviceInfo$lambda$0: Device info DeviceInfo(widthPixels=2064, heightPixels=2752, widthPoints=1032, heightPoints=1376)
+18:21:40.006 [ERROR] maestro.orchestra.Orchestra.executeCommands: [Command execution] CommandFailed: Assertion is false: id: jobDecision.title is visible
+18:21:40.006 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$10: Assert that id: jobDecision.title is visible FAILED

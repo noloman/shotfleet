@@ -1542,8 +1542,12 @@ def capacity_warn(cfg, want, platform, using=None):
     r = read_capacity(platform, cfg.get("sim_prefix", "shotfleet"))
     if m := capacity_message(plan_capacity(want, platform, r), want, r, using): print("warning: " + m, flush=True)
 
-def overload_note(want, n):
-    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
+SLOW_SIM_ERRORS = ("Unknown error", "Unable to clear state")
+
+def overload_note(want, n, errors=()):
+    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out.
+    Only when a failed flow's error is one of SLOW_SIM_ERRORS: a plain assertion failure is the flow's or the app's, not the Mac's."""
+    if not any(e in (err or "") for err in errors for e in SLOW_SIM_ERRORS): return ""
     level = memory_pressure()
     if n >= want and level not in ("2", "4"): return ""
     return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
@@ -1561,6 +1565,84 @@ def flow_parse_note(out):
             return (f"note: Maestro could not read a flow ({m.group(1) if m else 'see the log'}: 'Parsing Failed', {log}). "
                     "Fix that YAML; this is not a slow-simulator problem.\n")
     return ""
+
+LANDSCAPE_HINT = ("Maestro taps at portrait coordinates in iOS landscape (a Maestro issue): capture iPad in portrait, "
+                  "or open the screen with a launch argument or deep link.")
+STEP_LINE = re.compile(r"TestSuiteInteractor\.runFlow\S*: (?:\[shard (\d+)\] )?\s*(.*?) (RUNNING|COMPLETED|FAILED)\s*$")
+FAIL_TEXTS = 12  # visible texts named for a failed flow's last screen
+
+def flow_steps(debug, flow):
+    """(lines, steps) of the maestro.log under `debug` that ran `flow`: steps = [(line index, description, status)] of that flow only.
+    Sharded runs share one log and tag each step line with [shard N]; Maestro's own tap lines carry no tag. ([], []) if no log ran it."""
+    run = re.compile(r"runFlow: (?:\[shard (\d+)\] )?\s*Running flow " + re.escape(flow) + r"\s*$")
+    for log in Path(debug).glob("**/maestro.log"):
+        try: lines = log.read_text(errors="replace").splitlines()
+        except OSError: continue
+        shard = next((m.groups() for l in lines if (m := run.search(l))), None)
+        if shard is None: continue
+        return lines, [(i, m[2], m[3]) for i, l in enumerate(lines) if (m := STEP_LINE.search(l)) and m[1] == shard[0]]
+    return [], []
+
+def landscape_tap_hint(lines, steps, flow_text):
+    """LANDSCAPE_HINT when the log shows Maestro's iOS landscape bug: the flow turned the screen to landscape, Maestro still reports a
+    portrait-sized frame (widthPoints < heightPoints), and the last tap before the failure went to the middle of the element's bounds in
+    that portrait frame (seen: bounds [54,656][141,698], tap (97,677), while the element sat 344 = 1376 - 1032 points off on screen).
+    "" unless all of it is in the log; a tap window that another shard's tap lines make ambiguous gives "" too."""
+    if not re.search(r"setOrientation:\s*(?:\{?\s*orientation:\s*)?['\"]?LANDSCAPE", flow_text): return ""
+    fail = next((i for i, _, st in reversed(steps) if st == "FAILED"), None)
+    turned = next((i for i, d, st in steps if st == "COMPLETED" and d.startswith("Set orientation LANDSCAPE")), None)
+    if fail is None or turned is None or turned > fail: return ""
+    taps = [k for k, (i, d, st) in enumerate(steps) if st == "RUNNING" and d.startswith("Tap on") and turned < i < fail]
+    if not taps: return ""
+    start, end = steps[taps[-1]][0], steps[taps[-1] + 1][0]  # the tap's RUNNING line to this flow's next step line
+    window = lines[start:end]
+    el = [m for l in window if (m := re.search(r"Tapping on element:.*?bounds=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]", l))]
+    at = [m for l in window if (m := re.search(r"Tapping at \((-?\d+), (-?\d+)\)", l))]
+    size = [m for l in lines[turned:fail] if (m := re.search(r"widthPoints=(\d+), heightPoints=(\d+)", l))]
+    if len(el) != 1 or len(at) != 1 or not size: return ""
+    (x1, y1, x2, y2), (x, y), (w, h) = (map(int, m.groups()) for m in (el[0], at[0], size[-1]))
+    return LANDSCAPE_HINT if w < h and x1 <= x <= x2 and y1 <= y <= y2 and 0 <= x < w and 0 <= y < h else ""
+
+def failed_hierarchy(debug, flow):
+    """The screen hierarchy Maestro saved with the failed step of `flow` (commands json: metadata.error.hierarchyRoot), or None."""
+    for cj in sorted([*Path(debug).glob(f"**/commands-*({flow}).json"), *Path(debug).glob(f"**/{flow}/commands.json")],
+                     key=lambda p: p.stat().st_mtime, reverse=True):
+        try: cmds = json.loads(cj.read_text())
+        except (OSError, ValueError): continue
+        for e in cmds if isinstance(cmds, list) else []:
+            err = (e.get("metadata") or {}).get("error") if isinstance(e, dict) else None
+            if isinstance(err, dict) and isinstance(err.get("hierarchyRoot"), dict): return err["hierarchyRoot"]
+    return None
+
+def screenshot_texts(png):
+    """Text lines macOS text recognition reads on one failure screenshot, for a flow with no saved hierarchy. Cheap or nothing: [] off a Mac,
+    while macOS is compiling its text model (ANECompilerService busy), or when it doesn't answer within 20 s (twice) or the OCR budget."""
+    # ponytail: Mac only; on Linux (Docker, Android) the failure screen's hierarchy is what names its texts
+    try:
+        if not vision_available() or ane_state()[0]: return []
+        with ocr_budget(): got = read_text(ocr_tool(), png, timeout=20, patience=0)
+    except (RuntimeError, OSError, ValueError): return []  # OcrBusy is a RuntimeError
+    return [l.get("text", "") for l in got.get("lines") or []] or str(got.get("text", "")).splitlines()
+
+def failure_details(debug, flow, flow_text="", platform="ios"):
+    """Lines that say where a failed flow stopped: the failing step and its selector as Maestro's log names it, the failure screenshot,
+    up to FAIL_TEXTS texts on that screen (from the hierarchy Maestro saved, else one OCR of the screenshot), and the iOS landscape hint.
+    Called once per failed language, after the retry."""
+    out, (lines, steps) = [], flow_steps(debug, flow)
+    if step := next((d for _, d, st in reversed(steps) if st == "FAILED"), None): out.append(f"failed step: {step[:160]}")
+    pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
+    png = max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
+    if png: out.append(f"failure screenshot: {png}")
+    tree = failed_hierarchy(debug, flow)
+    texts = hierarchy_lines(tree) if tree else []
+    if not texts and png: texts = screenshot_texts(png)
+    texts = [t[:40] for t in dict.fromkeys(" ".join(t.split()) for t in texts) if len(t) > 1][:FAIL_TEXTS]
+    if texts: out.append("on screen: " + " | ".join(texts))
+    if platform == "ios" and (hint := landscape_tap_hint(lines, steps, flow_text)): out.append(hint)
+    return out
+
+def print_failure(debug, flow, flow_text="", platform="ios"):
+    for line in failure_details(debug, flow, flow_text, platform): print(f"     {line}")
 
 # ---------- run ----------
 
@@ -1847,8 +1929,10 @@ def ios_run_inner(cfg, path, only, parallel):
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
+        if not r_["ok"]: print_failure(out / ".work" / "debug" / f"attempt{r_.get('attempts', 1)}", lp, flow, "ios")
         results.append({"lproj": lp, **r_})
-    if not all(r["ok"] for r in results): print(flow_parse_note(out) or overload_note(want, n), end="")
+    if not all(r["ok"] for r in results):
+        print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
@@ -2326,7 +2410,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
                 if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev,
+                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname),
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
@@ -2355,8 +2439,9 @@ def android_run_inner(cfg, path, out, only, parallel):
     finally:
         stop_emulators(pool)
     for lp in todo:
-        r_ = final[lp]
+        r_ = final[lp]; where = r_.pop("_maestro", None)
         print_result(lp, r_, expected)
+        if not r_["ok"] and where: print_failure(*where, flow, "android")
         report["locales"][lp].update(r_)
     if hier:
         got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())
@@ -2398,6 +2483,9 @@ def ocr_tool():
     return str(exe)
 
 TWINS = {"ms": ("id",), "id": ("ms",), "hr": ("sl",), "sl": ("hr",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
+# Cyrillic languages language detection confuses on short, mixed UI text: a Russian screen with English job titles read as 0.99 Kazakh
+# (remoti ru-RU/8, 2026-10-06). Unlike TWINS, a neighbour passes only when the app's own strings back the expected language
+CYRILLIC = {"ru", "uk", "be", "bg", "kk", "mk", "sr", "ky", "mn", "tg"}
 LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
 
 def readable_languages():
@@ -2545,6 +2633,8 @@ def judge_screen(lp, ocr, tables):
         if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
             return lp, None
         langs = ocr.get("langs", {})
+        if {want, ocr.get("lang")} <= CYRILLIC and score.get(lp, 0) > max((v for o, v in score.items() if o != lp), default=0):
+            return lp, None  # the one line that matched is the expected language's and no other's: the neighbour is detection's guess
         # short, language-neutral screens ("AMRAP / EMOM / Tabata") get low-confidence guesses: not evidence
         if ocr.get("lang") not in (want, *TWINS.get(want, ())) and langs.get(want, 0) < 0.2 \
                 and langs.get(ocr.get("lang"), 0) >= 0.8:
@@ -2603,11 +2693,28 @@ LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
 
 SCREENGRAB_STAMP = re.compile(r"_\d{13}$")
 
-def shot_key(name):
+@functools.cache
+def locale_tags(label):
+    """How a file name can spell its folder's locale: the folder name and its store codes (ru -> ru-RU on Play)."""
+    return {label} | {store_code(label, s) for s in (PLAY, APP_STORE)} - {None}
+
+def shot_key(name, label=None, folder=()):
     """The screen a file shows, the same in every language: its name without fastlane screengrab's millisecond timestamp
-    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set."""
+    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set, and without
+    fastlane supply's _<locale> (de-DE/1_de-DE.png -> 1.png) when that is the folder's own locale and every file in the folder
+    (`folder`, their names) ends in it: cutting the same ending off every name keeps two screens of one folder apart."""
     p = Path(name)
-    return SCREENGRAB_STAMP.sub("", p.stem) + p.suffix
+    stem = SCREENGRAB_STAMP.sub("", p.stem)
+    for tag in locale_tags(label) if label else ():
+        if all(SCREENGRAB_STAMP.sub("", Path(n).stem).endswith("_" + tag) for n in (*folder, name)):
+            return stem[:-len(tag) - 1] + p.suffix
+    return stem + p.suffix
+
+def screen_keys(files):
+    """{"<label>/<name>": shot_key} for files given as "<label>/<name>", each judged with the rest of its folder."""
+    by = {}
+    for f in files: by.setdefault(f.split("/")[0], []).append(f.split("/", 1)[1])
+    return {f"{label}/{n}": shot_key(n, label, names) for label, names in by.items() for n in names}
 
 def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
@@ -3056,6 +3163,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
     rows, by_hash, expected_used, unverified, unread_files, no_language, not_verified, busy_hash = [], {}, set(), 0, set(), [], [], {}
+    screen = screen_keys(f"{label}/{p.name}" for label in images for p in images[label])  # 1_de-DE.png and 1_en-US.png: one screen
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -3083,7 +3191,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
-        if (stem := Path(shot_key(png.name)).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
+        if (stem := Path(screen[f"{label}/{png.name}"]).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
             rules, used = content_rules(expect[stem], label, lp)
             expected_used.update((stem, k) for k in used)
             bad, unsure = check_content(rules, r)
@@ -3111,17 +3219,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if same := [f for hits in busy_hash.values() if len({lp for lp, _ in hits}) > 1 for _, f in hits]:
         notes.append(f"{len(same)} unverified screens are identical across languages; run check again when text recognition answers "
                      f"to tell whether they're copies ({', '.join(same)})")
-    names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
+    names = {screen[r["file"]] for r in rows}  # expected set = union across languages, screengrab timestamps and supply's _<locale> aside
     for label in sorted(set(images) - set(unmapped)):
         have, seen = {}, {}
-        for p in images[label]: seen.setdefault(shot_key(p.name), []).append(p.name)
+        for p in images[label]: seen.setdefault(screen[f"{label}/{p.name}"], []).append(p.name)
         for key, files in sorted(seen.items()):  # 01Home_<t1>.png and 01Home_<t2>.png: one screen saved twice, not two screens
             if len(files) > 1:
                 problems.append(f"{label}: {', '.join(files)} are the same screen saved {len(files)} times (only screengrab's timestamp "
                                 "differs); keep the newest and delete the rest")
         if missing := names - set(seen):
             problems.append(f"{label}: missing {', '.join(sorted(missing))}")
-    stems = {Path(shot_key(r["file"])).stem for r in rows}
+    stems = {Path(screen[r["file"]]).stem for r in rows}
     for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
         if name not in stems:
             import difflib
@@ -3143,7 +3251,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         (report / "index.html").write_text(page.replace("<table>", f"<h3>Not verified ({len(not_verified)})</h3><p>{html.escape(loud)}</p><ul>{items}</ul><table>", 1))
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)"
           + (f", {len(not_verified)} not verified" if not_verified else ""))
-    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(shot_key(r['file'])).stem in expect})} screens, "
+    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(screen[r['file']]).stem in expect})} screens, "
                      f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
     if notes:
@@ -3167,7 +3275,8 @@ def write_gallery(out, rows, problems):
     def locate(rel):  # relative to the report; an absolute file: URL when the image lives outside it, so moving the report keeps the images
         return (Path(out) / rel).resolve().as_uri() if rel.startswith("..") else rel
     src = {r["file"]: locate(r.get("src", f"raw/{r['file']}")) for r in rows}
-    cell = {(r["file"].split("/")[0], shot_key(r["file"].split("/")[1])): r["file"] for r in rows}  # screengrab timestamps aside
+    key = screen_keys(r["file"] for r in rows)
+    cell = {(r["file"].split("/")[0], key[r["file"]]): r["file"] for r in rows}  # screengrab timestamps and supply's _<locale> aside
     names = sorted({k for _, k in cell})
     locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
