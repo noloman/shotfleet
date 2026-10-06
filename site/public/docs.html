@@ -88,7 +88,7 @@ shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator b
     <li>Try one language: <code>shotfleet run --locales en</code></li>
     <li>When you want every language: <code>shotfleet activate &lt;your key&gt;</code> (from your Gumroad receipt email; <code>check</code> and 2 languages in <code>run</code> work without one).</li>
     <li>Run them all: <code>shotfleet run</code> (finds <code>./shotfleet.toml</code>; both platforms if the file has both, <code>--platform ios</code> for one).</li>
-    <li>Review <code>out/index.html</code> (<code>out-ios/</code> and <code>out-android/</code> if the config has both platforms). It is a grid with a row per language and a column per screen, and problems are outlined in red.</li>
+    <li>Review <code>out/index.html</code> (<code>out-ios/</code> and <code>out-android/</code> if the config has both platforms). It is a grid with a row per language and a column per screen, and problems are outlined in red and marked &quot;problem&quot; in words. Every screenshot has alt text (language, screen, verdict) for screen readers.</li>
     <li>Export to fastlane: <code>shotfleet export out --fastlane fastlane/</code> (<code>out-ios</code> or <code>out-android</code> if the config has both). That writes <code>deliver</code>'s <code>screenshots/&lt;locale&gt;/</code> or <code>supply</code>'s <code>metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code>. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.</li>
   </ol>
 <pre><code>shotfleet run --locales en

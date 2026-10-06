@@ -189,7 +189,7 @@ class CheckPromises(unittest.TestCase):
                 sf.cmd_check(shots, strings=STRINGS, report_dir=d / "rep", ocr_command="cat {image}.txt")
             page = (d / "rep/index.html").read_text()
         self.assertEqual(page.count("<tr>"), 3)  # header + el + en
-        self.assertEqual(len(re.findall(r"<th>[^<]+</th>", page.split("</tr>")[0])), 2)
+        self.assertEqual(len(re.findall(r'<th scope="col">[^<]+</th>', page.split("</tr>")[0])), 2)
         self.assertIn("img.bad{border-color:#d33}", page)
         self.assertRegex(page, r'el/2\.png"><img [^>]*class="bad"')  # the English screenshot in the Greek row
         self.assertNotRegex(page, r'el/1\.png"><img [^>]*class="bad"')

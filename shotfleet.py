@@ -2907,7 +2907,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                    "a flat folder of one language's screenshots needs --locale <code>")
     if app is not None: android = Path(app).suffix == ".apk"  # the build says which store's rules apply
     elif run_json.exists(): android = json.loads(run_json.read_text()).get("platform") == "android"
-    else: android = any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS)
+    elif any(folder.glob("metadata/android")) or any(next(folder.glob(f"*/images/{k}"), None) for k in PLAY_FOLDERS): android = True
+    elif (folder / "screenshots").is_dir() or folder.name == "screenshots": android = False  # fastlane deliver's layout
+    else: android = store_from_sizes(images)  # plain <locale>/ folders: the sizes say which store, or None for both
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
     here = Path(folder).resolve()  # in device_runs(here.parent), without listing the parent (a folder in $TMPDIR: 68,000 entries, 15 s)
@@ -2917,6 +2919,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
+    if android is None:
+        notes.append("couldn't tell App Store from Google Play screenshots by their sizes, so each was judged against both stores' "
+                     "rules (a problem only when neither store takes it); pass --app to check against one store")
     if run_json.exists():  # a rerun keeps the languages it did not capture on purpose, but a check of "this run" should say which ones those are
         captured = set(json.loads(run_json.read_text()).get("locales", {}))
         old_folders = sorted(l for l in images if captured and l not in captured)
@@ -3049,7 +3054,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     return 1 if problems else 0
 
 def write_gallery(out, rows, problems):
-    """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red."""
+    """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red and marked
+    "⚠ problem" in text, every image with alt text, WCAG AA contrast in light and dark."""
     why = {}  # screenshot -> the reasons it was flagged, shown under the cell and as a tooltip
     for p in problems:
         if p.startswith("identical image"):  # "identical image in N languages: a/x.png, b/x.png"
@@ -3071,18 +3077,24 @@ def write_gallery(out, rows, problems):
             if f in src:
                 url = html.escape(src[f], quote=True)
                 reason = html.escape("; ".join(why.get(f, [])), quote=True)
-                note = f'<small>{reason}</small>' if reason else ""
-                tds.append(f'<td><a href="{url}"><img src="{url}" loading="lazy" title="{reason}" class="{"bad" if f in flagged else ""}"></a>{note}</td>')
+                note = f'<small><b><span aria-hidden="true">⚠</span> problem:</b> {reason}</small>' if reason else ""
+                alt = html.escape(f"{lp}, {Path(nm).stem}: {'problem, ' + '; '.join(why[f]) if f in flagged else 'no problem found'}", quote=True)
+                lang = html.escape(lp.replace("_", "-"), quote=True)
+                tds.append(f'<td><figure><a href="{url}"><img src="{url}" alt="{alt}" loading="lazy" title="{reason}" class="{"bad" if f in flagged else ""}"></a>'
+                           f'<figcaption class="sr" lang="{lang}">{html.escape(lp)} {html.escape(Path(nm).stem)}</figcaption>{note}</figure></td>')
             else:
                 tds.append('<td class="missing">missing</td>')
-        cells.append(f"<tr><th>{html.escape(lp)}</th>{''.join(tds)}</tr>")
+        cells.append(f'<tr><th scope="row">{html.escape(lp)}</th>{"".join(tds)}</tr>')
     probs = "".join(f"<li>{html.escape(p)}</li>" for p in problems) or "<li>none</li>"
-    (out / "index.html").write_text(f"""<!doctype html><meta charset="utf-8"><title>shotfleet results</title>
-<style>body{{font:14px -apple-system,sans-serif;margin:16px;background:#fafafa}}table{{border-collapse:collapse}}
-th{{text-align:right;padding-right:8px;vertical-align:middle}}td{{padding:3px}}img{{width:120px;border:3px solid transparent;border-radius:6px}}
-img.bad{{border-color:#d33}}small{{display:block;width:120px;color:#a22;font-size:11px;line-height:1.25}}td.missing{{width:120px;height:260px;background:#fee;color:#d33;text-align:center}}</style>
-<h1>shotfleet: {len(rows)} screenshots, {len(locales)} languages</h1><h3>Problems ({len(problems)})</h3><ul>{probs}</ul>
-<table><tr><th></th>{''.join(f"<th>{html.escape(n)}</th>" for n in names)}</tr>{''.join(cells)}</table>""")
+    (out / "index.html").write_text(f"""<!doctype html><html lang="en"><meta charset="utf-8"><title>shotfleet results</title>
+<style>:root{{color-scheme:light dark}}body{{font:14px -apple-system,sans-serif;margin:16px;background:#fafafa;color:#111}}table{{border-collapse:collapse}}
+th{{text-align:right;padding-right:8px;vertical-align:middle}}td{{padding:3px}}figure{{margin:0}}img{{width:120px;border:3px solid transparent;border-radius:6px}}
+img.bad{{border-color:#d33}}small{{display:block;width:120px;color:#a22;font-size:11px;line-height:1.25}}td.missing{{width:120px;height:260px;background:#fee;color:#b21f1f;text-align:center}}
+h2{{font-size:1.17em}}a:focus-visible{{outline:3px solid #1557c0;outline-offset:2px;border-radius:6px}}
+.sr{{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
+@media (prefers-color-scheme:dark){{body{{background:#1c1c1e;color:#eee}}img.bad{{border-color:#ff6b6b}}small{{color:#ff9e94}}td.missing{{background:#3d1f1f;color:#ffb4ab}}a:focus-visible{{outline-color:#8ab4ff}}}}</style>
+<h1>shotfleet: {len(rows)} screenshots, {len(locales)} languages</h1><h2>Problems ({len(problems)})</h2><ul>{probs}</ul>
+<table><tr><td></td>{''.join(f'<th scope="col">{html.escape(n)}</th>' for n in names)}</tr>{''.join(cells)}</table>""")
 
 # ---------- doctor / init / export ----------
 
@@ -4002,9 +4014,18 @@ def image_info(path):
 
 FLATTEN = "Save it as a JPEG or a PNG without alpha (on a Mac: sips -s format jpeg in.png --out out.jpg)"
 
+def store_from_sizes(images):
+    """Which store a plain folder's screenshots are for, when neither the layout nor a build says: False (App Store) when every
+    screenshot is an App Store size, True (Google Play) when none is, None when it's a mix and could be either."""
+    sizes = [s for pngs in images.values() for p in pngs if (s := image_info(p)[0])]
+    apple = sum(apple_class(s) is not None for s in sizes)
+    if apple == len(sizes): return False  # no readable sizes too: the App Store, as before
+    return True if apple == 0 else None
+
 def store_rules(images, android, ipad=False, tablet=False):
     """(problems, notes) against the stores' published screenshot rules (research/store-specs.md).
     Problems are what the store rejects; notes are worth knowing but don't block an upload.
+    `android` None: the store is unknown, so only what both stores reject is a problem.
     `tablet`: these are Play's 7" or 10" tablet screenshots, which Google wants at 1080 px or more."""
     problems, notes, long_ones, not_eligible, small_tablet, watch = [], [], {}, [], [], []
     for label, pngs in sorted(images.items()):
@@ -4021,6 +4042,10 @@ def store_rules(images, android, ipad=False, tablet=False):
                 elif max(size) > 2 * min(size):
                     long_ones.setdefault(size, set()).add(label)
                 if tablet and min(size) < 1080: small_tablet.append(name)
+            elif android is None:
+                if apple_class(size) is None and (min(size) < 320 or max(size) > 3840):
+                    problems.append(f"{name}: {size[0]}x{size[1]} fits neither store: it isn't an App Store screenshot size "
+                                    "and is outside Google Play's 320-3840 px")
             elif apple_class(size) is None:
                 problems.append(f"{name}: {size[0]}x{size[1]} isn't an App Store screenshot size")
             elif apple_class(size) == "Apple Watch": watch.append((label, size))
@@ -4029,7 +4054,7 @@ def store_rules(images, android, ipad=False, tablet=False):
             if len(phone) > 8: problems.append(f"{label}: {len(phone)} phone screenshots; Google Play takes at most 8")
             big = [p for p in phone if min(info[p][0]) >= 1080 and max(info[p][0]) * 9 == min(info[p][0]) * 16]
             if len(big) < 4: not_eligible.append(label)
-        else:
+        elif android is False:
             classes = {}
             for p, (size, _) in info.items():
                 if c := apple_class(size): classes.setdefault(c, []).append(p)

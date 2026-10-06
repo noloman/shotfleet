@@ -522,7 +522,7 @@ class CaptionOverAnEnglishUi(unittest.TestCase):
         self.assertIn('ocr.get("caption", "")', source); self.assertIn('ocr.get("caption_lang")', source)
 
     def test_the_same_check_refuses_a_size_the_app_store_does_not_take(self):  # the other half of the launch email: 'checks screenshot sizes against App Store Connect's rules'
-        golden_screenshot(self.d / "shots/ja/01.png", STORE_STRINGS["ja"].values(), CAPTION_JA, size=(1000, 2000))
+        golden_screenshot(self.d / "shots/screenshots/ja/01.png", STORE_STRINGS["ja"].values(), CAPTION_JA, size=(1000, 2000))  # fastlane deliver's layout: App Store screenshots
         code, report, _ = self.check(vision=self.vision_answer(list(STORE_STRINGS["ja"].values()), CAPTION_JA, "ja"))
         self.assertEqual((code, report["problems"]), (1, ["ja/01.png: 1000x2000 isn't an App Store screenshot size"]))
 
