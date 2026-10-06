@@ -3755,9 +3755,18 @@ def update_command(exe=None):
     exe = exe or os.path.realpath(sys.executable if getattr(sys, "frozen", False) else __file__)
     return "brew upgrade --cask noloman/tap/shotfleet" if "/Caskroom/" in exe else "curl -fsSL https://shotfleet.com/install.sh | sh"
 
-def cmd_doctor(fix=False, yes=False):
-    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
+def capture_mode(config="shotfleet.toml"):
+    """(uses [capture] for iOS, has an [android] section) for the config doctor looks at; (False, True) when there is none or it can't be read."""
+    try: doc = tomllib.loads(Path(config).read_text())
+    except (OSError, ValueError): return False, True  # tomllib.TOMLDecodeError and UnicodeDecodeError are ValueErrors
+    return "capture" in doc and "ios" in doc, "android" in doc
+
+def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
+    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan).
+    A config with [capture] (the team's XCUITest tests on iOS) needs Maestro and Java only for its Android section."""
     have = lambda c: shutil.which(c) is not None
+    capture, android = capture_mode(config)
+    maestro_for = "Android" if capture else "both"
     mac = is_mac()
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
@@ -3769,9 +3778,9 @@ def cmd_doctor(fix=False, yes=False):
     tested = ", ".join(MAESTRO_TESTED)
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if has_maestro else "maestro", maestro_ok,
-         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", "both"),
+         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", maestro_for),
         ("java 17+", find_java()[0], ("shotfleet doctor --fix  (downloads a Java runtime), or brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
-                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
+                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), maestro_for),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", simctl_works() if have("xcrun") else False,
@@ -3791,6 +3800,7 @@ def cmd_doctor(fix=False, yes=False):
     for name, ok, how, platform in checks:  # not `fix`: that is the --fix flag, and shadowing it made a plain `doctor` run the fix plan
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
+    if capture: print(f"note: {config} runs your XCUITest tests on iOS ([capture]), so iOS needs Xcode, not Maestro or Java")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -3837,7 +3847,8 @@ def cmd_doctor(fix=False, yes=False):
     if fix:
         print()
         fix_pkgs = [pk for pk in pkgs if not (pk == "cmdline-tools;latest" and not sdkmanager)]  # sdkmanager can't install itself
-        plan = fix_plan(maestro_ok, find_java()[0], fix_pkgs, bool(sdkmanager))
+        ios_only_capture = capture and not android  # nothing here needs Maestro or Java
+        plan = fix_plan(maestro_ok or ios_only_capture, find_java()[0] or ios_only_capture, fix_pkgs, bool(sdkmanager))
         if mac and not any(ok for n, ok, _, _ in checks if n == "xcrun simctl"):
             print("not fixable here: iOS needs Xcode and an iOS Simulator runtime (App Store, then Xcode > Settings > Components)")
         if not mac and not have("tesseract"):
@@ -4270,6 +4281,45 @@ def cmd_init(builds, dest="."):
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
 
+def ui_test_scheme(project):
+    """(shared scheme, UI test target) of a project's first scheme that tests a *UITests* bundle, read from the files on disk; None if none."""
+    for d in (project / "xcshareddata/xcschemes", project.with_suffix(".xcodeproj") / "xcshareddata/xcschemes"):
+        for f in sorted(d.glob("*.xcscheme")):
+            try: root = ET.parse(f).getroot()
+            except (ET.ParseError, OSError): continue
+            for r in root.iterfind("TestAction//TestableReference/BuildableReference"):
+                name = r.get("BlueprintName") or r.get("BuildableName", "").removesuffix(".xctest")
+                if r.get("BuildableName", "").endswith(".xctest") and "UITest" in name: return f.stem, name
+
+def cmd_init_capture(builds, dest="."):
+    """`init --capture`: a config whose [capture] runs the project's own XCUITest screenshot tests (no flow.yaml)."""
+    if builds: raise Fail("init --capture takes no build: the [capture] build command makes it. Run it in your Xcode project's folder")
+    dest, cwd = Path(dest), Path.cwd()
+    project = next(iter(xcode_projects(cwd)), None)
+    found = ui_test_scheme(project) if project else None
+    scheme, target = found or (project and scheme_for(project) or "<scheme>", None)
+    where = f"-{'workspace' if project.suffix == '.xcworkspace' else 'project'} {shlex.quote(config_path(project, dest))} " if project else ""
+    build = (f"xcodebuild build-for-testing {where}-scheme {shlex.quote(scheme)} -destination 'generic/platform=iOS Simulator' "
+             "-derivedDataPath .shotfleet/build CODE_SIGNING_ALLOWED=NO")
+    text = ("[ios]\n# locales = [\"de\", \"ja\"]   # default: every language the app ships\n"
+            "# app = \"path/to/MyApp.app\"   # default: the app next to the .xctestrun\n\n"
+            "# Your own XCUITest screenshot tests instead of a Maestro flow: shotfleet builds once, then runs them on several\n"
+            "# simulators at once, one language each, and checks the screenshots they save.\n"
+            f"[capture]\nbuild = {json.dumps(build)}\n"
+            "xctestrun = \".shotfleet/build/Build/Products/*.xctestrun\"   # exactly one match after the build\n"
+            + (f"only_testing = [{json.dumps(target)}]\n" if target else "# only_testing = [\"MyAppUITests/ScreenshotTests\"]\n")
+            + "screenshots = \"auto\"   # \"attachments\" (XCTAttachment, needs lifetime = .keepAlways), \"fastlane\" (SnapshotHelper) or \"auto\"\n"
+            f"timeout = {CAPTURE_TIMEOUT_S}   # seconds per language\n")
+    if not project: print(f"note: no Xcode project or workspace found in {cwd}; edit the build command in the config")
+    elif not found: print(f"note: no shared scheme in {project.name} tests a UI test target; set -scheme in the build command to the one that runs your screenshot tests")
+    else: print(f"{project.name}: scheme {scheme}, UI tests {target}")
+    dest.mkdir(parents=True, exist_ok=True)
+    if (dest / "shotfleet.toml").exists():
+        print(f"keeping existing {dest / 'shotfleet.toml'}. To use your XCUITest tests, put this in it (and remove flow = from [ios]):\n{text}"); return 0
+    (dest / "shotfleet.toml").write_text(text); print(f"wrote {dest / 'shotfleet.toml'}")
+    print(f"next: try one language (builds once, boots simulators, takes a few minutes):\n  shotfleet run {dest / 'shotfleet.toml'} --locales de")
+    return 0
+
 NO_XCRUN = "xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing"
 
 def latest_ios_runtime():
@@ -4556,6 +4606,7 @@ def main(argv=None):
     p = sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
     p.add_argument("--fix", action="store_true", help="offer to download what is missing (Maestro, Java, the Android tools); never uses sudo")
     p.add_argument("--yes", action="store_true", help="with --fix: don't ask before running the steps")
+    p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config to check for (default: ./shotfleet.toml); with [capture], iOS needs no Maestro")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
     p = sub.add_parser("skill", help="install the shotfleet skills for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Copilot)")
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills and ./.agents/skills instead of ~/.claude/skills and ~/.agents/skills")
@@ -4567,6 +4618,7 @@ def main(argv=None):
     p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
                    "none: use the newest Debug build found for the project in this folder")
     p.add_argument("--dir", default=".", help="where to write them (default: here)")
+    p.add_argument("--capture", action="store_true", help="iOS: write a [capture] config that runs your existing XCUITest screenshot tests instead of a Maestro flow")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
     p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config file (default: ./shotfleet.toml)")
     p.add_argument("--platform", choices=("ios", "android"), help="only this platform when the config has both")
@@ -4951,10 +5003,10 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
 
 def main_dispatch(a):
     try:
-        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes)
+        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes, a.config)
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "skill": return cmd_skill(a.dir, a.project, a.force)
-        if a.cmd == "init": return cmd_init(a.builds, a.dir)
+        if a.cmd == "init": return cmd_init_capture(a.builds, a.dir) if a.capture else cmd_init(a.builds, a.dir)
         global NO_HOOKS, NO_BUILD
         NO_HOOKS, NO_BUILD = bool(getattr(a, "no_hooks", False)), bool(getattr(a, "no_build", False))
         if a.cmd in ("run", "export") and os.environ.get("SHOTFLEET_IMAGE") == "check":  # set by the Dockerfile

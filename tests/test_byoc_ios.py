@@ -411,5 +411,107 @@ class CaptureRun(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()): self.assertEqual(sf.main(["check", str(self.d / "out")]), 0)
 
 
+
+class Doctor(unittest.TestCase):
+    """doctor reads the config it is pointed at (default ./shotfleet.toml) to see which mode is in use."""
+    def doctor(self, toml, *args, fix=False):
+        d = Path(tempfile.mkdtemp())
+        ocr = d / "ocr"; ocr.write_text("#!/bin/sh\necho Ready\n"); ocr.chmod(0o755)
+        if toml is not None: (d / "shotfleet.toml").write_text(toml)
+        out, plans = io.StringIO(), []
+        with mock.patch.object(sf, "maestro_cmd", lambda: None), mock.patch.object(sf, "find_java", lambda: (False, None)), \
+             mock.patch.object(sf, "is_mac", lambda: True), mock.patch.object(sf.sys, "frozen", True, create=True), \
+             mock.patch.object(sf.shutil, "which", lambda c: f"/usr/bin/{c}"), mock.patch.object(sf, "simctl_works", lambda: True), \
+             mock.patch.object(sf, "ios_runtimes", lambda: ["iOS 26.4"]), mock.patch.object(sf, "ocr_tool", lambda: str(ocr)), \
+             mock.patch.object(sf, "latest_release", lambda: None), mock.patch.object(sf, "run_fix_plan", lambda plan, yes: plans.append(plan) or 0), \
+             contextlib.redirect_stdout(out):
+            cwd = os.getcwd(); os.chdir(d)
+            try: code = sf.cmd_doctor(fix, False, *args)
+            finally: os.chdir(cwd)
+        return code, out.getvalue(), plans
+
+    def test_capture_config_makes_ios_ready_without_maestro_or_java(self):
+        code, out, _ = self.doctor('[ios]\n' + CAPTURE)
+        self.assertEqual(code, 0, out)
+        self.assertIn("iOS: ready", out)
+        self.assertIn("runs your XCUITest tests on iOS ([capture]), so iOS needs Xcode, not Maestro or Java", out)
+        self.assertRegex(out, r"MISSING maestro +\(Android\)")
+
+    def test_a_flow_config_or_none_still_needs_maestro_for_ios(self):
+        for toml in ('[ios]\napp = "My.app"\n', None):
+            code, out, _ = self.doctor(toml)
+            self.assertIn("iOS: not ready", out); self.assertRegex(out, r"MISSING maestro +\(both\)"); self.assertNotIn("[capture]", out)
+
+    def test_a_config_named_on_the_command_line_is_the_one_read(self):
+        d = Path(tempfile.mkdtemp()); write(d, '[ios]\n' + CAPTURE)
+        _, out, _ = self.doctor(None, str(d / "shotfleet.toml"))
+        self.assertIn("iOS: ready", out)
+
+    def test_fix_offers_no_maestro_for_an_ios_capture_config_but_does_for_its_android_section(self):
+        _, _, plans = self.doctor('[ios]\n' + CAPTURE, fix=True)
+        self.assertFalse(any("Maestro" in what or "Java" in what for what, _ in plans[0]))
+        _, _, plans = self.doctor('[ios]\n[android]\napk = "a.apk"\n' + CAPTURE, fix=True)
+        self.assertTrue(any("Maestro" in what for what, _ in plans[0]))
+
+    def test_an_unreadable_config_is_the_flow_mode(self):
+        self.assertEqual(sf.capture_mode("/nonexistent/shotfleet.toml"), (False, True))
+        d = Path(tempfile.mkdtemp()); (d / "x.toml").write_text("[ios\n")
+        self.assertEqual(sf.capture_mode(d / "x.toml"), (False, True))
+
+
+SCHEME = """<?xml version="1.0" encoding="UTF-8"?>
+<Scheme><BuildAction/><TestAction><Testables>
+  <TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BuildableName="MyAppTests.xctest" BlueprintName="MyAppTests"/></TestableReference>
+  <TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BuildableName="MyAppUITests.xctest" BlueprintName="MyAppUITests"/></TestableReference>
+</Testables></TestAction>
+<LaunchAction><BuildableProductRunnable><BuildableReference BuildableName="MyApp.app" BlueprintName="MyApp"/></BuildableProductRunnable></LaunchAction></Scheme>
+"""
+
+
+class InitCapture(unittest.TestCase):
+    def init(self, setup=None, builds=()):
+        d = Path(tempfile.mkdtemp()).resolve()
+        if setup: setup(d)
+        cwd = os.getcwd(); os.chdir(d)
+        try:
+            with contextlib.redirect_stdout(io.StringIO()) as out, contextlib.redirect_stderr(out): code = sf.main(["init", "--capture", *builds])
+        finally: os.chdir(cwd)
+        return d, code, out.getvalue()
+
+    def test_writes_a_capture_config_from_the_shared_scheme_with_ui_tests(self):
+        def project(d):
+            schemes = d / "MyApp.xcodeproj/xcshareddata/xcschemes"; schemes.mkdir(parents=True)
+            (schemes / "MyApp.xcscheme").write_text(SCHEME.replace("MyAppUITests", "Nope").replace("<TestableReference skipped=\"NO\"><BuildableReference BuildableIdentifier=\"primary\" BuildableName=\"Nope.xctest\" BlueprintName=\"Nope\"/></TestableReference>", ""))
+            (schemes / "MyApp-shared.xcscheme").write_text(SCHEME)
+        d, code, out = self.init(project)
+        self.assertEqual(code, 0, out)
+        self.assertFalse((d / "flow.yaml").exists())
+        doc = sf.tomllib.loads((d / "shotfleet.toml").read_text())
+        self.assertEqual(doc["capture"]["build"], "xcodebuild build-for-testing -project MyApp.xcodeproj -scheme MyApp-shared "
+                         "-destination 'generic/platform=iOS Simulator' -derivedDataPath .shotfleet/build CODE_SIGNING_ALLOWED=NO")
+        self.assertEqual(doc["capture"]["only_testing"], ["MyAppUITests"])
+        self.assertEqual(doc["capture"]["screenshots"], "auto")
+        with mock.patch.object(sf, "maestro_cmd", return_value=None):
+            _, cfg, _ = sf.load_config(d / "shotfleet.toml")  # what init writes is a valid config
+        self.assertEqual(cfg["_capture"]["timeout"], sf.CAPTURE_TIMEOUT_S)
+        self.assertIn("scheme MyApp-shared, UI tests MyAppUITests", out)
+
+    def test_without_a_project_it_writes_a_placeholder_and_says_so(self):
+        d, code, out = self.init()
+        self.assertEqual(code, 0)
+        self.assertIn("-scheme '<scheme>'", (d / "shotfleet.toml").read_text())
+        self.assertIn("# only_testing", (d / "shotfleet.toml").read_text())
+        self.assertIn("no Xcode project or workspace found", out)
+
+    def test_an_existing_config_is_kept_and_the_section_printed(self):
+        d, code, out = self.init(lambda d: (d / "shotfleet.toml").write_text('[ios]\napp = "My.app"\n'))
+        self.assertEqual((d / "shotfleet.toml").read_text(), '[ios]\napp = "My.app"\n')
+        self.assertIn("keeping existing", out); self.assertIn("[capture]", out)
+
+    def test_a_build_argument_is_refused(self):
+        _, code, _ = self.init(builds=["My.app"])
+        self.assertEqual(code, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
