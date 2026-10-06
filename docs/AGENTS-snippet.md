@@ -11,7 +11,7 @@ for Claude Code, `GEMINI.md` for Gemini CLI).
 
 shotfleet captures App Store and Google Play screenshots in every language the app ships from one English Maestro
 flow, and checks every screenshot against the app's own strings. It also checks screenshots you already have (fastlane, screengrab, by hand).
-Needs an Apple silicon Mac, Maestro 2.x and Java 17+; Xcode for iOS, the Android SDK for Android. Built for macOS 13 or later on Apple silicon; tested on macOS 27.
+Needs an Apple silicon Mac, Maestro 2.x and Java 17+; Xcode for iOS, the Android SDK for Android. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 
 Commands:
 

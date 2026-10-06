@@ -2206,7 +2206,7 @@
  },
  {
   "id": "C131",
-  "claim": "The release is built for macOS 13 or later on Apple silicon and tested on macOS 27",
+  "claim": "Built for macOS 13 or later on Apple silicon; full runs only on macOS 27; installer, doctor and check on macOS 14 and 15 (0.1.1) and 26.2 in a VM (0.1.2); other versions not tested",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -2218,10 +2218,10 @@
    "site/public/demo.html"
   ],
   "where_text": [
-   "Built for macOS 13 or later on Apple silicon; tested on macOS 27."
+   "Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet."
   ],
   "status": "evidence",
-  "proof": "2026-10-05, release 0.1.1 built from a standalone Python 3.14.2 and `swiftc -target arm64-apple-macos13.0`: `python3 tools/macho-minos.py dist/shotfleet` on the unpacked tarball gives 2 Mach-O files at macOS 11.0 and 1 (the ocr helper) at 13.0, none at 27.0 (the 0.1.0 folder had 52 of 56 at 27.0). Apple notarized both the program and the package (Accepted); the quarantined run, `check` on 72 real screenshots (0 problems) and a licence call over TLS all ran on macOS 27. Tests: tests/test_platform_reach.py. The Mach-O minimum is a build fact, not proof that it runs below macOS 27. After the deploy (2026-10-05) two manual GitHub runs installed the LIVE 0.1.1 on Apple-silicon macOS 14.8.9 and 15.7.9: install, `shotfleet --version` (0.1.1), `doctor` (ran to the end) and `check` on two sample screenshots worked with no start-up error (docs/owner-note-0.1.1.md, research/limits-platform-reach-2026-10-05.md; hosted runners 37303612329 and 37304115758; runner images macos-14 for 14.8.9 and macos-15 for 15.7.9). Not shown: simulator runs on those versions, macOS 13, macOS 26.0 to 26.2, a real Mac or a clean Mac. With the owner's yes (2026-10-05) the same sentence is also on the home page (the price lede and the \"Not for you if\" list), the comparison page, llms.txt, the skill and the agent snippet, and the JSON-LD softwareRequirements starts with `macOS 13 or later on an Apple silicon Mac`; the Gumroad page carries it too (not in the repo).",
+  "proof": "2026-10-05, release 0.1.1 built from a standalone Python 3.14.2 and `swiftc -target arm64-apple-macos13.0`: `python3 tools/macho-minos.py dist/shotfleet` on the unpacked tarball gives 2 Mach-O files at macOS 11.0 and 1 (the ocr helper) at 13.0, none at 27.0 (the 0.1.0 folder had 52 of 56 at 27.0). Apple notarized both the program and the package (Accepted); the quarantined run, `check` on 72 real screenshots (0 problems) and a licence call over TLS all ran on macOS 27. Tests: tests/test_platform_reach.py. The Mach-O minimum is a build fact, not proof that it runs below macOS 27. After the deploy (2026-10-05) two manual GitHub runs installed the LIVE 0.1.1 on Apple-silicon macOS 14.8.9 and 15.7.9: install, `shotfleet --version` (0.1.1), `doctor` (ran to the end) and `check` on two sample screenshots worked with no start-up error (docs/owner-note-0.1.1.md, research/limits-platform-reach-2026-10-05.md; hosted runners 37303612329 and 37304115758; runner images macos-14 for 14.8.9 and macos-15 for 15.7.9). Not shown: simulator runs on those versions, macOS 13, macOS 26.0 to 26.2, a real Mac or a clean Mac. With the owner's yes (2026-10-05) the same sentence is also on the home page (the price lede and the \"Not for you if\" list), the comparison page, llms.txt, the skill and the agent snippet, and the JSON-LD softwareRequirements starts with `macOS 13 or later on an Apple silicon Mac`; the Gumroad page carries it too (not in the repo). 2026-10-06 (research/site-claims-audit-2026-10-06.md item 2): 'tested on macOS 27' left out what ran elsewhere and what never ran. The line now says it, matching docs/compat.md (macOS 27 row; 14.8.9 and 15.7.9 row, 0.1.1 only; 26.2 row, the live 0.1.2 in a Tart VM; macOS 13 and 26.0 to 26.1 untested).",
   "layer": "device",
   "assertion": "On a Mac running macOS 13 or 26.0 to 26.2 (no hosted runner exists; a real Mac or a VM), the installed 0.1.1 prints `shotfleet 0.1.1` and `doctor` runs to the end. Already shown on macOS 14.8.9 and 15.7.9.",
   "fix": ""

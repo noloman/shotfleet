@@ -339,7 +339,7 @@ translation source.
 - With Tesseract installed (`brew install tesseract tesseract-lang`), `check` uses it automatically for those scripts: measured on 85 languages, 84 are then verified by reading instead of 66. Another OCR works too: `--ocr-command "<cmd> {image}"` (or `SHOTFLEET_OCR`); placeholders: `{image}`, `{lang}` (ISO code), `{tesseract}` (Tesseract's code), `{tesseract_with_english}` (e.g. `eng+ell`).
 - `check` without `--app` relies on language detection, which can't judge short screens; pass `--app` for the full check. With `--app`, a screen with only one or two of the app's strings is also judged by language detection.
 
-- Built for macOS 13 or later on Apple silicon; tested on macOS 27.
+- Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 - Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set `device_type` in the config. Xcode 26.x has not been run.
 - iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.
 - macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
