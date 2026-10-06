@@ -2599,6 +2599,14 @@ def play_folders(folder):
 IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg")
 LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
 
+SCREENGRAB_STAMP = re.compile(r"_\d{13}$")
+
+def shot_key(name):
+    """The screen a file shows, the same in every language: its name without fastlane screengrab's millisecond timestamp
+    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set."""
+    p = Path(name)
+    return SCREENGRAB_STAMP.sub("", p.stem) + p.suffix
+
 def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
     fastlane supply (metadata/android/<locale>/images/phoneScreenshots), fastlane deliver (screenshots/<locale>),
@@ -2982,9 +2990,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
-        if png.stem in (expect or {}):
-            rules, used = content_rules(expect[png.stem], label, lp)
-            expected_used.update((png.stem, k) for k in used)
+        if (stem := Path(shot_key(png.name)).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
+            rules, used = content_rules(expect[stem], label, lp)
+            expected_used.update((stem, k) for k in used)
             bad, unsure = check_content(rules, r)
             why = "text recognition can't read that script"
             if f"{label}/{png.name}" in unread_files: bad, unsure, why = [], bad + unsure, "the text reader found nothing on this screenshot"
@@ -3006,15 +3014,21 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
         if len(langs) > 1:  # en-GB and en-US both showing the app's English is fine
             problems.append(f"identical image in {len(langs)} languages: {', '.join(files)}")
-    names = {r["file"].split("/")[1] for r in rows}  # expected set = union across languages
+    names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
     for label in sorted(set(images) - set(unmapped)):
-        have = {p.name for p in images[label]}
-        if have != names:
-            problems.append(f"{label}: missing {', '.join(sorted(names - have))}")
+        have, seen = {}, {}
+        for p in images[label]: seen.setdefault(shot_key(p.name), []).append(p.name)
+        for key, files in sorted(seen.items()):  # 01Home_<t1>.png and 01Home_<t2>.png: one screen saved twice, not two screens
+            if len(files) > 1:
+                problems.append(f"{label}: {', '.join(files)} are the same screen saved {len(files)} times (only screengrab's timestamp "
+                                "differs); keep the newest and delete the rest")
+        if missing := names - set(seen):
+            problems.append(f"{label}: missing {', '.join(sorted(missing))}")
+    stems = {Path(shot_key(r["file"])).stem for r in rows}
     for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
-        if name not in {Path(r["file"]).stem for r in rows}:
+        if name not in stems:
             import difflib
-            near = difflib.get_close_matches(name, sorted({Path(r["file"]).stem for r in rows}), n=1)
+            near = difflib.get_close_matches(name, sorted(stems), n=1)
             problems.append(f"[expect.{name}] matches no screenshot" + (f"; did you mean [expect.{near[0]}]?" if near else ""))
         notes += [f"[expect.{name}.{k}] matches none of the languages checked" for k, v in expect[name].items()
                   if isinstance(v, dict) and k not in EXPECT_KEYS and (name, k) not in expected_used]
@@ -3024,7 +3038,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes}, indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)")
-    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(r['file']).stem in expect})} screens, "
+    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(shot_key(r['file'])).stem in expect})} screens, "
                      f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
     if notes:
@@ -3046,13 +3060,14 @@ def write_gallery(out, rows, problems):
     def locate(rel):  # relative to the report; an absolute file: URL when the image lives outside it, so moving the report keeps the images
         return (Path(out) / rel).resolve().as_uri() if rel.startswith("..") else rel
     src = {r["file"]: locate(r.get("src", f"raw/{r['file']}")) for r in rows}
-    names = sorted({r["file"].split("/")[1] for r in rows})
+    cell = {(r["file"].split("/")[0], shot_key(r["file"].split("/")[1])): r["file"] for r in rows}  # screengrab timestamps aside
+    names = sorted({k for _, k in cell})
     locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
     for lp in locales:
         tds = []
         for nm in names:
-            f = f"{lp}/{nm}"
+            f = cell.get((lp, nm), "")
             if f in src:
                 url = html.escape(src[f], quote=True)
                 reason = html.escape("; ".join(why.get(f, [])), quote=True)

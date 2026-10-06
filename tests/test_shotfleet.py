@@ -460,6 +460,69 @@ class CheckAnyFolder(unittest.TestCase):
         self.assertEqual(self.layout(["fr/a.png", "fr/b.png"]), {"fr": ["a.png", "b.png"]})
         self.assertEqual(self.layout(["raw/ko/a.png", "index.html"]), {"ko": ["a.png"]})
 
+    # real fastlane names and layouts (seen in subscrifi's folders, research/beyond-maestro-2026-10-06.md): snapshot writes
+    # screenshots/<locale>/<device>-<name>.png next to screenshots.html; screengrab writes
+    # metadata/android/<locale>/images/phoneScreenshots/<name>_<13-digit milliseconds>.png, a different timestamp in every language
+    SNAPSHOT = {lp: [f"screenshots/{lp}/iPhone 15 Pro Max-01Home.png", f"screenshots/{lp}/iPhone 15 Pro Max-02Categories.png"]
+                for lp in ("en-US", "de-DE")}
+    SCREENGRAB = {"en-US": ["01Home_1773696985949.png", "02Categories_1773696986518.png"],
+                  "de-DE": ["01Home_1773697012807.png", "02Categories_1773697013353.png"]}
+    WORDS = {"en": {"a": "Monthly subscriptions", "b": "Filter and sort"}, "de": {"a": "Monatliche Abonnements", "b": "Filtern und sortieren"}}
+
+    def fastlane_check(self, files, size, **kw):
+        """cmd_check on a fastlane folder made of `files` ({locale: [path]}), each screen's text in a .texts.json sidecar."""
+        sub = kw.pop("sub", "")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d) / "fastlane"
+            for lp, paths in files.items():
+                for rel in paths:
+                    f = root / rel; f.parent.mkdir(parents=True, exist_ok=True); f.write_bytes(png_c(*size))
+                    f.with_suffix(".texts.json").write_text(json.dumps(list(self.WORDS[lp[:2]].values())))
+            if sub == "screenshots": (root / "screenshots/screenshots.html").write_text("<html>")  # snapshot's own summary page
+            with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(sf, "ocr_tool", return_value="ocr"):
+                code = sf.cmd_check(root / sub, strings=self.WORDS, report_dir=Path(d) / "rep", ocr_command="cat {image}.txt", **kw)
+            report = json.loads((Path(d) / "rep/check.json").read_text())
+            report["gallery"] = (Path(d) / "rep/index.html").read_text()
+        return code, report
+
+    def test_shot_key_strips_only_screengrabs_13_digit_timestamp(self):
+        self.assertEqual(sf.shot_key("01Home_1773697012807.png"), "01Home.png")
+        for name in ("iPhone 15 Pro Max-01Home.png", "01Home.png", "01_lift_list.png", "shot_177369701280.png",
+                     "shot_17736970128071.png", "1773697012807.png", "home_v2.jpg"):
+            self.assertEqual(sf.shot_key(name), name)
+
+    def test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found(self):
+        code, report = self.fastlane_check(self.SNAPSHOT, (1290, 2796), sub="screenshots")
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(len(report["screenshots"]), 4)  # screenshots.html is not a screenshot
+        files = {**self.SNAPSHOT, "de-DE": self.SNAPSHOT["de-DE"][:1]}
+        code, report = self.fastlane_check(files, (1290, 2796), sub="screenshots")
+        self.assertEqual((code, report["problems"]), (1, ["de-DE: missing iPhone 15 Pro Max-02Categories.png"]))
+
+    def test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is(self):
+        play = lambda files: {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in files.items()}
+        code, report = self.fastlane_check(play(self.SCREENGRAB), (1080, 1920))
+        self.assertEqual((code, report["problems"]), (0, []))
+        self.assertEqual(report["gallery"].count('class="missing"'), 0)  # one column per screen, not one per timestamp
+        self.assertIn("de-DE/01Home_1773697012807.png", {r["file"] for r in report["screenshots"]})  # reports keep the real names
+        code, report = self.fastlane_check(play({**self.SCREENGRAB, "de-DE": self.SCREENGRAB["de-DE"][:1]}), (1080, 1920))
+        self.assertEqual((code, report["problems"]), (1, ["de-DE: missing 02Categories.png"]))
+
+    def test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match(self):
+        twice = {"en-US": ["01Home_1773696985949.png", "01Home_1773699999999.png"], "de-DE": ["01Home_1773697012807.png"]}
+        play = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in twice.items()}
+        code, report = self.fastlane_check(play, (1080, 1920))
+        self.assertEqual(code, 1)
+        self.assertEqual(report["problems"], ["en-US: 01Home_1773696985949.png, 01Home_1773699999999.png are the same screen saved 2 times "
+                                              "(only screengrab's timestamp differs); keep the newest and delete the rest"])
+
+    def test_expect_names_the_screen_without_screengrabs_timestamp(self):
+        play = {lp: [f"metadata/android/{lp}/images/phoneScreenshots/{n}" for n in names] for lp, names in self.SCREENGRAB.items()}
+        code, report = self.fastlane_check(play, (1080, 1920), expect={"01Home": {"all": ["Nowhere on screen"]}})
+        self.assertEqual(code, 1)
+        self.assertEqual(sorted(p.split(":")[0] for p in report["problems"]), ["de-DE/01Home_1773697012807.png", "en-US/01Home_1773696985949.png"])
+        self.assertFalse(any("matches no screenshot" in p for p in report["problems"]))
+
     def test_store_codes_map_to_app_languages(self):
         app = {"en", "de", "nb", "pt", "pt-PT", "zh-Hans", "in", "iw", "es"}
         cases = {"de-DE": "de", "no": "nb", "no-NO": "nb", "pt-BR": "pt", "pt-PT": "pt-PT", "en-US": "en",
