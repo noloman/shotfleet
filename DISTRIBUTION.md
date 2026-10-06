@@ -18,7 +18,7 @@
 |---|---|---|
 | Package | A single executable built with PyInstaller (Python bundled), plus the prebuilt `ocr` helper, Apple silicon only (arm64) | No Python or Swift needed on the buyer's Mac; source not shipped as plain text |
 | Trust | Signed with Manu's Developer ID and notarized by Apple | Without it Gatekeeper blocks the download ("cannot be opened") |
-| Install | `curl -fsSL https://shotfleet.com/install.sh \| sh` (checksum-verified). No Homebrew formula is published | One line, no public repos needed (Homebrew was the first plan; see Status) |
+| Install | `curl -fsSL https://shotfleet.com/install.sh \| sh` (checksum-verified), the main way. Also a Homebrew cask in the public tap `noloman/homebrew-tap`: `brew install noloman/tap/shotfleet` (same tarball, from `/download/<version>/`) | One line, no public repos needed (Homebrew was the first plan; see Status) |
 | Where binaries live | The shotfleet site's `/download` folder (no public source repo; source stays private; the empty `noloman/shotfleet-releases` is reserved for a later Action, tap and plugin) | The installer reads it over HTTPS and checks the SHA-256 |
 | Payment | Gumroad product linked from the site (merchant of record since 2025-01-01: handles VAT/sales tax worldwide, added on top of the price; Individual account, Netherlands bank payout; the same account sells Keysi) | Lemon Squeezy and Polar end in a Stripe check that asks for a KvK (none here; dropped 2026-10-02). Gumroad: 10% + $0.50 plus card 2.9% + $0.30, so about $24.46 net at $29 (research/gumroad-setup.md) |
 | Licence | `shotfleet activate <key>` validates once with the store's licence API (Gumroad keys: four groups of 8 hex characters, no secret in the app, one use count per key, 3 activations; a key from any other store is refused, with no network call), stores it in `~/Library/Application Support/shotfleet`, re-checks at most weekly, works offline for 30 days (an activated Mac; a CI key stores nothing and has no offline limit, see CI below) | Honest buyers never notice; casual sharing stops |
@@ -56,7 +56,8 @@ Only needed once the founder sale opens (STRATEGY.md week 4). Until then the wai
 - Decision: the program is not published in a public repo. The signed, notarized program is served from the shotfleet site; buyers install with
   `curl -fsSL https://shotfleet.com/install.sh | sh` (checksum-verified; installs on the PATH).
   `doctor` announces newer versions from `/download/VERSION`. A Homebrew formula was tried through a local tap and
-  removed in 0.1.2 (it was stale); if buyers ask for `brew install`, generate one from the tested tarball's SHA-256 (git history has the old file).
+  removed in 0.1.2 (it was stale). 2026-10-06: published as a cask (Homebrew's docs put proprietary binary-only software in casks) in
+  `noloman/homebrew-tap`, pointing at the immutable `/download/<version>/` tarball; `tools/bump-homebrew.sh <version> <tap checkout>` updates it per release.
 - Signing and notarization: done with the existing Developer ID (2357A78TMR) and the `KeysiNotary` profile (shotfleet's own `ShotfleetNotary` from 2026-10-05; "not found" usually means the screen locked, see packaging/README.md). Apple accepted
   the 0.1.0 build; a quarantined copy runs without a Gatekeeper prompt.
 - Licence: `activate`/`deactivate`, `run`/`export` gated in released builds only; tested against a fake Gumroad licence API

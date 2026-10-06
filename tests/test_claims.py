@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CLAIMS = json.loads((ROOT / "tests/claims.json").read_text())
-STATUSES = {"proven", "partial", "evidence", "untested", "unverifiable", "fixed", "removed"}
+STATUSES = {"proven", "partial", "evidence", "untested", "unverifiable", "fixed", "removed", "policy"}  # policy: the owner's decision, nothing to test
 KEYS = {"id", "claim", "where", "where_text", "status", "proof", "layer", "assertion", "fix"}
 LAYERS = {"unit", "site", "fixture", "device", "legal"}
 TESTS = "\n".join(p.read_text() for p in sorted((ROOT / "tests").glob("test_*.py")))

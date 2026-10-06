@@ -20,10 +20,16 @@
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
 - Text typed into fields by the flow is not translated by itself: it stays the same in every language unless you set per-language `[inputs]` (iOS; on Android that needs a Maestro that sets MAESTRO_DEVICE_UDID).
 
+## Install
+
+- `curl -fsSL https://shotfleet.com/install.sh | sh` is the main way: the signed, notarized Apple silicon build, checked against its SHA-256.
+- Or with Homebrew: `brew install noloman/tap/shotfleet` (a cask in my own tap, the same build). Homebrew doesn't install Maestro or Java; `shotfleet doctor --fix` does.
+
 ## Price and licence
 
 - `check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence.
 - A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. Gumroad applies the $29 by itself at checkout; there is no public count of how many are left. It includes a year of updates and a 14-day refund. Prices are before VAT or sales tax, which Gumroad adds where it applies; checkout is on Gumroad, the merchant of record.
+- Open-source maintainers and students can email hello@shotfleet.com with a link to their open-source repo or proof that they're a student for a 100%-off code. Gumroad makes an invoice from the receipt; there are no purchase orders.
 - The home page links to the checkout; shotfleet is on sale.
 
 ## Links

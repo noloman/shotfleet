@@ -18,7 +18,7 @@ INDEX = (ROOT / "site/public/index.html").read_text()
 SOURCE = (ROOT / "shotfleet.py").read_text()
 EM_DASH = "—"
 BANNED = ["works with every", "works with any app", "guarantee", "universal binary", "tested on sample projects",
-          "brew install noloman", "ai-powered", "first 100 people", "before anyone else"]
+          "brew install noloman/shotfleet", "ai-powered", "first 100 people", "before anyone else"]
 
 
 def frontmatter(path):
