@@ -1525,7 +1525,8 @@ class StuckOcrFallback(unittest.TestCase):
         with mock.patch.object(sf.shutil, "which", return_value=None), mock.patch.object(sf, "tesseract_languages", return_value=frozenset()):
             code, out, report = self.check()
         self.assertEqual(report["unverified"], ["de/1.png", "ja/1.png"])
-        self.assertEqual((code, report["problems"]), (1, ["identical image in 2 languages: de/1.png, ja/1.png"]))  # copies are still checked
+        self.assertEqual((code, report["problems"]), (0, []))  # identical, but unread: a note, not a copy problem
+        self.assertTrue(any(n.startswith("2 unverified screens are identical across languages") for n in report["notes"]), report["notes"])
         self.assertIn("brew install tesseract", out); self.assertIn("No restart needed", out)
 
 

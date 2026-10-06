@@ -1258,7 +1258,7 @@
  },
  {
   "id": "C072",
-  "claim": "If macOS text recognition gets stuck, check switches to Tesseract automatically when installed; otherwise it finishes after at most 8 minutes of waiting in all, judges screens with the app's own text, marks the rest not verified (unverified in --json, exit 0, --strict exit 1) and says to run again later or install Tesseract (no restart needed); concurrent checks take turns warming it up",
+  "claim": "If macOS text recognition gets stuck, check switches to Tesseract automatically when installed; otherwise it finishes after at most 8 minutes of waiting in all, judges screens with the app's own text, marks the rest not verified (unverified in --json, exit 0, --strict exit 1; identical unread screens are a note, not a copy problem) and says to run again later or install Tesseract (no restart needed); concurrent checks take turns warming it up",
   "where": [
    "README.md",
    "site/public/docs.html"
@@ -1268,7 +1268,7 @@
    "Without Tesseract, <code>check</code> still finishes"
   ],
   "status": "proven",
-  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, test_without_tesseract_it_says_how_to_fix; tests.test_ocr_wait (patient warm-up with a fake helper and fake ps, messages, Latin rule; Budget: the budget ends the waiting with unverified screens, .texts.json screens still judged, --json unverified, --strict exit 1, a warm-up that never answers; WarmUpLock: two real processes take turns, the lock wait counts against the budget).",
+  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, test_without_tesseract_it_says_how_to_fix; tests.test_ocr_wait (patient warm-up with a fake helper and fake ps, messages, Latin rule; Budget: the budget ends the waiting with unverified screens, .texts.json screens still judged, --json unverified, --strict exit 1, a warm-up that never answers, identical unverified screens are a note not a copy problem; WarmUpLock: two real processes take turns, the lock wait counts against the budget).",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""

@@ -3048,13 +3048,15 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                 return {**external_ocr(ocr_command, pngs[i][1], lp), **tesseract_script(pngs[i][1], lp)}
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
-    rows, by_hash, expected_used, unverified, unread_files, no_language, not_verified = [], {}, set(), 0, set(), [], []
+    rows, by_hash, expected_used, unverified, unread_files, no_language, not_verified, busy_hash = [], {}, set(), 0, set(), [], [], {}
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
         busy = gave_up is not None and not r  # macOS text recognition was given up on before it read this screen
-        if r.get("chars", 0) >= 40 or busy:  # ponytail: short screens (a watch button) can be identical across languages; an unread one is taken to have text
-            by_hash.setdefault(h, []).append((lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}"))
+        key = (lp or (canon(label).split("-")[0] if not tables else label), f"{label}/{png.name}")
+        if r.get("chars", 0) >= 40:  # ponytail: short screens (a watch button) can be identical across languages
+            by_hash.setdefault(h, []).append(key)
+        elif busy: busy_hash.setdefault(h, []).append(key)  # unread: its text can't prove a copy (games, no-text screens), so a note
         got, problem = judge_screen(lp or label, r, tables if lp else {})
         problem = caption_problem(lp or label, r, tables, problem)
         if not tables and r.get("ocr") == "external" and r.get("chars") and "osd_script" not in r: no_language.append(f"{label}/{png.name}")
@@ -3099,6 +3101,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         langs, files = {lp for lp, _ in hits}, [f for _, f in hits]
         if len(langs) > 1:  # en-GB and en-US both showing the app's English is fine
             problems.append(f"identical image in {len(langs)} languages: {', '.join(files)}")
+    if same := [f for hits in busy_hash.values() if len({lp for lp, _ in hits}) > 1 for _, f in hits]:
+        notes.append(f"{len(same)} unverified screens are identical across languages; run check again when text recognition answers "
+                     f"to tell whether they're copies ({', '.join(same)})")
     names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
     for label in sorted(set(images) - set(unmapped)):
         have, seen = {}, {}
@@ -3124,7 +3129,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                                                   indent=1, ensure_ascii=False))
     write_gallery(report, rows, problems)
     loud = (f"{len(not_verified)} screenshot(s) not verified, because {gave_up}: their language and [expect] texts were not checked "
-            "(store sizes, missing screens and copies were). " + OCR_WHAT_TO_DO) if not_verified else ""
+            "(store sizes and missing screens were). " + OCR_WHAT_TO_DO) if not_verified else ""
     if loud:  # at the top of the report, whatever the gallery looks like
         page = (report / "index.html").read_text()
         items = "".join(f"<li>{html.escape(f)}: not verified ({html.escape(gave_up)})</li>" for f in not_verified)
@@ -3560,11 +3565,12 @@ def cmd_doctor(fix=False, yes=False):
             read, r = None, e
         if r is None or (isinstance(r, subprocess.CompletedProcess) and r.returncode == 0 and not read):
             print("note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); "
-                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it. Now: {ocr_not_answering()}")
+                  f"doctor waited {DOCTOR_OCR_TIMEOUT_S} s and went on. `shotfleet check` waits for it, then finishes and marks screens it couldn't read "
+                  f"as not verified. Now: {ocr_not_answering()}")
         elif isinstance(r, Exception):
-            print(f"PROBLEM text recognition   can't start ({r}); wait a few minutes and run doctor again (a restart is a last resort)")
+            print(f"PROBLEM text recognition   can't start ({r}); wait a few minutes and run doctor again, or install Tesseract for a fallback reader (brew install tesseract). No restart needed: `shotfleet check` still finishes and marks screens it couldn't read as not verified")
         elif r.returncode != 0:
-            print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; wait a few minutes and run doctor again (a restart is a last resort)")
+            print(f"PROBLEM text recognition   failed: {(r.stderr or r.stdout).strip()[-200:] or 'exit ' + str(r.returncode)}; wait a few minutes and run doctor again, or install Tesseract for a fallback reader (brew install tesseract). No restart needed: `shotfleet check` still finishes and marks screens it couldn't read as not verified")
         elif read == "Ready":
             print(f"ok   text recognition   ready in {time.time() - t0:.0f} s")
         else:

@@ -219,6 +219,14 @@ class Budget(unittest.TestCase):
         self.assertEqual(code, 0); self.assertLess(took, 8)
         self.assertEqual(json.loads((self.d / "rep/check.json").read_text())["unverified"], ["ja/01.png"])
 
+    def test_identical_unverified_screens_are_a_note_not_a_copy_problem(self):  # games and no-text screens are identical by design
+        (self.d / "shots/de/01.texts.json").unlink()  # de and ja: the same bytes, neither read
+        code, out, *_ = self.main()
+        report = json.loads((self.d / "rep/check.json").read_text())
+        self.assertEqual((code, report["problems"], report["unverified"]), (0, [], ["de/01.png", "ja/01.png"]))
+        self.assertIn("2 unverified screens are identical across languages; run check again when text recognition answers to tell "
+                      "whether they're copies (de/01.png, ja/01.png)", report["notes"])
+
     def test_read_text_stops_at_the_budget(self):
         with mock.patch.object(sf, "ane_state", return_value=(True, 5)), mock.patch.object(sf, "OCR_RETRY_S", 0.2), \
              mock.patch.object(sf, "OCR_BUDGET_S", 1.5), sf.ocr_budget(), self.assertRaises(sf.OcrBusy):
