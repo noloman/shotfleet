@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What’s new in shotfleet</title>
+<meta name="description" content="What changed in each shotfleet release, in plain words: what you can do now that you couldn’t before, and what works better.">
+<meta property="og:title" content="What’s new in shotfleet">
+<meta property="og:description" content="What changed for you in each shotfleet release, newest first.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
+<meta property="og:url" content="https://shotfleet.com/whats-new">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="shotfleet">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/whats-new">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a><a href="/whats-new">What’s new</a></span>
+  </nav>
+</header>
+
+<!--
+  RELEASE STEP: the 0.1.5 heading holds the marker RELEASE_DATE (in a comment) until release day. Replace the whole comment with the date
+  from the CHANGELOG heading (YYYY-MM-DD). tests/test_site.py WhatsNew and packaging/publish.sh both refuse a release that still has it.
+  Every bullet here has a row in tests/claims.json; add one for each new bullet.
+-->
+
+<main class="wrap" id="main">
+  <section class="page">
+    <h1>What’s new</h1>
+    <p class="lede">What changed for you in each release, newest first.</p>
+
+    <h2 id="v0-1-5">0.1.5, <!-- RELEASE_DATE --></h2>
+
+    <h3>Works with what you already use</h3>
+    <ul>
+      <li>Already use fastlane snapshot or screengrab? <code>check</code> now works on those screenshots, no Maestro needed. It ignores the timestamp screengrab adds to every file name, so it no longer says every language is missing screens. The <a href="/docs">docs</a> have a ready-made fastlane lane that stops before the upload when <code>check</code> finds a problem.</li>
+      <li>Paparazzi, Roborazzi or Compose preview renders: copy each language into its own folder, then run <code>check</code> on them. The docs show a short loop that does the copying. I haven’t tried it on a real Paparazzi project yet.</li>
+      <li>Homebrew: <code>brew install noloman/tap/shotfleet</code> installs the same signed build. Homebrew doesn’t install Maestro or Java, but <code>shotfleet doctor --fix</code> does. When a new version is out, <code>doctor</code> tells you to run <code>brew upgrade</code>.</li>
+    </ul>
+
+    <h3>More reliable on a busy Mac</h3>
+    <ul>
+      <li>You never need to restart your Mac when macOS text recognition is busy. <code>check</code> waits for it up to 8 minutes and then finishes anyway: it still checks sizes and missing screens, and it marks the screens it couldn’t read as “not verified”. Run it again later, or install Tesseract. Add <code>--strict</code> if unread screens should fail the check.</li>
+      <li>No system banners over your screenshots. On iOS, shotfleet tells each simulator right after boot that the “Ready for Apple Intelligence” banner was already shown. On Android it turns off pop-up notification banners during the run. I couldn’t make that iOS banner show up in a test yet, so I can’t prove this part works. As a backup, <code>check</code> now flags the banner at the top of a screenshot when it reads the pixels (Android, or screenshots you bring yourself).</li>
+    </ul>
+
+    <h3>Clearer results</h3>
+    <ul>
+      <li><code>check</code> picks the right store by itself, from fastlane’s folder layout, your app build or the screenshot sizes. A plain folder of Android screenshots no longer gets judged by App Store sizes. Without <code>--app</code>, it also finds your app build in your project and tells you which one it used.</li>
+      <li>The HTML report works better with screen readers. Every screenshot has alt text with its language, screen and verdict, and problems are marked in words, not only with a red border.</li>
+      <li>The memory warning now says how many devices your run really uses. Before, it could say 4 when shotfleet had already cut the run to 2.</li>
+    </ul>
+
+    <h2 id="v0-1-4">0.1.4, 2026-10-06</h2>
+    <ul>
+      <li>For AI tools: <code>shotfleet skill install</code> now puts the three shotfleet skills where Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot look for them.</li>
+      <li>The skills are also in a public repo, <a href="https://github.com/noloman/shotfleet-skills">noloman/shotfleet-skills</a>. In Claude Code you add them as a plugin, and the plugin also starts the shotfleet MCP server.</li>
+      <li>The MCP server gives short answers: the counts, the first 100 problems and the path to the full report. Before, a big report could be 67,000 characters. Long runs send progress, and <code>run</code> skips your config’s hooks unless you ask for them.</li>
+      <li>iOS: a simulator that stops answering now costs 60 seconds instead of 300, and the next run replaces it with a fresh one. Only shotfleet’s own simulators are ever deleted.</li>
+      <li>When no simulator answers, the message gives you the exact command to shut down shotfleet’s own simulators. It no longer tells you to restart your Mac.</li>
+      <li>Text recognition copes better with a busy Mac. It tries again when the macOS text reader quits without an answer, and it waits when macOS starts preparing the reader in the middle of a check.</li>
+      <li>All nine demo clips are on <a href="/demo">See it work</a>: from <code>doctor</code> and <code>init</code> to catching the wrong language, store rules, export and CI.</li>
+    </ul>
+
+    <h2 id="v0-1-3">0.1.3, 2026-10-06</h2>
+    <ul>
+      <li>On Android with Maestro 2.7.0 or newer, shotfleet reads each screenshot’s text straight from the app instead of from the pixels, so it’s exact in every script.</li>
+      <li>The first time macOS prepares its text reader, <code>check</code> waits for it, up to 6 minutes, instead of switching to the slower Tesseract reader after 90 seconds. If macOS still doesn’t answer, it tells you what to do.</li>
+      <li><code>run</code> warns you when your Mac is short of memory or already swapping hard. <code>capacity = "off"</code> in the config turns the warning off.</li>
+      <li>Every release now stays at its own download address, like <code>https://shotfleet.com/download/0.1.3/</code>, and those files never change.</li>
+      <li>A new page, <a href="/demo">See it work</a>, with the first clips and my dated list of the real runs behind what this site says.</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+  </div>
+</footer>
+<script src="/ga.js" defer></script>
+</body>
+</html>

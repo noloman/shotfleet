@@ -97,7 +97,7 @@ class DocsPage(unittest.TestCase):
             text = (PUB / name).read_text()
             self.assertNotIn(EM_DASH, text, name)
         for phrase in BANNED: self.assertNotIn(phrase, DOCS.lower())
-        self.assertNotIn("<!--", DOCS)
+        self.assertNotIn("<!--", re.sub(r"<!-- DOCKER-PENDING.*?DOCKER-PENDING -->", "", DOCS, flags=re.S))  # only the parked Linux image text (test_site DockerPending)
 
     def test_it_is_in_the_sitemap_and_in_llms_txt_once(self):
         self.assertIn("<loc>https://shotfleet.com/docs</loc>", (PUB / "sitemap.xml").read_text())

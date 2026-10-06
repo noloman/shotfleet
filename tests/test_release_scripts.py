@@ -139,6 +139,17 @@ class DryRun(Fixture):
         subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "y"], check=True)
         self.assertIn("docs page '9.9.8'", self.publish("--dry-run").stdout)
 
+    def test_refuses_a_whats_new_page_whose_release_date_is_still_the_placeholder(self):
+        page = self.tree / "site/public/whats-new.html"
+        page.write_text("<h2 id=\"v9-9-9\">9.9.9, <!-- RELEASE_DATE --></h2>\n")
+        subprocess.run(["/usr/bin/git", "-C", str(self.tree), "add", "-A"], check=True)
+        subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "y"], check=True)
+        r = self.publish("--dry-run")
+        self.assertEqual(r.returncode, 1); self.assertIn("still has <!-- RELEASE_DATE -->", r.stdout)
+        page.write_text("<h2 id=\"v9-9-9\">9.9.9, 2026-01-01</h2>\n")
+        subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "z"], check=True)
+        self.assertEqual(self.publish("--dry-run").returncode, 0)
+
     def test_refuses_a_dirty_tree_and_resume_md(self):
         (self.tree / "shotfleet.py").write_text('VERSION = "9.9.9"\n# dirty\n')
         (self.tree / "RESUME.md").write_text("x")

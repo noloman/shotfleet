@@ -81,7 +81,7 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="#run">A real run</a><a href="#apps">My apps</a><a href="#price">Pricing</a><a href="/demo">See it work</a></span>
+    <span class="links"><a href="#run">A real run</a><a href="#apps">My apps</a><a href="#price">Pricing</a><a href="/demo">See it work</a><a href="/whats-new">What’s new</a></span>
     <a class="btn sm" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a>
   </nav>
 </header>
@@ -137,6 +137,18 @@
       <div class="ship more"><p>+11</p><span>more languages in the same run</span></div>
   </div>
   <div class="wrap"><p class="small fleet-note reveal">That’s seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. I didn’t add any code to the app for shotfleet. The one fix I made in it came from what the run found (further down). It all happens on your Mac, and your app and screenshots are never uploaded. For Flutter and React Native, I’ve run it on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps. Apple silicon Macs only.</p></div>
+
+  <section class="wrap section" id="new" aria-labelledby="new-h">
+    <div class="notfor reveal">
+      <h2 id="new-h">New in 0.1.5</h2>
+      <ul>
+        <li><code>check</code> works on your fastlane snapshot and screengrab screenshots, no Maestro needed.</li>
+        <li>It never needs a restart when macOS text recognition is busy. Screens it couldn’t read are marked “not verified”.</li>
+        <li><code>brew install noloman/tap/shotfleet</code> installs the same signed build.</li>
+      </ul>
+      <p class="small"><a href="/whats-new">Everything that’s new</a></p>
+    </div>
+  </section>
 
   <section class="wrap section numbers" aria-label="Numbers from real runs">
     <dl class="stats">
@@ -304,6 +316,16 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
+  <!-- SHOWCASE-PENDING: AnywhereRoles real-app showcase. Not public text yet: fill it in only once the run is recorded and every sentence
+       has a claims row in tests/claims.json, then delete these comment markers.
+  <section class="wrap section" id="showcase" aria-labelledby="showcase-h">
+    <div class="reveal">
+      <h2 id="showcase-h">TODO heading</h2>
+      <p class="muted lede-small">TODO: what the run was (date, platforms, languages, devices) and what check found.</p>
+    </div>
+  </section>
+  SHOWCASE-PENDING -->
+
   <section class="wrap section" aria-labelledby="not-h">
     <div class="notfor reveal">
       <h2 id="not-h">Not for you if…</h2>
@@ -351,7 +373,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
 <footer>
   <div class="wrap">
     <span>shotfleet by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span class="foot-links"><a href="/docs">Docs</a> <a href="/alternatives">Alternatives</a> <a href="/terms">Licence and refunds</a> <a href="/privacy">Privacy</a> <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span class="foot-links"><a href="/docs">Docs</a> <a href="/whats-new">What’s new</a> <a href="/alternatives">Alternatives</a> <a href="/terms">Licence and refunds</a> <a href="/privacy">Privacy</a> <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 

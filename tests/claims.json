@@ -3078,5 +3078,341 @@
   "proof": "2026-10-06, arm64 (twice: build1 and the final build2 image) and amd64 (emulated): clean --app exit 0 'checked 72 screenshots in 18 languages: 0 problem(s)'; planted --app exit 1, 3 problems: 'de/01_train.png: shows en strings (20 lines) more than de (6)', 'identical image in 2 languages: de/01_train.png, en/01_train.png', 'ja: missing 02_log.png' (logs linux-*-*-app.log, summary.txt). The Mac's verdict: the 0.1.2 gate's Vision run on the same set gave 0 problems (shotfleet-rc-build/0.1.2/home-d-source-apk/log); the roadmap's Linux-mode run gave the same 3 lines. Data: CrossfitTracker's 0.1.2-gate Android capture (18 languages x 4 screens, 1080x1920) copied as <locale>/ folders; planted = en/01_train.png over de/01_train.png and ja/02_log.png deleted; app = the 66 MiB CrossfitTracker APK (copy of shotfleet-rc-build/0.1.4/mcp-test/app.apk). Script: shotfleet-rc-build/docker-check/run-tests.sh. ",
   "assertion": "",
   "fix": ""
+ },
+ {
+  "id": "C190",
+  "claim": "What's new 0.1.5 and the home strip: check works on fastlane snapshot and screengrab screenshots without Maestro, ignores screengrab's timestamp, and the docs have a fastlane lane that stops before the upload on a problem",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "<code>check</code> now works on those screenshots, no Maestro needed",
+   "so it no longer says every language is missing screens",
+   "a ready-made fastlane lane that stops before the upload",
+   "works on your fastlane snapshot and screengrab screenshots, no Maestro needed"
+  ],
+  "status": "proven",
+  "proof": "Same proof as C175 and C177: CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_shot_key_strips_only_screengrabs_13_digit_timestamp, FastlaneAndRenders.test_the_fastlane_lane_checks_the_folders_snapshot_and_screengrab_write_and_fails_on_problems. check never calls Maestro (C175). CHANGELOG Unreleased (0.1.5).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C191",
+  "claim": "What's new 0.1.5: Paparazzi, Roborazzi or Compose preview renders are checked after copying each language into its own folder with the docs' loop; not tried on a real Paparazzi project",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "Paparazzi, Roborazzi or Compose preview renders: copy each language into its own folder",
+   "I haven’t tried it on a real Paparazzi project yet."
+  ],
+  "status": "partial",
+  "proof": "Same proof as C178: FastlaneAndRenders.test_the_render_copy_loop_makes_language_folders_with_the_same_names_that_check_reads, FastlaneAndRenders.test_a_flat_folder_of_renders_takes_one_language_with_locale. Partial for the same reason as C178 (no real Paparazzi or Roborazzi output tried), and the page says so.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C192",
+  "claim": "What's new 0.1.5 and the home strip: brew install noloman/tap/shotfleet installs the same signed build; Homebrew doesn't install Maestro or Java, doctor --fix does; doctor tells a Homebrew copy to run brew upgrade",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "<code>brew install noloman/tap/shotfleet</code> installs the same signed build",
+   "<code>doctor</code> tells you to run <code>brew upgrade</code>",
+   "<code>brew install noloman/tap/shotfleet</code> installs the same signed build"
+  ],
+  "status": "evidence",
+  "proof": "Install: same evidence as C181 (2026-10-06, the cask installed the notarized 0.1.4 build, codesign requirement passed, no depends_on for Maestro or Java). Upgrade line: G1Doctor.test_the_update_line_names_brew_for_a_homebrew_copy. At the 0.1.5 release tools/bump-homebrew.sh points the cask at the 0.1.5 tarball (packaging/README.md).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C193",
+  "claim": "What's new 0.1.5 and the home strip: no restart when macOS text recognition is busy; check waits within one 8-minute budget, then finishes, still checks sizes and missing screens, marks unread screens 'not verified'; --strict makes them fail",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "You never need to restart your Mac when macOS text recognition is busy.",
+   "waits for it up to 8 minutes and then finishes anyway",
+   "Add <code>--strict</code> if unread screens should fail the check.",
+   "It never needs a restart when macOS text recognition is busy."
+  ],
+  "status": "proven",
+  "proof": "Budget.test_the_budget_ends_the_waiting_and_check_finishes_with_unverified_screens, Budget.test_texts_json_screens_are_still_judged, Budget.test_json_carries_unverified_and_strict_makes_it_exit_1, Budget.test_a_warm_up_that_never_answers_also_ends_in_unverified_not_exit_2, Budget.test_read_text_stops_at_the_budget, WarmUpLock.test_the_wait_for_the_lock_counts_against_the_budget (tests/test_ocr_wait.py); the messages say 'No restart needed' (AneState.test_messages_tell_what_to_do). CHANGELOG Unreleased (0.1.5).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C194",
+  "claim": "What's new 0.1.5: iOS simulators are told the Apple Intelligence banner was already shown, Android heads-up banners are off during the run, the iOS part is not proven on a device, and check flags the banner text at the top when it reads pixels",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "tells each simulator right after boot that the “Ready for Apple Intelligence” banner was already shown",
+   "On Android it turns off pop-up notification banners during the run.",
+   "so I can’t prove this part works",
+   "<code>check</code> now flags the banner at the top of a screenshot when it reads the pixels"
+  ],
+  "status": "partial",
+  "proof": "Code: G1StatusBar.test_ios_status_bar_override_on_every_simulator (the defaults write of DateOfLastAppleIntelligenceReadinessCFU after boot), G1StatusBar.test_android_demo_mode_fixes_the_clock_and_battery (heads_up_notifications_enabled 0 in DEMO_MODE), SystemBanner.test_the_banner_in_the_top_band_is_flagged_and_the_same_words_lower_down_are_not. Device test 2026-10-06 inconclusive (branch claude/no-banners-test, /Users/manu/Developer/shotfleet-rc-build/banner-test/notes.md): neither control showed a banner, iOS under load ~850 and Android's shell notification channel can't make a heads-up. Partial until a quiet-Mac rerun shows the banner on the control and not with the fix; the page says it isn't proven.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C195",
+  "claim": "What's new 0.1.5: check picks the store from fastlane's layout, the build or the sizes; Android screenshots in a plain folder are no longer judged by App Store sizes; without --app it finds the build and says which",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>check</code> picks the right store by itself, from fastlane’s folder layout, your app build or the screenshot sizes.",
+   "A plain folder of Android screenshots no longer gets judged by App Store sizes.",
+   "it also finds your app build in your project and tells you which one it used"
+  ],
+  "status": "proven",
+  "proof": "PlainFolderStore.test_android_sizes_get_play_rules_not_app_store_sizes, PlainFolderStore.test_iphone_sizes_are_still_judged_by_app_store_rules, PlainFolderStore.test_a_mix_is_judged_against_both_stores_and_says_so_once, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores; the build: same proof as C176. CHANGELOG Unreleased (0.1.5).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C196",
+  "claim": "What's new 0.1.5: the HTML report has alt text with language, screen and verdict on every screenshot, and marks problems in words, not only with a red border",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "Every screenshot has alt text with its language, screen and verdict, and problems are marked in words, not only with a red border."
+  ],
+  "status": "proven",
+  "proof": "ReportAccessibility.test_lang_alt_and_a_text_marker_for_every_problem (page language, alt per image naming the verdict, 'problem:' text in a flagged cell, 'missing' in words). The CHANGELOG's WCAG AA contrast line is left off the page: no test computes the report's contrast.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C197",
+  "claim": "What's new 0.1.5: the memory warning names the number of devices the run really uses",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "The memory warning now says how many devices your run really uses."
+  ],
+  "status": "proven",
+  "proof": "Message.test_it_names_the_devices_this_run_really_uses (tests/test_capacity_planner.py). CHANGELOG Unreleased (0.1.5).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C198",
+  "claim": "What's new 0.1.4: shotfleet skill install puts the three skills where Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot look",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>shotfleet skill install</code> now puts the three shotfleet skills where Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot look for them."
+  ],
+  "status": "proven",
+  "proof": "Same proof as C159: Commands.test_install_writes_the_claude_and_the_shared_agents_folder, Commands.test_the_install_command_exists_installs_every_skill_and_keeps_what_is_there; which agent reads which folder is from the vendors' docs (C159). CHANGELOG 0.1.4.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C199",
+  "claim": "What's new 0.1.4: the skills are in the public repo noloman/shotfleet-skills; in Claude Code they install as a plugin that also starts the MCP server",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "The skills are also in a public repo",
+   "the plugin also starts the shotfleet MCP server"
+  ],
+  "status": "evidence",
+  "proof": "Same evidence as C161 (2026-10-06, throwaway HOME: claude plugin install shotfleet@shotfleet showed 3 skills and 1 MCP server). CHANGELOG 0.1.4.",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C200",
+  "claim": "What's new 0.1.4: the MCP server answers with counts, the first 100 problems and the report path (a big report was about 67,000 characters), sends progress on long runs, and run skips the config's hooks unless asked",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "The MCP server gives short answers: the counts, the first 100 problems and the path to the full report.",
+   "Long runs send progress, and <code>run</code> skips your config’s hooks unless you ask for them."
+  ],
+  "status": "proven",
+  "proof": "Mcp.test_a_big_report_comes_back_as_a_short_summary_unless_full_is_asked, Mcp.test_a_long_run_sends_progress_with_its_last_line_until_it_answers, Mcp.test_run_skips_the_config_hooks_unless_asked. 67,000 characters: CHANGELOG 0.1.4 (a 40 x 10 report). Real client test on the signed 0.1.4 build: docs/handoff.md section 17.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C201",
+  "claim": "What's new 0.1.4: an iOS simulator that stops answering costs 60 s, not 300 s, and the next run replaces it; only shotfleet's own pool simulators are deleted",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "a simulator that stops answering now costs 60 seconds instead of 300, and the next run replaces it with a fresh one",
+   "Only shotfleet’s own simulators are ever deleted."
+  ],
+  "status": "proven",
+  "proof": "SimctlTimeout.test_every_call_has_a_timeout_and_boot_status_waits_longer (uninstall, the first call, has 60 s), SimctlTimeout.test_installs_run_at_once_so_wedged_simulators_cost_one_timeout_not_one_each, SimctlTimeout.test_a_simulator_that_stopped_answering_is_marked_and_replaced_at_the_next_run. 300 s before: CHANGELOG 0.1.4.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C202",
+  "claim": "What's new 0.1.4: when no simulator answers, the message gives the exact shutdown command for shotfleet's own simulators instead of a restart",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "the message gives you the exact command to shut down shotfleet’s own simulators"
+  ],
+  "status": "proven",
+  "proof": "SimctlTimeout.test_when_none_answers_the_message_gives_the_exact_shutdown_of_shotfleets_simulators_only. CHANGELOG 0.1.4.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C203",
+  "claim": "What's new 0.1.4: text recognition starts a helper that quit again, and waits for a compile that starts mid-check",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "It tries again when the macOS text reader quits without an answer"
+  ],
+  "status": "proven",
+  "proof": "WarmUp.test_a_helper_that_exits_without_an_answer_is_started_again, ReadText.test_a_compile_mid_check_is_waited_for, ReadText.test_an_error_while_macos_compiles_is_retried_until_it_answers. CHANGELOG 0.1.4.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C204",
+  "claim": "What's new 0.1.4: all nine demo clips are on /demo",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "All nine demo clips are on <a href=\"/demo\">See it work</a>"
+  ],
+  "status": "evidence",
+  "proof": "site/public/demo.html has 9 <video> elements outside comments (Structure.test_every_demo_video_loads_nothing_until_played_and_has_a_poster_and_english_captions checks each); captions and recordings: C140 to C142, C162 to C168. Live with the 0.1.4 deploy (docs/handoff.md section 17).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C205",
+  "claim": "What's new 0.1.3: on Android with Maestro 2.7.0 or newer the screenshot text is read from the app, exact in every script",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "On Android with Maestro 2.7.0 or newer, shotfleet reads each screenshot’s text straight from the app"
+  ],
+  "status": "proven",
+  "proof": "Same proof as C132 and C153: Markers.test_hierarchy_needs_maestro_2_7, Reading.test_flattening_drops_the_status_bar_and_keeps_every_line_exact, and the 2026-10-05 Android fixture e2e (30 of 30, evidence 'hierarchy' on 8 of 8).",
+  "layer": "fixture",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C206",
+  "claim": "What's new 0.1.3: on the first compile check waits up to 6 minutes instead of switching to Tesseract after 90 s, and says what to do if macOS still doesn't answer",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>check</code> waits for it, up to 6 minutes, instead of switching to the slower Tesseract reader after 90 seconds"
+  ],
+  "status": "proven",
+  "proof": "WarmUp.test_slow_compile_is_waited_for_while_service_works, WarmUp.test_patience_is_a_ceiling, AneState.test_messages_tell_what_to_do. 90 s and 6 minutes: CHANGELOG 0.1.3.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C207",
+  "claim": "What's new 0.1.3: run warns when the Mac is short of memory or swapping hard; capacity = \"off\" turns it off",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>run</code> warns you when your Mac is short of memory or already swapping hard.",
+   "<code>capacity = \"off\"</code> in the config turns the warning off."
+  ],
+  "status": "proven",
+  "proof": "Wiring.test_warn_is_the_default_and_off_is_silent, Message.test_it_names_the_numbers_it_saw_and_what_to_close (tests/test_capacity_planner.py); README config reference: capacity = \"warn\" / \"off\".",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C208",
+  "claim": "What's new 0.1.3: each release stays at /download/<version>/ and those files never change",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "Every release now stays at its own download address"
+  ],
+  "status": "evidence",
+  "proof": "Versioned.test_two_versions_are_staged_served_and_verified, Versioned.test_headers_make_versioned_files_immutable_and_latest_no_cache, Versioned.test_a_corrupted_archived_file_refuses_before_anything_is_deployed. Live since the 0.1.3 deploy: /download/0.1.1/ to /download/0.1.3/ verified against their recorded sha256 and served immutable (docs/handoff.md section 17).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C209",
+  "claim": "What's new 0.1.3: the See it work page with the first clips and a dated list of real runs",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "A new page, <a href=\"/demo\">See it work</a>, with the first clips and my dated list of the real runs"
+  ],
+  "status": "evidence",
+  "proof": "CHANGELOG 0.1.3 (Site: See it work page); went live with the 0.1.3 deploy (docs/handoff.md section 17); each evidence line has its own row (C143 to C153, C169, C174).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
  }
 ]

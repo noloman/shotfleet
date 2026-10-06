@@ -288,5 +288,52 @@ class PrivacyPage(unittest.TestCase):
         self.assertNotIn("I delete the list 30 days after", text)  # that was a promise nothing carried out
 
 
+class WhatsNew(unittest.TestCase):
+    """/whats-new: linked from every page, listed for crawlers, and its newest release date filled in before that release is published."""
+    PAGE = (PUB / "whats-new.html").read_text()
+    PLACEHOLDER = "<!-- RELEASE_DATE -->"
+
+    def test_every_page_links_to_it_in_the_nav_and_in_the_footer(self):
+        for p in PAGES:
+            html = re.sub(r"<!--.*?-->", "", p.read_text(), flags=re.S)
+            with self.subTest(page=p.name):
+                self.assertIn('/whats-new">', re.search(r'<span class="links">(.*?)</span>', html, flags=re.S).group(1))
+                self.assertIn('href="/whats-new"', re.search(r"<footer>(.*?)</footer>", html, flags=re.S).group(1))
+
+    def test_it_is_in_the_sitemap_and_llms_txt(self):
+        self.assertIn("<loc>https://shotfleet.com/whats-new</loc>", (PUB / "sitemap.xml").read_text())
+        self.assertEqual((PUB / "llms.txt").read_text().count("](https://shotfleet.com/whats-new)"), 1)
+
+    def test_the_newest_release_date_is_filled_in_once_the_changelog_has_it(self):
+        """The release step dates the CHANGELOG heading (## X.Y.Z (YYYY-MM-DD)) and must put the same date here; packaging/publish.sh refuses the placeholder too."""
+        newest = re.search(r'<h2 id="v[\d-]+">(\d+\.\d+\.\d+), (.*?)</h2>', self.PAGE)
+        self.assertTrue(newest, "no release heading on /whats-new")
+        version, when = newest.groups()
+        self.assertEqual(self.PAGE.count(self.PLACEHOLDER), int(when == self.PLACEHOLDER), "the placeholder belongs in the newest heading only")
+        dated = re.search(rf"^## {re.escape(version)} \((\d{{4}}-\d\d-\d\d)\)", (ROOT / "CHANGELOG.md").read_text(), flags=re.M)
+        if dated: self.assertEqual(when, dated.group(1), f"{version} is released on {dated.group(1)}: replace {self.PLACEHOLDER} on /whats-new with that date")
+        else: self.assertEqual(when, self.PLACEHOLDER, f"{version} has no dated CHANGELOG heading yet, so its date stays the placeholder")
+        for v, d in re.findall(r'<h2 id="v[\d-]+">(\d+\.\d+\.\d+), (\d{4}-\d\d-\d\d)</h2>', self.PAGE):
+            with self.subTest(version=v): self.assertRegex((ROOT / "CHANGELOG.md").read_text(), rf"(?m)^## {re.escape(v)} \(")
+
+
+class DockerPending(unittest.TestCase):
+    """The Linux check image and its GitHub Action are not published yet. Until site/DOCKER_PUBLISHED exists, every public mention waits in a
+    <!-- DOCKER-PENDING ... DOCKER-PENDING --> comment; after publishing, delete the markers and add the flag file."""
+    FILES = [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt", ".xml", ".js")]
+    PUBLISHED = (ROOT / "site/DOCKER_PUBLISHED").exists()
+
+    def test_no_uncommented_mention_while_the_image_is_unpublished(self):
+        seen = 0
+        for p in self.FILES:
+            text = p.read_text()
+            seen += text.count("ghcr.io/noloman/shotfleet-check")
+            with self.subTest(file=p.name):
+                self.assertEqual(text.count("<!-- DOCKER-PENDING"), text.count("DOCKER-PENDING -->"))
+                if self.PUBLISHED: self.assertNotIn("DOCKER-PENDING", text, "published: remove the markers")
+                else: self.assertNotIn("noloman/shotfleet-check", re.sub(r"<!--.*?-->", "", text, flags=re.S))
+        self.assertGreater(seen, 0, "no mention found at all: is this test still looking at the right files?")
+
+
 if __name__ == "__main__":
     unittest.main()
