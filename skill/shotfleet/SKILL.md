@@ -100,4 +100,4 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 [references/troubleshooting.md](references/troubleshooting.md), [references/flow-writing.md](references/flow-writing.md),
 [references/config.md](references/config.md), [references/ci.md](references/ci.md), [references/licence.md](references/licence.md).
 The tool also ships an MCP server (`shotfleet mcp`) with `check`, `run` and `doctor`; its `check` writes the report into `./shotfleet-check` in the server's working directory (never into the folder it
-checks) unless you pass its `report` argument. Its replies are a short summary with the path to `check.json`; pass `full: true` for the whole report. Over MCP, `run` skips the config's `[hooks]` unless you pass `hooks: true`.
+checks) unless you pass its `report` argument. Its replies are a short summary with the path to `check.json`; pass `full: true` for the whole report. Over MCP, no command written in the config runs unless you pass `hooks: true`: `run` skips `[hooks]` and refuses a config with a `[capture]` build, `[ios] simctl` or `[android] shell`; `check` takes no `ocr_command` (that is the CLI's `--ocr-command`).

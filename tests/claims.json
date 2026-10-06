@@ -4231,5 +4231,26 @@
   "fixed_by": "code",
   "fixed": "Was fail-open with no limit (owner decision 2026-10-05), so any well-formed key passed with Gumroad blocked. Owner decision 2026-10-06: offline only after a good check on that machine, for 30 days.",
   "test": "GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days"
+ },
+ {
+  "id": "C257",
+  "claim": "Over MCP no command written in the config runs without hooks: true: run skips [hooks] and refuses a config with a [capture] build, [ios] simctl or [android] shell commands; check takes no ocr_command (README, docs, What's new 0.1.6)",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "Over MCP, no command written in your config runs unless you pass `hooks: true`.",
+   "Over MCP, no command written in your config runs unless you pass <code>hooks: true</code> to <code>run</code>.",
+   "<code>[android] shell</code> commands unless you pass <code>hooks: true</code>, the same opt-in as for <code>[hooks]</code>.",
+   "<code>check</code> over MCP no longer takes <code>ocr_command</code>"
+  ],
+  "status": "proven",
+  "proof": "McpRunRunsNoConfigCommandUnlessAsked.test_a_capture_build_does_not_run_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_simctl_and_shell_setup_commands_are_refused_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_the_last_guard_stops_setup_commands_and_the_build_even_past_mcp_call, McpCheckRunsNoProgram.test_ocr_command_is_refused_and_never_runs (security review S1/S2, 2026-10-07: shotfleet-rc-build/code-review-2026-10-07/security.md). CHANGELOG 0.1.6.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the pages.",
+  "fix": ""
  }
 ]

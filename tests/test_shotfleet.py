@@ -1308,7 +1308,8 @@ class Mcp(unittest.TestCase):
 
     def test_tool_annotations_say_what_each_tool_does(self):
         tools = {t["name"]: t for t in sf.MCP_TOOLS}
-        for name in ("check", "doctor"): self.assertIs(tools[name]["annotations"]["readOnlyHint"], True)
+        self.assertIs(tools["doctor"]["annotations"]["readOnlyHint"], True)
+        self.assertIs(tools["check"]["annotations"]["readOnlyHint"], False)  # it writes (and replaces) check.json and index.html
         run = tools["run"]["annotations"]
         self.assertEqual((run["readOnlyHint"], run["destructiveHint"], run["idempotentHint"]), (False, True, False))
         self.assertIn("hour", tools["run"]["description"])
@@ -2436,7 +2437,7 @@ class Review20261003(unittest.TestCase):
     def test_bad_mcp_call_returns_an_error_and_clears_the_last_report(self):
         sf.LAST_REPORT = Path("/stale/check.json")
         text, err = sf.mcp_call("check", {})
-        self.assertTrue(err); self.assertIn("KeyError", text); self.assertIsNone(sf.LAST_REPORT)
+        self.assertTrue(err); self.assertIn("folder should be a path", text); self.assertIsNone(sf.LAST_REPORT)
 
     def test_ocr_command_errors_and_tesseract_listing(self):
         with self.assertRaisesRegex(sf.Fail, r"unknown placeholder.*\{tesseract_with_english\}"):

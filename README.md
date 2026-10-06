@@ -242,12 +242,16 @@ plain text in `~/.claude.json`.
 
 ### What the MCP tools do
 
-- `check` and `doctor` only look. `check` never changes a screenshot; it writes its report to `./shotfleet-check`, or
-  to the folder you pass as `report`.
+- `doctor` only looks. `check` never changes a screenshot; it writes its report (`check.json` and `index.html`, replacing
+  those two files if they are there) to `./shotfleet-check`, or to the folder you pass as `report`. Over MCP `check` takes no
+  `ocr_command`: a program to run is for `--ocr-command` in your own terminal (or `SHOTFLEET_OCR` where the server starts).
 - `run` boots simulators or emulators and replaces the screenshots in the config's output folder. On a big app that can
   take an hour or more, so if your client asks for progress, the server sends it a line every 30 seconds.
-- Over MCP, `run` skips the `[hooks]` commands in your config unless you pass `hooks: true`. A config in a repo you just
-  cloned can hold any shell command, and here you wouldn't see it the way you see a command in your terminal.
+- Over MCP, no command written in your config runs unless you pass `hooks: true`. Without it, `run` skips the `[hooks]`
+  commands and refuses a config that has a `[capture]` build, `[ios] simctl` or `[android] shell` commands, and says which.
+  A config in a repo you just cloned can hold any shell command, and here you wouldn't see it the way you see a command in
+  your terminal. `run` still installs and runs the config's app (and with `[capture]`, its test bundle) on the simulators,
+  so only point it at a project you trust.
 - I keep the answers short: counts, the first 100 problems and notes, and the path to the full `check.json`. Pass
   `full: true` to get the whole report. For 40 languages with 10 screens each, the whole report is about 67,000
   characters, and Claude Code moves anything over 50,000 to a file instead of showing it.
