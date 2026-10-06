@@ -3,7 +3,7 @@
 # ~0.15 s; a one-file build unpacks itself on every launch, ~1.2 s, measured).
 #   packaging/build.sh                      -> dist/shotfleet/ (arm64), dist/shotfleet-<version>-macos-arm64.tar.gz
 # Signing and notarization run when these are set (Manu's Apple Developer account):
-#   DEVELOPER_ID="Developer ID Application: Name (TEAMID)"   NOTARY_PROFILE=<xcrun notarytool store-credentials name>
+#   DEVELOPER_ID="Developer ID Application: Name (TEAMID)"   NOTARY_PROFILE=ShotfleetNotary
 # Which macOS the build runs on (research/limits-platform-reach-2026-10-05.md): the Swift OCR helper targets macOS ${MACOS_MIN:-13.0}
 # (Vision's newer text models start there). The Python is the recorded one, python-build-standalone ${PINNED_PYTHON:-3.14.2} from uv
 # (`uv python install 3.14.2`), built for macOS 11, so the program runs on macOS 13 and newer; a Homebrew Python is built for the macOS it
@@ -14,6 +14,13 @@
 # The last lines say which macOS the build needs.
 set -eu
 cd "$(dirname "$0")/.."
+if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then packaging/notary-check.sh; fi  # minutes before the submit would find out
+notary_failed() {  # $1: the notarytool log; name the submission id only when Apple gave one
+  ID=$(sed -n 's/^ *id: //p' "$1" | head -1)
+  if [ -n "$ID" ]; then echo "notarization failed: xcrun notarytool log $ID --keychain-profile $NOTARY_PROFILE" >&2
+  else echo "notarization failed before Apple gave a submission id (notarytool's message is above; check the profile: packaging/notary-check.sh)" >&2; fi
+  exit 1
+}
 PINNED_PYTHON=${PINNED_PYTHON:-3.14.2}; MINOS_MAX=${PYTHON_MINOS_MAX:-11}
 PYTHON=${PYTHON:-$(uv python find "$PINNED_PYTHON" --managed-python 2>/dev/null || true)}
 [ -n "$PYTHON" ] && [ -x "$PYTHON" ] || { echo "build: no standalone Python $PINNED_PYTHON (run: uv python install $PINNED_PYTHON, or set PYTHON=<interpreter>)" >&2; exit 1; }
@@ -53,9 +60,10 @@ fi
 tar -C dist -czf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz" shotfleet
 if [ -n "${DEVELOPER_ID:-}" ] && [ -n "${NOTARY_PROFILE:-}" ]; then
   (cd dist && ditto -c -k --keepParent shotfleet "shotfleet-$VERSION-macos-$ARCH.zip")
-  xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
-    | tee build/notary.log
-  grep -q "status: Accepted" build/notary.log || { echo "notarization failed: xcrun notarytool log <id> --keychain-profile $NOTARY_PROFILE" >&2; exit 1; }
+  packaging/notary-check.sh  # again: the build took minutes and the screen may have locked since
+  (set -o pipefail; xcrun notarytool submit "dist/shotfleet-$VERSION-macos-$ARCH.zip" --keychain-profile "$NOTARY_PROFILE" --wait \
+    | tee build/notary.log) || notary_failed build/notary.log  # pipefail only here: tee must not hide notarytool's exit status
+  grep -q "status: Accepted" build/notary.log || notary_failed build/notary.log
   # Don't trust the verdict alone: unpack the tarball we will ship, mark it as downloaded (quarantine) and ask Gatekeeper.
   CHECK=$(mktemp -d); tar -C "$CHECK" -xzf "dist/shotfleet-$VERSION-macos-$ARCH.tar.gz"
   xattr -w com.apple.quarantine "0081;00000000;Safari;" "$CHECK/shotfleet/shotfleet"

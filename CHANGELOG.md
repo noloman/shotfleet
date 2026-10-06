@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Release scripts: a locked screen no longer looks like a lost notarization profile:** shotfleet now uses its own notarytool profile, `ShotfleetNotary`. macOS locks that profile about 5 minutes after the screen locks, and notarytool then says the profile is missing. The check now says to unlock the Mac and run again, and runs right before each upload to Apple. `packaging/release.sh` keeps the Mac awake while it builds and notarizes.
 - **Site: all nine demo clips on /demo:** doctor, init, a run on iPhone, a run on Android, catching the wrong language, checking screenshots you already have, store rules, export to fastlane, and CI. Real recordings on the fixture apps, with subtitles; sped-up parts are labelled.
 - **Text recognition retries a helper that quit:** on a very busy Mac the macOS text reader sometimes quits without an answer while it is still getting ready. `check` used to stop right there and blame the compile; now it tries again every 10 seconds within the same time limit.
 
