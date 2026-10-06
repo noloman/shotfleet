@@ -442,6 +442,7 @@ jobs:
 
   <h2 id="agents">With AI agents</h2>
   <p><code>shotfleet mcp</code> is an MCP server with <code>check</code>, <code>run</code> and <code>doctor</code> tools. Add it to Claude Code with <code>claude mcp add shotfleet -- shotfleet mcp</code>, or to any MCP client as the command <code>shotfleet mcp</code>.</p>
+  <p>Over MCP, no command written in your config runs unless you pass <code>hooks: true</code> to <code>run</code>. Without it, <code>run</code> skips the <code>[hooks]</code> and refuses a config that has a <code>[capture]</code> build, <code>[ios] simctl</code> or <code>[android] shell</code> commands. <code>check</code> takes no <code>ocr_command</code> over MCP; use <code>--ocr-command</code> in your terminal. A config from a repo you just cloned can hold any shell command, so read it first.</p>
   <p>There are also three agent skills that ship with the program: <code>shotfleet</code> (install, set up, run, check and troubleshoot), <code>shotfleet-ci</code> (add <code>shotfleet check</code> to CI) and <code>shotfleet-review</code> (turn a check report into a fix list). Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot all load skills from a folder. One command puts them in the right folders:</p>
 <pre><code>shotfleet skill install
 shotfleet skill install --project

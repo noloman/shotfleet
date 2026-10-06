@@ -17,7 +17,7 @@ if sys.version_info < (3, 11):
           "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
 import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket, struct, zlib
-import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import plistlib, platform as host_platform, ssl, stat, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -29,6 +29,31 @@ VERSION = "0.1.6"
 
 class Fail(Exception):
     """A user-facing error: printed as one line, no traceback."""
+
+# A locale becomes a folder name (out/raw/<locale>, fastlane listings) and an argument on the device: letters, digits, - and _ only.
+# Translation files and configs can come from someone else's repo, so "../x" or "de;rm" must never get that far.
+SAFE_LOCALE = re.compile(r"[A-Za-z0-9]{1,16}(?:[-_][A-Za-z0-9]{1,16}){0,5}")
+
+def bad_locale_text(lp, where):
+    return f"{lp!r} in {where} is not a language code (letters, digits, - and _ only, e.g. de, pt-BR, zh-Hans)"
+
+def check_locales(locales, where):
+    """Refuse a locale that could not safely be a folder name: the command line, the MCP `locales` argument, the config."""
+    for lp in locales:
+        if not isinstance(lp, str) or not SAFE_LOCALE.fullmatch(lp): raise Fail(bad_locale_text(lp, where))
+    return locales
+
+def safe_strings(strings, where):
+    """Drop the languages a translation file or a build names with something that isn't a language code, with a note."""
+    for lp in [lp for lp in strings if not SAFE_LOCALE.fullmatch(str(lp))]:
+        print(f"note: skipped {bad_locale_text(lp, where)}", file=sys.stderr)
+    return {lp: t for lp, t in strings.items() if SAFE_LOCALE.fullmatch(str(lp))}
+
+def inside(root, *parts):
+    """root/parts, refused when it resolves outside root: the last guard before anything under the output folder is deleted or written."""
+    p = Path(root, *parts)
+    if not p.resolve().is_relative_to(Path(root).resolve()): raise Fail(f"refusing to touch {p}: it is outside {root}")
+    return p
 
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
@@ -154,6 +179,12 @@ def check_section(cfg, platform, name):
     for key in ("locales", "device_types", "devices", "strings"):
         if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
             raise Fail(f"[{platform}] {key} in {name} should be a list of strings, e.g. {key} = [\"de\", \"ja\"]")
+    check_locales(cfg.get("locales", []) + ([cfg["base_locale"]] if "base_locale" in cfg else []), f"[{platform}] in {name}")
+    if "package" in cfg and not re.fullmatch(r"[A-Za-z0-9_.]+", cfg["package"]):  # it goes into `adb shell` commands: no shell characters
+        raise Fail(f"[{platform}] package in {name} should be an Android application id like com.example.app, not {cfg['package']!r}")
+    for key in ("avd", "avd_tablet", "avd_tablet-7"):  # a folder name under ~/.android/avd and an emulator argument
+        if key in cfg and (not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]*", cfg[key]) or ".." in cfg[key]):
+            raise Fail(f"[{platform}] {key} in {name} should be an emulator name (letters, digits, . _ -), not {cfg[key]!r}")
     if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
         raise Fail(f"[{platform}] locales in {name} is empty. Remove the line to capture every language the app ships, or list some: locales = [\"de\", \"ja\"]")
     for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
@@ -392,7 +423,7 @@ def load_strings(res_dir):
         for k in keys - base.keys():
             if "#" in k: continue  # plural forms (few, many) English doesn't have
             base[k] = k.split(":", 1)[1] if "/" in k.split(":", 1)[0] and ":" in k else k
-    return out
+    return safe_strings(out, res_dir.name)
 
 def stringsdict_forms(d):
     """{key#form: text} for every plural/device/width form in a .stringsdict, e.g. items#one = "1 item".
@@ -751,7 +782,7 @@ def load_strings_files(patterns, base="en"):
             for k, v in t.items():  # common.json and settings.json may both define "title": keep both, the later one namespaced
                 if k in have and have[k] != v: have[f"{Path(f).stem}:{k}"] = v
                 else: have[k] = v
-    return {lp: t for lp, t in out.items() if t}
+    return safe_strings({lp: t for lp, t in out.items() if t}, "the translation files")
 
 def unescape_android(v):
     """Android resource escapes: \\" \\' \\n \\t \\@ \\? \\uXXXX."""
@@ -791,11 +822,11 @@ def load_strings_apk(apk, base="en"):
                 out.setdefault(loc, {})[name] = unescape_android(m.group(2))
         elif not line.startswith("      "):
             name = None
-    if not zipfile.is_zipfile(apk): return out
+    if not zipfile.is_zipfile(apk): return safe_strings(out, Path(apk).name)
     with zipfile.ZipFile(apk) as z:  # Compose Multiplatform keeps its strings in assets, not resources.arsc
         for n in z.namelist():
             if n.endswith(".cvr"): add_cvr(out, n, z.read(n).decode("utf-8", "replace"), base)
-    return out
+    return safe_strings(out, Path(apk).name)
 
 def partly_translated(strings, base="en", min_coverage=0.5):
     """[(locale, percent)] for languages the app has some of its own strings in, but too few to count as shipped:
@@ -1259,6 +1290,7 @@ def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
     or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
     A failing command is a Fail (exit 2) that prints it."""
+    if commands: refuse_config_commands(f"[{'ios' if kind == 'simctl' else 'android'}] {kind}")
     for cmd in commands:
         try:
             if kind == "simctl":
@@ -1736,6 +1768,7 @@ def clear_single_run(out):
     shutil.rmtree(out / "raw", ignore_errors=True)
 
 def cmd_run(config_path, only=None, parallel=None, platform=None):
+    if only is not None: check_locales(only, "the languages asked for")
     plats = [platform] if platform else platforms_in(config_path)
     codes = []
     for p in plats:
@@ -1745,6 +1778,21 @@ def cmd_run(config_path, only=None, parallel=None, platform=None):
 
 NO_HOOKS = False
 NO_BUILD = False  # `run --no-build`: skip the [capture] build
+CONFIG_COMMANDS = True  # False over MCP without hooks: true: the [capture] build and the [ios] simctl / [android] shell commands don't run
+
+def config_commands(config_path):
+    """Every command a config makes `run` execute, by where it is written: [hooks] (shell), [capture] build (shell),
+    [ios] simctl (xcrun simctl on the Mac) and [android] shell (adb shell on the emulator)."""
+    if not Path(config_path).is_file(): return []  # cmd_run says so
+    _, doc = read_doc(config_path)
+    found = [f"[hooks] {k}" for k in HOOK_EVENTS if doc.get("hooks", {}).get(k)]
+    if doc.get("capture", {}).get("build"): found.append("[capture] build")
+    return found + [f"[{p}] {k}" for p, k in (("ios", "simctl"), ("android", "shell")) if doc.get(p, {}).get(k)]
+
+def refuse_config_commands(what):
+    """The last guard: over MCP without hooks: true, no command from the config runs, even if mcp_call's check missed one."""
+    if not CONFIG_COMMANDS:
+        raise Fail(f"the config's {what} commands only run over MCP when you pass hooks: true")
 
 def run_hook(hooks, event, config, env_extra):
     """Run the user's commands for one event (strings run by /bin/sh in the config's folder, output to stderr).
@@ -1821,6 +1869,18 @@ def shutdown_sims():
         except subprocess.TimeoutExpired: print(f"note: simulator {udid} did not shut down within 60 s; run `xcrun simctl shutdown {udid}`", file=sys.stderr)
     OUR_SIMS.clear()
 
+def open_lock(path):
+    """A lock file in /tmp, where any user can make files: never opened through a symlink (O_NOFOLLOW), made 0o600, and only used
+    when it is a regular file of this user. Otherwise OSError, and the caller goes on without the lock (as before for any lock error).
+    The name stays the same for every run of this user, so runs from other terminals and sessions still take turns."""
+    fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    st = os.fstat(fd)
+    if not (stat.S_ISREG(st.st_mode) and st.st_uid == os.getuid()):
+        os.close(fd)
+        print(f"note: {path} is not a lock file of yours (another user's, or not a plain file), so this runs without it", file=sys.stderr)
+        raise OSError(f"{path} is not this user's lock file")
+    return os.fdopen(fd, "r+")
+
 USE_DEVICE_LOCK = True  # the tests that run a fake run set this False: they use no device, and two test suites at once must not refuse each other
 
 @contextlib.contextmanager
@@ -1833,7 +1893,7 @@ def device_lock(key):
     try:
         if not USE_DEVICE_LOCK: raise ImportError
         import fcntl
-        f = os.fdopen(os.open(f"/tmp/shotfleet-{key}.lock", os.O_CREAT | os.O_RDWR, 0o666), "r+")
+        f = open_lock(f"/tmp/shotfleet-{key}.lock")
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         who = f.read().strip() if f else ""
@@ -1889,13 +1949,14 @@ def ios_run_inner(cfg, path, only, parallel):
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
+        raw = inside(out, "raw", lp)
         if capture:
-            shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
+            shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
             report["locales"][lp] = {"untranslated_selectors": []}; continue
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
-        shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
-        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
+        shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
+        inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -1964,7 +2025,7 @@ def ios_run_inner(cfg, path, only, parallel):
     def capture_step(sim, lp, work):
         """One language on one simulator: set its language, run the team's tests with xcodebuild, collect what they saved.
         Returns the error, None when xcodebuild passed (what was saved is judged by capture_result)."""
-        dst, bundle, log = out / "raw" / lp, work / f"{lp}.xcresult", work / f"{lp}.log"
+        dst, bundle, log = inside(out, "raw", lp), inside(work, f"{lp}.xcresult"), work / f"{lp}.log"
         shutil.rmtree(dst, ignore_errors=True); dst.mkdir(parents=True)
         shutil.rmtree(bundle, ignore_errors=True)  # xcodebuild refuses a result bundle that exists
         error = None
@@ -2014,7 +2075,7 @@ def ios_run_inner(cfg, path, only, parallel):
             retry = [lp for lp, r_ in final.items() if not r_["ok"]]
             if retry:  # simulators and drivers flake; one retry of just the failures is cheap
                 print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
-                for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
+                for lp in retry: shutil.rmtree(inside(out, "raw", lp)); (out / "raw" / lp).mkdir()
                 # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
                 # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
                 try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
@@ -2102,6 +2163,7 @@ CAPTURE_BUILD_TIMEOUT_S = 3600  # a first build with a Kotlin Multiplatform fram
 
 def capture_build(cap, config, out):
     """The team's build-for-testing command, once per `run`, in the config's folder; its output goes to out/build.log."""
+    refuse_config_commands("[capture] build")
     out.mkdir(parents=True, exist_ok=True)
     print(f"building for testing (once; --no-build skips it): {cap['build']}", flush=True)
     log = out / "build.log"
@@ -2583,7 +2645,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
-        shutil.rmtree(out / "raw" / lp, ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
+        shutil.rmtree(inside(out, "raw", lp), ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])
     if not todo:
@@ -2634,7 +2696,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 fname, dev = f"{tag}_f{j}", ran_on.get(f"{tag}_f{j}")
                 if dev not in lang: continue
                 lp = lang[dev]
-                dst = out / "raw" / lp
+                dst = inside(out, "raw", lp)
                 shutil.rmtree(dst, ignore_errors=True)
                 collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
@@ -3043,7 +3105,7 @@ def ocr_warmup_lock(limit):
     so the holder is not waiting on a compile and there is nothing to pile onto); False if the holder's compile went past `limit`
     seconds or looks stuck. The OS drops an flock when its holders exit, so a lock is never stale."""
     import fcntl
-    try: f = os.fdopen(os.open(OCR_LOCK, os.O_CREAT | os.O_RDWR, 0o666), "r+")
+    try: f = open_lock(OCR_LOCK)
     except OSError: return None
     start, said, look = time.time(), False, time.time() + 10
     while True:
@@ -4668,7 +4730,7 @@ def cmd_export(out, fastlane, name_prefix=""):
     done = []
     for folder, lp in sorted(targets.items()):
         if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
-        dst = root / folder / "images" / ANDROID_DEVICES[run.get("device", "phone")]["folder"] if android else root / folder
+        dst = inside(root, folder, "images", ANDROID_DEVICES[run.get("device", "phone")]["folder"]) if android else inside(root, folder)
         dst.mkdir(parents=True, exist_ok=True)
         new = sorted((shots / lp).glob("*.png"))
         sizes = {png_size(p) for p in new}
@@ -4773,17 +4835,19 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
      "no copies across languages, none missing, and the stores' size/count/transparency rules. Works on fastlane "
      "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
-     "folders. It never changes a screenshot; it only writes its report (check.json, index.html) to the report folder "
+     "folders. It never changes a screenshot and runs no command you give it; it writes its report (check.json, index.html, "
+     "replacing those two files if they are there) to the report folder "
      "(default: ./shotfleet-check in the server's working folder, or the run's own folder for shotfleet output). Takes seconds to a few minutes "
      "(text recognition of every screenshot). Returns a short JSON summary: counts, the first problem and note lines, and "
      "the path of the full check.json. Pass full: true to get the whole report (one entry per screenshot) instead.",
-     "annotations": {"readOnlyHint": True, "openWorldHint": False},
+     "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True, "openWorldHint": False},  # it overwrites check.json and index.html
      "inputSchema": {"type": "object", "required": ["folder"], "properties": {
          "folder": {"type": "string", "description": "folder with the screenshots"},
          "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
          "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"},
          "report": {"type": "string", "description": "where to write check.json and index.html (default: ./shotfleet-check)"},
-         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}}}},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}},
+         "additionalProperties": False}},
     {"name": "doctor", "title": "Check the setup",
      "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet, and say what is missing. "
      "Changes nothing (it never installs anything over MCP). Asks shotfleet.com once for the latest version. Takes seconds.",
@@ -4793,14 +4857,19 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
      "Boots iOS simulators or Android emulators, installs the app on them and replaces the screenshots and report "
      "in the config's output folder. Takes several minutes, and can take an hour or more for many languages and screens. "
-     "Without a licence it captures 2 languages. The config's [hooks] shell commands do NOT run over MCP unless you pass "
-     "hooks: true. Returns the same short summary as check (full: true for the whole report).",
+     "Without a licence it captures 2 languages. Commands written in the config do NOT run over MCP unless you pass "
+     "hooks: true: without it the [hooks] shell commands are skipped, and a config with a [capture] build (a shell command), "
+     "[ios] simctl or [android] shell commands is refused. It always installs and runs the config's app (and, with [capture], "
+     "its test bundle) on the simulators, so only point it at a project you trust. Returns the same short summary as check "
+     "(full: true for the whole report).",
      "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
      "inputSchema": {"type": "object", "required": ["config"], "properties": {
          "config": {"type": "string", "description": "path to shotfleet.toml"},
          "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"},
          "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"},
-         "hooks": {"type": "boolean", "description": "also run the config's [hooks] shell commands (default: false)"}}}},
+         "hooks": {"type": "boolean", "description": "also run the commands written in the config: [hooks] and the [capture] build "
+                   "(shell commands on this Mac), [ios] simctl and [android] shell (default: false)"}},
+         "additionalProperties": False}},
 ]
 
 MCP_LINES, MCP_LINE_CHARS = 100, 300  # a summary keeps this many problem and note lines, each cut to this length
@@ -4819,12 +4888,17 @@ def mcp_summary(code):
         out["more"] = f"only the first {MCP_LINES} lines are here; the report files have all of them (or call again with full: true)"
     return out
 
+def mcp_path(args, key):
+    """An MCP path argument as an absolute path: a string, never read as an option by the programs it is handed to."""
+    if not isinstance(args.get(key), str) or not args[key].strip(): raise Fail(f"{key} should be a path")
+    return Path(args[key]).expanduser().resolve()
+
 MCP_HEARTBEAT_S = 30  # with a progressToken, a progress notification this often (Claude Code drops a stdio call silent for 30 min)
 
 def mcp_call(name, args, progress=None):
     """One tool call -> (text, is_error). Output is captured; with `progress` (a function taking a message), its last line
     is sent every MCP_HEARTBEAT_S seconds while the tool works."""
-    global LAST_REPORT, NO_HOOKS
+    global LAST_REPORT, NO_HOOKS, CONFIG_COMMANDS
     LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
     log, stop = io.StringIO(), threading.Event()
     def beat():
@@ -4836,13 +4910,27 @@ def mcp_call(name, args, progress=None):
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             if name == "doctor": code = cmd_doctor()
             elif name == "check":
-                folder = Path(args["folder"]).expanduser()
-                report = args.get("report") and Path(args["report"]).expanduser()  # default ./shotfleet-check (a run's output: its own folder)
-                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"), report)
-            elif name == "run":  # a config from a cloned repo could hold any shell command: hooks only when asked for
-                NO_HOOKS = args.get("hooks") is not True
-                try: apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
-                finally: NO_HOOKS = False
+                if "ocr_command" in args:  # it runs a program: the command line's --ocr-command (or SHOTFLEET_OCR where the server starts) only
+                    return "check takes no ocr_command over MCP: it runs a program. Use `shotfleet check --ocr-command` in a terminal", True
+                folder = mcp_path(args, "folder")
+                report = args.get("report") and mcp_path(args, "report")  # default ./shotfleet-check (a run's output: its own folder)
+                app = args.get("app") and mcp_path(args, "app")
+                strings = args.get("strings")
+                if isinstance(strings, str): strings = [strings]  # one glob, as clients have sent since 0.1.4
+                if strings is not None and not (isinstance(strings, list) and all(isinstance(g, str) for g in strings)):
+                    return "strings should be a list of translation file globs", True
+                code = check_any(folder, app and str(app), strings, None, report)
+            elif name == "run":  # a config from a cloned repo could hold any command: none of them run unless asked for
+                locales = args.get("locales")
+                if locales is not None and not (isinstance(locales, list) and locales):
+                    return "locales should be a list of language codes, e.g. [\"de\", \"ja\"]", True
+                config, opted = str(mcp_path(args, "config")), args.get("hooks") is True
+                if not opted and (cmds := [c for c in config_commands(config) if not c.startswith("[hooks]")]):
+                    return (f"{Path(config).name} has commands that run on this Mac or its devices: {', '.join(cmds)}. Over MCP they only run "
+                            "when you pass hooks: true. Read them in the config first; a config from a repo you just cloned can hold any command"), True
+                NO_HOOKS, CONFIG_COMMANDS = not opted, opted
+                try: apply_free_tier(); code = cmd_run(config, locales)
+                finally: NO_HOOKS, CONFIG_COMMANDS = False, True
             else: return f"unknown tool {name}", True
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
