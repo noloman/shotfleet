@@ -148,7 +148,7 @@ class PriceAgreement(unittest.TestCase):
                 elif rel in self.CUSTOMER and (both or alone): self.assertTrue(both)               # the posts and drafts state the whole offer at least once; their notes only refer back to it
         card = plain(INDEX_HTML)
         self.assertRegex(card, r"\$29 ?launch price, first 100 buyers Then \$49 once, per developer\.")
-        self.assertIn("Prices are before VAT where it applies", card)
+        self.assertIn("Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies", card)
 
     def test_structured_data_on_the_page_has_the_same_two_prices_and_a_free_tier(self):
         pages = [re.sub(r"<!-- SALE\n.*?    SALE -->", "", INDEX_HTML, flags=re.S)]  # the waitlist page as served ...

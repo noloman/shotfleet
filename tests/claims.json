@@ -765,34 +765,36 @@
  },
  {
   "id": "C044",
-  "claim": "Licence includes every language, both platforms, iPad and tablets and export to fastlane",
+  "claim": "The licence adds every language and export to fastlane; both platforms and the iPad and tablet sizes are in the free tier too",
   "where": [
+   "site/public/index.html",
    "site/public/index.html"
   ],
   "where_text": [
-   "Every language, both platforms, iPad and tablets, and export to fastlane"
+   "<li>Every language and export to fastlane</li>",
+   "Capture up to 2 languages with <code>run</code>, on both platforms and every device size, iPad and tablets too"
   ],
   "status": "proven",
-  "proof": "TierReachesBothPlatformRuns.test_a_licensed_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_capped_state_gives_exactly_two_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers, TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy_when_licensed (tests/test_claims_unit.py). `main(['run'])` on a frozen build goes through the real ios_run_inner and android_run with stand-ins only below them (simulator pool, emulator pool, Maestro): with a fresh licence file each platform gets all 4 shipped languages, in every iPhone, iPad, phone, tablet and 7-inch set; without one each gets the first 2 and prints the free-tier line (the cap sits inside ios_run_inner/android_run, so a stub of ios_run itself would not show it). `export` without a licence exits 2 with the activate message and with one writes the fastlane folder. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not, GumroadLicence.test_released_build_needs_a_licence_for_run. Not covered: a real purchase or a real licence server (the licence is a file the test writes); sys.frozen is patched, the released binary was not run.",
+  "proof": "TierReachesBothPlatformRuns.test_a_licensed_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_capped_state_gives_exactly_two_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers, TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy_when_licensed (tests/test_claims_unit.py). `main(['run'])` on a frozen build goes through the real ios_run_inner and android_run with stand-ins only below them (simulator pool, emulator pool, Maestro): with a fresh licence file each platform gets all 4 shipped languages, in every iPhone, iPad, phone, tablet and 7-inch set; without one each gets the first 2 and prints the free-tier line (the cap sits inside ios_run_inner/android_run, so a stub of ios_run itself would not show it). `export` without a licence exits 2 with the activate message and with one writes the fastlane folder. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not, GumroadLicence.test_released_build_needs_a_licence_for_run. Not covered: a real purchase or a real licence server (the licence is a file the test writes); sys.frozen is patched, the released binary was not run. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 6): the price card listed 'both platforms, iPad and tablets' as paid, but the cap counts languages only; the card now says the free tier has them too.",
   "layer": "unit",
   "assertion": "With LOCALE_CAP=2 and a stub runner, ios_run and android_run receive exactly 2 locales; export raises NoLicence (exit 2).",
   "fix": ""
  },
  {
   "id": "C045",
-  "claim": "Up to 3 of your Macs and your CI, unlimited apps; one licence per developer",
+  "claim": "3 activations per key for your own Macs, CI uses none, unlimited apps; one licence per developer; a Mac without the key saved uses one each time",
   "where": [
    "site/public/index.html",
    "site/public/terms.html",
    "site/public/terms.html"
   ],
   "where_text": [
-   "Up to 3 of your Apple silicon Macs and your CI, unlimited apps",
-   "One licence is for one developer. Use it on up to three of your own Macs and in your CI.",
+   "3 activations per key, for your own Apple silicon Macs. One is used each time you activate on a Mac that doesn’t have the key saved, so also after <code>deactivate</code>, a new macOS install or a new user account. Your CI uses none.",
+   "One licence is for one developer. The key has 3 activations, for your own Macs, and your CI uses none.",
    "Unlimited apps and projects, including client and commercial work."
   ],
   "status": "partial",
-  "proof": "Client: GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing (the 4th activation is refused and spends nothing), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Never run against the real Gumroad with this product (no product exists yet); the fake follows Gumroad's help article and Keysi's live measurements (a real purchase verified there 2026-09-11). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs.",
+  "proof": "Client: GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing (the 4th activation is refused and spends nothing), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does).",
   "layer": "device",
   "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key from 4 different Macs (or by clearing licence.json): the 4th is refused with 'all 3 activations' and the Gumroad Uses row still reads 3; SHOTFLEET_KEY validates and the Uses row does not move.",
   "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8)."
@@ -806,12 +808,12 @@
    "README.md"
   ],
   "where_text": [
-   "The licence is checked online once and then about weekly, and works offline for 30 days (a CI key is checked on every run).",
+   "It works offline for 30 days, and a CI key is checked on every run.",
    "re-checks at most weekly, works offline for 30 days",
    "This check fails open on purpose: if the licence server can't be reached, the run counts as licensed"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online and documented in README, docs.html, DISTRIBUTION.md and the skill.",
+  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online and documented in README, docs.html, DISTRIBUTION.md and the skill. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the separate line under the button was folded into the updates line on the price card, which now says when the key is checked (at activation, then about once a week when run or export is used: require_licence is only called by those), the 30 days offline, the CI key on every run, and that a refused key or 30 days without an answer means the free tier.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -839,19 +841,27 @@
  },
  {
   "id": "C048",
-  "claim": "Free at launch: capture 2 languages with run; no account",
+  "claim": "Free: check, doctor and init with no licence; run captures up to 2 languages on both platforms and every device size; export needs a licence; no account",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
-   "marketing/launch-posts-v2.md"
+   "marketing/launch-posts-v2.md",
+   "site/public/index.html",
+   "site/public/index.html",
+   "site/public/terms.html",
+   "site/public/llms.txt"
   ],
   "where_text": [
    "Capture up to 2 languages with <code>run</code>",
    "<li>No account</li>",
-   "Free tier: capture 2 languages and check any screenshots."
+   "Free tier: capture 2 languages and check any screenshots.",
+   "<h3>Free</h3>",
+   "<li><code>export</code> to fastlane needs a licence</li>",
+   "<code>doctor</code> and <code>init</code> are free too, and the 2 free languages work on both platforms and every device size.",
+   "`check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence."
   ],
   "status": "proven",
-  "proof": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so, FreeTierOnAFrozenBuild.test_without_a_locale_list_it_is_the_first_two_of_what_the_app_ships, FreeTierOnAFrozenBuild.test_the_mcp_run_tool_is_capped_the_same_way, FreeTierOnAFrozenBuild.test_no_licence_server_is_contacted_and_no_licence_file_is_written, FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence, FreeTierOnAFrozenBuild.test_the_cap_is_per_run_two_runs_of_two_languages_give_four, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash (tests/test_claims_unit.py). With sys.frozen patched and no licence file, `main(['run', cfg, '--locales', 'de,ja,fr'])` captures exactly de and ja on iOS and on Android, prints 'free tier: capturing 2 of 3 languages (de, ja)', and so does the MCP run tool; any call to a licence server fails the test, and no licence file is written (no account). check, init and doctor never reach require_licence. The cap is per run, not per month (two runs of two languages give four): pinned by a test, and the claim says 'capture 2 languages with run', which stays true per run. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not. Not covered: the released binary itself (cold-test-2.md #25 had the gate off in that build); sys.frozen is patched.",
+  "proof": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so, FreeTierOnAFrozenBuild.test_without_a_locale_list_it_is_the_first_two_of_what_the_app_ships, FreeTierOnAFrozenBuild.test_the_mcp_run_tool_is_capped_the_same_way, FreeTierOnAFrozenBuild.test_no_licence_server_is_contacted_and_no_licence_file_is_written, FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence, FreeTierOnAFrozenBuild.test_the_cap_is_per_run_two_runs_of_two_languages_give_four, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash (tests/test_claims_unit.py). With sys.frozen patched and no licence file, `main(['run', cfg, '--locales', 'de,ja,fr'])` captures exactly de and ja on iOS and on Android, prints 'free tier: capturing 2 of 3 languages (de, ja)', and so does the MCP run tool; any call to a licence server fails the test, and no licence file is written (no account). check, init and doctor never reach require_licence. The cap is per run, not per month (two runs of two languages give four): pinned by a test, and the claim says 'capture 2 languages with run', which stays true per run. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not. Not covered: the released binary itself (cold-test-2.md #25 had the gate off in that build); sys.frozen is patched. 2026-10-06 (research/site-claims-audit-2026-10-06.md 'Verdict on Free at launch'): the heading said 'Free at launch', the only time-limited wording anywhere; nothing in the code ends the free tier (FREE_LANGUAGES is a constant). It now reads 'Free' and lists check, doctor and init, the 2 languages on both platforms and every device size (TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers), and that export needs a licence (TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one).",
   "layer": "fixture",
   "assertion": "Frozen-style test: with no licence file and sys.frozen patched, `main(['run','x.toml','--locales','de,ja,fr'])` captures exactly de and ja and prints the 'free tier' line; MCP run does the same.",
   "fix": ""
@@ -881,10 +891,10 @@
    "site/public/terms.html"
   ],
   "where_text": [
-   "A key can be activated 3 times, and activating again on a Mac that already holds it counts nothing."
+   "A key can be activated 3 times. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again."
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried.",
+  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 13): 'a Mac that already holds it' was true only while licence.json has the key; the terms, docs and README now say when the same Mac counts again.",
   "layer": "unit",
   "assertion": "Already covered; add: a human resets a Uses row once in the real dashboard.",
   "fix": ""
@@ -898,12 +908,12 @@
    "DISTRIBUTION.md"
   ],
   "where_text": [
-   "A year of updates; after that your version keeps working while macOS and your tools allow",
+   "A year of updates. After that, your version keeps working while macOS and your tools allow, and while it can check the key with Gumroad",
    "A year of updates is included.",
    "A year of updates is part of the $49"
   ],
   "status": "partial",
-  "proof": "No mechanism enforces or even defines the year: installs are an open download (site/public/download is served without a key; install.sh), the licence key 'never expires' (LAUNCH.md:12) and the client never compares a release date with a purchase date. As a promise it holds trivially for the first year; it only matters at renewal.",
+  "proof": "No mechanism enforces or even defines the year: installs are an open download (site/public/download is served without a key; install.sh), the licence key 'never expires' (LAUNCH.md:12) and the client never compares a release date with a purchase date. As a promise it holds trivially for the first year; it only matters at renewal. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the price card now names the licence check as a condition, as the terms already did (GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot).",
   "layer": "legal",
   "assertion": "Decide the rule (updates after 12 months need a renewal key) before the first buyer's anniversary: until then there is nothing to test.",
   "fix": "",
@@ -991,20 +1001,20 @@
  },
  {
   "id": "C056",
-  "claim": "The first 100 buyers pay the founder price",
+  "claim": "Gumroad applies the $29 price by itself to the first 100 sales; no count of what is left is shown",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
-   "the first 100 buyers pay the founder price."
+   "It gives the $29 price by itself to the first 100 sales, so you see what you’ll pay before you pay. I can’t show you how many are left."
   ],
   "status": "fixed",
-  "proof": "Depends on the Gumroad product having FOUNDER29 ($20 off, limit 100 uses) set to apply automatically (research/gumroad-setup.md checklist step 5), which does not exist yet. Unverified: what the page shows once the 100 uses are spent (Gumroad documents only a validity-period end as returning to the full price), and whether a test purchase uses one.",
+  "proof": "Live since 2026-10-04 (STATUS.md 'Gumroad'): FOUNDER29, $20 off the $49 list price, limit 100 uses, applied automatically; the public product page JSON shows price_cents 4900 and the discount_code (fetched 2026-10-06, research/site-claims-audit-2026-10-06.md item 7). The 100 limit is not visible to buyers, so the page no longer says 'the first 100 buyers pay the founder price' as if anyone could follow it, and says plainly that no count is shown. Still open: what the page shows after use 100, whether the creator test purchase used one, and whether a refunded FOUNDER29 sale still counts (research/refund-process-2026-10-05.md:40, an inference from Gumroad's source).",
   "layer": "legal",
   "assertion": "Human: open the product page in a private window and read $49 crossed out and $29 in the order summary; after a test of the limit (or at 100 uses) it must read $49.",
   "fix": "",
   "fixed_by": "wording",
-  "fixed": "The page said the price 'applies automatically', which depends on a Gumroad discount code that is not set up yet and whose behaviour after 100 uses is undocumented. It now promises only the outcome: the first 100 buyers pay the founder price. How it is applied is Manu's checklist (research/gumroad-setup.md)."
+  "fixed": "The page said the price 'applies automatically', which depends on a Gumroad discount code that is not set up yet and whose behaviour after 100 uses is undocumented. It now promises only the outcome: the first 100 buyers pay the founder price. How it is applied is Manu's checklist (research/gumroad-setup.md). 2026-10-06: worded the way Gumroad applies it (by itself, to the first 100 sales), with no claim of a counter buyers can see."
  },
  {
   "id": "C057",
@@ -2703,6 +2713,42 @@
   "proof": "docs/handoff.md section 17 ('How 0.1.3 was gated: on combined evidence'): g3-013c.log 2026-10-05 23:47 to 2026-10-06 00:20, iOS part 36 PASS lines and 0 FAIL before the Android phase (iPhone, iPad); g3-013d.log 00:37 to 00:44, tools/fixture-e2e.sh --platform-only android, 'PASS: all 29 assertions passed'. The two earlier full runs on the same build: g3-013.log FAIL 57 of 65 (blank iPad tr/01_welcome, swap 15 GB, load 909) and g3-013b.log FAIL 40 of 51 (two pool iPhone simulators hung, simctl terminate over 300 s); the Android part of g3-013c failed on an emulator running outside the lock. publish-013.sh required both clean parts; published 2026-10-06 00:47 (publish.log: Cloudflare 241044b8, smoke 36/0, live install 'shotfleet 0.1.3'). docs/compat.md macOS 27 row; STATUS.md 'Release state'. Logs on the owner's Mac (shotfleet-rc-build/0.1.3/g3-013.log, g3-013b.log, g3-013c.log, g3-013d.log, publish.log).",
   "layer": "device",
   "assertion": "Two recorded runs on one build; a single full run on the next release.",
+  "fix": ""
+ },
+ {
+  "id": "C170",
+  "claim": "Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies",
+  "where": [
+   "site/public/index.html",
+   "site/public/terms.html",
+   "site/public/llms.txt",
+   "README.md"
+  ],
+  "where_text": [
+   "Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies.",
+   "Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies, so a buyer in the EU pays the price plus VAT;",
+   "Prices are before VAT or sales tax, which Gumroad adds where it applies;",
+   "before VAT or sales tax where it applies"
+  ],
+  "status": "evidence",
+  "proof": "research/gumroad-setup.md:33: Gumroad adds tax on top of the price; terms.html already said Gumroad collects 'sales tax or VAT'. A US buyer in a state with sales tax pays sales tax, not VAT (research/site-claims-audit-2026-10-06.md item 8). Not checked: a real checkout from a US state.",
+  "layer": "legal",
+  "assertion": "Human: a Gumroad checkout from an EU and a US address shows the tax added on top of $29 or $49.",
+  "fix": ""
+ },
+ {
+  "id": "C172",
+  "claim": "The price card names the licence check: at activation, then about weekly when run or export is used; offline for 30 days; a CI key every run; refused or 30 days unreachable means the free tier",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier."
+  ],
+  "status": "proven",
+  "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. A CI key that can't reach Gumroad is let through (fails open), which docs.html says.",
+  "layer": "unit",
+  "assertion": "As the tests named.",
   "fix": ""
  }
 ]

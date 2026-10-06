@@ -47,7 +47,7 @@
    "name": "Free tier",
    "price": "0",
    "priceCurrency": "USD",
-   "description": "shotfleet check is free for everyone; run is free for up to 2 languages.",
+   "description": "shotfleet check, doctor and init are free for everyone; run is free for up to 2 languages, on both platforms and every device size; export needs a licence.",
    "availability": "https://schema.org/InStock"
   },
   {
@@ -322,22 +322,22 @@ app = "<span class="y">MyApp.app</span>"</pre>
       <div class="plan main reveal">
         <h3>Licence</h3>
         <p class="amount">$29<span>launch price, first 100 buyers</span></p>
-        <p class="founder">Then <b>$49</b> once, per developer. Prices are before VAT where it applies.</p>
+        <p class="founder">Then <b>$49</b> once, per developer. Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies.</p>
         <ul>
-          <li>Every language, both platforms, iPad and tablets, and export to fastlane</li>
-          <li>Up to 3 of your Apple silicon Macs and your CI, unlimited apps</li>
-          <li>A year of updates; after that your version keeps working while macOS and your tools allow</li>
+          <li>Every language and export to fastlane</li>
+          <li>3 activations per key, for your own Apple silicon Macs. One is used each time you activate on a Mac that doesn’t have the key saved, so also after <code>deactivate</code>, a new macOS install or a new user account. Your CI uses none. Unlimited apps. If you run out, email me and I’ll reset the count.</li>
+          <li>A year of updates. After that, your version keeps working while macOS and your tools allow, and while it can check the key with Gumroad: when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier.</li>
           <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
         </ul>
     <p><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet</a></p>
-    <p class="small">Checkout is on Gumroad, and the first 100 buyers pay the founder price. Your key comes in the Gumroad receipt email. Then install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
-    <p class="small">The licence is checked online once and then about weekly, and works offline for 30 days (a CI key is checked on every run).</p>
+    <p class="small">Checkout is on Gumroad. It gives the $29 price by itself to the first 100 sales, so you see what you’ll pay before you pay. I can’t show you how many are left. Your key comes in the Gumroad receipt email. Then install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
       </div>
       <div class="plan reveal">
-        <h3>Free at launch</h3>
+        <h3>Free</h3>
         <ul>
-          <li>Check any screenshots, from fastlane or by hand</li>
-          <li>Capture up to 2 languages with <code>run</code></li>
+          <li><code>check</code>, <code>doctor</code> and <code>init</code>, with no licence. Check any screenshots, from fastlane or by hand</li>
+          <li>Capture up to 2 languages with <code>run</code>, on both platforms and every device size, iPad and tablets too</li>
+          <li><code>export</code> to fastlane needs a licence</li>
           <li>No account</li>
         </ul>
         <p class="cmd" aria-label="Example command"><span>$</span> shotfleet check fastlane/ --app MyApp.app</p>
