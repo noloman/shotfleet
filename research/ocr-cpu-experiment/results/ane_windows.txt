@@ -1,0 +1,3 @@
+idle-before 16:28:45 load 37.43 ANE cpu +10.83 s in 30 s
+during-reader 16:29:16 load 37.27 ANE cpu +0 s in 30 s
+idle-after 16:29:46 load 39.12 ANE cpu +0 s in 30 s

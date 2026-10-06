@@ -1,0 +1,18 @@
+1 thread, side 2000	iphone-69-02-fit-trust.png	load 24.13	wall 4.5 s	cpu 9.0 s	RSS 640 MB
+4 threads, side 2000	iphone-69-02-fit-trust.png	load 25.96	wall 2.4 s	cpu 4.7 s	RSS 648 MB
+10 threads, side 2000	iphone-69-02-fit-trust.png	load 25.96	wall 2.6 s	cpu 5.2 s	RSS 664 MB
+1 thread, side 1600	iphone-69-02-fit-trust.png	load 27.32	wall 2.7 s	cpu 5.4 s	RSS 499 MB
+1 thread, side 1200	iphone-69-02-fit-trust.png	load 27.32	wall 2.8 s	cpu 5.5 s	RSS 472 MB
+1 thread, v6 small (latin only)	iphone-69-02-fit-trust.png	load 28.98	wall 3.7 s	cpu 7.5 s	RSS 728 MB
+1 thread, side 2000	iphone-69-05-weekly-briefing.png	load 28.34	wall 3.3 s	cpu 6.5 s	RSS 687 MB
+4 threads, side 2000	iphone-69-05-weekly-briefing.png	load 28.34	wall 2.4 s	cpu 4.7 s	RSS 687 MB
+10 threads, side 2000	iphone-69-05-weekly-briefing.png	load 29.91	wall 2.8 s	cpu 5.7 s	RSS 683 MB
+1 thread, side 1600	iphone-69-05-weekly-briefing.png	load 29.91	wall 3.3 s	cpu 6.6 s	RSS 478 MB
+1 thread, side 1200	iphone-69-05-weekly-briefing.png	load 30.08	wall 3.1 s	cpu 6.2 s	RSS 480 MB
+1 thread, v6 small (latin only)	iphone-69-05-weekly-briefing.png	load 30.07	wall 3.2 s	cpu 6.5 s	RSS 681 MB
+1 thread, side 2000	ipad-13-03-saved-and-tracker.png	load 30.07	wall 4.5 s	cpu 9.0 s	RSS 985 MB
+4 threads, side 2000	ipad-13-03-saved-and-tracker.png	load 30.15	wall 2.8 s	cpu 5.7 s	RSS 1037 MB
+10 threads, side 2000	ipad-13-03-saved-and-tracker.png	load 29.73	wall 3.9 s	cpu 7.7 s	RSS 1038 MB
+1 thread, side 1600	ipad-13-03-saved-and-tracker.png	load 29.73	wall 3.9 s	cpu 7.8 s	RSS 705 MB
+1 thread, side 1200	ipad-13-03-saved-and-tracker.png	load 30.72	wall 3.6 s	cpu 7.3 s	RSS 522 MB
+1 thread, v6 small (latin only)	ipad-13-03-saved-and-tracker.png	load 31.30	wall 4.4 s	cpu 8.8 s	RSS 1037 MB

@@ -1,0 +1,5 @@
+355M	venv
+117M	models
+275M	freeze
+345M	fixtures
+ 16G	/Users/manu/.cache/uv
