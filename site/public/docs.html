@@ -42,6 +42,7 @@
       <li><a href="#install">Install</a></li>
       <li><a href="#quickstart">Quickstart</a></li>
       <li><a href="#check">Check screenshots you already have</a></li>
+      <li><a href="#xcuitest">Your own XCUITest tests (iOS)</a></li>
       <li><a href="#config">Config</a></li>
       <li><a href="#strings">Flutter, React Native and other frameworks</a></li>
       <li><a href="#hooks">Hooks</a></li>
@@ -64,7 +65,7 @@
     <li>Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</li>
     <li>Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set <code>device_type</code> in the config. Xcode 26.x has not been run.</li>
     <li>macOS on Apple silicon only. The installer refuses Intel Macs.</li>
-    <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it).</li>
+    <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, <code>run</code> can use <a href="#xcuitest">your own XCUITest tests</a> instead, and then needs neither.</li>
     <li>Xcode for iOS, the Android SDK for Android.</li>
     <li><code>shotfleet doctor --fix</code> downloads what <code>doctor</code> found missing (Maestro 2.11.0, a Java 21 runtime, the Android command-line tools) after showing the plan and asking once; it never uses <code>sudo</code> and does not touch Xcode.</li>
     <li>Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in <code>ANDROID_HOME</code>, <code>ANDROID_SDK_ROOT</code>, <code>~/Library/Android/sdk</code>, Homebrew's <code>android-commandlinetools</code>, or next to an <code>adb</code> on your PATH, and uses any installed arm64 <code>google_apis</code> or <code>google_apis_playstore</code> image of API 33 or newer (or the <code>system_image</code> from the config). <code>shotfleet doctor</code> prints the <code>sdkmanager</code> commands for whatever is missing. The first Android run creates its own emulator, <code>shotfleet_android</code>, from that image; your other emulators are not touched.</li>
@@ -119,7 +120,7 @@ fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --ski
   <p><strong>Fresh state:</strong> each language starts from a clean install. On iOS that is <code>clearState</code>; on Android shotfleet clears the app data itself, because <code>clearState</code> would also erase the app language.</p>
 
   <h2 id="check">Check screenshots you already have</h2>
-  <p><code>run</code> needs Maestro. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
+  <p><code>run</code> needs Maestro, or on iOS <a href="#xcuitest">your own XCUITest tests</a>. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
 <pre><code>shotfleet check fastlane/screenshots                       # snapshot: screenshots/&lt;locale&gt;/
 shotfleet check fastlane/metadata/android                  # screengrab: &lt;locale&gt;/images/phoneScreenshots/
 shotfleet check fastlane/ --app path/to/MyApp.app          # a fastlane folder with both: the build picks its half
@@ -139,6 +140,29 @@ shotfleet check shots/ --locale en --app path/to/MyApp.app # a flat folder of on
   </ul>
   <p>When <code>check</code> has no build (no <code>--app</code>, and none found where you run it), it relies on language detection, which cannot judge short screens; pass <code>--app</code> for the full check.</p>
   <p><code>export</code> also takes a plain <code>&lt;locale&gt;/*.png</code> folder of such a set (Apple Watch, Mac, Apple TV, Vision Pro) once <code>shotfleet check &lt;folder&gt; --report &lt;folder&gt;</code> has written its <code>check.json</code> there; it copies the set into <code>screenshots/&lt;locale&gt;/</code> next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.</p>
+
+  <h3 id="xcuitest">Use your existing XCUITest screenshot tests (iOS)</h3>
+  <p>Already have XCUITest tests that take your screenshots, with <code>XCTAttachment</code> or fastlane's <code>SnapshotHelper</code>? <code>run</code> can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. You don't change your test code, and you don't need Maestro or Java for this.</p>
+<pre><code>[ios]
+locales = ["de", "ja", "ar"]      # default: every language the app ships
+
+[capture]                         # instead of flow = "flow.yaml": a config has one or the other
+build = "xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' -derivedDataPath .shotfleet/build"
+xctestrun = ".shotfleet/build/Build/Products/*.xctestrun"   # has to match exactly one file after the build
+only_testing = ["MyAppUITests/ScreenshotTests"]             # optional
+screenshots = "auto"              # "attachments" (XCTAttachment), "fastlane" (SnapshotHelper) or "auto" (both)
+timeout = 900                     # seconds per language</code></pre>
+  <p><code>shotfleet init --capture</code> writes this for you, with the shared scheme that has your UI tests. Then <code>shotfleet run</code> as usual. <code>run --no-build</code> skips the build and uses the <code>.xctestrun</code> that's already there. <code>shotfleet doctor</code> sees the <code>[capture]</code> table and stops asking for Maestro for iOS.</p>
+  <p>How it works, and what your tests need:</p>
+  <ul>
+    <li>The build is your own command, so whatever your project needs (<code>ARCHS=arm64</code>, a shared scheme, <code>CODE_SIGNING_ALLOWED=NO</code>) goes in there. It runs once, in the config's folder, and its output goes to <code>out/build.log</code>.</li>
+    <li>shotfleet sets each simulator's language itself and also passes <code>-AppleLanguages</code> and <code>-AppleLocale</code> to your app. Don't count on <code>-testLanguage</code>: with a prebuilt test bundle Xcode ignores it, and the run passes in English.</li>
+    <li><code>XCTAttachment</code>: give each screenshot a name (<code>a.name = "01Home"</code>) and <code>a.lifetime = .keepAlways</code>. Without <code>.keepAlways</code> Xcode throws the screenshots away when the test passes. The name becomes the file name, <code>out/raw/de/01Home.png</code>.</li>
+    <li>fastlane <code>SnapshotHelper</code>: it writes into <code>~/Library/Caches/tools.fastlane/screenshots</code>, one folder for all simulators, and only if that folder exists. shotfleet creates it if it's missing, takes each simulator's files by the simulator's name, and moves fastlane's <code>language.txt</code>, <code>locale.txt</code> and <code>snapshot-launch_arguments.txt</code> out of the way during the run (they would force one language on every simulator). It puts them back afterwards, also when the run fails. Keep calling <code>setupSnapshot(app)</code> before <code>app.launch()</code>.</li>
+    <li>A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.</li>
+    <li><code>check</code> and <code>export</code> work on the output like on any other run. It's paid like any <code>run</code>: 2 languages without a licence, and <code>check</code> stays free.</li>
+  </ul>
+  <p>iOS only for now: on Android, <code>run</code> still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's <code>SnapshotHelper</code> test, where <code>check</code> found a real bug. The device test for the finished feature (<code>tools/fixture-byoc-e2e.sh</code>) hasn't run yet.</p>
 
   <h3 id="fastlane-lane">A fastlane lane that stops on wrong screenshots</h3>
   <p>Put this in <code>fastlane/Fastfile</code>. fastlane runs <code>sh</code> from the <code>fastlane/</code> folder, hence the <code>cd ..</code>. Any problem makes <code>check</code> exit with 1, which fails the lane, so nothing is uploaded:</p>

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **Use your existing XCUITest screenshot tests (iOS):** a `[capture]` table in the config (instead of `flow`) makes `run` build your test bundle once with your own `build` command, then run `xcodebuild test-without-building` on several simulators at once, one language each. shotfleet sets each simulator's language itself (Xcode ignores `-testLanguage` with a prebuilt bundle), and collects `XCTAttachment` screenshots from the result bundle and fastlane `SnapshotHelper` files from its cache folder (made if missing; fastlane's `language.txt` and friends are moved aside and put back). A language that saved no screenshots, or misses a screen, fails even when the test passed. Same pool, retry, hung-simulator handling, `check` and `export` as a Maestro run; paid like `run`, 2 languages free. `run --no-build` skips the build, `init --capture` writes the table, and `doctor` stops asking for Maestro for iOS when the config has one. iOS only; the device test (`tools/fixture-byoc-e2e.sh`) hasn't run yet.
 
 ## 0.1.5 (2026-10-06)
 - **`check` with Tesseract or `--ocr-command` no longer burns minutes of CPU:** matching each screen's text against the app's strings built a fresh regex for every string, every language, every screenshot, which on 220 screenshots cost 3 to 5 minutes of CPU on top of the reading itself. It now looks for the plain text first and only runs the regex when it's there. Same verdicts, a couple of hundred times faster.
