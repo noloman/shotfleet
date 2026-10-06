@@ -187,7 +187,7 @@ class Offer(unittest.TestCase):
         self.assertIn("`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`", README)
 
     def test_limits_match_the_code(self):
-        self.assertEqual(sf.MAX_MACS, 3); self.assertIn("Up to 3 of your", INDEX); self.assertIn("up to three of your own Macs", TERMS)
+        self.assertEqual(sf.MAX_MACS, 3); self.assertIn("3 activations per key", INDEX); self.assertIn("The key has 3 activations", TERMS)
         self.assertIn(f"works offline for {sf.LICENCE_OFFLINE_DAYS} days", INDEX); self.assertIn(f"up to {sf.LICENCE_OFFLINE_DAYS} days", TERMS)
         self.assertIn("about once a week", TERMS); self.assertEqual(sf.LICENCE_RECHECK_DAYS, 7)
 

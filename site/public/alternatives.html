@@ -62,7 +62,7 @@
 
     <h3 id="shotfleet">shotfleet</h3>
     <p>It takes one English Maestro flow and rewrites it for every language your app has. It uses the translations built into your app to do that. Then it runs the flow on several simulators and emulators at the same time. It checks each screenshot for the wrong language, copies, missing screens and store size rules. Last, it exports the screenshots to fastlane's folders.</p>
-    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured on my own app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android, on one Mac.</p>
+    <p>Setup is one command, a two-line config and a Maestro flow in English. Measured once on my M1 Pro, with my app, on Maestro 2.0.10: 18 languages x 4 screens, 9 minutes on iOS and 15 on Android. Your Mac and your app will give other times.</p>
 
     <h3 id="fastlane">fastlane snapshot / screengrab</h3>
     <p>This is the one most people use. You write UI-test code (XCUITest on iOS, Espresso on Android) that taps buttons and takes screenshots, and it runs once per language. You add a test target to your app, and iOS and Android need separate code. It's free, lots of people use it, and it works in CI.</p>
@@ -86,7 +86,7 @@
         <li>Your fastlane UI tests already work well, and you don't mind running them once per language.</li>
         <li>You want frames, captions, or store upload. ButterKit and AppScreens are made for that; shotfleet doesn't do it.</li>
         <li>Your app is Flutter or React Native. shotfleet reads translation files from those stacks and has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native.</li>
-        <li>You don't have an Apple silicon Mac. shotfleet runs on macOS on Apple silicon only, and needs Maestro and Java 17 or newer. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
+        <li>You don't have an Apple silicon Mac. shotfleet runs on macOS on Apple silicon only, and needs Maestro and Java 17 or newer. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</li>
       </ul>
     </div>
 

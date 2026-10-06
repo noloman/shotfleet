@@ -58,7 +58,7 @@
 
   <h2 id="requirements">Requirements</h2>
   <ul>
-    <li>Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
+    <li>Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</li>
     <li>Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set <code>device_type</code> in the config. Xcode 26.x has not been run.</li>
     <li>macOS on Apple silicon only. The installer refuses Intel Macs.</li>
     <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it).</li>
@@ -226,7 +226,7 @@ not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show</c
   <p><code>shotfleet foo</code> runs <code>shotfleet-foo</code> from your PATH (like <code>git</code> and <code>gh</code>), when <code>foo</code> is not a built-in command. <code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code> and use stable exit codes, so they script like any other tool; <code>SHOTFLEET_OCR</code> or <code>--ocr-command</code> swaps the text reader; <code>strings = "glob"</code> swaps the translation source.</p>
 
   <h2 id="licence">Licence</h2>
-  <p><code>shotfleet activate &lt;key&gt;</code> stores your key on this Mac. The key from your Gumroad receipt works on 3 Macs, and activating again on a Mac that already holds it counts nothing. <code>shotfleet deactivate</code> removes it from this Mac but does not give the activation back; email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> to move to a fourth Mac. The licence is checked online when you activate and about once a week after; if the server cannot be reached, the Mac keeps working for up to 30 days after the last good check. A refunded or disabled key is refused at its next check; <code>check</code> and the 2 free languages keep working and nothing you made is deleted. In CI, set <code>SHOTFLEET_KEY</code> (no activation is used): that check fails open, so with the licence server unreachable the run counts as licensed and a CI key has no offline limit (see <a href="#ci">In CI</a>).</p>
+  <p><code>shotfleet activate &lt;key&gt;</code> stores your key on this Mac. The key from your Gumroad receipt has 3 activations. Activating again on a Mac that still has the key saved counts nothing; after <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes it from this Mac but does not give the activation back; if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> and I'll reset the count. The licence is checked online when you activate and about once a week after; if the server cannot be reached, the Mac keeps working for up to 30 days after the last good check. A refunded or disabled key is refused at its next check; <code>check</code> and the 2 free languages keep working and nothing you made is deleted. In CI, set <code>SHOTFLEET_KEY</code> (no activation is used): that check fails open, so with the licence server unreachable the run counts as licensed and a CI key has no offline limit (see <a href="#ci">In CI</a>).</p>
   <p>The messages you may see are "that key didn't activate: &lt;reason&gt;", "the key was disabled, as Gumroad does after a full refund" and "this licence is no longer valid". Terms and refunds are on the <a href="/terms">licence and refunds</a> page.</p>
 
   <h2 id="ci">In CI</h2>
@@ -278,7 +278,7 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
     <li><strong>Typing a password on iOS in Arabic:</strong> <code>inputText</code> into a secure (password) field drops Latin letters when the app runs in Arabic (seen on the Expo app, iOS 26.4: <code>abcdef</code> typed nothing, <code>abc123</code> typed only <code>123</code>, <code>123456</code> typed all six); name and e-mail fields are fine. Use digits for a demo password.</li>
     <li>Linux: <code>check</code> and the Android readers run from source on Linux: they need Tesseract, there is no Linux installer yet, and <code>run</code> on a Linux emulator has not been tried. iOS needs a Mac.</li>
     <li>iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.</li>
-    <li>Run times depend on the Mac and on Maestro: 18 languages took 9 minutes on iOS and 15 on Android on a 4-simulator M1 Pro with Maestro 2.0.10; on Maestro 2.11.0 shotfleet retried some iOS languages because a simulator's driver started slowly.</li>
+    <li>Run times depend on the Mac and on Maestro: in one run of my app on my M1 Pro with 4 simulators and Maestro 2.0.10, 18 languages took 9 minutes on iOS and 15 on Android; on Maestro 2.11.0 shotfleet retried some iOS languages because a simulator's driver started slowly.</li>
     <li>shotfleet uploads nothing to a store: fastlane does that (see Uploading above).</li>
   </ul>
 

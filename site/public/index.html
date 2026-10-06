@@ -47,7 +47,7 @@
    "name": "Free tier",
    "price": "0",
    "priceCurrency": "USD",
-   "description": "shotfleet check is free for everyone; run is free for up to 2 languages.",
+   "description": "shotfleet check, doctor and init are free for everyone; run is free for up to 2 languages, on both platforms and every device size; export needs a licence.",
    "availability": "https://schema.org/InStock"
   },
   {
@@ -136,14 +136,14 @@
       </figure>
       <div class="ship more"><p>+11</p><span>more languages in the same run</span></div>
   </div>
-  <div class="wrap"><p class="small fleet-note reveal">That’s seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. I didn’t change anything in the app to get them. It all happens on your Mac, and your app and screenshots are never uploaded. For Flutter and React Native, I’ve run it on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps. Apple silicon Macs only.</p></div>
+  <div class="wrap"><p class="small fleet-note reveal">That’s seven of the 72 screenshots from one run on my own app, WOD Tracker: 18 languages × 4 screens on an M1 Pro. I didn’t add any code to the app for shotfleet. The one fix I made in it came from what the run found (further down). It all happens on your Mac, and your app and screenshots are never uploaded. For Flutter and React Native, I’ve run it on one real Flutter app (wger) and one real Expo app (the obytes template), not yet on other Flutter or React Native apps. Apple silicon Macs only.</p></div>
 
   <section class="wrap section numbers" aria-label="Numbers from real runs">
     <dl class="stats">
       <div class="cell reveal"><dt>18 &times; 4</dt><dd>languages times screens in one run: 72 screenshots, one English flow, one Mac</dd></div>
-      <div class="cell reveal"><dt>9 min &middot; 15 min</dt><dd>for that run on iOS and on Android</dd></div>
+      <div class="cell reveal"><dt>9 min &middot; 15 min</dt><dd>for that one run on iOS and on Android, on my M1 Pro with my app</dd></div>
       <div class="cell reveal"><dt>4 languages</dt><dd>shared one unreachable Next button on Android. English hid it</dd></div>
-      <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: translated captions over an English UI</dd></div>
+      <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: the captions were translated, but the app under them was still in English</dd></div>
     </dl>
     <p class="small muted">All measured on my own apps. The 9 and 15 minutes were measured on Maestro 2.0.10. I also wrote up <a href="/alternatives">how it compares with other tools</a>.</p>
   </section>
@@ -152,7 +152,7 @@
     <div class="split">
       <div class="copy reveal">
         <h2 id="run-h">What a run looks like.</h2>
-        <p>On my app, 18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>, on one Mac. It boots the simulators, sets the language on each one and takes the screenshots. Then it reads every image back and compares the text with your app’s own strings, so a screen that came out in the wrong language gets caught.</p>
+        <p>On my M1 Pro, with my app, one run of 18 languages × 4 screens took <b>9 minutes on iOS</b> and <b>15 on Android</b>. Your Mac and your app will give other times. It boots the simulators, sets the language on each one and takes the screenshots. Then it reads every image back and compares the text with your app’s own strings, so a screen that came out in the wrong language gets caught.</p>
         <p>When you’re happy, one command puts the passing App Store and Google Play screenshots into fastlane’s folders.</p>
       </div>
       <div class="terminal reveal" role="img" aria-label="Terminal output of a shotfleet run: 18 of 18 locales captured in 534 seconds, 72 screenshots checked, 0 problems">
@@ -227,7 +227,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
       <ul>
         <li>Without it, you write UI-test code for fastlane snapshot and screengrab, and iOS and Android each need their own. With shotfleet, you write one Maestro flow in English, and it works on both platforms.</li>
         <li>Without it, you add something to your project: a UI-test target for fastlane, or a few lines in the app for simshot, which is iOS only. With shotfleet, nothing in your app’s code changes.</li>
-        <li>Without it, every language you add is one more set of screenshots to make. With shotfleet, the same flow runs in every language. On my app, 18 languages × 4 screens took 9 minutes on iOS and 15 on Android, on one Mac.</li>
+        <li>Without it, every language you add is one more set of screenshots to make. With shotfleet, the same flow runs in every language. On my M1 Pro, with my app, one run of 18 languages × 4 screens took 9 minutes on iOS and 15 on Android.</li>
         <li>Without it, a screenshot in the wrong language can reach your store listing, and you may only find out later. With shotfleet, <code>check</code> reads every screenshot before you upload. It flags the wrong language, blank screens and sizes the stores don’t accept.</li>
         <li>On my first run, the Next button on one onboarding page was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone. The English screenshots looked fine, so I hadn’t noticed. The run got stuck on that page, and that’s how I found it.</li>
       </ul>
@@ -308,7 +308,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
     <div class="notfor reveal">
       <h2 id="not-h">Not for you if…</h2>
       <ul>
-        <li>you don’t have an Apple silicon Mac. iOS simulators need a Mac, and so does the screenshot check, and there’s no Intel build yet. Built for macOS 13 or later on Apple silicon; tested on macOS 27.</li>
+        <li>you don’t have an Apple silicon Mac. iOS simulators need a Mac, and so does the screenshot check, and there’s no Intel build yet. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</li>
         <li>you want frames, captions or store upload. <a href="/alternatives#butterkit">ButterKit</a> and <a href="/alternatives#appscreens">AppScreens</a> do that; shotfleet doesn’t.</li>
         <li>your UI tests already run in every language and you’re happy with them. <a href="/alternatives#fastlane">fastlane snapshot</a> is open source and built for that.</li>
       </ul>
@@ -317,27 +317,27 @@ app = "<span class="y">MyApp.app</span>"</pre>
 
   <section class="wrap section" id="price" aria-labelledby="price-h">
     <h2 id="price-h" class="reveal">Buy shotfleet</h2>
-    <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. Built for macOS 13 or later on Apple silicon; tested on macOS 27. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
+    <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
     <div class="plans">
       <div class="plan main reveal">
         <h3>Licence</h3>
         <p class="amount">$29<span>launch price, first 100 buyers</span></p>
-        <p class="founder">Then <b>$49</b> once, per developer. Prices are before VAT where it applies.</p>
+        <p class="founder">Then <b>$49</b> once, per developer. Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies.</p>
         <ul>
-          <li>Every language, both platforms, iPad and tablets, and export to fastlane</li>
-          <li>Up to 3 of your Apple silicon Macs and your CI, unlimited apps</li>
-          <li>A year of updates; after that your version keeps working while macOS and your tools allow</li>
+          <li>Every language and export to fastlane</li>
+          <li>3 activations per key, for your own Apple silicon Macs. One is used each time you activate on a Mac that doesn’t have the key saved, so also after <code>deactivate</code>, a new macOS install or a new user account. Your CI uses none. Unlimited apps. If you run out, email me and I’ll reset the count.</li>
+          <li>A year of updates. After that, your version keeps working while macOS and your tools allow, and while it can check the key with Gumroad: when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier.</li>
           <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
         </ul>
     <p><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet</a></p>
-    <p class="small">Checkout is on Gumroad, and the first 100 buyers pay the founder price. Your key comes in the Gumroad receipt email. Then install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
-    <p class="small">The licence is checked online once and then about weekly, and works offline for 30 days (a CI key is checked on every run).</p>
+    <p class="small">Checkout is on Gumroad. It gives the $29 price by itself to the first 100 sales, so you see what you’ll pay before you pay. I can’t show you how many are left. Your key comes in the Gumroad receipt email. Then install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
       </div>
       <div class="plan reveal">
-        <h3>Free at launch</h3>
+        <h3>Free</h3>
         <ul>
-          <li>Check any screenshots, from fastlane or by hand</li>
-          <li>Capture up to 2 languages with <code>run</code></li>
+          <li><code>check</code>, <code>doctor</code> and <code>init</code>, with no licence. Check any screenshots, from fastlane or by hand</li>
+          <li>Capture up to 2 languages with <code>run</code>, on both platforms and every device size, iPad and tablets too</li>
+          <li><code>export</code> to fastlane needs a licence</li>
           <li>No account</li>
         </ul>
         <p class="cmd" aria-label="Example command"><span>$</span> shotfleet check fastlane/ --app MyApp.app</p>

@@ -119,10 +119,12 @@
 
     <h2 id="evidence">Evidence</h2>
     <p>What I ran, when, and what came out. I only list runs that are written down. The note under each line says where to find that record in shotfleet's repository.</p>
-    <p>Built for macOS 13 or later on Apple silicon; tested on macOS 27.</p>
+    <p>Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</p>
 
     <h3>Releases</h3>
     <ul class="evidence">
+      <li><b>2026-10-06, release 0.1.4.</b> The same signed build passed 29 of 29 assertions on an Android emulator and 36 of 36 on iPhone and iPad simulators. The first iOS try ran out of memory on my Mac, so iOS passed in a second run a few hours later. <span class="small">Record: docs/handoff.md section 17, STATUS.md.</span></li>
+      <li><b>2026-10-06, release 0.1.3.</b> The same signed build passed 36 of 36 assertions on iPhone and iPad simulators and 29 of 29 on an Android emulator, in two separate runs. My Mac didn't have enough memory to get one full run with all three through. <span class="note">Record: docs/handoff.md section 17, docs/compat.md, STATUS.md</span></li>
       <li><b>2026-10-05, release 0.1.2.</b> The signed build ran the fixture app on iPhone and iPad simulators and an Android emulator and passed 65 of 65 assertions in 37 minutes. <span class="note">Record: research/0.1.2-plan.md (Outcome), docs/handoff.md section 15, docs/compat.md</span></li>
       <li><b>2026-10-05, same run.</b> In the iPad part the Mac was heavily loaded and 3 of 4 simulators stopped answering; shotfleet finished all 4 languages on the 1 simulator left, with 0 problems. <span class="note">Record: docs/handoff.md section 15, research/0.1.2-plan.md</span></li>
       <li><b>2026-10-05, release 0.1.1.</b> On GitHub's hosted Apple silicon runners with macOS 14.8.9 and 15.7.9, the installer, shotfleet --version, doctor and check all ran; no simulator or emulator was run there. <span class="note">Record: research/limits-platform-reach-2026-10-05.md, docs/compat.md</span></li>
@@ -132,8 +134,6 @@
     <ul class="evidence">
       <li><b>2026-10-01 and 2026-10-04, my app, WOD Tracker.</b> 18 languages on iOS and Android, 0 problems, on Maestro 2.0.10. Then 19 languages each on iOS, an Android phone and an Android tablet, 0 problems, on Maestro 2.11.0; 9 iOS languages needed shotfleet's retry. <span class="note">Record: PLAN.md, docs/compat.md, research/maestro-2-11.md</span></li>
       <li><b>2026-10-05, timing.</b> WOD Tracker in 19 languages on 4 simulators and 4 emulators with Maestro 2.0.10: 404 s of capture on iOS and 415 s on Android phones, 0 problems, no retries. The Mac was not idle: its load went from 86 to 497 during the iOS part. <span class="note">Record: docs/compat.md, research/workarounds-maestro-resources-2026-10-05.md</span></li>
-      <!-- TODO(coordinator): the Maestro 2.11.0 vs 2.0.10 quiet-Mac measurement at 4 iOS simulators goes here once it is recorded
-           (research/workarounds-maestro-resources-2026-10-05.md section 5), with its own claims row. Not public text until then. -->
       <li><b>2026-10-03, wger (Flutter).</b> iOS and Android, German and Japanese: German on every screenshot. wger's Japanese is about 30% translated, so those screens show English, and check said so. <span class="note">Record: research/frameworks.md section 15, research/real-apps-2026-10-03/</span></li>
       <li><b>2026-10-03, the obytes template (Expo).</b> iOS and Android, English and Arabic, with Arabic right to left on the Settings screen. Its onboarding and login screens are hard-coded English, and check flagged them. <span class="note">Record: research/frameworks.md section 15, research/real-apps-2026-10-03/</span></li>
       <li><b>2026-10-03 and 2026-10-04, the KotlinConf app (Compose Multiplatform).</b> Android, German and English: 6 screenshots, 0 problems. On iOS its first screen came out blank (it draws after its text is readable) and check flagged it; a clean iOS run is still to do. <span class="note">Record: research/frameworks.md sections 15 to 17, research/real-apps-2026-10-04/</span></li>

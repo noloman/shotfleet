@@ -14,7 +14,7 @@
 
 ## Requirements
 
-- An Apple silicon Mac. The installer refuses Intel Macs. Built for macOS 13 or later on Apple silicon; tested on macOS 27.
+- An Apple silicon Mac. The installer refuses Intel Macs. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 - Maestro 2.x and Java 17+ (Maestro needs it).
 - Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
@@ -22,8 +22,8 @@
 
 ## Price and licence
 
-- `check` is free for everyone. `run` is free for up to 2 languages.
-- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. It includes a year of updates and a 14-day refund. Prices are before VAT where it applies; checkout is on Gumroad, the merchant of record.
+- `check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence.
+- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. Gumroad applies the $29 by itself at checkout; there is no public count of how many are left. It includes a year of updates and a 14-day refund. Prices are before VAT or sales tax, which Gumroad adds where it applies; checkout is on Gumroad, the merchant of record.
 - The home page links to the checkout; shotfleet is on sale.
 
 ## Links
