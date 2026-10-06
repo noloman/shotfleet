@@ -2398,6 +2398,9 @@ def ocr_tool():
     return str(exe)
 
 TWINS = {"ms": ("id",), "id": ("ms",), "hr": ("sl",), "sl": ("hr",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
+# Cyrillic languages language detection confuses on short, mixed UI text: a Russian screen with English job titles read as 0.99 Kazakh
+# (remoti ru-RU/8, 2026-10-06). Unlike TWINS, a neighbour passes only when the app's own strings back the expected language
+CYRILLIC = {"ru", "uk", "be", "bg", "kk", "mk", "sr", "ky", "mn", "tg"}
 LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
 
 def readable_languages():
@@ -2545,6 +2548,8 @@ def judge_screen(lp, ocr, tables):
         if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
             return lp, None
         langs = ocr.get("langs", {})
+        if {want, ocr.get("lang")} <= CYRILLIC and score.get(lp, 0) > max((v for o, v in score.items() if o != lp), default=0):
+            return lp, None  # the one line that matched is the expected language's and no other's: the neighbour is detection's guess
         # short, language-neutral screens ("AMRAP / EMOM / Tabata") get low-confidence guesses: not evidence
         if ocr.get("lang") not in (want, *TWINS.get(want, ())) and langs.get(want, 0) < 0.2 \
                 and langs.get(ocr.get("lang"), 0) >= 0.8:
@@ -2603,11 +2608,28 @@ LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
 
 SCREENGRAB_STAMP = re.compile(r"_\d{13}$")
 
-def shot_key(name):
+@functools.cache
+def locale_tags(label):
+    """How a file name can spell its folder's locale: the folder name and its store codes (ru -> ru-RU on Play)."""
+    return {label} | {store_code(label, s) for s in (PLAY, APP_STORE)} - {None}
+
+def shot_key(name, label=None, folder=()):
     """The screen a file shows, the same in every language: its name without fastlane screengrab's millisecond timestamp
-    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set."""
+    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set, and without
+    fastlane supply's _<locale> (de-DE/1_de-DE.png -> 1.png) when that is the folder's own locale and every file in the folder
+    (`folder`, their names) ends in it: cutting the same ending off every name keeps two screens of one folder apart."""
     p = Path(name)
-    return SCREENGRAB_STAMP.sub("", p.stem) + p.suffix
+    stem = SCREENGRAB_STAMP.sub("", p.stem)
+    for tag in locale_tags(label) if label else ():
+        if all(SCREENGRAB_STAMP.sub("", Path(n).stem).endswith("_" + tag) for n in (*folder, name)):
+            return stem[:-len(tag) - 1] + p.suffix
+    return stem + p.suffix
+
+def screen_keys(files):
+    """{"<label>/<name>": shot_key} for files given as "<label>/<name>", each judged with the rest of its folder."""
+    by = {}
+    for f in files: by.setdefault(f.split("/")[0], []).append(f.split("/", 1)[1])
+    return {f"{label}/{n}": shot_key(n, label, names) for label, names in by.items() for n in names}
 
 def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
@@ -3056,6 +3078,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
     rows, by_hash, expected_used, unverified, unread_files, no_language, not_verified, busy_hash = [], {}, set(), 0, set(), [], [], {}
+    screen = screen_keys(f"{label}/{p.name}" for label in images for p in images[label])  # 1_de-DE.png and 1_en-US.png: one screen
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -3083,7 +3106,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
-        if (stem := Path(shot_key(png.name)).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
+        if (stem := Path(screen[f"{label}/{png.name}"]).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
             rules, used = content_rules(expect[stem], label, lp)
             expected_used.update((stem, k) for k in used)
             bad, unsure = check_content(rules, r)
@@ -3111,17 +3134,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if same := [f for hits in busy_hash.values() if len({lp for lp, _ in hits}) > 1 for _, f in hits]:
         notes.append(f"{len(same)} unverified screens are identical across languages; run check again when text recognition answers "
                      f"to tell whether they're copies ({', '.join(same)})")
-    names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
+    names = {screen[r["file"]] for r in rows}  # expected set = union across languages, screengrab timestamps and supply's _<locale> aside
     for label in sorted(set(images) - set(unmapped)):
         have, seen = {}, {}
-        for p in images[label]: seen.setdefault(shot_key(p.name), []).append(p.name)
+        for p in images[label]: seen.setdefault(screen[f"{label}/{p.name}"], []).append(p.name)
         for key, files in sorted(seen.items()):  # 01Home_<t1>.png and 01Home_<t2>.png: one screen saved twice, not two screens
             if len(files) > 1:
                 problems.append(f"{label}: {', '.join(files)} are the same screen saved {len(files)} times (only screengrab's timestamp "
                                 "differs); keep the newest and delete the rest")
         if missing := names - set(seen):
             problems.append(f"{label}: missing {', '.join(sorted(missing))}")
-    stems = {Path(shot_key(r["file"])).stem for r in rows}
+    stems = {Path(screen[r["file"]]).stem for r in rows}
     for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
         if name not in stems:
             import difflib
@@ -3143,7 +3166,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         (report / "index.html").write_text(page.replace("<table>", f"<h3>Not verified ({len(not_verified)})</h3><p>{html.escape(loud)}</p><ul>{items}</ul><table>", 1))
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)"
           + (f", {len(not_verified)} not verified" if not_verified else ""))
-    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(shot_key(r['file'])).stem in expect})} screens, "
+    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(screen[r['file']]).stem in expect})} screens, "
                      f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
     if notes:
@@ -3167,7 +3190,8 @@ def write_gallery(out, rows, problems):
     def locate(rel):  # relative to the report; an absolute file: URL when the image lives outside it, so moving the report keeps the images
         return (Path(out) / rel).resolve().as_uri() if rel.startswith("..") else rel
     src = {r["file"]: locate(r.get("src", f"raw/{r['file']}")) for r in rows}
-    cell = {(r["file"].split("/")[0], shot_key(r["file"].split("/")[1])): r["file"] for r in rows}  # screengrab timestamps aside
+    key = screen_keys(r["file"] for r in rows)
+    cell = {(r["file"].split("/")[0], key[r["file"]]): r["file"] for r in rows}  # screengrab timestamps and supply's _<locale> aside
     names = sorted({k for _, k in cell})
     locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
