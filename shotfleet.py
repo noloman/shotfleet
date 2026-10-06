@@ -2567,6 +2567,14 @@ def system_dialog(ocr):
     m = SYSTEM_DIALOG.search(ocr.get("text", "")) if DIALOG_BUTTON.search(ocr.get("text", "")) else None
     return f'an Android system dialog covers the screen ("{m.group(0)}")' if m else None
 
+SYSTEM_BANNER = re.compile(r"Ready for Apple Intelligence", re.I)  # banners seen over real screenshots; add more as seen
+
+def system_banner(ocr):
+    """A system notification banner over the top of the screen. Needs OCR's line positions (macOS text recognition), so a
+    screen read from the app's own texts (.texts.json, which never holds the banner) or by Tesseract isn't checked."""
+    hit = next((l["text"] for l in ocr.get("lines") or [] if l.get("top", 1) < 0.2 and SYSTEM_BANNER.search(l.get("text", ""))), None)
+    return f'a system notification banner covers the top of the screen ("{hit}")' if hit else None
+
 def caption_problem(lp, ocr, tables, problem):
     """Framed screenshots carry a marketing caption above the device. Name the common failure plainly
     (a translated caption over an untranslated app)."""
@@ -2973,6 +2981,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                        "wait for text that is on the screen (extendedWaitUntil: visible: \"...\", timeout: 60000) before takeScreenshot")
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
+        if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
         if png.stem in (expect or {}):
             rules, used = content_rules(expect[png.stem], label, lp)
             expected_used.update((png.stem, k) for k in used)
