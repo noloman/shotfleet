@@ -1893,6 +1893,63 @@ def ios_run_inner(cfg, path, only, parallel):
         return 1
     return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device"), expect=cfg.get("_expect")), 1 if failed else 0)
 
+# ---------- bring your own capture (iOS): the team's XCUITest screenshot tests on the pool ----------
+# research/byoc-ios-experiment-2026-10-06.md: the language is set on the simulator (xcodebuild's -testLanguage is ignored with
+# -xctestrun), and screenshots come from two places: XCTAttachments in the result bundle, and fastlane SnapshotHelper's cache folder.
+
+FASTLANE_CACHE = Path.home() / "Library/Caches/tools.fastlane/screenshots"  # SnapshotHelper writes here ($SIMULATOR_HOST_HOME), for every simulator
+FASTLANE_SETTINGS = ("language.txt", "locale.txt", "snapshot-launch_arguments.txt")  # SnapshotHelper reads these and would force their language
+
+def xcresult_pngs(bundle, dst):
+    """Copy a result bundle's PNG attachments into dst as <XCTAttachment.name>.png; returns the file names written.
+    `export attachments` names files <UUID>.png; the real name is in manifest.json as <name>_<n>_<UUID>.png. Two attachments
+    with one name are both kept (<name>-2.png) with a warning."""
+    dst, written = Path(dst), []
+    with tempfile.TemporaryDirectory() as tmp:
+        r = sh(["xcrun", "xcresulttool", "export", "attachments", "--path", str(bundle), "--output-path", tmp, "--filter", "*.png"], timeout=300)
+        manifest = Path(tmp) / "manifest.json"
+        if r.returncode or not manifest.is_file():
+            if Path(bundle).exists(): print(f"warning: could not read the screenshots in {bundle}: {(r.stderr or r.stdout).strip()[-200:]}")
+            return written
+        for test in json.loads(manifest.read_text() or "[]"):
+            for a in test.get("attachments", []):
+                src = Path(tmp) / a.get("exportedFileName", "")
+                if not src.is_file(): continue
+                stem = Path(re.sub(r"_\d+_[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}(?=\.\w+$)", "", a.get("suggestedHumanReadableName") or src.name)).stem
+                target, i = dst / f"{stem}.png", 2
+                while target.exists(): target, i = dst / f"{stem}-{i}.png", i + 1
+                if i > 2: print(f"warning: two screenshots are named {stem} in {Path(bundle).name}; kept both ({target.name}). Give each XCTAttachment its own name")
+                dst.mkdir(parents=True, exist_ok=True); shutil.copy(src, target); written.append(target.name)
+    return written
+
+@contextlib.contextmanager
+def fastlane_cache(folder=None):
+    """SnapshotHelper's folder for the length of a run: made if missing (SnapshotHelper never makes it, and a test passes with 0
+    screenshots without it), with fastlane's language.txt/locale.txt/snapshot-launch_arguments.txt moved aside (a leftover one forces
+    its language on every simulator) and put back afterwards, also on an error or Ctrl-C. A folder shotfleet made is removed again."""
+    folder = Path(folder or FASTLANE_CACHE)
+    made = next((d for d in (folder.parent, folder) if not d.exists()), None)
+    folder.mkdir(parents=True, exist_ok=True)
+    aside = folder / ".shotfleet-aside"
+    for f in aside.glob("*") if aside.is_dir() else ():  # a run that was killed (SIGKILL) left them aside: put them back first
+        if not (folder / f.name).exists(): os.replace(f, folder / f.name)
+    moved = []
+    try:
+        for n in FASTLANE_SETTINGS:
+            if (folder / n).exists(): aside.mkdir(exist_ok=True); os.replace(folder / n, aside / n); moved.append(n)
+        yield folder
+    finally:
+        for n in moved: os.replace(aside / n, folder / n)
+        with contextlib.suppress(OSError): aside.rmdir()
+        if made: shutil.rmtree(made, ignore_errors=True)
+
+def fastlane_pngs(folder, sim_name, dst):
+    """Move this simulator's SnapshotHelper screenshots (<simulator name>-<shot>.png, one folder for all simulators) into dst as <shot>.png."""
+    dst, written = Path(dst), []
+    for f in sorted(Path(folder).glob(glob.escape(sim_name) + "-*.png")):
+        dst.mkdir(parents=True, exist_ok=True); shutil.move(str(f), str(dst / f.name[len(sim_name) + 1:])); written.append(f.name[len(sim_name) + 1:])
+    return written
+
 # ---------- android ----------
 
 BREW = Path("/opt/homebrew")
