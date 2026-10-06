@@ -11,12 +11,19 @@
 <meta property="og:title" content="shotfleet guides: localized screenshots">
 <meta property="og:description" content="Guides on localized App Store and Google Play screenshots: fastlane snapshot, Maestro locales and what a check finds.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="https://shotfleet.com/guides">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/guides">
 <link rel="icon" href="../../public/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../public/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="../../public/apple-touch-icon.png">
+<link rel="preload" href="../../public/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../public/site.css">
 <style>
 .docs { max-width: 760px; }
@@ -33,7 +40,7 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a><a href="/demo">See it work</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 <main class="wrap" id="main">
@@ -41,13 +48,13 @@
   <p class="label">Guide</p>
 <h1>Guides</h1>
 <p class="lede">How-tos for localized App Store and Google Play screenshots.</p>
-<ul><li><a href="/guides/fastlane-snapshot-screenshots-all-english">Why your fastlane snapshot screenshots are all in English (and how to check every language)</a><br><span class="small">Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app&#x27;s own strings. [draft: 2 item(s) still to verify]</span></li><li><a href="/guides/maestro-one-flow-every-language">Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps</a><br><span class="small">Maestro cannot set the locale inside a flow. Here is how to run one flow in every language on iOS and Android, and the four traps that give you English by mistake.</span></li><li><a href="/guides/the-button-nobody-could-reach">The button nobody could reach: how translated text broke my Android onboarding</a><br><span class="small">In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it. [draft: 4 item(s) still to verify]</span></li></ul>
+<ul><li><a href="/guides/fastlane-snapshot-screenshots-all-english">Why your fastlane snapshot screenshots are all in English (and how to check every language)</a><br><span class="small">Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app&#x27;s own strings. [draft: 2 item(s) still to verify]</span></li><li><a href="/guides/maestro-one-flow-every-language">Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps</a><br><span class="small">Maestro can&#x27;t set the locale inside a flow. How to run one flow in every language on iOS and Android, and the four traps that give you English by mistake.</span></li><li><a href="/guides/the-button-nobody-could-reach">The button nobody could reach: how translated text broke my Android onboarding</a><br><span class="small">In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it. [draft: 4 item(s) still to verify]</span></li><li><a href="/guides/check-localized-screenshots">How to check that your localized App Store and Google Play screenshots are really in each language</a><br><span class="small">Translated captions over an English app, English copied into every folder, a missing screen: how to find each one by hand, and with one free command. [draft: 5 item(s) still to verify]</span></li><li><a href="/guides/flutter-react-native-localized-screenshots">Localized App Store and Google Play screenshots for a Flutter or React Native app, from one Maestro flow</a><br><span class="small">What I learned running one Maestro flow in every language on a real Flutter app and a real Expo app: the language, the labels, the traps, and the setup. [draft: 5 item(s) still to verify]</span></li></ul>
  </div>
 </main>
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

@@ -3,20 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>The button nobody could reach: how translated text broke my Android onboarding</title>
+<title>The button nobody could reach: translated text on Android</title>
 <meta name="description" content="In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
-<meta property="og:title" content="The button nobody could reach: how translated text broke my Android onboarding">
+<meta property="og:title" content="The button nobody could reach: translated text on Android">
 <meta property="og:description" content="In Japanese, Korean, Chinese and Arabic the Next button sat below the screen on a small Android phone. How I found it, the 8-line fix, and how to test for it.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="https://shotfleet.com/guides/the-button-nobody-could-reach">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/guides/the-button-nobody-could-reach">
 <link rel="icon" href="../../public/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../public/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="../../public/apple-touch-icon.png">
+<link rel="preload" href="../../public/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="../../public/site.css">
 <style>
 .docs { max-width: 760px; }
@@ -41,13 +48,39 @@
   "mainEntityOfPage": "https://shotfleet.com/guides/the-button-nobody-could-reach"
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://shotfleet.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://shotfleet.com/guides"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "The button nobody could reach: how translated text broke my Android onboarding",
+      "item": "https://shotfleet.com/guides/the-button-nobody-could-reach"
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a></span>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a><a href="/demo">See it work</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 <main class="wrap" id="main">
@@ -91,7 +124,7 @@ Column(
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

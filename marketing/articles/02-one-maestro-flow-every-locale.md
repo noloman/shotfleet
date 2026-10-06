@@ -5,7 +5,8 @@ Status: draft for Manu to publish on the new domain. Not published. Written 2026
 | Field | Value |
 |---|---|
 | Title (H1) | Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps |
-| Meta description (under 160 chars) | Maestro cannot set the locale inside a flow. Here is how to run one flow in every language on iOS and Android, and the four traps that give you English by mistake. |
+| Title tag (under 60 chars, the search-result title) | One Maestro flow in every language, on iOS and Android |
+| Meta description (under 160 chars) | Maestro can't set the locale inside a flow. How to run one flow in every language on iOS and Android, and the four traps that give you English by mistake. |
 | Slug | `/maestro-one-flow-every-language` |
 | Target query | maestro multiple languages / maestro locale / maestro screenshots different languages / maestro device-locale |
 | Why this can rank | Few tutorials; results are the Maestro docs, vendor docs and one Medium post (research/marketing-research.md 3.3). The docs do not cover the traps. |

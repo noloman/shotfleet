@@ -25,6 +25,7 @@ Do not write for head terms ("app store screenshot sizes", "best screenshot tool
   Each item: what it looks like, how to find it by hand, how `check` reports it, the Apple or Google spec link.
 - Run first: re-run `shotfleet check` on a folder with each planted failure and paste real output. Link the official Apple screenshot specifications and Google Play preview assets pages; re-read them the day you publish (limits change).
 - Honest paragraph: what `check` cannot see (scripts macOS cannot read, very short screens, anything outside the image).
+- Overlap: article 5 (05-check-localized-screenshots.md, drafted 2026-10-06) answers the short query "check localized screenshots". When this checklist is written, merge it into that page or link the two; do not publish two pages for the same query.
 - Priority: medium. This is where a unique data set matters, so wait until at least one design partner has shared a real before and after (with written permission).
 
 ## 5. Automating Google Play screenshots in every language with emulators and fastlane supply
