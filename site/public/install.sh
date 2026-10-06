@@ -12,10 +12,17 @@ curl -fsSL "$BASE/shotfleet-macos-arm64.tar.gz.sha256" -o "$TMP/sum"
 tar -xzf "$TMP/shotfleet.tar.gz" -C "$TMP"
 APP="$HOME/Library/Application Support/shotfleet/app"  # the program folder; a link to it goes on the PATH
 rm -rf "$APP" && mkdir -p "$(dirname "$APP")" && mv "$TMP/shotfleet" "$APP"
-for DIR in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin"; do
-  if [ -d "$DIR" ] && [ -w "$DIR" ]; then break; fi
-  [ "$DIR" = "$HOME/.local/bin" ] && mkdir -p "$DIR"
-done
+# Where the link goes: SHOTFLEET_BIN_DIR if set; with a HOME that isn't this account's home (a test install), only inside that HOME;
+# otherwise the first writable of Homebrew's bin, /usr/local/bin and ~/.local/bin.
+REAL_HOME=$(eval echo "~$(id -un)" 2>/dev/null || echo "$HOME")
+if [ -n "${SHOTFLEET_BIN_DIR:-}" ]; then DIR=$SHOTFLEET_BIN_DIR; mkdir -p "$DIR"
+elif [ "$HOME" != "$REAL_HOME" ]; then DIR="$HOME/.local/bin"; mkdir -p "$DIR"
+else
+  for DIR in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin"; do
+    if [ -d "$DIR" ] && [ -w "$DIR" ]; then break; fi
+    [ "$DIR" = "$HOME/.local/bin" ] && mkdir -p "$DIR"
+  done
+fi
 ln -sf "$APP/shotfleet" "$DIR/shotfleet"
 echo "installed $("$DIR/shotfleet" --version) to $DIR"
 case ":$PATH:" in *":$DIR:"*) ;; *) echo "add it to your PATH: echo 'export PATH=\"$DIR:\$PATH\"' >> ~/.zshrc, then open a new Terminal window (until you do, \"shotfleet\" is not found)";; esac

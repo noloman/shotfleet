@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **install.sh no longer touches your real `shotfleet` link from a test install:** an install with `HOME` set to another folder used to overwrite `/opt/homebrew/bin/shotfleet`. It now links inside that `HOME` (`~/.local/bin`). `SHOTFLEET_BIN_DIR` picks the folder yourself.
 - **New logo:** three phones fanned like a hand of cards, the front one yellow with a check (one flow, many devices, every screenshot checked). Replaces the flag in the favicon, the Apple touch icon, every page's header, the link preview image and the Gumroad icon, thumbnail and covers. `marketing/logo/build.py` rebuilds them all.
 - **No "Ready for Apple Intelligence" banner over your screenshots:** on an iOS 26 simulator that banner popped up a few minutes after the first boot and landed on top of a Turkish screenshot in one of my runs. shotfleet now tells the simulator it was already shown, right after boot. On Android, heads-up notification banners are now switched off too (demo mode only hid the notification icons).
 - **`check` flags that banner when it reads the picture:** if the text reader finds "Ready for Apple Intelligence" in the top fifth of a screenshot, that is now a problem. It only works where `check` reads the pixels (Android, or screenshots you bring yourself). In an iOS run `check` reads the app's own texts instead, and the banner is not in there, so the fix above is what keeps it out.

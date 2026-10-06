@@ -239,11 +239,11 @@ class Storefront(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("shasum"), "install.sh needs shasum")
 class InstallScript(Fixture):
-    """install.sh against the fake server. Every case here stops before anything is installed (checksum or machine refusal)."""
-    def install(self, site, uname_s="Darwin", uname_m="arm64"):
+    """install.sh against the fake server. The refusal cases stop before anything is installed; the link cases install the fake program into a temp HOME."""
+    def install(self, site, uname_s="Darwin", uname_m="arm64", home_name="home"):
         shim = self.tmp / f"shim-{uname_s}-{uname_m}"; shim.mkdir(exist_ok=True)
         (shim / "uname").write_text(f'#!/bin/sh\ncase "$1" in -s) echo {uname_s};; -m) echo {uname_m};; esac\n'); (shim / "uname").chmod(0o755)
-        home = self.tmp / "home"; home.mkdir(exist_ok=True)
+        home = self.tmp / home_name; home.mkdir(exist_ok=True)
         return run(["env", "-i", f"HOME={home}", f"PATH={shim}:{CLEAN}", f"SHOTFLEET_BASE={site.url}/download", "sh", str(INSTALL)]), home
 
     def test_install_sh_refuses_a_wrong_checksum_and_installs_nothing(self):
@@ -259,6 +259,30 @@ class InstallScript(Fixture):
     def test_install_sh_refuses_linux(self):
         r, _ = self.install(self.site(), uname_s="Linux")
         self.assertEqual(r.returncode, 1); self.assertIn("macOS only", r.stderr)
+
+    def test_a_test_install_with_another_home_links_only_inside_that_home(self):
+        """2026-10-06: a temp-HOME install overwrote /opt/homebrew/bin/shotfleet for the real user. Now it stays in $HOME/.local/bin."""
+        brew = Path("/opt/homebrew/bin/shotfleet")
+        before = os.readlink(brew) if brew.is_symlink() else None
+        try:
+            r, home = self.install(self.site(), home_name="home-link")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertTrue((home / ".local/bin/shotfleet").is_symlink(), r.stdout)
+            self.assertIn(f"to {home}/.local/bin", r.stdout)
+            self.assertEqual(os.readlink(brew) if brew.is_symlink() else None, before)
+        finally:  # never leave the real Homebrew link changed, whatever happened above
+            now = os.readlink(brew) if brew.is_symlink() else None
+            if now != before and now and str(self.tmp) in now:
+                brew.unlink()
+                if before: brew.symlink_to(before)
+
+    def test_shotfleet_bin_dir_picks_the_link_folder(self):
+        site = self.site(); shim = self.tmp / "shim-Darwin-arm64"; shim.mkdir(exist_ok=True)
+        (shim / "uname").write_text('#!/bin/sh\ncase "$1" in -s) echo Darwin;; -m) echo arm64;; esac\n'); (shim / "uname").chmod(0o755)
+        home = self.tmp / "home2"; home.mkdir(exist_ok=True); bindir = self.tmp / "mybin"
+        r = run(["env", "-i", f"HOME={home}", f"PATH={shim}:{CLEAN}", f"SHOTFLEET_BASE={site.url}/download", f"SHOTFLEET_BIN_DIR={bindir}", "sh", str(INSTALL)])
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertTrue((bindir / "shotfleet").is_symlink())
 
     def test_smoke_relies_on_the_install_line_it_stops_at(self):
         self.assertRegex((INSTALL).read_text(), r"(?m)^tar -xzf ")  # tools/golive/smoke.sh runs install.sh up to this line
