@@ -3425,6 +3425,11 @@ def xcode_hint():
                        "(and once: sudo xcodebuild -license accept)")
     return "install Xcode from the App Store, open it once to accept its licence, and let it add an iOS Simulator runtime"
 
+def update_command(exe=None):
+    """How this copy updates: Homebrew's cask lives under .../Caskroom/..., anything else came from install.sh or the .pkg."""
+    exe = exe or os.path.realpath(sys.executable if getattr(sys, "frozen", False) else __file__)
+    return "brew upgrade --cask noloman/tap/shotfleet" if "/Caskroom/" in exe else "curl -fsSL https://shotfleet.com/install.sh | sh"
+
 def cmd_doctor(fix=False, yes=False):
     """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
     have = lambda c: shutil.which(c) is not None
@@ -3500,7 +3505,7 @@ def cmd_doctor(fix=False, yes=False):
         if not ready: print(f"  {plat} still needs: " + ", ".join(n for n, ok, _, p in checks if not ok and p in ("both", plat)))
     vt = lambda v: tuple(int(n) for n in re.findall(r"\d+", v))
     if (latest := latest_release()) and vt(latest) > vt(VERSION):  # a dev build newer than the release says nothing
-        print(f"shotfleet {latest} is out (you have {VERSION}): curl -fsSL https://shotfleet.com/install.sh | sh")
+        print(f"shotfleet {latest} is out (you have {VERSION}): {update_command()}")
     print("next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)" if ok_ios or ok_android
           else "next: fix the MISSING lines above (shotfleet doctor --fix fetches Maestro, Java and the Android tools), then run shotfleet doctor again")
     if fix:

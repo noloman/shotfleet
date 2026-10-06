@@ -2914,6 +2914,10 @@ class G1Doctor(unittest.TestCase):
 
     def nothing_installed(self): return self.doctor(False)
 
+    def test_the_update_line_names_brew_for_a_homebrew_copy(self):
+        self.assertEqual(sf.update_command("/opt/homebrew/Caskroom/shotfleet/0.1.4/shotfleet/shotfleet"), "brew upgrade --cask noloman/tap/shotfleet")
+        self.assertIn("install.sh", sf.update_command("/Users/me/Library/Application Support/shotfleet/app/shotfleet"))
+
     def test_a_mac_with_nothing_installed_gets_one_fix_per_missing_tool_and_exit_2(self):
         code, out = self.doctor(False)
         self.assertEqual(code, 2)
