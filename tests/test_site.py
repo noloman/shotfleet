@@ -429,5 +429,18 @@ class Hsts(unittest.TestCase):
         self.assertNotIn("includeSubDomains", block); self.assertNotIn("preload", block)
 
 
+class TextFilesAreUtf8(unittest.TestCase):
+    """Plain-text files say charset=utf-8. /download/VERSION also matches `/download/:file` (Cache-Control: no-cache); the rules merge by header name, so its own rule sets only Content-Type."""
+    RULES = {b.splitlines()[0]: b.splitlines()[1:] for b in (PUB / "_headers").read_text().strip().split("\n\n")}
+
+    def test_each_text_file_has_one_utf8_plain_text_content_type_rule(self):
+        for path in ("/download/VERSION", "/llms.txt", "/robots.txt", "/install.sh", "/.well-known/security.txt"):
+            with self.subTest(path=path): self.assertEqual([l.strip() for l in self.RULES[path]].count("Content-Type: text/plain; charset=utf-8"), 1)
+
+    def test_version_is_still_no_cache_and_its_own_rule_adds_no_second_cache_control(self):
+        self.assertEqual([l.strip() for l in self.RULES["/download/:file"]], ["Cache-Control: no-cache"])
+        self.assertFalse([l for l in self.RULES["/download/VERSION"] if "Cache-Control" in l])
+
+
 if __name__ == "__main__":
     unittest.main()
