@@ -81,7 +81,7 @@ The gate is **local**. There is no hosted CI gate (`tools/check-claims.sh` plus 
    `SHOTFLEET_KEY`). It builds `tools/fixture-app` (SwiftUI, en/de/ja/ar/tr, two screens) and `tools/fixture-app-android`, then drives `init`, `doctor`, `run` (iPhone and
    iPad, de/ja/ar/tr), `check`, `export`, and **plants a copied screenshot and a missing one and expects `check` to catch both**. Passing means iOS 36 of 36 and Android 29 of 29
    assertions (65 in all). It refuses to run without `SHOTFLEET_E2E=1`, needs 5 GB free and memory pressure that is not critical, and has a hard limit.
-   `tools/fixture-byoc-e2e.sh` does the same for `[capture]` on 2 simulators (de, ja); it has not passed for the finished feature yet.
+   `tools/fixture-byoc-e2e.sh` does the same for `[capture]` on 2 simulators (de, ja); it passed for the finished feature on 2026-10-07 (iOS 26.4 simulators).
 4. **A rebuild after this point voids the gate.** Gate runs are about 37 to 55 minutes on a quiet Mac, longer under load.
 
 Lessons written into the gate rules (`docs/handoff.md` section 17): start only at memory pressure level 1, not by "free percentage" (a run with 34 percent free and 15 GB of

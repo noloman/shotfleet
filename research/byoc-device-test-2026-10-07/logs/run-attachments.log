@@ -1,0 +1,9 @@
+building for testing (once; --no-build skips it): xcodebuild build-for-testing -project '/Users/manu/Developer/shotfleet-rc-build/byoc-retest-src/tools/fixture-app/FleetFixture.xcodeproj' -scheme FleetFixture -destination 'generic/platform=iOS Simulator' -derivedDataPath '/var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-byoc-e2e.NsTPoD/build' CODE_SIGNING_ALLOWED=NO ARCHS=arm64
+booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 2 simulators...
+ok   de       2/2 screenshots
+ok   ja       2/2 screenshots
+captured 2/2 locales in 23s on 2 simulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 4 screenshots in 2 languages: 0 problem(s)

@@ -361,8 +361,8 @@ class DockerPending(unittest.TestCase):
 
 
 class ByocPending(unittest.TestCase):
-    """Bring your own capture ([capture], your own XCUITest tests on iOS) has no passing device test yet. Until site/BYOC_DEVICE_PROVEN
-    exists, every public line that offers it carries CAVEAT. After tools/fixture-byoc-e2e.sh passes on a device: drop the caveats, add the flag."""
+    """Bring your own capture ([capture], your own XCUITest tests on iOS). Passed its device test 2026-10-07, so site/BYOC_DEVICE_PROVEN exists and
+    no public line may say otherwise. Without the flag, every public line that offers it carries CAVEAT."""
     CAVEAT = "its device test hasn't passed yet"
     FILES = [ROOT / "README.md"] + [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt")]
     PROVEN = (ROOT / "site/BYOC_DEVICE_PROVEN").exists()
@@ -372,7 +372,7 @@ class ByocPending(unittest.TestCase):
         for p in self.FILES:
             for n, line in enumerate(p.read_text().splitlines(), 1):
                 with self.subTest(file=p.name, line=n):
-                    if self.PROVEN: self.assertNotIn(self.CAVEAT, line.replace("’", "'"), "BYOC_DEVICE_PROVEN exists: remove the caveat")
+                    if self.PROVEN: self.assertNotRegex(line.replace("’", "'"), r"(?i)(hasn't|has not|not) passed( yet)?\b|device test (hasn't|has not)", "BYOC_DEVICE_PROVEN exists: no caveat")
                     elif "your own XCUITest" in line:
                         seen += 1
                         self.assertIn(self.CAVEAT, line.replace("’", "'"), "BYOC is not device-proven yet: say so on this line")

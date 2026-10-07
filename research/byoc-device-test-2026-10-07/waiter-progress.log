@@ -1,0 +1,14 @@
+2026-10-07 11:36:37 waiter armed (max 12 h), pid 60740; build /Users/manu/Developer/shotfleet-rc-build/0.1.6/unpacked/shotfleet/shotfleet (signed 0.1.6)
+2026-10-07 11:36:37 queue: 1 line(s) ahead of mine : - 2026-10-07 10:49 remoti screenshot agent (iPad slot 06 paywall, one 
+2026-10-07 12:25:59 queue: 0 line(s) ahead of mine , my turn
+2026-10-07 12:28:02 lock taken (quiet); starting e2e
+2026-10-07 12:28:02 START: load 12, free memory 60 %, swap [total = 14336.00M  used = 12824.69M  free = 1511.31M  (encrypted)]
+2026-10-07 12:38:32 HARD LIMIT (10 min elapsed, newest file 602 s old): killing the e2e process group
+2026-10-07 12:57:15 RE-ARMED with iOS 26.4 runtime; waiter armed (max 12 h), pid 49614; build /Users/manu/Developer/shotfleet-rc-build/0.1.6/unpacked/shotfleet/shotfleet (signed 0.1.6)
+2026-10-07 12:57:15 queue: 0 line(s) ahead of mine , my turn
+2026-10-07 12:59:17 lock taken (quiet); starting e2e
+2026-10-07 12:59:17 START: load 7, free memory 67 %, swap [total = 12288.00M  used = 10782.12M  free = 1505.88M  (encrypted)]
+2026-10-07 13:12:03 END: load 354, free memory 54 %, swap [total = 12288.00M  used = 11871.00M  free = 417.00M  (encrypted)]
+2026-10-07 13:12:03 e2e exit 0
+2026-10-07 13:12:03 e2e result: PASS
+2026-10-07 13:12:03 lock released, /tmp/shotfleet-byoc-retest-done created

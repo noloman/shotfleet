@@ -3758,9 +3758,9 @@
    "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.",
    "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix."
   ],
-  "status": "partial",
-  "layer": "unit",
-  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half ran once (research/byoc-device-test-2026-10-06/, 2026-10-06): the missing-.keepAlways case passed on a simulator (the language failed with the hint), but a simulator had stopped answering and the .xcresult was unreadable in that run, so it is weak evidence, and the device test as a whole has not passed (14 of 20 assertions). Partial: every test fakes xcodebuild; the page describes real behaviour on a simulator, which is only partly device-tested until tools/fixture-byoc-e2e.sh passes (C235).",
+  "status": "proven",
+  "layer": "device",
+  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). Device, 2026-10-07: PASSED, research/byoc-device-test-2026-10-07/ (tools/fixture-byoc-e2e.sh at 285e099, signed 0.1.6 binary, iOS 26.4 simulators pinned, 12:59 to 13:12: 'PASS: all 20 assertions passed' over run-attachments, run-fastlane, run-nokeep). Earlier attempts (2026-10-06 under load, 2026-10-07 12:28 with iOS 27.0 simulators frozen at boot) failed for environmental reasons, see the README there. The missing-.keepAlways case (run-nokeep) exits 1 and reports the language as failed.",
   "assertion": "A [capture] run whose xcodebuild passes but collects 0 PNGs for a language reports that language failed with the .keepAlways / setupSnapshot hint and exits 1; a language missing a name another language has fails with 'missing <name>'.",
   "fix": "",
   "test": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed"
@@ -3776,9 +3776,9 @@
    "shotfleet sets each simulator's language itself and also passes",
    "shotfleet sets each simulator's language itself and also passes"
   ],
-  "status": "partial",
-  "layer": "unit",
-  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature ran on a simulator once (research/byoc-device-test-2026-10-06/): the XCTAttachment run saved German and Japanese screenshots with the right language on one simulator (the second stopped answering), but the SnapshotHelper case (settings files moved aside and back) lost its simulators and has not run on a device. Partial: every test fakes xcodebuild and simctl; the language mechanism ran as the built feature only for XCTAttachment, on one simulator, and not for fastlane's files, until tools/fixture-byoc-e2e.sh passes (C235).",
+  "status": "proven",
+  "layer": "device",
+  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md). Device, 2026-10-07: PASSED, research/byoc-device-test-2026-10-07/ (tools/fixture-byoc-e2e.sh at 285e099, signed 0.1.6 binary, iOS 26.4 simulators pinned, 12:59 to 13:12: 'PASS: all 20 assertions passed' over run-attachments, run-fastlane, run-nokeep). Earlier attempts (2026-10-06 under load, 2026-10-07 12:28 with iOS 27.0 simulators frozen at boot) failed for environmental reasons, see the README there. Both the XCTAttachment and the SnapshotHelper case ran de and ja; 'the fastlane folder is as it was' passed (settings files put back).",
   "assertion": "set_sim_language runs simctl spawn <udid> defaults write -g AppleLanguages -array <lp> and AppleLocale -string <locale>; the .xctestrun copy sits beside the original (formats 1 and 2) with the arguments; language.txt/locale.txt/snapshot-launch_arguments.txt are back after the run and after an exception or Ctrl-C.",
   "fix": "",
   "test": "FastlaneCollector.test_settings_files_come_back_when_the_run_fails"
@@ -3821,7 +3821,7 @@
  },
  {
   "id": "C235",
-  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6; its device test hasn't passed yet",
+  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6, and none says its device test hasn't passed",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -3835,30 +3835,26 @@
    "site/public/docs.html",
    "README.md",
    "site/public/docs.html",
-   "site/public/index.html",
-   "README.md",
-   "site/public/docs.html"
+   "site/public/index.html"
   ],
   "where_text": [
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
-   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6; its device test hasn't passed yet.",
-   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6; its device test hasn't passed yet.",
-   "(on iOS, your own XCUITest tests can stand in for Maestro, but that part is new in 0.1.6; its device test hasn't passed yet)",
-   "can use <a href=\"#xcuitest\">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6; its device test hasn't passed yet.",
-   "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6; its device test hasn't passed yet, see below).",
-   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6; its device test hasn't passed yet).",
-   "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6; its device test hasn't passed yet) needs neither.",
-   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6; its device test hasn't passed yet)",
-   "and you don't need Maestro or Java for this (new in 0.1.6; its device test hasn't passed yet).",
-   "and you don't need Maestro or Java for this (new in 0.1.6; its device test hasn't passed yet).",
-   "On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6; its device test hasn't passed yet).",
-   "The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) has not passed yet.",
-   "The device test for the finished feature (<code>tools/fixture-byoc-e2e.sh</code>) has not passed yet."
+   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6.",
+   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6; its device test passed on iOS 26.4 simulators.",
+   "(on iOS, your own XCUITest tests can stand in for Maestro, but that part is new in 0.1.6)",
+   "can use <a href=\"#xcuitest\">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6, and its device test passed on iOS 26.4 simulators.",
+   "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6, see below).",
+   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6).",
+   "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6) needs neither.",
+   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6)",
+   "and you don't need Maestro or Java for this (new in 0.1.6; tested on iOS 26.4 simulators).",
+   "and you don't need Maestro or Java for this (new in 0.1.6; tested on iOS 26.4 simulators).",
+   "On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6)."
   ],
-  "status": "partial",
+  "status": "proven",
   "layer": "device",
-  "proof": "The device test ran once, 2026-10-06 22:57 (research/byoc-device-test-2026-10-06/, tools/fixture-byoc-e2e.sh): 14 of 20 assertions passed, on a Mac with load 300 to 800 and swap nearly full. XCTAttachment case: PASS (de and ja screenshots saved, both languages ok in run.json, the build ran once, no .xctestrun copies left), but one of the 2 simulators stopped answering (simctl uninstall) and the run finished on 1, German retried, so 'several simulators at once' did not run on a device. Missing-.keepAlways case: PASS (the language failed with the hint), but it also ran with a simulator that stopped answering and an unreadable .xcresult, so it is weak evidence. SnapshotHelper (fastlane) case: FAIL, both languages 0/0 screenshots, because its simulators hung; it has not run on a device. Needed to prove it: one passing run of tools/fixture-byoc-e2e.sh ('PASS: all N assertions passed') on a quiet Mac, scheduled by the coordinator under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'its device test hasn't passed yet', and a line that says 'Maestro or Java' or 'neither' about it must carry the same caveat. After the device test passes, the coordinator removes the caveats and adds the flag file.",
+  "proof": "Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). Device, 2026-10-07: PASSED, research/byoc-device-test-2026-10-07/ (tools/fixture-byoc-e2e.sh at 285e099, signed 0.1.6 binary, iOS 26.4 simulators pinned, 12:59 to 13:12: 'PASS: all 20 assertions passed' over run-attachments, run-fastlane, run-nokeep). Earlier attempts (2026-10-06 under load, 2026-10-07 12:28 with iOS 27.0 simulators frozen at boot) failed for environmental reasons, see the README there. Each case: de and ja screenshots saved, both languages ok in run.json, the build ran once, no .xctestrun copies left. ByocPending (tests/test_site.py) now requires that no public line says the device test hasn't passed; site/BYOC_DEVICE_PROVEN exists.",
   "assertion": "SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh prints 'PASS: all N assertions passed'.",
   "fix": ""
  },
@@ -3888,13 +3884,14 @@
   ],
   "where_text": [
    "<code>run</code> can run your own XCUITest screenshot tests",
-   "the finished feature is new in 0.1.6; its device test hasn't passed yet"
+   "the finished feature then passed its device test on iOS 26.4 simulators"
   ],
-  "status": "untested",
+  "status": "proven",
   "layer": "device",
-  "proof": "Same as C235 (device test pending) and C236 (tried by hand, E4/E5). CHANGELOG 0.1.6.",
+  "proof": "Same as C235 and C236 (tried by hand, E4/E5). CHANGELOG 0.1.6. Device, 2026-10-07: PASSED, research/byoc-device-test-2026-10-07/ (tools/fixture-byoc-e2e.sh at 285e099, signed 0.1.6 binary, iOS 26.4 simulators pinned, 12:59 to 13:12: 'PASS: all 20 assertions passed' over run-attachments, run-fastlane, run-nokeep). Earlier attempts (2026-10-06 under load, 2026-10-07 12:28 with iOS 27.0 simulators frozen at boot) failed for environmental reasons, see the README there.",
   "assertion": "The proof's tests; the quoted words on the page.",
-  "fix": ""
+  "fix": "",
+  "test": "ByocPending.test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven"
  },
  {
   "id": "C238",

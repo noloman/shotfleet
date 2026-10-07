@@ -33,7 +33,7 @@ After capture, every screenshot's text is compared against your app's own string
 
 ### Check screenshots you already have (fastlane snapshot, screengrab, by hand)
 
-`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6; its device test hasn't passed yet, see below). `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free. Point it at your fastlane folder and your app build:
+`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6, see below). `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free. Point it at your fastlane folder and your app build:
 
 ```bash
 shotfleet check fastlane/screenshots                       # snapshot: screenshots/<locale>/
@@ -90,7 +90,7 @@ Screenshots made in other tools work too. `check` knows Apple's sizes for Apple 
 
 ### Use your existing XCUITest screenshot tests (iOS)
 
-Already have XCUITest tests that take your screenshots, with `XCTAttachment` or fastlane's `SnapshotHelper`? `run` can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an `XCTAttachment` needs a name and `lifetime = .keepAlways`, see below), and you don't need Maestro or Java for this (new in 0.1.6; its device test hasn't passed yet).
+Already have XCUITest tests that take your screenshots, with `XCTAttachment` or fastlane's `SnapshotHelper`? `run` can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an `XCTAttachment` needs a name and `lifetime = .keepAlways`, see below), and you don't need Maestro or Java for this (new in 0.1.6; tested on iOS 26.4 simulators).
 
 ```toml
 [ios]
@@ -115,7 +115,7 @@ How it works, and what your tests need:
 - A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.
 - `check` and `export` work on the output like on any other run. It's paid like any `run`: 2 languages without a licence, and `check` stays free.
 
-iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug. The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) has not passed yet. Its first run, on an overloaded Mac, passed the XCTAttachment case for German and Japanese (on one simulator, because the second one stopped answering) and the missing-`.keepAlways` case, but the SnapshotHelper case lost its simulators.
+iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug. The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) passed on 2026-10-07, on iOS 26.4 simulators: your tests with `XCTAttachment` and with `SnapshotHelper`, German and Japanese on two simulators at once, and the missing-`.keepAlways` case, which is reported as a failed language.
 
 ## Free and paid
 
@@ -443,7 +443,7 @@ translation source.
 - Built to run on macOS 13 or later on Apple silicon (the build declares 13.0 as its minimum), but I haven't run it on macOS 13. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 - Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set `device_type` in the config. Xcode 26.x has not been run.
 - iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.
-- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6; its device test hasn't passed yet) needs neither. `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6) needs neither. `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
 - Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac. <!-- DOCKER-PENDING (not published yet: packaging/README.md step 9) For `check` there is also a Docker image (see Linux and CI). DOCKER-PENDING -->
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, which 2.11.0 does and 2.0.10 doesn't; see above).

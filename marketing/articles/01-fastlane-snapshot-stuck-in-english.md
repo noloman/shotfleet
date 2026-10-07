@@ -112,6 +112,6 @@ If your screenshots are already right in every language, you do not need it. If 
 
 ## Where to go from here
 
-If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at [shotfleet.com/#price](https://shotfleet.com/#price).
+If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` needs Maestro, Java and a flow; on iOS, your own XCUITest or `SnapshotHelper` tests work instead (new in 0.1.6). `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at [shotfleet.com/#price](https://shotfleet.com/#price).
 
 The free part is the `check` command above. Install it, point it at your `fastlane/` folder and read the grid.
