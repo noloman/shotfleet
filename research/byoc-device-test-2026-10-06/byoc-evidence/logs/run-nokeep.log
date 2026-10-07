@@ -1,0 +1,12 @@
+booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)
+simulator shotfleet-1 stopped answering last run; replacing it with a new one
+capturing 2 locales on 2 simulators...
+warning: could not read the screenshots in /private/var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-byoc-e2e.AMvBvF/proj/out-nokeep/.work/capture/attempt1/ja.xcresult: .xcresult/Info.plist does not exist, the result bundle might be corrupted or the provided path is not a result bundle
+Usage: xcresulttool <subcommand>
+  See 'xcresulttool --help' for more information.
+retrying 2: de, ja
+simulator AE7140BA-A78C-4EC0-A260-FFC2DBCAF5AA stopped answering (simctl uninstall did not answer within 60 s: simulator AE7140BA-A78C-4EC0-A260-FFC2DBCAF5AA is not responding. Shut it down with `xcrun simctl shutdown AE7140BA-A78C-4EC0-A260-FFC2DBCAF5AA` and run again; if it stays stuck, restart the Mac); carrying on without it
+FAIL de       0/0 screenshots (retried)  the test passed but saved no screenshots, which proves nothing. An XCTAttachment needs lifetime = .keepAlways; fastlane's SnapshotHelper needs setupSnapshot(a
+FAIL ja       0/0 screenshots (retried)  the test passed but saved no screenshots, which proves nothing. An XCTAttachment needs lifetime = .keepAlways; fastlane's SnapshotHelper needs setupSnapshot(a
+captured 0/2 locales in 389s on 1 simulators
+no screenshots were captured, so there's nothing to check; see the errors above and the xcodebuild logs
