@@ -1,0 +1,9 @@
+warning ja: 'Stories' -> 'ストーリー' also means 'Story', 'story'; anchor that step (below:/above:) if it taps the wrong element
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   de       5/5 screenshots
+ok   ja       5/5 screenshots
+captured 2/2 locales in 154s on 1 simulators
+
+checked 10 screenshots in 2 languages: 0 problem(s)
+rc=0

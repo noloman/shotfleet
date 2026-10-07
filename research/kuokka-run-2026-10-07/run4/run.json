@@ -1,0 +1,26 @@
+{
+ "locales": {
+  "ko": {
+   "untranslated_selectors": [],
+   "lproj": "ko",
+   "ok": true,
+   "seconds": 75,
+   "error": null,
+   "screenshots": 5,
+   "attempts": 1
+  },
+  "es": {
+   "untranslated_selectors": [],
+   "lproj": "es",
+   "ok": true,
+   "seconds": 44,
+   "error": null,
+   "screenshots": 5,
+   "attempts": 1
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/kuokka-run/shotfleet.toml",
+ "wall_seconds": 132,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/kuokka-run/app/Kuokka.app"
+}

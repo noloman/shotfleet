@@ -1,0 +1,13 @@
+2026-10-06 23:39:28 prepared config+flow, app copied, queued
+2026-10-07 00:18:01 waiting; lock held by analytics-consent session
+2026-10-07 00:46:50 lock free but job-tracker + remoti iPad lines still ahead per instruction; waiting
+2026-10-07 01:15:03 coordinator: Remoti iPad holds lock since 01:08; after DONE check 0.1.6 gate (queue + 0.1.6/progress.log), go if not ready
+2026-10-07 08:09:27 coordinator: order Remoti iPad -> 0.1.6 gate -> me. Waiting for gate DONE + lock free
+2026-10-07 09:44:49 coordinator: gate re-run goes first (0.1.6/g3-016b.log); I wait
+2026-10-07 10:23:08 Remoti took lock 10:15 (slot 05 + paywall, then consent verification); waiting for both DONE
+2026-10-07 10:56:04 START: lock taken, 3 good checks
+2026-10-07 10:57:14 run1 (de,ja) started, limit 20 min
+2026-10-07 10:59:48 run1 de,ja done rc=0 128s 10/10; reviewing frames
+2026-10-07 11:00:23 run2 = fixed flow, de,ja again (to test tap fixes), limit 20 min
+2026-10-07 11:05:56 run2 failed: tap point '94.5%' not an int (maestro 2.0.10). fixed. chain.sh: run3 de,ja; run4 ko,es; run5 fr,pt-BR (900 s kill each); whole-job end 11:56
+2026-10-07 11:18:28 ALL DEVICE RUNS DONE, lock released, queue line DONE

@@ -1,0 +1,49 @@
+# One English flow; shotfleet translates every selector per language.
+# The data is live Hacker News, so the stories differ from run to run.
+- launchApp:
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible: "Your premium Hacker News experience"
+    timeout: 90000
+- swipe:
+    direction: LEFT
+- tapOn: "Software Developer"
+- tapOn: "Skip"
+# The "Help improve Kuokka" analytics dialog covers the feed on a fresh install: dismiss it when it shows up.
+- extendedWaitUntil:
+    visible: "Not Now"
+    timeout: 25000
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible: "Stories"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 01_feed
+# The first story row (the "starter Radar" hint card above it is still there at this point)
+- tapOn:
+    point: "55%,38%"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 02_story
+- swipe:
+    start: "1%,50%"
+    end: "75%,50%"
+- tapOn: "Radar"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 03_radar
+# the 4th tab: by position, the word "Bookmarks" also matches other text in some languages
+- tapOn:
+    point: "48%,94%"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 04_saved
+- tapOn: "Account"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 05_account

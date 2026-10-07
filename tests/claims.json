@@ -4334,5 +4334,70 @@
   "proof": "Checked 2026-10-07 on 9f01416 (coordinator task, docs FAQ language question). Site: all 9 pages in site/public (index, docs, whats-new, guides, alternatives, demo, terms, privacy, 404) are <html lang=\"en\"> English text, and a grep for hreflang, language switcher and translate controls in site/public/*.html finds none. Tool messages: the Fail/print strings in shotfleet.py are English; the only non-English text in them is example values such as name = \"田中\" and \"Next\" = \"İleri\" in config error hints. Languages come from the app: locales default to 'every language the app ships' (shotfleet.py init templates and run), or the config's locales list. Not machine-tested: no test asserts that every message string is English. The FAQ's JSON-LD answer text equals the visible answer for all questions (JsonLd.test_the_docs_faq_markup_is_the_visible_faq_and_its_date_is_the_last_checked_date).",
   "assertion": "The quoted sentence is on the page and equal in the FAQPage JSON-LD (tests/test_site_audit.py, test_the_docs_faq_markup_is_the_visible_faq_and_its_date_is_the_last_checked_date).",
   "fix": ""
+ },
+ {
+  "id": "C262",
+  "claim": "Kuokka, 2026-10-07, shotfleet 0.1.5: 30 iPhone screenshots (6 languages x 5 screens) on 1 iPhone 17 Pro Max simulator, iOS 26.4, in three runs of two languages, 0 retries, 154 s, 132 s and 252 s",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On 2026-10-07 I ran shotfleet 0.1.5 on it: 30 iPhone screenshots (6 languages × 5 screens) on 1 iPhone 17 Pro Max simulator with iOS 26.4, in three runs of two languages, 0 retries, 154 s, 132 s and 252 s.",
+   "6 languages × 5 screens = 30 screenshots in three runs of two languages, on 1 iPhone 17 Pro Max simulator (iOS 26.4), 0 retries, 154 s, 132 s and 252 s"
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-run-2026-10-07/run3/run.json, run4/run.json, run5/run.json: wall_seconds 154, 132, 252; locales de,ja / ko,es / fr,pt-BR each ok with screenshots 5, attempts 1; simulators 1; logs/run3.log, run4.log, run5.log: 'booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)', 'captured 2/2 locales in 154s / 132s / 252s on 1 simulators', no 'retrying' line, run by shotfleet-rc-build/0.1.5/unpacked/shotfleet/shotfleet (shotfleet 0.1.5). Device lock held 10:56 to 11:19 under /tmp/shotfleet-devices.lock.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C263",
+  "claim": "Kuokka, 2026-10-07: check found 0 problems in all three runs (with the app build as the strings source)",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Check found 0 problems in all three. It was a debug build (2.0.14)",
+   "Check found 0 problems in all three. A debug build from an unreleased branch"
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-run-2026-10-07/run3/check.json, run4/check.json, run5/check.json (shotfleet check out-runN --app Kuokka.app, rc=0): screenshots 10, problems 0, notes 0, unverified 0 each; logs/check-run3.log, check-run4.log, check-run5.log: 'checked 10 screenshots in 2 languages: 0 problem(s)'; the in-run checks (run3/check-in-run.json etc.) say the same.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C264",
+  "claim": "Kuokka showcase: the 6 home-page frames are shotfleet's own raw output from the 2026-10-07 runs, resized to 360 px wide WebP; 6 of the 30, picked after looking at all 30",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "They are 6 of the 30, picked by me after looking at all of them."
+  ],
+  "status": "evidence",
+  "proof": "Source frames: shotfleet-rc-build/kuokka-run/out-run3/raw/{de,ja}/03_radar.png, out-run5/raw/fr/03_radar.png, out-run4/raw/{ko,es}/05_account.png, out-run5/raw/pt-BR/05_account.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/iphone_{de,ja,fr}_radar.webp and iphone_{ko,es,pt-br}_account.webp (no frames, captions or edits). Left out and why: research/kuokka-run-2026-10-07/NOTES.md (feed frames show OpenAI favicons and HN usernames, story frames show a user's comment, Bookmarks frames show a story title and author). Owner approval of the showcase: 2026-10-06 ('do what you consider, I trust you', per the coordinator's brief).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C265",
+  "claim": "Kuokka showcase: the content is live Hacker News at capture time, the build was a debug build 2.0.14 from an unreleased branch, and the first flow was wrong",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "The content is live Hacker News at the moment of capture.",
+   "the run itself was the second go: my first flow tapped the wrong spots"
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-run-2026-10-07/NOTES.md: app Kuokka 2.0.14 (289), Debug-iphonesimulator, built 2026-10-05 15:07 from branch review-prompt-redesign (commit 285c7897), copied unchanged from the HackerNewsKMP worktree; logs/run1-first-flow-de-ja.log and logs/run2-failed-point94.5.log are the earlier runs of the same day (run1: story tap hit the hint card's close button and the Bookmarks tap did nothing; run2: tap point '94.5%' refused by Maestro 2.0.10). Frames show Hacker News story titles as they were on 2026-10-07 at about 09:41 simulator time.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
  }
 ]

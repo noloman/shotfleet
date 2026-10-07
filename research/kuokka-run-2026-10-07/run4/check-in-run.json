@@ -1,0 +1,87 @@
+{
+ "screenshots": [
+  {
+   "file": "es/01_feed.png",
+   "src": "raw/es/01_feed.png",
+   "sha": "a75ddbca61b9",
+   "lang": "es",
+   "chars": 2199,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/02_story.png",
+   "src": "raw/es/02_story.png",
+   "sha": "79f8e82a6c76",
+   "lang": "es",
+   "chars": 3877,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/03_radar.png",
+   "src": "raw/es/03_radar.png",
+   "sha": "2c5bd72323fa",
+   "lang": "es",
+   "chars": 955,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/04_saved.png",
+   "src": "raw/es/04_saved.png",
+   "sha": "fcee184b4379",
+   "lang": "es",
+   "chars": 646,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/05_account.png",
+   "src": "raw/es/05_account.png",
+   "sha": "99d0495c34ad",
+   "lang": "es",
+   "chars": 1502,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/01_feed.png",
+   "src": "raw/ko/01_feed.png",
+   "sha": "753eaf15833c",
+   "lang": "ko",
+   "chars": 1536,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/02_story.png",
+   "src": "raw/ko/02_story.png",
+   "sha": "2ca56c61df98",
+   "lang": "ko",
+   "chars": 3675,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/03_radar.png",
+   "src": "raw/ko/03_radar.png",
+   "sha": "ff6ac20f984a",
+   "lang": "ko",
+   "chars": 651,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/04_saved.png",
+   "src": "raw/ko/04_saved.png",
+   "sha": "94a9c41ed6ac",
+   "lang": "ko",
+   "chars": 429,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/05_account.png",
+   "src": "raw/ko/05_account.png",
+   "sha": "d51504d07cd8",
+   "lang": "ko",
+   "chars": 816,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

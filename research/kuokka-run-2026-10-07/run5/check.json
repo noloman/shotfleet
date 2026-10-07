@@ -1,0 +1,87 @@
+{
+ "screenshots": [
+  {
+   "file": "fr/01_feed.png",
+   "src": "../out-run5/raw/fr/01_feed.png",
+   "sha": "2061b8fde257",
+   "lang": "fr",
+   "chars": 2272,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/02_story.png",
+   "src": "../out-run5/raw/fr/02_story.png",
+   "sha": "69386eb25a06",
+   "lang": "fr",
+   "chars": 3924,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/03_radar.png",
+   "src": "../out-run5/raw/fr/03_radar.png",
+   "sha": "6d2950e9acd5",
+   "lang": "fr",
+   "chars": 993,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/04_saved.png",
+   "src": "../out-run5/raw/fr/04_saved.png",
+   "sha": "6b6a5ffa4425",
+   "lang": "fr",
+   "chars": 703,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/05_account.png",
+   "src": "../out-run5/raw/fr/05_account.png",
+   "sha": "09afe8c2811d",
+   "lang": "fr",
+   "chars": 1570,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/01_feed.png",
+   "src": "../out-run5/raw/pt-BR/01_feed.png",
+   "sha": "539c30671844",
+   "lang": "pt-BR",
+   "chars": 2139,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/02_story.png",
+   "src": "../out-run5/raw/pt-BR/02_story.png",
+   "sha": "0d9f3496802d",
+   "lang": "pt-BR",
+   "chars": 3878,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/03_radar.png",
+   "src": "../out-run5/raw/pt-BR/03_radar.png",
+   "sha": "9482e5a3b690",
+   "lang": "pt-BR",
+   "chars": 958,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/04_saved.png",
+   "src": "../out-run5/raw/pt-BR/04_saved.png",
+   "sha": "7af789b00cbc",
+   "lang": "pt-BR",
+   "chars": 634,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/05_account.png",
+   "src": "../out-run5/raw/pt-BR/05_account.png",
+   "sha": "ae2af2960ff9",
+   "lang": "pt-BR",
+   "chars": 1402,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

@@ -1,0 +1,7 @@
+# Kuokka (Hacker News reader, Kotlin Multiplatform + SwiftUI), shotfleet dogfood re-run 2026-10-07.
+# Run 2 languages at a time (free tier): shotfleet run shotfleet.toml --locales de,ja --parallel 1
+[ios]
+app = "app/Kuokka.app"
+flow = "flow.yaml"
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
+parallel = 1
