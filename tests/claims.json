@@ -4285,13 +4285,15 @@
  },
  {
   "id": "C259",
-  "claim": "The spare activations (5 per key, 3 Macs) work from 0.1.6; 0.1.5 and older stop at 3, said on docs, terms and the home price card as well as What's new",
+  "claim": "The spare activations (5 per key, 3 Macs) work from 0.1.6; 0.1.5 and older stop at 3, said on docs, terms, the home price card and llms.txt as well as What's new",
   "where": [
    "site/public/docs.html",
    "site/public/terms.html",
-   "site/public/index.html"
+   "site/public/index.html",
+   "site/public/llms.txt"
   ],
   "where_text": [
+   "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3."
@@ -4299,7 +4301,7 @@
   "status": "proven",
   "layer": "unit",
   "proof": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6. CHANGELOG 0.1.6 (the 5 activations bullet: 0.1.5 and earlier still stop at 3; every version stays downloadable). Site review 2026-10-07 row 16.",
-  "assertion": "The quoted sentence is on all three pages.",
+  "assertion": "The quoted sentence is on all four files.",
   "fix": "",
   "test": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6"
  },

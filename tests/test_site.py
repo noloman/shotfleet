@@ -391,7 +391,7 @@ class ByocPending(unittest.TestCase):
 
 class ActivationCaveat(unittest.TestCase):
     def test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6(self):
-        for name in ("docs.html", "terms.html", "index.html"):
+        for name in ("docs.html", "terms.html", "index.html", "llms.txt"):
             with self.subTest(page=name): self.assertIn("The spare activations work from 0.1.6; 0.1.5 and older stop at 3.", (PUB / name).read_text())
 
 
