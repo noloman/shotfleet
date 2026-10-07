@@ -4285,14 +4285,16 @@
  },
  {
   "id": "C259",
-  "claim": "The spare activations (5 per key, 3 Macs) work from 0.1.6; 0.1.5 and older stop at 3, said on docs, terms, the home price card and llms.txt as well as What's new",
+  "claim": "The spare activations (5 per key, 3 Macs) work from 0.1.6; 0.1.5 and older stop at 3, said on docs, terms, the home price card, llms.txt and the README as well as What's new",
   "where": [
    "site/public/docs.html",
    "site/public/terms.html",
    "site/public/index.html",
-   "site/public/llms.txt"
+   "site/public/llms.txt",
+   "README.md"
   ],
   "where_text": [
+   "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
@@ -4301,7 +4303,7 @@
   "status": "proven",
   "layer": "unit",
   "proof": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6. CHANGELOG 0.1.6 (the 5 activations bullet: 0.1.5 and earlier still stop at 3; every version stays downloadable). Site review 2026-10-07 row 16.",
-  "assertion": "The quoted sentence is on all four files.",
+  "assertion": "The quoted sentence is on all five files.",
   "fix": "",
   "test": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6"
  },
@@ -4360,11 +4362,11 @@
    "site/public/demo.html"
   ],
   "where_text": [
-   "Check found 0 problems in all three. It was a debug build (2.0.14)",
-   "Check found 0 problems in all three. A debug build from an unreleased branch"
+   "Check found 0 problems in all three (the check reads the pictures; it does not prove that every tap hit the right button). It was a debug build (2.0.14)",
+   "Check found 0 problems in all three (the check reads the pictures; it does not prove that every tap hit the right button). A debug build from an unreleased branch"
   ],
   "status": "evidence",
-  "proof": "research/kuokka-run-2026-10-07/run3/check.json, run4/check.json, run5/check.json (shotfleet check out-runN --app Kuokka.app, rc=0): screenshots 10, problems 0, notes 0, unverified 0 each; logs/check-run3.log, check-run4.log, check-run5.log: 'checked 10 screenshots in 2 languages: 0 problem(s)'; the in-run checks (run3/check-in-run.json etc.) say the same.",
+  "proof": "research/kuokka-run-2026-10-07/run3/check.json, run4/check.json, run5/check.json (shotfleet check out-runN --app Kuokka.app, rc=0): screenshots 10, problems 0, notes 0, unverified 0 each; logs/check-run3.log, check-run4.log, check-run5.log: 'checked 10 screenshots in 2 languages: 0 problem(s)'; the in-run checks (run3/check-in-run.json etc.) say the same. A clean check does not prove the taps were right: run1 (wrong taps, logs/run1-first-flow-de-ja.log) also ended 'checked 10 screenshots in 2 languages: 0 problem(s)', so the home page and demo say the check reads the pictures and does not prove every tap hit the right button.",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-07.",
   "fix": ""
@@ -4386,16 +4388,16 @@
  },
  {
   "id": "C265",
-  "claim": "Kuokka showcase: the content is live Hacker News at capture time, the build was a debug build 2.0.14 from an unreleased branch, and the first flow was wrong",
+  "claim": "Kuokka showcase: the content is live Hacker News at capture time, the build was a debug build 2.0.14 from an unreleased branch, the runs were the third go (the first flow tapped the wrong spots, the second failed on a tap point written as 94.5%)",
   "where": [
    "site/public/index.html"
   ],
   "where_text": [
    "The content is live Hacker News at the moment of capture.",
-   "the run itself was the second go: my first flow tapped the wrong spots"
+   "the runs were the third go: my first flow tapped the wrong spots, my second failed on a tap point I wrote wrong (94.5%), and both logs are in the record"
   ],
   "status": "evidence",
-  "proof": "research/kuokka-run-2026-10-07/NOTES.md: app Kuokka 2.0.14 (289), Debug-iphonesimulator, built 2026-10-05 15:07 from branch review-prompt-redesign (commit 285c7897), copied unchanged from the HackerNewsKMP worktree; logs/run1-first-flow-de-ja.log and logs/run2-failed-point94.5.log are the earlier runs of the same day (run1: story tap hit the hint card's close button and the Bookmarks tap did nothing; run2: tap point '94.5%' refused by Maestro 2.0.10). Frames show Hacker News story titles as they were on 2026-10-07 at about 09:41 simulator time.",
+  "proof": "research/kuokka-run-2026-10-07/NOTES.md: app Kuokka 2.0.14 (289), Debug-iphonesimulator, built 2026-10-05 15:07 from branch review-prompt-redesign (commit 285c7897), copied unchanged from the HackerNewsKMP worktree; logs/run1-first-flow-de-ja.log and logs/run2-failed-point94.5.log are the earlier runs of the same day (run1: story tap hit the hint card's close button and the Bookmarks tap did nothing; run2: failed 'FAIL de 3/5, ja 3/5 (retried)' on tap point '94.5%', refused by Maestro 2.0.10; progress.log 11:05:56 and NOTES.md say the same; the counted runs are run3 to run5, so 'the third go'). Frames show Hacker News story titles as they were on 2026-10-07 at about 09:41 simulator time.",
   "layer": "site",
   "assertion": "One recorded run on the owner's app, 2026-10-07.",
   "fix": ""
