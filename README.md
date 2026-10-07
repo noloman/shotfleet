@@ -29,6 +29,8 @@ After capture, every screenshot's text is compared against your app's own string
 - **Translation collisions, before anything runs:** for example, `tr: 'Next' -> 'İleri' also means 'Advanced'`. A tap could hit the wrong button there, so you anchor that step with `below:`.
 
 - **Store rules:** sizes each store accepts (every App Store display class, Play's 320–3840 px), at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad. Notes (not failures) for Play's 2:1 rule and for listings that can't be recommended by Google Play (fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9).
+- **Store coverage:** at the end of every `check` there is a table per store (when it can tell which store the screenshots are for): one row per language, one column per device class. For the App Store those are iPhone 6.9", iPhone 6.5" and iPad 13"; for Google Play, phone, 7" tablet and 10" tablet. Each cell says `ok`, `missing`, `too many` or `wrong size` (`-` where the class isn't needed), and plain lines under it say what is short, for example `ja: iPad 13" missing (the App Store needs it because your app runs on iPad)`. It is in `index.html` and, as `coverage`, in `check.json` and `--json` too. It only reports what the rules above already know and changes no exit code. If you ran iPhone and iPad as separate device folders, each folder gets its own table.
+- **What changed since last time:** `shotfleet check out --compare last-release/` (an earlier shotfleet output folder or fastlane folder) also lists, per language and screen, what is new, removed or changed. A change is a different image; when both sides still have the text the app reported during `run` (the `.texts.json` files next to the screenshots), it also lists the text lines added and removed. An exported fastlane folder has no such files, so there you only see that the picture changed. It reads no screenshot with text recognition, it is a report only (exit code unchanged), and it is in `check.json` as `compare`.
 - **Languages your app doesn't have:** a store listing (say Traditional Chinese) whose screenshots can't be in that language because the app isn't translated into it.
 
 ### Check screenshots you already have (fastlane snapshot, screengrab, by hand)
@@ -166,6 +168,10 @@ fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --ski
 
 Run `shotfleet check fastlane/` right before uploading: export already skips languages that failed, and the check
 also catches folders you edited by hand.
+
+`shotfleet export out --fastlane fastlane/ --print-upload` prints that command with your folder in it. It only prints; shotfleet never uploads anything and never sees your Apple or Google credentials, fastlane uses its own. `--force` makes `deliver` skip the HTML preview it would otherwise wait on.
+
+Prefer the [asc CLI](https://github.com/rorkai/App-Store-Connect-CLI)? Its README lists an `asc screenshots upload` command that takes one language and one device type at a time, for example `asc screenshots upload --version-localization <id> --path fastlane/screenshots/en-US --device-type IPHONE_65 --replace --confirm` (flags as listed there on 2026-10-07; `asc screenshots upload --help` has the current ones). The folders `export` writes are named by store locale, so the `--path` is one of them.
 
 ## In CI
 

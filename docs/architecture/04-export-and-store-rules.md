@@ -43,6 +43,8 @@ fastlane layouts shotfleet reads or writes:
 | `screengrab` (Android capture) | `metadata/android/<locale>/images/phoneScreenshots/<name>_<13-digit ms timestamp>.png` | `check` strips the timestamp when matching screens |
 | supply with the locale in names | `de-DE/1_de-DE.png` | `check` strips the locale suffix only when every file in the folder has it |
 
+`export --print-upload` (`upload_command`) prints the `fastlane deliver` (iOS) or `fastlane supply` (Android) command for the fastlane folder, screenshots only; it prints and runs nothing. Flag names were read on docs.fastlane.tools on 2026-10-07.
+
 shotfleet does not touch `Fastfile`; the README shows lanes that run `shotfleet check` between `snapshot`/`screengrab` and `deliver`/`supply`.
 
 ## 4.2 Store size and count rules

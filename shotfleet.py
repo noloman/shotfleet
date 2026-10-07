@@ -3437,11 +3437,140 @@ def reports_json():
             "problems": [x for _, d in docs for x in d.get("problems", [])],
             "notes": [x for _, d in docs for x in d.get("notes", [])],
             "unverified": [x for _, d in docs for x in d.get("unverified", [])],
-            "reports": [{"report": str(f), "problems": d.get("problems", [])} for f, d in docs]}
+            "reports": [{"report": str(f), "problems": d.get("problems", []), **({"coverage": d["coverage"]} if d.get("coverage") else {}),
+                         **({"compare": d["compare"]} if d.get("compare") else {})} for f, d in docs]}
+
+# ---------- store coverage matrix and release diff (report only: they never change the exit code) ----------
+
+APPLE_COLUMNS = ['iPhone 6.9"', 'iPhone 6.5"', 'iPad 13"']
+PLAY_COLUMNS = {"phoneScreenshots": "phone", "sevenInchScreenshots": '7" tablet', "tenInchScreenshots": '10" tablet'}
+
+def coverage_matrix(sets, android, ipad=False):
+    """The per-language x device-class table for one store, or None when the store is unknown.
+    `sets`: App Store (android False): {label: [files]}; Google Play (android True): {play folder: {label: [files]}}.
+    Cell: {"status": ok | missing | too many | wrong size | optional, "count": N}. Uses only rules store_rules already applies
+    (App Store: 1 to 10 per class, a 6.9" or 6.5" iPhone set, a 13" iPad set when the app runs on iPad; Play: at most 8 per device
+    type, 320-3840 px, tablets 1080 px or more, 4 or more for tablets per research/store-specs.md). Conservative where the source is
+    unclear: Play's 2:1 limit is not a "wrong size" here (Play accepts 20:9 in practice; store_rules makes it a note), and a Play
+    language with no phone screenshot is "missing" although Google only states a minimum of two across device types (UNVERIFIED for phones alone)."""
+    if android is None: return None
+    locales, summary, cells = set(), [], {}
+    if android is False:
+        columns = APPLE_COLUMNS + ["other sizes"]
+        count, iphone_run = {}, False
+        for label, files in sets.items():
+            locales.add(label)
+            c = count.setdefault(label, {k: 0 for k in columns})
+            for f in files:
+                cls = apple_class(image_info(f)[0] or ())
+                iphone_run = iphone_run or bool(cls and cls.startswith("iPhone"))
+                if cls in APPLE_COLUMNS: c[cls] += 1
+                elif cls is None: c["other sizes"] += 1  # a recognised class we don't tabulate (Watch, Mac, 6.1"...) is neither
+        for label in sorted(locales):
+            c, row = count[label], {}
+            has_phone = c['iPhone 6.9"'] or c['iPhone 6.5"']
+            for col in APPLE_COLUMNS:
+                n = c[col]
+                need = ipad if col.startswith("iPad") else iphone_run and not has_phone
+                row[col] = {"status": "too many" if n > 10 else "ok" if n else "missing" if need else "optional", "count": n}
+            row["other sizes"] = {"status": "wrong size" if c["other sizes"] else "ok", "count": c["other sizes"]}
+            cells[label] = row
+            if row['iPad 13"']["status"] == "missing": summary.append(f'{label}: iPad 13" missing (the App Store needs it because your app runs on iPad)')
+            if row['iPhone 6.9"']["status"] == "missing": summary.append(f'{label}: iPhone 6.9" or 6.5" missing (the App Store needs one of them, and your other languages have iPhone screenshots)')
+            for col in APPLE_COLUMNS:
+                if row[col]["status"] == "too many": summary.append(f"{label}: {col} has {row[col]['count']} screenshots (the App Store takes at most 10)")
+            if c["other sizes"]: summary.append(f"{label}: {c['other sizes']} screenshot(s) aren't an App Store screenshot size")
+        return {"store": "App Store", "columns": columns, "locales": cells, "summary": summary}
+    columns = [PLAY_COLUMNS[k] for k in PLAY_COLUMNS if k in sets]
+    for kind, images in sets.items():
+        col, tablet = PLAY_COLUMNS[kind], kind != "phoneScreenshots"
+        for label, files in images.items():
+            locales.add(label)
+            sizes = [image_info(f)[0] for f in files]
+            wrong = sum(s is None or min(s) < 320 or max(s) > 3840 or (tablet and min(s) < 1080) for s in sizes)
+            n = len(files)
+            status = "too many" if n > 8 else "wrong size" if wrong else "ok" if n >= (4 if tablet else 1) else "missing" if n or not tablet else "optional"
+            cells.setdefault(label, {})[col] = {"status": status, "count": wrong if status == "wrong size" else n}
+    for label in sorted(locales):
+        for col in columns: cells[label].setdefault(col, {"status": "missing" if col == "phone" else "optional", "count": 0})
+        for col in columns:
+            st = cells[label][col]
+            if col == "phone" and st["status"] == "missing": summary.append(f"{label}: no phone screenshots (Google Play needs at least two screenshots across device types)")
+            elif st["status"] == "missing": summary.append(f"{label}: {col} has {st['count']} screenshot(s); Google asks for at least 4 for tablets")
+            elif st["status"] == "too many": summary.append(f"{label}: {col} has {st['count']} screenshots (Google Play takes at most 8 per device type)")
+            elif st["status"] == "wrong size": summary.append(f"{label}: {st['count']} {col} screenshot(s) outside Google Play's size limits (320-3840 px; tablets 1080 px or more)")
+    return {"store": "Google Play", "columns": columns, "locales": {l: cells[l] for l in sorted(cells)}, "summary": summary}
+
+def coverage_text(cov):
+    """The matrix as plain aligned text, then the summary lines."""
+    cols = cov["columns"]
+    cell = lambda c: "-" if c["status"] == "optional" else c["status"] if c["status"] == "missing" else f"{c['status']} ({c['count']})"
+    rows = [["", *cols]] + [[l, *(cell(r[c]) for c in cols)] for l, r in cov["locales"].items()]
+    w = [max(len(r[i]) for r in rows) for i in range(len(cols) + 1)]
+    return "\n".join("  " + "  ".join(x.ljust(w[i]) for i, x in enumerate(r)).rstrip() for r in rows)
+
+def coverage_html(cov):
+    cols = cov["columns"]
+    head = "".join(f'<th scope="col">{html.escape(c)}</th>' for c in ["Language", *cols])
+    body = "".join(f'<tr><th scope="row">{html.escape(l)}</th>' + "".join(
+        f'<td>{html.escape("-" if r[c]["status"] == "optional" else r[c]["status"] + (" (%d)" % r[c]["count"] if r[c]["count"] else ""))}</td>' for c in cols) + "</tr>"
+        for l, r in cov["locales"].items())
+    notes = "".join(f"<li>{html.escape(x)}</li>" for x in cov["summary"]) or "<li>nothing is missing</li>"
+    return f'<h2>{html.escape(cov["store"])} coverage</h2><table><tr>{head}</tr>{body}</table><ul>{notes}</ul>'
+
+def compare_folders(prev, images, play_folder="phoneScreenshots"):
+    """What changed per language and screen since `prev` (a shotfleet output folder or a fastlane folder): new, removed, changed.
+    Image hashes decide "changed"; when both screens have the app's own text next to them (<shot>.texts.json, written by `run`; an
+    exported fastlane folder has none) the lines added and removed are listed too. Nothing is read by OCR."""
+    try: old = find_screenshots(prev, play_folder=play_folder)
+    except Fail as e: raise Fail(f"--compare {prev}: {e}")
+    if not old: raise Fail(f"--compare: no screenshots found in {prev}")
+    pairs = {}  # current label -> previous label (de -> de-DE when the other folder is a fastlane one)
+    for pl in old:
+        cl = pl if pl in images else app_locale(pl, set(images))
+        if cl: pairs.setdefault(cl, pl)
+    def table(imgs, label):
+        keys = screen_keys(f"{label}/{p.name}" for p in imgs)
+        return {keys[f"{label}/{p.name}"]: p for p in imgs}
+    def lines(png):
+        t = screen_text(png)
+        return t["text"].split("\n") if t else None
+    out = {"against": str(prev), "new_languages": sorted(set(images) - set(pairs)), "removed_languages": sorted(set(old) - set(pairs.values())),
+           "locales": {}, "unchanged": 0}
+    for cl, pl in sorted(pairs.items()):
+        cur, was = table(images[cl], cl), table(old[pl], pl)
+        entry = {"new": sorted(set(cur) - set(was)), "removed": sorted(set(was) - set(cur)), "changed": []}
+        for k in sorted(set(cur) & set(was)):
+            if hashlib.sha256(cur[k].read_bytes()).digest() == hashlib.sha256(was[k].read_bytes()).digest(): out["unchanged"] += 1; continue
+            a, b = lines(cur[k]), lines(was[k])
+            ch = {"screen": k, "text": a is not None and b is not None}
+            if ch["text"]: ch["text_added"], ch["text_removed"] = [x for x in a if x not in b], [x for x in b if x not in a]
+            entry["changed"].append(ch)
+        if entry["new"] or entry["removed"] or entry["changed"]: out["locales"][cl] = entry
+    return out
+
+def compare_lines(cmp, limit=40):
+    """The diff as console lines (the first `limit`), plus how many were left out."""
+    L = [f"compared with {cmp['against']}: {sum(len(e['new']) + len(e['removed']) + len(e['changed']) for e in cmp['locales'].values())} difference(s), "
+         f"{cmp['unchanged']} screenshot(s) unchanged"]
+    if cmp["new_languages"]: L.append(f"  new languages: {', '.join(cmp['new_languages'])}")
+    if cmp["removed_languages"]: L.append(f"  languages not in this check: {', '.join(cmp['removed_languages'])}")
+    for loc, e in cmp["locales"].items():
+        for k in e["new"]: L.append(f"  {loc}/{k}: new")
+        for k in e["removed"]: L.append(f"  {loc}/{k}: removed")
+        for c in e["changed"]:
+            what = "; ".join(filter(None, [f"text added: {', '.join(repr(x) for x in c['text_added'][:3])}" if c.get("text_added") else "",
+                                           f"text removed: {', '.join(repr(x) for x in c['text_removed'][:3])}" if c.get("text_removed") else ""]))
+            L.append(f"  {loc}/{c['screen']}: changed" + (f" ({what})" if what else " (picture only)" if c["text"] else " (the picture; no text saved to compare)"))
+    return L[:limit], max(0, len(L) - limit)
+
+def compare_html(cmp):
+    L, _ = compare_lines(cmp, limit=10 ** 6)
+    return f'<h2>Changes since the last release</h2><ul>{"".join(f"<li>{html.escape(x.strip())}</li>" for x in L)}</ul>'
 
 @ocr_budget()
 def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
-              play_folder="phoneScreenshots", expect=None, locale=None, strict=False):
+              play_folder="phoneScreenshots", expect=None, locale=None, strict=False, compare=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder.
     `expect` ([expect.<screenshot>] tables) also requires the texts the developer listed to be on (or off) each screen.
@@ -3508,6 +3637,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
+    if android:
+        kind = play_folder if play_folder != "phoneScreenshots" else ANDROID_DEVICES.get(device, {}).get("folder") or "phoneScreenshots"
+        sets = {kind: images}
+        for k in play_folders(folder):  # a supply folder holds the phone and tablet sets side by side
+            if k != kind:
+                try: sets[k] = find_screenshots(folder, play_folder=k)
+                except Fail: pass
+        sets = {k: sets[k] for k in PLAY_FOLDERS if k in sets}
+    else: sets = images
+    coverage = coverage_matrix(sets, android, ipad)
+    compared = compare_folders(compare, images, play_folder) if compare else None
     if android is None:
         notes.append("couldn't tell App Store from Google Play screenshots by their sizes, so each was judged against both stores' "
                      "rules (a problem only when neither store takes it); pass --app to check against one store")
@@ -3646,9 +3786,10 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     global LAST_REPORT; LAST_REPORT = report / "check.json"
     if LAST_REPORT not in REPORTS: REPORTS.append(LAST_REPORT)
     problems += store_problems
-    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes, "unverified": not_verified},
+    (report / "check.json").write_text(json.dumps({"screenshots": rows, "problems": problems, "notes": notes, "unverified": not_verified,
+                                                   **({"coverage": coverage} if coverage else {}), **({"compare": compared} if compared else {})},
                                                   indent=1, ensure_ascii=False))
-    write_gallery(report, rows, problems)
+    write_gallery(report, rows, problems, coverage, compared)
     loud = (f"{len(not_verified)} screenshot(s) not verified, because {gave_up}: their language and [expect] texts were not checked "
             "(store sizes and missing screens were). " + OCR_WHAT_TO_DO) if not_verified else ""
     if loud:  # at the top of the report, whatever the gallery looks like
@@ -3664,11 +3805,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         print(f"notes ({len(notes)}, not blocking):")
         for n in notes[:12]: print(f"  - {n}")
         if len(notes) > 12: print(f"  ... {len(notes) - 12} more in {report / 'check.json'}")
+    if coverage:
+        print(f"\n{coverage['store']} coverage (language x device class):\n{coverage_text(coverage)}")
+        for line in coverage["summary"]: print(f"  - {line}")
+    if compared:
+        shown, more = compare_lines(compared)
+        print("\n" + "\n".join(shown) + (f"\n  ... {more} more in {report / 'check.json'}" if more else ""))
     if report != folder: print(f"report: {report / 'index.html'}")
     if loud: print(("--strict: exit 1. " if strict and not problems else "") + "NOT VERIFIED: " + loud)
     return 1 if problems or (strict and not_verified) else 0
 
-def write_gallery(out, rows, problems):
+def write_gallery(out, rows, problems, coverage=None, compared=None):
     """out/index.html: one row per language, one column per screen; flagged screenshots outlined in red and marked
     "⚠ problem" in text, every image with alt text, WCAG AA contrast in light and dark."""
     why = {}  # screenshot -> the reasons it was flagged, shown under the cell and as a tooltip
@@ -3710,7 +3857,7 @@ h2{{font-size:1.17em}}a:focus-visible{{outline:3px solid #1557c0;outline-offset:
 .sr{{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
 @media (prefers-color-scheme:dark){{body{{background:#1c1c1e;color:#eee}}img.bad{{border-color:#ff6b6b}}small{{color:#ff9e94}}td.missing{{background:#3d1f1f;color:#ffb4ab}}a:focus-visible{{outline-color:#8ab4ff}}}}</style>
 <h1>shotfleet: {len(rows)} screenshots, {len(locales)} languages</h1><h2>Problems ({len(problems)})</h2><ul>{probs}</ul>
-<table><tr><td></td>{''.join(f'<th scope="col">{html.escape(n)}</th>' for n in names)}</tr>{''.join(cells)}</table>""")
+<table><tr><td></td>{''.join(f'<th scope="col">{html.escape(n)}</th>' for n in names)}</tr>{''.join(cells)}</table>{coverage_html(coverage) if coverage else ""}{compare_html(compared) if compared else ""}""")
 
 # ---------- doctor / init / export ----------
 
@@ -4964,8 +5111,10 @@ def main(argv=None):
                    help="also check the [expect.<screenshot>] texts of this config (default: ./shotfleet.toml) are on screen; put it after the folder")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p.add_argument("--strict", action="store_true", help="exit 1, not 0, when screenshots were left unverified because macOS text recognition was busy")
+    p.add_argument("--compare", metavar="PREVIOUS", help="also list what is new, removed or changed per language and screen since this earlier shotfleet output or fastlane folder (a report; it changes no exit code)")
     p = sub.add_parser("export", help="copy screenshots that passed into fastlane's folders")
     p.add_argument("out", help="the run's output folder"); p.add_argument("--fastlane", required=True, help="your fastlane folder")
+    p.add_argument("--print-upload", action="store_true", help="after exporting, print the fastlane command that uploads these screenshots (shotfleet never uploads)")
     p.add_argument("--json", action="store_true", help="print the result as JSON on stdout (progress goes to stderr)")
     p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
     a = ap.parse_args(argv)
@@ -5421,7 +5570,17 @@ def require_licence():
             return
     mac_licence()
 
-def export_with_hooks(out, fastlane):
+def upload_command(fastlane, android):
+    """The fastlane command that uploads what `export` wrote, screenshots only (flags checked against docs.fastlane.tools 2026-10-07).
+    shotfleet prints it and never runs it: your credentials are fastlane's business."""
+    f = Path(fastlane)
+    if android:
+        return (f"fastlane supply --metadata_path {shlex.quote(str(f / 'metadata/android'))} --skip_upload_apk --skip_upload_aab "
+                "--skip_upload_metadata --skip_upload_changelogs --skip_upload_images")
+    return (f"fastlane deliver --screenshots_path {shlex.quote(str(f / 'screenshots'))} --skip_metadata --skip_binary_upload "
+            "--overwrite_screenshots --force")
+
+def export_with_hooks(out, fastlane, print_upload=False):
     """`export`, with the config's before_export / after_export hooks (found through run.json) around it."""
     out = Path(out)
     run_json = next((p for p in [out / "run.json", *[d / "run.json" for d in device_runs(out)]] if p.is_file()), None)
@@ -5435,6 +5594,7 @@ def export_with_hooks(out, fastlane):
     rc, cmd = run_hook(hooks, "before_export", config or "", env)
     if rc: raise Fail(f"hook before_export failed (exit {rc}): {cmd}")
     code = cmd_export(out, fastlane)
+    if print_upload: print("\nTo upload (shotfleet never uploads; fastlane does, with your own credentials):\n  " + upload_command(fastlane, run.get("platform") == "android"))
     rc, cmd = run_hook(hooks, "after_export", config or "", {**env, "SHOTFLEET_EXIT": str(code)})
     if rc: print(f"hook after_export failed (exit {rc}): {cmd}", file=sys.stderr)
     return max(code, 1 if rc else 0)
@@ -5489,11 +5649,12 @@ def check_build(folder, cwd=None):
     return app, None, strings, f"no --app given: using {app} for strings (pass --app to choose another)"
 
 @ocr_budget()  # one text-recognition budget for every folder this check covers
-def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None, strict=False):
+def check_any(folder, app=None, strings_files=None, ocr_command=None, report=None, expect=None, locale=None, strict=False, compare=None):
     """`check` on whatever folder it is: a run, a multi-device run, or Play listings (phone and tablet sets each on their own).
     No --app or --strings and no run.json: the app build (or translation files) `init` would find in the current folder."""
     if not Path(folder).is_dir(): raise Fail(f"no folder at {folder}")
     strings = None
+    if compare and not Path(compare).is_dir(): raise Fail(f"--compare: no folder at {compare}")
     if not app and not strings_files and not (Path(folder) / "run.json").exists() and not device_runs(folder):
         app, strings_files, strings, line = check_build(folder)
         print(line)
@@ -5502,13 +5663,14 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
         for k in kinds:
             print(f"\n== {k}")
             codes.append(cmd_check(folder, strings=strings, app=app, strings_files=strings_files, ocr_command=ocr_command,
-                                   report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect, strict=strict))
+                                   report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect, strict=strict, compare=compare))
         return max(codes)
     if subs := device_runs(folder):
         codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=False,
-                           report_dir=Path(report) / d.name if report else None, expect=expect, strict=strict) for d in subs]
+                           report_dir=Path(report) / d.name if report else None, expect=expect, strict=strict,
+                           compare=(Path(compare) / d.name if compare and (Path(compare) / d.name).is_dir() else compare)) for d in subs]
         return max(codes + [ipad_set_missing(folder)])
-    return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale, strict=strict)
+    return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale, strict=strict, compare=compare)
 
 def main_dispatch(a):
     try:
@@ -5531,8 +5693,8 @@ def main_dispatch(a):
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
         if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform, getattr(a, "retry_failed", False))
-        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale, a.strict)
-        if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
+        if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale, a.strict, a.compare)
+        if a.cmd == "export": return export_with_hooks(a.out, a.fastlane, a.print_upload)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
         print(f"shotfleet: {e}", file=sys.stderr); return 2
     except KeyboardInterrupt:

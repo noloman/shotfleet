@@ -4509,5 +4509,130 @@
   "assertion": "The proof's tests; the quoted words in the README.",
   "fix": "",
   "test": "IosRetries.test_retry_failed_reruns_only_the_failed_languages_and_keeps_the_good_ones"
+ },
+ {
+  "id": "C273",
+  "claim": "check ends with a language x device-class table per store (App Store: iPhone 6.9, 6.5, iPad 13; Play: phone, 7 and 10 inch tablet), each cell ok, missing, too many or wrong size",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "at the end of every `check` there is a table per store (when it can tell which store the screenshots are for)",
+   "at the end of every <code>check</code> there is a table per store (when it can tell which store the screenshots are for)"
+  ],
+  "status": "proven",
+  "proof": "AppStoreMatrix.test_more_than_ten_and_wrong_sizes, AppStoreMatrix.test_the_65_inch_set_alone_is_enough_and_neither_is_missing, PlayMatrix.test_phone_and_tablet_cells, AppStoreMatrix.test_unknown_store_has_no_matrix (tests/test_upload_gate_017.py). Rules are the ones store_rules already applies; Play's 4-for-tablets comes from research/store-specs.md and its phone minimum is UNVERIFIED, so a Play language with no phone screenshots is reported missing conservatively.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "PlayMatrix.test_phone_and_tablet_cells"
+ },
+ {
+  "id": "C274",
+  "claim": "The coverage table says in plain words what is short, e.g. ja: iPad 13\" missing (the App Store needs it because your app runs on iPad)",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "`ja: iPad 13\" missing (the App Store needs it because your app runs on iPad)`",
+   "<code>ja: iPad 13&quot; missing (the App Store needs it because your app runs on iPad)</code>"
+  ],
+  "status": "proven",
+  "proof": "AppStoreMatrix.test_a_language_without_ipad_screenshots_is_missing_and_says_why, AppStoreMatrix.test_ipad_is_optional_when_the_app_does_not_run_on_ipad (tests/test_upload_gate_017.py)",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "AppStoreMatrix.test_a_language_without_ipad_screenshots_is_missing_and_says_why"
+ },
+ {
+  "id": "C275",
+  "claim": "The coverage is in index.html and as coverage in check.json and --json, and it changes no exit code",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "It is in `index.html` and, as `coverage`, in `check.json` and `--json` too. It only reports what the rules above already know and changes no exit code.",
+   "It is in <code>index.html</code> and, as <code>coverage</code>, in <code>check.json</code> and <code>--json</code> too. It only reports what the rules above already know and changes no exit code."
+  ],
+  "status": "proven",
+  "proof": "CheckWritesTheMatrix.test_check_json_console_and_html_carry_the_matrix_and_the_exit_code_is_unchanged, CheckWritesTheMatrix.test_the_html_report_has_the_table (tests/test_upload_gate_017.py)",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "CheckWritesTheMatrix.test_check_json_console_and_html_carry_the_matrix_and_the_exit_code_is_unchanged"
+ },
+ {
+  "id": "C276",
+  "claim": "check --compare lists per language and screen what is new, removed or changed (a different image, plus text lines added and removed when both sides have the app's .texts.json)",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "also lists, per language and screen, what is new, removed or changed. A change is a different image; when both sides still have the text the app reported during `run`",
+   "also lists, per language and screen, what is new, removed or changed. A change is a different image; when both sides still have the text the app reported during <code>run</code>"
+  ],
+  "status": "proven",
+  "proof": "Compare.test_new_removed_changed_and_the_text_that_moved, Compare.test_a_fastlane_folder_matches_by_store_code_and_has_no_text_to_compare, Compare.test_languages_only_on_one_side_are_named (tests/test_upload_gate_017.py)",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "Compare.test_new_removed_changed_and_the_text_that_moved"
+ },
+ {
+  "id": "C277",
+  "claim": "check --compare reads nothing with text recognition, is a report only (exit code unchanged) and is in check.json as compare",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "It reads no screenshot with text recognition, it is a report only (exit code unchanged), and it is in `check.json` as `compare`.",
+   "It reads no screenshot with text recognition, it is a report only (exit code unchanged), and it is in <code>check.json</code> as <code>compare</code>."
+  ],
+  "status": "proven",
+  "proof": "Compare.test_it_is_a_report_not_a_failure, Compare.test_no_compare_means_no_compare_key (tests/test_upload_gate_017.py); compare_folders calls no reader (the fake reader of g1_check would fail on a missing .txt file).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "Compare.test_it_is_a_report_not_a_failure"
+ },
+ {
+  "id": "C278",
+  "claim": "export --print-upload prints the fastlane upload command with your folder in it; it only prints and shotfleet never uploads or sees your credentials",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "prints that command with your folder in it. It only prints; shotfleet never uploads anything and never sees your Apple or Google credentials, fastlane uses its own.",
+   "prints that command with your folder in it. It only prints; shotfleet never uploads anything and never sees your Apple or Google credentials, fastlane uses its own."
+  ],
+  "status": "proven",
+  "proof": "PrintUpload.test_the_commands, PrintUpload.test_export_prints_them_only_when_asked_and_never_runs_anything (tests/test_upload_gate_017.py)",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "PrintUpload.test_the_commands"
+ },
+ {
+  "id": "C279",
+  "claim": "The asc CLI has an asc screenshots upload command with --version-localization, --path, --device-type, --replace and --confirm, one language and device type at a time",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Its README lists an `asc screenshots upload` command that takes one language and one device type at a time",
+   "Its README lists an <code>asc screenshots upload</code> command that takes one language and one device type at a time"
+  ],
+  "status": "evidence",
+  "proof": "Read from the README of github.com/rorkai/App-Store-Connect-CLI on 2026-10-07 (summarised by a fetch tool, not run: no Apple account was used). The fastlane flags in the same section were read on docs.fastlane.tools (upload_to_app_store, upload_to_play_store) the same day.",
+  "layer": "unit",
+  "assertion": "Read on the date named in the proof; a later change upstream is not tracked.",
+  "fix": ""
  }
 ]
