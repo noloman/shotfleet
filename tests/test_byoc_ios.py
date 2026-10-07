@@ -326,7 +326,8 @@ class CaptureRun(unittest.TestCase):
         code, out = self.run_it()
         self.assertEqual(code, 1, out)
         self.assertIn("FAIL de", out); self.assertIn("saved no screenshots", out)
-        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "de", "ja"])  # retried once, like a failed flow
+        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja"])  # not retried: the test or its setup is wrong, not the device (0.1.7: only device failures are retried)
+        self.assertIn("not retrying de", out)
         run = json.loads((self.d / "out/run.json").read_text())
         self.assertFalse(run["locales"]["de"]["ok"]); self.assertIn(".keepAlways", run["locales"]["de"]["error"])
         self.assertTrue(run["locales"]["ja"]["ok"])
@@ -352,7 +353,7 @@ class CaptureRun(unittest.TestCase):
         with mock.patch.object(sf, "run_guarded", side_effect=fails_for_ja): code, out = self.run_it()
         self.assertEqual(code, 1, out)
         self.assertIn("xcodebuild failed (exit 65", out)
-        self.assertIn("TEST FAILED", (self.d / "out/.work/capture/attempt2/ja.log").read_text())
+        self.assertIn("TEST FAILED", (self.d / "out/.work/capture/attempt1/ja.log").read_text())  # a failing test is not retried (0.1.7: only device failures are)
 
     def test_a_hung_simulator_is_stopped_and_the_language_retried(self):
         real, hung = self.fake_run, []

@@ -2008,7 +2008,7 @@ class SimpleConfig(unittest.TestCase):
     def test_run_goes_through_every_platform_in_the_file(self):
         seen = []
         with mock.patch.object(sf, "platforms_in", return_value=["ios", "android"]), \
-             mock.patch.object(sf, "run_platform", side_effect=lambda c, o, p, plat: seen.append(plat) or (1 if plat == "android" else 0)):
+             mock.patch.object(sf, "run_platform", side_effect=lambda c, o, p, plat, *a: seen.append(plat) or (1 if plat == "android" else 0)):
             self.assertEqual(sf.cmd_run("x.toml"), 1)
             self.assertEqual(sf.cmd_run("x.toml", platform="ios"), 0)
         self.assertEqual(seen, ["ios", "android", "ios"])
@@ -2920,7 +2920,7 @@ class ContentExpect(unittest.TestCase):
             code = sf.main(["check", str(d / "shots"), "--strings", str(d / "locales/*/translation.json"), "--content", str(cfg),
                             "--report", str(d / "rep"), "--json"])
         report = json.loads(out.getvalue())
-        self.assertEqual((code, set(report)), (1, {"exit", "screenshots", "problems", "notes", "unverified"}))
+        self.assertEqual((code, set(report)), (1, {"exit", "screenshots", "problems", "notes", "unverified", "coverage"}))
         self.assertEqual(report["problems"], ['en/01_home.png: expected "Steinmännchen" on screen'])
         self.assertIn("content: [expect] checked on 2 screens", err.getvalue())
         with contextlib.redirect_stderr(io.StringIO()) as e2:
@@ -3311,7 +3311,7 @@ class G1ExitCodes(unittest.TestCase):
         self.assertEqual(code, 1)
         report = json.loads(out)
         self.assertEqual({k: report[k] for k in ("exit", "problems")}, {"exit": 1, "problems": ["de/01.png: shows en strings (4 lines) more than de (0)"]})
-        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes", "unverified"})
+        self.assertEqual(set(report), {"exit", "screenshots", "problems", "notes", "unverified", "coverage"})
 
     def test_two_for_a_setup_error_with_one_line_on_stderr(self):
         err = io.StringIO()

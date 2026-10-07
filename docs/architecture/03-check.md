@@ -196,6 +196,13 @@ to `extendedWaitUntil` visible text before `takeScreenshot`.
   `reports` array of `{"report", "problems"}` is added. With `exit` 2 the object has only `exit`.
 - **Exit code:** 1 if there are problems, or if `--strict` and some screens are unverified; else 0.
 
+## 3.5b Coverage matrix and `--compare`
+
+Both are reports: they add keys to `check.json` and lines to the console and `index.html`, and never change the exit code.
+
+- **`coverage_matrix(sets, android, ipad)`** (next to `cmd_check`) builds `{"store", "columns", "locales": {locale: {column: {"status", "count"}}}, "summary": [...]}` from the same rules `store_rules` applies (see [04](04-export-and-store-rules.md)); `None` when the store is unknown. Statuses: `ok`, `missing`, `too many`, `wrong size`, `optional`. App Store: columns iPhone 6.9", iPhone 6.5", iPad 13" and `other sizes`; an iPhone cell is missing only when the run has iPhone screenshots somewhere and the language has neither 6.9" nor 6.5"; iPad 13" is missing only when the app runs on iPad. Google Play: phone, 7" and 10" tablet (all three sets of a supply folder are looked up from one `cmd_check`); 4 or more for a tablet set comes from `research/store-specs.md`, and a language with no phone screenshot is "missing" conservatively (the page's wording is "a minimum of two screenshots across different device types"). Play's 2:1 limit is not a "wrong size" here, because `store_rules` makes it a note. A multi-device run gets one matrix per device folder.
+- **`compare_folders(prev, images)`** (`--compare PREVIOUS`) finds the earlier screenshots with `find_screenshots`, pairs languages by name or store code (`de` with `de-DE`), pairs screens with `screen_keys`, calls a screen changed when the sha256 of the files differs, and lists the text lines added and removed when both sides have a `.texts.json` (`screen_text`). No OCR runs; an exported fastlane folder has no sidecars, so there only the picture is compared. In a multi-device run `PREVIOUS/<device>` is used when it exists.
+
 ## 3.6 Extending the check
 
 - **A new rule:** add the condition inside the loop in `cmd_check` (or a pure helper next to `system_dialog`), append to `problems` or `notes`, and

@@ -66,7 +66,7 @@ It is not:
 |---|---|---|---|
 | `doctor [--fix] [--yes] [config]` | Checks Maestro, Java, Xcode, Android SDK, OCR; prints what is missing. `--fix` downloads Maestro, a JRE and the Android tools after one confirmation, never uses sudo. | no | 0 (one platform ready), 2 (neither), 1 (a `--fix` step failed) |
 | `init [build...] [--dir D] [--capture]` | Writes `shotfleet.toml` and `flow.yaml` for a simulator `.app` and/or an `.apk`, finding the newest Debug build if none is given. Knows Flutter, React Native, Expo, Capacitor, MAUI, Kotlin Multiplatform projects. `--capture` writes a `[capture]` config. | no | 0, 2 |
-| `run [config] [--platform] [--locales] [--parallel] [--json] [--no-hooks] [--no-build]` | Capture every language, then `check`. | free: 2 languages; paid: all | 0, 1, 2, 130 |
+| `run [config] [--platform] [--locales \| --retry-failed] [--parallel] [--json] [--no-hooks] [--no-build]` | Capture every language, then `check`. | free: 2 languages; paid: all | 0, 1, 2, 130 |
 | `check <folder> [--app] [--strings] [--report] [--ocr-command] [--locale] [--content [config]] [--json] [--strict]` | Verifies screenshots from shotfleet, fastlane or anything. | no, never | 0, 1, 2, 130 |
 | `export <out> --fastlane <dir> [--json] [--no-hooks]` | Copies passing languages into fastlane folders. | yes | 0, 1, 2 |
 | `activate <key>` / `deactivate` | Stores or removes the Gumroad licence on this Mac. | n/a | 0, 2 |
@@ -123,7 +123,7 @@ The same flow as numbered steps, with the code that does each one:
 7. **Collect text while the screenshot is on screen.** On iOS a background thread (`capture_texts`, `:1367`) reads the accessibility tree from the
    Maestro iOS driver the moment a PNG appears and writes `<shot>.texts.json`. On Android a marker step after each `takeScreenshot` makes Maestro save
    the hierarchy (`android_flow`, `hierarchy_texts`, `save_hierarchy_texts`). This is the app's own exact text, in every script.
-8. **Retry once.** Languages that failed are retried once on the devices that still answer (`ios_run_inner`, `:2076`; Android `safe_round`).
+8. **Retry once, device failures only.** Languages that failed with an infrastructure error (`INFRA_ERRORS`: a simulator that stopped answering, Maestro dying before it reported, an emulator that is offline or did not boot) are retried once on the devices that still answer (`retry_choice`, then `ios_run_inner`; Android `safe_round`). A failed flow or app is not retried. `run --retry-failed` reruns the languages that failed in `out/run.json` (`retry_setup`, `keep_earlier`).
 9. **Check.** `cmd_check` (`:3329`) finds the screenshots in whatever layout they are in, reads their text (app text first, then OCR), judges the
    language, finds copies and missing screens, applies the store rules and writes `check.json` and `index.html`.
 10. **Export.** `cmd_export` (`:4691`) copies the screenshots of every language with no problem into fastlane's folders, mapping app locales to
