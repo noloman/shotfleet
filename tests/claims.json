@@ -3888,7 +3888,7 @@
   ],
   "where_text": [
    "<code>run</code> can run your own XCUITest screenshot tests",
-   "the finished feature is new in 0.1.6; its device test hasn’t passed yet"
+   "the finished feature is new in 0.1.6; its device test hasn't passed yet"
   ],
   "status": "untested",
   "layer": "device",
