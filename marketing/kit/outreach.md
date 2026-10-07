@@ -3,7 +3,7 @@
 Owner: Manu sends, from his own address. Nothing here has been sent. Written 2026-10-02.
 Rules for every message below: send once, no follow-up before the stated wait, never offer payment or a licence in return for coverage (except design partners, where the licence is for an honest write-up and nothing is promised about its tone), accept silence. Do not DM anyone who has not written to you first, except where the person publicly asked for exactly this help and invited replies. Re-read the target's current page the same day.
 
-Facts you may use: 18 languages x 4 screens = 72 screenshots, 9 minutes iOS and 15 minutes Android, one M1 Pro Mac, 4 devices in parallel, one app, Maestro 2.0.10. Free: `shotfleet check`, and `run` for 2 languages. $29 for the first 100 buyers, then $49 once per developer, a year of updates, 14-day refund. Apple silicon only, Maestro 2.x, Java 17+. Never claim: Flutter or React Native on a real app, frames, captions, store upload, "catches all localization bugs", any Maestro endorsement.
+Facts you may use: 18 languages x 4 screens = 72 screenshots, 9 minutes iOS and 15 minutes Android, one M1 Pro Mac, 4 devices in parallel, one app (CrossfitTracker, 2026-10-01), Maestro 2.0.10. A second real app, AnywhereRoles (2026-10-06): 120 Android screenshots in 15 languages on 1 emulator in 1826 s, 108 iPhone screenshots on 2 simulators in 3420 s, 0 problems after the run. Free: `shotfleet check`, and `run` for 2 languages. $29 for the first 100 buyers, then $49 once per developer, a year of updates, 14-day refund. Apple silicon only, Maestro 2.x, Java 17+. Never claim: Flutter or React Native beyond wger (Flutter) and the obytes template (Expo), or bare React Native at all, frames, captions, store upload, "catches all localization bugs", any Maestro endorsement.
 
 ---
 
@@ -23,7 +23,7 @@ Subject (email) or first line (thread reply): `Your locale screenshot problem: I
 >
 > Terms, so there are no surprises: the licence is yours either way. I will not quote you, name you or use your app's name anywhere without your written yes to the exact words, and you can say no after seeing them. You owe me nothing if it does not work for your app.
 >
-> What it needs: an Apple silicon Mac, Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+. It does not make frames or captions and does not upload to the stores. I have not run it on a real Flutter or React Native app yet, so if that is your stack you would be an early test for me, not a safe bet.
+> What it needs: an Apple silicon Mac, Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+. It does not make frames or captions and does not upload to the stores. I have run it end to end on one public Flutter app (wger) and one Expo template (obytes), on iOS and Android, in two languages each. Other Flutter or Expo apps and bare React Native I have not run, so if that is your stack you would be an early test for me, not a safe bet.
 >
 > If this is not for you, no problem, and thank you for reading.
 > Manu
