@@ -788,13 +788,15 @@
    "site/public/index.html",
    "site/public/terms.html",
    "site/public/terms.html",
-   "site/public/whats-new.html"
+   "site/public/whats-new.html",
+   "site/public/index.html"
   ],
   "where_text": [
    "Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none. Unlimited apps.",
    "One licence is for one developer. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none.",
    "Unlimited apps and projects, including client and commercial work.",
-   "From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset."
+   "From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset.",
+   "A key can be activated 5 times: use it on up to 3 of your Macs, and the spare activations cover reinstalls."
   ],
   "status": "partial",
   "proof": "Client: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (the 6th activation is refused and spends nothing; 0.1.5 and earlier stop at the 4th), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does). 2026-10-06 (0.1.6, L2, owner decision): '3 activations' made a reinstall burn one of the 3 Macs. MAX_MACS is now 5 and every page says 'use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset' (the terms, docs and README also say the key has 5). Exact limit: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (activations 1 to 5 work, the 6th is refused and burns nothing); the wording: GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email; pages and code agree: Offer.test_limits_match_the_code. The device assertion below now means: the 6th is refused with 'all 5 activations' and Uses reads 5. Gumroad's own product description must say the same (licence-review/gumroad-description-new.txt; Manu edits Gumroad).",
@@ -3085,18 +3087,16 @@
  },
  {
   "id": "C190",
-  "claim": "What's new 0.1.5 and the home strip: check works on fastlane snapshot and screengrab screenshots without Maestro, ignores screengrab's timestamp, and the docs have a fastlane lane that stops before the upload on a problem",
+  "claim": "What's new 0.1.5: check works on fastlane snapshot and screengrab screenshots without Maestro, ignores screengrab's timestamp, and the docs have a fastlane lane that stops before the upload on a problem",
   "where": [
    "site/public/whats-new.html",
    "site/public/whats-new.html",
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
    "<code>check</code> now works on those screenshots, no Maestro needed",
    "so it no longer says every language is missing screens",
-   "a ready-made fastlane lane that stops before the upload",
-   "works on your fastlane snapshot and screengrab screenshots, no Maestro needed"
+   "a ready-made fastlane lane that stops before the upload"
   ],
   "status": "proven",
   "proof": "Same proof as C175 and C177: CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_shot_key_strips_only_screengrabs_13_digit_timestamp, FastlaneAndRenders.test_the_fastlane_lane_checks_the_folders_snapshot_and_screengrab_write_and_fails_on_problems. check never calls Maestro (C175). CHANGELOG Unreleased (0.1.5).",
@@ -3123,16 +3123,14 @@
  },
  {
   "id": "C192",
-  "claim": "What's new 0.1.5 and the home strip: brew install noloman/tap/shotfleet installs the same signed build; Homebrew doesn't install Maestro or Java, doctor --fix does; doctor tells a Homebrew copy to run brew upgrade",
+  "claim": "What's new 0.1.5: brew install noloman/tap/shotfleet installs the same signed build; Homebrew doesn't install Maestro or Java, doctor --fix does; doctor tells a Homebrew copy to run brew upgrade",
   "where": [
    "site/public/whats-new.html",
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
    "<code>brew install noloman/tap/shotfleet</code> installs the same signed build",
-   "<code>doctor</code> tells you to run <code>brew upgrade</code>",
-   "<code>brew install noloman/tap/shotfleet</code> installs the same signed build"
+   "<code>doctor</code> tells you to run <code>brew upgrade</code>"
   ],
   "status": "evidence",
   "proof": "Install: same evidence as C181 (2026-10-06, the cask installed the notarized 0.1.4 build, codesign requirement passed, no depends_on for Maestro or Java). Upgrade line: G1Doctor.test_the_update_line_names_brew_for_a_homebrew_copy. At the 0.1.5 release tools/bump-homebrew.sh points the cask at the 0.1.5 tarball (packaging/README.md).",
@@ -3142,18 +3140,16 @@
  },
  {
   "id": "C193",
-  "claim": "What's new 0.1.5 and the home strip: no restart when macOS text recognition is busy; check waits within one 8-minute budget, then finishes, still checks sizes and missing screens, marks unread screens 'not verified'; --strict makes them fail",
+  "claim": "What's new 0.1.5: no restart when macOS text recognition is busy; check waits within one 8-minute budget, then finishes, still checks sizes and missing screens, marks unread screens 'not verified'; --strict makes them fail",
   "where": [
    "site/public/whats-new.html",
    "site/public/whats-new.html",
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
    "You never need to restart your Mac when macOS text recognition is busy.",
    "waits for it up to 8 minutes and then finishes anyway",
-   "Add <code>--strict</code> if unread screens should fail the check.",
-   "It never needs a restart when macOS text recognition is busy."
+   "Add <code>--strict</code> if unread screens should fail the check."
   ],
   "status": "proven",
   "proof": "Budget.test_the_budget_ends_the_waiting_and_check_finishes_with_unverified_screens, Budget.test_texts_json_screens_are_still_judged, Budget.test_json_carries_unverified_and_strict_makes_it_exit_1, Budget.test_a_warm_up_that_never_answers_also_ends_in_unverified_not_exit_2, Budget.test_read_text_stops_at_the_budget, WarmUpLock.test_the_wait_for_the_lock_counts_against_the_budget (tests/test_ocr_wait.py); the messages say 'No restart needed' (AneState.test_messages_tell_what_to_do). CHANGELOG Unreleased (0.1.5).",
@@ -3621,7 +3617,7 @@
    "these are real shotfleet output, only made smaller for the web"
   ],
   "status": "evidence",
-  "proof": "Source frames (2026-10-06): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/{ja/1_jobs-list,hi/4_salary,ru/7_status,zh-CN/2_filters}.png and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/raw/{en,de,ko,ja}/iphone-69-03-saved-pipeline.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/ (no frames, captions or edits). Only slots the owner reviewed as public-safe: no iPhone slot 05, no slot 06 paywall, no iPad frame, and no frame that shows a job's source badge (the owner said no to that on 2026-10-06, so the iPhone en jobs list, de job detail and ja tracker frames were replaced by the same run's saved jobs screen in those languages, the only reviewed iPhone slot without it). Re-encoding the source with that command gives slightly different bytes (mean pixel difference about 1/255): same resized frames, other encoder settings (review 2026-10-06, finding 19).",
+  "proof": "Source frames (2026-10-06): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/{ja/1_jobs-list,hi/4_salary,ru/7_status,zh-CN/2_filters}.png and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/raw/{en,de,ko,ja}/iphone-69-03-saved-pipeline.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/ (no frames, captions or edits). Only slots the owner reviewed as public-safe: no iPhone slot 05, no slot 06 paywall, no iPad frame, and no frame that shows a job's source badge (the owner said no to that on 2026-10-06, so the iPhone en jobs list, de job detail and ja tracker frames were replaced by the same run's saved jobs screen in those languages, the only reviewed iPhone slot without it). Re-encoding the source with that command gives slightly different bytes (mean pixel difference about 1/255): same resized frames, other encoder settings (review 2026-10-06, finding 19). Owner sign-off, 2026-10-06: Manu approved the Hindi salary numbers (android_hi_salary), the AI filter frame (android_zh_filters, live) and the English job data in the ru/hi/ja frames on 2026-10-06; the iPhone slot 03 saved-jobs frames (iphone_ko_saved) replaced the Jobicy frames (coordinator-approved, commit c18473f).",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-06.",
   "fix": ""
@@ -3764,7 +3760,7 @@
   ],
   "status": "partial",
   "layer": "unit",
-  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half (NoKeepTests in tools/fixture-byoc-e2e.sh) has not run yet. Partial: every test fakes xcodebuild; the page describes real behaviour on a simulator, which is device-untested until tools/fixture-byoc-e2e.sh passes (C235).",
+  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half ran once (research/byoc-device-test-2026-10-06/, 2026-10-06): the missing-.keepAlways case passed on a simulator (the language failed with the hint), but a simulator had stopped answering and the .xcresult was unreadable in that run, so it is weak evidence, and the device test as a whole has not passed (14 of 20 assertions). Partial: every test fakes xcodebuild; the page describes real behaviour on a simulator, which is only partly device-tested until tools/fixture-byoc-e2e.sh passes (C235).",
   "assertion": "A [capture] run whose xcodebuild passes but collects 0 PNGs for a language reports that language failed with the .keepAlways / setupSnapshot hint and exits 1; a language missing a name another language has fails with 'missing <name>'.",
   "fix": "",
   "test": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed"
@@ -3782,7 +3778,7 @@
   ],
   "status": "partial",
   "layer": "unit",
-  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature has not run on a simulator yet. Partial: every test fakes xcodebuild and simctl; the language mechanism ran only by hand (E4/E5), not as the built feature, until tools/fixture-byoc-e2e.sh passes (C235).",
+  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature ran on a simulator once (research/byoc-device-test-2026-10-06/): the XCTAttachment run saved German and Japanese screenshots with the right language on one simulator (the second stopped answering), but the SnapshotHelper case (settings files moved aside and back) lost its simulators and has not run on a device. Partial: every test fakes xcodebuild and simctl; the language mechanism ran as the built feature only for XCTAttachment, on one simulator, and not for fastlane's files, until tools/fixture-byoc-e2e.sh passes (C235).",
   "assertion": "set_sim_language runs simctl spawn <udid> defaults write -g AppleLanguages -array <lp> and AppleLocale -string <locale>; the .xctestrun copy sits beside the original (formats 1 and 2) with the arguments; language.txt/locale.txt/snapshot-launch_arguments.txt are back after the run and after an exception or Ctrl-C.",
   "fix": "",
   "test": "FastlaneCollector.test_settings_files_come_back_when_the_run_fails"
@@ -3836,6 +3832,11 @@
    "README.md",
    "site/public/docs.html",
    "README.md",
+   "site/public/docs.html",
+   "README.md",
+   "site/public/docs.html",
+   "site/public/index.html",
+   "README.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3848,11 +3849,16 @@
    "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6 and not run end to end on a device yet, see below).",
    "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6 and not run end to end on a device yet).",
    "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6 and not run end to end on a device yet) needs neither.",
-   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet)"
+   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet)",
+   "and you don't need Maestro or Java for this (new in 0.1.6, and not run end to end on a device yet).",
+   "and you don't need Maestro or Java for this (new in 0.1.6, and not run end to end on a device yet).",
+   "On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6, not run end to end on a device yet).",
+   "The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) has not passed yet.",
+   "The device test for the finished feature (<code>tools/fixture-byoc-e2e.sh</code>) has not passed yet."
   ],
-  "status": "untested",
+  "status": "partial",
   "layer": "device",
-  "proof": "Pending: the device test tools/fixture-byoc-e2e.sh (de and ja on 2 simulators, attachments, a SnapshotHelper-style writer, and a test without .keepAlways) has not run; the coordinator schedules it under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending.test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'not run end to end on a device yet'. After the device test passes, the coordinator removes the caveats and adds the flag file.",
+  "proof": "The device test ran once, 2026-10-06 22:57 (research/byoc-device-test-2026-10-06/, tools/fixture-byoc-e2e.sh): 14 of 20 assertions passed, on a Mac with load 300 to 800 and swap nearly full. XCTAttachment case: PASS (de and ja screenshots saved, both languages ok in run.json, the build ran once, no .xctestrun copies left), but one of the 2 simulators stopped answering (simctl uninstall) and the run finished on 1, German retried, so 'several simulators at once' did not run on a device. Missing-.keepAlways case: PASS (the language failed with the hint), but it also ran with a simulator that stopped answering and an unreadable .xcresult, so it is weak evidence. SnapshotHelper (fastlane) case: FAIL, both languages 0/0 screenshots, because its simulators hung; it has not run on a device. Needed to prove it: one passing run of tools/fixture-byoc-e2e.sh ('PASS: all N assertions passed') on a quiet Mac, scheduled by the coordinator under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'not run end to end on a device yet', and a line that says 'Maestro or Java' or 'neither' about it must carry the same caveat. After the device test passes, the coordinator removes the caveats and adds the flag file.",
   "assertion": "SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh prints 'PASS: all N assertions passed'.",
   "fix": ""
  },
@@ -3895,11 +3901,13 @@
   "claim": "What's new 0.1.6: check understands fastlane supply's <n>_<locale>.png names; the 15 false 'missing' lines on a real 15-language Play set are gone",
   "where": [
    "site/public/whats-new.html",
-   "site/public/whats-new.html"
+   "site/public/whats-new.html",
+   "site/public/index.html"
   ],
   "where_text": [
    "<code>check</code> understands fastlane supply’s file names",
-   "On a real Google Play set in 15 languages, 15 false “missing” lines are gone."
+   "On a real Google Play set in 15 languages, 15 false “missing” lines are gone.",
+   "<code>check</code> reads fastlane supply’s file names and no longer calls a Russian screen Kazakh."
   ],
   "status": "proven",
   "layer": "unit",
@@ -3912,10 +3920,12 @@
   "id": "C239",
   "claim": "What's new 0.1.6: a Russian screen read as Kazakh passes when the app's Russian strings match it; a Ukrainian screen in the Russian folder is still caught",
   "where": [
-   "site/public/whats-new.html"
+   "site/public/whats-new.html",
+   "site/public/index.html"
   ],
   "where_text": [
-   "A Russian screen with English job titles in it is no longer called Kazakh"
+   "A Russian screen with English job titles in it is no longer called Kazakh",
+   "no longer calls a Russian screen Kazakh."
   ],
   "status": "proven",
   "layer": "unit",
@@ -3928,10 +3938,12 @@
   "id": "C240",
   "claim": "What's new 0.1.6: a failed language names the step it stopped on, the failure screenshot's path and up to 12 texts on that screen",
   "where": [
-   "site/public/whats-new.html"
+   "site/public/whats-new.html",
+   "site/public/index.html"
   ],
   "where_text": [
-   "When a language fails, <code>run</code> now says where it stopped"
+   "When a language fails, <code>run</code> now says where it stopped",
+   "<code>run</code> says where a failed language stopped: the step, the screenshot, and what was on screen."
   ],
   "status": "proven",
   "layer": "unit",

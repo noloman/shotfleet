@@ -356,6 +356,16 @@ class ByocPending(unittest.TestCase):
                         self.assertIn(self.CAVEAT, line, "BYOC is not device-proven yet: say so on this line")
         if not self.PROVEN: self.assertGreaterEqual(seen, 10, "fewer BYOC lines than expected: is this test still looking at the right files?")
 
+    def test_a_line_saying_you_need_neither_maestro_nor_java_for_xcuitest_tests_says_it_is_not_device_proven(self):
+        seen = 0
+        for p in self.FILES:
+            for n, line in enumerate(p.read_text().splitlines(), 1):
+                if "XCUITest" in line and re.search(r"Maestro or Java|neither", line):
+                    seen += 1
+                    with self.subTest(file=p.name, line=n):
+                        if not self.PROVEN: self.assertIn(self.CAVEAT, line, "this line says no Maestro or Java for XCUITest tests: say it is not device-proven")
+        self.assertGreaterEqual(seen, 6)  # README and docs lead + needs sentence, home page, llms.txt, alternatives
+
 
 class Hsts(unittest.TestCase):
     def test_every_page_sends_hsts_for_six_months_without_subdomains_or_preload(self):
