@@ -2,7 +2,7 @@
 
 Three subs, three different texts. Don't cross-post the same text.
 
-**How the rules were read:** Reddit blocks my tools, so I couldn't open the sidebars. What's below comes from search summaries on 2026-10-06 and the older notes in `research/marketing-research.md`. Open each sidebar and the pinned posts yourself before posting, and screenshot the rule you rely on.
+**How the rules were read:** Reddit blocks my tools (403 on every `about/rules.json`; Claude in Chrome and the built-in browser both refuse reddit.com), so I couldn't open one live sidebar. What's below comes from a third-party snapshot (threadotter.com, "last checked July 2026") and the older notes in `research/marketing-research.md`. Open each sidebar, its rules and the pinned posts yourself before posting, and screenshot the rule you rely on. Nothing goes on Reddit on 13 or 14 Oct (Keysi's launch).
 
 The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of your posts and comments should be about your own thing. Before these posts, it helps if your account has some normal, helpful comments in these subs (answers about Maestro, fastlane, localization, screenshots). If the account is mostly empty, spend a week answering questions first.
 
@@ -12,8 +12,8 @@ The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of you
 
 **Rules (second-hand, check the sidebar):**
 - Promoting your own app or tool is only allowed in **App Saturday** posts, on Saturday in your own time zone.
-- One app, **once per year**. So this post is the one shot for shotfleet; pick the day well (after 0.1.5 is live, and ideally after 0.1.6 so the XCUITest part can be said as available).
-- The mods proposed a minimum of about 20 sub karma in the last 6 months, and a template with the tech stack and the development challenges. The draft below includes both anyway.
+- One app, **once per year**. So this post is the one shot for shotfleet; pick the day well: Sat 24 Oct at the earliest, which is after Show HN and after 0.1.6 is live, so the XCUITest part can be said as available (with its 'not run end to end yet' limit).
+- The mods proposed a minimum of about 20 sub karma in the last 6 months, and a template with the tech stack, the development challenges and an AI-use line. The draft below includes all three anyway.
 - Use the App Saturday flair if there is one.
 
 **Best time:** Saturday morning US Eastern (afternoon in the Netherlands), so it's Saturday for most readers.
@@ -24,7 +24,7 @@ The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of you
 
 > I made this. It's a Mac command-line tool called shotfleet, and the part I think most of you can use is free.
 >
-> **The problem.** I have an app in 18 languages. Store screenshots in every language are a pain, and the failure I kept hitting was quiet: a screenshot that looks fine, but the app in it is in the wrong language. On the old Google Play screenshots of another of my apps, check found 103 problems where the captions were translated but the app under them was still English. Nobody tells you; the listing just looks a bit wrong to a Japanese user.
+> **The problem.** I have an app in 18 languages. Store screenshots in every language are a pain, and the failure I kept hitting was quiet: a screenshot that looks fine, but the app in it is in the wrong language. On the old Google Play screenshots of another of my apps, AnywhereRoles, check found 103 screenshots where the captions were translated but the app under them was still English. Nobody tells you; the listing just looks a bit wrong to a Japanese user.
 >
 > **The free part.** `shotfleet check` reads every screenshot in a folder and compares the text with your app's own strings. It flags the wrong language, blank screens and sizes the App Store doesn't accept (and a missing 13-inch iPad set). It works on fastlane snapshot output, no Maestro and no account needed:
 >
@@ -35,7 +35,7 @@ The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of you
 >
 > On a real fastlane snapshot set it found a German listing whose app was still in English.
 >
-> **The paid part.** `shotfleet run` takes one Maestro flow written in English and runs it in every language your app has, on several simulators at once. It rewrites the text taps from your app's translations ("Next" becomes "Weiter", "次へ"). On my M1 Pro, 18 languages x 4 screens took 9 minutes on iOS. Running your own XCUITest screenshot tests instead of a Maestro flow is coming in 0.1.6, not out yet.
+> **The paid part.** `shotfleet run` takes one Maestro flow written in English and runs it in every language your app has, on several simulators at once. It rewrites the text taps from your app's translations ("Next" becomes "Weiter", "次へ"). On my M1 Pro, 18 languages x 4 screens took 9 minutes on iOS. On iOS it can also run your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6, paid like this, 2 languages free). I haven't run that path end to end yet: my first try, on an overloaded Mac, lost its simulators. So treat it as new.
 >
 > **Tech stack.** Python, shipped as one signed binary for Apple silicon. Maestro drives the app. For reading text it uses the app's accessibility tree on iOS during a run, and macOS's built-in text recognition (Vision) for screenshots made by other tools. `simctl` for the simulators, launch arguments for the language.
 >
@@ -44,15 +44,19 @@ The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of you
 > - macOS text recognition sometimes takes minutes to wake up on a busy Mac. check now waits, then marks screens it couldn't read as "not verified" instead of guessing.
 > - Simulators that stop answering on a loaded Mac. One now costs 60 seconds instead of 300, and the next run replaces it with a fresh one. Only shotfleet's own simulators are ever deleted.
 >
-> **Limits.** Apple silicon only, needs Maestro and Java 17+ for `run`. No frames, captions or upload (fastlane does that). If your app has one or two languages you probably don't need it.
+> **Limits.** Apple silicon only, closed source. Capturing needs Maestro and Java 17+, except iOS with your own XCUITest tests. `doctor` asks shotfleet.com for the latest version number; your app and screenshots never leave your Mac. No frames, captions or upload (fastlane does that). If your app has one or two languages you probably don't need it.
 >
-> Price: check is free, run is free for 2 languages. Every language is $29 for the first 100 buyers, then $49, one-time.
+> **AI use.** I used Claude (Anthropic's coding assistant) to help write and test the code and to draft the docs and this post. I decide what ships, and the numbers above are from runs on my own Mac. [Manu: change this line to what is true for you.]
+>
+> Price: check is free, run is free for 2 languages. Every language is $29 for the first 100 buyers, then $49, one-time, with a year of updates and use on up to 3 of your Macs.
+>
+> Why snapshot gives English in every folder, in case that's your problem: https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english?utm_source=reddit-iosprogramming-guide
 >
 > https://shotfleet.com/?utm_source=reddit-iosprogramming
 >
 > How do you check your localized screenshots today? Happy to answer anything.
 
-**Before posting:** gates 1 and 2 in README.md. The tech stack lines (Python packaged with PyInstaller, Vision) come from DISTRIBUTION.md and the code, not from the site; they're true, but cut them if you'd rather not say. The "103 problems" sentence depends on gate 2; without it, say "on the old store screenshots of another of my apps, check flagged 108 of 120: translated captions over an app still in English" (claim C107).
+**Before posting:** gates 1 to 3 and 5 in README.md. The tech stack lines (Python packaged with PyInstaller, Vision) come from DISTRIBUTION.md and the code, not from the site; they're true, but cut them if you'd rather not say. The AI-use line is my guess at the wording: confirm it.
 
 ---
 
@@ -73,7 +77,9 @@ The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of you
 >
 > What it does: one Maestro flow written in English, run in every language your app has, on several emulators at once. It sets the per-app language (Android 13+ emulators) and rewrites the text taps from the strings in your APK. On my M1 Pro, 18 languages x 4 screens took 15 minutes on Android. Then it checks every screenshot for the wrong language, blank screens and Play size rules, and exports to fastlane's folders.
 >
-> Free: `shotfleet check` on screenshots you already have, including screengrab output (it ignores screengrab's timestamped file names). Runs on Apple silicon Macs only. Paid for more than 2 languages in a run: $29 for the first 100 buyers, then $49 once.
+> Free: `shotfleet check` on screenshots you already have, including screengrab output (it ignores screengrab's timestamped file names) and supply folders (fixed in 0.1.6). Runs on Apple silicon Macs only, and capturing needs Maestro and Java 17+. Paid for more than 2 languages in a run: $29 for the first 100 buyers, then $49 once.
+>
+> If you want the per-app locale part without the tool: https://shotfleet.com/guides/maestro-one-flow-every-language?utm_source=reddit-androiddev-guide
 >
 > https://shotfleet.com/?utm_source=reddit-androiddev
 >
@@ -85,7 +91,43 @@ The 10% rule: Reddit's old self-promotion guideline is that about 1 in 10 of you
 
 ---
 
-## 3. r/FlutterDev: probably skip
+## 3. r/SideProject: launch-week post
+
+**Rules (second-hand, check the sidebar):** self-promotion is the point of this sub. Title format `[Project name] - [Short description]`; say it's yours; add a screenshot or GIF; a live link with no email gate; don't repeat the same project often; no identical cross-posts. So this text is not the App Saturday text.
+
+**Best time:** any weekday of launch week, US morning. Not 13 or 14 Oct.
+
+**Title:** `shotfleet - one English Maestro flow, store screenshots in every language, checked`
+
+**Image:** the language grid from the home page, or the `c5-check` clip (a German screenshot in the Japanese folder, caught). Say in a comment that the clip is on the fixture app.
+
+**Body:**
+
+> I made this, on my own. I have a workout app in 18 languages, and for a long time my "localized" store screenshots were English with translated captions. Nobody tells you. A Japanese user just sees English under Japanese words.
+>
+> So I built shotfleet, a command-line tool for Apple silicon Macs. You write one Maestro flow in English. It reads the translations in your build, rewrites every tap for each language ("Next" becomes "次へ"), runs the flow on several simulators and emulators at once, then reads every screenshot back and flags the wrong language, blank screens and sizes the stores don't take.
+>
+> On my M1 Pro, one run of 18 languages x 4 screens took 9 minutes on iOS and 15 on Android. That's my app on my Mac, so yours will differ. The first Android run also showed me a Next button nobody could reach in Japanese, Korean, Chinese and Arabic on a small phone. English fit, so I'd never seen it.
+>
+> The check is free and works on screenshots you already have. On the old Play screenshots of another app of mine, it found 103 translated captions over an app still in English. That was my mistake, and it's why I recaptured the whole app.
+>
+> Limits: Apple silicon only, closed source, no frames or captions or store upload. Capturing needs Maestro and Java 17+ (on iOS it can also run your own XCUITest tests, new in 0.1.6 and not run end to end yet).
+>
+> Free: check, and run for 2 languages. Every language is $29 for the first 100 buyers, then $49, one-time.
+>
+> https://shotfleet.com/?utm_source=reddit-sideproject
+>
+> What would stop you from trying it?
+
+---
+
+## 4. r/macapps: no draft
+
+Second-hand rules: one developer post per 30 days, about 10 karma in the sub to self-promote even in comments, otherwise the monthly megathread; modmail first. A command-line tool is a fringe fit for an app sub. If you post Keysi there on 13 or 14 Oct, shotfleet can't go there until about 13 Nov. Skip unless you have a reason.
+
+---
+
+## 5. r/FlutterDev: probably skip
 
 **Rules (second-hand):** apps can only be posted if they're open source, or if the post is an insightful dive into how it was built; "No advertising of apps" is a rule. shotfleet is closed source and paid, so a promo post would likely be removed.
 

@@ -15,7 +15,7 @@
 
 ## Best time
 
-Weekdays, 14:00 to 17:00 Netherlands time (morning US East, afternoon Europe). Thread on launch day; standalone posts one or two a week after that, not all at once.
+Weekdays, 14:00 to 17:00 Netherlands time (morning US East, afternoon Europe). Thread on launch week's Monday (19 Oct), not as a reaction to Show HN; standalone posts one or two a week after that, not all at once. Nothing on 13 or 14 Oct (Keysi's launch).
 
 ---
 
@@ -46,8 +46,8 @@ Alt text: "Chinese onboarding page on a small phone, with no Next button visible
 
 Alt text: "Terminal: shotfleet check reports that the Japanese screenshot shows German strings, and that one image appears in two languages."
 
-**4/5** [257], clip: `c6-check-existing-square.mp4`
-> check is free, and it works on screenshots you already have, also fastlane snapshot and screengrab folders. No Maestro, no account.
+**4/5** [265], clip: `c6-check-existing-square.mp4`
+> check is free, and it works on screenshots you already have, also fastlane snapshot, screengrab and supply folders. No Maestro, no account.
 >
 > On the old Play screenshots of another of my apps it found 103 translated captions over an app still in English. My mistake.
 
@@ -101,8 +101,8 @@ Alt text: "Terminal: shotfleet run on 2 Android emulators, sped up 16 times, 5 o
 
 Alt text: "A GitHub Actions workflow that installs shotfleet and runs check, then check --json printing exit code 0."
 
-**E. AnywhereRoles before and after** [247], no clip (or a pair of the AnywhereRoles frames from the home page once they're live)
-> Before: check found 127 problems on my app's old Play screenshots. 103 were translated captions over an app still in English.
+**E. AnywhereRoles before and after** [247], image: one Android and one iPhone frame from the AnywhereRoles section of the home page (`site/public/img/showcase/`; alt text: the language and screen in the file name, "checked")
+> Before: check found 103 translated captions over an app still in English, on my other app's old Play screenshots. My mistake.
 >
 > After recapturing with my tool: 120 Android and 108 iPhone screenshots, 0 problems.
 >
@@ -112,5 +112,5 @@ Alt text: "A GitHub Actions workflow that installs shotfleet and runs check, the
 
 ## Before posting
 
-- Gate 1 (0.1.5 live) for "screengrab folders" and the brew line; gate 2 (AnywhereRoles live) for thread 4/5 and post E. Without gate 2: in 4/5 use "it flagged 108 of 120 store screenshots of another of my apps: translated captions over an app still in English"; skip post E.
+- Gate 1 (0.1.6 live) for the supply wording and the brew line, and the AnywhereRoles section live for thread 4/5 and post E. If it isn't live, cut the last sentence of 4/5 and skip post E.
 - Re-count after any edit. A quick way: `python3 -c "import sys; print(len(sys.stdin.read().strip()))"` and paste the post.

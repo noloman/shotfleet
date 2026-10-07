@@ -10,7 +10,7 @@
 
 ## Best time
 
-A weekday morning US Eastern (Tuesday to Thursday). IH posts stay visible for a day or two, so the exact hour matters less than being around to reply.
+A weekday morning US Eastern. Launch week starts Mon 19 Oct, so Mon 19 or Tue 20 Oct; not 13 or 14 Oct. IH posts stay visible for a day or two, so the exact hour matters less than being around to reply.
 
 ## Title
 
@@ -22,15 +22,15 @@ If the count is still 0: `I launched a Mac tool for localized app screenshots. 0
 
 > I'm Manu, a solo developer in the Netherlands. I have a few small apps. I built a tool for my own problem, and on 2026-10-05 I started selling it. Here's where it is, with real numbers.
 >
-> **The problem.** My workout app is in 18 languages. Store screenshots in 18 languages are a lot of work, so I had been cutting corners. On another app I made one English capture and only translated the captions. When I finally checked those Google Play screenshots, there were 127 problems, 103 of them translated captions over an app still in English.
+> **The problem.** My workout app is in 18 languages. Store screenshots in 18 languages are a lot of work, so I had been cutting corners. On another app I made one English capture and only translated the captions. When I finally checked those Google Play screenshots, there were 127 problems. 103 were translated captions over an app still in English, and 15 were false alarms from a bug in my own tool, fixed in 0.1.6.
 >
 > **The tool.** shotfleet is a Mac command-line tool. You write one Maestro flow in English, and it runs it in every language your app has, on iOS and Android, then checks every screenshot for the wrong language, blank screens and store sizes. One run of 18 languages x 4 screens took 9 minutes on iOS and 15 on Android on my M1 Pro. It also showed me a bug: a Next button that was out of reach in four languages on small phones.
 >
-> **Business model.** One-time licence on Gumroad: $29 for the first 100 buyers, then $49. Free tier: check (on any screenshots, also fastlane ones) and capturing up to 2 languages. 14-day refund. No subscription, because [YOUR REASON, e.g. "you only make screenshots a few times a year, and a monthly fee for that felt wrong"].
+> **Business model.** One-time licence on Gumroad: $29 for the first 100 buyers, then $49. It covers a year of updates (a calendar year), and you can use it on up to 3 of your Macs. Free tier: check (on any screenshots, also fastlane ones) and capturing up to 2 languages. 14-day refund. No subscription, because [YOUR REASON, e.g. "you only make screenshots a few times a year, and a monthly fee for that felt wrong"].
 >
 > **Numbers so far.**
 > - Sales: [SALES: 0 as of 2026-10-06, re-check Gumroad]
-> - Releases: 0.1.0 went live on 2026-10-05; I'm on [VERSION: 0.1.5, check https://shotfleet.com/download/VERSION] now. Most of the work after launch went into making it reliable on a busy Mac (simulators that stop answering, macOS text recognition that's slow to wake up).
+> - Releases: 0.1.0 went live on 2026-10-05; I'm on [VERSION: 0.1.6, check https://shotfleet.com/download/VERSION] now. Most of the work after launch went into making it reliable on a busy Mac (simulators that stop answering, macOS text recognition that's slow to wake up).
 > - Marketing spent: $0 [CHECK: still true?]
 > - Visitors: [VISITS: from site/signups.sh --visits, or leave this line out]
 >
@@ -48,7 +48,7 @@ If the count is still 0: `I launched a Mac tool for localized app screenshots. 0
 ## Before posting
 
 - Fill every `[...]` placeholder or delete the line. Don't guess numbers.
-- The 127/103 line needs gate 2 (README.md). Without it: "flagged 108 of 120 screenshots: translated captions over an app still in English" (C107).
+- The 127/103/15 line needs the AnywhereRoles section live (README.md gate 1). If it isn't, say only "the captions were translated but the app under them was still in English", with no numbers.
 - "On 2026-10-05 I started selling it": memory and STATUS say 0.1.0 went live 2026-10-05. Change if you count the launch date differently.
 - If there's a sale by then, the title changes; keep the honesty about how small the number is.
 

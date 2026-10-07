@@ -2,7 +2,7 @@
 
 You submit these yourself through each newsletter's own form. One link per newsletter, once. No follow-up before four weeks; silence is a normal answer. Never offer money or a free licence for coverage.
 
-Curators pick articles far more often than product pages. If one of the guide articles in `site/draft/guides/` is published by then (the button story is the best fit), send that link instead and keep the tool to one line. The texts below work for either; swap the link.
+Curators pick articles far more often than product pages. The two guides are live with 0.1.6: send the matching one instead of the home page and keep the tool to one line. iOS Dev Weekly: `https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english?utm_source=iosdevweekly-guide`. Android Weekly: `https://shotfleet.com/guides/maestro-one-flow-every-language?utm_source=androidweekly-guide`. The texts below work for either; swap the link. (Guide pages don't run the visit counter, so these tags only show in referrers.)
 
 ---
 
@@ -16,7 +16,7 @@ Curators pick articles far more often than product pages. If one of the guide ar
 
 **Reason for inclusion:**
 
-> I made shotfleet, a Mac command-line tool whose free check command reads a folder of App Store screenshots, including fastlane snapshot output, and flags any that show the wrong language, a blank screen or a size App Store Connect won't take. On the old Google Play screenshots of another of my apps it found 103 translated captions over an app still in English. The paid part runs one English Maestro flow in every language the app has, and support for your own XCUITest tests is coming in 0.1.6. Short clips of each command are at shotfleet.com/demo.
+> I made shotfleet, a Mac command-line tool whose free check command reads a folder of App Store screenshots, including fastlane snapshot output, and flags any that show the wrong language, a blank screen or a size App Store Connect won't take. On the old Google Play screenshots of another of my apps it found 103 translated captions over an app still in English. The paid part runs one English Maestro flow in every language the app has; since 0.1.6 it can also run your own XCUITest screenshot tests, which I haven't run end to end yet. Short clips of each command are at shotfleet.com/demo.
 
 ---
 
@@ -30,7 +30,7 @@ Curators pick articles far more often than product pages. If one of the guide ar
 
 **Text:**
 
-> I made shotfleet, a Mac command-line tool that runs one English Maestro flow in every language an Android app has, on several emulators at once, using per-app languages and the strings from the APK. On my own app it showed an onboarding Next button that was below the screen in Japanese, Korean, Chinese and Arabic on a small phone, because the page didn't scroll. Its check command is free and also reads screengrab output, flagging the wrong language, blank screens and Play size problems. Disclosure: it's a paid tool with a free tier.
+> I made shotfleet, a Mac command-line tool that runs one English Maestro flow in every language an Android app has, on several emulators at once, using per-app languages and the strings from the APK. On my own app it showed an onboarding Next button that was below the screen in Japanese, Korean, Chinese and Arabic on a small phone, because the page didn't scroll. Its check command is free and also reads screengrab and supply folders, flagging the wrong language, blank screens and Play size problems. Disclosure: it's a paid tool with a free tier.
 
 ---
 
@@ -50,5 +50,5 @@ Only send this one if you're fine with the Flutter claim being "one real app". I
 
 ## Before sending
 
-- Gate 1 (0.1.5 live: screengrab file names) and gate 2 (the 103 number) in README.md. Without gate 2, iOS Dev Weekly's second sentence becomes: "On the store screenshots of another of my apps it flagged 108 of 120: translated captions over an app still in English."
+- Gates 1 and 2 in README.md (0.1.6 live, XCUITest not proven). If AnywhereRoles isn't live, drop iOS Dev Weekly's second sentence.
 - Log the date and newsletter so you don't send twice.

@@ -5,6 +5,8 @@
 
 ## Rules to respect
 
+- The clips were recorded before 0.1.6. They show doctor, init, a run, check, export and CI; they don't show XCUITest or supply folders, so don't add a caption or voice-over line about either.
+
 - The clips are recordings on shotfleet's own **fixture app** (5 languages: ar, de, en, ja, tr), run from the repo's source on an M1 Pro on 2026-10-05/06. The burned-in subtitles say "my app". Say once on screen that it's the fixture app, so nobody thinks it's a real store app.
 - Sped-up parts already carry a "sped up" badge and the real time in the subtitle. Keep those cuts whole; don't trim the badge away.
 - The planted mistakes (German screenshot in the Japanese folder) are shown being made on a copy. Keep the "on purpose" line in.
@@ -51,7 +53,7 @@ Read slowly; it follows the subtitles so they don't fight each other. About 150 
 >
 > [4] Now I make a mistake on purpose. I put the German screen in the Japanese folder. check reads the text and catches it. It also sees the same picture in two languages.
 >
-> [5] check also works on screenshots I already have, like fastlane folders. No simulator. It's free, and nothing is uploaded.
+> [5] check also works on screenshots I already have, like fastlane snapshot or screengrab folders. No simulator. It's free, and nothing is uploaded.
 >
 > [6] When it all passes, one command puts the screenshots into fastlane's folders, one per language.
 >
@@ -73,7 +75,7 @@ shotfleet.com   ·   check is free   ·   Apple silicon Macs
 - **Description:**
   > One English Maestro flow, run in every language the app has, on iPhone simulators and Android emulators, then every screenshot checked for the wrong language. Recorded on shotfleet's own 5-language test app on an M1 Pro; sped-up parts are labelled.
   >
-  > The check is free and works on screenshots you already have, including fastlane snapshot and screengrab folders.
+  > The check is free and works on screenshots you already have, including fastlane snapshot, screengrab and supply folders.
   >
   > I made shotfleet. https://shotfleet.com/?utm_source=youtube
   > Each clip on its own: https://shotfleet.com/demo?utm_source=youtube

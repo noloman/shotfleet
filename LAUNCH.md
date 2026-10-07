@@ -2,6 +2,8 @@
 
 > **Status, 2026-10-05:** go-live ran 2026-10-05 (5fa4f7c, 5bbec86). Sections 4 to 6 are the record and the template for the next release. Section 8 (purge the waitlist 30 days after the launch email) is still live and is a promise on the privacy page.
 
+> **2026-10-07:** 0.1.6 is published. Launch week is Mon 19 Oct, Show HN Tue 20 or Wed 21 Oct; nothing about shotfleet on HN, Product Hunt or Reddit on 13 or 14 Oct (Keysi's launch). The posts are drafted in `marketing/launch-drafts/` and the day-by-day plan is `marketing/kit/launch-day.md`. Nothing in this file about go-live changes.
+
 > **2026-10-02: Polar was dropped.** Polar pays out through Stripe, and Stripe will ask a Dutch resident for a KvK number.
 > The sale moves to **Gumroad**, which you already use for Keysi (Individual account, EUR bank payout, no KvK entered).
 > Everything about Polar below this note is gone; the Polar organization, product, discount and checkout links are no
@@ -14,7 +16,7 @@ the program is served from the shotfleet site (no public source repo; the empty 
 Payments are on **Gumroad** (merchant of record since 2025-01-01: it charges and pays the VAT and sales tax worldwide; an
 Individual account needs no business registration). Lemon Squeezy and Polar are not used: both end in a Stripe check that
 asks for a KvK. Prices: **$49** once, **$29 for the first 100** (code `FOUNDER29`, applied automatically),
-a free tier (`check` plus 2 languages in `run`), 14-day refunds. Gumroad cannot show a VAT-inclusive price, so the page says prices
+a free tier (`check` plus 2 languages in `run`), 14-day refunds, a year of updates (a calendar year from the Gumroad sale date), use on up to 3 of the buyer's Macs, and free licences for open-source maintainers and students (a 100%-off code, by email). Gumroad cannot show a VAT-inclusive price, so the page says prices
 are before VAT where it applies. Fees: 10% + $0.50 plus card processing 2.9% + $0.30, so about $24.46 net at $29 and
 $41.88 at $49.
 
@@ -118,7 +120,7 @@ Only a paid sale by another person tests the refund itself (`docs/refund-runbook
 
 ## 7. Send the launch email (your account, your words; draft in marketing/launch-email.md)
 
-Posting and emailing stay yours, as agreed.
+Posting and emailing stay yours, as agreed. For launch week (19 Oct) the post texts and their gates are in `marketing/launch-drafts/README.md`.
 
 The founder price ($29) is for the first 100 buyers, whoever buys first: `go-live.sh` puts the buy page live before the email
 goes out, so the email does not promise the list an early window.
@@ -136,9 +138,9 @@ Put a reminder in your calendar the day you send the email.
 
 ## 9. Support: moving a key to another Mac
 
-A key has 5 activations (3 Macs plus 2 spare for reinstalls); Gumroad has no per-Mac record and the program cannot give one back (that needs your Gumroad
+From 0.1.6 a key has 5 activations (3 Macs plus 2 spare for reinstalls; 0.1.5 and older still stop at 3); Gumroad has no per-Mac record and the program cannot give one back (that needs your Gumroad
 token). When a buyer writes because they ran out: Gumroad, Sales, the sale, License key section, Uses row, minus or Reset. That
-is the whole job. The terms say exactly this.
+is the whole job. The terms say exactly this. A buyer asking about the year of updates: it is the Gumroad sale date plus a calendar year, compared with each build's frozen release date; later versions run as the free tier with the key. No renewal is on sale yet, so a renewal request is a personal email from hello@shotfleet.com.
 
 ## Open items (not done, because they need something only you can give)
 
