@@ -199,10 +199,10 @@ Skip, don't submit: awesome-ios, awesome-swift, awesome-cli-apps, awesome-i18n, 
 - **Entry:**
 
 ```
-12. [Shotfleet](https://shotfleet.com/?utm_source=awesome-aso&utm_medium=awesome-list) - CLI that captures store screenshots in every language from one Maestro flow and checks them.
+12. [Shotfleet](https://shotfleet.com/?utm_source=awesome-aso&utm_medium=awesome-list) - CLI: store screenshots in every language from one Maestro flow, with a language check.
 ```
 
-(Name plus description is 91 characters before the URL. Recount after any edit.)
+(Name plus description is 87 characters, under their 100 limit. Recount after any edit.)
 
 - **PR body:** `Adds Shotfleet (macOS CLI, closed source, free tier) to Tools. I'm the author.`
 
