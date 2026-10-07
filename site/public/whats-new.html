@@ -61,6 +61,17 @@
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
 
+    <h2 id="v0-1-7">0.1.7, 2026-10-07</h2>
+    <ul>
+      <li><code>check</code> now ends with a store coverage table: one row per language, one column per device class (App Store: iPhone 6.9&quot;, iPhone 6.5&quot;, iPad 13&quot;; Google Play: phone, 7&quot; tablet, 10&quot; tablet), each cell <code>ok</code>, <code>missing</code>, <code>too many</code> or <code>wrong size</code>. It is also in <code>index.html</code> and <code>check.json</code>, and it changes no exit code.</li>
+      <li><code>check --compare &lt;earlier folder&gt;</code> lists, per language and screen, what is new, removed or changed since an earlier shotfleet or fastlane folder. It is a report, and it doesn’t read any text.</li>
+      <li><code>export --print-upload</code> prints the <code>fastlane deliver</code> or <code>fastlane supply</code> command that uploads what you exported. It only prints it: shotfleet still never uploads. The docs now show the <code>asc screenshots upload</code> route too.</li>
+      <li><code>run</code> skips iOS 27.0 simulators unless you ask for them: they froze at boot in some of my runs. With no <code>runtime</code> in the config it uses the newest other one you have installed and says which, and why, in one line. A runtime you set is always used, and <code>doctor</code> warns if 27.0 is the only one installed.</li>
+      <li>When the Mac is very busy (swap almost full, critical memory pressure, or a load far above the number of cores), <code>run</code> says so once, in plain words, and suggests fewer parallel devices. Listing, creating and deleting simulators no longer wait forever: after a time limit they say the Mac is probably too busy.</li>
+      <li><code>run --retry-failed</code> reruns only the languages that failed in the last run of that config. The ones that passed stay as they were. And <code>run</code> now retries a language by itself only when the simulator or emulator failed, not when your flow or app did, because that would fail the same way again; it tells you which languages it didn’t retry.</li>
+      <li>Smaller: export hooks get <code>SHOTFLEET_PLATFORM</code> on iOS too; over MCP the <code>run</code> summary says when the free tier cut the languages; the Linux build no longer warns about a missing release date; the guides have an Atom feed.</li>
+    </ul>
+
     <h2 id="v0-1-6">0.1.6, 2026-10-06</h2>
     <ul>
       <li>New in 0.1.6, on iOS: <code>run</code> can run your own XCUITest screenshot tests (<code>XCTAttachment</code> or fastlane’s <code>SnapshotHelper</code>) instead of a Maestro flow, on several simulators at once, one language each, and then checks what they saved. For that you need neither Maestro nor Java. I tried the idea by hand first, and the finished feature then passed its device test on iOS 26.4 simulators. The <a href="/docs#xcuitest">docs</a> show how to set it up.</li>

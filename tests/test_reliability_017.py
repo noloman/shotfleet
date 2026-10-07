@@ -7,6 +7,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import shotfleet as sf
+sf.USE_DEVICE_LOCK = False  # fake runs touch no device; a real run holding /tmp/shotfleet-ios.lock must not make these fail
 
 needs_mac = unittest.skipUnless(sys.platform == "darwin", "iOS run path is macOS only")
 

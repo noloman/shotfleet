@@ -155,12 +155,12 @@
 
   <section class="wrap section" id="new" aria-labelledby="new-h">
     <div class="notfor reveal">
-      <h2 id="new-h">New in 0.1.6</h2>
+      <h2 id="new-h">New in 0.1.7</h2>
       <ul>
-        <li><code>check</code> reads fastlane supply’s file names and no longer calls a Russian screen Kazakh.</li>
-        <li><code>run</code> says where a failed language stopped: the step, the screenshot, and what was on screen.</li>
-        <li>A key can be activated 5 times: use it on up to 3 of your Macs, and the spare activations cover reinstalls.</li>
-        <li>On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6).</li>
+        <li><code>check</code> ends with a store coverage table: which language is missing which screenshot size for the App Store or Google Play.</li>
+        <li><code>check --compare</code> shows what changed since your last release, and <code>export --print-upload</code> prints the fastlane command that uploads it.</li>
+        <li><code>run --retry-failed</code> reruns only the languages that failed, and a busy Mac gets a plain warning instead of a hang.</li>
+        <li><code>run</code> skips iOS 27.0 simulators by default, because they froze at boot in my runs, and says which runtime it used.</li>
       </ul>
       <p class="small"><a href="/whats-new">Everything that’s new</a></p>
     </div>
