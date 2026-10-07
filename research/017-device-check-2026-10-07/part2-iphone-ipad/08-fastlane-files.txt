@@ -1,0 +1,8 @@
+fastlane/screenshots/de-DE/ipad-pro-13-inch-m5-12gb_01_welcome.png
+fastlane/screenshots/de-DE/ipad-pro-13-inch-m5-12gb_02_settings.png
+fastlane/screenshots/de-DE/iphone-17-pro-max_01_welcome.png
+fastlane/screenshots/de-DE/iphone-17-pro-max_02_settings.png
+fastlane/screenshots/ja/ipad-pro-13-inch-m5-12gb_01_welcome.png
+fastlane/screenshots/ja/ipad-pro-13-inch-m5-12gb_02_settings.png
+fastlane/screenshots/ja/iphone-17-pro-max_01_welcome.png
+fastlane/screenshots/ja/iphone-17-pro-max_02_settings.png

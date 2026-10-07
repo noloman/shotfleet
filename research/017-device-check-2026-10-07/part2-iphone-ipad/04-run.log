@@ -1,0 +1,35 @@
+
+== iPhone 17 Pro Max
+using iOS 26.4: iOS 27.0 is installed, but its simulators freeze at boot (seen in our own device test runs); set runtime = "com.apple.CoreSimulator.SimRuntime.iOS-27-0" in [ios] to use iOS 27.0 anyway
+warning: this Mac is very busy (swap is 93% full); simulators may stop answering. Close other builds or use fewer parallel devices (try --parallel 1).
+booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 2 simulators...
+retrying 2: de, ja
+ok   de       2/2 screenshots (retried)
+ok   ja       2/2 screenshots (retried)
+captured 2/2 locales in 386s on 2 simulators
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  ok (2)       -            -         ok (0)
+  ja  ok (2)       -            -         ok (0)
+
+== iPad Pro 13-inch (M5)
+using iOS 26.4: iOS 27.0 is installed, but its simulators freeze at boot (seen in our own device test runs); set runtime = "com.apple.CoreSimulator.SimRuntime.iOS-27-0" in [ios] to use iOS 27.0 anyway
+memory pressure is elevated: using 1 devices instead of 2
+warning: this Mac is short of memory: 1 device at once would be safer than 2 (this run uses 1) (macOS reports elevated memory pressure). Seen: 10.6 GB memory available, 17.0 GB swap in use, load 280 on 10 cores, 1 other simulators/emulators booted. A loaded Mac makes flows time out and the retries add load. Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.
+booting 1 simulators (iPad-Pro-13-inch-M5-12GB, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   de       2/2 screenshots
+ok   ja       2/2 screenshots
+captured 2/2 locales in 99s on 1 simulators
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  -            -            ok (2)    ok (0)
+  ja  -            -            ok (2)    ok (0)
+run exit 0

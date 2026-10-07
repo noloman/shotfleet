@@ -1,0 +1,31 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [
+    "Weiter"
+   ],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 68,
+   "error": null,
+   "screenshots": 2,
+   "attempts": 1
+  },
+  "ja": {
+   "untranslated_selectors": [
+    "Weiter"
+   ],
+   "lproj": "ja",
+   "ok": false,
+   "seconds": 25,
+   "error": "[shard 1] Element not found: Text matching regex: Weiter",
+   "screenshots": 1,
+   "attempts": 1
+  }
+ },
+ "config": "/private/tmp/shotfleet-devcheck.yA3PZQ/proj/shotfleet.toml",
+ "wall_seconds": 92,
+ "simulators": 2,
+ "app": "/private/tmp/shotfleet-devcheck.yA3PZQ/build/FleetFixture.app",
+ "platform": "ios"
+}

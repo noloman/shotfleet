@@ -1,0 +1,3 @@
+shotfleet: the app runs on iPad, so the App Store requires 13" iPad screenshots; add "iPad Pro 13-inch (M5)" to device_types and run again
+the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types
+export exit 2

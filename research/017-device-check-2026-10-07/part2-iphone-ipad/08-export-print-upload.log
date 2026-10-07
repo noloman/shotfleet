@@ -1,0 +1,6 @@
+exported 2 listings to /tmp/shotfleet-devcheck.ehmAKI/fastlane: de-DE, ja
+exported 2 listings to /tmp/shotfleet-devcheck.ehmAKI/fastlane: de-DE, ja
+
+To upload (shotfleet never uploads; fastlane does, with your own credentials):
+  fastlane deliver --screenshots_path /tmp/shotfleet-devcheck.ehmAKI/fastlane/screenshots --skip_metadata --skip_binary_upload --overwrite_screenshots --force
+export exit 0

@@ -1,0 +1,27 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": true,
+   "seconds": 11,
+   "error": null,
+   "screenshots": 2,
+   "attempts": 2
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "lproj": "ja",
+   "ok": true,
+   "seconds": 12,
+   "error": null,
+   "screenshots": 2,
+   "attempts": 2
+  }
+ },
+ "config": "/private/tmp/shotfleet-devcheck.ehmAKI/proj/shotfleet.toml",
+ "wall_seconds": 386,
+ "simulators": 2,
+ "app": "/private/tmp/shotfleet-devcheck.ehmAKI/build/FleetFixture.app",
+ "platform": "ios"
+}

@@ -1,0 +1,8 @@
+== Devices ==
+-- iOS 18.0 --
+-- iOS 18.6 --
+-- iOS 26.4 --
+    iPhone 15 Pro (18DBDD79-86AD-4251-981A-E69D28652298) (Booted) 
+-- iOS 27.0 --
+-- watchOS 26.5 --
+-- watchOS 27.0 --

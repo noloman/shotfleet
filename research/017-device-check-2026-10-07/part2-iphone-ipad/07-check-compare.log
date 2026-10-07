@@ -1,0 +1,11 @@
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  ok (2)       -            -         ok (0)
+  ja  ok (2)       -            -         ok (0)
+
+compared with /tmp/shotfleet-devcheck.yA3PZQ/out-before/iphone-17-pro-max: 1 difference(s), 3 screenshot(s) unchanged
+  ja/02_settings.png: new
+check compare exit 0
