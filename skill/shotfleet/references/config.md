@@ -64,7 +64,7 @@ Keys valid in `[ios]` and `[android]`:
 
 Instead of a Maestro flow, `run` can run the team's existing XCUITest screenshot tests (XCTAttachment or fastlane's
 `SnapshotHelper`) on its simulators, one language per simulator. `[capture]` and `flow` are refused together; `app` is
-optional (default: the app next to the `.xctestrun`). Maestro is not needed for this.
+optional (default: the app next to the `.xctestrun`). Maestro is not needed for this. New in 0.1.6; the device test has not passed yet, so say so when you recommend it.
 
 ```toml
 [ios]
