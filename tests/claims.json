@@ -4398,5 +4398,116 @@
   "layer": "site",
   "assertion": "One recorded run on the owner's app, 2026-10-07.",
   "fix": ""
+ },
+ {
+  "id": "C266",
+  "claim": "With no `runtime` in the config, `run` skips iOS 27.0 and uses the newest other installed runtime, saying which and why in one line; if only iOS 27.0 is installed it uses it and warns; `doctor` warns too",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`run` skips iOS 27.0 and uses the newest other runtime you have installed. It says which one it picked and why, in one line. If iOS 27.0 is the only runtime installed it uses it and warns, and `shotfleet doctor` warns too."
+  ],
+  "status": "proven",
+  "proof": "RuntimeGuard.test_the_newest_runtime_that_is_not_known_to_hang_wins_and_one_line_says_why, RuntimeGuard.test_when_only_a_bad_runtime_is_installed_it_is_used_with_a_warning, RuntimeGuard.test_doctor_warns_when_the_only_runtime_is_a_known_bad_one_and_explains_runtime (tests/test_reliability_017.py, fake simctl output).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "RuntimeGuard.test_the_newest_runtime_that_is_not_known_to_hang_wins_and_one_line_says_why"
+ },
+ {
+  "id": "C267",
+  "claim": "A runtime set in the config is never second-guessed",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "a runtime you set is never second-guessed."
+  ],
+  "status": "proven",
+  "proof": "RuntimeGuard.test_run_prints_the_choice_and_a_runtime_in_the_config_is_never_second_guessed (tests/test_reliability_017.py): the runtime guard is only asked when the config has no runtime.",
+  "layer": "unit",
+  "assertion": "The proof's test; the quoted words in the README.",
+  "fix": "",
+  "test": "RuntimeGuard.test_run_prints_the_choice_and_a_runtime_in_the_config_is_never_second_guessed"
+ },
+ {
+  "id": "C268",
+  "claim": "iOS 27.0 simulators froze at boot in some of the owner's own runs",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "iOS 27.0 simulators:** they froze at boot in some of my own runs"
+  ],
+  "status": "evidence",
+  "proof": "coordinator-state.md, 2026-10-06 13:00 line: BYOC re-test hung booting iOS 27.0 simulators ('known freeze'), killed by the watchdog, then re-run with iOS 26.4 pinned. product-roadmap-2026-10-07.md gap G1. A device test of the guard is still to run.",
+  "layer": "device",
+  "assertion": "Owner's runs, as recorded; not a measurement of how often it happens.",
+  "fix": ""
+ },
+ {
+  "id": "C269",
+  "claim": "run prints one warning when the Mac is very busy (swap 90% full or more, critical memory pressure, or load far above the cores), suggests fewer parallel devices, checks again before a retry and between Android rounds, warns at most once, never refuses; capacity = \"off\" silences it",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`run` prints one warning before it starts (\"this Mac is very busy; simulators may stop answering\") and suggests fewer parallel devices. It checks again before a retry and between Android rounds, and warns at most once per run. It never refuses to run, and `capacity = \"off\"` silences it."
+  ],
+  "status": "proven",
+  "proof": "OverloadAdvisor.test_the_state_that_lost_the_ipad_pool_is_called_very_busy, OverloadAdvisor.test_each_danger_sign_alone_is_enough_and_a_quiet_mac_gets_nothing, OverloadAdvisor.test_it_warns_once_per_run_and_capacity_off_silences_it, IosRetries.test_the_overload_warning_is_checked_again_before_the_retry (tests/test_reliability_017.py, fake readings). The Android between-rounds check is in the code (android_run_inner) and not run by a test.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README. The thresholds are provisional.",
+  "fix": "",
+  "test": "OverloadAdvisor.test_it_warns_once_per_run_and_capacity_off_silences_it"
+ },
+ {
+  "id": "C270",
+  "claim": "Every simctl and adb call has a time limit, so a simulator that stops answering ends the run with a message instead of hanging it",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "Every `simctl` and `adb` call has a time limit, so a simulator that stops answering ends the run with a message instead of hanging it."
+  ],
+  "status": "proven",
+  "proof": "BoundedCalls.test_every_simctl_and_adb_call_in_the_program_has_a_timeout, BoundedCalls.test_listing_creating_and_deleting_simulators_all_go_through_the_bounded_call (tests/test_reliability_017.py). Calls inside Maestro and xcodebuild are bounded by run_guarded, not by this test.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "BoundedCalls.test_every_simctl_and_adb_call_in_the_program_has_a_timeout"
+ },
+ {
+  "id": "C271",
+  "claim": "A language that fails because the device broke is retried once by itself; a flow or app failure is not; run.json counts the tries (attempts)",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "`run` retries it once by itself. When the flow or the app failed (an element not found, a wrong number of screenshots, a blank screen), it does not: a second try would fail the same way, and it says so. `run.json` counts the tries per language (`attempts`)."
+  ],
+  "status": "proven",
+  "proof": "InfraErrors.test_device_failures_are_told_apart_from_flow_failures, IosRetries.test_a_flow_failure_is_not_retried_and_run_json_says_one_try, IosRetries.test_a_device_failure_is_retried_once_and_the_try_is_counted, IosRetries.test_a_device_failure_that_stays_is_tried_twice_only (tests/test_reliability_017.py, fake Maestro). The list of device-failure phrases is from Maestro's and simctl's messages seen so far; a new phrase is not retried until it is added.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "IosRetries.test_a_device_failure_is_retried_once_and_the_try_is_counted"
+ },
+ {
+  "id": "C272",
+  "claim": "run --retry-failed reruns only the languages that failed in the last run, keeps the passed ones listed in run.json, adds up the tries, refuses --locales and a missing run.json",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "To rerun only the languages that failed in this config's last run, use `shotfleet run --retry-failed`. The languages that passed stay as they were and are still listed in `run.json`, and the tries of the retried ones add up. It can't be combined with `--locales`, and it stops with a message if there is no earlier `run.json`."
+  ],
+  "status": "proven",
+  "proof": "IosRetries.test_retry_failed_reruns_only_the_failed_languages_and_keeps_the_good_ones, IosRetries.test_attempts_add_up_across_a_failed_retry_and_a_retry_failed_run, IosRetries.test_retry_failed_without_an_earlier_run_says_so, IosRetries.test_the_flag_and_locales_do_not_mix (tests/test_reliability_017.py, fake Maestro, iOS path). The Android path shares retry_setup and keep_earlier and is not run by a test.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words in the README.",
+  "fix": "",
+  "test": "IosRetries.test_retry_failed_reruns_only_the_failed_languages_and_keeps_the_good_ones"
  }
 ]

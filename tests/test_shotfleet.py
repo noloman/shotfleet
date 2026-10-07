@@ -2008,7 +2008,7 @@ class SimpleConfig(unittest.TestCase):
     def test_run_goes_through_every_platform_in_the_file(self):
         seen = []
         with mock.patch.object(sf, "platforms_in", return_value=["ios", "android"]), \
-             mock.patch.object(sf, "run_platform", side_effect=lambda c, o, p, plat: seen.append(plat) or (1 if plat == "android" else 0)):
+             mock.patch.object(sf, "run_platform", side_effect=lambda c, o, p, plat, *a: seen.append(plat) or (1 if plat == "android" else 0)):
             self.assertEqual(sf.cmd_run("x.toml"), 1)
             self.assertEqual(sf.cmd_run("x.toml", platform="ios"), 0)
         self.assertEqual(seen, ["ios", "android", "ios"])

@@ -144,11 +144,17 @@ example `shotfleet-iphone-17-pro-max-1`). Rules that matter:
 
 **Device type default.** `default_device_type` (`:1750`) is the iPhone 17 Pro Max (1320x2868, the App Store 6.9" class); with an older Xcode that lacks
 it, the newest `iPhone N Pro Max` is used. A configured `device_type` is never changed. `device_type_id` accepts a display name or a full identifier.
-`runtime` defaults to the **last** installed iOS runtime (`latest_ios_runtime`, `:4496`). Installing a newer runtime therefore silently changes what
-`run` uses: pin `runtime` in the config for a tested setup.
+`runtime` defaults to the newest installed iOS runtime that is not on `BAD_IOS_RUNTIMES` (`latest_ios_runtime` asks, `pick_ios_runtime` chooses; the
+list is a dict of simctl version to reason, starting with `27.0`, whose simulators froze at boot in our device runs). When it skips one it prints a
+single line saying which runtime it uses and why; when only bad ones are installed it uses the newest of them and warns. `doctor` warns in that
+last case too. A `runtime` in the config is used as written. Installing a newer runtime still changes what `run` uses: pin `runtime` for a tested setup.
 
 **Multi-device sets.** `device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]` runs the whole pipeline once per type into `out/<slug>/`
 (`capture_platform`, `:1831`), then `ipad_set_missing` (`:1857`) refuses an iPad-capable app that has no 13" iPad set.
+
+**Bounded calls.** Every `simctl` and `adb` call has a time limit. `Sim.run` and `Emu.adb` carry their own; the list, create and delete calls (which had
+none, and hang first on an overloaded Mac) go through `simctl_sh` (`SIM_LIST_TIMEOUT_S`, 120 s), which turns a hang into a `RuntimeError` that says the Mac is
+probably too busy. `tests/test_reliability_017.py` fails if a new `sh(["xcrun", ...])` or `adb` call has no `timeout`.
 
 **Install.** `install()` uninstalls then installs the app on every simulator at once (`healthy_installs`, `:1245`), because one wedged simulator
 used to cost its full timeout in turn (five wedged simulators cost 1,500 s in the 0.1.2 gate). It does **not** `simctl terminate`: uninstalling stops
@@ -220,11 +226,27 @@ for iOS (see `localize_flow`); Android uses the same mechanism, and the round st
   the fewest of cores, free memory, half under elevated pressure and one while swapping, and `run` prints a message naming what the Mac showed.
   It never changes the pool and never refuses. The constants (`CAPACITY_COST`, `CAPACITY_SWAP_GB = 10`) are provisional and the file says which
   figure came from which run (`research/workarounds-maestro-resources-2026-10-05.md`). `capacity = "adjust"` is refused as not available.
+- The **overload advisor** (`busy_reasons`, `busy_message`, `busy_warn`) is separate from the planner and plainer: swap 90 percent full, kern pressure 4, or a
+  1-minute load of 10 per core or more (`BUSY_*` constants, provisional, from the 2026-10-07 run with load 500 to 800 and swap nearly full) prints one line,
+  "this Mac is very busy; simulators may stop answering", with a lower `--parallel` suggested. `capacity_warn` prints it instead of the planner's message when
+  both apply; it is checked again before a retry and between Android rounds; once per run (`BUSY_STATE`, reset in `run_platform`). It never refuses or changes the pool.
 - `overload_note` explains failures that look like a loaded Mac, but only when a failed flow's error is `Unknown error` or `Unable to clear state`,
   never for an ordinary assertion failure; `flow_parse_note` says so instead when Maestro reported "Parsing Failed".
 
 Why it matters: four simulators on a loaded Mac took many times longer than on a quiet one, and retries added load. Two gate runs were lost to
 memory (`docs/handoff.md` section 17). The release gate now starts only at memory pressure level 1.
+
+## 2.5a Retries and `--retry-failed`
+
+A failed language is retried once, but only when its error looks like the device's (`is_infra_error`, phrases in `INFRA_ERRORS`: `Unknown error`,
+`Unable to clear state`, `no result`, `flow never ran`, `no progress for`, `did not answer`, an offline emulator...). A flow or app failure (element
+not found, wrong screenshot count, blank screen, `xcodebuild failed`) is not retried, and `run` says why (`say_not_retried`). Each result carries
+`attempts` (iOS and Android) and the summary's "(retried)" comes from it.
+
+`run --retry-failed` reads `out/run.json` (`retry_setup`: it must exist and name this config), runs only the languages with `ok: false` through the normal
+path (so the licence cap and all checks still apply), and `keep_earlier` writes the languages that passed back into the new `run.json` in their old order, with the
+retried languages' `attempts` added to their earlier ones. `check` then judges the whole `raw/` folder. With nothing failed it prints "nothing to retry" and
+exits 0 before any build, device or hook. Multi-device runs do this per `out/<device>/`.
 
 ## 2.6 Setting the language
 

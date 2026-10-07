@@ -3,7 +3,7 @@
 
 usage: shotfleet doctor
        shotfleet init [App.app] [app.apk] [--dir dir]   (no build given: finds the newest Debug one here)
-       shotfleet run <config.toml> [--locales de,ja] [--parallel N]
+       shotfleet run <config.toml> [--locales de,ja | --retry-failed] [--parallel N]
        shotfleet check <folder> [--app App.app|app.apk] [--report dir] [--content [shotfleet.toml]]
        shotfleet export <out_dir> --fastlane <fastlane_dir>
 
@@ -1228,6 +1228,14 @@ SIM_TIMEOUT_S, SIM_BOOT_TIMEOUT_S = 300, 900  # a wedged simulator (CoreSimulato
 # pool setup (boot, bootstatus, status bar, uninstall, install) took 23 s at 1 simulator (research/speed-2026-10-05.md 1b),
 # and the 10 wedges seen in the 0.1.2/0.1.3 gates never answered within 300 s, so 60 s drops no simulator that was going to answer.
 SIM_QUICK_TIMEOUT_S = 60
+SIM_LIST_TIMEOUT_S = 120  # list, create, delete: these answer in under a second on a quiet Mac; on an overloaded one (load 500-800, 2026-10-07) CoreSimulator answers nothing
+
+def simctl_sh(*args, timeout=SIM_LIST_TIMEOUT_S):
+    """`xcrun simctl <args>` that cannot hang: a call that does not answer in time is a RuntimeError that says the Mac is probably too busy."""
+    try: return sh(["xcrun", "simctl", *args], timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"simctl {args[0]} did not answer within {timeout} s: CoreSimulator has stopped answering, which usually means this Mac is too busy. "
+                           "Close other builds and simulators (or use fewer parallel devices) and run again; if it stays stuck, restart the Mac")
 
 class Sim:
     name = None  # make_pool sets it: SnapshotHelper names its files after the simulator
@@ -1303,18 +1311,18 @@ def run_setup(device, kind, commands):
 
 def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
     """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar, run the config's [ios] simctl commands."""
-    existing = json.loads(sh(["xcrun", "simctl", "list", "devices", "-j"]).stdout)["devices"].get(runtime, [])
+    existing = json.loads(simctl_sh("list", "devices", "-j").stdout)["devices"].get(runtime, [])
     by_name = {d["name"]: d for d in existing if d.get("isAvailable") and d.get("deviceTypeIdentifier", device_type) == device_type}
     for d in existing:  # same name, other device type (config changed): replace it, or screenshots get the wrong size
         if re.fullmatch(re.escape(prefix) + r"-\d+", d["name"]) and d["name"] not in by_name:
-            sh(["xcrun", "simctl", "delete", d["udid"]])
+            simctl_sh("delete", d["udid"])
     pool = []
     for i in range(n):
         name = f"{prefix}-{i + 1}"
         err, udid = "", by_name.get(name, {}).get("udid", "")
         if udid and hung_marker(udid).exists() and replace_hung(name, udid): udid = ""
         if not udid:
-            made = sh(["xcrun", "simctl", "create", name, device_type, runtime])
+            made = simctl_sh("create", name, device_type, runtime)
             udid, err = made.stdout.strip(), made.stderr.strip()
         if not udid:  # e.g. an older Xcode that has no iPhone 17 Pro Max: say why, and where the valid names are
             raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})" + (f": {err}" if err else "") +
@@ -1468,8 +1476,8 @@ def memory_pressure():
     """macOS's memory pressure level ("1" normal, "2" elevated, "4" critical), "" where it can't be read. A cron or CI
     PATH has no /usr/sbin, and Linux may have no sysctl at all: that must not stop a run."""
     for exe in ("sysctl", "/usr/sbin/sysctl"):
-        try: return sh([exe, "-n", "kern.memorystatus_vm_pressure_level"]).stdout.strip()
-        except OSError: pass
+        try: return sh([exe, "-n", "kern.memorystatus_vm_pressure_level"], timeout=20).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired): pass
     return ""
 
 def fit_parallel(n):
@@ -1517,6 +1525,7 @@ class Reading(NamedTuple):
     pressure: str = ""                    # kern.memorystatus_vm_pressure_level: "1", "2", "4"
     booted_ours: int = 0                  # pool devices already booted (a run reuses them: no extra memory)
     booted_other: int = 0                 # other projects' simulators/emulators, already in avail_gb
+    swap_total_gb: Optional[float] = None
 
 class Plan(NamedTuple):
     n: int
@@ -1571,9 +1580,9 @@ def parse_vm_stat(text):
     if not size or len(pages) < 3: return None
     return sum(pages.values()) * int(size.group(1)) / 2**30
 
-def parse_swap_used_gb(text):
-    """GB in use from `sysctl -n vm.swapusage` ("total = 7168.00M  used = 6383.19M  free = ..."), None if unreadable."""
-    m = re.search(r"used = ([\d.]+)([MGK])", text)
+def parse_swap_used_gb(text, field="used"):
+    """GB in use from `sysctl -n vm.swapusage` ("total = 7168.00M  used = 6383.19M  free = ..."), None if unreadable. field="total": the size of swap."""
+    m = re.search(field + r" = ([\d.]+)([MGK])", text)
     return float(m.group(1)) / {"K": 2**20, "M": 1024, "G": 1}[m.group(2)] if m else None
 
 def parse_load1(text):
@@ -1592,25 +1601,101 @@ def read_capacity(platform="ios", prefix="shotfleet"):
     def run(*cmd):
         try: return sh(list(cmd), timeout=20).stdout
         except (OSError, subprocess.SubprocessError): return ""
-    avail, total, swap = None, None, None
+    avail, total, swap, swap_total = None, None, None, None
     if sys.platform == "darwin":
         avail = parse_vm_stat(run("vm_stat"))
         try: total = int(run("sysctl", "-n", "hw.memsize")) / 2**30
         except ValueError: pass
-        swap = parse_swap_used_gb(run("sysctl", "-n", "vm.swapusage"))
+        swap_text = run("sysctl", "-n", "vm.swapusage")
+        swap, swap_total = parse_swap_used_gb(swap_text), parse_swap_used_gb(swap_text, "total")
     else: avail = mem_available_gb()
     ours, other = count_booted(run("xcrun", "simctl", "list", "devices", "booted"), prefix) if platform == "ios" else (0, 0)  # ponytail: emulators not counted; adb devices on 57xx ports if it matters
     try: load = os.getloadavg()[0]
     except OSError: load = None
-    return Reading(avail, total, swap, load, os.cpu_count(), memory_pressure(), ours, other)
+    return Reading(avail, total, swap, load, os.cpu_count(), memory_pressure(), ours, other, swap_total)
+
+# ---------- overload advisor: one plain warning when the Mac is in the state where simulators stopped answering (never refuses, never changes the pool) ----------
+# 2026-10-07: load 500-800 with swap nearly full, `simctl uninstall` timed out on every iPad simulator. Thresholds are provisional, from that run and the quiet ones (load 3 on 10 cores).
+BUSY_SWAP_FRACTION = 0.9     # share of swap in use
+BUSY_LOAD_PER_CORE = 10      # 1-minute load average divided by cores (28 per core was the 55 minute run; a quiet Mac is under 1)
+BUSY_STATE = {"warned": False}  # one warning per run, however many times it is checked
+
+def busy_reasons(r):
+    """Why this reading is dangerous for simulators ([] when it is not): swap almost full, macOS pressure critical, load far above the cores."""
+    out = []
+    if r.swap_used_gb is not None and r.swap_total_gb and r.swap_used_gb / r.swap_total_gb >= BUSY_SWAP_FRACTION:
+        out.append(f"swap is {100 * r.swap_used_gb / r.swap_total_gb:.0f}% full")
+    if r.pressure == "4": out.append("macOS reports critical memory pressure")
+    if r.load1 is not None and r.cores and r.load1 / r.cores >= BUSY_LOAD_PER_CORE: out.append(f"load {r.load1:.0f} on {r.cores} cores")
+    return out
+
+def busy_message(r, using=None):
+    """The one-line warning, "" when the Mac is fine. `using` = how many devices this run uses: more than 1 gets a lower number suggested."""
+    reasons = busy_reasons(r)
+    if not reasons: return ""
+    return (f"warning: this Mac is very busy ({'; '.join(reasons)}); simulators may stop answering. Close other builds or use fewer parallel devices"
+            + (f" (try --parallel {max(1, using // 2)})" if using and using > 1 else "") + ".")
+
+def busy_warn(cfg, platform, using=None, r=None):
+    """Print busy_message once per run (config `capacity = "off"` silences it). True when it printed."""
+    if BUSY_STATE["warned"] or cfg.get("capacity", "warn") == "off": return False
+    if m := busy_message(r or read_capacity(platform, cfg.get("sim_prefix", "shotfleet")), using):
+        print(m, flush=True); BUSY_STATE["warned"] = True
+        return True
+    return False
 
 def capacity_warn(cfg, want, platform, using=None):
-    """Warn-only (config `capacity`: "warn" default, "off" silent): print the planner's message when the Mac looks short of memory."""
+    """Warn-only (config `capacity`: "warn" default, "off" silent): print the planner's message when the Mac looks short of memory;
+    when the Mac is dangerously busy, the plainer overload warning says it instead (one warning, not two)."""
     if cfg.get("capacity", "warn") == "off": return
     r = read_capacity(platform, cfg.get("sim_prefix", "shotfleet"))
+    if busy_warn(cfg, platform, using or want, r): return
     if m := capacity_message(plan_capacity(want, platform, r), want, r, using): print("warning: " + m, flush=True)
 
 SLOW_SIM_ERRORS = ("Unknown error", "Unable to clear state")
+# What a failed language's error says when the device or Maestro broke, not the flow or the app (lowercase). Only these are retried by themselves:
+# a flow that fails on a missing element, a wrong screenshot count or a blank screen fails the same way a second time. Add a phrase when a new device failure shows up.
+INFRA_ERRORS = ("unknown error", "unable to clear state",  # Maestro's words when a slow simulator times its simctl calls out
+                "no result", "flow never ran",              # Maestro died or was stopped before it reported
+                "no progress for", "did not answer", "not responding", "stopped answering",
+                "offline", "emulator did not boot", "emulators did not boot", "can't find service", "not found: emulator")
+
+def is_infra_error(error):
+    """True when a failed language's error looks like a device or infrastructure problem (INFRA_ERRORS), so one more try can help."""
+    e = (error or "").lower()
+    return any(m in e for m in INFRA_ERRORS)
+
+def retry_choice(final):
+    """(languages to retry, languages not retried) from {locale: result}: only failures with an infrastructure error are retried."""
+    failed = [lp for lp, r_ in final.items() if not r_["ok"]]
+    retry = [lp for lp in failed if is_infra_error(final[lp].get("error"))]
+    return retry, [lp for lp in failed if lp not in retry]
+
+def say_not_retried(skipped):
+    if skipped:
+        print(f"not retrying {', '.join(skipped)}: the flow or the app failed, not the device, so a second try would fail the same way "
+              "(fix it, then `shotfleet run <config> --retry-failed` reruns only the failed languages)", flush=True)
+
+def retry_setup(cfg, out):
+    """`run --retry-failed`: (languages that failed in out/run.json, that report). Fail when there is no usable run.json or another config wrote it."""
+    f = Path(out) / "run.json"
+    try: prev = json.loads(f.read_text())
+    except (OSError, ValueError): raise Fail(f"--retry-failed needs the last run's {f}, and it is missing or unreadable. Run once without it first")
+    try: same = not prev.get("config") or Path(prev["config"]).resolve() == Path(cfg["_config"]).resolve()
+    except (OSError, KeyError, TypeError): same = True
+    if not same: raise Fail(f"{f} was written by another config ({prev['config']}). Run without --retry-failed, or use that config")
+    return [lp for lp, r in prev.get("locales", {}).items() if r.get("ok") is False], prev
+
+def keep_earlier(report, prev):
+    """After `run --retry-failed`: put the languages that passed last time back into the report as they were (in their old order), and add the
+    earlier tries of the retried ones to their `attempts`, so run.json lists every language and never claims fewer tries than were made.
+    Returns how many were kept."""
+    if not prev: return 0
+    old, now = prev.get("locales", {}), report["locales"]
+    for lp, r in now.items():
+        if lp in old: r["attempts"] = old[lp].get("attempts", 2 if old[lp].get("retried") else 1) + r.get("attempts", 1)
+    report["locales"] = {lp: now.get(lp, old.get(lp)) for lp in [*old, *now]}
+    return sum(1 for lp in old if lp not in now)
 
 def overload_note(want, n, errors=()):
     """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out.
@@ -1620,7 +1705,7 @@ def overload_note(want, n, errors=()):
     if n >= want and level not in ("2", "4"): return ""
     return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
             + ", and failed flows with 'Unknown error' or 'Unable to clear state' usually mean a simulator was too slow to answer."
-            + " Close other simulators and apps and rerun the failed languages: shotfleet run --locales <codes>\n")
+            + " Close other simulators and apps and rerun just the failed languages: shotfleet run <config> --retry-failed\n")
 
 def flow_parse_note(out):
     """When Maestro could not read a flow, say so: the retry would fail the same way within seconds, and a memory hint would send people
@@ -1738,8 +1823,9 @@ def junit_results(path):
 def device_type_id(name):
     """'iPad Pro 13-inch (M5)' or a full com.apple.CoreSimulator.SimDeviceType identifier -> the identifier."""
     if name.startswith("com.apple."): return name
-    try: listed = sh(["xcrun", "simctl", "list", "devicetypes", "-j"]).stdout
+    try: listed = simctl_sh("list", "devicetypes", "-j").stdout
     except OSError: raise Fail(NO_XCRUN)
+    except RuntimeError as e: raise Fail(str(e))
     types = json.loads(listed or '{"devicetypes": []}')["devicetypes"]
     match = next((t["identifier"] for t in types if t["name"].casefold() == name.casefold()), None)
     if not match: raise Fail(f"no simulator type called {name!r}. List them: xcrun simctl list devicetypes")
@@ -1767,13 +1853,13 @@ def clear_single_run(out):
     for f in ("run.json", "check.json"): (out / f).unlink(missing_ok=True)
     shutil.rmtree(out / "raw", ignore_errors=True)
 
-def cmd_run(config_path, only=None, parallel=None, platform=None):
+def cmd_run(config_path, only=None, parallel=None, platform=None, retry_failed=False):
     if only is not None: check_locales(only, "the languages asked for")
     plats = [platform] if platform else platforms_in(config_path)
     codes = []
     for p in plats:
         if len(plats) > 1: print(f"\n=== {p} ===")
-        codes.append(run_platform(config_path, only, parallel, p))
+        codes.append(run_platform(config_path, only, parallel, p, retry_failed))
     return max(codes)
 
 NO_HOOKS = False
@@ -1811,8 +1897,15 @@ def run_hook(hooks, event, config, env_extra):
         if r.returncode: return r.returncode, cmd
     return 0, None
 
-def run_platform(config_path, only, parallel, platform):
+def run_platform(config_path, only, parallel, platform, retry_failed=False):
     platform, cfg, path = load_config(config_path, platform)
+    BUSY_STATE["warned"] = False
+    if retry_failed:
+        cfg["_retry_failed"] = True
+        top = path(cfg.get("out", "out")).resolve()
+        if not any(retry_setup(cfg, d)[0] for d in device_runs(top) or [top]):  # nothing failed anywhere: no build, no devices, no hooks
+            print(f"nothing to retry: every language passed in the last run ({top / 'run.json'}). Run without --retry-failed to capture everything again")
+            return 0
     out = path(cfg.get("out", "out")).resolve()
     env = {"SHOTFLEET_PLATFORM": platform, "SHOTFLEET_OUT": str(out), "SHOTFLEET_BUNDLE_ID": cfg.get("bundle_id") or cfg.get("package") or "",
            "SHOTFLEET_LOCALES": ",".join(only or cfg.get("locales") or [])}
@@ -1936,8 +2029,13 @@ def ios_run_inner(cfg, path, only, parallel):
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
     note_partly_translated(strings, base_locale, only or cfg.get("locales") or None)
-    locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
     out = path(cfg.get("out", "out")).resolve()
+    prev = None  # `run --retry-failed`: the last run's report, whose passed languages stay as they were
+    if cfg.get("_retry_failed"):
+        only, prev = retry_setup(cfg, out)
+        if not only: print(f"nothing to retry in {out}: every language passed"); return 0
+        print(f"retrying the languages that failed in the last run: {', '.join(only)}")
+    locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
     # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
     for d in ("flows", "debug", "shots"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
@@ -2072,8 +2170,10 @@ def ios_run_inner(cfg, path, only, parallel):
     try:
         with fastlane_cache() if capture and capture.get("screenshots", "auto") != "attachments" else contextlib.nullcontext() as cache:
             final = step(list(report["locales"]), 1)
-            retry = [lp for lp, r_ in final.items() if not r_["ok"]]
-            if retry:  # simulators and drivers flake; one retry of just the failures is cheap
+            retry, skipped = retry_choice(final)  # simulators and drivers flake: one retry of the failures that look like that is cheap; a flow that failed would fail again
+            say_not_retried(skipped)
+            if retry:
+                busy_warn(cfg, "ios", n)  # the Mac may have got worse since the start
                 print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
                 for lp in retry: shutil.rmtree(inside(out, "raw", lp)); (out / "raw" / lp).mkdir()
                 # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
@@ -2098,12 +2198,14 @@ def ios_run_inner(cfg, path, only, parallel):
     if not all(r["ok"] for r in results):
         print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
+    kept = keep_earlier(report, prev)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
     report["app"] = cfg["app"]
     report["platform"] = "ios"  # export hooks get SHOTFLEET_PLATFORM from run.json
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
+    if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
     failed = [r["lproj"] for r in results if not r["ok"]]
     if not any((out / "raw").glob("*/*.png")):
         print(f"no screenshots were captured, so there's nothing to check; see the errors above and the {'xcodebuild' if capture else 'maestro'} logs")
@@ -2621,6 +2723,11 @@ def android_run(cfg, path, out, only, parallel):
         return android_run_inner(cfg, path, out, only, parallel)
 
 def android_run_inner(cfg, path, out, only, parallel):
+    prev = None  # `run --retry-failed`: the last run's report, whose passed languages stay as they were
+    if cfg.get("_retry_failed"):
+        only, prev = retry_setup(cfg, out)
+        if not only: print(f"nothing to retry in {out}: every language passed"); return 0
+        print(f"retrying the languages that failed in the last run: {', '.join(only)}")
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     framework_hint(apk, "strings" in cfg, path("."))
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
@@ -2723,12 +2830,16 @@ def android_run_inner(cfg, path, out, only, parallel):
         t0, final = time.time(), {}
         print(f"capturing {len(todo)} locales on {n} emulators, {-(-len(todo) // n)} rounds...", flush=True)
         for i in range(0, len(todo), n):
+            if i: busy_warn(cfg, "android", n)  # between rounds the Mac may have got worse
             final.update(safe_round(todo[i:i + n], f"r{i // n + 1}"))
-        retry = [lp for lp, r_ in final.items() if not r_["ok"]]
+        retry, skipped = retry_choice(final)  # only failures that look like the device's (INFRA_ERRORS) get another try
+        if not broken: say_not_retried(skipped)
         if retry and not broken:
+            busy_warn(cfg, "android", n)
             print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
             for i in range(0, len(retry), n):
-                for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True}
+                for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True, "attempts": 2}
+        for r_ in final.values(): r_.setdefault("attempts", 1)
     finally:
         stop_emulators(pool)
     for lp in todo:
@@ -2736,6 +2847,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         print_result(lp, r_, expected)
         if not r_["ok"] and where: print_failure(*where, flow, "android")
         report["locales"][lp].update(r_)
+    kept = keep_earlier(report, prev)
     if hier:
         got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())
         print(f"screen text from the UI hierarchy for {got} of {total} screenshots" + ("" if got == total else "; the rest are read from pixels (OCR)"))
@@ -2743,6 +2855,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                   device=cfg.get("device", "phone"), hierarchy_markers=hier)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators")
+    if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
         return 1
@@ -3908,8 +4021,8 @@ def simctl_works():
 
 def ios_runtimes():
     """Names of the iOS Simulator runtimes Xcode has (['iOS 26.4']), [] when it has none, None when xcrun can't say."""
-    try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
-    except OSError: return None
+    try: listed = simctl_sh("list", "runtimes", "-j")
+    except (OSError, RuntimeError): return None
     try: rts = json.loads(listed.stdout)["runtimes"] if listed.returncode == 0 else None
     except (ValueError, KeyError, TypeError): return None
     return None if rts is None else [r.get("name") or r.get("identifier", "iOS") for r in rts if r.get("platform") == "iOS" and r.get("isAvailable")]
@@ -3966,9 +4079,14 @@ def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
         ("aapt2", has_aapt2, f"sdkmanager build-tools {later}", "Android"),
         (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager a system image of API 33 or newer for {ABI} {later}", "Android"),
     ]
+    runtimes = None
     if mac and next(ok for n, ok, _, _ in checks if n == "xcrun simctl") and (runtimes := ios_runtimes()) is not None:
         checks.append((f"iOS Simulator runtime {runtimes[-1]}" if runtimes else "iOS Simulator runtime", bool(runtimes),
                        "xcodebuild -downloadPlatform iOS  (or Xcode > Settings > Components)", "iOS"))
+    if runtimes and all(bad_runtime_reason({"name": n}) for n in runtimes):
+        print(f"WARNING iOS Simulator runtime {runtimes[-1]}: {bad_runtime_reason({'name': runtimes[-1]})}. It is the only one installed, so `run` has to use it. "
+              "Install another (xcodebuild -downloadPlatform iOS), then pin it with runtime = \"...\" under [ios] in shotfleet.toml "
+              "(the identifiers are in `xcrun simctl list runtimes`)")
     for name, ok, how, platform in checks:  # not `fix`: that is the --fix flag, and shadowing it made a plain `doctor` run the fix plan
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
@@ -4494,14 +4612,44 @@ def cmd_init_capture(builds, dest="."):
 
 NO_XCRUN = "xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing"
 
+# iOS runtimes whose simulators are known to hang, by the "version" simctl reports -> why. Add a line here when a runtime is found to be bad
+# (and remove it when a later Xcode fixes it). `run` skips these when the config sets no `runtime`; `doctor` warns when one is all there is.
+BAD_IOS_RUNTIMES = {"27.0": "its simulators freeze at boot (seen in our own device test runs)"}
+
+def runtime_version(r):
+    """A runtime's version as numbers: from simctl's "version" (26.4), else from its name ("iOS 26.4"); () when neither has one."""
+    m = re.search(r"\d+(?:\.\d+)*", str(r.get("version") or r.get("name") or ""))
+    return tuple(map(int, m.group().split("."))) if m else ()
+
+def bad_runtime_reason(r, bad=None):
+    """Why this runtime is on the list of runtimes known to hang ("" when it is not)."""
+    bad = BAD_IOS_RUNTIMES if bad is None else bad
+    return next((why for v, why in bad.items() if runtime_version(r) == runtime_version({"version": v})), "")
+
+def pick_ios_runtime(runtimes, bad=None):
+    """(identifier, note) for the runtime `run` uses when the config names none: the newest one not on BAD_IOS_RUNTIMES; if only bad ones are
+    installed, the newest of them with a note saying so. note is one line, "" when nothing was skipped. `runtimes` are simctl's entries (available iOS ones)."""
+    ordered = [r for _, r in sorted(enumerate(runtimes), key=lambda ir: (runtime_version(ir[1]), ir[0]))]
+    good = [r for r in ordered if not bad_runtime_reason(r, bad)]
+    skipped = [r for r in ordered if bad_runtime_reason(r, bad)]
+    pick = (good or ordered)[-1]
+    label = lambda r: r.get("name") or r["identifier"]
+    if not skipped: return pick["identifier"], ""
+    how = f'set runtime = "{skipped[-1]["identifier"]}" in [ios] to use {label(skipped[-1])} anyway'
+    if good: return pick["identifier"], f"using {label(pick)}: {label(skipped[-1])} is installed, but {bad_runtime_reason(skipped[-1], bad)}; {how}"
+    return pick["identifier"], f"warning: the only iOS runtime installed is {label(pick)}, and {bad_runtime_reason(pick, bad)}; install another one (xcodebuild -downloadPlatform iOS) and pin it with runtime = ... in [ios]"
+
 def latest_ios_runtime():
-    try: listed = sh(["xcrun", "simctl", "list", "runtimes", "-j"])
+    try: listed = simctl_sh("list", "runtimes", "-j")
     except OSError: raise Fail(NO_XCRUN)
+    except RuntimeError as e: raise Fail(str(e))
     if listed.returncode:
         raise Fail(f"xcrun simctl doesn't work ({(listed.stderr.strip().splitlines() or ['no reason given'])[0]}). Install Xcode and open it once, then run shotfleet doctor")
     ios = [r for r in json.loads(listed.stdout or '{"runtimes": []}')["runtimes"] if r.get("platform") == "iOS" and r.get("isAvailable")]
     if not ios: raise Fail("no iOS Simulator runtime is installed. Install one with: xcodebuild -downloadPlatform iOS (or Xcode > Settings > Components)")
-    return ios[-1]["identifier"]
+    identifier, note = pick_ios_runtime(ios)
+    if note: print(note, flush=True)
+    return identifier
 
 # Android language tag -> Google Play listing locale (fastlane supply folder names)
 
@@ -4796,6 +4944,7 @@ def main(argv=None):
     p.add_argument("--platform", choices=("ios", "android"), help="only this platform when the config has both")
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
+    p.add_argument("--retry-failed", action="store_true", help="rerun only the languages that failed in this config's last run (out/run.json); the ones that passed stay as they were")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
     p.add_argument("--no-build", action="store_true", help="with [capture]: don't run the build command, use the .xctestrun that is there")
@@ -4822,6 +4971,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.cmd == "run" and a.locales is not None and not a.locales.strip(","):
         ap.error("--locales is empty; leave it out to run every language")
+    if a.cmd == "run" and a.retry_failed and a.locales is not None:
+        ap.error("--retry-failed picks the languages itself; use it without --locales")
     if a.cmd == "run" and a.parallel is not None and a.parallel < 1:
         ap.error("--parallel must be 1 or more")
     if getattr(a, "json", False):  # CI: stdout carries only the JSON report
@@ -5379,7 +5530,7 @@ def main_dispatch(a):
                 if w := maestro_warning(ver): print(f"note: {w}", file=sys.stderr)
         if a.cmd == "activate": return cmd_activate(a.key)
         if a.cmd == "deactivate": return cmd_deactivate()
-        if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform)
+        if a.cmd == "run": return cmd_run(a.config, [l.strip() for l in a.locales.split(",") if l.strip()] if a.locales else None, a.parallel, a.platform, getattr(a, "retry_failed", False))
         if a.cmd == "check": return check_any(a.out, a.app, a.strings, a.ocr_command, a.report, read_expect(a.content) if a.content else None, a.locale, a.strict)
         if a.cmd == "export": return export_with_hooks(a.out, a.fastlane)
     except (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired) as e:  # worded for people; never exit 1
