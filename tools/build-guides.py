@@ -3,8 +3,9 @@
 
   python3 tools/build-guides.py                    draft pages and a hub in site/draft/guides/ (never served)
   python3 tools/build-guides.py --publish          also copy the VERIFIED articles into site/public/guides/, write the hub
-                                                   (site/public/guides.html) and add them all to site/public/sitemap.xml
+                                                   (site/public/guides.html), add them all to site/public/sitemap.xml and write the Atom feed
   python3 tools/build-guides.py --publish-unverified   the same, for every article, ticked or not (your decision)
+  python3 tools/build-guides.py --feed             only rewrite the Atom feed (site/public/guides/feed.xml) from the guides already published
 
 An article is verified when its 'TO VERIFY BEFORE PUBLISHING' list has no item left unticked: an item counts as ticked
 when its last TICKED is not a PARTLY TICKED (an item can record a partial run, then the full one). A list with no items counts as unverified.
@@ -20,6 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = "https://shotfleet.com"
 AUTHOR = "Manuel Lorenzo Parejo"
 PLACEHOLDER = "BUILD_DATE"  # drafts carry this; --publish writes the day it ran
+
+FEED_LINK = '\n<link rel="alternate" type="application/atom+xml" title="shotfleet guides" href="/guides/feed.xml">'
 
 NAV = '''<header class="top">
   <nav class="pill" aria-label="Main">
@@ -146,7 +149,7 @@ def page(title, description, path, body, og_type="website", ld=None, assets="/")
 <link rel="icon" href="{assets}favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="{assets}apple-touch-icon.png">
 <link rel="preload" href="{assets}fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{assets}site.css">{ld_tag}
+<link rel="stylesheet" href="{assets}site.css">{FEED_LINK if path.startswith("/guides") else ""}{ld_tag}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -189,13 +192,49 @@ def add_to_sitemap(root, paths, built):
     p.write_text(text)
 
 
-def build(root=ROOT, publish=False, unverified=False, today=None, out=sys.stdout, err=sys.stderr):
+def feed_xml(entries):
+    """An Atom feed (title, link, date, summary per guide) from [(slug, title, description, 'YYYY-MM-DD')], newest first."""
+    e = html.escape
+    entries = sorted(entries, key=lambda x: x[3], reverse=True)
+    items = "".join(f"""  <entry>
+    <title>{e(t)}</title>
+    <link href="{SITE}/guides/{slug}"/>
+    <id>{SITE}/guides/{slug}</id>
+    <updated>{d}T00:00:00Z</updated>
+    <summary>{e(desc)}</summary>
+  </entry>
+""" for slug, t, desc, d in entries)
+    return f"""<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>shotfleet guides</title>
+  <link href="{SITE}/guides/feed.xml" rel="self" type="application/atom+xml"/>
+  <link href="{SITE}/guides"/>
+  <id>{SITE}/guides</id>
+  <updated>{entries[0][3] if entries else "1970-01-01"}T00:00:00Z</updated>
+  <author><name>{e(AUTHOR)}</name></author>
+{items}</feed>
+"""
+
+
+def write_feed(root, arts, built):
+    """site/public/guides/feed.xml for the articles that are published (a page exists in site/public/guides/), dated by their own datePublished."""
+    pub, entries = root / "site/public/guides", []
+    for a in arts:
+        f = pub / f"{a['slug']}.html"
+        if f.is_file():
+            m = re.search(r'"datePublished": "(\d{4}-\d\d-\d\d)"', f.read_text())
+            entries.append((a["slug"], a["title"], a["description"], m.group(1) if m else built))
+    if entries: (pub / "feed.xml").write_text(feed_xml(entries))
+
+
+def build(root=ROOT, publish=False, unverified=False, today=None, out=sys.stdout, err=sys.stderr, feed_only=False):
     """Write drafts; with publish, copy the verified articles to site/public/guides/. Returns an exit code (1 when an article was refused)."""
     arts = [a for p in sorted((root / "marketing/articles").glob("[0-9][0-9]-*.md")) if (a := parse_article(p))]
     draft = root / "site/draft/guides"; draft.mkdir(parents=True, exist_ok=True)
     for a in arts: (draft / f"{a['slug']}.html").write_text(article_page(a, PLACEHOLDER, "../../public/"))
     (draft / "index.html").write_text(hub_page(arts, True, "../../public/"))
     print(f"drafts: {len(arts)} article(s) and the hub in {draft.relative_to(root)}", file=out)
+    if feed_only: write_feed(root, arts, (today or date.today()).isoformat()); return 0
     if not publish: return 0
     ok, refused = [], []
     for a in arts:
@@ -209,6 +248,7 @@ def build(root=ROOT, publish=False, unverified=False, today=None, out=sys.stdout
         for a in ok: (pub / f"{a['slug']}.html").write_text(article_page(a, built)); print(f"published {a['slug']}", file=out)
         (root / "site/public/guides.html").write_text(hub_page(ok, False))  # not guides/index.html: the worker would redirect /guides to /guides/
         add_to_sitemap(root, ["/guides", *(f"/guides/{a['slug']}" for a in ok)], built)
+        write_feed(root, arts, built)
     return 1 if refused else 0
 
 
@@ -216,8 +256,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--publish", action="store_true", help="copy the verified articles into site/public/guides/ and add them to sitemap.xml")
     ap.add_argument("--publish-unverified", action="store_true", help="publish every article, including ones with unticked TO VERIFY items")
+    ap.add_argument("--feed", action="store_true", help="only rewrite site/public/guides/feed.xml from the guides that are already published")
     a = ap.parse_args(argv)
-    return build(publish=a.publish or a.publish_unverified, unverified=a.publish_unverified)
+    return build(publish=a.publish or a.publish_unverified, unverified=a.publish_unverified, feed_only=a.feed)
 
 
 if __name__ == "__main__":

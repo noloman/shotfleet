@@ -55,61 +55,6 @@ const server = http.createServer((req, res) => {
 
   const waitlist = fs.readFileSync(path.join(PUB, "index.html"), "utf8").includes("<!-- WAITLIST -->");
   if (waitlist) {
-    // ---- signup (C088): success, then the optional question
-    {
-      const { page, ctx, calls } = await open("/?utm_source=hn&utm_medium=post", { referer: "https://news.ycombinator.com/item?id=1" });
-      await page.fill("#signup-top-email", "Reader@Example.com");
-      await page.click("#signup-top button[type=submit]");
-      await page.waitForSelector("#signup-top-done", { state: "visible" });
-      check("signup success shows You're on the list and hides the form", (await text(page, "#signup-top-done")).includes("You’re on the list.") && !(await visible(page, "#signup-top")));
-      check("signup sends one POST to /api/signup as JSON", calls.length === 1 && calls[0].path === "/api/signup" && calls[0].method === "POST" && /json/.test(calls[0].type));
-      check("signup sends exactly email, the honeypot as website, and the referrer with utm tags", Object.keys(calls[0].body).sort().join() === "email,ref,website" && calls[0].body.email === "Reader@Example.com" && calls[0].body.website === "" && calls[0].body.ref === "news.ycombinator.com utm_source=hn utm_medium=post");
-      check("the optional question is shown after the signup, not before", (await text(page, "#signup-top-done")).includes("One more thing, if you like: what do you build with?") && calls.length === 1);
-      await page.selectOption("#stack-top-stack", "flutter");
-      await page.click("#stack-top button");
-      await page.waitForSelector("#signup-top-done .followup-thanks", { state: "visible" });
-      check("answering sends the same address with the stack and shows thanks", calls.length === 2 && calls[1].body.email === "Reader@Example.com" && calls[1].body.stack === "flutter" && calls[1].body.website === "" && (await text(page, ".followup-thanks")).includes("Thanks"));
-      await ctx.close();
-    }
-    {
-      const { page, ctx, calls } = await open("/");
-      await page.fill("#signup-email", "skip@example.com"); await page.click("#signup button[type=submit]");
-      await page.waitForSelector("#signup-done", { state: "visible" });
-      await page.selectOption("#stack-card-stack", ""); await page.click("#stack-card button");
-      check("skipping the question costs nothing: the signup was already sent and an empty answer sends nothing more", calls.length === 1 && !(await page.locator("#signup-done .followup-thanks").isVisible()));
-      await ctx.close();
-    }
-    // ---- errors
-    for (const [name, rep, want] of [
-      ["429 shows the server's own wait message", () => ({ status: 429, json: { error: "Too many attempts. Wait a minute and try again." } }), "Too many attempts. Wait a minute and try again."],
-      ["500 without a message shows the generic retry text", () => ({ status: 500, text: "boom" }), "Couldn't save that. Try again in a minute."],
-      ["400 shows the server's own text", () => ({ status: 400, json: { error: "That doesn't look like an email address. Check it and try again." } }), "That doesn't look like an email address. Check it and try again."],
-      ["a network failure shows the connection text", () => "abort", "Couldn't reach the server. Check your connection and try again."],
-    ]) {
-      const { page, ctx, calls } = await open("/", { reply: rep });
-      await page.fill("#signup-top-email", "a@example.com"); await page.click("#signup-top button[type=submit]");
-      await page.waitForSelector("#signup-top-error", { state: "visible" });
-      check("signup: " + name, (await text(page, "#signup-top-error")) === want && (await visible(page, "#signup-top")) && !(await visible(page, "#signup-top-done")) && await page.locator("#signup-top button[type=submit]").isEnabled());
-      await ctx.close();
-    }
-    {
-      const { page, ctx, calls } = await open("/");
-      await page.click("#signup-top button[type=submit]");
-      const empty = await text(page, "#signup-top-error");
-      await page.fill("#signup-top-email", "not an address"); await page.click("#signup-top button[type=submit]");
-      const bad = await text(page, "#signup-top-error");
-      check("an empty or malformed address is stopped in the page with a message and no request", empty === "Enter your email address." && bad.startsWith("That doesn't look like an email address") && calls.length === 0);
-      await ctx.close();
-    }
-    {
-      const { page, ctx, calls } = await open("/");
-      await page.evaluate(() => { document.querySelector("#signup .trap").value = "http://spam.example"; });
-      await page.fill("#signup-email", "bot@example.com"); await page.click("#signup button[type=submit]");
-      await page.waitForSelector("#signup-done", { state: "visible" });
-      check("the hidden honeypot field is sent as website, so the server can drop it", calls[0].body.website === "http://spam.example");
-      check("the honeypot is out of sight and out of the tab order", !(await page.locator("#signup .trap").isVisible()) || (await page.locator("#signup .trap").evaluate(e => e.tabIndex)) === -1);
-      await ctx.close();
-    }
     // ---- analytics.js (C077): what the counter sends, with analytics declined
     for (const choice of ["declined", "undecided"]) {
       const storage = choice === "declined" ? "denied" : null;  // second run: no choice made at all (banner showing)

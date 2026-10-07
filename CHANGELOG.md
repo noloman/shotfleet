@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- **No more "no usable release date" warning on Linux:** the Linux build and the `check` Docker image now bake in their build date like the Mac build does, so a frozen Linux `shotfleet` no longer prints that warning on every start.
+- **Export hooks get `SHOTFLEET_PLATFORM` on iOS too:** `run` now writes `platform` into `run.json` for iOS runs (only Android runs did), so `before_export` and `after_export` no longer see it empty.
+- **The MCP `run` summary says when the free tier cut the languages:** a short `note` field, for example "Free tier: captured 2 of 3 languages (de, ja)", so an agent doesn't have to guess why some are missing.
+- **Guides have a feed:** https://shotfleet.com/guides/feed.xml (Atom), linked from the guides page and every guide.
+- **The site's server no longer has a signup route** (there is no signup form). Messages, the forget form and visit counts work as before; stored data is untouched.
+
 ## 0.1.6 (2026-10-06)
 - **`check` works on fastlane supply's own file names:** supply puts the locale in every name (`1_de-DE.png`, `1_en-US.png`), so `check` said every language was missing every other language's screenshots. It now ignores the folder's own locale at the end of a name when it matches screens, but only when every file in that folder ends in it, so two different screens can't get mixed up. On a real 15-language Play set the 15 false "missing" lines are gone.
 - **A Russian screen is no longer "Kazakh":** macOS's language detection read a Russian screen full of English job titles as 99% Kazakh, and `check` reported it. Now, when detection names a close Cyrillic neighbour (Russian, Ukrainian, Belarusian, Bulgarian, Kazakh and a few more) and the screen matches the app's own strings for the expected language and no other, that's a pass. A Ukrainian screen in the Russian folder is still caught when the app's Ukrainian strings show it.
