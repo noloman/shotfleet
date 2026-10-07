@@ -1,0 +1,24 @@
+{
+ "locales": {
+  "de": {
+   "untranslated_selectors": [],
+   "lproj": "de",
+   "ok": true,
+   "error": null,
+   "screenshots": 2,
+   "attempts": 2
+  },
+  "ja": {
+   "untranslated_selectors": [],
+   "lproj": "ja",
+   "ok": true,
+   "error": null,
+   "screenshots": 2,
+   "attempts": 1
+  }
+ },
+ "config": "/private/var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-byoc-e2e.AMvBvF/proj/shotfleet.toml",
+ "wall_seconds": 260,
+ "simulators": 1,
+ "app": "/var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-byoc-e2e.AMvBvF/build/Build/Products/Debug-iphonesimulator/FleetFixture.app"
+}

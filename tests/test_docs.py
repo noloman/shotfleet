@@ -2,6 +2,7 @@
 
 Run: python3 -m unittest tests.test_docs
 """
+import xml.etree.ElementTree as ET
 import contextlib, html, importlib.util, io, json, re, sys, tempfile, tomllib, unittest
 from datetime import date
 from pathlib import Path
@@ -283,7 +284,7 @@ class Generator(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("refused open-guide", err)
             pub = root / "site/public/guides"
-            self.assertEqual(sorted(p.name for p in pub.iterdir()), ["good-guide.html"])
+            self.assertEqual(sorted(p.name for p in pub.iterdir()), ["feed.xml", "good-guide.html"])
             self.assertNotIn("open-guide", (root / "site/public/guides.html").read_text())  # the hub: /guides, not /guides/
             page = (pub / "good-guide.html").read_text()
             self.assertIn('"datePublished": "2026-11-01"', page)
@@ -293,6 +294,13 @@ class Generator(unittest.TestCase):
             self.assertIn("<loc>https://shotfleet.com/guides/good-guide</loc>", sitemap)
             self.assertIn("<loc>https://shotfleet.com/guides</loc>", sitemap)
             self.assertNotIn("open-guide", sitemap)
+            feed = (pub / "feed.xml").read_text()  # one entry per published guide: title, link, date, summary
+            self.assertIn("<title>A good guide</title>", feed); self.assertIn('<link href="https://shotfleet.com/guides/good-guide"/>', feed)
+            self.assertIn("<updated>2026-11-01T00:00:00Z</updated>", feed); self.assertIn("<summary>About A good guide.</summary>", feed)
+            self.assertNotIn("open-guide", feed)
+            ET.fromstring(feed)  # well-formed XML
+            link = '<link rel="alternate" type="application/atom+xml" title="shotfleet guides" href="/guides/feed.xml">'
+            self.assertIn(link, page); self.assertIn(link, (root / "site/public/guides.html").read_text())
             self.run_build(root, publish=True)  # idempotent
             self.assertEqual(sitemap, (root / "site/public/sitemap.xml").read_text())
 
@@ -310,7 +318,7 @@ class Generator(unittest.TestCase):
             root = self.make_root(d)
             code, out, err = self.run_build(root, publish=True, unverified=True)
             self.assertEqual(code, 0)
-            self.assertEqual(sorted(p.name for p in (root / "site/public/guides").iterdir()), ["good-guide.html", "open-guide.html"])
+            self.assertEqual(sorted(p.name for p in (root / "site/public/guides").iterdir()), ["feed.xml", "good-guide.html", "open-guide.html"])
 
     def test_a_description_over_160_characters_is_refused_even_when_verified(self):
         with tempfile.TemporaryDirectory() as d:
@@ -322,6 +330,22 @@ class Generator(unittest.TestCase):
             self.assertIn("161 characters", err)
             self.assertFalse((root / "site/public/guides/good-guide.html").exists())
             self.assertTrue((root / "site/public/guides/open-guide.html").exists())
+
+    def test_the_real_guides_have_a_feed_that_lists_exactly_the_published_ones_and_every_guide_links_to_it(self):
+        feed = ET.fromstring((PUB / "guides/feed.xml").read_text())
+        ns = {"a": "http://www.w3.org/2005/Atom"}
+        links = sorted(e.find("a:link", ns).get("href") for e in feed.findall("a:entry", ns))
+        published = sorted(f"https://shotfleet.com/guides/{p.stem}" for p in (PUB / "guides").glob("*.html"))
+        self.assertEqual(links, published)
+        for e in feed.findall("a:entry", ns): self.assertTrue(all(e.findtext(f"a:{k}", namespaces=ns) for k in ("title", "id", "updated", "summary")))
+        link = '<link rel="alternate" type="application/atom+xml" title="shotfleet guides" href="/guides/feed.xml">'
+        for f in [PUB / "guides.html", *(PUB / "guides").glob("*.html")]: self.assertIn(link, f.read_text(), f.name)
+        for a in Renderer.articles(): self.assertIn(link, bg.article_page(a, bg.PLACEHOLDER))  # a rebuild keeps it
+
+    def test_the_feed_is_served_as_atom_and_the_csp_covers_it(self):
+        headers = (PUB / "_headers").read_text()
+        self.assertRegex(headers, r"(?m)^/guides/feed\.xml\n(  .*\n)*  Content-Type: application/atom\+xml; charset=utf-8")
+        self.assertRegex(headers, r"(?m)^/\*\n  Content-Security-Policy: default-src 'self'")  # /* matches the feed too; the alternate link fetches nothing the CSP blocks
 
     def test_the_cli_flags(self):
         with contextlib.redirect_stdout(io.StringIO()) as out, self.assertRaises(SystemExit):

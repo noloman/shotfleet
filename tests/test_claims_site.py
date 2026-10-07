@@ -247,7 +247,7 @@ class WorkerBehaviour(unittest.TestCase):
 
     def test_the_whole_worker_suite_passes(self):
         self.assertEqual(self.code, 0, self.out[-2000:]); self.assertNotRegex(self.out, r"(?m)^FAIL")
-        self.assertGreaterEqual(len(self.ok), 55)
+        self.assertGreaterEqual(len(self.ok), 35)
 
     def test_c077_a_visit_adds_to_a_total_per_day_source_language_and_event_and_stores_nothing_else(self):
         self.has("visits are counted per day, source and language", "known events are kept, unknown ones count as a view", "source is sanitised",
@@ -256,20 +256,17 @@ class WorkerBehaviour(unittest.TestCase):
                  "a visit key and value hold neither the IP address nor the user agent")
 
     def test_c078_only_three_kinds_of_record_exist_and_none_holds_the_ip_or_user_agent(self):
-        self.has("a signup record holds exactly at, platform, stack, country, lang and ref",
-                 "the signup record and key never hold the IP address or the user agent",
-                 "a contact message is one msg: record holding exactly message, email and country",
+        self.has("a contact message is one msg: record holding exactly message, email and country",
                  "a contact message never holds the IP address or the user agent",
-                 "the only kinds of key ever written are email:, msg: and hit:",
+                 "the only kinds of key ever written are msg: and hit:",
                  "the server's own log lines name the event and country, never the IP, user agent or an address")
 
-    def test_c079_the_waitlist_record_has_the_listed_fields_and_never_the_ip(self):
-        self.has("the signup record has the country, the language, the referrer verbatim, the stack and the date",
-                 "the referrer is cut at 300 characters", "without a country the record says null, not a guess",
-                 "the signup record and key never hold the IP address or the user agent")
+    def test_there_is_no_signup_route(self):
+        self.has("there is no signup route: /api/signup is a 404 and writes nothing")
+        self.assertNotIn("/api/signup", read("site/worker.js"))
 
     def test_c082_forget_removes_the_signup_and_the_messages_and_answers_the_same_either_way(self):
-        self.has("forget removes the address from the list", "forget removes the messages left with that reply address",
+        self.has("forget removes an old waitlist record", "forget removes the messages left with that reply address",
                  "forget leaves other people's messages", "forget answers identically whether or not the address was on the list",
                  "forget with an address that is not an address is a 400 and deletes nothing")
 
@@ -278,7 +275,7 @@ class WorkerBehaviour(unittest.TestCase):
                  "contact too long 400", "contact bad reply address 400", "contact honeypot is not stored",
                  "a message of exactly 2,000 characters is accepted", "a message of 1 character after trimming is refused",
                  "a body over 4,096 bytes is refused with 413", "a body that is not JSON is a 400",
-                 "rate limited contact, forget and signup are all 429", "a rate limited request writes nothing")
+                 "rate limited contact and forget are both 429", "a rate limited request writes nothing")
 
     def test_c083_messages_can_be_read_with_signups_sh(self):
         sh = read("site/signups.sh")
@@ -309,7 +306,7 @@ class WranglerConfig(unittest.TestCase):
         self.assertEqual([k["binding"] for k in kv], ["WAITLIST"]); self.assertTrue(re.fullmatch(r"[0-9a-f]{32}", kv[0]["id"]))
         code = read("site/worker.js")
         self.assertIn("env.WAITLIST.put", code)
-        self.assertEqual(set(re.findall(r"env\.([A-Z_]+)\b", code)) - {"HIT_BATCH", "FLUSH_MS", "ALERT", "ALERT_TO"}, {"WAITLIST", "LIMITER"})
+        self.assertEqual(set(re.findall(r"env\.([A-Z_]+)\b", code)) - {"HIT_BATCH", "FLUSH_MS"}, {"WAITLIST", "LIMITER"})
 
     def test_c084_the_rate_limit_is_five_a_minute_per_ip_through_the_limiter_binding(self):
         rl = self.cfg["ratelimits"]
@@ -343,15 +340,6 @@ class WranglerConfig(unittest.TestCase):
         self.assertNotEqual(read("site/draft/alternatives.html"), read("site/public/alternatives.html"))
 
 
-class StackAnswers(unittest.TestCase):
-    @unittest.skipIf(LIVE, "the sale page has no waitlist form")
-    def test_every_option_of_the_what_do_you_build_with_question_is_a_stack_the_worker_keeps(self):
-        # an option the worker does not know is silently dropped, so the answer would be lost
-        options = set(re.findall(r'<option value="([a-z-]+)"', INDEX_HTML))
-        stacks = set(re.findall(r'"([a-z-]+)"', re.search(r"const STACKS = new Set\(\[(.*?)\]\)", read("site/worker.js")).group(1)))
-        self.assertTrue(options); self.assertLessEqual(options, stacks)
-
-
 # --------------------------------------------------------------------------------------------------------------------- C078, C079
 class PrivacyPageListsWhatIsStored(unittest.TestCase):
     PRIVACY = plain(read("site/public/privacy.html"))
@@ -361,7 +349,6 @@ class PrivacyPageListsWhatIsStored(unittest.TestCase):
                              "country": "Your country, which Cloudflare works out from your IP address", "lang": "your browser's language. The IP address itself isn't stored.",
                              "ref": "The site that linked you here and any utm_ tags in the link", "at": "The date and time you joined."}.items():
             with self.subTest(field=field): self.assertIn(words, self.PRIVACY)
-        self.assertIn("platform", read("site/worker.js"))  # derived from the stack answer, never asked or sent by the page
         self.assertNotIn("platform", read("site/public/forms.js"))
 
     def test_c078_the_contact_message_fields_are_named_on_the_page(self):
@@ -396,24 +383,6 @@ class BrowserBehaviour(unittest.TestCase):
 
     def test_the_browser_run_passes(self):
         self.assertEqual(self.code, 0, self.out[-3000:]); self.assertNotRegex(self.out, r"(?m)^FAIL")
-
-    @unittest.skipIf(LIVE, "the sale page has no waitlist form")
-    def test_c088_signup_shows_you_are_on_the_list_then_the_optional_question(self):
-        self.has("signup success shows You're on the list and hides the form", "signup sends one POST to /api/signup as JSON",
-                 "the optional question is shown after the signup, not before",
-                 "answering sends the same address with the stack and shows thanks",
-                 "skipping the question costs nothing: the signup was already sent and an empty answer sends nothing more")
-
-    @unittest.skipIf(LIVE, "the sale page has no waitlist form")
-    def test_c088_errors_validation_and_the_honeypot(self):
-        self.has("signup: 429 shows the server's own wait message", "signup: 500 without a message shows the generic retry text",
-                 "signup: 400 shows the server's own text", "signup: a network failure shows the connection text",
-                 "an empty or malformed address is stopped in the page with a message and no request",
-                 "the hidden honeypot field is sent as website, so the server can drop it")
-
-    @unittest.skipIf(LIVE, "the sale page has no waitlist form")
-    def test_c079_the_page_sends_only_the_address_the_honeypot_and_the_referrer_host_with_utm_tags(self):
-        self.has("signup sends exactly email, the honeypot as website, and the referrer with utm tags")
 
     @unittest.skipIf(LIVE, "the sale page has no waitlist form")
     def test_c077_the_counter_sends_only_src_and_ev_sets_no_cookie_and_runs_whatever_the_analytics_choice(self):

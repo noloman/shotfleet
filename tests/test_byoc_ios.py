@@ -301,6 +301,7 @@ class CaptureRun(unittest.TestCase):
         self.assertEqual(sorted(p.name for p in self.xctestrun.parent.glob("*.xctestrun")), [self.xctestrun.name])  # copies removed
         run = json.loads((self.d / "out/run.json").read_text())
         self.assertEqual(run["app"], str(self.xctestrun.parent / "Debug-iphonesimulator/My.app"))
+        self.assertEqual(run["platform"], "ios")  # export hooks read SHOTFLEET_PLATFORM from here
         self.assertTrue(all(v["ok"] and v["screenshots"] == 2 for v in run["locales"].values()))
         sf.cmd_check.assert_called_once()
 

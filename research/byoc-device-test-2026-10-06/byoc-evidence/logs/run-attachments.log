@@ -1,0 +1,11 @@
+building for testing (once; --no-build skips it): xcodebuild build-for-testing -project '/Users/manu/Developer/shotfleet-rc-build/0.1.6/byoc-src/tools/fixture-app/FleetFixture.xcodeproj' -scheme FleetFixture -destination 'generic/platform=iOS Simulator' -derivedDataPath '/var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-byoc-e2e.AMvBvF/build' CODE_SIGNING_ALLOWED=NO ARCHS=arm64
+booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)
+simulator 71FA79A6-0085-4202-AF7D-A244B72D7042 stopped answering (simctl uninstall did not answer within 60 s: simulator 71FA79A6-0085-4202-AF7D-A244B72D7042 is not responding. Shut it down with `xcrun simctl shutdown 71FA79A6-0085-4202-AF7D-A244B72D7042` and run again; if it stays stuck, restart the Mac); carrying on without it
+capturing 2 locales on 1 simulators...
+retrying 1: de
+ok   de       2/2 screenshots (retried)
+ok   ja       2/2 screenshots
+captured 2/2 locales in 260s on 1 simulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 4 screenshots in 2 languages: 0 problem(s)

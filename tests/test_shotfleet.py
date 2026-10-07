@@ -1264,6 +1264,19 @@ class Mcp(unittest.TestCase):
         self.assertEqual(s["reports"], [str((Path(rep) / "check.json").resolve())])
         self.assertEqual(len(json.loads(full)["screenshots"]), 400)
 
+    def test_the_run_summary_has_a_note_when_the_free_tier_capped_the_languages(self):
+        for cap, noted in ((2, True), (None, False)):
+            with tempfile.TemporaryDirectory() as d, self.fake_check(1, 1), contextlib.redirect_stdout(io.StringIO()), \
+                 mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "config_commands", return_value=[]):
+                def fake_run(*a):
+                    with mock.patch.object(sf, "LOCALE_CAP", cap): sf.cap_locales(["de", "ja", "fr"])
+                    sf.check_any(d, report=str(Path(d) / "rep")); return 0
+                with mock.patch.object(sf, "cmd_run", fake_run):
+                    text, err = sf.mcp_call("run", {"config": str(Path(d) / "shotfleet.toml")})
+            self.assertFalse(err, text); s = json.loads(text)
+            self.assertEqual("note" in s, noted)
+            if noted: self.assertIn("2 of 3 languages (de, ja)", s["note"]); self.assertIn("activate", s["note"])
+
     def test_a_run_that_wrote_no_report_returns_its_output(self):
         with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", lambda *a: print("stopped early") or 2):
             text, err = sf.mcp_call("run", {"config": "x.toml"})

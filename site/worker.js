@@ -1,14 +1,11 @@
 // API for the landing page; static files in public/ are served before this runs.
-//   POST /api/signup  {email, stack?, ref, website}  -> join the waitlist (KV key "email:<address>"); a later call with stack adds the answer
-//   POST /api/forget  {email}                           -> remove an address from the waitlist, and the contact messages left with it as the reply address
+//   POST /api/forget  {email}                           -> remove an address from the old waitlist (KV key "email:<address>", written before the sale opened; nothing writes it now), and the contact messages left with it as the reply address
 //   POST /api/hit    {src, ev}                          -> count one page event (view, runs, pricing, cta): KV key "hit:<day>|<source>|<language>|<event>" holds a total, nothing about the visitor
 //   POST /api/contact {message, email?, website}        -> a message for Manu (KV key "msg:<time>-<id>", the reply address also in its metadata so forget can find it)
-// Read signups: ./signups.sh. New signups also send me an email when the ALERT binding and ALERT_TO secret exist (see notifyJoin).
+// There is no signup route: the site has no signup form. Read what is stored with ./signups.sh.
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
 const MAX_BODY = 4096;
-const STACKS = new Set(["native", "swift", "kotlin", "react-native", "flutter", "kmp", "maui", "unity", "other"]);
-const PLATFORM_OF = { native: "both", swift: "ios", kotlin: "android" };  // the other stacks ship on both stores or aren't known
-const ROUTES = new Set(["/api/signup", "/api/forget", "/api/contact", "/api/hit"]);
+const ROUTES = new Set(["/api/forget", "/api/contact", "/api/hit"]);
 
 const EVENTS = new Set(["view", "runs", "pricing", "cta"]);
 const pending = new Map();  // visit counts waiting to be written
@@ -19,14 +16,14 @@ export default {
     if (!ROUTES.has(pathname)) return json({ error: "Not found" }, 404);
     if (request.method !== "POST") return json({ error: "Use POST" }, 405);
 
-    if (pathname === "/api/hit") {  // before the rate limit so page views never use up a visitor's signup budget
+    if (pathname === "/api/hit") {  // before the rate limit so page views never use up a visitor's rate-limit budget
       let b = {}; try { b = JSON.parse((await request.text()).slice(0, 200)); } catch {}
       const slug = (s, n) => String(s || "").toLowerCase().replace(/[^a-z0-9.-]/g, "").slice(0, n);
       const src = slug(b.src, 40) || "direct", lang = slug((request.headers.get("accept-language") || "").split(/[-,;]/)[0], 3) || "xx";
       const ev = EVENTS.has(b.ev) ? b.ev : "view";
       const key = `hit:${new Date().toISOString().slice(0, 10)}|${src}|${lang}|${ev}`;
       pending.set(key, (pending.get(key) || 0) + 1);
-      // KV's free tier allows 1,000 writes a day and signups share them, so counts are batched per isolate: written when
+      // KV's free tier allows 1,000 writes a day and messages share them, so counts are batched per isolate: written when
       // HIT_BATCH visits are waiting, or 25 s after the first one (waitUntil keeps the isolate alive that long), so a quiet site still records every visit.
       const flush = () => {
         const batch = [...pending]; pending.clear();
@@ -77,46 +74,8 @@ export default {
       console.log(JSON.stringify({ event: "forget" }));
       return json({ ok: true }); // same answer whether or not it was on the list
     }
-
-    // bots fill the hidden "website" field; answer like a success so they don't adapt
-    if (body.website) return json({ ok: true });
-    const stack = STACKS.has(body.stack) ? body.stack : null;  // optional follow-up question on the page
-    const existing = await env.WAITLIST.get(key);
-    if (!existing) {
-      const rec = {
-        at: new Date().toISOString(),
-        platform: ["ios", "android", "both"].includes(body.platform) ? body.platform : (PLATFORM_OF[stack] || "unknown"),
-        stack,
-        country: request.cf?.country || null,
-        lang: String(request.headers.get("accept-language") || "").split(/[-,;]/)[0].toLowerCase().replace(/[^a-z]/g, "").slice(0, 3) || null,
-        ref: String(body.ref || "").slice(0, 300),   // external referrer + utm_* tags, sent by the page
-      };
-      await env.WAITLIST.put(key, JSON.stringify(rec));
-      ctx.waitUntil(notifyJoin(env, key, rec));
-      console.log(JSON.stringify({ event: "signup", country: request.cf?.country || null }));
-    } else if (stack) {  // the follow-up answer for someone already on the list
-      const prev = JSON.parse(existing);
-      if (!prev.stack) await env.WAITLIST.put(key, JSON.stringify({ ...prev, stack, platform: prev.platform !== "unknown" ? prev.platform : (PLATFORM_OF[stack] || "unknown") }));
-    }
-    return json({ ok: true });
   },
 };
-
-// An email to me when someone new joins: the number, country, source and stack answer, never the address. It goes through
-// Cloudflare's send_email binding to my verified Email Routing address (the ALERT_TO secret), so nothing leaves Cloudflare.
-// Off unless ALERT and ALERT_TO exist. A failed send must never break a signup, so failures are only logged.
-async function notifyJoin(env, key, rec) {
-  if (!env.ALERT || !env.ALERT_TO) return;
-  try {
-    const { keys } = await env.WAITLIST.list({ prefix: "email:" });  // ponytail: counts the first 1,000 signups only
-    const n = keys.some(k => k.name === key) ? keys.length : keys.length + 1;  // KV lists can lag a new key by up to a minute
-    const source = rec.ref.replace(/[^\x20-\x7e]/g, "").slice(0, 80) || "direct";
-    await env.ALERT.send({ to: env.ALERT_TO, from: "alerts@shotfleet.com", subject: `shotfleet signup #${n}`,
-      text: `#${n} on the list.\nCountry: ${rec.country || "unknown"}\nSource: ${source}\nStack: ${rec.stack || "not answered"}\n\nThe address is not in this email. Read it with site/signups.sh.\n` });
-  } catch (e) {
-    console.log(JSON.stringify({ event: "notify_failed", why: String(e?.code || e?.message || e).slice(0, 120) }));
-  }
-}
 
 const json = (data, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });

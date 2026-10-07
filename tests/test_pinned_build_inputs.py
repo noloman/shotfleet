@@ -47,6 +47,14 @@ class PinnedBuildInputs(unittest.TestCase):
         self.assertNotIn("python3 -m venv", s)
         self.assertLess(s.index("PINNED_PYTHON="), s.index("swiftc"))  # a wrong Python is refused before anything is built
 
+    def test_every_build_freezes_the_release_date(self):
+        # a frozen build without the _release module prints "no usable release date" on every start
+        for name, text in (("build.sh", (PKG / "build.sh").read_text()), ("build-linux.sh", (PKG / "build-linux.sh").read_text()),
+                           ("Dockerfile", (PKG.parent / "Dockerfile").read_text())):
+            self.assertIn("RELEASE_DATE = ", text, name)
+            self.assertIn("--hidden-import _release", text, name)
+            self.assertIn("--paths", text, name)
+
     def test_no_unpinned_pip_install_left_in_packaging(self):
         for f in sorted(PKG.glob("*.sh")):
             for n, line in enumerate(f.read_text().splitlines(), 1):

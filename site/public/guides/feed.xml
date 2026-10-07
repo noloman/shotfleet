@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>shotfleet guides</title>
+  <link href="https://shotfleet.com/guides/feed.xml" rel="self" type="application/atom+xml"/>
+  <link href="https://shotfleet.com/guides"/>
+  <id>https://shotfleet.com/guides</id>
+  <updated>2026-10-06T00:00:00Z</updated>
+  <author><name>Manuel Lorenzo Parejo</name></author>
+  <entry>
+    <title>Why your fastlane snapshot screenshots are all in English (and how to check every language)</title>
+    <link href="https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english"/>
+    <id>https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english</id>
+    <updated>2026-10-06T00:00:00Z</updated>
+    <summary>Every language folder shows English? Five causes to rule out in fastlane snapshot, plus a free command that checks each image against your app&#x27;s own strings.</summary>
+  </entry>
+  <entry>
+    <title>Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps</title>
+    <link href="https://shotfleet.com/guides/maestro-one-flow-every-language"/>
+    <id>https://shotfleet.com/guides/maestro-one-flow-every-language</id>
+    <updated>2026-10-06T00:00:00Z</updated>
+    <summary>Maestro can&#x27;t set the locale inside a flow. How to run one flow in every language on iOS and Android, and the four traps that give you English by mistake.</summary>
+  </entry>
+</feed>

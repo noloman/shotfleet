@@ -2101,6 +2101,7 @@ def ios_run_inner(cfg, path, only, parallel):
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
     report["app"] = cfg["app"]
+    report["platform"] = "ios"  # export hooks get SHOTFLEET_PLATFORM from run.json
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
     failed = [r["lproj"] for r in results if not r["ok"]]
@@ -4884,6 +4885,7 @@ def mcp_summary(code):
     out = {"exit": code, "screenshots": len(shots), "languages": len({s.get("file", "").split("/")[0] for s in shots}),
            "problems_total": len(problems), "problems": cut(problems), "notes_total": len(notes), "notes": cut(notes),
            "reports": [str(f.resolve()) for f in REPORTS if f.is_file()]}
+    if FREE_TIER_NOTE: out["note"] = FREE_TIER_NOTE
     if len(problems) > MCP_LINES or len(notes) > MCP_LINES:
         out["more"] = f"only the first {MCP_LINES} lines are here; the report files have all of them (or call again with full: true)"
     return out
@@ -4898,8 +4900,8 @@ MCP_HEARTBEAT_S = 30  # with a progressToken, a progress notification this often
 def mcp_call(name, args, progress=None):
     """One tool call -> (text, is_error). Output is captured; with `progress` (a function taking a message), its last line
     is sent every MCP_HEARTBEAT_S seconds while the tool works."""
-    global LAST_REPORT, NO_HOOKS, CONFIG_COMMANDS
-    LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
+    global LAST_REPORT, NO_HOOKS, CONFIG_COMMANDS, FREE_TIER_NOTE
+    LAST_REPORT = None; FREE_TIER_NOTE = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
     log, stop = io.StringIO(), threading.Event()
     def beat():
         while not stop.wait(MCP_HEARTBEAT_S):
@@ -4987,12 +4989,15 @@ GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
 MAX_MACS = 5  # activations per key: the promise is 3 of your Macs, the other 2 are spare for reinstalls (then an email resets the count)
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
+FREE_TIER_NOTE = None  # set when the cap actually cut the languages; the MCP run summary carries it
 
 class NoLicence(Fail):
     """No valid licence: `export` stops; `run` falls back to the free tier."""
 
 def cap_locales(locales):
+    global FREE_TIER_NOTE
     if LOCALE_CAP is None or len(locales) <= LOCALE_CAP: return locales
+    FREE_TIER_NOTE = f"Free tier: captured {LOCALE_CAP} of {len(locales)} languages ({', '.join(locales[:LOCALE_CAP])}). `shotfleet activate <key>` unlocks every language ({BUY_URL})."
     print(f"free tier: capturing {LOCALE_CAP} of {len(locales)} languages ({', '.join(locales[:LOCALE_CAP])}). "
           f"This run is limited to {LOCALE_CAP} languages because there is no valid licence. "
           f"`--locales a,b` picks which ones; `shotfleet activate <key>` unlocks every language ({BUY_URL})")

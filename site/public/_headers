@@ -21,6 +21,13 @@
 /download/:version/*
   Cache-Control: public, max-age=31536000, immutable
 
+/guides/feed.xml
+  Content-Type: application/atom+xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+
 /install.sh
   Content-Type: text/plain; charset=utf-8
   Cache-Control: no-cache
+
+/.well-known/security.txt
+  Content-Type: text/plain; charset=utf-8

@@ -90,7 +90,7 @@ Screenshots made in other tools work too. `check` knows Apple's sizes for Apple 
 
 ### Use your existing XCUITest screenshot tests (iOS)
 
-Already have XCUITest tests that take your screenshots, with `XCTAttachment` or fastlane's `SnapshotHelper`? `run` can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an `XCTAttachment` needs a name and `lifetime = .keepAlways`, see below), and you don't need Maestro or Java for this.
+Already have XCUITest tests that take your screenshots, with `XCTAttachment` or fastlane's `SnapshotHelper`? `run` can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an `XCTAttachment` needs a name and `lifetime = .keepAlways`, see below), and you don't need Maestro or Java for this (new in 0.1.6, and not run end to end on a device yet).
 
 ```toml
 [ios]
@@ -115,7 +115,7 @@ How it works, and what your tests need:
 - A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.
 - `check` and `export` work on the output like on any other run. It's paid like any `run`: 2 languages without a licence, and `check` stays free.
 
-iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug. The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) hasn't run yet.
+iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug. The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) has not passed yet. Its first run, on an overloaded Mac, passed the XCTAttachment case for German and Japanese (on one simulator, because the second one stopped answering) and the missing-`.keepAlways` case, but the SnapshotHelper case lost its simulators.
 
 ## Free and paid
 
