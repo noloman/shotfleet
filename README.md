@@ -33,7 +33,7 @@ After capture, every screenshot's text is compared against your app's own string
 
 ### Check screenshots you already have (fastlane snapshot, screengrab, by hand)
 
-`run` needs Maestro. `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free. Point it at your fastlane folder and your app build:
+`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6 and not run end to end on a device yet, see below). `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free. Point it at your fastlane folder and your app build:
 
 ```bash
 shotfleet check fastlane/screenshots                       # snapshot: screenshots/<locale>/
@@ -88,11 +88,40 @@ Screenshots made in other tools work too. `check` knows Apple's sizes for Apple 
 
 `shotfleet run` (not `check`) also surfaces real localization bugs: on WOD Tracker the flow could not tap Next on one onboarding page in Japanese, Korean, Chinese and Arabic on small phones.
 
+### Use your existing XCUITest screenshot tests (iOS)
+
+Already have XCUITest tests that take your screenshots, with `XCTAttachment` or fastlane's `SnapshotHelper`? `run` can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an `XCTAttachment` needs a name and `lifetime = .keepAlways`, see below), and you don't need Maestro or Java for this.
+
+```toml
+[ios]
+locales = ["de", "ja", "ar"]      # default: every language the app ships
+
+[capture]                         # instead of flow = "flow.yaml": a config has one or the other
+build = "xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' -derivedDataPath .shotfleet/build"
+xctestrun = ".shotfleet/build/Build/Products/*.xctestrun"   # has to match exactly one file after the build
+only_testing = ["MyAppUITests/ScreenshotTests"]             # optional
+screenshots = "auto"              # "attachments" (XCTAttachment), "fastlane" (SnapshotHelper) or "auto" (both)
+timeout = 900                     # seconds per language
+```
+
+`shotfleet init --capture` writes this for you, with the shared scheme that has your UI tests. Then `shotfleet run` as usual. `run --no-build` skips the build and uses the `.xctestrun` that's already there. `shotfleet doctor` (run in the config's folder, or `shotfleet doctor path/to/shotfleet.toml`) sees the `[capture]` table and stops asking for Maestro for iOS.
+
+How it works, and what your tests need:
+
+- The build is your own command, so whatever your project needs (`ARCHS=arm64`, a shared scheme, `CODE_SIGNING_ALLOWED=NO`) goes in there. It runs once, in the config's folder, and its output goes to `out/build.log`.
+- shotfleet sets each simulator's language itself and also passes `-AppleLanguages` and `-AppleLocale` to your app. Don't count on `-testLanguage`: with a prebuilt test bundle Xcode ignores it, and the run passes in English.
+- `XCTAttachment`: give each screenshot a name (`a.name = "01Home"`) and `a.lifetime = .keepAlways`. Without `.keepAlways` Xcode throws the screenshots away when the test passes. The name becomes the file name, `out/raw/de/01Home.png`.
+- fastlane `SnapshotHelper`: it writes into `~/Library/Caches/tools.fastlane/screenshots`, one folder for all simulators, and only if that folder exists. shotfleet creates it if it's missing, takes each simulator's files by the simulator's name, and moves fastlane's `language.txt`, `locale.txt` and `snapshot-launch_arguments.txt` out of the way during the run (they would force one language on every simulator). It puts them back afterwards, also when the run fails. Keep calling `setupSnapshot(app)` before `app.launch()`.
+- A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.
+- `check` and `export` work on the output like on any other run. It's paid like any `run`: 2 languages without a licence, and `check` stays free.
+
+iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug. The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) hasn't run yet.
+
 ## Free and paid
 
 `shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT or sales tax where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
 
-`shotfleet activate <key>` stores your key on this Mac. The key from your Gumroad receipt has 3 activations. Activating again on a Mac that still has the key saved counts nothing; after `shotfleet deactivate`, a new macOS install or a new user account, the same Mac counts again. `shotfleet deactivate` removes it from this Mac but does not give the activation back; if you run out, email hello@shotfleet.com and I'll reset the count. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, that line says why. A `SHOTFLEET_KEY` in CI is never refused just because the licence server is down (see "In CI" below). `check`, `doctor` and `init` are always free, and the 2 free languages work on both platforms and every device size.
+`shotfleet activate <key>` stores your key on this Mac. Use it on up to 3 of your Macs; there are spare activations for reinstalls (the key has 5), and if you run out, email hello@shotfleet.com for a reset. Activating again on a Mac that still has the key saved counts nothing; after `shotfleet deactivate`, a new macOS install or a new user account, the same Mac counts again. `shotfleet deactivate` removes it from this Mac but does not give the activation back. Your key covers every version released within a year of your purchase; a later version runs as the free tier and says which versions your key covers, and the ones you have keep working. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, `run` stops with exit 2 instead (the key is a CI gate). A `SHOTFLEET_KEY` in CI keeps working while the licence server is down only on a machine where it passed a check in the last 30 days (see "In CI" below). `check`, `doctor` and `init` are always free, and the 2 free languages work on both platforms and every device size.
 
 ## Quickstart (build the app once for the simulator first)
 
@@ -106,7 +135,7 @@ shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator b
 
 Notes: Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition. After `init`, try `shotfleet run --locales en`, and run `shotfleet activate <your key>` when you want every language (steps below).
 
-Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included.
+Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.
 
 `shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first: Maestro 2.11.0 (a version the real runs passed on, checked against a pinned SHA-256), a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools with the SDK pieces `doctor` lists (it accepts the Android SDK licences, which the plan says). It asks once, `--yes` skips the question for CI, it stops at the first step that fails, and it never uses `sudo`, edits your shell files or touches Xcode. Maestro and Java go into `~/.shotfleet` (`SHOTFLEET_HOME` changes that); Android tools go where `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) points, else into the SDK shotfleet found or Android Studio's default folder. Behind a proxy that re-signs HTTPS, point `SSL_CERT_FILE` at its CA bundle. Tried on a Linux machine with none of these installed: `doctor` then reported Maestro 2.0.10 and the Android toolchain as ok, and the Java download was run separately against Adoptium's real API (Java 21.0.12 ran). Run on a Mac (Apple silicon, macOS 27, 2026-10-03) in a throwaway home folder, with Maestro 2.0.10 as the pin of that day; not yet run with the 2.11.0 download, and not on a separate clean user account.
 
@@ -164,9 +193,9 @@ jobs:
             shotfleet-check/
 ```
 
-To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your 3 activations. This check fails open on purpose: if the licence server can't be reached, the run counts as licensed, so a CI job never fails because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good key. A Mac where you ran `shotfleet activate` is different: it re-checks about weekly and stops after 30 days offline. With an invalid key, `export` refuses and `run` captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with `--locales de,ja`; `run` says so on a line that starts with "free tier:", and if the key is refused that line says why.
+To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your activations. If the licence server can't be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days (shotfleet notes a hash of the key and the date there, never the key itself). On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers. A Mac where you ran `shotfleet activate` re-checks about weekly and stops after 30 days offline. If the key is refused or can't be checked, `export` and `run` both stop with exit 2 and say why, so a CI job never goes green on 2 languages by accident (unset `SHOTFLEET_KEY` to get the free tier). On hosted CI runners, which start fresh every time, cache `~/Library/Application Support/shotfleet/ci-checked.json` between jobs to keep that 30-day grace during a Gumroad outage; it holds a hash and a date, no secret.
 
-With `--json`, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in `run.json`.
+With `--json`, progress goes to stderr, including the "free tier:" line (only when no `SHOTFLEET_KEY` is set; with one, a refused key stops `run`).
 
 ## Linux and CI
 
@@ -213,12 +242,16 @@ plain text in `~/.claude.json`.
 
 ### What the MCP tools do
 
-- `check` and `doctor` only look. `check` never changes a screenshot; it writes its report to `./shotfleet-check`, or
-  to the folder you pass as `report`.
+- `doctor` only looks. `check` never changes a screenshot; it writes its report (`check.json` and `index.html`, replacing
+  those two files if they are there) to `./shotfleet-check`, or to the folder you pass as `report`. Over MCP `check` takes no
+  `ocr_command`: a program to run is for `--ocr-command` in your own terminal (or `SHOTFLEET_OCR` where the server starts).
 - `run` boots simulators or emulators and replaces the screenshots in the config's output folder. On a big app that can
   take an hour or more, so if your client asks for progress, the server sends it a line every 30 seconds.
-- Over MCP, `run` skips the `[hooks]` commands in your config unless you pass `hooks: true`. A config in a repo you just
-  cloned can hold any shell command, and here you wouldn't see it the way you see a command in your terminal.
+- Over MCP, no command written in your config runs unless you pass `hooks: true`. Without it, `run` skips the `[hooks]`
+  commands and refuses a config that has a `[capture]` build, `[ios] simctl` or `[android] shell` commands, and says which.
+  A config in a repo you just cloned can hold any shell command, and here you wouldn't see it the way you see a command in
+  your terminal. `run` still installs and runs the config's app (and with `[capture]`, its test bundle) on the simulators,
+  so only point it at a project you trust.
 - I keep the answers short: counts, the first 100 problems and notes, and the path to the full `check.json`. Pass
   `full: true` to get the whole report. For 40 languages with 10 screens each, the whole report is about 67,000
   characters, and Claude Code moves anything over 50,000 to a file instead of showing it.
@@ -408,7 +441,7 @@ translation source.
 - Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 - Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set `device_type` in the config. Xcode 26.x has not been run.
 - iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup.
-- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6 and not run end to end on a device yet) needs neither. `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
 - Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac. For `check` there is also a Docker image (see Linux and CI).
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, which 2.11.0 does and 2.0.10 doesn't; see above).

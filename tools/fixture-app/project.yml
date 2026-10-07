@@ -1,0 +1,31 @@
+# The fixture app as an Xcode project with an XCUITest target, for the bring-your-own-capture device test
+# (tools/fixture-byoc-e2e.sh). FleetFixture.xcodeproj is generated from this file: `xcodegen` in this folder.
+# build.sh (swiftc, no project) stays the build for the Maestro tests.
+name: FleetFixture
+options:
+  bundleIdPrefix: dev.shotfleet
+  deploymentTarget: {iOS: "17.0"}
+settings:
+  base: {CODE_SIGNING_ALLOWED: NO, GENERATE_INFOPLIST_FILE: YES, SWIFT_VERSION: "5.0", DEVELOPMENT_LANGUAGE: en}
+targets:
+  FleetFixture:
+    type: application
+    platform: iOS
+    sources: [App.swift, Resources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.shotfleet.fixture
+        TARGETED_DEVICE_FAMILY: "1"  # iPhone only, so check doesn't ask for an iPad set
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Fleet Fixture
+  FleetFixtureUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies: [{target: FleetFixture}]
+    settings:
+      base: {PRODUCT_BUNDLE_IDENTIFIER: dev.shotfleet.fixture.uitests, TEST_TARGET_NAME: FleetFixture, TARGETED_DEVICE_FAMILY: "1"}
+schemes:
+  FleetFixture:
+    build: {targets: {FleetFixture: all, FleetFixtureUITests: [test]}}
+    test: {targets: [FleetFixtureUITests]}

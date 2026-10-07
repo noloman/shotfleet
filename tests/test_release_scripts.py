@@ -126,6 +126,16 @@ class DryRun(Fixture):
         self.tar.write_bytes(good[:-1] + bytes([good[-1] ^ 1]))  # same size again, wrong content
         self.assertIn("does not match its manifest sha256", self.publish("--dry-run").stdout)
 
+    def test_refuses_a_manifest_version_that_is_not_strictly_digits(self):  # security review S7 (2026-10-07): the case glob let `9.9.9;x` through
+        for bad in ("9.9.9;touch${IFS}x", "9.9.9$(id)", "9.9.9.1", "9..9"):
+            with self.subTest(version=bad):
+                m = self.tmp / "bad-manifest.txt"
+                m.write_text(self.manifest.read_text().replace("version 9.9.9", f"version {bad}", 1))
+                r = self.publish("--dry-run", manifest=m)
+                self.assertEqual(r.returncode, 1)
+                self.assertIn("manifest has no 'version X.Y.Z' line", r.stdout)
+                self.assertNotIn(f"manifest version {bad}", r.stdout)
+
     def test_refuses_a_version_that_disagrees(self):
         (self.tree / "shotfleet.py").write_text('VERSION = "9.9.8"\n')
         subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "y"], check=True)
@@ -138,6 +148,13 @@ class DryRun(Fixture):
         (self.tree / "site/public/docs.html").write_text("<p>Last checked against version 9.9.8 on 2026-01-01.</p>\n")
         subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "y"], check=True)
         self.assertIn("docs page '9.9.8'", self.publish("--dry-run").stdout)
+
+    def test_refuses_a_changelog_whose_top_release_heading_is_still_the_placeholder(self):
+        (self.tree / "CHANGELOG.md").write_text("# Changelog\n\n## 9.9.9 (<!-- RELEASE_DATE -->)\n- x\n\n## 9.9.8 (2026-01-01)\n- y\n")
+        subprocess.run(["/usr/bin/git", "-C", str(self.tree), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "y"], check=True)
+        r = self.publish("--dry-run")
+        self.assertEqual(r.returncode, 1); self.assertIn("top release heading still has <!-- RELEASE_DATE -->", r.stdout)
+        self.assertIn("VERSION agrees", r.stdout)  # the placeholder heading still names the version
 
     def test_refuses_a_whats_new_page_whose_release_date_is_still_the_placeholder(self):
         page = self.tree / "site/public/whats-new.html"

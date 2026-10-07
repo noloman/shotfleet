@@ -1,0 +1,8 @@
+== 14:15:50 run3 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform android --locales en
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 1 locales on 1 emulators, 1 rounds...
+ok   en       8/8 screenshots
+captured 1/1 locales in 106s on 1 emulators
+
+checked 8 screenshots in 1 languages: 0 problem(s)

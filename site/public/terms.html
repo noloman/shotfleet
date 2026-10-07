@@ -11,14 +11,19 @@
 <meta property="og:title" content="Licence and refunds · shotfleet">
 <meta property="og:description" content="What you get with a shotfleet licence, and how updates and refunds work.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="https://shotfleet.com/terms">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/terms">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -37,16 +42,17 @@
 
   <h2>The licence</h2>
   <ul>
-    <li>One licence is for one developer. The key has 3 activations, for your own Macs, and your CI uses none.</li>
+    <li>One licence is for one developer. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset. Your CI uses none.</li>
     <li>Unlimited apps and projects, including client and commercial work.</li>
     <li><code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. The licence unlocks every language and <code>export</code>. <code>doctor</code> and <code>init</code> are free too, and the 2 free languages work on both platforms and every device size.</li>
     <li>shotfleet needs a Mac with Apple silicon for now. There's no Intel build yet.</li>
-    <li>Don't share your key or publish it. A key can be activated 3 times. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes the key from a Mac, but Gumroad can't give the activation back from there: if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> and I'll reset the count.</li>
+    <li>Don't share your key or publish it. A key can be activated 5 times: 3 Macs and 2 spare for reinstalls. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes the key from a Mac, but Gumroad can't give the activation back from there: if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> and I'll reset the count.</li>
     <li>Open-source maintainers and students can email me for a free licence: a 100%-off code for the same licence.</li>
   </ul>
 
   <h2>Updates</h2>
-  <p>A year of updates is included. After that, the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run: it asks Gumroad about once a week, and works offline for up to 30 days (a CI key, <code>SHOTFLEET_KEY</code>, is checked online on every run and has no offline limit). I plan to offer an optional renewal for further updates after the first year; it is not available yet.</p>
+  <p>A year of updates is included: your licence covers every shotfleet version released within a year of your purchase. A version released after that runs as the free tier with your key and tells you so; to get it, you'd need a renewal. The renewal isn't on sale yet, so for now email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
+  <p>The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run: it asks Gumroad about once a week, and works offline for up to 30 days (a CI key, <code>SHOTFLEET_KEY</code>, is checked online on every run, and works offline only on a machine where it passed a check in the last 30 days). Every version stays downloadable at <code>shotfleet.com/download/&lt;version&gt;/</code>.</p>
 
   <h2>Refunds</h2>
   <p>You can ask for a refund within 14 days of buying and you'll get it, no questions asked, and you don't have to say why. Email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> with your order email.</p>
@@ -64,7 +70,7 @@
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 <script src="/ga.js" defer></script>

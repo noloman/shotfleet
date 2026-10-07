@@ -1,0 +1,12 @@
+== 14:10:33 run2 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform android --locales en
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 1 locales on 1 emulators, 1 rounds...
+retrying 1: en
+FAIL en       2/8 screenshots (retried)  Element not found: Text matching regex: Why this fits.*
+captured 0/1 locales in 154s on 1 emulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 2 screenshots in 1 languages: 0 problem(s)
+notes (1, not blocking):
+  - 1 listing(s) (en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations

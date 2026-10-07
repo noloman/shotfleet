@@ -15,7 +15,7 @@
 ## Requirements
 
 - An Apple silicon Mac. The installer refuses Intel Macs. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
-- Maestro 2.x and Java 17+ (Maestro needs it).
+- Maestro 2.x and Java 17+ (Maestro needs it). On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet. Android still needs a Maestro flow.
 - Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
 - Text typed into fields by the flow is not translated by itself: it stays the same in every language unless you set per-language `[inputs]` (iOS; on Android that needs a Maestro that sets MAESTRO_DEVICE_UDID).
@@ -37,9 +37,21 @@ DOCKER-PENDING -->
 ## Price and licence
 
 - `check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence.
-- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. Gumroad applies the $29 by itself at checkout; there is no public count of how many are left. It includes a year of updates and a 14-day refund. Prices are before VAT or sales tax, which Gumroad adds where it applies; checkout is on Gumroad, the merchant of record.
+- A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49, once per developer. Gumroad applies the $29 by itself at checkout; there is no public count of how many are left. It includes a year of updates (every version released within a year of the purchase; versions you have keep working) and a 14-day refund. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset. CI uses no activation. Prices are before VAT or sales tax, which Gumroad adds where it applies; checkout is on Gumroad, the merchant of record.
 - Open-source maintainers and students can email hello@shotfleet.com with a link to their open-source repo or proof that they're a student for a 100%-off code. Gumroad makes an invoice from the receipt; there are no purchase orders.
 - The home page links to the checkout; shotfleet is on sale.
+
+## Not for you if
+
+- You don't have an Apple silicon Mac.
+- You want frames, captions or store upload. ButterKit and AppScreens do that; shotfleet doesn't.
+- Your UI tests already run in every language and you're happy with them. Keep them, and if you want, run the free `check` on the folder they write.
+
+## Common questions
+
+- Why are my localized screenshots in English? Usually the app never got the language (with fastlane snapshot, `setupSnapshot(app)` must run before `app.launch()`), or the app has no translation for it. `check --app` reports both: screenshots whose text is in another language, and store listings in a language the app doesn't have.
+- Can Maestro take screenshots in every language? Maestro's own setting for it is the device locale, chosen when the device starts (`maestro start-device --device-locale de_DE`); its docs have no flow command for it, and a flow's text selectors (`tapOn: "Next"`) don't change with it. shotfleet keeps one English flow, passes the app's language as launch arguments (iOS) or per-app language (Android), rewrites the text selectors for each language from the app's own translations, and runs the languages in parallel.
+- Does it check screenshot sizes? Yes: every App Store display class, Play's 320 to 3840 px, at most 10 (App Store) or 8 (Play) per listing, no transparency, a 6.9" or 6.5" iPhone set, and a 13" iPad set when the app runs on iPad.
 
 ## Links
 
@@ -47,6 +59,9 @@ DOCKER-PENDING -->
 - [Docs](https://shotfleet.com/docs): install, quickstart, config keys, hooks, CI recipe, agent skills, requirements and limits
 - [What's new](https://shotfleet.com/whats-new): what changed for buyers in each release, newest first
 - [See it work](https://shotfleet.com/demo): short clips of the commands, and a dated record of the real runs (release gates, macOS versions, real apps)
+- [Guides](https://shotfleet.com/guides): how-tos for localized App Store and Google Play screenshots
+- [Why your fastlane snapshot screenshots are all in English](https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english): five causes to rule out, and checking every language with the free `check`
+- [Run one Maestro flow in every language](https://shotfleet.com/guides/maestro-one-flow-every-language): iOS launch arguments, Android per-app locales, and four traps that give you English by mistake
 - [Alternatives](https://shotfleet.com/alternatives): how it compares with other tools, and when not to buy it
 - [Terms](https://shotfleet.com/terms): licence and refunds
 - [Privacy](https://shotfleet.com/privacy): what the site stores and what is kept when you buy or write to me

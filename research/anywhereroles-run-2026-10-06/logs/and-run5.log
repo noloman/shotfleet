@@ -1,0 +1,13 @@
+== 14:33:31 run5 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform android --locales en,de,ja
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+booting 2 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 2 emulators, 2 rounds...
+retrying 3: de, en, ja
+FAIL en       2/8 screenshots (retried)  [shard 2] No visible element found: "Mobile Platform Lead"
+FAIL de       2/8 screenshots (retried)  [shard 1] No visible element found: "Mobile Platform Lead"
+FAIL ja       2/8 screenshots (retried)  No visible element found: "Mobile Platform Lead"
+captured 0/3 locales in 333s on 2 emulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+shotfleet: --ocr-command failed on 1_jobs-list.png: Error, cannot read input file /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/de/1_jobs-list.png: No such file or directory
+Error during processing.
+macOS text recognition didn't answer in time: macOS is still compiling its text-reading model (ANECompilerService). A first-time compile on a busy Mac can take minutes, and the result is kept for next time. The fallback reader was used: using Tesseract instead of macOS text recognition; it reads fewer scripts and names no language, so some screens may be reported as unverified. Run check again later for the full reader

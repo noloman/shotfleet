@@ -2,16 +2,15 @@
 """Render the drafted articles (marketing/articles/NN-*.md) into guide pages. Stdlib only.
 
   python3 tools/build-guides.py                    draft pages and a hub in site/draft/guides/ (never served)
-  python3 tools/build-guides.py --publish          also copy the VERIFIED articles into site/public/guides/ and add them
-                                                   (and /guides) to site/public/sitemap.xml
+  python3 tools/build-guides.py --publish          also copy the VERIFIED articles into site/public/guides/, write the hub
+                                                   (site/public/guides.html) and add them all to site/public/sitemap.xml
   python3 tools/build-guides.py --publish-unverified   the same, for every article, ticked or not (your decision)
 
 An article is verified when its 'TO VERIFY BEFORE PUBLISHING' list has no item left unticked: an item counts as ticked
-when it says TICKED (and not PARTLY TICKED). A list with no items counts as unverified.
+when its last TICKED is not a PARTLY TICKED (an item can record a partial run, then the full one). A list with no items counts as unverified.
 
-Before the FIRST publish, run `wrangler dev` (cd site) and open /guides/<slug> without .html: the worker serves
-site/public with html_handling for /docs, /terms and /privacy, but nested routing (/guides/<slug>) has not been
-confirmed without a deploy.
+Routing, checked with `wrangler dev` (cd site) on 2026-10-06: /guides/<slug> serves guides/<slug>.html with a 200 and
+/guides serves guides.html; a guides/index.html would answer /guides with a redirect to /guides/, so the hub is not one.
 """
 import argparse, html, json, re, sys
 from datetime import date
@@ -31,18 +30,9 @@ NAV = '''<header class="top">
 FOOTER = '''<footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>'''
-STYLE = '''<style>
-.docs { max-width: 760px; }
-.docs h2 { scroll-margin-top: 96px; }
-.docs pre { margin: 0; font: 0.88rem/1.6 var(--mono); background: color-mix(in srgb, var(--ink) 8%, transparent); border-radius: 12px; padding: 14px 16px; overflow-x: auto; }
-.docs pre code { background: none; padding: 0; font: inherit; }
-.docs ol, .docs ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
-.docs img { max-width: 100%; height: auto; border-radius: 12px; }
-.docs table { min-width: 0; }
-</style>'''
 
 
 # ---------- the Markdown subset: headings, paragraphs, lists, code fences, inline code, links, images, emphasis, tables ----------
@@ -112,7 +102,7 @@ def parse_article(path):
     slug = (field("Slug") or "").strip("`/ ")
     if not slug: return None
     head, _, body = text.partition("\n---\n")
-    return {"slug": slug, "title": field("Title") or "", "description": field("Meta description") or "", "body": body.strip(), "open_items": open_items(head), "file": path.name}
+    return {"slug": slug, "title": field("Title") or "", "title_tag": field("Title tag"), "description": field("Meta description") or "", "body": body.strip(), "open_items": open_items(head), "file": path.name}
 
 
 def open_items(text):
@@ -122,12 +112,13 @@ def open_items(text):
     section = re.split(r"^(?:---|Sources\b.*)$", text[m.end():], maxsplit=1, flags=re.M)[0]
     items = re.findall(r"^(?:\d+\.|[-*])\s+(.*)$", section, re.M)
     if not items: return ["(the TO VERIFY section lists nothing)"]
-    return [t for t in items if not (re.match(r"\[[xX]\]", t) or ("TICKED" in t and "PARTLY" not in t))]
+    ticked = lambda t: (marks := re.findall(r"(PARTLY )?TICKED", t)) and not marks[-1]  # the last mark counts
+    return [t for t in items if not (re.match(r"\[[xX]\]", t) or ticked(t))]
 
 
 def page(title, description, path, body, og_type="website", ld=None, assets="/"):
-    ld_json = json.dumps(ld, indent=2, ensure_ascii=False).replace("</", "<\\/") if ld else ""  # no "</script>" inside the tag
-    ld_tag = f'\n<script type="application/ld+json">\n{ld_json}\n</script>' if ld else ""
+    blocks = ld if isinstance(ld, list) else [ld] if ld else []  # no "</script>" inside a tag
+    ld_tag = "".join(f'\n<script type="application/ld+json">\n{json.dumps(b, indent=2, ensure_ascii=False).replace("</", "<\\/")}\n</script>' for b in blocks)
     e = lambda s: html.escape(s, quote=True)
     return f'''<!doctype html>
 <html lang="en">
@@ -142,14 +133,20 @@ def page(title, description, path, body, og_type="website", ld=None, assets="/")
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(description)}">
 <meta property="og:image" content="{SITE}/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="{SITE}{path}">
 <meta property="og:type" content="{og_type}">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="{SITE}{path}">
 <link rel="icon" href="{assets}favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="{assets}site.css">
-{STYLE}{ld_tag}
+<link rel="icon" href="{assets}favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="{assets}apple-touch-icon.png">
+<link rel="preload" href="{assets}fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{assets}site.css">{ld_tag}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -169,7 +166,11 @@ def page(title, description, path, body, og_type="website", ld=None, assets="/")
 def article_page(a, built, assets="/"):
     ld = {"@context": "https://schema.org", "@type": "Article", "headline": a["title"], "description": a["description"], "author": {"@type": "Person", "name": AUTHOR},
           "datePublished": built, "mainEntityOfPage": f"{SITE}/guides/{a['slug']}"}
-    return page(a["title"], a["description"], f"/guides/{a['slug']}", render_markdown(a["body"]), "article", ld, assets)
+    crumbs = {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+        {"@type": "ListItem", "position": n, "name": name, "item": f"{SITE}{url}"}
+        for n, (name, url) in enumerate([("Home", "/"), ("Guides", "/guides"), (a["title"], f"/guides/{a['slug']}")], 1)]}
+    # the title tag can be shorter than the h1 (a "Title tag" row in the article's table); search results cut titles at about 60 characters
+    return page(a["title_tag"] or a["title"], a["description"], f"/guides/{a['slug']}", render_markdown(a["body"]), "article", [ld, crumbs], assets)
 
 
 def hub_page(arts, drafts, assets="/"):
@@ -179,11 +180,11 @@ def hub_page(arts, drafts, assets="/"):
     return page("shotfleet guides: localized screenshots", "Guides on localized App Store and Google Play screenshots: fastlane snapshot, Maestro locales and what a check finds.", "/guides", body, assets=assets)
 
 
-def add_to_sitemap(root, paths):
+def add_to_sitemap(root, paths, built):
     p = root / "site/public/sitemap.xml"
     text = p.read_text()
     for path in paths:
-        loc = f"  <url><loc>{SITE}{path}</loc></url>\n"
+        loc = f"  <url><loc>{SITE}{path}</loc><lastmod>{built}</lastmod></url>\n"  # tests/test_site_audit wants a lastmod on every entry
         if f"<loc>{SITE}{path}</loc>" not in text: text = text.replace("</urlset>", loc + "</urlset>")
     p.write_text(text)
 
@@ -206,8 +207,8 @@ def build(root=ROOT, publish=False, unverified=False, today=None, out=sys.stdout
         pub = root / "site/public/guides"; pub.mkdir(parents=True, exist_ok=True)
         built = (today or date.today()).isoformat()
         for a in ok: (pub / f"{a['slug']}.html").write_text(article_page(a, built)); print(f"published {a['slug']}", file=out)
-        (pub / "index.html").write_text(hub_page(ok, False))
-        add_to_sitemap(root, ["/guides", *(f"/guides/{a['slug']}" for a in ok)])
+        (root / "site/public/guides.html").write_text(hub_page(ok, False))  # not guides/index.html: the worker would redirect /guides to /guides/
+        add_to_sitemap(root, ["/guides", *(f"/guides/{a['slug']}" for a in ok)], built)
     return 1 if refused else 0
 
 

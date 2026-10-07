@@ -1,0 +1,34 @@
+== 16:24:22 run11 /Users/manu/Developer/shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet run scripts/shotfleet/shotfleet.toml --platform android --parallel 1
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+warning es: 'Insights' -> 'Estadísticas' also means 'Statistics'; anchor that step (below:/above:) if it taps the wrong element
+warning es: 'Weekly briefing' -> 'Resumen semanal' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning fr: 'Weekly briefing' -> 'Récapitulatif hebdomadaire' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning it: 'Weekly briefing' -> 'Riepilogo settimanale' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning ko: 'Weekly briefing' -> '주간 브리핑' also means 'Your weekly briefing'; anchor that step (below:/above:) if it taps the wrong element
+warning nl: 'Weekly briefing' -> 'Wekelijks overzicht' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning pl: 'Weekly briefing' -> 'Podsumowanie tygodnia' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning pt-BR: 'Weekly briefing' -> 'Resumo semanal' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning ru: 'Weekly briefing' -> 'Еженедельная сводка' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning tr: 'Weekly briefing' -> 'Haftalık özet' also means 'Weekly digest'; anchor that step (below:/above:) if it taps the wrong element
+warning zh-CN: 'Your next move' -> '下一步' also means 'Next'; anchor that step (below:/above:) if it taps the wrong element
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 15 locales on 1 emulators, 15 rounds...
+ok   de       8/8 screenshots
+ok   en       8/8 screenshots
+ok   es       8/8 screenshots
+ok   fr       8/8 screenshots
+ok   hi       8/8 screenshots
+ok   it       8/8 screenshots
+ok   ja       8/8 screenshots
+ok   ko       8/8 screenshots
+ok   nl       8/8 screenshots
+ok   pl       8/8 screenshots
+ok   pt-BR    8/8 screenshots
+ok   ru       8/8 screenshots
+ok   sv       8/8 screenshots
+ok   tr       8/8 screenshots
+ok   zh-CN    8/8 screenshots
+captured 15/15 locales in 1826s on 1 emulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 120 screenshots in 15 languages: 0 problem(s)

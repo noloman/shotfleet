@@ -274,7 +274,9 @@ class LlmsTxt(unittest.TestCase):
 
     def test_links_are_the_site_pages_and_they_exist(self):
         links = re.findall(r"\]\((https?://[^)]+)\)", LLMS)
-        self.assertEqual(links, ["https://shotfleet.com/", "https://shotfleet.com/docs", "https://shotfleet.com/whats-new", "https://shotfleet.com/demo", "https://shotfleet.com/alternatives", "https://shotfleet.com/terms",
+        self.assertEqual(links, ["https://shotfleet.com/", "https://shotfleet.com/docs", "https://shotfleet.com/whats-new", "https://shotfleet.com/demo", "https://shotfleet.com/guides",
+                                 "https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english", "https://shotfleet.com/guides/maestro-one-flow-every-language",
+                                 "https://shotfleet.com/alternatives", "https://shotfleet.com/terms",
                                  "https://shotfleet.com/privacy"])
         sitemap = (ROOT / "site/public/sitemap.xml").read_text()
         for url in links:

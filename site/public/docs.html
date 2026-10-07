@@ -3,22 +3,128 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>shotfleet documentation: install, config, CI, hooks</title>
-<meta name="description" content="How to install and run shotfleet: quickstart, config keys, hooks, overrides, inputs, a CI recipe, agent skills, requirements and limits.">
+<title>shotfleet docs: localized screenshots, check, config, CI</title>
+<meta name="description" content="How to install shotfleet, take localized App Store and Google Play screenshots from one Maestro flow, check screenshots you already have, and run it in CI.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
-<meta property="og:title" content="shotfleet documentation: install, config, CI, hooks">
+<meta property="og:title" content="shotfleet docs: localized screenshots, check, config, CI">
 <meta property="og:description" content="Quickstart, config keys, hooks, overrides, inputs, a CI recipe, agent skills, requirements and limits.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
 <meta property="og:url" content="https://shotfleet.com/docs">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/docs">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "TechArticle",
+   "@id": "https://shotfleet.com/docs#article",
+   "headline": "shotfleet documentation",
+   "url": "https://shotfleet.com/docs",
+   "dateModified": "2026-10-06",
+   "inLanguage": "en",
+   "author": {
+    "@type": "Person",
+    "name": "Manuel Lorenzo Parejo",
+    "url": "https://manulorenzo.me"
+   },
+   "about": {
+    "@id": "https://shotfleet.com/#software"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "Home",
+     "item": "https://shotfleet.com/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Docs",
+     "item": "https://shotfleet.com/docs"
+    }
+   ]
+  },
+  {
+   "@type": "FAQPage",
+   "mainEntity": [
+    {
+     "@type": "Question",
+     "name": "Does shotfleet upload my screenshots to App Store Connect or Google Play?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. export copies the languages that passed into fastlane's folders, and fastlane does the upload (deliver for the App Store, supply for Google Play)."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Do I need Maestro?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Only for run, which drives your app with Maestro 2.x (on iOS, run can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet). check doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "I already use fastlane snapshot. Do I have to switch?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. Keep your UI tests and point check at the folder they write (see Check screenshots you already have). With --app it finds screenshots that came out in the wrong language, copies, missing screens and store-rule problems."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does it work with Flutter or React Native?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes, from your translation files (the strings key), in the cases I ran: I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does it work on an Intel Mac?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. It needs an Apple silicon Mac, and the installer refuses Intel Macs."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Does it add device frames or marketing captions?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens (how they compare)."
+     }
+    },
+    {
+     "@type": "Question",
+     "name": "Is it free?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "check, doctor and init are free for everyone. run is free for up to 2 languages. A licence unlocks every language and export; the price is on the home page."
+     }
+    }
+   ]
+  }
+ ]
+}
+</script>
+<link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -33,8 +139,8 @@
  <div class="page docs">
   <p class="label">Docs</p>
   <h1>shotfleet documentation</h1>
-  <p class="lede">This page covers how to install shotfleet, take your screenshots, check them and hand them to fastlane. If something here is wrong or unclear, email me at <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
-  <p class="small">Last checked against version 0.1.5 on 2026-10-06.</p>
+  <p class="lede">shotfleet is a macOS command-line tool that takes your localized App Store and Google Play screenshots from one English Maestro flow, in every language your app has, and checks that each one is in the right language. This page covers how to install shotfleet, take your screenshots, check them and hand them to fastlane. If something here is wrong or unclear, email me at <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
+  <p class="small">Last checked against version 0.1.6 on 2026-10-06.</p>
 
   <nav class="toc" aria-label="On this page">
     <ol>
@@ -42,6 +148,7 @@
       <li><a href="#install">Install</a></li>
       <li><a href="#quickstart">Quickstart</a></li>
       <li><a href="#check">Check screenshots you already have</a></li>
+      <li><a href="#xcuitest">Your own XCUITest tests (iOS)</a></li>
       <li><a href="#config">Config</a></li>
       <li><a href="#strings">Flutter, React Native and other frameworks</a></li>
       <li><a href="#hooks">Hooks</a></li>
@@ -56,6 +163,7 @@
       DOCKER-PENDING -->
       <li><a href="#agents">With AI agents</a></li>
       <li><a href="#limits">Limits</a></li>
+      <li><a href="#faq">Common questions</a></li>
     </ol>
   </nav>
 
@@ -64,7 +172,7 @@
     <li>Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.</li>
     <li>Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set <code>device_type</code> in the config. Xcode 26.x has not been run.</li>
     <li>macOS on Apple silicon only. The installer refuses Intel Macs.</li>
-    <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it).</li>
+    <li>Maestro 2.x (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, <code>run</code> can use <a href="#xcuitest">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.</li>
     <li>Xcode for iOS, the Android SDK for Android.</li>
     <li><code>shotfleet doctor --fix</code> downloads what <code>doctor</code> found missing (Maestro 2.11.0, a Java 21 runtime, the Android command-line tools) after showing the plan and asking once; it never uses <code>sudo</code> and does not touch Xcode.</li>
     <li>Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in <code>ANDROID_HOME</code>, <code>ANDROID_SDK_ROOT</code>, <code>~/Library/Android/sdk</code>, Homebrew's <code>android-commandlinetools</code>, or next to an <code>adb</code> on your PATH, and uses any installed arm64 <code>google_apis</code> or <code>google_apis_playstore</code> image of API 33 or newer (or the <code>system_image</code> from the config). <code>shotfleet doctor</code> prints the <code>sdkmanager</code> commands for whatever is missing. The first Android run creates its own emulator, <code>shotfleet_android</code>, from that image; your other emulators are not touched.</li>
@@ -77,7 +185,7 @@ shotfleet doctor --fix           # checks Maestro, Java, Xcode, Android SDK; sho
   <p>Make sure the right Xcode is selected (<code>xcode-select -p</code> shows which one). If your app is iOS only, you can ignore the Android part of <code>doctor</code>. The first <code>doctor</code> can take a minute while macOS gets its text recognition ready. You only need <code>shotfleet activate &lt;your key&gt;</code> (the key is in your Gumroad receipt email) after your first run, when you want every language. <code>check</code> works without a licence.</p>
   <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. <code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; see <a href="/terms">licence and refunds</a>. Without a valid licence, <code>run</code> captures only 2 languages (the first two of your app's languages unless you pick them with <code>--locales de,ja</code>) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If <code>SHOTFLEET_KEY</code> is set but refused, that line says why. <code>check</code>, <code>doctor</code> and <code>init</code> are always free.</p>
 
-  <p>To update, run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). <code>shotfleet doctor</code> tells you when a newer version is out. A year of updates is included.</p>
+  <p>To update, run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). <code>shotfleet doctor</code> tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.</p>
 
   <p>There is also an installer you can double-click. Each release is published as a signed, notarized package, <code>https://shotfleet.com/download/shotfleet-macos-arm64.pkg</code>. It puts the program in <code>/usr/local/lib/shotfleet</code> and links <code>shotfleet</code> into <code>/usr/local/bin</code>; macOS asks for your password. Use it if you can't use the <code>curl</code> line, or if a browser-downloaded copy shows "Apple could not verify ...".</p>
 
@@ -119,7 +227,7 @@ fastlane supply --skip_upload_apk --skip_upload_aab --skip_upload_metadata --ski
   <p><strong>Fresh state:</strong> each language starts from a clean install. On iOS that is <code>clearState</code>; on Android shotfleet clears the app data itself, because <code>clearState</code> would also erase the app language.</p>
 
   <h2 id="check">Check screenshots you already have</h2>
-  <p><code>run</code> needs Maestro. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
+  <p><code>run</code> needs Maestro, or on iOS <a href="#xcuitest">your own XCUITest tests</a> (new in 0.1.6 and not run end to end on a device yet). <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free. Point it at your fastlane folder and your app build:</p>
 <pre><code>shotfleet check fastlane/screenshots                       # snapshot: screenshots/&lt;locale&gt;/
 shotfleet check fastlane/metadata/android                  # screengrab: &lt;locale&gt;/images/phoneScreenshots/
 shotfleet check fastlane/ --app path/to/MyApp.app          # a fastlane folder with both: the build picks its half
@@ -139,6 +247,29 @@ shotfleet check shots/ --locale en --app path/to/MyApp.app # a flat folder of on
   </ul>
   <p>When <code>check</code> has no build (no <code>--app</code>, and none found where you run it), it relies on language detection, which cannot judge short screens; pass <code>--app</code> for the full check.</p>
   <p><code>export</code> also takes a plain <code>&lt;locale&gt;/*.png</code> folder of such a set (Apple Watch, Mac, Apple TV, Vision Pro) once <code>shotfleet check &lt;folder&gt; --report &lt;folder&gt;</code> has written its <code>check.json</code> there; it copies the set into <code>screenshots/&lt;locale&gt;/</code> next to your iPhone and iPad sets. Size and count rules only: shotfleet captures iPhone, iPad and Android screens, not these.</p>
+
+  <h3 id="xcuitest">Use your existing XCUITest screenshot tests (iOS)</h3>
+  <p>Already have XCUITest tests that take your screenshots, with <code>XCTAttachment</code> or fastlane's <code>SnapshotHelper</code>? <code>run</code> can run those instead of a Maestro flow. It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it. In most cases you don't change your test code (an <code>XCTAttachment</code> needs a name and <code>lifetime = .keepAlways</code>, see below), and you don't need Maestro or Java for this.</p>
+<pre><code>[ios]
+locales = ["de", "ja", "ar"]      # default: every language the app ships
+
+[capture]                         # instead of flow = "flow.yaml": a config has one or the other
+build = "xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' -derivedDataPath .shotfleet/build"
+xctestrun = ".shotfleet/build/Build/Products/*.xctestrun"   # has to match exactly one file after the build
+only_testing = ["MyAppUITests/ScreenshotTests"]             # optional
+screenshots = "auto"              # "attachments" (XCTAttachment), "fastlane" (SnapshotHelper) or "auto" (both)
+timeout = 900                     # seconds per language</code></pre>
+  <p><code>shotfleet init --capture</code> writes this for you, with the shared scheme that has your UI tests. Then <code>shotfleet run</code> as usual. <code>run --no-build</code> skips the build and uses the <code>.xctestrun</code> that's already there. <code>shotfleet doctor</code> (run in the config's folder, or <code>shotfleet doctor path/to/shotfleet.toml</code>) sees the <code>[capture]</code> table and stops asking for Maestro for iOS.</p>
+  <p>How it works, and what your tests need:</p>
+  <ul>
+    <li>The build is your own command, so whatever your project needs (<code>ARCHS=arm64</code>, a shared scheme, <code>CODE_SIGNING_ALLOWED=NO</code>) goes in there. It runs once, in the config's folder, and its output goes to <code>out/build.log</code>.</li>
+    <li>shotfleet sets each simulator's language itself and also passes <code>-AppleLanguages</code> and <code>-AppleLocale</code> to your app. Don't count on <code>-testLanguage</code>: with a prebuilt test bundle Xcode ignores it, and the run passes in English.</li>
+    <li><code>XCTAttachment</code>: give each screenshot a name (<code>a.name = "01Home"</code>) and <code>a.lifetime = .keepAlways</code>. Without <code>.keepAlways</code> Xcode throws the screenshots away when the test passes. The name becomes the file name, <code>out/raw/de/01Home.png</code>.</li>
+    <li>fastlane <code>SnapshotHelper</code>: it writes into <code>~/Library/Caches/tools.fastlane/screenshots</code>, one folder for all simulators, and only if that folder exists. shotfleet creates it if it's missing, takes each simulator's files by the simulator's name, and moves fastlane's <code>language.txt</code>, <code>locale.txt</code> and <code>snapshot-launch_arguments.txt</code> out of the way during the run (they would force one language on every simulator). It puts them back afterwards, also when the run fails. Keep calling <code>setupSnapshot(app)</code> before <code>app.launch()</code>.</li>
+    <li>A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.</li>
+    <li><code>check</code> and <code>export</code> work on the output like on any other run. It's paid like any <code>run</code>: 2 languages without a licence, and <code>check</code> stays free.</li>
+  </ul>
+  <p>iOS only for now: on Android, <code>run</code> still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's <code>SnapshotHelper</code> test, where <code>check</code> found a real bug. The device test for the finished feature (<code>tools/fixture-byoc-e2e.sh</code>) hasn't run yet.</p>
 
   <h3 id="fastlane-lane">A fastlane lane that stops on wrong screenshots</h3>
   <p>Put this in <code>fastlane/Fastfile</code>. fastlane runs <code>sh</code> from the <code>fastlane/</code> folder, hence the <code>cd ..</code>. Any problem makes <code>check</code> exit with 1, which fails the lane, so nothing is uploaded:</p>
@@ -263,7 +394,7 @@ not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show</c
   <p><code>shotfleet foo</code> runs <code>shotfleet-foo</code> from your PATH (like <code>git</code> and <code>gh</code>), when <code>foo</code> is not a built-in command. <code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code> and use stable exit codes, so they script like any other tool; <code>SHOTFLEET_OCR</code> or <code>--ocr-command</code> swaps the text reader; <code>strings = "glob"</code> swaps the translation source.</p>
 
   <h2 id="licence">Licence</h2>
-  <p><code>shotfleet activate &lt;key&gt;</code> stores your key on this Mac. The key from your Gumroad receipt has 3 activations. Activating again on a Mac that still has the key saved counts nothing; after <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes it from this Mac but does not give the activation back; if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> and I'll reset the count. The licence is checked online when you activate and about once a week after; if the server cannot be reached, the Mac keeps working for up to 30 days after the last good check. A refunded or disabled key is refused at its next check; <code>check</code> and the 2 free languages keep working and nothing you made is deleted. In CI, set <code>SHOTFLEET_KEY</code> (no activation is used): that check fails open, so with the licence server unreachable the run counts as licensed and a CI key has no offline limit (see <a href="#ci">In CI</a>).</p>
+  <p><code>shotfleet activate &lt;key&gt;</code> stores your key on this Mac. Use it on up to 3 of your Macs; there are spare activations for reinstalls (the key has 5), and if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset. Activating again on a Mac that still has the key saved counts nothing; after <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes it from this Mac but does not give the activation back. The licence is checked online when you activate and about once a week after; if the server cannot be reached, the Mac keeps working for up to 30 days after the last good check. A refunded or disabled key is refused at its next check; <code>check</code> and the 2 free languages keep working and nothing you made is deleted. In CI, set <code>SHOTFLEET_KEY</code> (no activation is used; see <a href="#ci">In CI</a>). Your key covers every version released within a year of your purchase; a later version runs as the free tier and says which versions your key covers, and the ones you have keep working.</p>
   <p>The messages you may see are "that key didn't activate: &lt;reason&gt;", "the key was disabled, as Gumroad does after a full refund" and "this licence is no longer valid". Terms and refunds are on the <a href="/terms">licence and refunds</a> page.</p>
   <p>Maintain an open-source project, or a student? Email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> with a link to your open-source repo or proof that you're a student, and I'll send you a 100%-off code.</p>
   <p>Need an invoice? Gumroad makes one from your receipt. I don't take purchase orders.</p>
@@ -288,7 +419,7 @@ jobs:
           path: |
             check.json
             shotfleet-check/</code></pre>
-  <p>To use <code>run</code> or <code>export</code> in CI, set <code>SHOTFLEET_KEY</code> to your licence key (keep it in a secret). It is checked online on each run and uses none of your 3 activations. This check fails open on purpose: if the licence server cannot be reached, the run counts as licensed, so a CI job never fails because Gumroad is down. A CI key has no offline time limit and nothing is stored for it, so while Gumroad is unreachable it is not re-checked: a refunded or disabled key keeps working until a run reaches Gumroad, and an outage looks the same as a good key. A Mac where you ran <code>shotfleet activate</code> is different: it re-checks about weekly and stops after 30 days offline. With an invalid key, <code>export</code> refuses and <code>run</code> captures only 2 languages. Which two: the first two of your app's languages, unless you pick them with <code>--locales de,ja</code>; <code>run</code> says so on a line that starts with "free tier:", and if the key is refused that line says why.</p>
+  <p>To use <code>run</code> or <code>export</code> in CI, set <code>SHOTFLEET_KEY</code> to your licence key (keep it in a secret). It is checked online on each run and uses none of your activations. If the licence server cannot be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days (shotfleet notes a hash of the key and the date there, never the key itself). On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers. A Mac where you ran <code>shotfleet activate</code> re-checks about weekly and stops after 30 days offline. If the key is refused or can't be checked, <code>export</code> and <code>run</code> both stop with exit 2 and say why, so a CI job never goes green on 2 languages by accident (unset <code>SHOTFLEET_KEY</code> to get the free tier). On hosted CI runners, which start fresh every time, cache <code>~/Library/Application Support/shotfleet/ci-checked.json</code> between jobs to keep that 30-day grace during a Gumroad outage; it holds a hash and a date, no secret.</p>
   <p>With <code>--json</code>, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in <code>run.json</code>.</p>
 
   <!-- DOCKER-PENDING (not published yet: packaging/README.md step 9)
@@ -311,6 +442,7 @@ jobs:
 
   <h2 id="agents">With AI agents</h2>
   <p><code>shotfleet mcp</code> is an MCP server with <code>check</code>, <code>run</code> and <code>doctor</code> tools. Add it to Claude Code with <code>claude mcp add shotfleet -- shotfleet mcp</code>, or to any MCP client as the command <code>shotfleet mcp</code>.</p>
+  <p>Over MCP, no command written in your config runs unless you pass <code>hooks: true</code> to <code>run</code>. Without it, <code>run</code> skips the <code>[hooks]</code> and refuses a config that has a <code>[capture]</code> build, <code>[ios] simctl</code> or <code>[android] shell</code> commands. <code>check</code> takes no <code>ocr_command</code> over MCP; use <code>--ocr-command</code> in your terminal. A config from a repo you just cloned can hold any shell command, so read it first.</p>
   <p>There are also three agent skills that ship with the program: <code>shotfleet</code> (install, set up, run, check and troubleshoot), <code>shotfleet-ci</code> (add <code>shotfleet check</code> to CI) and <code>shotfleet-review</code> (turn a check report into a fix list). Claude Code, Cursor, Codex, Gemini CLI and GitHub Copilot all load skills from a folder. One command puts them in the right folders:</p>
 <pre><code>shotfleet skill install
 shotfleet skill install --project
@@ -339,13 +471,29 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
     <li>shotfleet uploads nothing to a store: fastlane does that (see Uploading above).</li>
   </ul>
 
+  <h2 id="faq">Common questions</h2>
+  <h3>Does shotfleet upload my screenshots to App Store Connect or Google Play?</h3>
+  <p>No. <code>export</code> copies the languages that passed into fastlane's folders, and fastlane does the upload (<code>deliver</code> for the App Store, <code>supply</code> for Google Play).</p>
+  <h3>Do I need Maestro?</h3>
+  <p>Only for <code>run</code>, which drives your app with Maestro 2.x (on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet). <code>check</code> doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language.</p>
+  <h3>I already use fastlane snapshot. Do I have to switch?</h3>
+  <p>No. Keep your UI tests and point <code>check</code> at the folder they write (see <a href="#check">Check screenshots you already have</a>). With <code>--app</code> it finds screenshots that came out in the wrong language, copies, missing screens and store-rule problems.</p>
+  <h3>Does it work with Flutter or React Native?</h3>
+  <p>Yes, from your translation files (<a href="#strings">the <code>strings</code> key</a>), in the cases I ran: I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet.</p>
+  <h3>Does it work on an Intel Mac?</h3>
+  <p>No. It needs an Apple silicon Mac, and the installer refuses Intel Macs.</p>
+  <h3>Does it add device frames or marketing captions?</h3>
+  <p>No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens (<a href="/alternatives">how they compare</a>).</p>
+  <h3>Is it free?</h3>
+  <p><code>check</code>, <code>doctor</code> and <code>init</code> are free for everyone. <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; the price is on the <a href="/#price">home page</a>.</p>
+
   <p class="small">Manuel Lorenzo Parejo · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></p>
  </div>
 </main>
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

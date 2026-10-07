@@ -56,6 +56,7 @@ One line per note: date, what it decided, whether it was applied. Written 2026-1
 | `market-2026.md`, `marketing-research.md` | 2026-10-01, 2026-10-02 | Market and channel research |
 | `web-service.md`, `website-localization.md` | 2026-10-02 | Two ideas not pursued: a credits website, a localized site (later, not now) |
 | `seo-audit.md`, `site-critique.md`, `site-critique-2.md` | 2026-10-02, 2026-10-03 | Site audits; status tables inside |
+| `seo-audit-2026-10-06.md` | 2026-10-06 | SEO and AI-search follow-up: live vs main, fixes on claude/seo-improvements, keyword evidence, owner list |
 | `ga-setup.md` | 2026-10-02 | GA4 setup for shotfleet.com |
 
 Folders: `experiments-2026-10-04/`, `proposed-platform-reach/` (the proposed macOS 13 patch, merged through #55), `real-apps-2026-10-03/`, `real-apps-2026-10-04/`, `real-apps-2026-10-05/` (screenshots and logs behind `frameworks.md` and the claims register).

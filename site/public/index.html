@@ -26,6 +26,21 @@
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
+ "@type": "WebSite",
+ "@id": "https://shotfleet.com/#website",
+ "name": "shotfleet",
+ "url": "https://shotfleet.com/",
+ "inLanguage": "en",
+ "publisher": {
+  "@type": "Person",
+  "name": "Manuel Lorenzo Parejo",
+  "url": "https://manulorenzo.me"
+ }
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
  "@type": "SoftwareApplication",
  "@id": "https://shotfleet.com/#software",
  "name": "shotfleet",
@@ -55,7 +70,7 @@
    "name": "Licence, launch price",
    "price": "29",
    "priceCurrency": "USD",
-   "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, a year of updates, 14-day refund.",
+   "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, use it on up to 3 of your Macs, a year of updates, 14-day refund.",
    "availability": "https://schema.org/InStock",
    "url": "https://8954369651852.gumroad.com/l/shotfleet"
   },
@@ -64,7 +79,7 @@
    "name": "Licence, standard price",
    "price": "49",
    "priceCurrency": "USD",
-   "description": "The price after the first 100 buyers: once per developer, a year of updates, 14-day refund.",
+   "description": "The price after the first 100 buyers: once per developer, use it on up to 3 of your Macs, a year of updates, 14-day refund.",
    "availability": "https://schema.org/InStock",
    "url": "https://8954369651852.gumroad.com/l/shotfleet"
   }
@@ -155,7 +170,7 @@
       <div class="cell reveal"><dt>18 &times; 4</dt><dd>languages times screens in one run: 72 screenshots, one English flow, one Mac</dd></div>
       <div class="cell reveal"><dt>9 min &middot; 15 min</dt><dd>for that one run on iOS and on Android, on my M1 Pro with my app</dd></div>
       <div class="cell reveal"><dt>4 languages</dt><dd>shared one unreachable Next button on Android. English hid it</dd></div>
-      <div class="cell reveal"><dt>108 of 120</dt><dd>store screenshots of another of my apps flagged by <code>shotfleet check</code>: the captions were translated, but the app under them was still in English</dd></div>
+      <div class="cell reveal"><dt>108 of 120</dt><dd>old App Store screenshots of AnywhereRoles, another of my apps, flagged by <code>shotfleet check</code>: the captions were translated, but the app under them was still in English</dd></div>
     </dl>
     <p class="small muted">All measured on my own apps. The 9 and 15 minutes were measured on Maestro 2.0.10. I also wrote up <a href="/alternatives">how it compares with other tools</a>.</p>
   </section>
@@ -250,7 +265,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
   <section class="wrap section" id="apps" aria-labelledby="apps-h">
     <div class="reveal">
       <h2 id="apps-h">What my other apps look like in five languages.</h2>
-      <p class="muted lede-small">I have two other apps in the stores. These are their real store screenshots, not shotfleet output: one screen in five languages. I’m showing them for what localized store screenshots look like, not what shotfleet can do.</p>
+      <p class="muted lede-small">Besides AnywhereRoles further down, I have two other apps in the stores. These are their real store screenshots, not shotfleet output: one screen in five languages. I’m showing them for what localized store screenshots look like, not what shotfleet can do.</p>
       <div class="tabs" role="tablist" aria-label="My apps">
         <button role="tab" id="tab-stressi" aria-controls="panel-stressi" aria-selected="true">Stressi <span>Android</span></button>
         <button role="tab" id="tab-cairn" aria-controls="panel-cairn" aria-selected="false" tabindex="-1">Cairn <span>iPad</span></button>
@@ -316,15 +331,55 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
-  <!-- SHOWCASE-PENDING: AnywhereRoles real-app showcase. Not public text yet: fill it in only once the run is recorded and every sentence
-       has a claims row in tests/claims.json, then delete these comment markers.
   <section class="wrap section" id="showcase" aria-labelledby="showcase-h">
     <div class="reveal">
-      <h2 id="showcase-h">TODO heading</h2>
-      <p class="muted lede-small">TODO: what the run was (date, platforms, languages, devices) and what check found.</p>
+      <h2 id="showcase-h">A real app: AnywhereRoles.</h2>
+      <p class="muted lede-small">Unlike the store screenshots just above, these are real shotfleet output, only made smaller for the web. On 2026-10-06 I ran shotfleet 0.1.4 on AnywhereRoles, also my app: 120 Android screenshots (15 languages × 8 screens) on 1 emulator in 1826 s with 0 retries, and 108 iPhone screenshots (18 languages × 6 screens) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s. My Mac was heavily loaded and short of memory, so shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each needed a second try. Check found 0 problems in both.</p>
+      <p class="muted lede-small">Before this run, check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions. Of the other 24, 15 were false “missing” lines from a bug in how 0.1.4 read fastlane supply’s file names (fixed in 0.1.6), and 9 were others. That was my mistake, and it’s why I recaptured every language. To be fair, writing and debugging the Android flow took me several failed runs before this one.</p>
+    </div>
+    <div class="fleet small" role="group" aria-label="AnywhereRoles: eight screenshots in seven languages on Android and iPhone, each checked" tabindex="0">
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_ja_jobs.webp" alt="AnywhereRoles on Android, the jobs list in Japanese, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ja">日本語</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>hi</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_hi_salary.webp" alt="AnywhereRoles on Android, the salary screen in Hindi, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="hi">हिन्दी</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ru</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_ru_status.webp" alt="AnywhereRoles on Android, the application status screen in Russian, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ru">Русский</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>zh-CN</b> Android</span></span>
+          <div class="shot"><img src="img/showcase/android_zh_filters.webp" alt="AnywhereRoles on Android, the filters screen in Chinese, checked" width="360" height="640" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="zh-CN">简体中文</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>en</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_en_saved.webp" alt="AnywhereRoles on iPhone, the saved jobs screen in English, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="en">English</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>de</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_de_saved.webp" alt="AnywhereRoles on iPhone, the saved jobs screen in German, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="de">Deutsch</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ko</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_ko_saved.webp" alt="AnywhereRoles on iPhone, the saved jobs screen in Korean, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ko">한국어</figcaption>
+        </figure>
+        <figure class="ship">
+          <span class="ribbon" aria-hidden="true"><span class="flag k"><b>ja</b> iPhone</span></span>
+          <div class="shot"><img src="img/showcase/iphone_ja_saved.webp" alt="AnywhereRoles on iPhone, the saved jobs screen in Japanese, checked" width="360" height="783" loading="lazy"><span class="stamp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span></div>
+          <figcaption lang="ja">日本語</figcaption>
+        </figure>
     </div>
   </section>
-  SHOWCASE-PENDING -->
 
   <section class="wrap section" aria-labelledby="not-h">
     <div class="notfor reveal">
@@ -339,7 +394,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
 
   <section class="wrap section" id="price" aria-labelledby="price-h">
     <h2 id="price-h" class="reveal">Buy shotfleet</h2>
-    <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
+    <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6 and not run end to end on a device yet. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
     <div class="plans">
       <div class="plan main reveal">
         <h3>Licence</h3>
@@ -347,8 +402,8 @@ app = "<span class="y">MyApp.app</span>"</pre>
         <p class="founder">Then <b>$49</b> once, per developer. Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies.</p>
         <ul>
           <li>Every language and export to fastlane</li>
-          <li>3 activations per key, for your own Apple silicon Macs. One is used each time you activate on a Mac that doesn’t have the key saved, so also after <code>deactivate</code>, a new macOS install or a new user account. Your CI uses none. Unlimited apps. If you run out, email me and I’ll reset the count.</li>
-          <li>A year of updates. After that, your version keeps working while macOS and your tools allow, and while it can check the key with Gumroad: when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier.</li>
+          <li>Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset. Your CI uses none. Unlimited apps.</li>
+          <li>A year of updates: your key covers every version released within a year of your purchase. Versions you have keep working while macOS and your tools allow, and while they can check the key with Gumroad: when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier.</li>
           <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
         </ul>
     <p><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet</a></p>
@@ -373,7 +428,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
 <footer>
   <div class="wrap">
     <span>shotfleet by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span class="foot-links"><a href="/docs">Docs</a> <a href="/whats-new">What’s new</a> <a href="/alternatives">Alternatives</a> <a href="/terms">Licence and refunds</a> <a href="/privacy">Privacy</a> <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span class="foot-links"><a href="/docs">Docs</a> <a href="/whats-new">What’s new</a> <a href="/guides">Guides</a> <a href="/alternatives">Alternatives</a> <a href="/terms">Licence and refunds</a> <a href="/privacy">Privacy</a> <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 

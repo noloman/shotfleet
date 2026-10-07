@@ -445,7 +445,7 @@
    "**Wrong language:** the German folder actually shows English or Japanese strings."
   ],
   "status": "proven",
-  "proof": "ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command (el/2.png shows en), StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (ja shows en), JudgeScreen.test_screen_showing_another_locales_strings_fails.",
+  "proof": "ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command (el/2.png shows en), StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (ja shows en), JudgeScreen.test_screen_showing_another_locales_strings_fails. A same-script neighbour is not a wrong language when the app's own strings back the expected one: CheckAnyFolder.test_russian_screen_detection_calls_kazakh_passes_when_the_apps_russian_strings_match (remoti ru-RU/8, read by macOS as 0.99 Kazakh), and a Ukrainian screen in the Russian folder is still flagged: CheckAnyFolder.test_ukrainian_screen_in_the_russian_folder_is_still_caught.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -530,7 +530,7 @@
    "<h2 id=\"check\">Check screenshots you already have</h2>"
   ],
   "status": "fixed",
-  "proof": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match, CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names. Real, 2026-10-06 (research/beyond-maestro-2026-10-06.md E1, scratch copies only): subscrifi's 8-language screengrab folder (01Home_1773697012807.png ...) gave 8 false 'missing' lines before (origin/main bd17993) and none after; with the debug APK check found by itself, all 42 non-English screens were reported as showing English, which they do (the de-DE home screen is English). subscrifi's snapshot folder (en-US, de-DE, 'iPhone 15 Pro Max-01Home.png', screenshots.html beside them) still reports the 11 German screens that show English and the 12-per-listing limit.",
+  "proof": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match, CheckAnyFolder.test_finds_fastlane_ios_android_and_plain_folders, FastlaneBothStores.test_check_with_a_build_picks_its_half_of_a_fastlane_folder_for_both_stores, AuditFixes.test_folders_with_both_platforms_or_jpegs, RealAppDefects.test_non_language_store_folders_are_ignored. Real: Cairn, remoti, CrossfitTracker (research/real-apps.md). StoreScreens output was never tried. Folder layouts supported: deliver, supply, raw/, plain <locale>/. 2026-10-03: ROADMAP.md reports CrossfitTracker's 72 iOS + 72 Android real screenshots checked clean and the planted set exactly its 2 mistakes. 2026-10-03 review (claims-unit): left partial. The layout matrix is unit-tested, but the claim names StoreScreens (never tried) and the assertion asks for a real framed export from a screenshot tool as a golden sample; none was available, and a folder made by the test says nothing about another tool's file names. Real, 2026-10-06 (research/beyond-maestro-2026-10-06.md E1, scratch copies only): subscrifi's 8-language screengrab folder (01Home_1773697012807.png ...) gave 8 false 'missing' lines before (origin/main bd17993) and none after; with the debug APK check found by itself, all 42 non-English screens were reported as showing English, which they do (the de-DE home screen is English). subscrifi's snapshot folder (en-US, de-DE, 'iPhone 15 Pro Max-01Home.png', screenshots.html beside them) still reports the 11 German screens that show English and the 12-per-listing limit. 2026-10-06 (0.1.6): fastlane supply's own names were still false: supply writes <n>_<locale>.png (1_de-DE.png), the locale in every name, so check said every language was missing every other language's files (remoti's committed Play set: 15 false 'missing' lines). Fixed in code (shot_key also cuts a trailing _<locale> when it is the folder's own locale and every file in the folder ends in it) and tested with supply's real layout and names: CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_shot_key_cuts_only_the_folders_own_locale_and_never_merges_two_screens. Real, scratch copy of remoti's fastlane/metadata/android (120 screenshots, 15 languages, --strings, read by Tesseract to spare the shared Mac's text recognition): 24 problems before (a0e39c4), 9 after; the 15 gone are exactly the false 'missing' lines, the 9 left are CJK screens Tesseract reads worse than macOS, identical before and after. macOS's own check of that set had reported 16: those 15 plus ru-RU/8 (C026).",
   "layer": "unit",
   "assertion": "Layout matrix test (exists) plus a real framed ButterKit/AppScreens export checked in CI as a golden sample.",
   "fix": "",
@@ -783,21 +783,23 @@
  },
  {
   "id": "C045",
-  "claim": "3 activations per key for your own Macs, CI uses none, unlimited apps; one licence per developer; a Mac without the key saved uses one each time",
+  "claim": "Use it on up to 3 of your Macs, with spare activations for reinstalls (5 per key), and an email for a reset; CI uses none, unlimited apps; one licence per developer",
   "where": [
    "site/public/index.html",
    "site/public/terms.html",
-   "site/public/terms.html"
+   "site/public/terms.html",
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "3 activations per key, for your own Apple silicon Macs. One is used each time you activate on a Mac that doesn’t have the key saved, so also after <code>deactivate</code>, a new macOS install or a new user account. Your CI uses none.",
-   "One licence is for one developer. The key has 3 activations, for your own Macs, and your CI uses none.",
-   "Unlimited apps and projects, including client and commercial work."
+   "Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none. Unlimited apps.",
+   "One licence is for one developer. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none.",
+   "Unlimited apps and projects, including client and commercial work.",
+   "From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset."
   ],
   "status": "partial",
-  "proof": "Client: GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing (the 4th activation is refused and spends nothing), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does).",
+  "proof": "Client: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (the 6th activation is refused and spends nothing; 0.1.5 and earlier stop at the 4th), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does). 2026-10-06 (0.1.6, L2, owner decision): '3 activations' made a reinstall burn one of the 3 Macs. MAX_MACS is now 5 and every page says 'use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset' (the terms, docs and README also say the key has 5). Exact limit: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (activations 1 to 5 work, the 6th is refused and burns nothing); the wording: GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email; pages and code agree: Offer.test_limits_match_the_code. The device assertion below now means: the 6th is refused with 'all 5 activations' and Uses reads 5. Gumroad's own product description must say the same (licence-review/gumroad-description-new.txt; Manu edits Gumroad).",
   "layer": "device",
-  "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key from 4 different Macs (or by clearing licence.json): the 4th is refused with 'all 3 activations' and the Gumroad Uses row still reads 3; SHOTFLEET_KEY validates and the Uses row does not move.",
+  "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key 6 times (or by clearing licence.json): the 6th is refused with 'all 5 activations' and the Gumroad Uses row still reads 5; SHOTFLEET_KEY validates and the Uses row does not move.",
   "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8)."
  },
  {
@@ -811,10 +813,10 @@
   "where_text": [
    "It works offline for 30 days, and a CI key is checked on every run.",
    "re-checks at most weekly, works offline for 30 days",
-   "This check fails open on purpose: if the licence server can't be reached, the run counts as licensed"
+   "If the licence server can't be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online and documented in README, docs.html, DISTRIBUTION.md and the skill. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the separate line under the button was folded into the updates line on the price card, which now says when the key is checked (at activation, then about once a week when run or export is used: require_licence is only called by those), the 30 days offline, the CI key on every run, and that a refused key or 30 days without an answer means the free tier.",
+  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days and documented in README, docs.html, DISTRIBUTION.md and the skill. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the separate line under the button was folded into the updates line on the price card, which now says when the key is checked (at activation, then about once a week when run or export is used: require_licence is only called by those), the 30 days offline, the CI key on every run, and that a refused key or 30 days without an answer means the free tier. 2026-10-06 (0.1.6, L1b, owner decision): the CI key no longer fails open. Offline it counts only where it passed a check in the last 30 days (a hash of the key and the date are noted in ci-checked.json next to licence.json; an activated Mac's licence.json with the same key counts too); otherwise NoLicence with 'couldn't be checked'. GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days, FreeTierMessage.test_an_unreachable_licence_server_stops_run_for_a_key_this_machine_never_checked_and_says_why, FreeTierMessage.test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -887,52 +889,54 @@
  },
  {
   "id": "C050",
-  "claim": "A key has 3 activations: deactivate removes it from a Mac but cannot give one back; a fourth Mac means an email and a manual reset; don't share your key",
+  "claim": "A key can be activated 5 times (3 Macs, 2 spare for reinstalls): deactivate removes it from a Mac but cannot give one back; running out means an email and a manual reset; don't share your key",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "A key can be activated 3 times. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again."
+   "A key can be activated 5 times: 3 Macs and 2 spare for reinstalls. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again."
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 13): 'a Mac that already holds it' was true only while licence.json has the key; the terms, docs and README now say when the same Mac counts again.",
+  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 13): 'a Mac that already holds it' was true only while licence.json has the key; the terms, docs and README now say when the same Mac counts again. 2026-10-06 (0.1.6): 5 activations, GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing and GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email.",
   "layer": "unit",
   "assertion": "Already covered; add: a human resets a Uses row once in the real dashboard.",
   "fix": ""
  },
  {
   "id": "C051",
-  "claim": "A year of updates is included",
+  "claim": "A year of updates: a licence covers every version released within a calendar year of the purchase (up to the same date a year later); later versions run as the free tier with a message",
   "where": [
    "site/public/index.html",
    "site/public/terms.html",
-   "DISTRIBUTION.md"
+   "DISTRIBUTION.md",
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "A year of updates. After that, your version keeps working while macOS and your tools allow, and while it can check the key with Gumroad",
-   "A year of updates is included.",
-   "A year of updates is part of the $49"
+   "A year of updates: your key covers every version released within a year of your purchase.",
+   "A year of updates is included: your licence covers every shotfleet version released within a year of your purchase.",
+   "A year of updates is part of the $49: a key covers every version released within a year of the purchase (the same date a year later)",
+   "“A year of updates” now means exactly that: your key covers every shotfleet version released within a year of your purchase. A version that comes out later runs as the free tier and says which versions your key covers; the versions you have keep working. If you bought in October 2026, every version released until October 2027 is covered."
   ],
-  "status": "partial",
-  "proof": "No mechanism enforces or even defines the year: installs are an open download (site/public/download is served without a key; install.sh), the licence key 'never expires' (LAUNCH.md:12) and the client never compares a release date with a purchase date. As a promise it holds trivially for the first year; it only matters at renewal. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the price card now names the licence check as a condition, as the terms already did (GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot).",
+  "status": "proven",
+  "proof": "2026-10-06 (0.1.6, L3, owner decision): enforced. packaging/build.sh bakes the build day (UTC) into a module `_release` that PyInstaller freezes into the program's code (not a loose file); shotfleet.py baked_release_date reads it (None from source; a released build without a usable date warns on stderr, still runs, and with a known sale date is NOT treated as covered). gumroad_verify reads purchase.sale_timestamp; activate, the weekly check and a CI key's check store it in licence.json / ci-checked.json as `sale`, so offline use works; check_update_window raises NoLicence (export refuses, run is the free tier) when the release date is after the same date a year after the sale (calendar year; 29 February counts to 1 March), and `activate` refuses such a key before it spends an activation, with a message naming the last release day the key covers, this version and its date, that the versions you have keep working, and 'email hello@shotfleet.com' for a renewal. The clock is never used: UpdateWindow.test_moving_the_clock_back_does_not_stretch_the_window. Edges: UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not, UpdateWindow.test_a_missing_sale_date_or_no_release_date_decides_nothing, UpdateWindow.test_the_release_date_is_baked_into_the_frozen_code_by_the_build_and_a_missing_or_bad_one_warns_and_means_none, UpdateWindow.test_a_released_build_without_a_release_date_is_not_covered_but_a_source_run_is, UpdateWindow.test_bad_sale_dates_never_crash_and_a_year_is_a_calendar_year, UpdateWindow.test_a_refunded_key_is_still_refused_inside_and_outside_the_window, UpdateWindow.test_a_hand_edited_sale_date_is_overwritten_from_gumroad_at_the_next_online_check, UpdateWindow.test_offline_the_stored_sale_date_decides_and_the_30_days_still_apply, UpdateWindow.test_october_2026_builds_work_for_every_current_buyer, UpdateWindow.test_an_out_of_window_key_is_refused_before_it_spends_an_activation_and_a_new_version_runs_as_the_free_tier. Limits: the build day is a few days before the publish day, which errs in the buyer's favour; licence.json is unsigned, so a hand-edited sale date holds until the next online check (about weekly); downloads stay public, so the check is the only enforcement. Not run on a real build or against the real Gumroad (the sale_timestamp field is from Gumroad's docs and the live purchase object, not a verify call made today).",
   "layer": "legal",
-  "assertion": "Decide the rule (updates after 12 months need a renewal key) before the first buyer's anniversary: until then there is nothing to test.",
+  "assertion": "Unit: as the tests named. Device: a release-candidate build with a release date more than 365 days after a fake sale is the free tier with the message.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "Reworded to what the code does: nothing enforces the year (the install is an open download, the key never expires). It is a promise to ship updates for a year; afterwards your version keeps working while macOS and your tools allow and the licence check can run. Not built: an 'updates until' date, because the product does not yet define what the year counts from.",
-  "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
+  "fixed_by": "code",
+  "fixed": "0.1.6: the year is now enforced against the build's baked-in release date and Gumroad's sale date (it was wording only, with nothing enforcing it). The terms, price card, docs, README, llms.txt and skill say what the code does.",
+  "test": "UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not"
  },
  {
   "id": "C052",
-  "claim": "After the year, the version you have keeps working as long as macOS, Xcode and Maestro let it",
+  "claim": "The versions you already have keep working as long as macOS, Xcode and Maestro let them, and the licence check can run",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "the version you have keeps working for as long as macOS, Xcode and Maestro let it, and as long as the licence check can run"
+   "The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run"
   ],
   "status": "proven",
-  "proof": "GumroadLicenceShape.test_a_success_answer_is_valid_and_its_use_count_is_read, GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag, GumroadLicenceShape.test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not, GumroadLicenceShape.test_an_unknown_key_is_a_404_with_a_message_and_is_invalid, GumroadLicenceShape.test_an_outage_is_not_a_verdict, GumroadLicenceShape.test_the_age_of_the_purchase_decides_nothing, GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check, GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicenceShape.test_the_terms_say_what_the_code_does (tests/test_claims_unit.py). Pins the answers the code reads (Gumroad: success, uses, message, purchase.refunded/chargebacked/disputed/dispute_won) as fixtures and the decision made from each; a purchase of any age stays valid, the check runs about weekly, an outage never invalidates, 30 days offline stops it, and the Terms sentence matches (Offer.test_limits_match_the_code). The fixtures follow Gumroad's licence-key documentation and are not captured from the live API: if Gumroad changes the shape, or unpublishes the product, the promise as worded in the Terms ('as long as the licence check can run') is the disclosed limit. Earlier: GumroadLicence.test_a_gumroad_outage_is_not_a_verdict.",
+  "proof": "GumroadLicenceShape.test_a_success_answer_is_valid_and_its_use_count_is_read, GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag, GumroadLicenceShape.test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not, GumroadLicenceShape.test_an_unknown_key_is_a_404_with_a_message_and_is_invalid, GumroadLicenceShape.test_an_outage_is_not_a_verdict, GumroadLicenceShape.test_the_age_of_the_purchase_decides_nothing, GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check, GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicenceShape.test_the_terms_say_what_the_code_does (tests/test_claims_unit.py). Pins the answers the code reads (Gumroad: success, uses, message, purchase.refunded/chargebacked/disputed/dispute_won) as fixtures and the decision made from each; a purchase of any age stays valid, the check runs about weekly, an outage never invalidates, 30 days offline stops it, and the Terms sentence matches (Offer.test_limits_match_the_code). The fixtures follow Gumroad's licence-key documentation and are not captured from the live API: if Gumroad changes the shape, or unpublishes the product, the promise as worded in the Terms ('as long as the licence check can run') is the disclosed limit. Earlier: GumroadLicence.test_a_gumroad_outage_is_not_a_verdict. 2026-10-06 (0.1.6): reworded with L3; a version released within the year keeps passing for a purchase 800 days old (GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check now sets the release date 100 days after the sale).",
   "layer": "unit",
   "assertion": "Release gate that pins the Gumroad licence answer shape used (success, uses, purchase.refunded/chargebacked/disputed).",
   "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Gumroad) is reachable at least once every 30 days.'",
@@ -942,20 +946,20 @@
  },
  {
   "id": "C053",
-  "claim": "You can renew for another year of updates",
+  "claim": "Versions released more than a year after the purchase need a renewal; the renewal isn't on sale yet, so email",
   "where": [
    "site/public/terms.html"
   ],
   "where_text": [
-   "I plan to offer an optional renewal for further updates after the first year; it is not available yet."
+   "The renewal isn't on sale yet, so for now email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a>."
   ],
   "status": "fixed",
-  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic.",
+  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic. 2026-10-06 (0.1.6): the window is enforced (C051), so the terms now say a later version needs a renewal that isn't on sale yet, and to email; the program's message says the same (UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not).",
   "layer": "legal",
   "assertion": "A Gumroad product 'shotfleet renewal' exists and its key extends the update window.",
   "fix": "After a year, I plan to offer an optional renewal for further updates (not available yet).",
   "fixed_by": "wording",
-  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.'",
+  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.' 0.1.6: 'email hello@shotfleet.com' for now, as the program says.",
   "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
  },
  {
@@ -1608,15 +1612,15 @@
  },
  {
   "id": "C093",
-  "claim": "Licence: only Gumroad keys work (3 activations, one count per key); a key from any other store, and a saved licence from one, are refused; refunded, charged-back and disputed Gumroad keys are refused",
+  "claim": "Licence: only Gumroad keys work (5 activations, one count per key); a key from any other store, and a saved licence from one, are refused; refunded, charged-back and disputed Gumroad keys are refused",
   "where": [
    "DISTRIBUTION.md"
   ],
   "where_text": [
-   "Gumroad is the store: its licence keys count activations (3 per key;"
+   "Gumroad is the store: its licence keys count activations (5 per key, for 3 Macs plus reinstalls;"
   ],
   "status": "proven",
-  "proof": "GumroadLicence.test_three_activations_then_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call and Licence.test_a_saved_licence_from_another_store_is_refused_and_can_be_removed (no network call in either). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK; the Lemon Squeezy code was removed 2026-10-03.",
+  "proof": "GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call and Licence.test_a_saved_licence_from_another_store_is_refused_and_can_be_removed (no network call in either). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK; the Lemon Squeezy code was removed 2026-10-03.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": ""
@@ -1839,7 +1843,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "store screenshots of another of my apps flagged by <code>shotfleet check</code>"
+   "old App Store screenshots of AnywhereRoles, another of my apps, flagged by <code>shotfleet check</code>"
   ],
   "status": "evidence",
   "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
@@ -2765,7 +2769,7 @@
    "when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier."
   ],
   "status": "proven",
-  "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_fails_open_with_no_offline_limit_but_a_refused_key_is_refused_online, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. A CI key that can't reach Gumroad is let through (fails open), which docs.html says.",
+  "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. Since 0.1.6 a CI key that can't reach Gumroad counts only where it passed a check in the last 30 days, which docs.html says.",
   "layer": "unit",
   "assertion": "As the tests named.",
   "fix": ""
@@ -2804,7 +2808,7 @@
  },
  {
   "id": "C175",
-  "claim": "`run` needs Maestro, `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included",
+  "claim": "`run` needs Maestro, `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included (the iOS clause 'or your own XCUITest tests' of the same sentences is C235)",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -2812,14 +2816,14 @@
    "site/public/llms.txt"
   ],
   "where_text": [
-   "`run` needs Maestro. `check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
-   "<code>run</code> needs Maestro. <code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
+   "`check` doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? `check` works on those screenshots, and it's free.",
+   "<code>check</code> doesn't. Already use fastlane snapshot (XCUITest) or screengrab (Espresso)? <code>check</code> works on those screenshots, and it's free.",
    "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots, no Maestro needed.",
    "fastlane snapshot from XCUITest, fastlane screengrab from Espresso with its timestamped file names, a plain folder per language, by hand) without capturing anything and without Maestro."
   ],
   "status": "proven",
   "layer": "unit",
-  "proof": "CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match, CheckAnyFolder.test_expect_names_the_screen_without_screengrabs_timestamp, CheckAnyFolder.test_shot_key_strips_only_screengrabs_13_digit_timestamp. check never calls Maestro (only run's capture does; research/beyond-maestro-2026-10-06.md section 1.1). Real, 2026-10-06 (research/beyond-maestro-2026-10-06.md E1, scratch copies only): subscrifi's 8-language screengrab folder (01Home_1773697012807.png ...) gave 8 false 'missing' lines before (origin/main bd17993) and none after; with the debug APK check found by itself, all 42 non-English screens were reported as showing English, which they do (the de-DE home screen is English). subscrifi's snapshot folder (en-US, de-DE, 'iPhone 15 Pro Max-01Home.png', screenshots.html beside them) still reports the 11 German screens that show English and the 12-per-listing limit.",
+  "proof": "CheckAnyFolder.test_fastlane_snapshot_names_and_folder_check_clean_and_a_missing_screen_is_still_found, CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is, CheckAnyFolder.test_two_files_that_differ_only_by_timestamp_are_one_screen_saved_twice_not_a_match, CheckAnyFolder.test_expect_names_the_screen_without_screengrabs_timestamp, CheckAnyFolder.test_shot_key_strips_only_screengrabs_13_digit_timestamp. check never calls Maestro (only run's capture does; research/beyond-maestro-2026-10-06.md section 1.1). Real, 2026-10-06 (research/beyond-maestro-2026-10-06.md E1, scratch copies only): subscrifi's 8-language screengrab folder (01Home_1773697012807.png ...) gave 8 false 'missing' lines before (origin/main bd17993) and none after; with the debug APK check found by itself, all 42 non-English screens were reported as showing English, which they do (the de-DE home screen is English). subscrifi's snapshot folder (en-US, de-DE, 'iPhone 15 Pro Max-01Home.png', screenshots.html beside them) still reports the 11 German screens that show English and the 12-per-listing limit. Supply's <n>_<locale>.png names (0.1.6): CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is.",
   "assertion": "cmd_check on fastlane/screenshots/<locale>/<device>-<name>.png with screenshots.html beside them, and on metadata/android/<locale>/images/phoneScreenshots/<name>_<13 digits>.png with a different timestamp per language, reports no missing screen; a screen really missing is still reported; two files of one language that differ only by the timestamp are reported, not matched.",
   "fix": "",
   "test": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is"
@@ -3413,6 +3417,840 @@
   "proof": "CHANGELOG 0.1.3 (Site: See it work page); went live with the 0.1.3 deploy (docs/handoff.md section 17); each evidence line has its own row (C143 to C153, C169, C174).",
   "layer": "site",
   "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C210",
+  "claim": "Docs lede: shotfleet is a macOS command-line tool that takes localized App Store and Google Play screenshots from one English Maestro flow, in every language the app has, and checks each one",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "shotfleet is a macOS command-line tool that takes your localized App Store and Google Play screenshots from one English Maestro flow, in every language your app has, and checks that each one is in the right language."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same definition as llms.txt's summary and the home JSON-LD description. One flow in every language: C001 (evidence) and C015 (proven); the language check: C026 (proven). macOS and Apple silicon only: C113, C131.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C211",
+  "claim": "Docs FAQ: shotfleet does not upload; export copies the passing languages into fastlane's folders and fastlane uploads (deliver, supply)",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "No. <code>export</code> copies the languages that passed into fastlane's folders, and fastlane does the upload"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Nothing is uploaded: C004 (NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to). The deliver and supply recipes: C075 and C177. The docs Limits line 'shotfleet uploads nothing to a store' says the same.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "NothingIsUploaded.test_the_program_only_names_the_servers_it_talks_to"
+ },
+ {
+  "id": "C212",
+  "claim": "Docs FAQ: run needs Maestro 2.x (on iOS it can use the team's own XCUITest tests instead, C235); check doesn't need Maestro and works on fastlane snapshot and screengrab folders and on a plain folder per language",
+  "where": [
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "<code>check</code> doesn't need Maestro: it works on the folders fastlane snapshot and screengrab write, and on a plain folder per language.",
+   "without capturing anything and without Maestro."
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C175 (CheckAnyFolder tests) and C048 (check is free). The plain folder per language: C178 and the docs check section.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_screengrab_timestamps_are_not_missing_screens_and_a_really_missing_one_is"
+ },
+ {
+  "id": "C213",
+  "claim": "Docs FAQ: keep fastlane UI tests and point check at their folder; it finds the wrong language, copies, missing screens and store-rule problems",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Keep your UI tests and point <code>check</code> at the folder they write"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Wrong language C026, copies and missing C025, store rules C022, all proven; fastlane folders C175.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files"
+ },
+ {
+  "id": "C214",
+  "claim": "Docs FAQ: Flutter and React Native work from translation files; run end to end on wger and the obytes template on iOS and Android on 2026-10-03; other apps and bare React Native not run",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same runs as C035 (research/frameworks.md section 15, research/real-apps-2026-10-03/).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C215",
+  "claim": "Docs FAQ and llms.txt: needs an Apple silicon Mac; the installer refuses Intel Macs",
+  "where": [
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "No. It needs an Apple silicon Mac, and the installer refuses Intel Macs.",
+   "- You don't have an Apple silicon Mac."
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). InstallScript.test_install_sh_refuses_an_intel_mac (C113); Offer.test_apple_silicon_is_said_where_a_buyer_decides.",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "InstallScript.test_install_sh_refuses_an_intel_mac"
+ },
+ {
+  "id": "C216",
+  "claim": "Docs FAQ and llms.txt: no device frames, captions or store upload; ButterKit and AppScreens do frames and captions",
+  "where": [
+   "site/public/docs.html",
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens",
+   "- You want frames, captions or store upload. ButterKit and AppScreens do that; shotfleet doesn't."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same statement as C037 on the home page (frames, captions and upload are absent from the program; research/pricing-2026-10.md 'Not offered'). What ButterKit and AppScreens do: /alternatives, checked 2026-10-02 (C108).",
+  "layer": "device",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C217",
+  "claim": "Docs FAQ: check, doctor and init free for everyone; run free for up to 2 languages; a licence unlocks every language and export",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "<code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C048 (FreeTierOnAFrozenBuild tests) and C044; sf.FREE_LANGUAGES is 2. The docs name no price (DocsPage.test_it_does_not_promise_an_upload_or_a_price).",
+  "layer": "fixture",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so"
+ },
+ {
+  "id": "C218",
+  "claim": "llms.txt: localized screenshots in English usually mean the app never got the language (fastlane: setupSnapshot before app.launch) or has no translation; check --app reports both",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Usually the app never got the language (with fastlane snapshot, `setupSnapshot(app)` must run before `app.launch()`), or the app has no translation for it."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). fastlane's snapshot docs (setupSnapshot(app) before app.launch() in setUp()), read 2026-10-03 for article 01 item 6; the missing-translation fallback reproduced on an iOS 26.4 simulator (article 01 item 3, 2026-10-03). check reports the wrong language (C026) and a listing in a language the app does not have (C024).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C219",
+  "claim": "llms.txt: Maestro's own language setting is the device locale chosen when the device starts (maestro start-device --device-locale); its docs have no flow command for it and text selectors don't change with it; shotfleet passes the language as launch arguments (iOS) or per-app language (Android), rewrites the selectors per language and runs the languages in parallel",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Maestro's own setting for it is the device locale, chosen when the device starts (`maestro start-device --device-locale de_DE`); its docs have no flow command for it"
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Maestro's docs page 'Test in different locales' (docs.maestro.dev/maestro-flows/flow-control-and-logic/test-in-different-locales), read 2026-10-06: the locale is a device setting given with --device-locale to start-device or cloud, 'there is no place within a Flow itself' to define it, and maestro test cannot set it. The rewrite: C015 (proven); parallel runs: C001. Wording fixed 2026-10-06 (review finding 9): the old 'there is no place inside a flow to set it' contradicted shotfleet itself, which sets the language inside the flow: localize_flow adds AppleLanguages/AppleLocale launch arguments to every launchApp (iOS), and Android uses per-app language (cmd locale set-app-locales, API 33+).",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C220",
+  "claim": "llms.txt: check checks screenshot sizes: every App Store display class, Play 320 to 3840 px, at most 10 or 8 per listing, no transparency, a 6.9 or 6.5 inch iPhone set, a 13 inch iPad set when the app runs on iPad",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Yes: every App Store display class, Play's 320 to 3840 px, at most 10 (App Store) or 8 (Play) per listing, no transparency"
+  ],
+  "status": "proven",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C022 (StoreRules.test_app_store_sizes_alpha_counts_and_required_class, test_google_play_limits_and_notes); the docs check section lists the same rules.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "StoreRules.test_app_store_sizes_alpha_counts_and_required_class"
+ },
+ {
+  "id": "C221",
+  "claim": "Comparison page: the clips on See it work show the main commands",
+  "where": [
+   "site/public/alternatives.html"
+  ],
+  "where_text": [
+   "You can watch the main commands in the clips on <a href=\"/demo\">See it work</a>."
+  ],
+  "status": "evidence",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). site/public/demo.html has clips of doctor, init, run on iPhone and Android, check, check on existing screenshots, store rules, export and CI (C162 to C169, C209).",
+  "layer": "site",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C222",
+  "claim": "AnywhereRoles showcase: the 8 home-page frames are shotfleet's own raw output from the 2026-10-06 run, only resized to 360 px wide WebP",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "these are real shotfleet output, only made smaller for the web"
+  ],
+  "status": "evidence",
+  "proof": "Source frames (2026-10-06): /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android/raw/{ja/1_jobs-list,hi/4_salary,ru/7_status,zh-CN/2_filters}.png and /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-iphone/raw/{en,de,ko,ja}/iphone-69-03-saved-pipeline.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/ (no frames, captions or edits). Only slots the owner reviewed as public-safe: no iPhone slot 05, no slot 06 paywall, no iPad frame, and no frame that shows a job's source badge (the owner said no to that on 2026-10-06, so the iPhone en jobs list, de job detail and ja tracker frames were replaced by the same run's saved jobs screen in those languages, the only reviewed iPhone slot without it). Re-encoding the source with that command gives slightly different bytes (mean pixel difference about 1/255): same resized frames, other encoder settings (review 2026-10-06, finding 19).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C223",
+  "claim": "AnywhereRoles, 2026-10-06, shotfleet 0.1.4: 120 Android screenshots (15 languages x 8) on 1 emulator in 1826 s with 0 retries",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "On 2026-10-06 I ran shotfleet 0.1.4 on AnywhereRoles, also my app: 120 Android screenshots (15 languages × 8 screens) on 1 emulator in 1826 s with 0 retries"
+  ],
+  "status": "evidence",
+  "proof": "research/anywhereroles-run-2026-10-06/out-android/run.json (2026-10-06 16:55): 15 locales, each ok with screenshots 8, emulators 1, wall_seconds 1826; research/anywhereroles-run-2026-10-06/logs/and-run11.log: run by shotfleet-rc-build/0.1.4/unpacked/shotfleet/shotfleet, 'booting 1 emulators (shotfleet_android, 1080x1920)', no 'retrying' line, 'captured 15/15 locales in 1826s on 1 emulators'; docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C224",
+  "claim": "AnywhereRoles, 2026-10-06, shotfleet 0.1.4: 108 iPhone screenshots (18 languages x 6) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "108 iPhone screenshots (18 languages × 6 screens) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s"
+  ],
+  "status": "evidence",
+  "proof": "research/anywhereroles-run-2026-10-06/out-iphone/run.json (2026-10-06 18:17): 18 locales, each ok with screenshots 6, simulators 2, wall_seconds 3420; research/anywhereroles-run-2026-10-06/logs/ios-run2.log: 'booting 2 simulators (iPhone-17-Pro-Max, iOS-26-4)', 'captured 18/18 locales in 3420s on 2 simulators'; maestro1.log shows iOS 26.4; docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C225",
+  "claim": "AnywhereRoles iPhone run: the Mac was loaded and short of memory, shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each passed on a second try",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "My Mac was heavily loaded and short of memory, so shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each needed a second try."
+  ],
+  "status": "evidence",
+  "proof": "research/anywhereroles-run-2026-10-06/logs/ios-run2.log: 'memory pressure is elevated: using 2 devices instead of 4', 'load 234 on 10 cores', 'retrying 3: ja, tr, zh-Hans'; research/anywhereroles-run-2026-10-06/out-iphone/run.json: attempts 2 for ja, tr and zh-Hans, 1 for the other 15, all ok.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C226",
+  "claim": "AnywhereRoles, 2026-10-06: check found 0 problems in the 120 Android and the 108 iPhone screenshots",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Check found 0 problems in both."
+  ],
+  "status": "evidence",
+  "proof": "research/anywhereroles-run-2026-10-06/out-android/check.json (120 screenshots, 0 problems, 0 notes) and research/anywhereroles-run-2026-10-06/out-iphone/check.json (108 screenshots, 0 problems, 0 notes), both 2026-10-06; and-run11.log and ios-run2.log end with 'checked 120 screenshots in 15 languages: 0 problem(s)' and 'checked 108 screenshots in 18 languages: 0 problem(s)'.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C227",
+  "claim": "Before the recapture, check on AnywhereRoles' old Google Play screenshots found 127 problems: 103 translated captions over an English UI (one English capture with translated captions), 15 false 'missing' lines from 0.1.4's reading of fastlane supply's file names (fixed in 0.1.6), and 9 others",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions. Of the other 24, 15 were false “missing” lines from a bug in how 0.1.4 read fastlane supply’s file names (fixed in 0.1.6), and 9 were others."
+  ],
+  "status": "evidence",
+  "proof": "docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2), finding F1: shotfleet check fastlane/metadata/android with 0.1.3 and 0.1.4, 'checked 120 screenshots in 15 languages: 127 problem(s)'; 103 lines 'the caption is in X but the app UI shows en strings'; cause: one English capture set with localized captions. After the recapture the same check gives 16 (all false, F2 and F7): research/anywhereroles-run-2026-10-06/check-android-after/check.json (2026-10-06 18:46). The 15: dogfood F2 (one false 'missing 1_en-US.png, ...' line per locale, research/anywhereroles-run-2026-10-06/dogfood-excerpt.md), fixed in 0.1.6 by CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is (C031). The other 9 (127 - 103 - 15) are not explained in the record: the 127-line output was not saved as a file.",
+  "layer": "device",
+  "assertion": "Recorded check output on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C228",
+  "claim": "Writing and debugging AnywhereRoles' Android flow took several failed runs before the final one",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "writing and debugging the Android flow took me several failed runs before this one"
+  ],
+  "status": "evidence",
+  "proof": "research/anywhereroles-run-2026-10-06/logs/and-run1.log to and-run10.log (nine of and-run1 to and-run10 ended in FAIL, run3 was a one-language success; for example 'FAIL en 3/8 screenshots (retried)  Element not found: Text matching regex: Salary Insights') and the kept folders /Users/manu/Developer/remoti/.claude/worktrees/handoff-shots/build/shotfleet/out-android-run2-failed to out-android-run10-es-fail; docs/dogfood-shotfleet-2026-10.md in the app's repository (excerpt with Setup, Result, F1, F2, F6 and F7 copied to research/anywhereroles-run-2026-10-06/dogfood-excerpt.md) (/Users/manu/Developer/remoti/.claude/worktrees/handoff-shots, branch claude/store-screenshots-2026-10, commit 6560b25b2) ('failed Android runs while the flow was being fixed', 9 failed runs).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C229",
+  "claim": "Demo evidence: 2026-10-06, AnywhereRoles, shotfleet 0.1.4: Android 120 on 1 emulator with 0 retries, iPhone 108 on 2 simulators with 3 languages retried once, 0 problems; the old Play screenshots had 127 problems: 103 translated captions over English, 15 false 'missing' lines from a 0.1.4 bug (fixed in 0.1.6), 9 others",
+  "where": [
+   "site/public/demo.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "shotfleet 0.1.4, a full run on both platforms: Android, 15 languages × 8 screens = 120 screenshots on 1 emulator, 0 retries; iPhone, 18 languages × 6 screens = 108 screenshots on 2 simulators, 3 languages retried once. Check found 0 problems in both. Before it, check on the app’s old Google Play screenshots found 127 problems: 103 translated captions over English screens, 15 false “missing” lines from a 0.1.4 bug with fastlane supply’s file names (fixed in 0.1.6), and 9 others.",
+   "Record: research/anywhereroles-run-2026-10-06/"
+  ],
+  "status": "evidence",
+  "proof": "Same records as C222 to C228, copied into this repository on 2026-10-06: research/anywhereroles-run-2026-10-06/out-android/run.json and check.json, research/anywhereroles-run-2026-10-06/out-iphone/run.json and check.json, research/anywhereroles-run-2026-10-06/logs/and-run11.log and ios-run2.log, and the run report's F1 and F2 (research/anywhereroles-run-2026-10-06/dogfood-excerpt.md, from docs/dogfood-shotfleet-2026-10.md in the app's repository).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-06.",
+  "fix": ""
+ },
+ {
+  "id": "C230",
+  "claim": "[capture] replaces flow for iOS: a config has one or the other, and build/xctestrun/only_testing/screenshots/timeout are checked before anything builds",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "instead of flow = \"flow.yaml\": a config has one or the other",
+   "instead of flow = \"flow.yaml\": a config has one or the other"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CaptureConfig.test_flow_and_capture_together_are_refused, CaptureConfig.test_capture_needs_build_and_xctestrun, CaptureConfig.test_bad_screenshots_value_typo_and_types_are_refused, CaptureConfig.test_capture_without_flow_or_app_loads_and_needs_no_maestro, CaptureConfig.test_capture_is_ios_only (tests/test_byoc_ios.py).",
+  "assertion": "load_config refuses flow plus [capture], a missing build or xctestrun, an unknown key, a wrong type and a screenshots value outside attachments/fastlane/auto, with a one-line message; a [capture] config loads without a flow, an app or Maestro.",
+  "fix": "",
+  "test": "CaptureConfig.test_flow_and_capture_together_are_refused"
+ },
+ {
+  "id": "C231",
+  "claim": "With [capture], a language that saved no screenshots, or lacks a screen another language saved, fails even when the test passed",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.",
+   "A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix."
+  ],
+  "status": "partial",
+  "layer": "unit",
+  "proof": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed, CaptureRun.test_a_screen_missing_in_one_language_fails_that_language, CaptureRun.test_nothing_at_all_says_so_and_does_not_check (faked xcodebuild). The device half (NoKeepTests in tools/fixture-byoc-e2e.sh) has not run yet. Partial: every test fakes xcodebuild; the page describes real behaviour on a simulator, which is device-untested until tools/fixture-byoc-e2e.sh passes (C235).",
+  "assertion": "A [capture] run whose xcodebuild passes but collects 0 PNGs for a language reports that language failed with the .keepAlways / setupSnapshot hint and exits 1; a language missing a name another language has fails with 'missing <name>'.",
+  "fix": "",
+  "test": "CaptureRun.test_zero_screenshots_fails_the_language_with_the_hint_even_though_the_test_passed"
+ },
+ {
+  "id": "C232",
+  "claim": "With [capture], shotfleet sets each simulator's language itself, adds -AppleLanguages/-AppleLocale to a copy of the .xctestrun, and moves fastlane's language files aside and back, also when the run fails",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "shotfleet sets each simulator's language itself and also passes",
+   "shotfleet sets each simulator's language itself and also passes"
+  ],
+  "status": "partial",
+  "layer": "unit",
+  "proof": "SimulatorLanguage.test_the_simulators_global_language_and_locale_are_written, XctestrunCopy.test_copy_sits_beside_the_original_with_the_language_arguments_in_both_formats, FastlaneCollector.test_settings_files_come_back_when_the_run_fails, FastlaneCollector.test_settings_files_are_moved_aside_and_put_back, CaptureRun.test_fastlane_snapshot_files_are_collected_per_simulator_and_its_settings_restored, AttachmentCollector.test_names_come_from_the_manifest_without_the_index_and_uuid. The commands are the ones experiment E4/E5 ran by hand (research/byoc-ios-experiment-2026-10-06.md); the built feature has not run on a simulator yet. Partial: every test fakes xcodebuild and simctl; the language mechanism ran only by hand (E4/E5), not as the built feature, until tools/fixture-byoc-e2e.sh passes (C235).",
+  "assertion": "set_sim_language runs simctl spawn <udid> defaults write -g AppleLanguages -array <lp> and AppleLocale -string <locale>; the .xctestrun copy sits beside the original (formats 1 and 2) with the arguments; language.txt/locale.txt/snapshot-launch_arguments.txt are back after the run and after an exception or Ctrl-C.",
+  "fix": "",
+  "test": "FastlaneCollector.test_settings_files_come_back_when_the_run_fails"
+ },
+ {
+  "id": "C233",
+  "claim": "[capture] runs are paid like any run: 2 languages without a licence; check stays free",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "It's paid like any `run`: 2 languages without a licence, and `check` stays free.",
+   "It's paid like any <code>run</code>: 2 languages without a licence, and <code>check</code> stays free."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CaptureRun.test_without_a_licence_three_languages_become_two_like_a_maestro_run, CaptureRun.test_two_languages_without_a_licence_are_free, CaptureRun.test_check_stays_free_on_capture_output.",
+  "assertion": "A released build without a licence runs 2 of 3 [capture] languages and prints the free-tier line; 2 languages run without it; check never asks for a licence.",
+  "fix": "",
+  "test": "CaptureRun.test_without_a_licence_three_languages_become_two_like_a_maestro_run"
+ },
+ {
+  "id": "C234",
+  "claim": "init --capture writes the [capture] table from the shared scheme with UI tests, and doctor stops asking for Maestro for iOS when the config has [capture] (doctor reads ./shotfleet.toml, or the config path given as its argument)",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "`shotfleet doctor` (run in the config's folder, or `shotfleet doctor path/to/shotfleet.toml`) sees the `[capture]` table and stops asking for Maestro for iOS.",
+   "<code>shotfleet doctor</code> (run in the config's folder, or <code>shotfleet doctor path/to/shotfleet.toml</code>) sees the <code>[capture]</code> table and stops asking for Maestro for iOS."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "Doctor.test_capture_config_makes_ios_ready_without_maestro_or_java, Doctor.test_a_flow_config_or_none_still_needs_maestro_for_ios, Doctor.test_fix_offers_no_maestro_for_an_ios_capture_config_but_does_for_its_android_section, InitCapture.test_writes_a_capture_config_from_the_shared_scheme_with_ui_tests, DeviceTestScript.test_init_capture_finds_the_fixtures_ui_test_scheme.",
+  "assertion": "doctor with a [capture] config prints 'iOS: ready' with Maestro and Java missing (they become Android lines); init --capture writes a config load_config accepts, with the scheme and UI test target read from the scheme files.",
+  "fix": "",
+  "test": "Doctor.test_capture_config_makes_ios_ready_without_maestro_or_java"
+ },
+ {
+  "id": "C235",
+  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6 and not run end to end on a device yet",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/index.html",
+   "site/public/llms.txt",
+   "site/public/alternatives.html",
+   "site/public/docs.html",
+   "README.md",
+   "site/public/docs.html",
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
+   "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
+   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
+   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
+   "(on iOS, your own XCUITest tests can stand in for Maestro, but that part is new in 0.1.6 and not run end to end on a device yet)",
+   "can use <a href=\"#xcuitest\">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
+   "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6 and not run end to end on a device yet, see below).",
+   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6 and not run end to end on a device yet).",
+   "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6 and not run end to end on a device yet) needs neither.",
+   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet)"
+  ],
+  "status": "untested",
+  "layer": "device",
+  "proof": "Pending: the device test tools/fixture-byoc-e2e.sh (de and ja on 2 simulators, attachments, a SnapshotHelper-style writer, and a test without .keepAlways) has not run; the coordinator schedules it under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending.test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'not run end to end on a device yet'. After the device test passes, the coordinator removes the caveats and adds the flag file.",
+  "assertion": "SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh prints 'PASS: all N assertions passed'.",
+  "fix": ""
+ },
+ {
+  "id": "C236",
+  "claim": "Bring your own capture was tried by hand first: fixture app on 2 simulators at once in German and Japanese, and a real app's SnapshotHelper test where check found a real bug",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug.",
+   "I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's <code>SnapshotHelper</code> test, where <code>check</code> found a real bug."
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "research/byoc-ios-experiment-2026-10-06.md (branch claude/byoc-ios-experiment, b2b95da), 2026-10-06: E4 fixture, byoc-e4-de and byoc-e4-ja in parallel, check confirmed de/ja on every screen; E5 subscrifi's unchanged SnapshotHelper test, 12 screenshots collected, check: every German screen shows English (LocalizationHelper defaults to 'en'). Evidence in ~/Developer/shotfleet-rc-build/byoc-ios/.",
+  "assertion": "The research note's E4 and E5 sections say so, with logs in byoc-ios/.",
+  "fix": ""
+ },
+ {
+  "id": "C237",
+  "claim": "What's new 0.1.6: on iOS, run can run the team's own XCUITest screenshot tests instead of a Maestro flow, several simulators at once, one language each, then checks them; needs neither Maestro nor Java; tried by hand, the finished feature not run end to end on a device yet",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>run</code> can run your own XCUITest screenshot tests",
+   "the finished feature is new in 0.1.6 and not run end to end on a device yet"
+  ],
+  "status": "untested",
+  "layer": "device",
+  "proof": "Same as C235 (device test pending) and C236 (tried by hand, E4/E5). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": ""
+ },
+ {
+  "id": "C238",
+  "claim": "What's new 0.1.6: check understands fastlane supply's <n>_<locale>.png names; the 15 false 'missing' lines on a real 15-language Play set are gone",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "<code>check</code> understands fastlane supply’s file names",
+   "On a real Google Play set in 15 languages, 15 false “missing” lines are gone."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is. Real set: AnywhereRoles' committed Play folder, 16 problems = 15 F2 lines + ru-RU/8 before the fix (research/anywhereroles-run-2026-10-06/check-android-after/check.json, research/anywhereroles-run-2026-10-06/dogfood-excerpt.md F2); C031. CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_supply_locale_in_the_name_is_not_missing_screens_and_a_really_missing_one_is"
+ },
+ {
+  "id": "C239",
+  "claim": "What's new 0.1.6: a Russian screen read as Kazakh passes when the app's Russian strings match it; a Ukrainian screen in the Russian folder is still caught",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "A Russian screen with English job titles in it is no longer called Kazakh"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "CheckAnyFolder.test_russian_screen_detection_calls_kazakh_passes_when_the_apps_russian_strings_match, CheckAnyFolder.test_ukrainian_screen_in_the_russian_folder_is_still_caught (C026). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "CheckAnyFolder.test_russian_screen_detection_calls_kazakh_passes_when_the_apps_russian_strings_match"
+ },
+ {
+  "id": "C240",
+  "claim": "What's new 0.1.6: a failed language names the step it stopped on, the failure screenshot's path and up to 12 texts on that screen",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "When a language fails, <code>run</code> now says where it stopped"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "FailureLine.test_names_the_step_the_screenshot_and_up_to_12_texts_from_the_hierarchy, FailureLine.test_without_a_hierarchy_the_screenshot_is_read_once (tests/test_failure_messages.py). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "FailureLine.test_names_the_step_the_screenshot_and_up_to_12_texts_from_the_hierarchy"
+ },
+ {
+  "id": "C241",
+  "claim": "What's new 0.1.6: when Maestro taps an iPad in landscape at the portrait position, run says so in one line with what to do instead",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "when Maestro taps at the portrait position and misses, <code>run</code> says so in one line"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "LandscapeHint.test_the_real_ipad_failure_gets_the_hint, LandscapeHint.test_no_hint_on_android (tests/test_failure_messages.py), from the real iPad log of the AnywhereRoles run (dogfood F12). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "LandscapeHint.test_the_real_ipad_failure_gets_the_hint"
+ },
+ {
+  "id": "C242",
+  "claim": "What's new 0.1.6: the short-of-memory note only shows with the errors it explains, not on every failed flow",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "note only shows up when a failure really looks like that"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "MemoryNote.test_a_plain_assertion_failure_gets_no_memory_note, MemoryNote.test_the_note_comes_with_the_errors_it_explains (tests/test_failure_messages.py). CHANGELOG 0.1.6.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "MemoryNote.test_a_plain_assertion_failure_gets_no_memory_note"
+ },
+ {
+  "id": "C243",
+  "claim": "Guide 1: check is free (no licence, no account), captures nothing and leaves the fastlane folders alone; the report (check.json and an index.html grid, a row per language, a column per screen, problems outlined in red) goes to ./shotfleet-check",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders.",
+   "problems outlined in red) goes to <code>./shotfleet-check</code>"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence (tests/test_claims_unit.py), CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone (tests/test_cli_claims.py); the grid: cmd_check calls write_gallery, whose docstring and README 'Review out/index.html' say one row per language, one column per screen, flagged screenshots outlined in red (C028, C032, C048).",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone"
+ },
+ {
+  "id": "C244",
+  "claim": "Guide 1: check reports wrong language, copies, missing screenshots, store rules (sizes, counts, transparency) and listings in a language the app does not have",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "folder shows English strings.",
+   "sizes, counts and transparency that App Store Connect or Play would reject.",
+   "for example Traditional Chinese screenshots when the app has no Traditional Chinese."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "G1CheckDetectors.test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language, G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files, G1CheckDetectors.test_a_language_that_did_not_produce_every_screen_is_reported_as_missing, StoreRules.test_app_store_sizes_alpha_counts_and_required_class, StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (a ja screen showing en is reported). Same as C022, C024, C025, C026.",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "G1CheckDetectors.test_the_same_image_in_two_languages_is_reported_once_with_both_files"
+ },
+ {
+  "id": "C245",
+  "claim": "Guide 1 real-run numbers: 252 committed WOD Tracker iOS screenshots gave one real problem (zh-Hant listings over an English app); every planted mistake in a copy of a clean set was reported; 220 AnywhereRoles screenshots in 57 to 86 s warm; the first compile can take minutes and once took about 40 minutes",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "(252 iOS images) it found one real problem: Traditional Chinese listings",
+   "When I planted mistakes in a copy of a clean set (a German screen in English, a Korean screen in Japanese, two copied images), each one was reported.",
+   "a check took 57 to 86 seconds once macOS text recognition was warm",
+   "once took about 40 minutes."
+  ],
+  "status": "evidence",
+  "layer": "fixture",
+  "proof": "252 and 1 problem: research/first-run.md lines 73-74 ('checked 252 screenshots in 22 languages: 1 problem(s)', 'zh-Hant: the app has no zh-Hant translation'), README 'It found one real problem: the Traditional Chinese listings'. Planted set: research/e2-tesseract-parity.md (4 planted mistakes: de screen in English, ko screen in Japanese, two copies; macOS recognition found every one). 57 to 86 s: C030 (shotfleet-rc-build/c030-retime/retime.log, live 0.1.4, env -i, no Tesseract). About 40 minutes: shotfleet.py OCR_WHAT_TO_DO and the OCR_BUDGET_S comment (2026-10-06, quiet Mac, c030-retime), README limits. The article's TO VERIFY items 2 and 5 hold the runs. Edited 2026-10-06 when publishing: the planted sentence used to describe a scenario that is not recorded ('English in German, deleted Japanese', C030 proof), and 'on a busy Mac once took over half an hour' contradicted the record (quiet Mac, about 40 minutes).",
+  "assertion": "None beyond the recorded runs; one app per number.",
+  "fix": ""
+ },
+ {
+  "id": "C246",
+  "claim": "Guide 1: when macOS text recognition doesn't answer, check says so, does not fail over it, finishes and marks unread screens not verified; with Tesseract installed it uses it automatically; no restart needed",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "macOS text recognition didn't answer in time",
+   "it finishes and marks the screens it couldn't read as \"not verified\""
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract, StuckOcrFallback.test_without_tesseract_it_says_how_to_fix (tests/test_shotfleet.py); tests/test_ocr_wait.py Budget. Messages: shotfleet.py ocr_not_answering ('didn't answer in time', 'isn't answering') and OCR_WHAT_TO_DO ('No restart needed'). Same as C072.",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "StuckOcrFallback.test_without_tesseract_it_says_how_to_fix"
+ },
+ {
+  "id": "C247",
+  "claim": "Guide 1: macOS text recognition reads 33 languages on macOS 27; other scripts still get the other-language, copy and missing checks; with Tesseract installed check uses it for them automatically, 84 of 85 languages read against 66",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "macOS text recognition reads 33 languages on macOS 27 (older versions read fewer)",
+   "in my test, 84 of 85 languages could then be read, against 66 without it."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "C071 (.build/ocr --langs printed 33 codes on macOS 27, 2026-10-03; G1ScriptsMacosCannotRead.test_check_says_it_only_did_the_weaker_checks_and_still_finds_missing_and_wrong_language). 84 of 85 and 66: README limits ('measured on 85 languages, 84 are then verified by reading instead of 66', tools/langmatrix.py). Edited 2026-10-06 when publishing: 'plug in Tesseract for full coverage' overstated it.",
+  "assertion": "None beyond C071; the count depends on the buyer's macOS.",
+  "fix": ""
+ },
+ {
+  "id": "C248",
+  "claim": "Guide 1: copies are only reported on screens with enough text; two near-empty identical screens can pass",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "Copies are only reported on screens with enough text."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "Code read 2026-10-06: cmd_check adds a screenshot to the copy comparison only when its text has 40 or more characters (shotfleet.py, `if r.get(\"chars\", 0) >= 40`, ponytail comment: short screens can be identical across languages). No test pins the 40.",
+  "assertion": "Test: two identical screens with under 40 characters in two languages give no 'identical image' problem.",
+  "fix": ""
+ },
+ {
+  "id": "C249",
+  "claim": "Guides 1 and 2: Apple silicon Macs only (the installer refuses Intel); run is free for up to 2 languages; a licence unlocks every language and export, $29 for the first 100 buyers then $49 once, 14-day refund",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "only runs on an Apple silicon Mac (the installer refuses Intel)",
+   "$29 for the first 100 buyers, then $49 once (14-day refund)",
+   "$29 for the first 100 buyers, then $49 once, 14-day refund"
+  ],
+  "status": "evidence",
+  "layer": "site",
+  "proof": "site/public/install.sh line 6 refuses any `uname -m` but arm64 ('shotfleet needs an Apple silicon Mac'). Free tier and prices: the same statements as C048 (FreeTierOnAFrozenBuild tests) and C042 (PriceAgreement tests, which read the home page, terms, README and llms.txt, not the guides). Refund: site/public/terms.html ('within 14 days').",
+  "assertion": "Extend PriceAgreement to site/public/guides/*.html if prices change.",
+  "fix": ""
+ },
+ {
+  "id": "C250",
+  "claim": "Guide 1: causes 4 and 5 reproduced on a test app (no de.lproj gives English while ja stays Japanese; an app that saves its own language stays English until reinstalled); a String Catalog without English entries builds no en.lproj; the fastlane docs and issues #8895, #11457, #12917 say what the guide quotes",
+  "where": [
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
+   "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
+  ],
+  "where_text": [
+   "my test build had <code>de.lproj</code> and <code>ja.lproj</code> and no <code>en.lproj</code>",
+   "uninstalling and installing the app again gave German",
+   "All three are closed."
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "marketing/articles/01-fastlane-snapshot-stuck-in-english.md TO VERIFY items 1, 3, 4 and 6 (ran 2026-10-03: Xcode 27.0, iOS 26.4 iPhone 17 simulator, a throwaway SwiftUI app with a String Catalog; the issue pages and docs.fastlane.tools opened that day). Not run: snapshot's own reinstall_app option, a real app, current fastlane against the old issues (the guide says so).",
+  "assertion": "None beyond the recorded runs.",
+  "fix": ""
+ },
+ {
+  "id": "C251",
+  "claim": "Guide 2: shotfleet rewrites the English flow's text selectors per language: tapOn Next becomes Weiter in German, or (Nächste|Weiter) when the app has two translations",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "becomes <code>Weiter</code> in German, or <code>(Nächste|Weiter)</code> if your app has two translations for it."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "TranslateFlow.test_single_translation_is_quoted_literal, TranslateFlow.test_label_with_two_keys_matches_either_translation (tests/test_shotfleet.py). Same as C015, C016. Edited 2026-10-06 when publishing: the draft said Next becomes (Nächste|Weiter) without the two-translations condition.",
+  "assertion": "The proof's tests.",
+  "fix": "",
+  "test": "TranslateFlow.test_label_with_two_keys_matches_either_translation"
+ },
+ {
+  "id": "C252",
+  "claim": "Guide 2: 18 languages x 4 screens (72 screenshots) took 9 minutes on iOS with four simulators and 15 on Android, on one Mac, Maestro 2.0.10",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac."
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "Same run as C007 and C105: README sample 'captured 18/18 locales in 534s on 4 simulators', the home page's '9 min · 15 min ... measured on Maestro 2.0.10'. Edited 2026-10-06 when publishing: 'four simulators' is the iOS run's, not Android's.",
+  "assertion": "None beyond C007.",
+  "fix": ""
+ },
+ {
+  "id": "C253",
+  "claim": "Guide 2: shotfleet runs simulators and emulators on your Mac, not real devices or device clouds; needs an Apple silicon Mac, Maestro 2.x, Java 17+ and API 33+ emulators; no frames, captions or store upload; Flutter and React Native from translation files, run end to end on wger and the obytes Expo template only",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "it runs simulators and emulators on your Mac",
+   "It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators.",
+   "It makes no frames or captions and does not upload to the stores.",
+   "I have run that end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, and not yet on any other."
+  ],
+  "status": "evidence",
+  "layer": "unit",
+  "proof": "README limits ('macOS on Apple silicon only', 'Maestro', 'Java 17+', 'Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run)'); C073 (API 33+), C037 (no frames, captions or upload). Edited 2026-10-06 when publishing: the draft said no real Flutter or React Native app had been run, which README contradicts since 2026-10-03.",
+  "assertion": "None beyond the README limits and the named claims.",
+  "fix": ""
+ },
+ {
+  "id": "C254",
+  "claim": "Guide 2: plain-Maestro facts measured on Maestro 2.0.10: a takeScreenshot straight after launchApp showed the home screen in 4 of 4 runs; -e before test exits 2 with Unknown options; clearState drops the Android per-app language; two maestro test processes on two emulators failed one of two in both attempts",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html",
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "in 4 of 4 runs",
+   "exit code 2",
+   "the per-app language goes with it",
+   "one of the two failed in both attempts"
+  ],
+  "status": "evidence",
+  "layer": "device",
+  "proof": "marketing/articles/02-one-maestro-flow-every-locale.md TO VERIFY items 1 to 10, every one ticked with the run (2026-10-03/04: Maestro 2.0.10, iPhone 17 iOS 26.4 simulator, API 36 emulator with tools/fixture-app-android; the Maestro docs pages and morse_app PR #216 opened). Not run: Maestro 2.11, API 33 to 35, --shard-split (the guide says so).",
+  "assertion": "None beyond the recorded runs; Maestro versions change this.",
+  "fix": ""
+ },
+ {
+  "id": "C255",
+  "claim": "A released build ignores SHOTFLEET_GUMROAD_API: the licence check can't be pointed at another server",
+  "where": [
+   "DISTRIBUTION.md"
+  ],
+  "where_text": [
+   "no secret in the app, one use count per key, 5 activations"
+  ],
+  "status": "proven",
+  "proof": "0.1.6 (L1a, 'Defect 2' in research/review-2026-10-03.md): shotfleet.py gumroad_api honours SHOTFLEET_GUMROAD_API only from source (tests) or in a build whose product id starts with RCTEST (tools/release-candidate.sh's test build, which needs its fake server); a released build always asks api.gumroad.com. GumroadLicence.test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source (frozen, real product id, override at a dead host: activation still reaches the configured server, and a made-up SHOTFLEET_KEY is refused). Not tried on the binary itself.",
+  "layer": "unit",
+  "assertion": "As the test named.",
+  "fix": "",
+  "fixed_by": "code",
+  "fixed": "Pointing the override at a dead host plus any well-formed SHOTFLEET_KEY was a full licence. Fixed in code: the override is read at call time and ignored when frozen with a real product id.",
+  "test": "GumroadLicence.test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source"
+ },
+ {
+  "id": "C256",
+  "claim": "A CI key is checked online on every run, uses no activation, and works offline only on a machine where it passed a check in the last 30 days",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/terms.html"
+  ],
+  "where_text": [
+   "It's checked online on each run and uses none of your activations.",
+   "On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers.",
+   "works offline only on a machine where it passed a check in the last 30 days"
+  ],
+  "status": "proven",
+  "proof": "0.1.6 (L1b, 'Defect 3'): GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days (offline and never checked: refused with 'couldn't be checked'; a made-up key with Gumroad blocked: refused; online: no use counted, no licence.json, the record holds a hash, not the key; offline after a check: fine at 29 days, refused at 31 days and with a future date; an activated Mac with the same key counts as checked), GumroadLicence.test_nothing_counts_a_use_except_one_activation, FreeTierMessage.test_an_unreachable_licence_server_stops_run_for_a_key_this_machine_never_checked_and_says_why, FreeTierMessage.test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here. tools/release-candidate.sh also checks a fresh HOME is refused during an outage (not run in this change). Limit: a CI job on a fresh runner fails to license during a Gumroad outage (run captures 2 languages, export exits 2).",
+  "layer": "unit",
+  "assertion": "As the tests named.",
+  "fix": "",
+  "fixed_by": "code",
+  "fixed": "Was fail-open with no limit (owner decision 2026-10-05), so any well-formed key passed with Gumroad blocked. Owner decision 2026-10-06: offline only after a good check on that machine, for 30 days.",
+  "test": "GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days"
+ },
+ {
+  "id": "C257",
+  "claim": "Over MCP no command written in the config runs without hooks: true: run skips [hooks] and refuses a config with a [capture] build, [ios] simctl or [android] shell commands; check takes no ocr_command (README, docs, What's new 0.1.6)",
+  "where": [
+   "README.md",
+   "site/public/docs.html",
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "Over MCP, no command written in your config runs unless you pass `hooks: true`.",
+   "Over MCP, no command written in your config runs unless you pass <code>hooks: true</code> to <code>run</code>.",
+   "<code>[android] shell</code> commands unless you pass <code>hooks: true</code>, the same opt-in as for <code>[hooks]</code>.",
+   "<code>check</code> over MCP no longer takes <code>ocr_command</code>"
+  ],
+  "status": "proven",
+  "proof": "McpRunRunsNoConfigCommandUnlessAsked.test_a_capture_build_does_not_run_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_simctl_and_shell_setup_commands_are_refused_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_the_last_guard_stops_setup_commands_and_the_build_even_past_mcp_call, McpCheckRunsNoProgram.test_ocr_command_is_refused_and_never_runs (security review S1/S2, 2026-10-07: shotfleet-rc-build/code-review-2026-10-07/security.md). CHANGELOG 0.1.6.",
+  "layer": "unit",
+  "assertion": "The proof's tests; the quoted words on the pages.",
   "fix": ""
  }
 ]

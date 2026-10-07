@@ -239,7 +239,7 @@ class Renderer(unittest.TestCase):
     @staticmethod
     def articles():
         found = [a for p in sorted((ROOT / "marketing/articles").glob("[0-9][0-9]-*.md")) if (a := bg.parse_article(p))]
-        assert len(found) == 3, [a["slug"] for a in found]  # 04-ideas.md has no Slug row and is skipped
+        assert len(found) == 5, [a["slug"] for a in found]  # 04-ideas.md has no Slug row and is skipped
         return found
 
 
@@ -261,6 +261,8 @@ class Generator(unittest.TestCase):
         self.assertEqual(bg.open_items(VERIFIED), [])
         self.assertEqual(len(bg.open_items(UNVERIFIED)), 1)
         self.assertEqual(len(bg.open_items("## TO VERIFY BEFORE PUBLISHING\n\n1. PARTLY TICKED (code read, not run).\n2. A thing.\n")), 2)
+        self.assertEqual(bg.open_items("## TO VERIFY BEFORE PUBLISHING\n\n1. PARTLY TICKED (read). TICKED 2026-10-06 (ran it).\n"), [])  # the last mark counts
+        self.assertEqual(len(bg.open_items("## TO VERIFY BEFORE PUBLISHING\n\n1. TICKED (iOS). PARTLY TICKED (Android not run).\n")), 1)
         self.assertEqual(len(bg.open_items("## TO VERIFY BEFORE PUBLISHING\n\nnothing listed\n")), 1)  # an empty list is not a checked list
         self.assertEqual(bg.open_items("no list at all"), [])
 
@@ -281,8 +283,8 @@ class Generator(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("refused open-guide", err)
             pub = root / "site/public/guides"
-            self.assertEqual(sorted(p.name for p in pub.iterdir()), ["good-guide.html", "index.html"])
-            self.assertNotIn("open-guide", (pub / "index.html").read_text())
+            self.assertEqual(sorted(p.name for p in pub.iterdir()), ["good-guide.html"])
+            self.assertNotIn("open-guide", (root / "site/public/guides.html").read_text())  # the hub: /guides, not /guides/
             page = (pub / "good-guide.html").read_text()
             self.assertIn('"datePublished": "2026-11-01"', page)
             self.assertNotIn(bg.PLACEHOLDER, page)
@@ -308,7 +310,7 @@ class Generator(unittest.TestCase):
             root = self.make_root(d)
             code, out, err = self.run_build(root, publish=True, unverified=True)
             self.assertEqual(code, 0)
-            self.assertEqual(sorted(p.name for p in (root / "site/public/guides").iterdir()), ["good-guide.html", "index.html", "open-guide.html"])
+            self.assertEqual(sorted(p.name for p in (root / "site/public/guides").iterdir()), ["good-guide.html", "open-guide.html"])
 
     def test_a_description_over_160_characters_is_refused_even_when_verified(self):
         with tempfile.TemporaryDirectory() as d:

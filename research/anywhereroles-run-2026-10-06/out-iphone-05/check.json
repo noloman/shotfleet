@@ -1,0 +1,150 @@
+{
+ "screenshots": [
+  {
+   "file": "de/iphone-69-05-weekly-briefing.png",
+   "src": "raw/de/iphone-69-05-weekly-briefing.png",
+   "sha": "e4aabc278aa2",
+   "lang": "de",
+   "chars": 2221,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-05-weekly-briefing.png",
+   "src": "raw/en/iphone-69-05-weekly-briefing.png",
+   "sha": "20fc5f12e21c",
+   "lang": "en",
+   "chars": 1909,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-05-weekly-briefing.png",
+   "src": "raw/es/iphone-69-05-weekly-briefing.png",
+   "sha": "c9e2594bf504",
+   "lang": "es",
+   "chars": 2268,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-05-weekly-briefing.png",
+   "src": "raw/fr/iphone-69-05-weekly-briefing.png",
+   "sha": "35dc2c1d94ed",
+   "lang": "fr",
+   "chars": 2426,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-05-weekly-briefing.png",
+   "src": "raw/hi/iphone-69-05-weekly-briefing.png",
+   "sha": "586b3bf75aa1",
+   "lang": "hi",
+   "chars": 1911,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-05-weekly-briefing.png",
+   "src": "raw/id/iphone-69-05-weekly-briefing.png",
+   "sha": "e85a43f79afe",
+   "lang": "id",
+   "chars": 2141,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-05-weekly-briefing.png",
+   "src": "raw/it/iphone-69-05-weekly-briefing.png",
+   "sha": "daf4eb87160a",
+   "lang": "it",
+   "chars": 2290,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ja/iphone-69-05-weekly-briefing.png",
+   "sha": "d3e3a1da15cc",
+   "lang": "ja",
+   "chars": 1168,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ko/iphone-69-05-weekly-briefing.png",
+   "sha": "4cae8d778f06",
+   "lang": "ko",
+   "chars": 1258,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-05-weekly-briefing.png",
+   "src": "raw/nl/iphone-69-05-weekly-briefing.png",
+   "sha": "c025868b2d16",
+   "lang": "nl",
+   "chars": 2239,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-05-weekly-briefing.png",
+   "src": "raw/pl/iphone-69-05-weekly-briefing.png",
+   "sha": "5b9b626fb6c6",
+   "lang": "pl",
+   "chars": 2200,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-05-weekly-briefing.png",
+   "src": "raw/pt-BR/iphone-69-05-weekly-briefing.png",
+   "sha": "8d2b62b6a3a1",
+   "lang": "pt-BR",
+   "chars": 2232,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ro/iphone-69-05-weekly-briefing.png",
+   "sha": "a0ab358980a1",
+   "lang": "ro",
+   "chars": 2233,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ru/iphone-69-05-weekly-briefing.png",
+   "sha": "bd479f4a8cc0",
+   "lang": "ru",
+   "chars": 2225,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-05-weekly-briefing.png",
+   "src": "raw/sv/iphone-69-05-weekly-briefing.png",
+   "sha": "eef94340ecbc",
+   "lang": "sv",
+   "chars": 2050,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-05-weekly-briefing.png",
+   "src": "raw/tr/iphone-69-05-weekly-briefing.png",
+   "sha": "cbd54196e993",
+   "lang": "tr",
+   "chars": 2022,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-05-weekly-briefing.png",
+   "src": "raw/uk/iphone-69-05-weekly-briefing.png",
+   "sha": "93301c4d8084",
+   "lang": "uk",
+   "chars": 2242,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-05-weekly-briefing.png",
+   "src": "raw/zh-Hans/iphone-69-05-weekly-briefing.png",
+   "sha": "2ad925080302",
+   "lang": "zh-Hans",
+   "chars": 962,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": []
+}

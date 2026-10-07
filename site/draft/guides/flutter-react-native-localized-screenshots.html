@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flutter and React Native screenshots in every language</title>
+<meta name="description" content="What I learned running one Maestro flow in every language on a real Flutter app and a real Expo app: the language, the labels, the traps, and the setup.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Flutter and React Native screenshots in every language">
+<meta property="og:description" content="What I learned running one Maestro flow in every language on a real Flutter app and a real Expo app: the language, the labels, the traps, and the setup.">
+<meta property="og:image" content="https://shotfleet.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The same app screen in Japanese, Arabic and Korean, each with a language pennant">
+<meta property="og:url" content="https://shotfleet.com/guides/flutter-react-native-localized-screenshots">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://shotfleet.com/guides/flutter-react-native-localized-screenshots">
+<link rel="icon" href="../../public/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../public/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="../../public/apple-touch-icon.png">
+<link rel="preload" href="../../public/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../../public/site.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Localized App Store and Google Play screenshots for a Flutter or React Native app, from one Maestro flow",
+  "description": "What I learned running one Maestro flow in every language on a real Flutter app and a real Expo app: the language, the labels, the traps, and the setup.",
+  "author": {
+    "@type": "Person",
+    "name": "Manuel Lorenzo Parejo"
+  },
+  "datePublished": "BUILD_DATE",
+  "mainEntityOfPage": "https://shotfleet.com/guides/flutter-react-native-localized-screenshots"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://shotfleet.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Guides",
+      "item": "https://shotfleet.com/guides"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Localized App Store and Google Play screenshots for a Flutter or React Native app, from one Maestro flow",
+      "item": "https://shotfleet.com/guides/flutter-react-native-localized-screenshots"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <nav class="pill" aria-label="Main">
+    <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
+    <span class="links"><a href="/#run">A real run</a><a href="/#apps">My apps</a><a href="/#price">Pricing</a><a href="/demo">See it work</a><a href="/whats-new">What’s new</a></span>
+  </nav>
+</header>
+<main class="wrap" id="main">
+ <div class="page docs">
+  <p class="label">Guide</p>
+<h1>Localized App Store and Google Play screenshots for a Flutter or React Native app, from one Maestro flow</h1>
+<p>If your app is Flutter or React Native, you can take its store screenshots in every language with one Maestro flow, on iOS and Android, without changing the app. You need three things: a way to start the app in each language, text selectors that match in each language, and a wait that's long enough for your framework's first frame.</p>
+<p>I make a tool that does this (shotfleet, more below). What follows comes from running it on two real open-source apps on 2026-10-03: wger (Flutter) and the obytes template (Expo with i18next), on iOS and Android.</p>
+<h2>Does the language reach the app?</h2>
+<p>Yes, on both platforms, with no code change. On iOS the app is started with <code>-AppleLanguages</code>, and it reached Flutter and the Expo app (i18next takes its language from <code>expo-localization</code>, and nothing was saved on a fresh install). On Android 13 and newer, the per-app language (<code>cmd locale set-app-locales</code>) reached both. Arabic switched the Expo app to right to left on both platforms.</p>
+<p>Maestro itself sets the language for the whole device when it starts it (<code>maestro start-device --device-locale de_DE</code>), and there's no place inside a flow to set it.</p>
+<h2>Do the text selectors match?</h2>
+<p>This is where it breaks. A flow that says <code>tapOn: "Log in"</code> only works in English. In German the button says something else.</p>
+<p>shotfleet reads the translations and rewrites each text selector for each language. Flutter and React Native don't keep their translations in a form it can read inside the built app, so you point it at your source files with one line in the config:</p>
+<pre><code class="language-toml">strings = "lib/l10n/*.arb"                  # Flutter
+strings = "src/translations/*.json"         # the Expo app I ran (i18next)</code></pre>
+<p>On both apps, <code>init</code> found the build by itself and wrote that line.</p>
+<p>Two things I hit:</p>
+<ul><li><strong>Flutter joins a row into one label.</strong> A row with a title and a detail line is one label with a newline, so <code>tapOn: "Self-hosted"</code> finds nothing, even in English. Write <code>tapOn: "Self-hosted.*"</code>; shotfleet translates the part before the <code>.*</code>.</li><li><strong>Text the app doesn't translate stays English.</strong> The Expo template's onboarding and login screens are hard-coded English. shotfleet reported those three selectors as untranslated, and the check flagged the two Arabic screenshots that showed English. That was right: the app is English there. Use <code>id:</code> selectors (<code>testID</code>) for those, as they worked for every input and button I tried.</li></ul>
+<h2>Wait for the first frame</h2>
+<p>A Flutter debug build can take a long time to draw its first frame on a fresh Android emulator. My first screenshot was a white screen with only the status bar. Wait for real text before the first screenshot:</p>
+<pre><code class="language-yaml">- extendedWaitUntil:
+    visible: "Log in"
+    timeout: 60000</code></pre>
+<p>shotfleet now flags a blank screenshot and captures that language again once, but the wait in your flow is the real fix.</p>
+<h2>Half-translated languages</h2>
+<p>wger's Japanese was about 30% done, so most of the Japanese screenshots came out in English: Flutter shows the base language for every missing string. shotfleet warns when you ask for such a language by name, and the check reports the screenshots that came out in the base language. That listing isn't usable until the translation is finished.</p>
+<h2>The setup, short</h2>
+<pre><code class="language-bash">curl -fsSL https://shotfleet.com/install.sh | sh
+shotfleet doctor        # what's missing: Maestro, Java, Xcode, Android SDK
+shotfleet init          # finds your build, writes the config (with the strings line) and a flow.yaml
+                        # edit flow.yaml: your Maestro steps in English, a takeScreenshot for each store image
+shotfleet run --locales en,de</code></pre>
+<p>It needs an Apple silicon Mac, Maestro 2.x and Java 17+, Xcode for iOS and Android API 33+ emulators. <code>run</code> is free for up to 2 languages, so you can try this on your own app before paying anything. The details, including the Xcode 27 build line for Expo, are in the <a href="https://shotfleet.com/docs#strings">docs</a>.</p>
+<h2>What I didn't run</h2>
+<p>One Flutter app and one Expo app. Not bare React Native, not other apps, not a Flutter release build on Android. If you try it on yours and something breaks, email me at hello@shotfleet.com.</p>
+<p>To check screenshots you already have, from any tool, see <a href="https://shotfleet.com/guides/check-localized-screenshots">how to check localized screenshots</a>.</p>
+ </div>
+</main>
+<footer>
+  <div class="wrap">
+    <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+  </div>
+</footer>
+</body>
+</html>

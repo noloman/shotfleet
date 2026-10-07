@@ -1,11 +1,12 @@
 # Article 2: one Maestro flow in every locale
 
-Status: draft for Manu to publish on the new domain. Not published. Written 2026-10-02. The iOS snippets were run on 2026-10-03 with Maestro 2.0.10 on an iOS 26.4 simulator; the Android snippets are still UNRUN. See the TO VERIFY list. Do not publish until each item is ticked.
+Status: published to site/public/guides/ on 2026-10-06 at Manu's word (goes live with the 0.1.6 site deploy). Written 2026-10-02; every TO VERIFY item below was run (iOS and Android, Maestro 2.0.10). Edits when publishing: removed the pointer to this TO VERIFY list (readers can't see it); the article 3 link (a 404, unpublished) now points at the same story on the home page; 'Next' becomes 'Weiter', or (Nächste|Weiter) only when the app has two translations (C016); the four simulators are the iOS run's; the Flutter/React Native line now says what README says since 2026-10-03 (run end to end on wger and the obytes Expo template); added a link to guide 1. Claims C251-C254.
 
 | Field | Value |
 |---|---|
 | Title (H1) | Run one Maestro flow in every language: iOS launch arguments, Android per-app locales, and the traps |
-| Meta description (under 160 chars) | Maestro cannot set the locale inside a flow. Here is how to run one flow in every language on iOS and Android, and the four traps that give you English by mistake. |
+| Title tag (under 60 chars, the search-result title) | One Maestro flow in every language, on iOS and Android |
+| Meta description (under 160 chars) | Maestro can't set the locale inside a flow. How to run one flow in every language on iOS and Android, and the four traps that give you English by mistake. |
 | Slug | `/maestro-one-flow-every-language` |
 | Target query | maestro multiple languages / maestro locale / maestro screenshots different languages / maestro device-locale |
 | Why this can rank | Few tutorials; results are the Maestro docs, vendor docs and one Medium post (research/marketing-research.md 3.3). The docs do not cover the traps. |
@@ -86,7 +87,7 @@ appId: com.example.myapp
 
 I ran this on Maestro 2.0.10 against an iOS 26.4 simulator. The `tapOn` before the screenshot matters: when I put a `takeScreenshot` straight after `launchApp`, the image showed the iOS home screen, not the app, in 4 of 4 runs (with and without `clearState`; the Mac was under heavy load at the time). Putting `extendedWaitUntil` with `visible: id: next` first gave the app. Wait for something on screen before the first screenshot.
 
-Everything here was run on Maestro 2.0.10 only. Newer versions can differ: where `takeScreenshot` writes is one thing to check on yours (see the note on item 2 in the TO VERIFY list).
+Everything here was run on Maestro 2.0.10 only. Newer versions can differ: where `takeScreenshot` writes is one thing to check on yours.
 
 Run it once per language, with the variables after `test`:
 
@@ -122,16 +123,16 @@ A flow that says `tapOn: "Next"` fails in German. Two ways out: tap by `id:` (ac
 
 **4. Parallel runs on Android.** Two separate `maestro test` processes on two devices on one Mac were unreliable for me on Maestro 2.0.10. With two emulators and two `maestro test` processes started together, one of the two failed in both attempts (a `TimeoutException`, or an exception on Maestro's own log folder), while each passed alone. A Maestro process listened on TCP 7001 while it ran, which is my guess for the shared resource; I did not prove it. Run one device at a time, or use one run that shards across devices (`--shard-split`, which I did not test), and check the images of both devices.
 
-Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this on iOS 26.4 with Maps launched in German; I did not test Android), so write those taps in English. `launchApp` also takes a `permissions` setting (see its docs page); I did not test it against a permission dialog. And long languages push buttons off the screen: use `scrollUntilVisible` before the tap, with `direction: DOWN` ([article 3](https://shotfleet.com/the-button-nobody-could-reach) has the story).
+Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this on iOS 26.4 with Maps launched in German; I did not test Android), so write those taps in English. `launchApp` also takes a `permissions` setting (see its docs page); I did not test it against a permission dialog. And long languages push buttons off the screen: use `scrollUntilVisible` before the tap, with `direction: DOWN` (it happened to me: [a Next button nobody could reach](https://shotfleet.com/#catch-h) in four languages).
 
 ## Read the images, not the exit code
 
-All four traps pass. The only way to catch them is to look at the output, or to have something look for you: `shotfleet check shots/ --app path/to/MyApp.app` reads each image back and reports wrong-language and duplicate images. It is free (no licence, no account) and works on any folder of screenshots.
+All four traps pass. The only way to catch them is to look at the output, or to have something look for you: `shotfleet check shots/ --app path/to/MyApp.app` reads each image back and reports wrong-language and duplicate images. It is free (no licence, no account) and works on any folder of screenshots, fastlane's too ([how to check a fastlane snapshot folder](https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english)).
 
 ## Where shotfleet fits
 
-Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so `tapOn: "Next"` becomes `(Nächste|Weiter)` in German. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS and 15 on Android on one Mac, four simulators in parallel. That is one app and Maestro 2.0.10, so treat it as a data point. `run` is free for 2 languages; a licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once, 14-day refund.
+Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so `tapOn: "Next"` becomes `Weiter` in German, or `(Nächste|Weiter)` if your app has two translations for it. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac. That is one app and Maestro 2.0.10, so treat it as a data point. `run` is free for 2 languages; a licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once, 14-day refund.
 
 ## When not to use shotfleet
 
-If your app has ids on everything you tap, three or four languages, and one platform, the loop above is enough. If you test on real devices or in a device cloud, shotfleet does not help; it runs simulators and emulators on your Mac. It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. It makes no frames or captions and does not upload to the stores. For Flutter and React Native it works from your translation files; I have tested that on real translation files but not on a real Flutter or React Native app yet, so I do not claim it.
+If your app has ids on everything you tap, three or four languages, and one platform, the loop above is enough. If you test on real devices or in a device cloud, shotfleet does not help; it runs simulators and emulators on your Mac. It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. It makes no frames or captions and does not upload to the stores. For Flutter and React Native it works from your translation files. I have run that end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, and not yet on any other.

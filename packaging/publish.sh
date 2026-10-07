@@ -112,7 +112,12 @@ else BASE=${BASE:-https://shotfleet.com}; fi
 echo "== publish $( [ "$STAGING" = 1 ] && echo '[STAGING shotfleet-staging] ' )$( [ "$DRY" = 1 ] && echo 'DRY RUN: deploys, rolls back and writes nothing' || echo 'REAL RUN') =="
 echo "-- manifest and files"
 VERSION=$(awk '$1 == "version" { print $2 }' "$MANIFEST")
-case "$VERSION" in [0-9]*.[0-9]*.[0-9]*) ok "manifest version $VERSION" ;; *) fail "manifest has no 'version X.Y.Z' line"; VERSION=unknown ;; esac
+# strictly X.Y.Z (digits only): the version goes into file names and paths below, so no space or shell character may pass
+case "$VERSION" in
+  *[!0-9.]*|*..*|.*|*.|*.*.*.*) fail "manifest has no 'version X.Y.Z' line (digits only)"; VERSION=unknown ;;
+  [0-9]*.[0-9]*.[0-9]*) ok "manifest version $VERSION" ;;
+  *) fail "manifest has no 'version X.Y.Z' line (digits only)"; VERSION=unknown ;;
+esac
 TAR=shotfleet-$VERSION-macos-arm64.tar.gz; PKG=shotfleet-$VERSION-macos-arm64.pkg
 [ "$(grep -c '^file ' "$MANIFEST")" = 2 ] || fail "the manifest must list exactly two files: $TAR and $PKG"
 for n in "$TAR" "$PKG"; do
@@ -136,6 +141,7 @@ V_DOC=$(sed -n 's/.*Last checked against version \([0-9][0-9.]*\) on.*/\1/p' "$T
 if [ "$V_PY" = "$VERSION" ] && [ "$V_CL" = "$VERSION" ] && [ "$V_DOC" = "$VERSION" ]; then ok "VERSION agrees: manifest, shotfleet.py, top CHANGELOG heading and docs 'Last checked' line all say $VERSION"
 else fail "VERSION disagrees: manifest '$VERSION', shotfleet.py '$V_PY', top CHANGELOG heading '$V_CL', docs page '$V_DOC'"; fi
 if grep -qF '<!-- RELEASE_DATE -->' "$TREE/site/public/whats-new.html" 2>/dev/null; then fail "site/public/whats-new.html still has <!-- RELEASE_DATE -->: put the release date from the CHANGELOG heading there"; fi
+if grep -m1 -E '^## [0-9]+\.[0-9]+\.[0-9]+' "$TREE/CHANGELOG.md" 2>/dev/null | grep -qF '<!-- RELEASE_DATE -->'; then fail "CHANGELOG.md's top release heading still has <!-- RELEASE_DATE -->: put the release date there (## X.Y.Z (YYYY-MM-DD))"; fi
 [ ! -e "$TREE/RESUME.md" ] || fail "RESUME.md is in the tree (the coordinator deletes it before merge)"
 if git -C "$TREE" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git -C "$TREE" fetch -q origin 2>/dev/null || warn "git fetch failed: origin/main may be stale"

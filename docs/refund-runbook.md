@@ -63,12 +63,12 @@ Do not mention chargebacks or argue about whose fault it is.
 | 200, `"refunded": false` | The refund did not go through, or it was partial. The key still works. | nothing |
 | 404 `That license does not exist for the provided product.` | Wrong product ID or key. Do not conclude anything. | |
 
-4. The Mac locks at its next check, up to 7 days after the refund (30 if offline). A CI key (`SHOTFLEET_KEY`) is different: it is checked on every run and has no offline limit, so it locks at the first run that reaches Gumroad after the refund, however long Gumroad was unreachable before that. To see it sooner on your own test Mac, set `checked` in `licence.json` back 8 days and run `shotfleet export`. Details: `research/refund-process-2026-10-05.md`, section 3.
+4. The Mac locks at its next check, up to 7 days after the refund (30 if offline). A CI key (`SHOTFLEET_KEY`) is checked on every run, so it locks at the first run that reaches Gumroad after the refund; while Gumroad is unreachable it keeps working only on machines where it passed a check in the last 30 days. To see it sooner on your own test Mac, set `checked` in `licence.json` back 8 days and run `shotfleet export`. Details: `research/refund-process-2026-10-05.md`, section 3.
 
 ## 5. Reset or disable a key
 
 In **Sales**, the sale, **Manage license keys** **[help: article 268]**:
-- **Uses row**: minus, plus, Edit (type a number) or Reset to zero. Use it for a fourth Mac: reset to 0 or set 2, then the buyer runs `shotfleet activate KEY` on the new Mac **[help]**.
+- **Uses row**: minus, plus, Edit (type a number) or Reset to zero. Use it when a buyer runs out of activations (5 per key): reset to 0 or set it to the number of Macs they still use, then the buyer runs `shotfleet activate KEY` on the new Mac **[help]**.
 - **Disable the key** (a leaked key, a $0 sale you want dead): the key answers 404 disabled, so every Mac and CI run is refused at its next check **[help; button label unverified]**. It also stops the real owner: tell them and give a new sale or code.
 - **Revoke access** to a purchase is a second way, not offered for refunded sales **[from Gumroad's source; label unverified]**.
 - Re-enabling a key is possible in the same place **[unverified]**.

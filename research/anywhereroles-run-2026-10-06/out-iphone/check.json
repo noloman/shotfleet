@@ -1,0 +1,870 @@
+{
+ "screenshots": [
+  {
+   "file": "de/iphone-69-01-jobs-list.png",
+   "src": "raw/de/iphone-69-01-jobs-list.png",
+   "sha": "601ff9c83ce4",
+   "lang": "de",
+   "chars": 1127,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/iphone-69-02-fit-trust.png",
+   "src": "raw/de/iphone-69-02-fit-trust.png",
+   "sha": "935dee05ffb9",
+   "lang": "de",
+   "chars": 1488,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/iphone-69-03-saved-pipeline.png",
+   "src": "raw/de/iphone-69-03-saved-pipeline.png",
+   "sha": "b743d2b66c14",
+   "lang": "de",
+   "chars": 899,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/iphone-69-04-application-tracker.png",
+   "src": "raw/de/iphone-69-04-application-tracker.png",
+   "sha": "a0cf5f4de062",
+   "lang": "de",
+   "chars": 1264,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/iphone-69-05-weekly-briefing.png",
+   "src": "raw/de/iphone-69-05-weekly-briefing.png",
+   "sha": "fca6d1fe1a23",
+   "lang": "de",
+   "chars": 2060,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/iphone-69-06-paywall.png",
+   "src": "raw/de/iphone-69-06-paywall.png",
+   "sha": "10c1b4b4b918",
+   "lang": "de",
+   "chars": 2957,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-01-jobs-list.png",
+   "src": "raw/en/iphone-69-01-jobs-list.png",
+   "sha": "0bf30e9c1fd7",
+   "lang": "en",
+   "chars": 1019,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-02-fit-trust.png",
+   "src": "raw/en/iphone-69-02-fit-trust.png",
+   "sha": "3af648180c10",
+   "lang": "en",
+   "chars": 1214,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-03-saved-pipeline.png",
+   "src": "raw/en/iphone-69-03-saved-pipeline.png",
+   "sha": "1d7dc2232111",
+   "lang": "en",
+   "chars": 799,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-04-application-tracker.png",
+   "src": "raw/en/iphone-69-04-application-tracker.png",
+   "sha": "30c98dd9ddda",
+   "lang": "en",
+   "chars": 1020,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-05-weekly-briefing.png",
+   "src": "raw/en/iphone-69-05-weekly-briefing.png",
+   "sha": "1459263f199d",
+   "lang": "en",
+   "chars": 1774,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/iphone-69-06-paywall.png",
+   "src": "raw/en/iphone-69-06-paywall.png",
+   "sha": "f14390df850c",
+   "lang": "en",
+   "chars": 2476,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-01-jobs-list.png",
+   "src": "raw/es/iphone-69-01-jobs-list.png",
+   "sha": "145537ecac6a",
+   "lang": "es",
+   "chars": 1114,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-02-fit-trust.png",
+   "src": "raw/es/iphone-69-02-fit-trust.png",
+   "sha": "2cc07cc4f4be",
+   "lang": "es",
+   "chars": 1594,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-03-saved-pipeline.png",
+   "src": "raw/es/iphone-69-03-saved-pipeline.png",
+   "sha": "c67ec3fd076b",
+   "lang": "es",
+   "chars": 964,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-04-application-tracker.png",
+   "src": "raw/es/iphone-69-04-application-tracker.png",
+   "sha": "da95b5816506",
+   "lang": "es",
+   "chars": 1340,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-05-weekly-briefing.png",
+   "src": "raw/es/iphone-69-05-weekly-briefing.png",
+   "sha": "85fb1e5fa5c9",
+   "lang": "es",
+   "chars": 2144,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/iphone-69-06-paywall.png",
+   "src": "raw/es/iphone-69-06-paywall.png",
+   "sha": "6d1943391de9",
+   "lang": "es",
+   "chars": 2947,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-01-jobs-list.png",
+   "src": "raw/fr/iphone-69-01-jobs-list.png",
+   "sha": "a3714910da5e",
+   "lang": "fr",
+   "chars": 1177,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-02-fit-trust.png",
+   "src": "raw/fr/iphone-69-02-fit-trust.png",
+   "sha": "df6a571250da",
+   "lang": "fr",
+   "chars": 1511,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-03-saved-pipeline.png",
+   "src": "raw/fr/iphone-69-03-saved-pipeline.png",
+   "sha": "d5b193aca5db",
+   "lang": "fr",
+   "chars": 990,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-04-application-tracker.png",
+   "src": "raw/fr/iphone-69-04-application-tracker.png",
+   "sha": "b8564f752869",
+   "lang": "fr",
+   "chars": 1299,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-05-weekly-briefing.png",
+   "src": "raw/fr/iphone-69-05-weekly-briefing.png",
+   "sha": "2b4be57c78f2",
+   "lang": "fr",
+   "chars": 2261,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/iphone-69-06-paywall.png",
+   "src": "raw/fr/iphone-69-06-paywall.png",
+   "sha": "7f3b462b3e02",
+   "lang": "fr",
+   "chars": 3094,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-01-jobs-list.png",
+   "src": "raw/hi/iphone-69-01-jobs-list.png",
+   "sha": "d0612f311f97",
+   "lang": "hi",
+   "chars": 1097,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-02-fit-trust.png",
+   "src": "raw/hi/iphone-69-02-fit-trust.png",
+   "sha": "8f9889a702d2",
+   "lang": "hi",
+   "chars": 1408,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-03-saved-pipeline.png",
+   "src": "raw/hi/iphone-69-03-saved-pipeline.png",
+   "sha": "931c352c4bac",
+   "lang": "hi",
+   "chars": 868,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-04-application-tracker.png",
+   "src": "raw/hi/iphone-69-04-application-tracker.png",
+   "sha": "aeeb630422b3",
+   "lang": "hi",
+   "chars": 1139,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-05-weekly-briefing.png",
+   "src": "raw/hi/iphone-69-05-weekly-briefing.png",
+   "sha": "55007eee35f8",
+   "lang": "hi",
+   "chars": 1787,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hi/iphone-69-06-paywall.png",
+   "src": "raw/hi/iphone-69-06-paywall.png",
+   "sha": "396e1ebbe4ab",
+   "lang": "hi",
+   "chars": 2573,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-01-jobs-list.png",
+   "src": "raw/id/iphone-69-01-jobs-list.png",
+   "sha": "7d2c583acbc6",
+   "lang": "id",
+   "chars": 1079,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-02-fit-trust.png",
+   "src": "raw/id/iphone-69-02-fit-trust.png",
+   "sha": "f4061171f4ad",
+   "lang": "id",
+   "chars": 1510,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-03-saved-pipeline.png",
+   "src": "raw/id/iphone-69-03-saved-pipeline.png",
+   "sha": "6ea3583e3794",
+   "lang": "id",
+   "chars": 872,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-04-application-tracker.png",
+   "src": "raw/id/iphone-69-04-application-tracker.png",
+   "sha": "2bbe7a427128",
+   "lang": "id",
+   "chars": 1205,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-05-weekly-briefing.png",
+   "src": "raw/id/iphone-69-05-weekly-briefing.png",
+   "sha": "9bf5398d8562",
+   "lang": "id",
+   "chars": 1959,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "id/iphone-69-06-paywall.png",
+   "src": "raw/id/iphone-69-06-paywall.png",
+   "sha": "9435ea800f1a",
+   "lang": "id",
+   "chars": 2893,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-01-jobs-list.png",
+   "src": "raw/it/iphone-69-01-jobs-list.png",
+   "sha": "d4939ee5550c",
+   "lang": "it",
+   "chars": 1106,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-02-fit-trust.png",
+   "src": "raw/it/iphone-69-02-fit-trust.png",
+   "sha": "d63c482b8f7b",
+   "lang": "it",
+   "chars": 1535,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-03-saved-pipeline.png",
+   "src": "raw/it/iphone-69-03-saved-pipeline.png",
+   "sha": "d526dfabd21b",
+   "lang": "it",
+   "chars": 900,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-04-application-tracker.png",
+   "src": "raw/it/iphone-69-04-application-tracker.png",
+   "sha": "b95b93ae4691",
+   "lang": "it",
+   "chars": 1255,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-05-weekly-briefing.png",
+   "src": "raw/it/iphone-69-05-weekly-briefing.png",
+   "sha": "61c3d55d81b4",
+   "lang": "it",
+   "chars": 2126,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "it/iphone-69-06-paywall.png",
+   "src": "raw/it/iphone-69-06-paywall.png",
+   "sha": "84af4495af98",
+   "lang": "it",
+   "chars": 2992,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-01-jobs-list.png",
+   "src": "raw/ja/iphone-69-01-jobs-list.png",
+   "sha": "fb659e667faf",
+   "lang": "ja",
+   "chars": 880,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-02-fit-trust.png",
+   "src": "raw/ja/iphone-69-02-fit-trust.png",
+   "sha": "7dd91c87c979",
+   "lang": "ja",
+   "chars": 895,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-03-saved-pipeline.png",
+   "src": "raw/ja/iphone-69-03-saved-pipeline.png",
+   "sha": "8b489e9a3c87",
+   "lang": "ja",
+   "chars": 615,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-04-application-tracker.png",
+   "src": "raw/ja/iphone-69-04-application-tracker.png",
+   "sha": "ebd8295e5361",
+   "lang": "ja",
+   "chars": 783,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ja/iphone-69-05-weekly-briefing.png",
+   "sha": "e6fca7ad896d",
+   "lang": "ja",
+   "chars": 1036,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ja/iphone-69-06-paywall.png",
+   "src": "raw/ja/iphone-69-06-paywall.png",
+   "sha": "222ecaa6ae45",
+   "lang": "ja",
+   "chars": 1440,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-01-jobs-list.png",
+   "src": "raw/ko/iphone-69-01-jobs-list.png",
+   "sha": "7b223d3da36f",
+   "lang": "ko",
+   "chars": 870,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-02-fit-trust.png",
+   "src": "raw/ko/iphone-69-02-fit-trust.png",
+   "sha": "cb6255c9d49e",
+   "lang": "ko",
+   "chars": 838,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-03-saved-pipeline.png",
+   "src": "raw/ko/iphone-69-03-saved-pipeline.png",
+   "sha": "e8ffba303d9b",
+   "lang": "ko",
+   "chars": 632,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-04-application-tracker.png",
+   "src": "raw/ko/iphone-69-04-application-tracker.png",
+   "sha": "94d4ac9d2ac9",
+   "lang": "ko",
+   "chars": 741,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ko/iphone-69-05-weekly-briefing.png",
+   "sha": "8d6de7124f8d",
+   "lang": "ko",
+   "chars": 1125,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ko/iphone-69-06-paywall.png",
+   "src": "raw/ko/iphone-69-06-paywall.png",
+   "sha": "26731bc6733a",
+   "lang": "ko",
+   "chars": 1505,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-01-jobs-list.png",
+   "src": "raw/nl/iphone-69-01-jobs-list.png",
+   "sha": "12d892824df2",
+   "lang": "nl",
+   "chars": 1120,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-02-fit-trust.png",
+   "src": "raw/nl/iphone-69-02-fit-trust.png",
+   "sha": "12908f952405",
+   "lang": "nl",
+   "chars": 1510,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-03-saved-pipeline.png",
+   "src": "raw/nl/iphone-69-03-saved-pipeline.png",
+   "sha": "1a5876f69504",
+   "lang": "nl",
+   "chars": 904,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-04-application-tracker.png",
+   "src": "raw/nl/iphone-69-04-application-tracker.png",
+   "sha": "99947f7b49dc",
+   "lang": "nl",
+   "chars": 1170,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-05-weekly-briefing.png",
+   "src": "raw/nl/iphone-69-05-weekly-briefing.png",
+   "sha": "cffa79c7ec5c",
+   "lang": "nl",
+   "chars": 2054,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/iphone-69-06-paywall.png",
+   "src": "raw/nl/iphone-69-06-paywall.png",
+   "sha": "a3f19c72d09b",
+   "lang": "nl",
+   "chars": 2900,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-01-jobs-list.png",
+   "src": "raw/pl/iphone-69-01-jobs-list.png",
+   "sha": "f94840aa1913",
+   "lang": "pl",
+   "chars": 1101,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-02-fit-trust.png",
+   "src": "raw/pl/iphone-69-02-fit-trust.png",
+   "sha": "d60afe37291c",
+   "lang": "pl",
+   "chars": 1498,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-03-saved-pipeline.png",
+   "src": "raw/pl/iphone-69-03-saved-pipeline.png",
+   "sha": "18dd8e06a04e",
+   "lang": "pl",
+   "chars": 909,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-04-application-tracker.png",
+   "src": "raw/pl/iphone-69-04-application-tracker.png",
+   "sha": "6d32a96edff3",
+   "lang": "pl",
+   "chars": 1237,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-05-weekly-briefing.png",
+   "src": "raw/pl/iphone-69-05-weekly-briefing.png",
+   "sha": "73c98107f554",
+   "lang": "pl",
+   "chars": 2076,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/iphone-69-06-paywall.png",
+   "src": "raw/pl/iphone-69-06-paywall.png",
+   "sha": "1e3acda0ceb4",
+   "lang": "pl",
+   "chars": 3029,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-01-jobs-list.png",
+   "src": "raw/pt-BR/iphone-69-01-jobs-list.png",
+   "sha": "b2ca51aaa310",
+   "lang": "pt-BR",
+   "chars": 1112,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-02-fit-trust.png",
+   "src": "raw/pt-BR/iphone-69-02-fit-trust.png",
+   "sha": "30010986c89e",
+   "lang": "pt-BR",
+   "chars": 1598,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-03-saved-pipeline.png",
+   "src": "raw/pt-BR/iphone-69-03-saved-pipeline.png",
+   "sha": "26de3b7b8325",
+   "lang": "pt-BR",
+   "chars": 924,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-04-application-tracker.png",
+   "src": "raw/pt-BR/iphone-69-04-application-tracker.png",
+   "sha": "0a3e7e6af839",
+   "lang": "pt-BR",
+   "chars": 1322,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-05-weekly-briefing.png",
+   "src": "raw/pt-BR/iphone-69-05-weekly-briefing.png",
+   "sha": "a5ea1bb663ef",
+   "lang": "pt-BR",
+   "chars": 2031,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt-BR/iphone-69-06-paywall.png",
+   "src": "raw/pt-BR/iphone-69-06-paywall.png",
+   "sha": "978c59ea0c85",
+   "lang": "pt-BR",
+   "chars": 2905,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-01-jobs-list.png",
+   "src": "raw/ro/iphone-69-01-jobs-list.png",
+   "sha": "e77fe3edbd41",
+   "lang": "ro",
+   "chars": 1135,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-02-fit-trust.png",
+   "src": "raw/ro/iphone-69-02-fit-trust.png",
+   "sha": "9dbd592b93b0",
+   "lang": "ro",
+   "chars": 1551,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-03-saved-pipeline.png",
+   "src": "raw/ro/iphone-69-03-saved-pipeline.png",
+   "sha": "a9c1c2897230",
+   "lang": "ro",
+   "chars": 926,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-04-application-tracker.png",
+   "src": "raw/ro/iphone-69-04-application-tracker.png",
+   "sha": "59658c016f18",
+   "lang": "ro",
+   "chars": 1184,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ro/iphone-69-05-weekly-briefing.png",
+   "sha": "153b94e3880b",
+   "lang": "ro",
+   "chars": 2072,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ro/iphone-69-06-paywall.png",
+   "src": "raw/ro/iphone-69-06-paywall.png",
+   "sha": "aaddd3ce7fac",
+   "lang": "ro",
+   "chars": 2993,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-01-jobs-list.png",
+   "src": "raw/ru/iphone-69-01-jobs-list.png",
+   "sha": "6d6f127e88ee",
+   "lang": "ru",
+   "chars": 1136,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-02-fit-trust.png",
+   "src": "raw/ru/iphone-69-02-fit-trust.png",
+   "sha": "fc61f05ea3f5",
+   "lang": "ru",
+   "chars": 1566,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-03-saved-pipeline.png",
+   "src": "raw/ru/iphone-69-03-saved-pipeline.png",
+   "sha": "b1f99f2681b5",
+   "lang": "ru",
+   "chars": 910,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-04-application-tracker.png",
+   "src": "raw/ru/iphone-69-04-application-tracker.png",
+   "sha": "9eabc768a35e",
+   "lang": "ru",
+   "chars": 1321,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-05-weekly-briefing.png",
+   "src": "raw/ru/iphone-69-05-weekly-briefing.png",
+   "sha": "aeba831f2c85",
+   "lang": "ru",
+   "chars": 2083,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ru/iphone-69-06-paywall.png",
+   "src": "raw/ru/iphone-69-06-paywall.png",
+   "sha": "56ddda7860de",
+   "lang": "ru",
+   "chars": 2968,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-01-jobs-list.png",
+   "src": "raw/sv/iphone-69-01-jobs-list.png",
+   "sha": "6f3cc7453f6b",
+   "lang": "sv",
+   "chars": 1080,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-02-fit-trust.png",
+   "src": "raw/sv/iphone-69-02-fit-trust.png",
+   "sha": "ddad03e9d418",
+   "lang": "sv",
+   "chars": 1456,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-03-saved-pipeline.png",
+   "src": "raw/sv/iphone-69-03-saved-pipeline.png",
+   "sha": "d91b3dd7aca3",
+   "lang": "sv",
+   "chars": 841,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-04-application-tracker.png",
+   "src": "raw/sv/iphone-69-04-application-tracker.png",
+   "sha": "c62766a3f4b7",
+   "lang": "sv",
+   "chars": 1106,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-05-weekly-briefing.png",
+   "src": "raw/sv/iphone-69-05-weekly-briefing.png",
+   "sha": "c5e04ac8e640",
+   "lang": "sv",
+   "chars": 1894,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "sv/iphone-69-06-paywall.png",
+   "src": "raw/sv/iphone-69-06-paywall.png",
+   "sha": "2a2001fc46ca",
+   "lang": "sv",
+   "chars": 2642,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-01-jobs-list.png",
+   "src": "raw/tr/iphone-69-01-jobs-list.png",
+   "sha": "7b2041dba647",
+   "lang": "tr",
+   "chars": 1076,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-02-fit-trust.png",
+   "src": "raw/tr/iphone-69-02-fit-trust.png",
+   "sha": "9776337ffe67",
+   "lang": "tr",
+   "chars": 1502,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-03-saved-pipeline.png",
+   "src": "raw/tr/iphone-69-03-saved-pipeline.png",
+   "sha": "ff92590a437f",
+   "lang": "tr",
+   "chars": 842,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-04-application-tracker.png",
+   "src": "raw/tr/iphone-69-04-application-tracker.png",
+   "sha": "ee0824b62475",
+   "lang": "tr",
+   "chars": 1184,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-05-weekly-briefing.png",
+   "src": "raw/tr/iphone-69-05-weekly-briefing.png",
+   "sha": "72910ee0a1c2",
+   "lang": "tr",
+   "chars": 1882,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "tr/iphone-69-06-paywall.png",
+   "src": "raw/tr/iphone-69-06-paywall.png",
+   "sha": "26dcaecf56be",
+   "lang": "tr",
+   "chars": 2584,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-01-jobs-list.png",
+   "src": "raw/uk/iphone-69-01-jobs-list.png",
+   "sha": "b11dc9a72610",
+   "lang": "uk",
+   "chars": 1162,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-02-fit-trust.png",
+   "src": "raw/uk/iphone-69-02-fit-trust.png",
+   "sha": "7563bf88c632",
+   "lang": "uk",
+   "chars": 1482,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-03-saved-pipeline.png",
+   "src": "raw/uk/iphone-69-03-saved-pipeline.png",
+   "sha": "2163c654ae6a",
+   "lang": "uk",
+   "chars": 911,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-04-application-tracker.png",
+   "src": "raw/uk/iphone-69-04-application-tracker.png",
+   "sha": "1bbf3e6333e7",
+   "lang": "uk",
+   "chars": 1306,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-05-weekly-briefing.png",
+   "src": "raw/uk/iphone-69-05-weekly-briefing.png",
+   "sha": "8b932149c2ba",
+   "lang": "uk",
+   "chars": 2063,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/iphone-69-06-paywall.png",
+   "src": "raw/uk/iphone-69-06-paywall.png",
+   "sha": "a8000278aa17",
+   "lang": "uk",
+   "chars": 2975,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-01-jobs-list.png",
+   "src": "raw/zh-Hans/iphone-69-01-jobs-list.png",
+   "sha": "da098db54677",
+   "lang": "zh-Hans",
+   "chars": 820,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-02-fit-trust.png",
+   "src": "raw/zh-Hans/iphone-69-02-fit-trust.png",
+   "sha": "55992b5bff51",
+   "lang": "zh-Hans",
+   "chars": 663,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-03-saved-pipeline.png",
+   "src": "raw/zh-Hans/iphone-69-03-saved-pipeline.png",
+   "sha": "2d5be9862f03",
+   "lang": "zh-Hans",
+   "chars": 540,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-04-application-tracker.png",
+   "src": "raw/zh-Hans/iphone-69-04-application-tracker.png",
+   "sha": "0cdafe3f84c8",
+   "lang": "zh-Hans",
+   "chars": 626,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-05-weekly-briefing.png",
+   "src": "raw/zh-Hans/iphone-69-05-weekly-briefing.png",
+   "sha": "bc25f711d9d7",
+   "lang": "zh-Hans",
+   "chars": 840,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/iphone-69-06-paywall.png",
+   "src": "raw/zh-Hans/iphone-69-06-paywall.png",
+   "sha": "81f010e0d982",
+   "lang": "zh-Hans",
+   "chars": 1118,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": []
+}

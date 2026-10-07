@@ -14,6 +14,7 @@
 <meta property="og:url" content="https://shotfleet.com/demo">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/demo">
 <meta name="color-scheme" content="light dark">
@@ -22,6 +23,27 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Home",
+   "item": "https://shotfleet.com/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "See it work",
+   "item": "https://shotfleet.com/demo"
+  }
+ ]
+}
+</script>
+<link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -139,6 +161,7 @@
       <li><b>2026-10-03 and 2026-10-04, the KotlinConf app (Compose Multiplatform).</b> Android, German and English: 6 screenshots, 0 problems. On iOS its first screen came out blank (it draws after its text is readable) and check flagged it; a clean iOS run is still to do. <span class="note">Record: research/frameworks.md sections 15 to 17, research/real-apps-2026-10-04/</span></li>
       <li><b>2026-10-04 and 2026-10-05, Microsoft's .NET MAUI localization sample.</b> Five languages on iOS and two on Android, one screen each: 0 untranslated selectors and 0 problems. Not yet a real MAUI app or a Release build. <span class="note">Record: research/frameworks.md section 5, research/experiments-2026-10-04/C/ and C2/</span></li>
       <li><b>2026-10-04 and 2026-10-05, a small Capacitor test app.</b> The per-app language reached its web view on iOS 26.4, iOS 18.6 and Android 16. Maestro read the web view's text on iOS but not on Android. This tested the language only, not a full shotfleet run. <span class="note">Record: research/frameworks.md section 7, research/experiments-2026-10-04/B/ and B2/</span></li>
+      <li><b>2026-10-06, AnywhereRoles, my app.</b> shotfleet 0.1.4, a full run on both platforms: Android, 15 languages × 8 screens = 120 screenshots on 1 emulator, 0 retries; iPhone, 18 languages × 6 screens = 108 screenshots on 2 simulators, 3 languages retried once. Check found 0 problems in both. Before it, check on the app’s old Google Play screenshots found 127 problems: 103 translated captions over English screens, 15 false “missing” lines from a 0.1.4 bug with fastlane supply’s file names (fixed in 0.1.6), and 9 others. Some frames are on the <a href="/#showcase">home page</a>. <span class="note">Record: research/anywhereroles-run-2026-10-06/ (run.json and check.json of each run, the console logs and the run report’s findings)</span></li>
     </ul>
 
     <h3>New in 0.1.3</h3>
@@ -151,7 +174,7 @@
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 <script src="/ga.js" defer></script>

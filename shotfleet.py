@@ -16,8 +16,8 @@ if sys.version_info < (3, 11):
     print(f"shotfleet needs Python 3.11 or newer; this is {sys.version.split()[0]} ({sys.executable}).\n"
           "Install one (macOS: brew install python; Linux: your package manager).", file=sys.stderr)
     sys.exit(2)
-import base64, contextlib, csv, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket, struct, zlib
-import plistlib, platform as host_platform, ssl, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import base64, contextlib, csv, datetime, functools, glob, hashlib, html, io, json, os, re, shlex, shutil, signal, socket, struct, zlib
+import http.client, plistlib, platform as host_platform, ssl, stat, subprocess, tarfile, tempfile, threading, time, tomllib, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
 # everything is imported up front: a Homebrew Python upgrade mid-run deletes the old library folder (seen 2026-10-01)
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -25,10 +25,35 @@ from pathlib import Path
 from typing import NamedTuple, Optional
 
 HERE = Path(__file__).resolve().parent
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 
 class Fail(Exception):
     """A user-facing error: printed as one line, no traceback."""
+
+# A locale becomes a folder name (out/raw/<locale>, fastlane listings) and an argument on the device: letters, digits, - and _ only.
+# Translation files and configs can come from someone else's repo, so "../x" or "de;rm" must never get that far.
+SAFE_LOCALE = re.compile(r"[A-Za-z0-9]{1,16}(?:[-_][A-Za-z0-9]{1,16}){0,5}")
+
+def bad_locale_text(lp, where):
+    return f"{lp!r} in {where} is not a language code (letters, digits, - and _ only, e.g. de, pt-BR, zh-Hans)"
+
+def check_locales(locales, where):
+    """Refuse a locale that could not safely be a folder name: the command line, the MCP `locales` argument, the config."""
+    for lp in locales:
+        if not isinstance(lp, str) or not SAFE_LOCALE.fullmatch(lp): raise Fail(bad_locale_text(lp, where))
+    return locales
+
+def safe_strings(strings, where):
+    """Drop the languages a translation file or a build names with something that isn't a language code, with a note."""
+    for lp in [lp for lp in strings if not SAFE_LOCALE.fullmatch(str(lp))]:
+        print(f"note: skipped {bad_locale_text(lp, where)}", file=sys.stderr)
+    return {lp: t for lp, t in strings.items() if SAFE_LOCALE.fullmatch(str(lp))}
+
+def inside(root, *parts):
+    """root/parts, refused when it resolves outside root: the last guard before anything under the output folder is deleted or written."""
+    p = Path(root, *parts)
+    if not p.resolve().is_relative_to(Path(root).resolve()): raise Fail(f"refusing to touch {p}: it is outside {root}")
+    return p
 
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
@@ -36,10 +61,14 @@ KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "b
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
-TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect")  # the optional tables [hooks], [overrides.<locale>], [inputs] and [expect.<screenshot>] are documented in the README
+TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not")
 EXAMPLE_SETUP = {"shell": '"setprop debug.myapp.demo 1"', "simctl": '"ui $UDID appearance dark"'}
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
+# [capture] (iOS): run the team's own XCUITest screenshot tests instead of a Maestro flow (research/byoc-ios-experiment-2026-10-06.md)
+CAPTURE_KEYS = {"build": str, "xctestrun": str, "only_testing": list, "screenshots": str, "timeout": int}
+CAPTURE_SHOTS = ("attachments", "fastlane", "auto")
+CAPTURE_TIMEOUT_S = 900
 
 def check_tables(doc, name):
     """Refuse an unknown top-level table (a typo like [hook] would otherwise be ignored silently) and malformed hooks/overrides."""
@@ -65,6 +94,28 @@ def check_tables(doc, name):
         if not isinstance(table, dict) or not all(isinstance(v, str) for v in table.values()):
             raise Fail(f"[overrides.{locale}] in {name} should map English texts to text in that language, e.g. \"Next\" = \"İleri\"")
     check_expect(doc.get("expect", {}), name)
+    if "capture" in doc: check_capture(doc["capture"], name)
+
+def check_capture(cap, name):
+    """[capture] build/xctestrun/only_testing/screenshots/timeout: refuse typos, wrong types and missing settings before anything builds."""
+    import difflib
+    example = ("e.g.\n  [capture]\n  build = \"xcodebuild build-for-testing -scheme MyApp -destination 'generic/platform=iOS Simulator' "
+               "-derivedDataPath .shotfleet/build\"\n  xctestrun = \".shotfleet/build/Build/Products/*.xctestrun\"")
+    if not isinstance(cap, dict): raise Fail(f"[capture] in {name} should be a table, {example}")
+    words = {str: "string", int: "whole number", list: "list"}
+    for key, value in cap.items():
+        if key not in CAPTURE_KEYS:
+            near = difflib.get_close_matches(key, CAPTURE_KEYS, n=1)
+            raise Fail(f"[capture] in {name} has an unknown setting '{key}'" + (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(CAPTURE_KEYS)}"))
+        if not isinstance(value, CAPTURE_KEYS[key]) or isinstance(value, bool):
+            raise Fail(f"[capture] {key} in {name} should be a {words[CAPTURE_KEYS[key]]}, not {value!r}")
+    for key in ("build", "xctestrun"):
+        if not cap.get(key, "").strip(): raise Fail(f"[capture] in {name} is missing {key}, {example}")
+    if not all(isinstance(t, str) and t.strip() for t in cap.get("only_testing", [])):
+        raise Fail(f"[capture] only_testing in {name} should be a list of test names, e.g. only_testing = [\"MyAppUITests/ScreenshotTests\"]")
+    if cap.get("screenshots", "auto") not in CAPTURE_SHOTS:
+        raise Fail(f"[capture] screenshots in {name} should be \"attachments\" (XCTAttachment), \"fastlane\" (SnapshotHelper) or \"auto\" (both), not {cap['screenshots']!r}")
+    if cap.get("timeout", 1) < 1: raise Fail(f"[capture] timeout in {name} should be 1 or more seconds, not {cap['timeout']}")
 
 def check_expect(expect, name):
     """[expect.<screenshot>] any/all/not = ["text", ...], with [expect.<screenshot>.<locale>] for one language: refuse typos."""
@@ -128,6 +179,12 @@ def check_section(cfg, platform, name):
     for key in ("locales", "device_types", "devices", "strings"):
         if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
             raise Fail(f"[{platform}] {key} in {name} should be a list of strings, e.g. {key} = [\"de\", \"ja\"]")
+    check_locales(cfg.get("locales", []) + ([cfg["base_locale"]] if "base_locale" in cfg else []), f"[{platform}] in {name}")
+    if "package" in cfg and not re.fullmatch(r"[A-Za-z0-9_.]+", cfg["package"]):  # it goes into `adb shell` commands: no shell characters
+        raise Fail(f"[{platform}] package in {name} should be an Android application id like com.example.app, not {cfg['package']!r}")
+    for key in ("avd", "avd_tablet", "avd_tablet-7"):  # a folder name under ~/.android/avd and an emulator argument
+        if key in cfg and (not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]*", cfg[key]) or ".." in cfg[key]):
+            raise Fail(f"[{platform}] {key} in {name} should be an emulator name (letters, digits, . _ -), not {cfg[key]!r}")
     if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
         raise Fail(f"[{platform}] locales in {name} is empty. Remove the line to capture every language the app ships, or list some: locales = [\"de\", \"ja\"]")
     for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
@@ -147,18 +204,24 @@ def load_config(config_path, platform=None):
     if platform not in doc: raise Fail(f"{cfg_path.name} has no [{platform}] section")
     cfg = doc[platform]
     check_section(cfg, platform, cfg_path.name)
+    if "capture" in doc and "ios" not in doc:
+        raise Fail(f"[capture] in {cfg_path.name} runs your XCUITest tests on iOS simulators, so it needs an [ios] section (Android still uses a Maestro flow)")
+    capture = doc.get("capture") if platform == "ios" else None
+    if capture and "flow" in cfg:
+        raise Fail(f"{cfg_path.name} has both flow = in [ios] and a [capture] table. Use one: a Maestro flow, or your own XCUITest tests in [capture]")
+    cfg["_capture"] = capture
     cfg["_config"], cfg["_hooks"], cfg["_overrides"] = str(cfg_path), doc.get("hooks", {}), doc.get("overrides", {})
     cfg["_inputs"], cfg["_expect"] = doc.get("inputs", {}), doc.get("expect", {})
-    cfg.setdefault("flow", "flow.yaml")
+    if not capture: cfg.setdefault("flow", "flow.yaml")
     cfg.setdefault("out", "out" if len(platforms) == 1 else f"out-{platform}")  # two platforms must not share a folder
-    missing = [k for k in REQUIRED[platform] if not cfg.get(k)]
+    missing = [k for k in REQUIRED[platform] if not cfg.get(k) and not capture]  # capture: the app is found next to the .xctestrun after the build
     if missing:
         raise Fail(f"[{platform}] in {cfg_path.name} is missing: {', '.join(missing)}")
     path = lambda p: Path(os.path.normpath(cfg_path.parent / Path(p).expanduser()))  # absolute/~ paths win, others are relative to the config; no `..` left in the path
-    flow = path(cfg["flow"])
-    if not flow.is_file():
+    if not capture and not (flow := path(cfg["flow"])).is_file():
         raise Fail(f"flow file not found: {flow}. `shotfleet init` writes a starter flow")
-    if platform == "ios":
+    if platform == "ios" and capture and not cfg.get("app"): pass
+    elif platform == "ios":
         app = path(cfg["app"])
         if not (app / "Info.plist").is_file():
             if app.exists() and app.suffix != ".app": raise Fail(f"{app} isn't a simulator app: {not_a_build(app, 'ios')}")
@@ -181,7 +244,7 @@ def load_config(config_path, platform=None):
         cfg["package"] = cfg.get("package") or (m and m.group(1))
         if not cfg["package"]: raise Fail(f"can't read the package name of {apk.name}; set package in the config")
         cfg["apk"] = str(apk)
-    if not maestro_cmd():
+    if not capture and not maestro_cmd():
         raise Fail("Maestro isn't installed. Run shotfleet doctor --fix, or install it with: curl -Ls https://get.maestro.mobile.dev | bash")
     return platform, cfg, path
 # lproj code -> App Store Connect / fastlane locale
@@ -360,7 +423,7 @@ def load_strings(res_dir):
         for k in keys - base.keys():
             if "#" in k: continue  # plural forms (few, many) English doesn't have
             base[k] = k.split(":", 1)[1] if "/" in k.split(":", 1)[0] and ":" in k else k
-    return out
+    return safe_strings(out, res_dir.name)
 
 def stringsdict_forms(d):
     """{key#form: text} for every plural/device/width form in a .stringsdict, e.g. items#one = "1 item".
@@ -719,7 +782,7 @@ def load_strings_files(patterns, base="en"):
             for k, v in t.items():  # common.json and settings.json may both define "title": keep both, the later one namespaced
                 if k in have and have[k] != v: have[f"{Path(f).stem}:{k}"] = v
                 else: have[k] = v
-    return {lp: t for lp, t in out.items() if t}
+    return safe_strings({lp: t for lp, t in out.items() if t}, "the translation files")
 
 def unescape_android(v):
     """Android resource escapes: \\" \\' \\n \\t \\@ \\? \\uXXXX."""
@@ -759,11 +822,11 @@ def load_strings_apk(apk, base="en"):
                 out.setdefault(loc, {})[name] = unescape_android(m.group(2))
         elif not line.startswith("      "):
             name = None
-    if not zipfile.is_zipfile(apk): return out
+    if not zipfile.is_zipfile(apk): return safe_strings(out, Path(apk).name)
     with zipfile.ZipFile(apk) as z:  # Compose Multiplatform keeps its strings in assets, not resources.arsc
         for n in z.namelist():
             if n.endswith(".cvr"): add_cvr(out, n, z.read(n).decode("utf-8", "replace"), base)
-    return out
+    return safe_strings(out, Path(apk).name)
 
 def partly_translated(strings, base="en", min_coverage=0.5):
     """[(locale, percent)] for languages the app has some of its own strings in, but too few to count as shipped:
@@ -1087,6 +1150,11 @@ def flow_mapping_lines(text, indent=4):
         return lines
     return emit(tree, indent)
 
+def apple_locale(lproj):
+    """The AppleLocale that goes with an app language: number and date formats follow the store locale (de -> de_DE, zh-Hans -> zh_CN)."""
+    store = store_code(lproj, APP_STORE) or lproj
+    return {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
+
 def localize_flow(flow, lproj, shots_dir, env=None):
     """Make a translated flow self-contained for one locale.
 
@@ -1094,9 +1162,7 @@ def localize_flow(flow, lproj, shots_dir, env=None):
     any flow to any device. So the language travels with the flow, as launch arguments, not with
     the simulator.
     """
-    store = store_code(lproj, APP_STORE) or lproj  # number/date formats follow the store locale
-    locale = {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
-    args = [f'      AppleLanguages: "({lproj})"', f'      AppleLocale: "{locale}"']
+    args = [f'      AppleLanguages: "({lproj})"', f'      AppleLocale: "{apple_locale(lproj)}"']
 
     def launch(clear, opts=()):
         """A launchApp step with the user's own options (permissions, appId...) plus the language arguments."""
@@ -1164,6 +1230,7 @@ SIM_TIMEOUT_S, SIM_BOOT_TIMEOUT_S = 300, 900  # a wedged simulator (CoreSimulato
 SIM_QUICK_TIMEOUT_S = 60
 
 class Sim:
+    name = None  # make_pool sets it: SnapshotHelper names its files after the simulator
     def __init__(self, udid): self.udid = udid
     def run(self, *args, check=True):
         t = {"bootstatus": SIM_BOOT_TIMEOUT_S, "uninstall": SIM_QUICK_TIMEOUT_S, "terminate": SIM_QUICK_TIMEOUT_S}.get(args[0], SIM_TIMEOUT_S)  # a first boot on a loaded Mac can take minutes
@@ -1223,6 +1290,7 @@ def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
     or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
     A failing command is a Fail (exit 2) that prints it."""
+    if commands: refuse_config_commands(f"[{'ios' if kind == 'simctl' else 'android'}] {kind}")
     for cmd in commands:
         try:
             if kind == "simctl":
@@ -1251,7 +1319,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         if not udid:  # e.g. an older Xcode that has no iPhone 17 Pro Max: say why, and where the valid names are
             raise RuntimeError(f"could not create simulator {name} ({device_type}, {runtime})" + (f": {err}" if err else "") +
                                ". Set device_type (valid ones: xcrun simctl list devicetypes) or runtime in the config")
-        s = Sim(udid)
+        s = Sim(udid); s.name = name
         OUR_SIMS.add(udid)  # at once: a bootstatus timeout on the 2nd of 4 must still shut the other booted ones down
         s.run("boot", udid, check=False)  # already-booted is fine
         pool.append(s)
@@ -1542,8 +1610,12 @@ def capacity_warn(cfg, want, platform, using=None):
     r = read_capacity(platform, cfg.get("sim_prefix", "shotfleet"))
     if m := capacity_message(plan_capacity(want, platform, r), want, r, using): print("warning: " + m, flush=True)
 
-def overload_note(want, n):
-    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out."""
+SLOW_SIM_ERRORS = ("Unknown error", "Unable to clear state")
+
+def overload_note(want, n, errors=()):
+    """Why failures on a loaded Mac are probably not the app's: slow simulators time Maestro's simctl calls out.
+    Only when a failed flow's error is one of SLOW_SIM_ERRORS: a plain assertion failure is the flow's or the app's, not the Mac's."""
+    if not any(e in (err or "") for err in errors for e in SLOW_SIM_ERRORS): return ""
     level = memory_pressure()
     if n >= want and level not in ("2", "4"): return ""
     return ("note: this Mac was short of memory" + (f" (used {n} simulators instead of {want})" if n < want else "")
@@ -1561,6 +1633,84 @@ def flow_parse_note(out):
             return (f"note: Maestro could not read a flow ({m.group(1) if m else 'see the log'}: 'Parsing Failed', {log}). "
                     "Fix that YAML; this is not a slow-simulator problem.\n")
     return ""
+
+LANDSCAPE_HINT = ("Maestro taps at portrait coordinates in iOS landscape (a Maestro issue): capture iPad in portrait, "
+                  "or open the screen with a launch argument or deep link.")
+STEP_LINE = re.compile(r"TestSuiteInteractor\.runFlow\S*: (?:\[shard (\d+)\] )?\s*(.*?) (RUNNING|COMPLETED|FAILED)\s*$")
+FAIL_TEXTS = 12  # visible texts named for a failed flow's last screen
+
+def flow_steps(debug, flow):
+    """(lines, steps) of the maestro.log under `debug` that ran `flow`: steps = [(line index, description, status)] of that flow only.
+    Sharded runs share one log and tag each step line with [shard N]; Maestro's own tap lines carry no tag. ([], []) if no log ran it."""
+    run = re.compile(r"runFlow: (?:\[shard (\d+)\] )?\s*Running flow " + re.escape(flow) + r"\s*$")
+    for log in Path(debug).glob("**/maestro.log"):
+        try: lines = log.read_text(errors="replace").splitlines()
+        except OSError: continue
+        shard = next((m.groups() for l in lines if (m := run.search(l))), None)
+        if shard is None: continue
+        return lines, [(i, m[2], m[3]) for i, l in enumerate(lines) if (m := STEP_LINE.search(l)) and m[1] == shard[0]]
+    return [], []
+
+def landscape_tap_hint(lines, steps, flow_text):
+    """LANDSCAPE_HINT when the log shows Maestro's iOS landscape bug: the flow turned the screen to landscape, Maestro still reports a
+    portrait-sized frame (widthPoints < heightPoints), and the last tap before the failure went to the middle of the element's bounds in
+    that portrait frame (seen: bounds [54,656][141,698], tap (97,677), while the element sat 344 = 1376 - 1032 points off on screen).
+    "" unless all of it is in the log; a tap window that another shard's tap lines make ambiguous gives "" too."""
+    if not re.search(r"setOrientation:\s*(?:\{?\s*orientation:\s*)?['\"]?LANDSCAPE", flow_text or ""): return ""
+    fail = next((i for i, _, st in reversed(steps) if st == "FAILED"), None)
+    turned = next((i for i, d, st in steps if st == "COMPLETED" and d.startswith("Set orientation LANDSCAPE")), None)
+    if fail is None or turned is None or turned > fail: return ""
+    taps = [k for k, (i, d, st) in enumerate(steps) if st == "RUNNING" and d.startswith("Tap on") and turned < i < fail]
+    if not taps: return ""
+    start, end = steps[taps[-1]][0], steps[taps[-1] + 1][0]  # the tap's RUNNING line to this flow's next step line
+    window = lines[start:end]
+    el = [m for l in window if (m := re.search(r"Tapping on element:.*?bounds=\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]", l))]
+    at = [m for l in window if (m := re.search(r"Tapping at \((-?\d+), (-?\d+)\)", l))]
+    size = [m for l in lines[turned:fail] if (m := re.search(r"widthPoints=(\d+), heightPoints=(\d+)", l))]
+    if len(el) != 1 or len(at) != 1 or not size: return ""
+    (x1, y1, x2, y2), (x, y), (w, h) = (map(int, m.groups()) for m in (el[0], at[0], size[-1]))
+    return LANDSCAPE_HINT if w < h and x1 <= x <= x2 and y1 <= y <= y2 and 0 <= x < w and 0 <= y < h else ""
+
+def failed_hierarchy(debug, flow):
+    """The screen hierarchy Maestro saved with the failed step of `flow` (commands json: metadata.error.hierarchyRoot), or None."""
+    for cj in sorted([*Path(debug).glob(f"**/commands-*({flow}).json"), *Path(debug).glob(f"**/{flow}/commands.json")],
+                     key=lambda p: p.stat().st_mtime, reverse=True):
+        try: cmds = json.loads(cj.read_text())
+        except (OSError, ValueError): continue
+        for e in cmds if isinstance(cmds, list) else []:
+            err = (e.get("metadata") or {}).get("error") if isinstance(e, dict) else None
+            if isinstance(err, dict) and isinstance(err.get("hierarchyRoot"), dict): return err["hierarchyRoot"]
+    return None
+
+def screenshot_texts(png):
+    """Text lines macOS text recognition reads on one failure screenshot, for a flow with no saved hierarchy. Cheap or nothing: [] off a Mac,
+    while macOS is compiling its text model (ANECompilerService busy), or when it doesn't answer within 20 s (twice) or the OCR budget."""
+    # ponytail: Mac only; on Linux (Docker, Android) the failure screen's hierarchy is what names its texts
+    try:
+        if not vision_available() or ane_state()[0]: return []
+        with ocr_budget(): got = read_text(ocr_tool(), png, timeout=20, patience=0)
+    except (RuntimeError, OSError, ValueError): return []  # OcrBusy is a RuntimeError
+    return [l.get("text", "") for l in got.get("lines") or []] or str(got.get("text", "")).splitlines()
+
+def failure_details(debug, flow, flow_text="", platform="ios"):
+    """Lines that say where a failed flow stopped: the failing step and its selector as Maestro's log names it, the failure screenshot,
+    up to FAIL_TEXTS texts on that screen (from the hierarchy Maestro saved, else one OCR of the screenshot), and the iOS landscape hint.
+    Called once per failed language, after the retry."""
+    out, (lines, steps) = [], flow_steps(debug, flow)
+    if step := next((d for _, d, st in reversed(steps) if st == "FAILED"), None): out.append(f"failed step: {step[:160]}")
+    pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
+    png = max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
+    if png: out.append(f"failure screenshot: {png}")
+    tree = failed_hierarchy(debug, flow)
+    texts = hierarchy_lines(tree) if tree else []
+    if not texts and png: texts = screenshot_texts(png)
+    texts = [t[:40] for t in dict.fromkeys(" ".join(t.split()) for t in texts) if len(t) > 1][:FAIL_TEXTS]
+    if texts: out.append("on screen: " + " | ".join(texts))
+    if platform == "ios" and (hint := landscape_tap_hint(lines, steps, flow_text)): out.append(hint)
+    return out
+
+def print_failure(debug, flow, flow_text="", platform="ios"):
+    for line in failure_details(debug, flow, flow_text, platform): print(f"     {line}")
 
 # ---------- run ----------
 
@@ -1618,6 +1768,7 @@ def clear_single_run(out):
     shutil.rmtree(out / "raw", ignore_errors=True)
 
 def cmd_run(config_path, only=None, parallel=None, platform=None):
+    if only is not None: check_locales(only, "the languages asked for")
     plats = [platform] if platform else platforms_in(config_path)
     codes = []
     for p in plats:
@@ -1626,6 +1777,22 @@ def cmd_run(config_path, only=None, parallel=None, platform=None):
     return max(codes)
 
 NO_HOOKS = False
+NO_BUILD = False  # `run --no-build`: skip the [capture] build
+CONFIG_COMMANDS = True  # False over MCP without hooks: true: the [capture] build and the [ios] simctl / [android] shell commands don't run
+
+def config_commands(config_path):
+    """Every command a config makes `run` execute, by where it is written: [hooks] (shell), [capture] build (shell),
+    [ios] simctl (xcrun simctl on the Mac) and [android] shell (adb shell on the emulator)."""
+    if not Path(config_path).is_file(): return []  # cmd_run says so
+    _, doc = read_doc(config_path)
+    found = [f"[hooks] {k}" for k in HOOK_EVENTS if doc.get("hooks", {}).get(k)]
+    if doc.get("capture", {}).get("build"): found.append("[capture] build")
+    return found + [f"[{p}] {k}" for p, k in (("ios", "simctl"), ("android", "shell")) if doc.get(p, {}).get(k)]
+
+def refuse_config_commands(what):
+    """The last guard: over MCP without hooks: true, no command from the config runs, even if mcp_call's check missed one."""
+    if not CONFIG_COMMANDS:
+        raise Fail(f"the config's {what} commands only run over MCP when you pass hooks: true")
 
 def run_hook(hooks, event, config, env_extra):
     """Run the user's commands for one event (strings run by /bin/sh in the config's folder, output to stderr).
@@ -1675,6 +1842,7 @@ def capture_platform(platform, cfg, path, only, parallel):
                 codes.append(android_run({**cfg, "device": d}, path, out / d, only, parallel))
             return max(codes)
         return android_run(cfg, path, out, only, parallel)
+    if cfg.get("_capture") and not NO_BUILD: capture_build(cfg["_capture"], cfg["_config"], path(cfg.get("out", "out")).resolve())
     if devices := cfg.get("device_types"):  # iPhone and iPad sets from one flow: out/<device>/ each
         codes = []
         clear_single_run(path(cfg.get("out", "out")).resolve())
@@ -1701,6 +1869,18 @@ def shutdown_sims():
         except subprocess.TimeoutExpired: print(f"note: simulator {udid} did not shut down within 60 s; run `xcrun simctl shutdown {udid}`", file=sys.stderr)
     OUR_SIMS.clear()
 
+def open_lock(path):
+    """A lock file in /tmp, where any user can make files: never opened through a symlink (O_NOFOLLOW), made 0o600, and only used
+    when it is a regular file of this user. Otherwise OSError, and the caller goes on without the lock (as before for any lock error).
+    The name stays the same for every run of this user, so runs from other terminals and sessions still take turns."""
+    fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    st = os.fstat(fd)
+    if not (stat.S_ISREG(st.st_mode) and st.st_uid == os.getuid()):
+        os.close(fd)
+        print(f"note: {path} is not a lock file of yours (another user's, or not a plain file), so this runs without it", file=sys.stderr)
+        raise OSError(f"{path} is not this user's lock file")
+    return os.fdopen(fd, "r+")
+
 USE_DEVICE_LOCK = True  # the tests that run a fake run set this False: they use no device, and two test suites at once must not refuse each other
 
 @contextlib.contextmanager
@@ -1713,7 +1893,7 @@ def device_lock(key):
     try:
         if not USE_DEVICE_LOCK: raise ImportError
         import fcntl
-        f = os.fdopen(os.open(f"/tmp/shotfleet-{key}.lock", os.O_CREAT | os.O_RDWR, 0o666), "r+")
+        f = open_lock(f"/tmp/shotfleet-{key}.lock")
         fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         who = f.read().strip() if f else ""
@@ -1739,11 +1919,20 @@ def ios_run_inner(cfg, path, only, parallel):
     if "device_type" in cfg: cfg["device_type"] = device_type_id(cfg["device_type"])
     if "device_type" not in cfg: cfg["device_type"] = default_device_type()  # an explicit device_type was resolved above and is never changed
     if "runtime" not in cfg: cfg["runtime"] = latest_ios_runtime()  # setdefault would ask xcrun even when the config names one
+    if capture := cfg.get("_capture"):  # the team's own XCUITest bundle: the app under test sits next to the .xctestrun
+        xctestrun = find_xctestrun(capture["xctestrun"], path)
+        if not cfg.get("app"):
+            app = xctestrun_app(xctestrun)
+            if not app or not (app / "Info.plist").is_file():
+                raise Fail(f"can't find the app under test next to {xctestrun}; set app = \"path/to/App.app\" in [ios]")
+            cfg["app"] = str(app)
+        cfg["bundle_id"] = cfg.get("bundle_id") or plist_value(Path(cfg["app"]) / "Info.plist", "CFBundleIdentifier")
+        if not cfg["bundle_id"]: raise Fail(f"can't read the bundle id of {Path(cfg['app']).name}; set bundle_id in [ios]")
     cfg["app"] = str(path(cfg["app"]))
     framework_hint(cfg["app"], "strings" in cfg, path("."))
     # default: the strings compiled into the app under test, so selectors always match the binary
     strings = config_strings(cfg, path) or load_strings(Path(cfg["app"]))
-    flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
+    flow = None if capture else with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
     note_partly_translated(strings, base_locale, only or cfg.get("locales") or None)
@@ -1760,10 +1949,14 @@ def ios_run_inner(cfg, path, only, parallel):
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
+        raw = inside(out, "raw", lp)
+        if capture:
+            shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
+            report["locales"][lp] = {"untranslated_selectors": []}; continue
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
-        shutil.rmtree(out / "raw" / lp, ignore_errors=True); (out / "raw" / lp).mkdir(parents=True)
-        (out / ".work" / "flows" / f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
+        shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
+        inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -1780,11 +1973,11 @@ def ios_run_inner(cfg, path, only, parallel):
     def install(sims):  # each flow's clearState gives every locale a fresh start
         for sim in sims:  # no `simctl terminate`: uninstall stops a running app (Maestro's own iOS clearState is uninstall + install, no terminate)
             sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)
-            sim.run("install", sim.udid, cfg["app"])
+            if not capture: sim.run("install", sim.udid, cfg["app"])  # capture: xcodebuild installs it; the uninstall only proves the simulator answers
     pool[:] = healthy_installs(pool, len(pool), install)
     n = len(pool)
 
-    expected = count_screenshots(flow)
+    expected = None if capture else count_screenshots(flow)  # capture: every screen any language saved (counted after the run)
 
     def batch(lps, attempt):
         """Run these locales in one sharded Maestro process; return {lproj: result}."""
@@ -1829,26 +2022,81 @@ def ios_run_inner(cfg, path, only, parallel):
             out_[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "attempts": attempt}
         return out_
 
+    def capture_step(sim, lp, work):
+        """One language on one simulator: set its language, run the team's tests with xcodebuild, collect what they saved.
+        Returns the error, None when xcodebuild passed (what was saved is judged by capture_result)."""
+        dst, bundle, log = inside(out, "raw", lp), inside(work, f"{lp}.xcresult"), work / f"{lp}.log"
+        shutil.rmtree(dst, ignore_errors=True); dst.mkdir(parents=True)
+        shutil.rmtree(bundle, ignore_errors=True)  # xcodebuild refuses a result bundle that exists
+        error = None
+        try:
+            set_sim_language(sim, lp)
+            sim.run("uninstall", sim.udid, cfg["bundle_id"], check=False)  # a fresh install per language, like a flow's clearState
+            if cache and sim.name:
+                for f in cache.glob(glob.escape(sim.name) + "-*.png"): f.unlink()  # an earlier, interrupted run's files
+            cmd = ["xcodebuild", "test-without-building", "-xctestrun", str(xctestrun_with_language(xctestrun, lp)),
+                   "-destination", f"id={sim.udid}", "-resultBundlePath", str(bundle), *[f"-only-testing:{t}" for t in capture.get("only_testing", [])]]
+            # ponytail: progress is a file changing in the result bundle or a new SnapshotHelper file; a test that writes neither for
+            # stall_s seconds is stopped like a hung simulator. Read xcodebuild's own output if that ever stops a healthy test.
+            r = run_guarded(cmd, timeout=capture.get("timeout", CAPTURE_TIMEOUT_S), stall_s=cfg.get("stall_s", STALL_S),
+                            progress=lambda: max(newest_file(bundle), newest_screenshot(cache) if cache else 0))
+            log.write_text(r.stdout)
+            if r.returncode: error = f"xcodebuild failed (exit {r.returncode}; log: {log})"
+        except subprocess.TimeoutExpired as e:
+            log.write_text(e.output or "")
+            error = (f"no progress for {cfg.get('stall_s', STALL_S)} s, stopped (a hung simulator or test; log: {log})" if getattr(e, "stalled", False)
+                     else f"timed out after {capture.get('timeout', CAPTURE_TIMEOUT_S)} s ([capture] timeout; log: {log})")
+        except RuntimeError as e:  # simctl stopped answering
+            error = str(e)
+        if capture.get("screenshots", "auto") != "fastlane": xcresult_pngs(bundle, dst)
+        if cache and sim.name: fastlane_pngs(cache, sim.name, dst)
+        return error
+
+    def capture_batch(lps, attempt):
+        """Every language once: each simulator takes the next language as soon as it is free (one xcodebuild per simulator at a time)."""
+        work = out / ".work" / "capture" / f"attempt{attempt}"; work.mkdir(parents=True, exist_ok=True)
+        todo, errors, lock = list(lps), {}, threading.Lock()
+        def worker(sim):
+            while True:
+                with lock:
+                    if not todo: return
+                    lp = todo.pop(0)
+                errors[lp] = capture_step(sim, lp, work)
+        k = min(n, len(lps))
+        with ThreadPoolExecutor(k) as ex: list(ex.map(worker, pool[:k]))
+        return {lp: capture_result(out, lp, errors[lp], report["locales"], attempt) for lp in lps}
+
     print(f"capturing {len(report['locales'])} locales on {n} simulators...", flush=True)
     t0 = time.time()
-    final = batch(list(report["locales"]), 1)
-    retry = [lp for lp, r_ in final.items() if not r_["ok"]]
-    if retry:  # simulators and drivers flake; one retry of just the failures is cheap
-        print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
-        for lp in retry: shutil.rmtree(out / "raw" / lp); (out / "raw" / lp).mkdir()
-        # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
-        # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
-        try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
-        except RuntimeError as e:  # none answers any more: keep what the first attempt captured, check it and report the rest as failed (exit 1)
-            print(f"not retrying: {e}", flush=True)
-        else:
-            n = len(pool)
-            final.update(batch(retry, 2))
+    step = capture_batch if capture else batch
+    try:
+        with fastlane_cache() if capture and capture.get("screenshots", "auto") != "attachments" else contextlib.nullcontext() as cache:
+            final = step(list(report["locales"]), 1)
+            retry = [lp for lp, r_ in final.items() if not r_["ok"]]
+            if retry:  # simulators and drivers flake; one retry of just the failures is cheap
+                print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
+                for lp in retry: shutil.rmtree(inside(out, "raw", lp)); (out / "raw" / lp).mkdir()
+                # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
+                # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
+                try: pool[:] = healthy_installs(pool, min(n, len(retry)), install)  # a simulator that stopped answering is left out
+                except RuntimeError as e:  # none answers any more: keep what the first attempt captured, check it and report the rest as failed (exit 1)
+                    print(f"not retrying: {e}", flush=True)
+                else:
+                    n = len(pool)
+                    final.update(step(retry, 2))
+    finally:
+        if capture:
+            for f in xctestrun.parent.glob("*.shotfleet-*.xctestrun"): f.unlink(missing_ok=True)
+    if capture:  # a language that failed first can make another look complete: count again against every screen the run saved
+        final = {lp: capture_result(out, lp, None if r_["ok"] else r_["error"], report["locales"], r_["attempts"]) for lp, r_ in final.items()}
+        expected = len(capture_names(out, report["locales"]))
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
+        if not r_["ok"] and not capture: print_failure(out / ".work" / "debug" / f"attempt{r_.get('attempts', 1)}", lp, flow, "ios")  # Maestro's logs; [capture] runs keep xcodebuild's log instead
         results.append({"lproj": lp, **r_})
-    if not all(r["ok"] for r in results): print(flow_parse_note(out) or overload_note(want, n), end="")
+    if not all(r["ok"] for r in results):
+        print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     report["wall_seconds"] = round(time.time() - t0)
     report["simulators"] = n
@@ -1857,9 +2105,137 @@ def ios_run_inner(cfg, path, only, parallel):
     print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
     failed = [r["lproj"] for r in results if not r["ok"]]
     if not any((out / "raw").glob("*/*.png")):
-        print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
+        print(f"no screenshots were captured, so there's nothing to check; see the errors above and the {'xcodebuild' if capture else 'maestro'} logs")
         return 1
     return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device"), expect=cfg.get("_expect")), 1 if failed else 0)
+
+# ---------- bring your own capture (iOS): the team's XCUITest screenshot tests on the pool ----------
+# research/byoc-ios-experiment-2026-10-06.md: the language is set on the simulator (xcodebuild's -testLanguage is ignored with
+# -xctestrun), and screenshots come from two places: XCTAttachments in the result bundle, and fastlane SnapshotHelper's cache folder.
+
+FASTLANE_CACHE = Path.home() / "Library/Caches/tools.fastlane/screenshots"  # SnapshotHelper writes here ($SIMULATOR_HOST_HOME), for every simulator
+FASTLANE_SETTINGS = ("language.txt", "locale.txt", "snapshot-launch_arguments.txt")  # SnapshotHelper reads these and would force their language
+
+def xcresult_pngs(bundle, dst):
+    """Copy a result bundle's PNG attachments into dst as <XCTAttachment.name>.png; returns the file names written.
+    `export attachments` names files <UUID>.png; the real name is in manifest.json as <name>_<n>_<UUID>.png. Two attachments
+    with one name are both kept (<name>-2.png) with a warning."""
+    dst, written = Path(dst), []
+    with tempfile.TemporaryDirectory() as tmp:
+        r = sh(["xcrun", "xcresulttool", "export", "attachments", "--path", str(bundle), "--output-path", tmp, "--filter", "*.png"], timeout=300)
+        manifest = Path(tmp) / "manifest.json"
+        if r.returncode or not manifest.is_file():
+            if Path(bundle).exists(): print(f"warning: could not read the screenshots in {bundle}: {(r.stderr or r.stdout).strip()[-200:]}")
+            return written
+        for test in json.loads(manifest.read_text() or "[]"):
+            for a in test.get("attachments", []):
+                src = Path(tmp) / a.get("exportedFileName", "")
+                if not src.is_file(): continue
+                stem = Path(re.sub(r"_\d+_[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}(?=\.\w+$)", "", a.get("suggestedHumanReadableName") or src.name)).stem
+                target, i = dst / f"{stem}.png", 2
+                while target.exists(): target, i = dst / f"{stem}-{i}.png", i + 1
+                if i > 2: print(f"warning: two screenshots are named {stem} in {Path(bundle).name}; kept both ({target.name}). Give each XCTAttachment its own name")
+                dst.mkdir(parents=True, exist_ok=True); shutil.copy(src, target); written.append(target.name)
+    return written
+
+@contextlib.contextmanager
+def fastlane_cache(folder=None):
+    """SnapshotHelper's folder for the length of a run: made if missing (SnapshotHelper never makes it, and a test passes with 0
+    screenshots without it), with fastlane's language.txt/locale.txt/snapshot-launch_arguments.txt moved aside (a leftover one forces
+    its language on every simulator) and put back afterwards, also on an error or Ctrl-C. A folder shotfleet made is removed again."""
+    folder = Path(folder or FASTLANE_CACHE)
+    made = next((d for d in (folder.parent, folder) if not d.exists()), None)
+    folder.mkdir(parents=True, exist_ok=True)
+    aside = folder / ".shotfleet-aside"
+    for f in aside.glob("*") if aside.is_dir() else ():  # a run that was killed (SIGKILL) left them aside: put them back first
+        if not (folder / f.name).exists(): os.replace(f, folder / f.name)
+    moved = []
+    try:
+        for n in FASTLANE_SETTINGS:
+            if (folder / n).exists(): aside.mkdir(exist_ok=True); os.replace(folder / n, aside / n); moved.append(n)
+        yield folder
+    finally:
+        for n in moved: os.replace(aside / n, folder / n)
+        with contextlib.suppress(OSError): aside.rmdir()
+        if made: shutil.rmtree(made, ignore_errors=True)
+
+CAPTURE_BUILD_TIMEOUT_S = 3600  # a first build with a Kotlin Multiplatform framework took 5 min in E5; an hour means it hangs
+
+def capture_build(cap, config, out):
+    """The team's build-for-testing command, once per `run`, in the config's folder; its output goes to out/build.log."""
+    refuse_config_commands("[capture] build")
+    out.mkdir(parents=True, exist_ok=True)
+    print(f"building for testing (once; --no-build skips it): {cap['build']}", flush=True)
+    log = out / "build.log"
+    try: r = run_guarded(["/bin/sh", "-c", cap["build"]], timeout=CAPTURE_BUILD_TIMEOUT_S, cwd=Path(config).parent)
+    except subprocess.TimeoutExpired as e:
+        log.write_text(e.output or ""); raise Fail(f"the [capture] build ran for {CAPTURE_BUILD_TIMEOUT_S // 60} min and was stopped (log: {log})")
+    log.write_text(r.stdout)
+    if r.returncode:
+        tail = "\n  ".join(r.stdout.strip().splitlines()[-15:])
+        raise Fail(f"the [capture] build failed (exit {r.returncode}), so nothing ran. Last lines of {log}:\n  {tail}")
+
+def find_xctestrun(pattern, path):
+    """The one .xctestrun the build made (shotfleet's own per-language copies don't count)."""
+    found = sorted(p for p in glob.glob(str(path(pattern))) if ".shotfleet-" not in Path(p).name)
+    if not found:
+        raise Fail(f"no .xctestrun matches {pattern} (in {path('.')}). Check that the build's -derivedDataPath matches it, and run without --no-build")
+    if len(found) > 1:
+        raise Fail(f"{len(found)} .xctestrun files match {pattern}: " + ", ".join(Path(p).name for p in found) + ". Make the glob match one")
+    return Path(found[0])
+
+def xctestrun_targets(plist):
+    """The test targets of an .xctestrun: format 1 has them at the top level, format 2 in TestConfigurations[].TestTargets[]."""
+    if "TestConfigurations" in plist: return [t for c in plist["TestConfigurations"] for t in c.get("TestTargets", [])]
+    return [v for k, v in plist.items() if not k.startswith("__") and isinstance(v, dict)]
+
+def xctestrun_app(xctestrun):
+    """The app under test: UITargetAppPath, else the first .app the tests depend on that isn't the test runner. None if neither."""
+    for t in xctestrun_targets(plistlib.loads(Path(xctestrun).read_bytes())):
+        for p in [t.get("UITargetAppPath"), *t.get("DependentProductPaths", [])]:
+            if p and p.endswith(".app") and not p.endswith("-Runner.app"): return Path(p.replace("__TESTROOT__", str(Path(xctestrun).parent)))
+
+def xctestrun_with_language(src, lproj):
+    """A copy of the .xctestrun whose UI tests launch the app in lproj (-AppleLanguages/-AppleLocale, as a Maestro run passes them).
+    It sits beside the original: the paths inside are relative to its folder, and a moved copy fails (exit 70)."""
+    plist = plistlib.loads(Path(src).read_bytes())
+    for t in xctestrun_targets(plist):
+        t["UITargetAppCommandLineArguments"] = [*t.get("UITargetAppCommandLineArguments", []), "-AppleLanguages", f"({lproj})", "-AppleLocale", apple_locale(lproj)]
+    dst = Path(src).with_name(f"{Path(src).stem}.shotfleet-{lproj}.xctestrun")
+    dst.write_bytes(plistlib.dumps(plist))
+    return dst
+
+def set_sim_language(sim, lproj):
+    """The simulator's own language, which every app launch gets however the test starts the app (no reboot needed)."""
+    sim.run("spawn", sim.udid, "defaults", "write", "-g", "AppleLanguages", "-array", lproj)
+    sim.run("spawn", sim.udid, "defaults", "write", "-g", "AppleLocale", "-string", apple_locale(lproj))
+
+def newest_file(folder):
+    """The newest file's modification time under folder, 0 when there is none."""
+    try: return max((p.stat().st_mtime for p in Path(folder).rglob("*") if p.is_file()), default=0)
+    except OSError: return 0
+
+NO_SHOTS_HINT = ("the test passed but saved no screenshots, which proves nothing. An XCTAttachment needs lifetime = .keepAlways; "
+                 "fastlane's SnapshotHelper needs setupSnapshot(app) before app.launch(); check [capture] screenshots and only_testing")
+
+def capture_names(out, locales):
+    """Every screen name any language of this run saved."""
+    return {p.stem for lp in locales for p in (out / "raw" / lp).glob("*.png")}
+
+def capture_result(out, lp, error, locales, attempt):
+    """A language's result: failed when xcodebuild failed, when it saved no screenshot, or when it lacks a screen another language has."""
+    have = {p.stem for p in (out / "raw" / lp).glob("*.png")}
+    if not error and not have: error = NO_SHOTS_HINT
+    elif not error and (missing := capture_names(out, locales) - have): error = f"missing {', '.join(sorted(missing))} (other languages saved them)"
+    elif not error: error = blank_note(out / "raw" / lp)
+    return {"ok": error is None, "error": error, "screenshots": len(have), "attempts": attempt}
+
+def fastlane_pngs(folder, sim_name, dst):
+    """Move this simulator's SnapshotHelper screenshots (<simulator name>-<shot>.png, one folder for all simulators) into dst as <shot>.png."""
+    dst, written = Path(dst), []
+    for f in sorted(Path(folder).glob(glob.escape(sim_name) + "-*.png")):
+        dst.mkdir(parents=True, exist_ok=True); shutil.move(str(f), str(dst / f.name[len(sim_name) + 1:])); written.append(f.name[len(sim_name) + 1:])
+    return written
 
 # ---------- android ----------
 
@@ -2269,7 +2645,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing}
-        shutil.rmtree(out / "raw" / lp, ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
+        shutil.rmtree(inside(out, "raw", lp), ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])
     if not todo:
@@ -2320,13 +2696,13 @@ def android_run_inner(cfg, path, out, only, parallel):
                 fname, dev = f"{tag}_f{j}", ran_on.get(f"{tag}_f{j}")
                 if dev not in lang: continue
                 lp = lang[dev]
-                dst = out / "raw" / lp
+                dst = inside(out, "raw", lp)
                 shutil.rmtree(dst, ignore_errors=True)
                 collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
                 if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev,
+                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname),
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
@@ -2355,8 +2731,9 @@ def android_run_inner(cfg, path, out, only, parallel):
     finally:
         stop_emulators(pool)
     for lp in todo:
-        r_ = final[lp]
+        r_ = final[lp]; where = r_.pop("_maestro", None)
         print_result(lp, r_, expected)
+        if not r_["ok"] and where: print_failure(*where, flow, "android")
         report["locales"][lp].update(r_)
     if hier:
         got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())
@@ -2398,6 +2775,9 @@ def ocr_tool():
     return str(exe)
 
 TWINS = {"ms": ("id",), "id": ("ms",), "hr": ("sl",), "sl": ("hr",)}  # language detection can't tell these apart in UI text (measured, tools/langmatrix.py)
+# Cyrillic languages language detection confuses on short, mixed UI text: a Russian screen with English job titles read as 0.99 Kazakh
+# (remoti ru-RU/8, 2026-10-06). Unlike TWINS, a neighbour passes only when the app's own strings back the expected language
+CYRILLIC = {"ru", "uk", "be", "bg", "kk", "mk", "sr", "ky", "mn", "tg"}
 LEGACY = {"in": "id", "iw": "he", "ji": "yi", "tl": "fil", "no": "nb"}  # Android's old codes -> what language detection reports
 
 def readable_languages():
@@ -2545,6 +2925,8 @@ def judge_screen(lp, ocr, tables):
         if script and len(re.findall(script, ocr.get("text", ""))) >= 3:  # detection mixes up Latin-heavy CJK screens
             return lp, None
         langs = ocr.get("langs", {})
+        if {want, ocr.get("lang")} <= CYRILLIC and score.get(lp, 0) > max((v for o, v in score.items() if o != lp), default=0):
+            return lp, None  # the one line that matched is the expected language's and no other's: the neighbour is detection's guess
         # short, language-neutral screens ("AMRAP / EMOM / Tabata") get low-confidence guesses: not evidence
         if ocr.get("lang") not in (want, *TWINS.get(want, ())) and langs.get(want, 0) < 0.2 \
                 and langs.get(ocr.get("lang"), 0) >= 0.8:
@@ -2603,11 +2985,28 @@ LOCALE_LABEL = re.compile(r"[a-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*")
 
 SCREENGRAB_STAMP = re.compile(r"_\d{13}$")
 
-def shot_key(name):
+@functools.cache
+def locale_tags(label):
+    """How a file name can spell its folder's locale: the folder name and its store codes (ru -> ru-RU on Play)."""
+    return {label} | {store_code(label, s) for s in (PLAY, APP_STORE)} - {None}
+
+def shot_key(name, label=None, folder=()):
     """The screen a file shows, the same in every language: its name without fastlane screengrab's millisecond timestamp
-    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set."""
+    (01Home_1773697012807.png -> 01Home.png), which screengrab adds unless use_timestamp_suffix(false) is set, and without
+    fastlane supply's _<locale> (de-DE/1_de-DE.png -> 1.png) when that is the folder's own locale and every file in the folder
+    (`folder`, their names) ends in it: cutting the same ending off every name keeps two screens of one folder apart."""
     p = Path(name)
-    return SCREENGRAB_STAMP.sub("", p.stem) + p.suffix
+    stem = SCREENGRAB_STAMP.sub("", p.stem)
+    for tag in locale_tags(label) if label else ():
+        if all(SCREENGRAB_STAMP.sub("", Path(n).stem).endswith("_" + tag) for n in (*folder, name)):
+            return stem[:-len(tag) - 1] + p.suffix
+    return stem + p.suffix
+
+def screen_keys(files):
+    """{"<label>/<name>": shot_key} for files given as "<label>/<name>", each judged with the rest of its folder."""
+    by = {}
+    for f in files: by.setdefault(f.split("/")[0], []).append(f.split("/", 1)[1])
+    return {f"{label}/{n}": shot_key(n, label, names) for label, names in by.items() for n in names}
 
 def find_screenshots(folder, platform=None, play_folder="phoneScreenshots", locale=None):
     """{folder label: [png, ...]} for the layouts people actually have: shotfleet's own output (raw/<locale>),
@@ -2706,7 +3105,7 @@ def ocr_warmup_lock(limit):
     so the holder is not waiting on a compile and there is nothing to pile onto); False if the holder's compile went past `limit`
     seconds or looks stuck. The OS drops an flock when its holders exit, so a lock is never stale."""
     import fcntl
-    try: f = os.fdopen(os.open(OCR_LOCK, os.O_CREAT | os.O_RDWR, 0o666), "r+")
+    try: f = open_lock(OCR_LOCK)
     except OSError: return None
     start, said, look = time.time(), False, time.time() + 10
     while True:
@@ -3056,6 +3455,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             for i, r in zip(redo, ex.map(external, redo)):
                 ocrs[i] = {**ocrs[i], **r}
     rows, by_hash, expected_used, unverified, unread_files, no_language, not_verified, busy_hash = [], {}, set(), 0, set(), [], [], {}
+    screen = screen_keys(f"{label}/{p.name}" for label in images for p in images[label])  # 1_de-DE.png and 1_en-US.png: one screen
     for (label, png), r in zip(pngs, ocrs):
         lp = app_locale(label, tables)
         h = hashlib.sha256(png.read_bytes()).hexdigest()[:12]
@@ -3083,7 +3483,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if problem: problems.append(f"{label}/{png.name}: {problem}")
         if dialog := system_dialog(r): problems.append(f"{label}/{png.name}: {dialog}")
         if banner := system_banner(r): problems.append(f"{label}/{png.name}: {banner}")
-        if (stem := Path(shot_key(png.name)).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
+        if (stem := Path(screen[f"{label}/{png.name}"]).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
             rules, used = content_rules(expect[stem], label, lp)
             expected_used.update((stem, k) for k in used)
             bad, unsure = check_content(rules, r)
@@ -3111,17 +3511,17 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if same := [f for hits in busy_hash.values() if len({lp for lp, _ in hits}) > 1 for _, f in hits]:
         notes.append(f"{len(same)} unverified screens are identical across languages; run check again when text recognition answers "
                      f"to tell whether they're copies ({', '.join(same)})")
-    names = {shot_key(r["file"].split("/")[1]) for r in rows}  # expected set = union across languages, screengrab timestamps aside
+    names = {screen[r["file"]] for r in rows}  # expected set = union across languages, screengrab timestamps and supply's _<locale> aside
     for label in sorted(set(images) - set(unmapped)):
         have, seen = {}, {}
-        for p in images[label]: seen.setdefault(shot_key(p.name), []).append(p.name)
+        for p in images[label]: seen.setdefault(screen[f"{label}/{p.name}"], []).append(p.name)
         for key, files in sorted(seen.items()):  # 01Home_<t1>.png and 01Home_<t2>.png: one screen saved twice, not two screens
             if len(files) > 1:
                 problems.append(f"{label}: {', '.join(files)} are the same screen saved {len(files)} times (only screengrab's timestamp "
                                 "differs); keep the newest and delete the rest")
         if missing := names - set(seen):
             problems.append(f"{label}: missing {', '.join(sorted(missing))}")
-    stems = {Path(shot_key(r["file"])).stem for r in rows}
+    stems = {Path(screen[r["file"]]).stem for r in rows}
     for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
         if name not in stems:
             import difflib
@@ -3143,7 +3543,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         (report / "index.html").write_text(page.replace("<table>", f"<h3>Not verified ({len(not_verified)})</h3><p>{html.escape(loud)}</p><ul>{items}</ul><table>", 1))
     print(f"\nchecked {len(rows)} screenshots in {len(images)} languages: {len(problems)} problem(s)"
           + (f", {len(not_verified)} not verified" if not_verified else ""))
-    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(shot_key(r['file'])).stem in expect})} screens, "
+    if expect: print(f"content: [expect] checked on {len({r['file'] for r in rows if Path(screen[r['file']]).stem in expect})} screens, "
                      f"{unverified} expectation(s) could not be verified (see notes)")
     for p in problems: print(f"  - {p}")
     if notes:
@@ -3167,7 +3567,8 @@ def write_gallery(out, rows, problems):
     def locate(rel):  # relative to the report; an absolute file: URL when the image lives outside it, so moving the report keeps the images
         return (Path(out) / rel).resolve().as_uri() if rel.startswith("..") else rel
     src = {r["file"]: locate(r.get("src", f"raw/{r['file']}")) for r in rows}
-    cell = {(r["file"].split("/")[0], shot_key(r["file"].split("/")[1])): r["file"] for r in rows}  # screengrab timestamps aside
+    key = screen_keys(r["file"] for r in rows)
+    cell = {(r["file"].split("/")[0], key[r["file"]]): r["file"] for r in rows}  # screengrab timestamps and supply's _<locale> aside
     names = sorted({k for _, k in cell})
     locales = sorted({r["file"].split("/")[0] for r in rows})
     cells = []
@@ -3525,9 +3926,18 @@ def update_command(exe=None):
     exe = exe or os.path.realpath(sys.executable if getattr(sys, "frozen", False) else __file__)
     return "brew upgrade --cask noloman/tap/shotfleet" if "/Caskroom/" in exe else "curl -fsSL https://shotfleet.com/install.sh | sh"
 
-def cmd_doctor(fix=False, yes=False):
-    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan)."""
+def capture_mode(config="shotfleet.toml"):
+    """(uses [capture] for iOS, has an [android] section) for the config doctor looks at; (False, True) when there is none or it can't be read."""
+    try: doc = tomllib.loads(Path(config).read_text())
+    except (OSError, ValueError): return False, True  # tomllib.TOMLDecodeError and UnicodeDecodeError are ValueErrors
+    return "capture" in doc and "ios" in doc, "android" in doc
+
+def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
+    """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan).
+    A config with [capture] (the team's XCUITest tests on iOS) needs Maestro and Java only for its Android section."""
     have = lambda c: shutil.which(c) is not None
+    capture, android = capture_mode(config)
+    maestro_for = "Android" if capture else "both"
     mac = is_mac()
     has_aapt2 = bool(sorted((SDK / "build-tools").glob("*/aapt2"))) or have("aapt2")
     image, later = find_image(), "(command below)"
@@ -3539,9 +3949,9 @@ def cmd_doctor(fix=False, yes=False):
     tested = ", ".join(MAESTRO_TESTED)
     checks = [
         (f"maestro {maestro_v} (tested: {tested})" if maestro_v else f"maestro (version unknown; tested: {tested})" if has_maestro else "maestro", maestro_ok,
-         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", "both"),
+         "shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)", maestro_for),
         ("java 17+", find_java()[0], ("shotfleet doctor --fix  (downloads a Java runtime), or brew install openjdk@21  (shotfleet finds Homebrew's Java by itself; Maestro needs 17 or newer)"
-                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), "both"),
+                                       if mac else "apt install openjdk-21-jre-headless  (Maestro needs Java 17 or newer)"), maestro_for),
         *([("swiftc (OCR checks)", have("swiftc") or getattr(sys, "frozen", False), "xcode-select --install", "both")] if mac else
           [("tesseract (screenshot checks)", have("tesseract"), install_hint(), "both")]),
         ("xcrun simctl", simctl_works() if have("xcrun") else False,
@@ -3561,6 +3971,7 @@ def cmd_doctor(fix=False, yes=False):
     for name, ok, how, platform in checks:  # not `fix`: that is the --fix flag, and shadowing it made a plain `doctor` run the fix plan
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
+    if capture: print(f"note: {config} runs your XCUITest tests on iOS ([capture]), so iOS needs Xcode, not Maestro or Java")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
     pkgs = [pkg for ok, pkg in ((has_adb, "platform-tools"), (has_emulator, "emulator"), (has_aapt2, "build-tools;36.0.0"),
@@ -3607,7 +4018,8 @@ def cmd_doctor(fix=False, yes=False):
     if fix:
         print()
         fix_pkgs = [pk for pk in pkgs if not (pk == "cmdline-tools;latest" and not sdkmanager)]  # sdkmanager can't install itself
-        plan = fix_plan(maestro_ok, find_java()[0], fix_pkgs, bool(sdkmanager))
+        ios_only_capture = capture and not android  # nothing here needs Maestro or Java
+        plan = fix_plan(maestro_ok or ios_only_capture, find_java()[0] or ios_only_capture, fix_pkgs, bool(sdkmanager))
         if mac and not any(ok for n, ok, _, _ in checks if n == "xcrun simctl"):
             print("not fixable here: iOS needs Xcode and an iOS Simulator runtime (App Store, then Xcode > Settings > Components)")
         if not mac and not have("tesseract"):
@@ -4040,6 +4452,45 @@ def cmd_init(builds, dest="."):
           f"  shotfleet run {dest / 'shotfleet.toml'} --locales en")
     return 0
 
+def ui_test_scheme(project):
+    """(shared scheme, UI test target) of a project's first scheme that tests a *UITests* bundle, read from the files on disk; None if none."""
+    for d in (project / "xcshareddata/xcschemes", project.with_suffix(".xcodeproj") / "xcshareddata/xcschemes"):
+        for f in sorted(d.glob("*.xcscheme")):
+            try: root = ET.parse(f).getroot()
+            except (ET.ParseError, OSError): continue
+            for r in root.iterfind("TestAction//TestableReference/BuildableReference"):
+                name = r.get("BlueprintName") or r.get("BuildableName", "").removesuffix(".xctest")
+                if r.get("BuildableName", "").endswith(".xctest") and "UITest" in name: return f.stem, name
+
+def cmd_init_capture(builds, dest="."):
+    """`init --capture`: a config whose [capture] runs the project's own XCUITest screenshot tests (no flow.yaml)."""
+    if builds: raise Fail("init --capture takes no build: the [capture] build command makes it. Run it in your Xcode project's folder")
+    dest, cwd = Path(dest), Path.cwd()
+    project = next(iter(xcode_projects(cwd)), None)
+    found = ui_test_scheme(project) if project else None
+    scheme, target = found or (project and scheme_for(project) or "<scheme>", None)
+    where = f"-{'workspace' if project.suffix == '.xcworkspace' else 'project'} {shlex.quote(config_path(project, dest))} " if project else ""
+    build = (f"xcodebuild build-for-testing {where}-scheme {shlex.quote(scheme)} -destination 'generic/platform=iOS Simulator' "
+             "-derivedDataPath .shotfleet/build CODE_SIGNING_ALLOWED=NO")
+    text = ("[ios]\n# locales = [\"de\", \"ja\"]   # default: every language the app ships\n"
+            "# app = \"path/to/MyApp.app\"   # default: the app next to the .xctestrun\n\n"
+            "# Your own XCUITest screenshot tests instead of a Maestro flow: shotfleet builds once, then runs them on several\n"
+            "# simulators at once, one language each, and checks the screenshots they save.\n"
+            f"[capture]\nbuild = {json.dumps(build)}\n"
+            "xctestrun = \".shotfleet/build/Build/Products/*.xctestrun\"   # exactly one match after the build\n"
+            + (f"only_testing = [{json.dumps(target)}]\n" if target else "# only_testing = [\"MyAppUITests/ScreenshotTests\"]\n")
+            + "screenshots = \"auto\"   # \"attachments\" (XCTAttachment, needs lifetime = .keepAlways), \"fastlane\" (SnapshotHelper) or \"auto\"\n"
+            f"timeout = {CAPTURE_TIMEOUT_S}   # seconds per language\n")
+    if not project: print(f"note: no Xcode project or workspace found in {cwd}; edit the build command in the config")
+    elif not found: print(f"note: no shared scheme in {project.name} tests a UI test target; set -scheme in the build command to the one that runs your screenshot tests")
+    else: print(f"{project.name}: scheme {scheme}, UI tests {target}")
+    dest.mkdir(parents=True, exist_ok=True)
+    if (dest / "shotfleet.toml").exists():
+        print(f"keeping existing {dest / 'shotfleet.toml'}. To use your XCUITest tests, put this in it (and remove flow = from [ios]):\n{text}"); return 0
+    (dest / "shotfleet.toml").write_text(text); print(f"wrote {dest / 'shotfleet.toml'}")
+    print(f"next: try one language (builds once, boots simulators, takes a few minutes):\n  shotfleet run {dest / 'shotfleet.toml'} --locales de")
+    return 0
+
 NO_XCRUN = "xcrun isn't available: iOS simulators need a Mac with Xcode (App Store). Run shotfleet doctor to see what else is missing"
 
 def latest_ios_runtime():
@@ -4279,7 +4730,7 @@ def cmd_export(out, fastlane, name_prefix=""):
     done = []
     for folder, lp in sorted(targets.items()):
         if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
-        dst = root / folder / "images" / ANDROID_DEVICES[run.get("device", "phone")]["folder"] if android else root / folder
+        dst = inside(root, folder, "images", ANDROID_DEVICES[run.get("device", "phone")]["folder"]) if android else inside(root, folder)
         dst.mkdir(parents=True, exist_ok=True)
         new = sorted((shots / lp).glob("*.png"))
         sizes = {png_size(p) for p in new}
@@ -4326,6 +4777,7 @@ def main(argv=None):
     p = sub.add_parser("doctor", help="check that Maestro, Xcode and the Android SDK are ready")
     p.add_argument("--fix", action="store_true", help="offer to download what is missing (Maestro, Java, the Android tools); never uses sudo")
     p.add_argument("--yes", action="store_true", help="with --fix: don't ask before running the steps")
+    p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config to check for (default: ./shotfleet.toml); with [capture], iOS needs no Maestro")
     sub.add_parser("mcp", help="run as an MCP server (for Claude, Cursor and other AI agents)")
     p = sub.add_parser("skill", help="install the shotfleet skills for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Copilot)")
     p.add_argument("action", choices=("install",)); p.add_argument("--project", action="store_true", help="install into ./.claude/skills and ./.agents/skills instead of ~/.claude/skills and ~/.agents/skills")
@@ -4337,6 +4789,7 @@ def main(argv=None):
     p.add_argument("builds", nargs="*", metavar="build", help="a simulator .app and/or an .apk (both go in one config); "
                    "none: use the newest Debug build found for the project in this folder")
     p.add_argument("--dir", default=".", help="where to write them (default: here)")
+    p.add_argument("--capture", action="store_true", help="iOS: write a [capture] config that runs your existing XCUITest screenshot tests instead of a Maestro flow")
     p = sub.add_parser("run", help="capture every language and check the screenshots")
     p.add_argument("config", nargs="?", default="shotfleet.toml", help="the config file (default: ./shotfleet.toml)")
     p.add_argument("--platform", choices=("ios", "android"), help="only this platform when the config has both")
@@ -4344,6 +4797,7 @@ def main(argv=None):
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
+    p.add_argument("--no-build", action="store_true", help="with [capture]: don't run the build command, use the .xctestrun that is there")
     p = sub.add_parser("check", help="check screenshots from shotfleet, fastlane or any tool")
     p.add_argument("out", help="a shotfleet output folder, a fastlane screenshots/metadata folder, or <locale>/ folders")
     p.add_argument("--app", help="simulator .app or .apk whose strings to check against (not needed for shotfleet's own output)")
@@ -4381,17 +4835,19 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Check localized App Store / Google Play screenshots: each shows its own language, "
      "no copies across languages, none missing, and the stores' size/count/transparency rules. Works on fastlane "
      "folders (screenshots/<locale>/, metadata/android/<locale>/images/phoneScreenshots/), shotfleet output, or <locale>/ "
-     "folders. It never changes a screenshot; it only writes its report (check.json, index.html) to the report folder "
+     "folders. It never changes a screenshot and runs no command you give it; it writes its report (check.json, index.html, "
+     "replacing those two files if they are there) to the report folder "
      "(default: ./shotfleet-check in the server's working folder, or the run's own folder for shotfleet output). Takes seconds to a few minutes "
      "(text recognition of every screenshot). Returns a short JSON summary: counts, the first problem and note lines, and "
      "the path of the full check.json. Pass full: true to get the whole report (one entry per screenshot) instead.",
-     "annotations": {"readOnlyHint": True, "openWorldHint": False},
+     "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True, "openWorldHint": False},  # it overwrites check.json and index.html
      "inputSchema": {"type": "object", "required": ["folder"], "properties": {
          "folder": {"type": "string", "description": "folder with the screenshots"},
          "app": {"type": "string", "description": "simulator .app or .apk whose strings to check against"},
          "strings": {"type": "array", "items": {"type": "string"}, "description": "translation file globs instead of app"},
          "report": {"type": "string", "description": "where to write check.json and index.html (default: ./shotfleet-check)"},
-         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}}}},
+         "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"}},
+         "additionalProperties": False}},
     {"name": "doctor", "title": "Check the setup",
      "description": "Check that Maestro, Xcode and the Android SDK are ready for shotfleet, and say what is missing. "
      "Changes nothing (it never installs anything over MCP). Asks shotfleet.com once for the latest version. Takes seconds.",
@@ -4401,14 +4857,19 @@ MCP_TOOLS = [  # annotations are hints for the client (MCP spec, ToolAnnotations
      "description": "Capture screenshots in every language from a shotfleet.toml config, then check them. "
      "Boots iOS simulators or Android emulators, installs the app on them and replaces the screenshots and report "
      "in the config's output folder. Takes several minutes, and can take an hour or more for many languages and screens. "
-     "Without a licence it captures 2 languages. The config's [hooks] shell commands do NOT run over MCP unless you pass "
-     "hooks: true. Returns the same short summary as check (full: true for the whole report).",
+     "Without a licence it captures 2 languages. Commands written in the config do NOT run over MCP unless you pass "
+     "hooks: true: without it the [hooks] shell commands are skipped, and a config with a [capture] build (a shell command), "
+     "[ios] simctl or [android] shell commands is refused. It always installs and runs the config's app (and, with [capture], "
+     "its test bundle) on the simulators, so only point it at a project you trust. Returns the same short summary as check "
+     "(full: true for the whole report).",
      "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": False, "openWorldHint": True},
      "inputSchema": {"type": "object", "required": ["config"], "properties": {
          "config": {"type": "string", "description": "path to shotfleet.toml"},
          "locales": {"type": "array", "items": {"type": "string"}, "description": "only these languages, e.g. [\"de\", \"ja\"]"},
          "full": {"type": "boolean", "description": "return the whole report instead of the summary (can be very long)"},
-         "hooks": {"type": "boolean", "description": "also run the config's [hooks] shell commands (default: false)"}}}},
+         "hooks": {"type": "boolean", "description": "also run the commands written in the config: [hooks] and the [capture] build "
+                   "(shell commands on this Mac), [ios] simctl and [android] shell (default: false)"}},
+         "additionalProperties": False}},
 ]
 
 MCP_LINES, MCP_LINE_CHARS = 100, 300  # a summary keeps this many problem and note lines, each cut to this length
@@ -4427,12 +4888,17 @@ def mcp_summary(code):
         out["more"] = f"only the first {MCP_LINES} lines are here; the report files have all of them (or call again with full: true)"
     return out
 
+def mcp_path(args, key):
+    """An MCP path argument as an absolute path: a string, never read as an option by the programs it is handed to."""
+    if not isinstance(args.get(key), str) or not args[key].strip(): raise Fail(f"{key} should be a path")
+    return Path(args[key]).expanduser().resolve()
+
 MCP_HEARTBEAT_S = 30  # with a progressToken, a progress notification this often (Claude Code drops a stdio call silent for 30 min)
 
 def mcp_call(name, args, progress=None):
     """One tool call -> (text, is_error). Output is captured; with `progress` (a function taking a message), its last line
     is sent every MCP_HEARTBEAT_S seconds while the tool works."""
-    global LAST_REPORT, NO_HOOKS
+    global LAST_REPORT, NO_HOOKS, CONFIG_COMMANDS
     LAST_REPORT = None; REPORTS.clear()  # a run that never reached `check` must not return the previous check's report
     log, stop = io.StringIO(), threading.Event()
     def beat():
@@ -4444,13 +4910,27 @@ def mcp_call(name, args, progress=None):
         with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             if name == "doctor": code = cmd_doctor()
             elif name == "check":
-                folder = Path(args["folder"]).expanduser()
-                report = args.get("report") and Path(args["report"]).expanduser()  # default ./shotfleet-check (a run's output: its own folder)
-                code = check_any(folder, args.get("app"), args.get("strings"), args.get("ocr_command"), report)
-            elif name == "run":  # a config from a cloned repo could hold any shell command: hooks only when asked for
-                NO_HOOKS = args.get("hooks") is not True
-                try: apply_free_tier(); code = cmd_run(args["config"], args.get("locales"))
-                finally: NO_HOOKS = False
+                if "ocr_command" in args:  # it runs a program: the command line's --ocr-command (or SHOTFLEET_OCR where the server starts) only
+                    return "check takes no ocr_command over MCP: it runs a program. Use `shotfleet check --ocr-command` in a terminal", True
+                folder = mcp_path(args, "folder")
+                report = args.get("report") and mcp_path(args, "report")  # default ./shotfleet-check (a run's output: its own folder)
+                app = args.get("app") and mcp_path(args, "app")
+                strings = args.get("strings")
+                if isinstance(strings, str): strings = [strings]  # one glob, as clients have sent since 0.1.4
+                if strings is not None and not (isinstance(strings, list) and all(isinstance(g, str) for g in strings)):
+                    return "strings should be a list of translation file globs", True
+                code = check_any(folder, app and str(app), strings, None, report)
+            elif name == "run":  # a config from a cloned repo could hold any command: none of them run unless asked for
+                locales = args.get("locales")
+                if locales is not None and not (isinstance(locales, list) and locales):
+                    return "locales should be a list of language codes, e.g. [\"de\", \"ja\"]", True
+                config, opted = str(mcp_path(args, "config")), args.get("hooks") is True
+                if not opted and (cmds := [c for c in config_commands(config) if not c.startswith("[hooks]")]):
+                    return (f"{Path(config).name} has commands that run on this Mac or its devices: {', '.join(cmds)}. Over MCP they only run "
+                            "when you pass hooks: true. Read them in the config first; a config from a repo you just cloned can hold any command"), True
+                NO_HOOKS, CONFIG_COMMANDS = not opted, opted
+                try: apply_free_tier(); code = cmd_run(config, locales)
+                finally: NO_HOOKS, CONFIG_COMMANDS = False, True
             else: return f"unknown tool {name}", True
     except Exception as e:  # one bad call must not kill the server
         msg = e if isinstance(e, (Fail, RuntimeError, ValueError, OSError, subprocess.TimeoutExpired)) else f"{type(e).__name__}: {e}"
@@ -4500,79 +4980,198 @@ def cmd_mcp():
 
 LICENCE_FILE = Path.home() / "Library/Application Support/shotfleet/licence.json"
 LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30
+GUMROAD_TOTAL_SECONDS = 20  # one licence call, DNS and a slow-drip server included
 BUY_URL = "https://shotfleet.com/#price"
-GUMROAD_API = os.environ.get("SHOTFLEET_GUMROAD_API", "https://api.gumroad.com/v2/licenses")
+GUMROAD_API = "https://api.gumroad.com/v2/licenses"
 GUMROAD_PRODUCT_ID = "WxLJHi0WgmVoqCqybcFVPg=="  # set by packaging/go-live.sh
-MAX_MACS = 3
+MAX_MACS = 5  # activations per key: the promise is 3 of your Macs, the other 2 are spare for reinstalls (then an email resets the count)
 FREE_LANGUAGES = 2
 LOCALE_CAP = None  # set by `run` without a licence: the free tier captures this many languages
-LOCALE_CAP_WHY = None  # with LOCALE_CAP: why a SHOTFLEET_KEY was refused (None when no key is set); only worded, never decides anything
 
 class NoLicence(Fail):
     """No valid licence: `export` stops; `run` falls back to the free tier."""
 
 def cap_locales(locales):
     if LOCALE_CAP is None or len(locales) <= LOCALE_CAP: return locales
-    why = f": the key was not accepted, {LOCALE_CAP_WHY}" if LOCALE_CAP_WHY else ""
     print(f"free tier: capturing {LOCALE_CAP} of {len(locales)} languages ({', '.join(locales[:LOCALE_CAP])}). "
-          f"This run is limited to {LOCALE_CAP} languages because there is no valid licence{why}. "
+          f"This run is limited to {LOCALE_CAP} languages because there is no valid licence. "
           f"`--locales a,b` picks which ones; `shotfleet activate <key>` unlocks every language ({BUY_URL})")
     return locales[:LOCALE_CAP]
 
 # The licence calls use tls_context(): certifi's CA bundle (the released build can't count on the Mac's), unless the environment names
 # one (SSL_CERT_FILE...), as a corporate proxy that re-signs HTTPS needs.
+# ponytail: HTTPS_PROXY + SSL_CERT_FILE can answer for Gumroad (a proxy with its own CA); buyers behind corporate HTTPS proxies need their CA,
+# so this stays. The ceiling: a licence answer signed by a server of ours (public key in the build) would close it.
+
+def gumroad_api():
+    """SHOTFLEET_GUMROAD_API points the check at a test server. Honoured from source and in release-candidate test builds (a TEST product
+    id baked in by tools/release-candidate.sh), never in a released build: there it would let anyone point the check at a fake server."""
+    if getattr(sys, "frozen", False) and not GUMROAD_PRODUCT_ID.startswith("RCTEST"): return GUMROAD_API
+    return os.environ.get("SHOTFLEET_GUMROAD_API", GUMROAD_API)
+
+def baked_release_date():
+    """The day this build was made: packaging/build.sh writes it into a module (`_release`) that PyInstaller freezes into the program's code, so it
+    can't be removed by deleting a file. A build is published days later, never earlier, so this errs in the buyer's favour. None from source.
+    A released build without a usable date says so on stderr and still runs, but its licence is not treated as covering it (check_update_window)."""
+    try:
+        import _release
+        return datetime.date.fromisoformat(_release.RELEASE_DATE)
+    except (ImportError, AttributeError, TypeError, ValueError):
+        if getattr(sys, "frozen", False): print("warning: this build has no usable release date, so shotfleet can't tell which versions your licence covers; `shotfleet check` still works, `run` and `export` need a build that has one (reinstall, or email hello@shotfleet.com)", file=sys.stderr)
+        return None
+
+RELEASE_DATE = baked_release_date()
+
+def sale_time(stamp):
+    """Gumroad's purchase.sale_timestamp ("2026-10-05T12:34:56Z") as unix time, or None when it is missing or unreadable."""
+    try: return datetime.datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp() if stamp else None
+    except (ValueError, OverflowError, OSError): return None
+
+def is_time(t):
+    return isinstance(t, (int, float)) and not isinstance(t, bool) and 0 <= t < 1e11  # finite, and a believable date (NaN, 1e20, negatives are not)
+
+def updates_until(sale):
+    """The last release day this purchase covers (the same date a year later; 29 February counts to 1 March), or None when the sale date isn't known."""
+    if not is_time(sale): return None
+    try:
+        d = datetime.datetime.fromtimestamp(sale, datetime.timezone.utc).date()
+        try: return d.replace(year=d.year + 1)
+        except ValueError: return datetime.date(d.year + 1, 3, 1)
+    except (OverflowError, ValueError, OSError): return None
+
+def check_update_window(sale):
+    """A licence covers every version released within a year of the purchase. Compares the build's baked-in release date with Gumroad's sale
+    date, never with today's date, so moving the clock changes nothing. Without a sale date (Gumroad sent none) it passes. A released build
+    that has no release date can't be compared, so with a known sale date it is not covered either (a source run is the developer's own)."""
+    end = updates_until(sale)
+    if end is None: return
+    if RELEASE_DATE is None:
+        if not getattr(sys, "frozen", False): return
+        raise NoLicence(f"this copy of shotfleet {VERSION} has no release date, so it can't tell whether your licence covers it, and it runs as the free tier. "
+                        "Reinstall shotfleet from https://shotfleet.com, or email hello@shotfleet.com. `check` is free, and `run` captures up to 2 languages without a licence.")
+    if RELEASE_DATE <= end: return
+    raise NoLicence(f"your licence covers every shotfleet version released until {end} (a year from your purchase), and this one, {VERSION}, "
+                    f"came out on {RELEASE_DATE}, so it runs as the free tier. The versions you already have keep working with your key "
+                    f"(every version is at https://shotfleet.com/download/<version>/). To get a year of new versions, email hello@shotfleet.com. "
+                    "`check` is free, and `run` captures up to 2 languages without a licence.")
+
+def ci_record_file():
+    return LICENCE_FILE.with_name("ci-checked.json")
+
+def write_json_atomic(path, obj):
+    """Write a state file so a reader never sees half of it: a temp file in the same folder (private, 0600), then os.replace.
+    Raises OSError when the folder can't be written; the old file is then untouched."""
+    path = Path(path); path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    try:
+        with os.fdopen(fd, "w") as f: f.write(json.dumps(obj))
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError): os.unlink(tmp)
+        raise
+
+def key_hash(key):
+    return hashlib.sha256(key.strip().encode()).hexdigest()
+
+def ci_seen(key):
+    """The last good online check of this key on this machine, {"checked", "sale"}, or None. A CI key's checks are recorded (a hash of the
+    key, never the key); an activated Mac's licence.json with the same key counts too. A record that says the key was refused ends the search."""
+    for f, match in ((ci_record_file(), lambda r: r.get("key_sha256") == key_hash(key)), (LICENCE_FILE, lambda r: r.get("key") == key.strip())):
+        try: r = json.loads(f.read_text())
+        except (OSError, ValueError): continue
+        if isinstance(r, dict) and match(r):
+            if r.get("refused"): return None
+            if is_time(r.get("checked")): return r
+    return None
 
 def is_gumroad_key(key):
     """Gumroad keys are four groups of 8 (ABCDEF12-34567890-...)."""
     return bool(re.fullmatch(r"[0-9A-Fa-f]{8}(?:-[0-9A-Fa-f]{8}){3}", key.strip()))
 
+def gumroad_fetch(req):
+    """-> (status, body bytes). Every failure to get an answer is an OSError. The whole call has a time limit (the socket timeout alone
+    doesn't cover DNS or a server that drips one byte a second), so it runs in a thread we stop waiting for."""
+    out = []
+    def go():
+        try:
+            try:
+                with urllib.request.urlopen(req, timeout=15, context=tls_context()) as r: out.append((200, r.read()))
+            except urllib.error.HTTPError as e:  # an unknown key is a 404 with a JSON message
+                with e: out.append((e.code, e.read()))
+        except BaseException as e: out.append(e)
+    t = threading.Thread(target=go, daemon=True); t.start(); t.join(GUMROAD_TOTAL_SECONDS)
+    if not out: raise OSError(f"can't reach the licence server (no answer within {GUMROAD_TOTAL_SECONDS} seconds)")
+    if isinstance(out[0], (OSError, http.client.HTTPException)):  # a proxy's garbage status line or a cut-off body are not OSErrors
+        raise OSError(f"can't reach the licence server ({getattr(out[0], 'reason', out[0])})")
+    if isinstance(out[0], BaseException): raise out[0]
+    return out[0]
+
 def gumroad_verify(key, count_use):
-    """Gumroad's licence check -> (ok, uses, reason). Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
+    """Gumroad's licence check -> (ok, uses, reason, sale): sale is the purchase time (unix) or None. Gumroad has no per-Mac activation: `uses` is one counter for the whole key,
     and every check bumps it unless count_use is False. Gumroad answers success:true for a refunded or charged-back purchase
-    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict.
+    ("licence enforcement is up to the seller"), so the purchase flags are checked here. A 5xx is an outage, not a verdict, and neither is
+    any answer without a true/false `success` (an empty 403/407, a 429, a login page): those raise OSError.
     Gumroad's source (Aug 2026) also disables the key itself on a full refund: that is a 404 "This license key has been disabled"."""
     if not GUMROAD_PRODUCT_ID: raise Fail("this build has no Gumroad product id (packaging/go-live.sh sets it)")
     data = urllib.parse.urlencode({"product_id": GUMROAD_PRODUCT_ID, "license_key": key.strip(),
                                    "increment_uses_count": "true" if count_use else "false"}).encode()
-    try:
-        with urllib.request.urlopen(urllib.request.Request(f"{GUMROAD_API}/verify", data=data), timeout=15, context=tls_context()) as r:
-            body = json.loads(r.read() or b"{}")
-    except urllib.error.HTTPError as e:  # an unknown key is a 404 with a JSON message
-        with e:
-            if e.code >= 500: raise OSError(f"Gumroad answered {e.code}")
-            try: body = json.loads(e.read() or b"{}")
-            except ValueError: raise OSError(f"Gumroad answered {e.code}")
-    except (urllib.error.URLError, TimeoutError) as e:
-        raise OSError(f"can't reach the licence server ({getattr(e, 'reason', e)})")
-    except ValueError:  # a 200 that is not JSON (a hotel Wi-Fi login page): not a verdict, so the 30 days offline grace applies
-        raise OSError("can't reach the licence server (its answer was not readable)")
-    if not isinstance(body, dict): raise OSError("can't reach the licence server (its answer was not readable)")
-    if not body.get("success"):
-        why = body.get("message", "invalid key").rstrip(".")
+    code, raw = gumroad_fetch(urllib.request.Request(f"{gumroad_api()}/verify", data=data))
+    if code >= 500: raise OSError(f"Gumroad answered {code}")
+    try: body = json.loads(raw or b"{}")
+    except (ValueError, RecursionError): body = None  # a hotel Wi-Fi login page: not a verdict, so the 30 days offline grace applies
+    if not isinstance(body, dict) or not isinstance(body.get("success"), bool):
+        raise OSError("can't reach the licence server (" + (f"Gumroad answered {code} without a usable answer" if code != 200 else "its answer was not readable") + ")")
+    if not body["success"]:
+        msg = body.get("message")
+        why = (msg.rstrip(".") if isinstance(msg, str) else "") or "invalid key"
         if "disabled" in why: why = "the key was disabled, as Gumroad does after a full refund"  # the buyer sees why, not Gumroad's English sentence
-        return False, 0, why
-    p = body.get("purchase") or {}
-    uses = body.get("uses", 0)
-    if p.get("refunded"): return False, uses, "the purchase was refunded"
-    if p.get("chargebacked"): return False, uses, "the purchase was charged back"
-    if p.get("disputed") and not p.get("dispute_won"): return False, uses, "the purchase is disputed"  # a won dispute keeps the licence
-    return True, uses, None
+        return False, 0, why, None
+    p = body.get("purchase")
+    p = p if isinstance(p, dict) else {}
+    uses, sale = body.get("uses"), sale_time(p.get("sale_timestamp"))
+    uses = uses if isinstance(uses, int) and not isinstance(uses, bool) else 0
+    if p.get("refunded"): return False, uses, "the purchase was refunded", sale
+    if p.get("chargebacked"): return False, uses, "the purchase was charged back", sale
+    if p.get("disputed") and not p.get("dispute_won"): return False, uses, "the purchase is disputed", sale  # a won dispute keeps the licence
+    return True, uses, None, sale
+
+def save_licence(lic):
+    """Write licence.json; a folder that can't be written is a plain sentence, and this runs before anything is counted."""
+    try: write_json_atomic(LICENCE_FILE, lic)
+    except OSError as e:
+        raise Fail(f"can't save the licence in {LICENCE_FILE.parent} ({e.strerror or e}). Nothing was used from your activations: "
+                   "make that folder writable by you, then run `shotfleet activate` again")
 
 def cmd_activate(key):
     if not is_gumroad_key(key):
         raise Fail("that doesn't look like a shotfleet key (four groups of 8 letters and digits, like ABCDEF12-34567890-ABCDEF12-34567890). "
                    f"Your key is in the Gumroad receipt email: {BUY_URL}")
-    # Look first without counting: a refused key, or one with all 3 activations used, must not burn another.
-    ok, uses, why = gumroad_verify(key, count_use=False)
+    key = key.strip()
+    # Look first without counting: a refused key, or one with all its activations used, must not burn another.
+    ok, uses, why, sale = gumroad_verify(key, count_use=False)
     if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
-    known = (read_licence() or {}).get("key") == key.strip()  # this Mac already holds it: no new activation
+    try: check_update_window(sale)  # an out-of-window key must not spend an activation on a version it doesn't cover
+    except NoLicence as e: raise Fail(f"nothing was activated and no activation was used: {e}")
+    old = read_licence()
+    # This Mac already holds the key (a finished or an interrupted activation) -> no new activation. A file that is there but unreadable
+    # counts as held too: it is a re-check, and it must never cost one.
+    known = (old or {}).get("key") == key or (old is None and LICENCE_FILE.exists())
     if not known:
         if uses >= MAX_MACS:
             raise Fail(f"this key has used all {MAX_MACS} activations. Email hello@shotfleet.com and I'll reset the count")
-        ok, uses, why = gumroad_verify(key, count_use=True)  # ponytail: two people activating at once can pass 3; I reset by hand
-        if not ok: raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
-    LICENCE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LICENCE_FILE.write_text(json.dumps({"key": key.strip(), "store": "gumroad", "checked": time.time()}))
+        # Save first, count second: a folder that can't be written fails before anything is charged, and if the answer is lost after
+        # Gumroad counted, the retry finds the key here and doesn't count again.
+        save_licence({"key": key, "store": "gumroad", "checked": 0, "sale": None, "pending": True})
+        try: ok, uses, why, sale = gumroad_verify(key, count_use=True)
+        except OSError as e:
+            raise Fail(f"{e}. Gumroad may have counted this activation, and this Mac remembers it: run `shotfleet activate` again when you're online "
+                       "and it won't use another one")
+        if not ok or uses > MAX_MACS:  # uses > MAX_MACS: others activated at the same moment and took the last slot; the count stays burned
+            if old: save_licence(old)
+            else: LICENCE_FILE.unlink(missing_ok=True)
+            if ok: raise Fail(f"this key has used all {MAX_MACS} activations (someone activated at the same moment). Email hello@shotfleet.com and I'll reset the count")
+            raise Fail(f"that key didn't activate: {why}. Your key is in the Gumroad receipt email: {BUY_URL}")
+    save_licence({"key": key, "store": "gumroad", "checked": time.time(), "sale": sale})
     print(f"activated on {socket.gethostname()}. Thanks for buying shotfleet!")
     return 0
 
@@ -4580,9 +5179,9 @@ def read_licence():
     """The stored licence as a dict, or None when the file is missing or unreadable (a half-written file must never crash a command)."""
     try: lic = json.loads(LICENCE_FILE.read_text())
     except (OSError, ValueError): return None
-    if not isinstance(lic, dict) or not lic.get("key"): return None
+    if not isinstance(lic, dict) or not isinstance(lic.get("key"), str) or not lic["key"]: return None
     checked = lic.get("checked", 0)
-    return lic if isinstance(checked, (int, float)) and not isinstance(checked, bool) else None  # a text or null date is as good as a corrupt file
+    return lic if is_time(checked) else None  # a text or null date is as good as a corrupt file
 
 def cmd_deactivate():
     if not LICENCE_FILE.exists(): print("no licence on this Mac"); return 0
@@ -4592,44 +5191,79 @@ def cmd_deactivate():
     LICENCE_FILE.unlink()
     if lic.get("store") == "gumroad":  # freeing an activation takes a Gumroad access token, which can't ship in the program
         print(f"removed from this Mac. Gumroad can't give the activation back from here: "
-              f"if all {MAX_MACS} are used, email hello@shotfleet.com and I'll reset the count")
+              f"if all {MAX_MACS} activations are used, email hello@shotfleet.com and I'll reset the count")
     else:
         print("removed from this Mac (it was a licence from a store shotfleet no longer uses)")
     return 0
 
-def require_licence():
-    """`run` and `export` need a licence in released builds; `check`, `doctor` and `init` are free.
-    Checked online at most weekly; works offline for 30 days after the last good check."""
-    if not getattr(sys, "frozen", False): return  # running from source
-    if key := os.environ.get("SHOTFLEET_KEY"):  # CI: no activation slot used
-        try:
-            valid, why = gumroad_verify(key, count_use=False)[::2] if is_gumroad_key(key) else (False, "not a shotfleet key")
-        except OSError: return  # don't fail a build because the licence server is unreachable
-        if not valid: raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
-        return
+def key_licence(key):
+    """SHOTFLEET_KEY (CI): checked online on every run, no activation used. Raises NoLicence when it isn't good."""
+    if not is_gumroad_key(key): raise NoLicence("SHOTFLEET_KEY isn't a valid licence (not a shotfleet key)")
+    try: valid, _, why, sale = gumroad_verify(key, count_use=False)
+    except OSError as e:  # offline: only a key that passed a check on this machine in the last 30 days
+        seen = ci_seen(key)
+        if seen is None or not -86400 <= time.time() - seen["checked"] < LICENCE_OFFLINE_DAYS * 86400:  # a day of clock skew, as for an activated Mac
+            raise NoLicence(f"SHOTFLEET_KEY couldn't be checked ({e}). Offline, a key only works on a machine where it passed a check in the "
+                            "last 30 days, and this one has no such check. Run again once Gumroad can be reached")
+        return check_update_window(seen.get("sale"))
+    if not valid:
+        # remembered, so blocking Gumroad afterwards doesn't bring the key back: the CI record goes, and an activation of the same key is marked
+        with contextlib.suppress(OSError): ci_record_file().unlink(missing_ok=True)
+        lic = read_licence()
+        if lic and lic["key"] == key.strip():
+            with contextlib.suppress(OSError): write_json_atomic(LICENCE_FILE, {**lic, "refused": why})
+        raise NoLicence(f"SHOTFLEET_KEY isn't a valid licence ({why or 'invalid'})")
+    with contextlib.suppress(OSError):  # a read-only home only loses the offline grace
+        write_json_atomic(ci_record_file(), {"key_sha256": key_hash(key), "checked": time.time(), "sale": sale})
+    return check_update_window(sale)
+
+def mac_licence():
+    """The licence activated on this Mac (licence.json): checked online at most weekly, works offline for 30 days after the last good check."""
     if not LICENCE_FILE.exists():
         raise NoLicence(f"`export` and every language in `run` need a licence: shotfleet activate <key> (buy one at {BUY_URL}; checkout is on Gumroad). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
     lic = read_licence()
-    if lic is None:
-        raise NoLicence("the saved licence on this Mac is unreadable: activate again with `shotfleet activate <key>` (the key is in your purchase email). "
-                        "`check` is free, and `run` captures up to 2 languages without one.")
+    if lic is None:  # activating again re-checks the key online and doesn't use another activation
+        raise NoLicence("the saved licence on this Mac is unreadable: activate again with `shotfleet activate <key>` (the key is in your purchase email; "
+                        "this won't use another activation). `check` is free, and `run` captures up to 2 languages without one.")
     if lic.get("store") != "gumroad":  # a file from a store shotfleet no longer uses (shotfleet is sold through Gumroad only)
         raise NoLicence("the saved licence on this Mac is from a store shotfleet no longer uses: activate your Gumroad key with `shotfleet activate <key>` "
                         "(it is in your purchase email). `check` is free, and `run` captures up to 2 languages without one.")
-    age = (time.time() - lic.get("checked", 0)) / 86400
-    if age < -1:  # dated in the future: a hand-edited file would otherwise never be rechecked
-        raise NoLicence("the saved licence on this Mac has a date in the future: activate again with `shotfleet activate <key>`. "
+    if lic.get("refused"):  # the weekly check said no once; blocking Gumroad doesn't undo that
+        raise NoLicence(f"this licence is no longer valid ({lic['refused']}). If that has changed, `shotfleet activate <key>` checks it again. {BUY_URL}")
+    if lic.get("pending"):
+        raise NoLicence("activating on this Mac didn't finish: run `shotfleet activate <key>` again when you're online (it won't use another activation). "
                         "`check` is free, and `run` captures up to 2 languages without one.")
-    if age < LICENCE_RECHECK_DAYS: return
+    age = (time.time() - lic.get("checked", 0)) / 86400
+    if 0 <= age < LICENCE_RECHECK_DAYS: return check_update_window(lic.get("sale"))  # a file from before 0.1.6 has no sale date: it gets one at the weekly check
+    # Due for a re-check, or dated in the future (a clock that was fast, or a hand edit): verify online, then save today's date.
     try:
-        valid, why = gumroad_verify(lic["key"], count_use=False)[::2]
+        valid, _, why, sale = gumroad_verify(lic["key"], count_use=False)
     except OSError:
-        if age < LICENCE_OFFLINE_DAYS: return
+        if 0 <= age < LICENCE_OFFLINE_DAYS: return check_update_window(lic.get("sale"))
+        if age < 0:
+            raise NoLicence("the saved licence on this Mac is dated in the future (was the clock wrong?) and the licence server can't be reached to check it: "
+                            "set the clock right or connect once. `check` is free, and `run` captures up to 2 languages without one.")
         raise NoLicence("couldn't reach the licence server for 30 days; connect once to keep using every language in `run`")
     if not valid:
+        with contextlib.suppress(OSError): write_json_atomic(LICENCE_FILE, {**lic, "refused": why})
         raise NoLicence(f"this licence is no longer valid ({why}). {BUY_URL}")
-    LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time()}))
+    with contextlib.suppress(OSError):  # a read-only file only loses the new date; the licence is valid
+        write_json_atomic(LICENCE_FILE, {**lic, "checked": time.time(), "sale": sale})  # Gumroad's sale date replaces whatever the file said
+    check_update_window(sale)
+
+def require_licence():
+    """`run` and `export` need a licence in released builds; `check`, `doctor` and `init` are free."""
+    if not getattr(sys, "frozen", False): return  # running from source
+    if key := os.environ.get("SHOTFLEET_KEY"):
+        try: return key_licence(key)
+        except NoLicence as refusal:  # a stale key in a shell profile mustn't hide a licence activated on this Mac
+            if not LICENCE_FILE.exists(): raise
+            try: mac_licence()
+            except NoLicence: raise refusal
+            print(f"warning: SHOTFLEET_KEY was not accepted ({refusal}); using the licence activated on this Mac. Unset SHOTFLEET_KEY or fix it.", file=sys.stderr)
+            return
+    mac_licence()
 
 def export_with_hooks(out, fastlane):
     """`export`, with the config's before_export / after_export hooks (found through run.json) around it."""
@@ -4650,12 +5284,14 @@ def export_with_hooks(out, fastlane):
     return max(code, 1 if rc else 0)
 
 def apply_free_tier():
-    """`run` without a valid licence still runs, for two languages (the free tier shows the product)."""
-    global LOCALE_CAP, LOCALE_CAP_WHY
+    """`run` without a valid licence still runs, for two languages (the free tier shows the product). Not when SHOTFLEET_KEY is set: that is a
+    CI job's gate, and a green job that quietly captured 2 languages would be a lie, so it stops (exit 2)."""
+    global LOCALE_CAP
+    LOCALE_CAP = None  # the MCP server calls this on every run: a licence activated meanwhile must lift the cap
     try: require_licence()
     except NoLicence as e:
+        if os.environ.get("SHOTFLEET_KEY"): raise Fail(f"{e}. `run` stops here instead of capturing only 2 languages, because SHOTFLEET_KEY is set (unset it to use the free tier)")
         print(f"note: {e}", file=sys.stderr); LOCALE_CAP = FREE_LANGUAGES
-        LOCALE_CAP_WHY = str(e) if os.environ.get("SHOTFLEET_KEY") else None
 
 def on_sigterm(*_):  # CI cancelling a job: clean up like Ctrl-C
     raise KeyboardInterrupt
@@ -4720,12 +5356,12 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
 
 def main_dispatch(a):
     try:
-        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes)
+        if a.cmd == "doctor": return cmd_doctor(a.fix, a.yes, a.config)
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "skill": return cmd_skill(a.dir, a.project, a.force)
-        if a.cmd == "init": return cmd_init(a.builds, a.dir)
-        global NO_HOOKS
-        NO_HOOKS = bool(getattr(a, "no_hooks", False))
+        if a.cmd == "init": return cmd_init_capture(a.builds, a.dir) if a.capture else cmd_init(a.builds, a.dir)
+        global NO_HOOKS, NO_BUILD
+        NO_HOOKS, NO_BUILD = bool(getattr(a, "no_hooks", False)), bool(getattr(a, "no_build", False))
         if a.cmd in ("run", "export") and os.environ.get("SHOTFLEET_IMAGE") == "check":  # set by the Dockerfile
             raise Fail(f"`{a.cmd}` doesn't work in the shotfleet-check Docker image: it has no simulators, emulators or Maestro, "
                        "so it only runs `check`. Use `run` and `export` on a Mac")

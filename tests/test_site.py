@@ -85,8 +85,8 @@ def resolve(ref, page_ids):
     if u.scheme in ("http", "https", "mailto", "tel", "data"): return True
     if not u.path: return u.fragment in page_ids or not u.fragment
     path = PUB / (u.path.lstrip("/") or "index.html")
-    if path.is_dir(): path = path / "index.html"
-    if not path.exists(): path = path.with_name(path.name + ".html")
+    if not path.is_file() and path.with_name(path.name + ".html").exists(): path = path.with_name(path.name + ".html")  # /guides: guides.html beats guides/
+    elif path.is_dir(): path = path / "index.html"
     if not path.exists(): return False
     if u.fragment: return u.fragment in Page(path.read_text()).ids
     return True
@@ -175,7 +175,7 @@ class Offer(unittest.TestCase):
 
     def test_refund_window_is_14_days_everywhere(self):
         for name, text in self.DOCS.items():
-            found = set(re.findall(r"(\d+)[- ]day refund", text)) | set(re.findall(r"within (\d+) days", text))
+            found = set(re.findall(r"(\d+)[- ]day refund", text)) | set(re.findall(r"within (\d+) days(?! of (?:your|the) purchase)", text))
             if name in ("index.html", "terms.html", "launch-email.md", "README.md"): self.assertEqual(found, {"14"}, name)
 
     def test_free_tier_wording_matches_the_code_on_every_page(self):
@@ -187,7 +187,9 @@ class Offer(unittest.TestCase):
         self.assertIn("`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`", README)
 
     def test_limits_match_the_code(self):
-        self.assertEqual(sf.MAX_MACS, 3); self.assertIn("3 activations per key", INDEX); self.assertIn("The key has 3 activations", TERMS)
+        self.assertEqual(sf.MAX_MACS, 5); self.assertIn(f"A key can be activated {sf.MAX_MACS} times: 3 Macs and 2 spare for reinstalls", TERMS)
+        for text in (INDEX, TERMS): self.assertIn("there are spare activations for reinstalls, and if you run out, email", text)
+        self.assertNotRegex(INDEX + TERMS + README, r"\b3 activations")
         self.assertIn(f"works offline for {sf.LICENCE_OFFLINE_DAYS} days", INDEX); self.assertIn(f"up to {sf.LICENCE_OFFLINE_DAYS} days", TERMS)
         self.assertIn("about once a week", TERMS); self.assertEqual(sf.LICENCE_RECHECK_DAYS, 7)
 
@@ -197,9 +199,10 @@ class Offer(unittest.TestCase):
         self.assertIn("arm64", (PUB / "install.sh").read_text())  # and the installer really refuses anything else
 
     def test_the_updates_promise_is_not_an_unconditional_forever(self):
-        self.assertIn("not available yet", TERMS)  # renewal
+        self.assertIn("The renewal isn't on sale yet, so for now email", TERMS)  # renewal
         self.assertNotIn("you can renew", TERMS)
-        self.assertIn("keeps working while macOS and your tools allow", INDEX)
+        self.assertIn("Versions you have keep working while macOS and your tools allow", INDEX)
+        self.assertIn("keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run", TERMS)
 
 
 @unittest.skipIf(LIVE, "the site is already live; the waitlist blocks are gone")
@@ -333,6 +336,32 @@ class DockerPending(unittest.TestCase):
                 if self.PUBLISHED: self.assertNotIn("DOCKER-PENDING", text, "published: remove the markers")
                 else: self.assertNotIn("noloman/shotfleet-check", re.sub(r"<!--.*?-->", "", text, flags=re.S))
         self.assertGreater(seen, 0, "no mention found at all: is this test still looking at the right files?")
+
+
+class ByocPending(unittest.TestCase):
+    """Bring your own capture ([capture], your own XCUITest tests on iOS) has not run end to end on a device yet. Until site/BYOC_DEVICE_PROVEN
+    exists, every public line that offers it carries CAVEAT. After tools/fixture-byoc-e2e.sh passes on a device: drop the caveats, add the flag."""
+    CAVEAT = "not run end to end on a device yet"
+    FILES = [ROOT / "README.md"] + [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt")]
+    PROVEN = (ROOT / "site/BYOC_DEVICE_PROVEN").exists()
+
+    def test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven(self):
+        seen = 0
+        for p in self.FILES:
+            for n, line in enumerate(p.read_text().splitlines(), 1):
+                with self.subTest(file=p.name, line=n):
+                    if self.PROVEN: self.assertNotIn(self.CAVEAT, line, "BYOC_DEVICE_PROVEN exists: remove the caveat")
+                    elif "your own XCUITest" in line:
+                        seen += 1
+                        self.assertIn(self.CAVEAT, line, "BYOC is not device-proven yet: say so on this line")
+        if not self.PROVEN: self.assertGreaterEqual(seen, 10, "fewer BYOC lines than expected: is this test still looking at the right files?")
+
+
+class Hsts(unittest.TestCase):
+    def test_every_page_sends_hsts_for_six_months_without_subdomains_or_preload(self):
+        block = (ROOT / "site/public/_headers").read_text().split("\n\n")[0]
+        self.assertIn("Strict-Transport-Security: max-age=15552000", block)
+        self.assertNotIn("includeSubDomains", block); self.assertNotIn("preload", block)
 
 
 if __name__ == "__main__":

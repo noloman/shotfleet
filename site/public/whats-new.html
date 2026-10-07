@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>What’s new in shotfleet</title>
+<title>What’s new in shotfleet: release notes for every version</title>
 <meta name="description" content="What changed in each shotfleet release, in plain words: what you can do now that you couldn’t before, and what works better.">
-<meta property="og:title" content="What’s new in shotfleet">
+<meta property="og:title" content="What’s new in shotfleet: release notes for every version">
 <meta property="og:description" content="What changed for you in each shotfleet release, newest first.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -14,6 +14,7 @@
 <meta property="og:url" content="https://shotfleet.com/whats-new">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="shotfleet">
+<meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://shotfleet.com/whats-new">
 <meta name="color-scheme" content="light dark">
@@ -22,6 +23,27 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Home",
+   "item": "https://shotfleet.com/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "What’s new",
+   "item": "https://shotfleet.com/whats-new"
+  }
+ ]
+}
+</script>
+<link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -35,8 +57,8 @@
 </header>
 
 <!--
-  RELEASE STEP: the 0.1.5 heading holds the marker RELEASE_DATE (in a comment) until release day. Replace the whole comment with the date
-  from the CHANGELOG heading (YYYY-MM-DD). tests/test_site.py WhatsNew and packaging/publish.sh both refuse a release that still has it.
+  RELEASE STEP: the 0.1.6 heading holds the marker RELEASE_DATE (in a comment) until release day. Replace the whole comment with the date
+  the CHANGELOG heading gets on release day (it waits as "## 0.1.6 (RELEASE_DATE marker)" too). tests/test_site.py WhatsNew and packaging/publish.sh both refuse a release that still has it.
   Every bullet here has a row in tests/claims.json; add one for each new bullet.
 -->
 
@@ -44,6 +66,19 @@
   <section class="page">
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
+
+    <h2 id="v0-1-6">0.1.6, 2026-10-06</h2>
+    <ul>
+      <li>New in 0.1.6, on iOS: <code>run</code> can run your own XCUITest screenshot tests (<code>XCTAttachment</code> or fastlane’s <code>SnapshotHelper</code>) instead of a Maestro flow, on several simulators at once, one language each, and then checks what they saved. For that you need neither Maestro nor Java. I tried it by hand first, but the finished feature is new in 0.1.6 and not run end to end on a device yet. The <a href="/docs#xcuitest">docs</a> show how to set it up.</li>
+      <li>Over MCP, <code>run</code> now refuses a config with a <code>[capture]</code> build, <code>[ios] simctl</code> or <code>[android] shell</code> commands unless you pass <code>hooks: true</code>, the same opt-in as for <code>[hooks]</code>. <code>check</code> over MCP no longer takes <code>ocr_command</code>; use <code>--ocr-command</code> in your terminal.</li>
+      <li><code>check</code> understands fastlane supply’s file names, like <code>1_de-DE.png</code>. Before, it said every language was missing every other language’s screenshots. On a real Google Play set in 15 languages, 15 false “missing” lines are gone.</li>
+      <li>A Russian screen with English job titles in it is no longer called Kazakh when the app’s own Russian strings match it. A Ukrainian screen in the Russian folder is still caught.</li>
+      <li>When a language fails, <code>run</code> now says where it stopped: the step, the path to the failure screenshot, and up to 12 texts that were on that screen.</li>
+      <li>iPad in landscape: when Maestro taps at the portrait position and misses, <code>run</code> says so in one line and tells you what to do instead.</li>
+      <li>The “this Mac was short of memory” note only shows up when a failure really looks like that, not on every failed flow.</li>
+      <li>From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset.</li>
+      <li>“A year of updates” now means exactly that: your key covers every shotfleet version released within a year of your purchase. A version that comes out later runs as the free tier and says which versions your key covers; the versions you have keep working. If you bought in October 2026, every version released until October 2027 is covered.</li>
+    </ul>
 
     <h2 id="v0-1-5">0.1.5, 2026-10-06</h2>
 
@@ -92,7 +127,7 @@
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 <script src="/ga.js" defer></script>
