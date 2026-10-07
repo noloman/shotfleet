@@ -367,6 +367,33 @@ class ByocPending(unittest.TestCase):
         self.assertGreaterEqual(seen, 6)  # README and docs lead + needs sentence, home page, llms.txt, alternatives
 
 
+class SecurityTxt(unittest.TestCase):
+    """RFC 9116: /.well-known/security.txt. Workers static assets upload dot-directories (wrangler's asset ignore list is only .assetsignore, _headers, _redirects)."""
+    F = PUB / ".well-known/security.txt"
+
+    def test_the_file_has_exactly_the_four_fields(self):
+        text = self.F.read_text(); self.assertTrue(text.endswith("\n") and not text.endswith("\n\n"))
+        self.assertEqual([l.split(": ", 1)[0] for l in text.splitlines()], ["Contact", "Expires", "Preferred-Languages", "Canonical"])
+        f = dict(l.split(": ", 1) for l in text.splitlines())
+        self.assertEqual(f["Contact"], "mailto:hello@shotfleet.com"); self.assertEqual(f["Preferred-Languages"], "en")
+        self.assertEqual(f["Canonical"], "https://shotfleet.com/.well-known/security.txt")
+
+    def test_expires_is_in_the_future_and_under_a_year_away(self):
+        from datetime import datetime, timedelta, timezone
+        exp = dict(l.split(": ", 1) for l in self.F.read_text().splitlines())["Expires"]
+        self.assertRegex(exp, r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$")
+        when = datetime.fromisoformat(exp.replace("Z", "+00:00")); now = datetime.now(timezone.utc)
+        self.assertGreater(when, now, f"security.txt expired on {exp}: bump Expires in site/public/.well-known/security.txt")
+        self.assertLess(when - now, timedelta(days=366), "RFC 9116: Expires should be less than a year away")
+
+    def test_headers_serve_it_as_utf8_text_plain(self):
+        self.assertIn("/.well-known/security.txt\n  Content-Type: text/plain; charset=utf-8\n", (PUB / "_headers").read_text())
+
+    def test_nothing_ignores_it_and_the_worker_is_not_in_its_way(self):
+        self.assertFalse(any(".well-known" in (ROOT / p).read_text() for p in ("site/public/.assetsignore", "site/.assetsignore") if (ROOT / p).exists()))
+        self.assertNotIn("well-known", (ROOT / "site/worker.js").read_text())  # worker runs first only for /api/* (wrangler.toml), so this is a plain asset
+
+
 class Hsts(unittest.TestCase):
     def test_every_page_sends_hsts_for_six_months_without_subdomains_or_preload(self):
         block = (ROOT / "site/public/_headers").read_text().split("\n\n")[0]
