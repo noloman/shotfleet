@@ -265,7 +265,7 @@ Config: a `[capture]` table in place of `flow` (validated by `check_capture`, `:
 Progress for the stall watchdog is "a file changed in the result bundle or a new SnapshotHelper file appeared" (`newest_file`, `newest_screenshot`).
 Same pool, same retry, same `check` and `export` as a Maestro run; paid like `run`. Status: **the device test (`tools/fixture-byoc-e2e.sh`) has not
 passed on a device for the finished feature**, which is why `site/BYOC_DEVICE_PROVEN` does not exist and public lines carry the caveat
-("not run end to end on a device yet", enforced by `tests/test_site.py` `ByocPending`). Experiments E4 and E5 (research note above) showed it works by
+("its device test hasn't passed yet", enforced by `tests/test_site.py` `ByocPending`). Experiments E4 and E5 (research note above) showed it works by
 hand on the fixture app and on a real project.
 
 ## 2.8 Retries, timeouts, watchdogs

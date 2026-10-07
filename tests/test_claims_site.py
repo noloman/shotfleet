@@ -287,9 +287,8 @@ class WorkerBehaviour(unittest.TestCase):
                  "page views are not rate limited, so they never reach the limiter")
 
     def test_c081_the_purge_step_exists_and_the_privacy_page_and_launch_checklist_agree(self):
-        self.assertIn("I will delete the waitlist within 30 days after I send the launch email", read("site/public/privacy.html"))
+        self.assertIn("The waitlist is closed and I never emailed it. Any address still on it will be deleted", read("site/public/privacy.html"))
         self.assertIn("--purge-waitlist", read("site/signups.sh")); self.assertIn("--purge-waitlist", read("LAUNCH.md"))
-        self.assertRegex(read("LAUNCH.md"), r"30 days")
         self.assertNotIn("expirationTtl", read("site/worker.js"))  # nothing deletes by itself: the promise is a manual step
 
 

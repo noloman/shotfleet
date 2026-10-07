@@ -14,8 +14,8 @@
 
 ## Requirements
 
-- An Apple silicon Mac. The installer refuses Intel Macs. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
-- Maestro 2.x and Java 17+ (Maestro needs it). On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet. Android still needs a Maestro flow.
+- An Apple silicon Mac. The installer refuses Intel Macs. Built to run on macOS 13 or later on Apple silicon (the build declares 13.0 as its minimum), but I haven't run it on macOS 13. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
+- Maestro 2.x and Java 17+ (Maestro needs it). On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6; its device test hasn't passed yet. Android still needs a Maestro flow.
 - Xcode for iOS (a Debug simulator build), the Android SDK for Android (API 33+ emulators).
 - Native iOS and Android strings and Compose Multiplatform are read from the build. Flutter, React Native, .NET MAUI and Unity work from your translation files (strings = "glob"); this was run end to end on a real Flutter app (wger) and a real Expo app (the obytes template), on iOS and Android, on 2026-10-03; other apps and bare React Native are not yet run.
 - Text typed into fields by the flow is not translated by itself: it stays the same in every language unless you set per-language `[inputs]` (iOS; on Android that needs a Maestro that sets MAESTRO_DEVICE_UDID).
@@ -25,14 +25,6 @@
 - `curl -fsSL https://shotfleet.com/install.sh | sh` is the main way: the signed, notarized Apple silicon build, checked against its SHA-256.
 - Or with Homebrew: `brew install noloman/tap/shotfleet` (a cask in my own tap, the same build). Homebrew doesn't install Maestro or Java; `shotfleet doctor --fix` does.
 
-<!-- DOCKER-PENDING (the Linux image and the GitHub Action are not published yet; see packaging/README.md step 9, then delete these two marker lines and add site/DOCKER_PUBLISHED)
-## Linux and CI
-
-- `check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check` (free, no licence, amd64 and arm64): `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk`
-- GitHub Action: `uses: noloman/shotfleet-check-action@v1` with `folder:` and `app:` (also `locale:`, `args:`, `warn-only:`), on `ubuntu-latest`. Outputs: the problem count, the report folder and the JSON from `check --json`. Tested locally with `docker run`; not yet run on GitHub's runners.
-- What doesn't work on Linux: `run` and `export` (the image only runs `check`; capturing and exporting need a Mac), and macOS text recognition (Tesseract reads fewer scripts; the image has data for 34 common languages).
-- Without `--app` (or `--strings`) the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.
-DOCKER-PENDING -->
 
 ## Price and licence
 

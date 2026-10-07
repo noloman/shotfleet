@@ -285,10 +285,11 @@ class PrivacyPage(unittest.TestCase):
         text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", (PUB / "privacy.html").read_text()))
         for must in ("about once a week", "the product ID", "count as an activation", "shotfleet doctor", "latest version number",
                      "by day, by the site or link you came from, and by your browser's language", "your IP address is not stored",
-                     "I will delete the waitlist within 30 days after I send the launch email",
+                     "The waitlist is closed and I never emailed it. Any address still on it will be deleted",
                      "kept until I've answered them", "I delete them on request", "Your app and screenshots are never uploaded"):
             self.assertIn(must, text)
         self.assertNotIn("I delete the list 30 days after", text)  # that was a promise nothing carried out
+        self.assertNotIn("after I send the launch email", text)  # no waitlist email was ever sent
 
 
 class WhatsNew(unittest.TestCase):
@@ -321,8 +322,8 @@ class WhatsNew(unittest.TestCase):
 
 
 class DockerPending(unittest.TestCase):
-    """The Linux check image and its GitHub Action are not published yet. Until site/DOCKER_PUBLISHED exists, every public mention waits in a
-    <!-- DOCKER-PENDING ... DOCKER-PENDING --> comment; after publishing, delete the markers and add the flag file."""
+    """The Linux check image and its GitHub Action are not published yet. Until site/DOCKER_PUBLISHED exists, no public file mentions it (the held-back text is in
+    site/draft/docker-pending.txt); after publishing, put it back and add the flag file."""
     FILES = [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt", ".xml", ".js")]
     PUBLISHED = (ROOT / "site/DOCKER_PUBLISHED").exists()
 
@@ -335,13 +336,12 @@ class DockerPending(unittest.TestCase):
                 self.assertEqual(text.count("<!-- DOCKER-PENDING"), text.count("DOCKER-PENDING -->"))
                 if self.PUBLISHED: self.assertNotIn("DOCKER-PENDING", text, "published: remove the markers")
                 else: self.assertNotIn("noloman/shotfleet-check", re.sub(r"<!--.*?-->", "", text, flags=re.S))
-        self.assertGreater(seen, 0, "no mention found at all: is this test still looking at the right files?")
 
 
 class ByocPending(unittest.TestCase):
-    """Bring your own capture ([capture], your own XCUITest tests on iOS) has not run end to end on a device yet. Until site/BYOC_DEVICE_PROVEN
+    """Bring your own capture ([capture], your own XCUITest tests on iOS) has no passing device test yet. Until site/BYOC_DEVICE_PROVEN
     exists, every public line that offers it carries CAVEAT. After tools/fixture-byoc-e2e.sh passes on a device: drop the caveats, add the flag."""
-    CAVEAT = "not run end to end on a device yet"
+    CAVEAT = "its device test hasn't passed yet"
     FILES = [ROOT / "README.md"] + [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt")]
     PROVEN = (ROOT / "site/BYOC_DEVICE_PROVEN").exists()
 
@@ -350,10 +350,10 @@ class ByocPending(unittest.TestCase):
         for p in self.FILES:
             for n, line in enumerate(p.read_text().splitlines(), 1):
                 with self.subTest(file=p.name, line=n):
-                    if self.PROVEN: self.assertNotIn(self.CAVEAT, line, "BYOC_DEVICE_PROVEN exists: remove the caveat")
+                    if self.PROVEN: self.assertNotIn(self.CAVEAT, line.replace("’", "'"), "BYOC_DEVICE_PROVEN exists: remove the caveat")
                     elif "your own XCUITest" in line:
                         seen += 1
-                        self.assertIn(self.CAVEAT, line, "BYOC is not device-proven yet: say so on this line")
+                        self.assertIn(self.CAVEAT, line.replace("’", "'"), "BYOC is not device-proven yet: say so on this line")
         if not self.PROVEN: self.assertGreaterEqual(seen, 10, "fewer BYOC lines than expected: is this test still looking at the right files?")
 
     def test_a_line_saying_you_need_neither_maestro_nor_java_for_xcuitest_tests_says_it_is_not_device_proven(self):
@@ -363,8 +363,14 @@ class ByocPending(unittest.TestCase):
                 if "XCUITest" in line and re.search(r"Maestro or Java|neither", line):
                     seen += 1
                     with self.subTest(file=p.name, line=n):
-                        if not self.PROVEN: self.assertIn(self.CAVEAT, line, "this line says no Maestro or Java for XCUITest tests: say it is not device-proven")
+                        if not self.PROVEN: self.assertIn(self.CAVEAT, line.replace("’", "'"), "this line says no Maestro or Java for XCUITest tests: say it is not device-proven")
         self.assertGreaterEqual(seen, 6)  # README and docs lead + needs sentence, home page, llms.txt, alternatives
+
+
+class ActivationCaveat(unittest.TestCase):
+    def test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6(self):
+        for name in ("docs.html", "terms.html", "index.html"):
+            with self.subTest(page=name): self.assertIn("The spare activations work from 0.1.6; 0.1.5 and older stop at 3.", (PUB / name).read_text())
 
 
 class SecurityTxt(unittest.TestCase):

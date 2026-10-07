@@ -1408,15 +1408,15 @@
  },
  {
   "id": "C081",
-  "claim": "I delete the list 30 days after the launch email goes out, or sooner if you ask",
+  "claim": "The waitlist is closed, no email was ever sent to it, and any address still on it will be deleted (or removed at once by the visitor or on request)",
   "where": [
    "site/public/privacy.html"
   ],
   "where_text": [
-   "I will delete the waitlist within 30 days after I send the launch email, or sooner if you ask."
+   "The waitlist is closed and I never emailed it. Any address still on it will be deleted, and you can remove yours yourself below, or ask me."
   ],
   "status": "partial",
-  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence. 2026-10-03: WorkerBehaviour.test_c081_the_purge_step_exists_and_the_privacy_page_and_launch_checklist_agree checks the sentence, signups.sh --purge-waitlist and the LAUNCH.md step, and that worker.js sets no expiry. Still missing: the promise is a manual step 30 days after the launch email; nothing here can test that it is done on time, and msg: records are covered by the separate 'kept until answered' sentence.",
+  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence. 2026-10-03: WorkerBehaviour.test_c081_the_purge_step_exists_and_the_privacy_page_and_launch_checklist_agree checks the sentence, signups.sh --purge-waitlist and the LAUNCH.md step, and that worker.js sets no expiry. 2026-10-07: reworded after the 0.1.6 site review, because no waitlist email was ever sent (signups were 0): the page now says the waitlist is closed and any address still on it will be deleted, with no date. Deleting what is stored is still a manual step (site/signups.sh --purge-waitlist; not done by the review pass). Nothing here can test that it is done, and msg: records are covered by the separate 'kept until answered' sentence.",
   "layer": "site",
   "assertion": "Assert wrangler.toml has a scheduled purge or worker.js passes expirationTtl to put(); or a signups.sh --purge exists and the launch checklist (LAUNCH.md) lists it.",
   "fix": "Add the 30-day purge to LAUNCH.md and implement it; extend the sentence to messages.",
@@ -2225,7 +2225,7 @@
  },
  {
   "id": "C131",
-  "claim": "Built for macOS 13 or later on Apple silicon; full runs only on macOS 27; installer, doctor and check on macOS 14 and 15 (0.1.1) and 26.2 in a VM (0.1.2); other versions not tested",
+  "claim": "Built to run on macOS 13 or later on Apple silicon (minos 13.0, tools/verify-release.sh), not run on 13; full runs only on macOS 27; installer, doctor and check on macOS 14 and 15 (0.1.1) and 26.2 in a VM (0.1.2); other versions not tested",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -2237,7 +2237,7 @@
    "site/public/demo.html"
   ],
   "where_text": [
-   "Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet."
+   "Built to run on macOS 13 or later on Apple silicon (the build declares 13.0 as its minimum), but I haven't run it on macOS 13. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet."
   ],
   "status": "evidence",
   "proof": "2026-10-05, release 0.1.1 built from a standalone Python 3.14.2 and `swiftc -target arm64-apple-macos13.0`: `python3 tools/macho-minos.py dist/shotfleet` on the unpacked tarball gives 2 Mach-O files at macOS 11.0 and 1 (the ocr helper) at 13.0, none at 27.0 (the 0.1.0 folder had 52 of 56 at 27.0). Apple notarized both the program and the package (Accepted); the quarantined run, `check` on 72 real screenshots (0 problems) and a licence call over TLS all ran on macOS 27. Tests: tests/test_platform_reach.py. The Mach-O minimum is a build fact, not proof that it runs below macOS 27. After the deploy (2026-10-05) two manual GitHub runs installed the LIVE 0.1.1 on Apple-silicon macOS 14.8.9 and 15.7.9: install, `shotfleet --version` (0.1.1), `doctor` (ran to the end) and `check` on two sample screenshots worked with no start-up error (docs/owner-note-0.1.1.md, research/limits-platform-reach-2026-10-05.md; hosted runners 37303612329 and 37304115758; runner images macos-14 for 14.8.9 and macos-15 for 15.7.9). Not shown: simulator runs on those versions, macOS 13, macOS 26.0 to 26.2, a real Mac or a clean Mac. With the owner's yes (2026-10-05) the same sentence is also on the home page (the price lede and the \"Not for you if\" list), the comparison page, llms.txt, the skill and the agent snippet, and the JSON-LD softwareRequirements starts with `macOS 13 or later on an Apple silicon Mac`; the Gumroad page carries it too (not in the repo). 2026-10-06 (research/site-claims-audit-2026-10-06.md item 2): 'tested on macOS 27' left out what ran elsewhere and what never ran. The line now says it, matching docs/compat.md (macOS 27 row; 14.8.9 and 15.7.9 row, 0.1.1 only; 26.2 row, the live 0.1.2 in a Tart VM; macOS 13 and 26.0 to 26.1 untested).",
@@ -3821,7 +3821,7 @@
  },
  {
   "id": "C235",
-  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6 and not run end to end on a device yet",
+  "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6; its device test hasn't passed yet",
   "where": [
    "README.md",
    "site/public/docs.html",
@@ -3842,23 +3842,23 @@
   "where_text": [
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
-   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
-   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
-   "(on iOS, your own XCUITest tests can stand in for Maestro, but that part is new in 0.1.6 and not run end to end on a device yet)",
-   "can use <a href=\"#xcuitest\">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6 and not run end to end on a device yet.",
-   "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6 and not run end to end on a device yet, see below).",
-   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6 and not run end to end on a device yet).",
-   "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6 and not run end to end on a device yet) needs neither.",
-   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6 and not run end to end on a device yet)",
-   "and you don't need Maestro or Java for this (new in 0.1.6, and not run end to end on a device yet).",
-   "and you don't need Maestro or Java for this (new in 0.1.6, and not run end to end on a device yet).",
-   "On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6, not run end to end on a device yet).",
+   "On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6; its device test hasn't passed yet.",
+   "On iOS, `run` can instead run your own XCUITest screenshot tests (XCTAttachment or fastlane SnapshotHelper) with a `[capture]` table in the config, one language per simulator, and then needs neither. That part is new in 0.1.6; its device test hasn't passed yet.",
+   "(on iOS, your own XCUITest tests can stand in for Maestro, but that part is new in 0.1.6; its device test hasn't passed yet)",
+   "can use <a href=\"#xcuitest\">your own XCUITest tests</a> instead, and then needs neither. That part is new in 0.1.6; its device test hasn't passed yet.",
+   "`run` needs Maestro, or on iOS your own XCUITest tests (new in 0.1.6; its device test hasn't passed yet, see below).",
+   "<code>run</code> needs Maestro, or on iOS <a href=\"#xcuitest\">your own XCUITest tests</a> (new in 0.1.6; its device test hasn't passed yet).",
+   "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6; its device test hasn't passed yet) needs neither.",
+   "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6; its device test hasn't passed yet)",
+   "and you don't need Maestro or Java for this (new in 0.1.6; its device test hasn't passed yet).",
+   "and you don't need Maestro or Java for this (new in 0.1.6; its device test hasn't passed yet).",
+   "On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6; its device test hasn't passed yet).",
    "The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) has not passed yet.",
    "The device test for the finished feature (<code>tools/fixture-byoc-e2e.sh</code>) has not passed yet."
   ],
   "status": "partial",
   "layer": "device",
-  "proof": "The device test ran once, 2026-10-06 22:57 (research/byoc-device-test-2026-10-06/, tools/fixture-byoc-e2e.sh): 14 of 20 assertions passed, on a Mac with load 300 to 800 and swap nearly full. XCTAttachment case: PASS (de and ja screenshots saved, both languages ok in run.json, the build ran once, no .xctestrun copies left), but one of the 2 simulators stopped answering (simctl uninstall) and the run finished on 1, German retried, so 'several simulators at once' did not run on a device. Missing-.keepAlways case: PASS (the language failed with the hint), but it also ran with a simulator that stopped answering and an unreadable .xcresult, so it is weak evidence. SnapshotHelper (fastlane) case: FAIL, both languages 0/0 screenshots, because its simulators hung; it has not run on a device. Needed to prove it: one passing run of tools/fixture-byoc-e2e.sh ('PASS: all N assertions passed') on a quiet Mac, scheduled by the coordinator under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'not run end to end on a device yet', and a line that says 'Maestro or Java' or 'neither' about it must carry the same caveat. After the device test passes, the coordinator removes the caveats and adds the flag file.",
+  "proof": "The device test ran once, 2026-10-06 22:57 (research/byoc-device-test-2026-10-06/, tools/fixture-byoc-e2e.sh): 14 of 20 assertions passed, on a Mac with load 300 to 800 and swap nearly full. XCTAttachment case: PASS (de and ja screenshots saved, both languages ok in run.json, the build ran once, no .xctestrun copies left), but one of the 2 simulators stopped answering (simctl uninstall) and the run finished on 1, German retried, so 'several simulators at once' did not run on a device. Missing-.keepAlways case: PASS (the language failed with the hint), but it also ran with a simulator that stopped answering and an unreadable .xcresult, so it is weak evidence. SnapshotHelper (fastlane) case: FAIL, both languages 0/0 screenshots, because its simulators hung; it has not run on a device. Needed to prove it: one passing run of tools/fixture-byoc-e2e.sh ('PASS: all N assertions passed') on a quiet Mac, scheduled by the coordinator under the device lock. Unit, with xcodebuild and simctl faked: CaptureRun.test_builds_once_then_runs_each_language_on_its_own_simulator_in_parallel, CaptureRun.test_more_languages_than_simulators_take_turns, CaptureRun.test_a_hung_simulator_is_stopped_and_the_language_retried. By hand before the code existed: experiment E4 (research/byoc-ios-experiment-2026-10-06.md). The caveat on every line that offers it is guarded by ByocPending (tests/test_site.py): while site/BYOC_DEVICE_PROVEN is missing, every line in README.md and site/public that says 'your own XCUITest' must say 'its device test hasn't passed yet', and a line that says 'Maestro or Java' or 'neither' about it must carry the same caveat. After the device test passes, the coordinator removes the caveats and adds the flag file.",
   "assertion": "SHOTFLEET_E2E=1 tools/fixture-byoc-e2e.sh prints 'PASS: all N assertions passed'.",
   "fix": ""
  },
@@ -3881,14 +3881,14 @@
  },
  {
   "id": "C237",
-  "claim": "What's new 0.1.6: on iOS, run can run the team's own XCUITest screenshot tests instead of a Maestro flow, several simulators at once, one language each, then checks them; needs neither Maestro nor Java; tried by hand, the finished feature not run end to end on a device yet",
+  "claim": "What's new 0.1.6: on iOS, run can run the team's own XCUITest screenshot tests instead of a Maestro flow, several simulators at once, one language each, then checks them; needs neither Maestro nor Java; tried by hand, the finished feature its device test hasn't passed yet",
   "where": [
    "site/public/whats-new.html",
    "site/public/whats-new.html"
   ],
   "where_text": [
    "<code>run</code> can run your own XCUITest screenshot tests",
-   "the finished feature is new in 0.1.6 and not run end to end on a device yet"
+   "the finished feature is new in 0.1.6; its device test hasn’t passed yet"
   ],
   "status": "untested",
   "layer": "device",
@@ -4103,8 +4103,8 @@
   ],
   "where_text": [
    "only runs on an Apple silicon Mac (the installer refuses Intel)",
-   "$29 for the first 100 buyers, then $49 once (14-day refund)",
-   "$29 for the first 100 buyers, then $49 once, 14-day refund"
+   "$29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund",
+   "$29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund"
   ],
   "status": "evidence",
   "layer": "site",
@@ -4263,6 +4263,59 @@
   "proof": "McpRunRunsNoConfigCommandUnlessAsked.test_a_capture_build_does_not_run_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_simctl_and_shell_setup_commands_are_refused_without_hooks_true, McpRunRunsNoConfigCommandUnlessAsked.test_the_last_guard_stops_setup_commands_and_the_build_even_past_mcp_call, McpCheckRunsNoProgram.test_ocr_command_is_refused_and_never_runs (security review S1/S2, 2026-10-07: shotfleet-rc-build/code-review-2026-10-07/security.md). CHANGELOG 0.1.6.",
   "layer": "unit",
   "assertion": "The proof's tests; the quoted words on the pages.",
+  "fix": ""
+ },
+ {
+  "id": "C258",
+  "claim": "What's new 0.1.6: in CI a SHOTFLEET_KEY that is refused or can't be checked stops run with exit 2; with Gumroad unreachable a key counts only where it passed a check in the last 30 days; cache ci-checked.json between jobs",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "now stops <code>run</code> with exit 2, instead of quietly capturing 2 languages",
+   "<code>~/Library/Application Support/shotfleet/ci-checked.json</code> between jobs"
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "LicenceHardening.test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages (run exits 2 with 'stops here'), LicenceHardening.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days. CHANGELOG 0.1.6 (SHOTFLEET_KEY is a gate in CI). Added to What's new after the 0.1.6 site review, 2026-10-07.",
+  "assertion": "The proof's tests; the quoted words on the page.",
+  "fix": "",
+  "test": "LicenceHardening.test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages"
+ },
+ {
+  "id": "C259",
+  "claim": "The spare activations (5 per key, 3 Macs) work from 0.1.6; 0.1.5 and older stop at 3, said on docs, terms and the home price card as well as What's new",
+  "where": [
+   "site/public/docs.html",
+   "site/public/terms.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
+   "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
+   "The spare activations work from 0.1.6; 0.1.5 and older stop at 3."
+  ],
+  "status": "proven",
+  "layer": "unit",
+  "proof": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6. CHANGELOG 0.1.6 (the 5 activations bullet: 0.1.5 and earlier still stop at 3; every version stays downloadable). Site review 2026-10-07 row 16.",
+  "assertion": "The quoted sentence is on all three pages.",
+  "fix": "",
+  "test": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6"
+ },
+ {
+  "id": "C260",
+  "claim": "/demo says its Record notes name files in the private repository, and that the owner sends the record on request by email; no internal ids (claims rows, branch names) on the page",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "names the file in my private repository where I keep the record (run logs, check.json). Email hello@shotfleet.com and I'll send you the one you want to see."
+  ],
+  "status": "policy",
+  "layer": "site",
+  "proof": "Site review 2026-10-07 row 2. github.com/noloman/shotfleet is private, so the pointers cannot be followed. Whether Manu sends a record when asked is his promise; nothing tests it.",
+  "assertion": "The quoted sentence is on the page; no 'claims row' or 'branch claude/' text on /demo.",
   "fix": ""
  }
 ]

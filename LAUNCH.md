@@ -123,7 +123,7 @@ Posting and emailing stay yours, as agreed.
 The founder price ($29) is for the first 100 buyers, whoever buys first: `go-live.sh` puts the buy page live before the email
 goes out, so the email does not promise the list an early window.
 
-## 8. 30 days after the launch email: delete the waitlist (a promise on the privacy page)
+## 8. Delete the waitlist (the privacy page says any address on it will be deleted; no waitlist email was ever sent)
 
 ```sh
 site/signups.sh --purge-waitlist      # shows the count, asks you to type PURGE, then deletes every email: record
