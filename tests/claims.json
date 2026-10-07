@@ -4381,7 +4381,7 @@
    "They are 6 of the 30, picked by me after looking at all of them."
   ],
   "status": "evidence",
-  "proof": "Source frames: shotfleet-rc-build/kuokka-run/out-run3/raw/{de,ja}/03_radar.png, out-run5/raw/fr/03_radar.png, out-run4/raw/{ko,es}/05_account.png, out-run5/raw/pt-BR/05_account.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/iphone_{de,ja,fr}_radar.webp and iphone_{ko,es,pt-br}_account.webp (no frames, captions or edits). Left out and why: research/kuokka-run-2026-10-07/NOTES.md (feed frames show OpenAI favicons and HN usernames, story frames show a user's comment, Bookmarks frames show a story title and author). Owner approval of the showcase: 2026-10-06 ('do what you consider, I trust you', per the coordinator's brief).",
+  "proof": "Source frames: shotfleet-rc-build/kuokka-run/out-run3/raw/{de,ja}/03_radar.png, out-run5/raw/fr/03_radar.png, out-run4/raw/{ko,es}/05_account.png, out-run5/raw/pt-BR/05_account.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/iphone_{de,ja,fr}_radar.webp and iphone_{ko,es,pt-br}_account.webp (no frames, captions or edits). Left out and why: research/kuokka-run-2026-10-07/NOTES.md (feed frames show OpenAI favicons and HN usernames, story frames show a user's comment, Bookmarks frames show a story title and author). Owner approval of the showcase: 2026-10-06 ('do what you consider, I trust you', per the coordinator's brief). Owner approval that the app name Kuokka is public (the page, the alt text, and the name printed inside the de, ja and fr Radar frames), given explicitly in chat on 2026-10-07: 'make it public, it's our project so it's all OK'.",
   "layer": "device",
   "assertion": "One recorded run on the owner's app, 2026-10-07.",
   "fix": ""
