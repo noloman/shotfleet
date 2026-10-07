@@ -4649,5 +4649,124 @@
   "layer": "unit",
   "assertion": "Read on the date named in the proof; a later change upstream is not tracked.",
   "fix": ""
+ },
+ {
+  "id": "C281",
+  "claim": "WOD Tracker, 2026-10-07, shotfleet 0.1.6, iPhone: three runs of two languages (hi,tr / zh-Hans,pl / nl,pt), 4 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator, iOS 26.4, 0 retries, 366 s, 400 s and 384 s",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "iPhone: three runs of two languages (hi and tr, zh-Hans and pl, nl and pt), 4 screens each, 24 screenshots on 1 iPhone 17 Pro Max simulator with iOS 26.4, 0 retries, 366 s, 400 s and 384 s.",
+   "iPhone: 3 runs of 2 languages, 4 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator (iOS 26.4), 0 retries, 366 s, 400 s and 384 s."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/iphone-run1/run.json, iphone-run2/run.json, iphone-run3/run.json: wall_seconds 366, 400, 384; locales hi,tr / zh-Hans,pl / nl,pt each ok with screenshots 4 and attempts 1; simulators 1; logs/run1-hi-tr.log, run2-zh-Hans-pl.log, run3-nl-pt.log: 'booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)', no 'retrying' line; shotfleet 0.1.6 (NOTES.md). The English dry run (iphone-dry, 4 screenshots) is an extra run and is not counted in the 24. Device lock 18:14:38 to 19:16:06 (progress.log).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C282",
+  "claim": "WOD Tracker, 2026-10-07, shotfleet 0.1.6, Android: two runs of three languages (hi,tr,zh-CN / pl,nl,pt), 6 screens each = 36 screenshots on 1 emulator, 0 retries, 553 s and 528 s, demo data seeded through the app's debug link, no account",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Android: two runs of three languages (hi, tr and zh-CN, then pl, nl and pt), 6 screens each, 36 screenshots on 1 emulator, 0 retries, 553 s and 528 s.",
+   "Android: 2 runs of 3 languages, 6 screens each = 36 screenshots on 1 emulator, 0 retries, 553 s and 528 s, with demo data seeded through the app’s debug link."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/android-run1/run.json, android-run2/run.json: wall_seconds 553 and 528; locales hi,tr,zh-CN / pl,nl,pt each ok with screenshots 6; emulators 1 (device emulator-5702); no retried flag; logs/run-android-run1.log, run-android-run2.log. The earlier tries (android-run1-failed-1942: tr 0/6 after one retry; android-run2-sleep-interrupted-2020: Mac asleep 17 min) are not counted; the dry, dry-final and zhsmoke runs are extra. Demo data: NOTES.md (debug deep link crossfittracker://debug, PRO debug override, Wipe & Seed, no sign-in). Device lock 19:23:17 to 20:34:15 (progress-android.log).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C283",
+  "claim": "WOD Tracker, 2026-10-07: shotfleet check found 0 problems in all five counted runs; the check reads the pictures and does not prove that every tap hit the right button",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Check found 0 problems in all five runs (the check reads the pictures; it does not prove that every tap hit the right button).",
+   "Check found 0 problems in all five runs (the check reads the pictures; it does not prove that every tap hit the right button)."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/iphone-run1/check.json, iphone-run2/check.json, iphone-run3/check.json, android-run1/check.json, android-run2/check.json (shotfleet check --app, rc 0): screenshots 8, 8, 8, 18, 18; problems 0, notes 0, unverified 0 each; logs/check-iphone-run*.log and check-android-run*.log. A clean check does not prove the taps were right: the iPhone run1 attempt A (logs/failed-attempts/run1-attemptA-hi-tr-rc0-but-hi-02-benchmarks-shows-Train.log) ended rc=0 with 'checked 8 screenshots in 2 languages: 0 problem(s)' although its Hindi Benchmarks frame showed Train.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C284",
+  "claim": "WOD Tracker, 2026-10-07: on iPhone check read the app's view hierarchy; on Android Maestro 2.0.10 saves none, so check read the Android pictures by text recognition, which is weaker evidence",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On iPhone it also had the app’s view hierarchy to read; Maestro 2.0.10 saves none on Android, so there check read the pictures by text recognition, which is weaker evidence.",
+   "On iPhone it had the view hierarchy to read; on Android it read the pictures by text recognition, which is weaker evidence."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/iphone-run1/check.json etc.: every screenshot entry has \"evidence\": \"hierarchy\" (28 of 28 including the dry run); android-run1/check.json, android-run2/check.json: \"evidence\": \"ocr\" on every entry (54 of 54 over the five Android runs), and each Android run.json has \"hierarchy_markers\": false. NOTES.md, Findings for shotfleet (f).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C285",
+  "claim": "WOD Tracker showcase: the 12 home-page frames are shotfleet's own raw output from the 2026-10-07 runs, resized to 360 px wide WebP; 12 of the 60 captured in the counted runs, picked after looking at all of them",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "These twelve are 12 of the 60 captured in the runs that count, picked by me after looking at all of them."
+  ],
+  "status": "evidence",
+  "proof": "Source frames (/Users/manu/Developer/shotfleet-rc-build/showcase-wod/): out-iphone-run1/raw/hi/04_clock.png, out-iphone-run1/raw/tr/02_benchmarks.png, out-iphone-run2/raw/zh-Hans/04_clock.png, out-iphone-run2/raw/pl/02_benchmarks.png, out-iphone-run3/raw/nl/04_clock.png, out-iphone-run3/raw/pt/01_train.png, out-android-run1/raw/hi/01_log.png, out-android-run1/raw/tr/03_analytics.png, out-android-run1/raw/zh-CN/06_clock.png, out-android-run2/raw/pl/02_progress.png, out-android-run2/raw/nl/03_analytics.png, out-android-run2/raw/pt/01_log.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/wod_{iphone,android}_<lang>_<screen>.webp (no captions, frames or edits; the table 'Frames on the site' in research/wod-tracker-run-2026-10-07/NOTES.md lists each pair). 60 = iPhone 24 + Android 36 (claims C281, C282). Every frame was looked at and judged public-safe (NOTES.md, Frames reviewed): no account, name, e-mail, paywall or real data; no frame of a discarded attempt is used. Owner approval: Manu said in chat on 2026-10-07 that the shotfleet examples are fine to make public ('it's our project so it's all OK', 'the more examples we have in our website the better'); the WOD Tracker owner session had no objection.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C286",
+  "claim": "WOD Tracker showcase: debug builds of version 1.6.7 that were in store review at the time (not the store version), captured with shotfleet 0.1.6; iPhone frames show the app empty with no paywall (empty store keys); Android frames show seeded demo data; English that stays is the app's own content",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "from a debug build of version 1.6.7, which was in store review at the time, so this is not the store version.",
+   "the iPhone frames show the app empty, with no paywall because this build has no store keys.",
+   "The English that stays is the app’s own content (format names, benchmark names)."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/NOTES.md: commit 0cdad156, iOS build 58 (Debug simulator build) and Android 1.6.7-debug versionCode 77 (debug APK); in store review since 2026-10-07 11:40 CEST, not released, store version at the time 1.6.4; iOS Secrets.swift holds empty RevenueCat placeholders so there is no paywall; Android demo data from the debug deep link; English leftovers listed under Frames reviewed (AMRAP, For Time, EMOM, Tabata, Benchmarks library names, exercise names). shotfleet --version printed 0.1.6 (the page goes live with 0.1.7). Owner approval: Manu said in chat on 2026-10-07 that the shotfleet examples are fine to make public ('it's our project so it's all OK', 'the more examples we have in our website the better'); the WOD Tracker owner session had no objection.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
+ },
+ {
+  "id": "C287",
+  "claim": "WOD Tracker showcase: in setting up, one iPhone attempt was green (exit 0, 8 of 8 screenshots) but its Hindi Benchmarks frame showed the Train screen; check said 0 problems; found by looking; those frames are not on the page",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "In setting up the run, one iPhone attempt came out green (exit 0, 8 of 8 screenshots) but its Hindi Benchmarks frame showed the Train screen, because my tap landed on the tab bar.",
+   "I caught it by looking at each frame, and those frames are not on this page; the run was repeated."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/logs/failed-attempts/run1-attemptA-hi-tr-rc0-but-hi-02-benchmarks-shows-Train.log ('ok hi 4/4 screenshots', 'ok tr 4/4 screenshots', 'checked 8 screenshots in 2 languages: 0 problem(s)', rc=0) and logs/failed-attempts/run1-attemptA.run.json; NOTES.md, What went wrong (iPhone item 4) and Findings (b). The attempt's frames are in out-iphone-run1-attemptA-hi-frame02-wrong (not copied; none of the 12 site frames comes from it); the repeated run1 is the one that counts.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-07.",
+  "fix": ""
  }
 ]
