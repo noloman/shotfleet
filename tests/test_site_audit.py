@@ -5,6 +5,7 @@ and the waitlist/sale markers on the pages go-live.sh rewrites. Stdlib only, no 
 """
 import json, re, subprocess, sys, tempfile, unittest
 from datetime import date
+from html import unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
@@ -394,6 +395,8 @@ class JsonLd(unittest.TestCase):
         graph = {n["@type"]: n for n in d["@graph"]}
         visible = re.findall(r"<h3>(.*?)</h3>", docs.split('<h2 id="faq">', 1)[1])
         self.assertEqual([q["name"] for q in graph["FAQPage"]["mainEntity"]], [re.sub(r"<[^>]+>", "", v) for v in visible])
+        answers = re.findall(r"<h3>.*?</h3>\s*<p>(.*?)</p>", docs.split('<h2 id="faq">', 1)[1])
+        self.assertEqual([q["acceptedAnswer"]["text"] for q in graph["FAQPage"]["mainEntity"]], [unescape(re.sub(r"<[^>]+>", "", a)) for a in answers])
         self.assertEqual(graph["TechArticle"]["dateModified"], re.search(r"Last checked against version [\d.]+ on (\d{4}-\d\d-\d\d)\.", docs).group(1))
 
     def test_json_ld_is_a_data_block_so_the_csp_needs_no_inline_script_allowance(self):

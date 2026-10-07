@@ -4319,5 +4319,20 @@
   "proof": "Site review 2026-10-07 row 2. github.com/noloman/shotfleet is private, so the pointers cannot be followed. Whether Manu sends a record when asked is his promise; nothing tests it.",
   "assertion": "The quoted sentence is on the page; no 'claims row' or 'branch claude/' text on /demo.",
   "fix": ""
+ },
+ {
+  "id": "C261",
+  "claim": "Docs FAQ: the site, the docs and the tool's messages are in English; what it captures is whatever languages the app ships",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "No, the site, the docs and the tool's messages are in English. What it captures is whatever languages your app ships."
+  ],
+  "status": "evidence",
+  "layer": "site",
+  "proof": "Checked 2026-10-07 on 9f01416 (coordinator task, docs FAQ language question). Site: all 9 pages in site/public (index, docs, whats-new, guides, alternatives, demo, terms, privacy, 404) are <html lang=\"en\"> English text, and a grep for hreflang, language switcher and translate controls in site/public/*.html finds none. Tool messages: the Fail/print strings in shotfleet.py are English; the only non-English text in them is example values such as name = \"田中\" and \"Next\" = \"İleri\" in config error hints. Languages come from the app: locales default to 'every language the app ships' (shotfleet.py init templates and run), or the config's locales list. Not machine-tested: no test asserts that every message string is English. The FAQ's JSON-LD answer text equals the visible answer for all questions (JsonLd.test_the_docs_faq_markup_is_the_visible_faq_and_its_date_is_the_last_checked_date).",
+  "assertion": "The quoted sentence is on the page and equal in the FAQPage JSON-LD (tests/test_site_audit.py, test_the_docs_faq_markup_is_the_visible_faq_and_its_date_is_the_last_checked_date).",
+  "fix": ""
  }
 ]
