@@ -141,6 +141,20 @@ class Structure(unittest.TestCase):
         for name, page in self.pages(): self.assertEqual(page.external, [], name)
 
 
+class StrayTags(unittest.TestCase):
+    """`<App>` typed in prose or in <code> is parsed as a tag and the word vanishes: write &lt;App&gt;. Every start tag on every public page (and guide) must be a known element."""
+    KNOWN = set("""a b body br button caption circle code dd defs dialog div dl dt em figcaption figure footer form g h1 h2 h3 h4 head header hr html i img input label
+        li link main mask meta nav ol p path pre rect script section span strong style svg table tbody td textarea th thead title tr track ul video""".split())
+
+    def test_every_start_tag_is_a_real_html_or_svg_element(self):
+        class Tags(HTMLParser):
+            def __init__(self): super().__init__(); self.names = set()
+            def handle_starttag(self, tag, attrs): self.names.add(tag)
+        for p in PAGES + sorted((PUB / "guides").glob("*.html")):
+            tags = Tags(); tags.feed(p.read_text())
+            with self.subTest(page=p.name): self.assertEqual(tags.names - self.KNOWN, set(), "a placeholder like <App> in text or code: write &lt;App&gt;")
+
+
 class Style(unittest.TestCase):
     TEXT_FILES = [*PUB.glob("*"), *(ROOT / "site/draft").glob("*"), ROOT / "README.md", ROOT / "DISTRIBUTION.md", ROOT / "LAUNCH.md",
                   *(ROOT / "marketing").glob("launch-*.md")]
