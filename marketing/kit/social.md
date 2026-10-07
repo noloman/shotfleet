@@ -92,7 +92,7 @@ Post as a thread on each network from its own account. If the Show HN goes up th
 > It warns when two labels clash in a language (Turkish "Next" and "Advanced" are both İleri) and reports wrong-language images, copies, missing screens and store size rules. It does not make frames or captions and does not upload; fastlane does that.
 
 5. (no asset)
-> Limits up front: Apple silicon Mac only. Needs Maestro 2.x and Java 17+, Xcode for iOS, the Android SDK for Android. Android needs API 33+ emulators. Flutter and React Native work from translation files; I have not run a real Flutter or React Native app yet.
+> Limits up front: Apple silicon Mac only. Needs Maestro 2.x and Java 17+, Xcode for iOS, the Android SDK for Android. Android needs API 33+ emulators. Flutter and Expo work from translation files; I have run one public Flutter app (wger) and one Expo template (obytes) end to end, not other Flutter or Expo apps or bare React Native.
 
 6. (asset: short clip)
 > Free: shotfleet check on any screenshots, and run for 2 languages. A licence unlocks every language and export: $29 for the first 100 buyers, then $49 once, with a 14-day refund. Install and details: https://shotfleet.com/?utm_source=SOURCE

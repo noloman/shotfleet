@@ -29,7 +29,7 @@ Communities (Reddit's "community" or subreddit targeting; pick all four in one a
 - r/reactnative
 
 Notes:
-- Flutter and React Native readers will land on a page that says it works from translation files and has not yet run a real Flutter or React Native app. The ad copy below never mentions either framework, so nobody is promised more than the page says.
+- Flutter and React Native readers will land on a page that says it works from translation files and has run end to end on one public Flutter app (wger) and one Expo template (obytes), nothing more. The ad copy below never mentions either framework, so nobody is promised more than the page says.
 - Country: choose the markets you can serve in English (for example United States, United Kingdom, Canada, Australia, Netherlands, Germany). Reddit's data on audience size by country was not available; the list is a starting guess, not a finding. Exclude nothing else; do not add interest or keyword targeting on top.
 - Placement: feed only. Leave off conversion-optimisation and any "optimise for" setting that spends faster than you can watch.
 - Device: all. Desktop clicks are likelier to convert for a Mac tool, but there is no data here, so do not restrict on a guess.
