@@ -1398,7 +1398,7 @@
    "site/public/privacy.html"
   ],
   "where_text": [
-   "To send you one email when shotfleet is available to buy"
+   "I meant to send you one email when shotfleet became available to buy"
   ],
   "status": "unverifiable",
   "proof": "A commitment, not a fact. The waitlist exists (worker.test.mjs: signup 200, stored, honeypot not stored). 2026-10-06: the index.html sentence ('I'll email you once, when it's ready.') went with the waitlist form at go-live; only the privacy page part is left.",
@@ -2981,8 +2981,8 @@
   "claim": "check runs on Linux in the Docker image ghcr.io/noloman/shotfleet-check: free, no licence, amd64 and arm64, with the compiled program, Tesseract and aapt2",
   "where": [
    "README.md",
-   "site/public/docs.html",
-   "site/public/llms.txt"
+   "site/draft/docker-pending.txt",
+   "site/draft/docker-pending.txt"
   ],
   "where_text": [
    "in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check`. It's free, needs no licence, and is built for amd64 and arm64.",
@@ -3000,7 +3000,7 @@
   "claim": "The GitHub Action noloman/shotfleet-check-action runs check on ubuntu-latest, fails the job on a problem (warn-only turns them into warnings), outputs the problem count, report folder and JSON; tested locally only",
   "where": [
    "README.md",
-   "site/public/docs.html"
+   "site/draft/docker-pending.txt"
   ],
   "where_text": [
    "It fails the job when `check` finds a problem (`warn-only: true` turns problems into warnings), and its outputs are the problem count, the report folder and the JSON from `check --json`. I tested it locally with `docker run` and the same inputs GitHub passes; it hasn't run on GitHub's runners yet.",
@@ -3017,7 +3017,7 @@
   "claim": "In the Docker image, run and export stop with one line saying the image only runs check",
   "where": [
    "README.md",
-   "site/public/docs.html"
+   "site/draft/docker-pending.txt"
   ],
   "where_text": [
    "The image only runs `check`, and it says so in one line if you try the others.",
@@ -3035,8 +3035,8 @@
   "claim": "No macOS text recognition on Linux: Tesseract reads fewer scripts; the image has Tesseract data for 34 common languages",
   "where": [
    "README.md",
-   "site/public/docs.html",
-   "site/public/llms.txt"
+   "site/draft/docker-pending.txt",
+   "site/draft/docker-pending.txt"
   ],
   "where_text": [
    "The image has Tesseract data for 34 common languages.",
@@ -3054,8 +3054,8 @@
   "claim": "Without --app or --strings the wrong-language check is much weaker on Linux; copies, missing screens and store rules are still checked",
   "where": [
    "README.md",
-   "site/public/docs.html",
-   "site/public/llms.txt"
+   "site/draft/docker-pending.txt",
+   "site/draft/docker-pending.txt"
   ],
   "where_text": [
    "the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.",
@@ -3073,7 +3073,7 @@
   "claim": "On a real 72-screenshot, 18-language Android set the image with --app gave the Mac's verdict: 0 problems clean, all 3 planted faults found; without --app the English screen in de/ was missed",
   "where": [
    "README.md",
-   "site/public/docs.html"
+   "site/draft/docker-pending.txt"
   ],
   "where_text": [
    "the image with `--app` gave the same verdict as the Mac: 0 problems on the clean set, and all 3 planted faults found",
@@ -4278,10 +4278,10 @@
   ],
   "status": "proven",
   "layer": "unit",
-  "proof": "LicenceHardening.test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages (run exits 2 with 'stops here'), LicenceHardening.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days. CHANGELOG 0.1.6 (SHOTFLEET_KEY is a gate in CI). Added to What's new after the 0.1.6 site review, 2026-10-07.",
+  "proof": "LicenceHardening.test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages (run exits 2 with 'stops here'), GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days. CHANGELOG 0.1.6 (SHOTFLEET_KEY is a gate in CI). Added to What's new after the 0.1.6 site review, 2026-10-07.",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": "",
-  "test": "LicenceHardening.test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages"
+  "test": "GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days"
  },
  {
   "id": "C259",

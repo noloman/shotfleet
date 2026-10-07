@@ -416,7 +416,7 @@ class ComparisonTable(unittest.TestCase):
                          ["Takes the screenshots from your running app", "One flow for every language", "Checks the language of the result", "iOS and Android"])
         row = table["shotfleet"]
         self.assertEqual(row[:4], ["Yes", "Yes", "Yes", "Both"])
-        self.assertEqual(row[4], "$49 once ($29 for the first 100 buyers). Free: check and 2 languages in run")
+        self.assertEqual(row[4], "$49 once, with a year of updates ($29 for the first 100 buyers). Free: check and 2 languages in run")
 
     def test_the_draft_table_says_yes_to_five_things_and_each_is_a_command_or_option_the_program_has(self):
         table = self.rows(read("site/draft/alternatives.html"))
