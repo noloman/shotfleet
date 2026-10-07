@@ -391,8 +391,8 @@ class ByocPending(unittest.TestCase):
 
 class ActivationCaveat(unittest.TestCase):
     def test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6(self):
-        for name in ("docs.html", "terms.html", "index.html", "llms.txt"):
-            with self.subTest(page=name): self.assertIn("The spare activations work from 0.1.6; 0.1.5 and older stop at 3.", (PUB / name).read_text())
+        for path in (PUB / "docs.html", PUB / "terms.html", PUB / "index.html", PUB / "llms.txt", ROOT / "README.md"):
+            with self.subTest(page=path.name): self.assertIn("The spare activations work from 0.1.6; 0.1.5 and older stop at 3.", path.read_text())
 
 
 class SecurityTxt(unittest.TestCase):
@@ -436,6 +436,11 @@ class TextFilesAreUtf8(unittest.TestCase):
     def test_each_text_file_has_one_utf8_plain_text_content_type_rule(self):
         for path in ("/download/VERSION", "/llms.txt", "/robots.txt", "/install.sh", "/.well-known/security.txt"):
             with self.subTest(path=path): self.assertEqual([l.strip() for l in self.RULES[path]].count("Content-Type: text/plain; charset=utf-8"), 1)
+
+    def test_versioned_sha256_files_are_utf8_text_and_stay_immutable(self):
+        # live they had no content-type; Cache-Control comes from /download/:version/* (rules merge by header name)
+        self.assertEqual([l.strip() for l in self.RULES["/download/:version/*.sha256"]], ["Content-Type: text/plain; charset=utf-8"])
+        self.assertEqual([l.strip() for l in self.RULES["/download/:version/*"]], ["Cache-Control: public, max-age=31536000, immutable"])
 
     def test_version_is_still_no_cache_and_its_own_rule_adds_no_second_cache_control(self):
         self.assertEqual([l.strip() for l in self.RULES["/download/:file"]], ["Cache-Control: no-cache"])
