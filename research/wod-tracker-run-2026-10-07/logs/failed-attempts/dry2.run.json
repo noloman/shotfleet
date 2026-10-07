@@ -1,0 +1,19 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "lproj": "en",
+   "ok": false,
+   "seconds": 95,
+   "error": "Element not found: Text matching regex: 12 Min EMOM",
+   "screenshots": 3,
+   "attempts": 2
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/shotfleet.toml",
+ "wall_seconds": 225,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/Crossfit Tracker.app"
+}

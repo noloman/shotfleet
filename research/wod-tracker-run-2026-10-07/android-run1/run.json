@@ -1,0 +1,41 @@
+{
+ "locales": {
+  "hi": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "ok": true,
+   "seconds": 175,
+   "error": null,
+   "screenshots": 6,
+   "device": "emulator-5702"
+  },
+  "tr": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "ok": true,
+   "seconds": 164,
+   "error": null,
+   "screenshots": 6,
+   "device": "emulator-5702"
+  },
+  "zh-CN": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "ok": true,
+   "seconds": 167,
+   "error": null,
+   "screenshots": 6,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/shotfleet.android.toml",
+ "wall_seconds": 553,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/androidApp-debug.apk",
+ "device": "phone",
+ "hierarchy_markers": false
+}

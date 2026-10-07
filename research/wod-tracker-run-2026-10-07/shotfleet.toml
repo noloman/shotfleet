@@ -1,0 +1,10 @@
+# WOD Tracker showcase, iPhone (working config built from shotfleet.draft.toml). shotfleet 0.1.6 released binary.
+# Dry run:  shotfleet run shotfleet.toml --platform ios --locales en --parallel 1
+# Pairs:    --locales hi,tr  |  zh-Hans,pl  |  nl,pt   (the output folder `out-ios` is renamed to out-iphone-dry / out-iphone-runN after each run)
+[ios]
+app = "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/Crossfit Tracker.app"
+bundle_id = "me.manulorenzo.crossfittracker"
+flow = "flow.yaml"
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"   # NOT iOS 27.0
+parallel = 1
+out = "out-ios"

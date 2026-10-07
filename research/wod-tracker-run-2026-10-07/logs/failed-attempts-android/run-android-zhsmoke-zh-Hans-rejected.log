@@ -1,0 +1,4 @@
+shotfleet: none of those languages are in the app. It ships: ar, da, de, en, es, fr, hi, it, ja, ko, nb, nl, pl, pt, ru, sv, tr, zh-CN, zh-TW (write them as listed; case and region matter)
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+skip zh-Hans: app has no zh-Hans strings
+rc=2 killed=0

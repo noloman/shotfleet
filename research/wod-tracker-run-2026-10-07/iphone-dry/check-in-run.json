@@ -1,0 +1,39 @@
+{
+ "screenshots": [
+  {
+   "file": "en/01_train.png",
+   "src": "raw/en/01_train.png",
+   "sha": "2b84242189b6",
+   "lang": "en",
+   "chars": 1231,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/02_benchmarks.png",
+   "src": "raw/en/02_benchmarks.png",
+   "sha": "d82096e6618a",
+   "lang": "en",
+   "chars": 751,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/03_timer_setup.png",
+   "src": "raw/en/03_timer_setup.png",
+   "sha": "de229f47e836",
+   "lang": "en",
+   "chars": 525,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/04_clock.png",
+   "src": "raw/en/04_clock.png",
+   "sha": "021d7749a7be",
+   "lang": "en",
+   "chars": 1378,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

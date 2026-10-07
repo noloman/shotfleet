@@ -1,0 +1,19 @@
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+warning tr: 'Log' -> 'Kaydet' also means 'Save'; anchor that step (below:/above:) if it taps the wrong element
+warning tr: 'Next' -> 'İleri' also means 'Advanced'; anchor that step (below:/above:) if it taps the wrong element
+warning zh-CN: 'Train' -> '训练' also means 'Work', 'Workouts'; anchor that step (below:/above:) if it taps the wrong element
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 1 emulators, 3 rounds...
+retrying 1: tr
+ok   hi       6/6 screenshots
+FAIL tr       0/6 screenshots (retried)  Assertion is false: "İlk adımınızı seçin" is visible
+     failed step: Assert that "İlk adımınızı seçin" is visible
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-wod/out-android/.work/debug/retry1/.maestro/tests/2026-10-07_194032/screenshot-❌-1791394873796-(retry1_f0).png
+     on screen: Adım 3 / 4 | Atla | Deneyim seviyeniz | Deneyiminizi kişiselleştirmemize yardımc | Başlangıç | Kuvvet antrenmanına yeni başlayanlar | Orta | 1-3 yıllık antrenman deneyimi | İleri | 3+ yıl düzenli antrenman deneyimi
+ok   zh-CN    6/6 screenshots
+captured 2/3 locales in 474s on 1 emulators
+
+checked 12 screenshots in 2 languages: 0 problem(s)
+rc=1 killed=0

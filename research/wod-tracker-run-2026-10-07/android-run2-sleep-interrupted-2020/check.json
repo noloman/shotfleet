@@ -1,0 +1,151 @@
+{
+ "screenshots": [
+  {
+   "file": "nl/01_log.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/nl/01_log.png",
+   "sha": "7e76b8140318",
+   "lang": "nl",
+   "chars": 329,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/02_progress.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/nl/02_progress.png",
+   "sha": "c6a829b5560f",
+   "lang": "nl",
+   "chars": 184,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/03_analytics.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/nl/03_analytics.png",
+   "sha": "ef5539f362fa",
+   "lang": "nl",
+   "chars": 535,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/04_train.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/nl/04_train.png",
+   "sha": "7f69b69a9258",
+   "lang": "nl",
+   "chars": 298,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/05_benchmarks.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/nl/05_benchmarks.png",
+   "sha": "f84623db0679",
+   "lang": "nl",
+   "chars": 211,
+   "evidence": "ocr"
+  },
+  {
+   "file": "nl/06_clock.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/nl/06_clock.png",
+   "sha": "c74b5cc06341",
+   "lang": "nl",
+   "chars": 111,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/01_log.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pl/01_log.png",
+   "sha": "cd651b0cc743",
+   "lang": "pl",
+   "chars": 371,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/02_progress.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pl/02_progress.png",
+   "sha": "548dcfcd9060",
+   "lang": "pl",
+   "chars": 182,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/03_analytics.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pl/03_analytics.png",
+   "sha": "9601b30d35fc",
+   "lang": "pl",
+   "chars": 431,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/04_train.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pl/04_train.png",
+   "sha": "eaf267fca27d",
+   "lang": "pl",
+   "chars": 300,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/05_benchmarks.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pl/05_benchmarks.png",
+   "sha": "0bf591476134",
+   "lang": "pl",
+   "chars": 213,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pl/06_clock.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pl/06_clock.png",
+   "sha": "1696ebbd9fdc",
+   "lang": "pl",
+   "chars": 113,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt/01_log.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pt/01_log.png",
+   "sha": "4934944c3117",
+   "lang": "pt",
+   "chars": 370,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt/02_progress.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pt/02_progress.png",
+   "sha": "62c2fe5544e6",
+   "lang": "pt",
+   "chars": 191,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt/03_analytics.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pt/03_analytics.png",
+   "sha": "11ce601c4000",
+   "lang": "pt",
+   "chars": 537,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt/04_train.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pt/04_train.png",
+   "sha": "2b09939dcc51",
+   "lang": "pt",
+   "chars": 356,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt/05_benchmarks.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pt/05_benchmarks.png",
+   "sha": "296b0c1bafd6",
+   "lang": "pt",
+   "chars": 215,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt/06_clock.png",
+   "src": "../out-android-run2-sleep-interrupted-2020/raw/pt/06_clock.png",
+   "sha": "ffccb9a8efe0",
+   "lang": "pt",
+   "chars": 116,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

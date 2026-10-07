@@ -1,0 +1,18 @@
+warning zh-Hans: 'Benchmarks' -> '基准' also means 'Benchmark'; anchor that step (below:/above:) if it taps the wrong element
+warning zh-Hans: 'Workouts' -> '训练' also means 'Train', 'Training', 'WORK'; anchor that step (below:/above:) if it taps the wrong element
+warning pl: 'I Understand' -> 'Rozumiem' also means 'Got It'; anchor that step (below:/above:) if it taps the wrong element
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+retrying 1: zh-Hans
+FAIL zh-Hans  1/4 screenshots (retried)  Element not found: Text matching regex: 基准, Below: "训练"
+     failed step: Tap on "基准", Below "训练"
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-wod/out-ios/.work/debug/attempt2/.maestro/tests/2026-10-07_185914/screenshot-❌-1791392426488-(zh-Hans).png
+     on screen: WOD Tracker | 训练 | 15:00、AMRAP、尽可能多的轮数 | 尽可能多的轮数 | 上限 20:00、For Time、计时完成，时间上限可选 | 计时完成，时间上限可选 | 12 × 1:00、EMOM、每个间隔开始新一轮 | clock.arrow.circlepath | 12 × 1:00 | EMOM | 每个间隔开始新一轮 | 8 × 0:20 / 0:10、Tabata、运动 20 秒，休息 10 秒，8
+ok   pl       4/4 screenshots
+captured 1/2 locales in 357s on 1 simulators
+
+checked 5 screenshots in 2 languages: 1 problem(s)
+  - zh-Hans: missing 02_benchmarks.png, 03_timer_setup.png, 04_clock.png
+rc=1 killed=0

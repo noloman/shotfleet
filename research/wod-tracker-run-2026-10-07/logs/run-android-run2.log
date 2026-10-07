@@ -1,0 +1,15 @@
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+warning pl: 'I Understand' -> 'Rozumiem' also means 'Got It', 'Got it'; anchor that step (below:/above:) if it taps the wrong element
+warning pl: 'Log' -> 'Zapisz' also means 'Save'; anchor that step (below:/above:) if it taps the wrong element
+warning pl: 'Select a lift' -> 'Wybierz ćwiczenie' also means 'Select Exercise', 'Select Lift'; anchor that step (below:/above:) if it taps the wrong element
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 1 emulators, 3 rounds...
+ok   pl       6/6 screenshots
+ok   nl       6/6 screenshots
+ok   pt       6/6 screenshots
+captured 3/3 locales in 528s on 1 emulators
+
+checked 18 screenshots in 3 languages: 0 problem(s)
+rc=0 killed=0

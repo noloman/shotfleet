@@ -1,0 +1,71 @@
+{
+ "screenshots": [
+  {
+   "file": "nl/01_train.png",
+   "src": "../out-iphone-run3/raw/nl/01_train.png",
+   "sha": "c25fedb703d8",
+   "lang": "nl",
+   "chars": 1327,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/02_benchmarks.png",
+   "src": "../out-iphone-run3/raw/nl/02_benchmarks.png",
+   "sha": "6778f2ad3487",
+   "lang": "nl",
+   "chars": 833,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/03_timer_setup.png",
+   "src": "../out-iphone-run3/raw/nl/03_timer_setup.png",
+   "sha": "3432c2686119",
+   "lang": "nl",
+   "chars": 571,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "nl/04_clock.png",
+   "src": "../out-iphone-run3/raw/nl/04_clock.png",
+   "sha": "9510322bf5c6",
+   "lang": "nl",
+   "chars": 1651,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt/01_train.png",
+   "src": "../out-iphone-run3/raw/pt/01_train.png",
+   "sha": "4b6494ac7289",
+   "lang": "pt",
+   "chars": 1454,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt/02_benchmarks.png",
+   "src": "../out-iphone-run3/raw/pt/02_benchmarks.png",
+   "sha": "a10d7a8b3d96",
+   "lang": "pt",
+   "chars": 835,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt/03_timer_setup.png",
+   "src": "../out-iphone-run3/raw/pt/03_timer_setup.png",
+   "sha": "1aef98871737",
+   "lang": "pt",
+   "chars": 593,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pt/04_clock.png",
+   "src": "../out-iphone-run3/raw/pt/04_clock.png",
+   "sha": "1c083cec0dab",
+   "lang": "pt",
+   "chars": 1747,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

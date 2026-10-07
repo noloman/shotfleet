@@ -1,0 +1,30 @@
+{
+ "locales": {
+  "zh-Hans": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "lproj": "zh-Hans",
+   "ok": false,
+   "seconds": 68,
+   "error": "Element not found: Text matching regex: 基准, Below: \"训练\"",
+   "screenshots": 1,
+   "attempts": 2
+  },
+  "pl": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "lproj": "pl",
+   "ok": true,
+   "seconds": 197,
+   "error": null,
+   "screenshots": 4,
+   "attempts": 1
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/shotfleet.toml",
+ "wall_seconds": 357,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/Crossfit Tracker.app"
+}

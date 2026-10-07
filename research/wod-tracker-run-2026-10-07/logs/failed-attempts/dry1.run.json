@@ -1,0 +1,19 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "lproj": "en",
+   "ok": false,
+   "seconds": 101,
+   "error": "Assertion is false: \"Benchmarks\" is visible",
+   "screenshots": 0,
+   "attempts": 2
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/shotfleet.toml",
+ "wall_seconds": 271,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/Crossfit Tracker.app"
+}

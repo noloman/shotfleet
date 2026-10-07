@@ -1,0 +1,12 @@
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 1 locales on 1 simulators...
+retrying 1: en
+FAIL en       0/4 screenshots (retried)  Assertion is false: "Benchmarks" is visible
+     failed step: Assert that "Benchmarks" is visible
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-wod/out-ios/.work/debug/attempt2/.maestro/tests/2026-10-07_181750/screenshot-❌-1791389976268-(en).png
+     on screen: WOD Tracker | Train | Timer | Start here | Close Start here | New here? Run a 4-minute Tabata clock to | Start a 4-minute timer | Log a lift instead | Benchmark WOD, Benchmark, You haven't tr | Flame | Benchmark WOD | Benchmark
+captured 0/1 locales in 271s on 1 simulators
+no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs
+rc=1 killed=0

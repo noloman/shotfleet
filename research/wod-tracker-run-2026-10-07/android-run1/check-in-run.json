@@ -1,0 +1,151 @@
+{
+ "screenshots": [
+  {
+   "file": "hi/01_log.png",
+   "src": "raw/hi/01_log.png",
+   "sha": "af58d769db46",
+   "lang": "hi",
+   "chars": 277,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/02_progress.png",
+   "src": "raw/hi/02_progress.png",
+   "sha": "b1ff81710780",
+   "lang": "hi",
+   "chars": 126,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/03_analytics.png",
+   "src": "raw/hi/03_analytics.png",
+   "sha": "82c0b9bdc667",
+   "lang": "hi",
+   "chars": 355,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/04_train.png",
+   "src": "raw/hi/04_train.png",
+   "sha": "3d82e3bc6fc0",
+   "lang": "hi",
+   "chars": 229,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/05_benchmarks.png",
+   "src": "raw/hi/05_benchmarks.png",
+   "sha": "664012db9b0a",
+   "lang": "hi",
+   "chars": 162,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/06_clock.png",
+   "src": "raw/hi/06_clock.png",
+   "sha": "43bac9e1a058",
+   "lang": "hi",
+   "chars": 84,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/01_log.png",
+   "src": "raw/tr/01_log.png",
+   "sha": "ab074527ace7",
+   "lang": "tr",
+   "chars": 368,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/02_progress.png",
+   "src": "raw/tr/02_progress.png",
+   "sha": "0862c34de119",
+   "lang": "tr",
+   "chars": 194,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/03_analytics.png",
+   "src": "raw/tr/03_analytics.png",
+   "sha": "f5cc34940a7b",
+   "lang": "tr",
+   "chars": 509,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/04_train.png",
+   "src": "raw/tr/04_train.png",
+   "sha": "6476028a57c1",
+   "lang": "tr",
+   "chars": 317,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/05_benchmarks.png",
+   "src": "raw/tr/05_benchmarks.png",
+   "sha": "60239d8b0029",
+   "lang": "tr",
+   "chars": 227,
+   "evidence": "ocr"
+  },
+  {
+   "file": "tr/06_clock.png",
+   "src": "raw/tr/06_clock.png",
+   "sha": "569c8f7bffc8",
+   "lang": "tr",
+   "chars": 122,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/01_log.png",
+   "src": "raw/zh-CN/01_log.png",
+   "sha": "e0199ea1abb0",
+   "lang": "zh-CN",
+   "chars": 216,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/02_progress.png",
+   "src": "raw/zh-CN/02_progress.png",
+   "sha": "ce1e16bb34aa",
+   "lang": "zh-CN",
+   "chars": 106,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/03_analytics.png",
+   "src": "raw/zh-CN/03_analytics.png",
+   "sha": "ba1830503b27",
+   "lang": "zh-CN",
+   "chars": 201,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/04_train.png",
+   "src": "raw/zh-CN/04_train.png",
+   "sha": "213a85492dde",
+   "lang": "zh-CN",
+   "chars": 169,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/05_benchmarks.png",
+   "src": "raw/zh-CN/05_benchmarks.png",
+   "sha": "b3f1b6feed1d",
+   "lang": "zh-CN",
+   "chars": 144,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/06_clock.png",
+   "src": "raw/zh-CN/06_clock.png",
+   "sha": "cc4052622152",
+   "lang": "zh-CN",
+   "chars": 66,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

@@ -1,0 +1,30 @@
+{
+ "locales": {
+  "hi": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "lproj": "hi",
+   "ok": true,
+   "seconds": 169,
+   "error": null,
+   "screenshots": 4,
+   "attempts": 1
+  },
+  "tr": {
+   "untranslated_selectors": [
+    "2/12"
+   ],
+   "lproj": "tr",
+   "ok": true,
+   "seconds": 184,
+   "error": null,
+   "screenshots": 4,
+   "attempts": 1
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/shotfleet.toml",
+ "wall_seconds": 366,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/Crossfit Tracker.app"
+}

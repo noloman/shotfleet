@@ -1,0 +1,15 @@
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+warning tr: 'Log' -> 'Kaydet' also means 'Save'; anchor that step (below:/above:) if it taps the wrong element
+warning tr: 'Next' -> 'İleri' also means 'Advanced'; anchor that step (below:/above:) if it taps the wrong element
+warning zh-CN: 'Train' -> '训练' also means 'Work', 'Workouts'; anchor that step (below:/above:) if it taps the wrong element
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 1 emulators, 3 rounds...
+ok   hi       6/6 screenshots
+ok   tr       6/6 screenshots
+ok   zh-CN    6/6 screenshots
+captured 3/3 locales in 553s on 1 emulators
+
+checked 18 screenshots in 3 languages: 0 problem(s)
+rc=0 killed=0

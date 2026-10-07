@@ -1,0 +1,68 @@
+2026-10-07 17:47:18 GATE(android attempt 1) load1=47.90 free%=57 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=80
+2026-10-07 17:47:18 GATE(android attempt 1) OPEN
+2026-10-07 17:47:18 ANDROID START attempt 1 (start numbers = the GATE line above)
+2026-10-07 17:47:18 android build started pid/pgid=31717 user=manu limit=3600s
+2026-10-07 17:49:38 ANDROID END load1=13.17 free%=52 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=79
+2026-10-07 17:49:38 ANDROID BUILD OK
+2026-10-07 17:54:32 GATE(ios attempt 1) load1=216.40 free%=49 pressure_level=2 swapouts_per_60s=0 disk_free_GiB=79
+2026-10-07 17:56:32 GATE(ios attempt 1) load1=50.59 free%=56 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=78
+2026-10-07 17:56:32 GATE(ios attempt 1) OPEN
+2026-10-07 17:56:32 IOS START attempt 1 (start numbers = the GATE line above)
+2026-10-07 17:56:32 ios build started pid/pgid=35600 user=manu limit=3600s
+2026-10-07 18:02:33 DURING(ios) load1=79.32 free%=40 pressure_level=2 swapouts_per_60s=0 disk_free_GiB=77
+2026-10-07 18:03:33 IOS END load1=301.70 free%=37 pressure_level=2 swapouts_per_60s=0 disk_free_GiB=77
+2026-10-07 18:03:33 IOS BUILD OK
+2026-10-07 18:07:37 chain-iphone.sh started pid 41836; waiting for lock+queue+quiet rule
+2026-10-07 18:07:37 wait: lock held: shotfleet 0.1.7 release builder: devcheck2 | started 18:02 | est. see queue line, hard limit 25 min | waiter pid 35520
+2026-10-07 18:08:37 wait: lock held: shotfleet 0.1.7 release builder: devcheck2 | started 18:02 | est. see queue line, hard limit 25 min | waiter pid 35520
+2026-10-07 18:09:37 wait: lock held: shotfleet 0.1.7 release builder: devcheck2 | started 18:02 | est. see queue line, hard limit 25 min | waiter pid 35520
+2026-10-07 18:10:37 wait: lock held: shotfleet 0.1.7 release builder: devcheck2 | started 18:02 | est. see queue line, hard limit 25 min | waiter pid 35520
+2026-10-07 18:11:37 wait: lock held: shotfleet 0.1.7 release builder: devcheck2 | started 18:02 | est. see queue line, hard limit 25 min | waiter pid 35520
+2026-10-07 18:12:37 quiet check pass 1/3: quiet: free 49%, load 118 load=118.50 free%=49% disk_free_GiB=76
+2026-10-07 18:13:37 quiet check pass 2/3: quiet: free 53%, load 53 load=53.17 free%=53% disk_free_GiB=75
+2026-10-07 18:14:38 quiet check pass 3/3: quiet: free 55%, load 23 load=23.26 free%=55% disk_free_GiB=76
+2026-10-07 18:14:38 LOCK TAKEN 18:14; start numbers: load=23.26 free%=55% disk_free_GiB=76; pre-lock quiet checks passed 3x
+2026-10-07 18:14:38 iphone-dry (en) started, limit 1500s; load=23.26 free%=55% disk_free_GiB=76
+2026-10-07 18:19:58 iphone-dry done rc=1 killed=0 wall=320s; captured 0/1 locales in 271s on 1 simulators no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs ; load=83.89 free%=52% disk_free_GiB=76
+2026-10-07 18:19:58 DRY RUN finished: waiting for /Users/manu/Developer/shotfleet-rc-build/showcase-wod/go (or redo / abort) up to 20 min, lock still held
+2026-10-07 18:20:28 REDO dry run (flow edited)
+2026-10-07 18:20:28 iphone-dry (en) started, limit 1500s; load=53.55 free%=53% disk_free_GiB=76
+2026-10-07 18:25:09 iphone-dry done rc=1 killed=0 wall=281s; captured 0/1 locales in 225s on 1 simulators ; load=79.32 free%=51% disk_free_GiB=75
+2026-10-07 18:25:09 DRY RUN (redo) finished
+2026-10-07 18:25:29 REDO dry run (flow edited)
+2026-10-07 18:25:29 iphone-dry (en) started, limit 1500s; load=58.13 free%=52% disk_free_GiB=75
+2026-10-07 18:29:30 iphone-dry done rc=0 killed=0 wall=241s; captured 1/1 locales in 205s on 1 simulators ; load=77.36 free%=53% disk_free_GiB=76
+2026-10-07 18:29:30 DRY RUN (redo) finished
+2026-10-07 18:29:50 iphone-run1 (hi,tr) started, limit 1800s; load=79.91 free%=55% disk_free_GiB=76
+2026-10-07 18:36:50 iphone-run1 done rc=1 killed=0 wall=420s; captured 0/2 locales in 352s on 1 simulators ; load=6.70 free%=52% disk_free_GiB=77
+2026-10-07 18:36:50 iphone-run2 (zh-Hans,pl) started, limit 1800s; load=6.70 free%=52% disk_free_GiB=77
+2026-10-07 18:37:29 run1 (hi,tr) FAILED at scrollUntilVisible Benchmarks in hi/tr; I killed my chain script (SIGKILL, lock kept, still mine) and run2's group to fix the flow; continuing with chain2
+2026-10-07 18:38:31 chain2 started pid 91749: adopting my lock (taken 18:14:38), sims.before kept from the first chain
+2026-10-07 18:38:31 iphone-run1 (hi,tr) started, limit 1800s; load=34.24 free%=55% disk_free_GiB=77
+2026-10-07 18:45:12 iphone-run1 done rc=0 killed=0 wall=401s; captured 2/2 locales in 360s on 1 simulators ; load=13.60 free%=54% disk_free_GiB=77
+2026-10-07 18:45:12 iphone-run2 (zh-Hans,pl) started, limit 1800s; load=13.60 free%=54% disk_free_GiB=77
+2026-10-07 18:46:43 run1 attempt A (hi,tr) rc=0 8/8 but hi 02_benchmarks shows Train (row hidden behind the tab bar, tap hit the Train tab). Flow fixed (extra scroll). I killed chain2 + the just-started run2 (SIGKILL chain, lock kept) and restart chain2: run1 hi,tr / run2 zh-Hans,pl / run3 nl,pt with the fixed flow
+2026-10-07 18:46:43 chain2 started pid 95341: adopting my lock (taken 18:14:38), sims.before kept from the first chain
+2026-10-07 18:46:43 iphone-run1 (hi,tr) started, limit 1800s; load=79.88 free%=54% disk_free_GiB=77
+2026-10-07 18:53:43 iphone-run1 done rc=0 killed=0 wall=420s; captured 2/2 locales in 366s on 1 simulators ; load=12.10 free%=55% disk_free_GiB=75
+2026-10-07 18:53:43 iphone-run2 (zh-Hans,pl) started, limit 1800s; load=12.10 free%=55% disk_free_GiB=75
+2026-10-07 19:00:44 iphone-run2 done rc=1 killed=0 wall=421s; captured 1/2 locales in 357s on 1 simulators ; load=45.64 free%=53% disk_free_GiB=75
+2026-10-07 19:00:44 run2 FAILED: waiting up to 15 min for /Users/manu/Developer/shotfleet-rc-build/showcase-wod/redo (flow edited, rerun the same pair) / go (next pair) / abort; lock still held
+2026-10-07 19:01:24 iphone-run2 (zh-Hans,pl) started, limit 1800s; load=25.38 free%=54% disk_free_GiB=75
+2026-10-07 19:08:45 iphone-run2 done rc=0 killed=0 wall=441s; captured 2/2 locales in 400s on 1 simulators ; load=15.70 free%=52% disk_free_GiB=74
+2026-10-07 19:08:45 iphone-run3 (nl,pt) started, limit 1800s; load=15.70 free%=52% disk_free_GiB=74
+2026-10-07 19:16:06 iphone-run3 done rc=0 killed=0 wall=441s; captured 2/2 locales in 384s on 1 simulators ; load=18.98 free%=56% disk_free_GiB=73
+2026-10-07 19:16:06 ALL DEVICE RUNS DONE
+2026-10-07 19:16:06 CLEANUP start
+2026-10-07 19:16:06 LOCK RELEASED (load=18.98 free%=56% disk_free_GiB=73)
+2026-10-07 19:16:06 queue line replaced by DONE line
+2026-10-07 19:16:06 CLEANUP end
+2026-10-07 19:16:25 check iphone-run1 started
+2026-10-07 19:16:27 check iphone-run1 done: checked 8 screenshots in 2 languages: 0 problem(s) report: check-iphone-run1/index.html rc=0 
+2026-10-07 19:16:27 check iphone-run2 started
+2026-10-07 19:16:29 check iphone-run2 done: checked 8 screenshots in 2 languages: 0 problem(s) report: check-iphone-run2/index.html rc=0 
+2026-10-07 19:16:29 check iphone-run3 started
+2026-10-07 19:16:31 check iphone-run3 done: checked 8 screenshots in 2 languages: 0 problem(s) report: check-iphone-run3/index.html rc=0 
+2026-10-07 19:16:31 check iphone-dry started
+2026-10-07 19:16:33 check iphone-dry done: checked 4 screenshots in 1 languages: 0 problem(s) report: check-iphone-dry/index.html rc=0 
+2026-10-07 19:16:33 all checks done

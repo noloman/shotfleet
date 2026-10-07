@@ -1,0 +1,103 @@
+{
+ "screenshots": [
+  {
+   "file": "hi/01_log.png",
+   "src": "raw/hi/01_log.png",
+   "sha": "1c333ea0e7e4",
+   "lang": "hi",
+   "chars": 261,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/02_progress.png",
+   "src": "raw/hi/02_progress.png",
+   "sha": "c7b5466de5e7",
+   "lang": "hi",
+   "chars": 124,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/03_analytics.png",
+   "src": "raw/hi/03_analytics.png",
+   "sha": "031a73e01eba",
+   "lang": "hi",
+   "chars": 318,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/04_train.png",
+   "src": "raw/hi/04_train.png",
+   "sha": "3d82e3bc6fc0",
+   "lang": "hi",
+   "chars": 229,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/05_benchmarks.png",
+   "src": "raw/hi/05_benchmarks.png",
+   "sha": "664012db9b0a",
+   "lang": "hi",
+   "chars": 162,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hi/06_clock.png",
+   "src": "raw/hi/06_clock.png",
+   "sha": "f9ffe995f08c",
+   "lang": "hi",
+   "chars": 84,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/01_log.png",
+   "src": "raw/zh-CN/01_log.png",
+   "sha": "68c9a024e897",
+   "lang": "zh-CN",
+   "chars": 204,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/02_progress.png",
+   "src": "raw/zh-CN/02_progress.png",
+   "sha": "3c90acc7387d",
+   "lang": "zh-CN",
+   "chars": 112,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/03_analytics.png",
+   "src": "raw/zh-CN/03_analytics.png",
+   "sha": "086840e194c6",
+   "lang": "zh-CN",
+   "chars": 195,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/04_train.png",
+   "src": "raw/zh-CN/04_train.png",
+   "sha": "213a85492dde",
+   "lang": "zh-CN",
+   "chars": 169,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/05_benchmarks.png",
+   "src": "raw/zh-CN/05_benchmarks.png",
+   "sha": "b3f1b6feed1d",
+   "lang": "zh-CN",
+   "chars": 144,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/06_clock.png",
+   "src": "raw/zh-CN/06_clock.png",
+   "sha": "f348dbc7859f",
+   "lang": "zh-CN",
+   "chars": 66,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

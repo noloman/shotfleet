@@ -1,0 +1,124 @@
+# DRAFT for the WOD Tracker showcase, iOS (not run yet; nothing here has touched a device).
+# Planned name in the run folder: flow.ios.yaml. English only: shotfleet translates every tap per language.
+# Target: WOD Tracker 1.6.7 (iOS build 58), commit 0cdad156, Debug simulator build. Fresh install in every language.
+#
+# NO SEEDED DATA on iOS: the demo-data seed is behind a shake gesture (iosApp/iOSApp.swift, `#if DEBUG ... .onShake`) and Maestro cannot
+# shake; shotfleet also starts every language from a clean install, which would wipe a seed done by hand. So this flow shows only screens
+# that are public by construction (built-in libraries and timers). No sign-in, no typed data, no Health data.
+#
+# Selectors (string keys read at 0cdad156, iosApp/en.lproj/Localizable.strings):
+#   VERIFIED in the 1.6.x strings and in the flow that passed 19/19 on 2026-10-04: "I Understand", "Your Training. Your Data.", "Next",
+#     "Experience Level", "3+ years of dedicated training", "Pick your first step", "I'll explore on my own".
+#   From the owner's capture script scripts/aso/capture/ios_cap.py (same commit): "Benchmarks" row, "12 Min EMOM" preset, "Skip" (get-ready).
+#   NOT YET SEEN ON A SCREEN (INFERENCE): the "AMRAP" format button, the pull-down that closes the setup sheet, the ".*2/12.*" clock label on
+#     iOS (Android's flow waits for it), and that "Skip" shows up before the get-ready is over.
+# If a NEW step fails in the dry run: delete 03_timer_setup first (the weakest), then fix the clock steps by looking at the frames.
+- launchApp:
+    permissions:
+      all: allow
+- waitForAnimationToEnd:
+    timeout: 3000
+# The disclaimer can appear late on a busy Mac: dismiss it until onboarding shows (as in examples/crossfittracker/ios.yaml)
+- repeat:
+    while:
+      notVisible: "Your Training. Your Data."
+    times: 15
+    commands:
+      - tapOn:
+          text: "I Understand"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible: "Your Training. Your Data."
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Experience Level"
+# "below" pins the Next button: in Turkish "Next" and the "Advanced" option are the same word (İleri)
+- tapOn:
+    text: "Next"
+    below:
+      text: "3+ years of dedicated training"
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible: "Pick your first step"
+- tapOn: "I'll explore on my own"
+# Wait for the Train tab by the Start here card that only it has (the Benchmarks row is below the fold)
+- extendedWaitUntil:
+    visible: "Start here"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 4000
+# 01: Train (Start here card, timers, the Snap a WOD row new in 1.6.7, workout libraries). Empty state, nothing personal.
+- takeScreenshot: 01_train
+# the Benchmarks row is below the fold: scroll to it
+# (the object form `element: text:` is translated by shotfleet, the plain string form is not; "below" pins the row, not the Benchmark pill of the card above)
+- scrollUntilVisible:
+    element:
+      text: "Benchmarks"
+      below:
+        text: "Workouts"
+    direction: DOWN
+    timeout: 30000
+# the row can sit behind the floating tab bar (Hindi did: the tap hit the Train tab): one more scroll lifts it clear
+- scroll
+- waitForAnimationToEnd:
+    timeout: 2000
+# 02: the benchmark library (public WOD names; Heroes names are real people: review before using)
+- tapOn:
+    text: "Benchmarks"
+    below:
+      text: "Workouts"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 02_benchmarks
+# back to Train: edge swipe (same gesture as the Kuokka flow; Maestro 2.0.10 wants whole percents)
+- swipe:
+    start: "1%,50%"
+    end: "75%,50%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- repeat:
+    times: 2
+    commands:
+      - swipe:
+          start: "50%,30%"
+          end: "50%,85%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+# 03: a timer's setup sheet. Starts nothing, saves nothing. (The Programs row is NOT tapped: it opens the paywall.)
+- tapOn: "AMRAP"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 03_timer_setup
+# close the sheet by pulling it down (UNVERIFIED gesture)
+- swipe:
+    start: "50%,12%"
+    end: "50%,95%"
+- waitForAnimationToEnd:
+    timeout: 3000
+# 04: the full-screen WOD clock. "12 Min EMOM" is a built-in preset (Quick start). Skip the get-ready, wait for round 2 of 12.
+# the Quick start presets are below the fold: scroll to the preset
+- scrollUntilVisible:
+    element:
+      text: "12 Min EMOM"
+    direction: DOWN
+    timeout: 30000
+- tapOn: "12 Min EMOM"
+- tapOn:
+    text: "Skip"
+    optional: true
+# The label changes every second; wait for the part every language shares (2/12). `repeat` never fails, it runs out of tries.
+- repeat:
+    while:
+      notVisible: ".*2/12.*"
+    times: 90
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 04_clock

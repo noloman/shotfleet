@@ -1,0 +1,10 @@
+# WOD Tracker showcase, Android. shotfleet 0.1.6 released binary, one private emulator (AVD shotfleet_android).
+# Dry run:  shotfleet run shotfleet.android.toml --platform android --locales en --parallel 1
+# Runs:     --locales hi,tr,zh-Hans  |  pl,nl,pt   (the output folder `out-android` is renamed to out-android-dry / out-android-runN after each run)
+[android]
+apk = "/Users/manu/Developer/shotfleet-rc-build/showcase-wod/app/androidApp-debug.apk"
+package = "me.manulorenzo.crossfittracker.android.debug"
+flow = "flow.android.yaml"
+avd = "shotfleet_android"
+parallel = 1
+out = "out-android"

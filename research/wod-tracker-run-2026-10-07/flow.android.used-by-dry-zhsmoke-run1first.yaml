@@ -1,0 +1,178 @@
+# WOD Tracker showcase, Android: the flow the runs use (built from flow.draft.android.yaml, which is the owner's scripts/aso/shotfleet/android.yaml at 0cdad156
+# with renamed shots). Name in the record: flow.android.yaml.
+# (used for the Play screenshots on 2026-10-05, 20 of 22 locales, commit bda66d97), with only the screenshot names changed and one added shot (04_train after the seed). English text only.
+# It needs the DEBUG build: crossfittracker://debug opens the debug menu (debug manifest only), "PRO" unlocks the tier, "Wipe & Seed"
+# writes a year of DEMO data (notes in the app language). All data on screen is that demo data. Expect about 4-5 min per language.
+# Screens: 01_log 02_progress 03_analytics (seeded) 04_train 05_benchmarks 06_clock (WOD clock, round 2/12). Avoid: Profile after the
+# seed is not shot. The Profile step at the top only switches the unit to Kilograms, nothing is shown.
+appId: me.manulorenzo.crossfittracker.android.debug
+name: "WOD Tracker showcase, Android"
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ── Onboarding (Android): 3 intro pages, then "Pick your first step" ──
+# the disclaimer can appear late on a busy machine: dismiss it until onboarding shows
+- repeat:
+    while:
+      notVisible: "Welcome to WOD Tracker"
+    times: 15
+    commands:
+      - tapOn:
+          text: "I Understand"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2000
+- assertVisible: "Welcome to WOD Tracker"
+# CJK and Arabic text can push Next below the fold on a 1080x1920 screen: scroll to it first
+- scrollUntilVisible:
+    element:
+      text: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 3000
+# CJK and Arabic text can push Next below the fold on a 1080x1920 screen: scroll to it first
+- scrollUntilVisible:
+    element:
+      text: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 3000
+# CJK and Arabic text can push Next below the fold on a 1080x1920 screen: scroll to it first
+- scrollUntilVisible:
+    element:
+      text: "Next"
+    direction: DOWN
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 3000
+# the third Next lands on "Pick your first step" (step 4 of 4); skip it
+- assertVisible: "Pick your first step"
+- tapOn: "I'll explore on my own"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Setup: kilograms, PRO and a year of seeded data through the debug menu ──
+# (the kg block is dropped for the pounds run, see run.sh)
+- tapOn: "Profile"
+- waitForAnimationToEnd:
+    timeout: 2000
+# kg:begin
+- scrollUntilVisible:
+    element:
+      text: "Kilograms"
+    direction: DOWN
+    speed: 30
+    visibilityPercentage: 70
+    timeout: 90000
+- tapOn: "Kilograms"
+# kg:end
+- openLink: crossfittracker://debug
+- tapOn: "PRO"
+- tapOn: "Wipe & Seed"
+- extendedWaitUntil:
+    notVisible: "Debug menu"
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── 3 Log: the All filter is the default ──
+- tapOn: "Log"
+- waitForAnimationToEnd:
+    timeout: 3000
+# the seed's toast ("Seeded 1 year of debug data") lasts a few seconds; keep it out of the shot
+- extendedWaitUntil:
+    notVisible: "Seeded 1 year of debug data"
+    timeout: 10000
+# the list shows a spinner for a few seconds on a slow emulator. The newest card is a different lift per seed
+# (Snatch, Bench Press, Back Squat, ...), and shotfleet escapes a regex selector, so no text selector fits every
+# language: wait a fixed time instead (a spinner keeps waitForAnimationToEnd from returning early)
+- waitForAnimationToEnd:
+    timeout: 12000
+- waitForAnimationToEnd:
+    timeout: 12000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 01_log
+
+# ── 4 Progress > Lifts, Back Squat (exercise names stay English) ──
+- tapOn: "Progress"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "Select a lift"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "Back Squat"
+- waitForAnimationToEnd:
+    timeout: 3000
+# scroll past the Exercise library row and the four stat cards: e1RM card at the top, the chart below
+- swipe:
+    start: 50%, 78%
+    end: 50%, 54%
+    duration: 800
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02_progress
+
+# ── 6 Progress > Analytics, scrolled to the Plateau card ──
+- tapOn: "Analytics"
+- waitForAnimationToEnd:
+    timeout: 3000
+- scrollUntilVisible:
+    element:
+      text: "Plateau Analysis"
+    direction: DOWN
+    timeout: 60000
+    centerElement: true
+# the card sits mid-screen; lift it to the upper third, as the original captures had it
+- swipe:
+    start: 50%, 75%
+    end: 50%, 53%
+    duration: 600
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 03_analytics
+
+# ── 2 Train > Benchmarks ──
+- tapOn: "Train"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04_train
+- scrollUntilVisible:
+    element:
+      text: "Girls, Heroes and Open workouts, with your attempt history"
+    direction: DOWN
+    timeout: 60000
+- tapOn: "Girls, Heroes and Open workouts, with your attempt history"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 05_benchmarks
+- back
+- waitForAnimationToEnd:
+    timeout: 2000
+
+# ── 1 Train > 12 Min EMOM > full-screen clock, round 2 of the work phase ──
+- scrollUntilVisible:
+    element:
+      text: "12 Min EMOM"
+    direction: UP
+- tapOn: "12 Min EMOM"
+# on a slow emulator the 8 s get-ready can be over before Maestro looks: then there is nothing to skip
+- tapOn:
+    text: "Start now"
+    optional: true
+# The label changes every second ("Round 2/12 · Work 0:49 · Total 9:49"), so wait for the
+# one part every language shares: 2/12. repeat never fails, it just runs out of tries.
+- repeat:
+    while:
+      notVisible: ".*2/12.*"
+    times: 90
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 1500
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: 06_clock

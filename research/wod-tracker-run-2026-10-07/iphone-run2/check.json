@@ -1,0 +1,71 @@
+{
+ "screenshots": [
+  {
+   "file": "pl/01_train.png",
+   "src": "../out-iphone-run2/raw/pl/01_train.png",
+   "sha": "6f74efa1cb3c",
+   "lang": "pl",
+   "chars": 1301,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/02_benchmarks.png",
+   "src": "../out-iphone-run2/raw/pl/02_benchmarks.png",
+   "sha": "aeab084ad1dc",
+   "lang": "pl",
+   "chars": 816,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/03_timer_setup.png",
+   "src": "../out-iphone-run2/raw/pl/03_timer_setup.png",
+   "sha": "7c72fbc197ff",
+   "lang": "pl",
+   "chars": 560,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "pl/04_clock.png",
+   "src": "../out-iphone-run2/raw/pl/04_clock.png",
+   "sha": "b88a9fcafe5e",
+   "lang": "pl",
+   "chars": 1588,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/01_train.png",
+   "src": "../out-iphone-run2/raw/zh-Hans/01_train.png",
+   "sha": "ee7c27c2e59f",
+   "lang": "zh-Hans",
+   "chars": 779,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/02_benchmarks.png",
+   "src": "../out-iphone-run2/raw/zh-Hans/02_benchmarks.png",
+   "sha": "f9944fc4eebb",
+   "lang": "zh-Hans",
+   "chars": 612,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/03_timer_setup.png",
+   "src": "../out-iphone-run2/raw/zh-Hans/03_timer_setup.png",
+   "sha": "c554f9c702ae",
+   "lang": "zh-Hans",
+   "chars": 350,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "zh-Hans/04_clock.png",
+   "src": "../out-iphone-run2/raw/zh-Hans/04_clock.png",
+   "sha": "60e976845006",
+   "lang": "zh-Hans",
+   "chars": 923,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

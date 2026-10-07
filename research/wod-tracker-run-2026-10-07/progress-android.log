@@ -1,0 +1,60 @@
+2026-10-07 17:47:18 GATE(android attempt 1) load1=47.90 free%=57 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=80
+2026-10-07 17:47:18 GATE(android attempt 1) OPEN
+2026-10-07 17:47:18 ANDROID START attempt 1 (start numbers = the GATE line above)
+2026-10-07 17:47:18 android build started pid/pgid=31717 user=manu limit=3600s
+2026-10-07 17:49:38 ANDROID END load1=13.17 free%=52 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=79
+2026-10-07 17:49:38 ANDROID BUILD OK
+2026-10-07 18:12:37 quiet check pass 1/3: quiet: free 49%, load 118 load=118.50 free%=49% disk_free_GiB=76
+2026-10-07 18:13:37 quiet check pass 2/3: quiet: free 53%, load 53 load=53.17 free%=53% disk_free_GiB=75
+2026-10-07 18:14:38 quiet check pass 3/3: quiet: free 55%, load 23 load=23.26 free%=55% disk_free_GiB=76
+2026-10-07 18:14:38 LOCK TAKEN 18:14; start numbers: load=23.26 free%=55% disk_free_GiB=76; pre-lock quiet checks passed 3x
+2026-10-07 19:16:06 LOCK RELEASED (load=18.98 free%=56% disk_free_GiB=73)
+2026-10-07 19:21:16 chain-android-run started pid 8193 (waiting for queue, 3 quiet checks, lock)
+2026-10-07 19:21:16 quiet check pass 1/3: quiet: free 62%, load 4; load=4.39 free%=62% disk_free_GiB=73
+2026-10-07 19:22:16 quiet check pass 2/3: quiet: free 63%, load 3; load=3.31 free%=63% disk_free_GiB=73
+2026-10-07 19:23:17 quiet check pass 3/3: quiet: free 62%, load 2; load=2.42 free%=62% disk_free_GiB=73
+2026-10-07 19:23:17 LOCK TAKEN: WOD Tracker showcase Android (OCR session) | shotfleet 0.1.6 on WOD Tracker 1.6.7 debug APK, 1 emulator | started 19:23 | est. 40 min, hard limit 90 (ends 20:53); load=2.42 free%=62% disk_free_GiB=73; avds: kuokka_smoke shotfleet_android shotfleet_android_tablet ; adb: 0 emulators; qemu:        0
+2026-10-07 19:23:17 android-dry (en) started, limit 1800s; load=2.42 free%=62% disk_free_GiB=73
+2026-10-07 19:27:37 android-dry done rc=0 killed=0 wall=260s; captured 1/1 locales in 175s on 1 emulators ; load=3.55 free%=57% disk_free_GiB=73
+2026-10-07 19:27:37 dry run finished: waiting up to 15 min for /Users/manu/Developer/shotfleet-rc-build/showcase-wod/android.cmd ('run NAME LOCALES' or 'end'); lock still held
+2026-10-07 19:28:02 android-zhsmoke (zh-Hans) started, limit 1800s; load=3.59 free%=57% disk_free_GiB=73
+2026-10-07 19:28:23 android-zhsmoke done rc=2 killed=0 wall=21s; ; load=3.30 free%=58% disk_free_GiB=73
+2026-10-07 19:28:23 android-zhsmoke finished rc=2: waiting up to 15 min for the next android.cmd
+2026-10-07 19:28:28 android-zhsmoke (zh-CN) started, limit 1800s; load=3.28 free%=58% disk_free_GiB=73
+2026-10-07 19:32:48 android-zhsmoke done rc=0 killed=0 wall=260s; captured 1/1 locales in 194s on 1 emulators ; load=4.00 free%=56% disk_free_GiB=73
+2026-10-07 19:32:48 android-zhsmoke finished rc=0: waiting up to 15 min for the next android.cmd
+2026-10-07 19:33:08 android-run1 (hi,tr,zh-CN) started, limit 1800s; load=3.54 free%=56% disk_free_GiB=73
+2026-10-07 19:38:09 android-run1: progress check 5 min in: load=4.61 free%=54% disk_free_GiB=72; adb: emulator-5702	device ; lines in log:        8, files in out:       23
+2026-10-07 19:41:29 android-run1 done rc=1 killed=0 wall=501s; captured 2/3 locales in 474s on 1 emulators ; load=4.08 free%=56% disk_free_GiB=73
+2026-10-07 19:41:29 android-run1 finished rc=1: waiting up to 15 min for the next android.cmd
+2026-10-07 19:42:19 android-run1 (hi,tr,zh-CN) started, limit 1800s; load=3.28 free%=57% disk_free_GiB=73
+2026-10-07 19:47:20 android-run1: progress check 5 min in: load=5.62 free%=54% disk_free_GiB=72; adb: emulator-5702	device ; lines in log:        8, files in out:       20
+2026-10-07 19:52:21 android-run1: progress check 10 min in: load=4.65 free%=60% disk_free_GiB=70; adb: ; lines in log:        8, files in out:       40
+2026-10-07 19:52:41 android-run1 done rc=0 killed=0 wall=622s; captured 3/3 locales in 553s on 1 emulators ; load=3.95 free%=61% disk_free_GiB=73
+2026-10-07 19:52:41 android-run1 finished rc=0: waiting up to 15 min for the next android.cmd
+2026-10-07 19:52:51 android-run2 (pl,nl,pt) started, limit 1800s; load=4.19 free%=61% disk_free_GiB=73
+2026-10-07 20:15:42 NOTE: Mac went into Maintenance Sleep 19:57:01-20:14:16 during android-run2 (processes frozen, wall clock jumped 17 min; pmset -g log). Started 'caffeinate -i -w 8193' (dies with my chain) so it cannot happen again; hold time counted by wall clock includes the sleep
+2026-10-07 20:15:53 android-run2: progress check 23 min in: load=13.13 free%=61% disk_free_GiB=72; adb: emulator-5702	device ; lines in log:        8, files in out:       20
+2026-10-07 20:20:13 android-run2 done rc=0 killed=0 wall=1642s; captured 3/3 locales in 1619s on 1 emulators ; load=4.60 free%=58% disk_free_GiB=73
+2026-10-07 20:20:13 android-run2 finished rc=0: waiting up to 15 min for the next android.cmd
+2026-10-07 20:20:24 android-run2 (pl,nl,pt) started, limit 1800s; load=4.21 free%=59% disk_free_GiB=73
+2026-10-07 20:25:24 android-run2: progress check 5 min in: load=4.40 free%=61% disk_free_GiB=71; adb: emulator-5702	device ; lines in log:        8, files in out:       20
+2026-10-07 20:29:45 android-run2 done rc=0 killed=0 wall=561s; captured 3/3 locales in 528s on 1 emulators ; load=3.44 free%=62% disk_free_GiB=72
+2026-10-07 20:29:45 android-run2 finished rc=0: waiting up to 15 min for the next android.cmd
+2026-10-07 20:30:05 android-dry-final (en) started, limit 1800s; load=3.82 free%=63% disk_free_GiB=72
+2026-10-07 20:33:45 android-dry-final done rc=0 killed=0 wall=220s; captured 1/1 locales in 187s on 1 emulators ; load=4.26 free%=63% disk_free_GiB=72
+2026-10-07 20:33:45 android-dry-final finished rc=0: waiting up to 15 min for the next android.cmd
+2026-10-07 20:33:55 ALL ANDROID DEVICE RUNS DONE
+2026-10-07 20:33:55 ANDROID CLEANUP start
+2026-10-07 20:34:15 LOCK RELEASED (load=3.06 free%=63% disk_free_GiB=72)
+2026-10-07 20:34:15 ANDROID CLEANUP end
+2026-10-07 20:34:23 check android-run1 started
+2026-10-07 20:34:27 check android-run1 done: checked 18 screenshots in 3 languages: 0 problem(s) report: check-android-run1/index.html rc=0 
+2026-10-07 20:34:27 check android-run2 started
+2026-10-07 20:34:31 check android-run2 done: checked 18 screenshots in 3 languages: 0 problem(s) report: check-android-run2/index.html rc=0 
+2026-10-07 20:34:31 check android-dry started
+2026-10-07 20:34:33 check android-dry done: checked 6 screenshots in 1 languages: 0 problem(s) report: check-android-dry/index.html rc=0 
+2026-10-07 20:34:33 check android-zhsmoke started
+2026-10-07 20:34:35 check android-zhsmoke done: checked 6 screenshots in 1 languages: 0 problem(s) report: check-android-zhsmoke/index.html rc=0 
+2026-10-07 20:34:35 all android checks done
+2026-10-07 20:35:03 check android-dry-final done: checked 6 screenshots in 1 languages: 0 problem(s) report: check-android-dry-final/index.html rc=0 

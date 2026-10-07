@@ -1,0 +1,13 @@
+warning hi: 'Benchmarks' -> 'बेंचमार्क' also means 'Benchmark'; anchor that step (below:/above:) if it taps the wrong element
+warning hi: 'Skip' -> 'छोड़ें' also means 'Discard'; anchor that step (below:/above:) if it taps the wrong element
+warning tr: 'Next' -> 'İleri' also means 'Advanced'; anchor that step (below:/above:) if it taps the wrong element
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   hi       4/4 screenshots
+ok   tr       4/4 screenshots
+captured 2/2 locales in 360s on 1 simulators
+
+checked 8 screenshots in 2 languages: 0 problem(s)
+rc=0 killed=0

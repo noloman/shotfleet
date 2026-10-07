@@ -1,0 +1,20 @@
+warning hi: 'Benchmarks' -> 'बेंचमार्क' also means 'Benchmark'; anchor that step (below:/above:) if it taps the wrong element
+warning hi: 'Skip' -> 'छोड़ें' also means 'Discard'; anchor that step (below:/above:) if it taps the wrong element
+warning tr: 'Next' -> 'İleri' also means 'Advanced'; anchor that step (below:/above:) if it taps the wrong element
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   '2/12'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+retrying 2: hi, tr
+FAIL hi       1/4 screenshots (retried)  No visible element found: "Benchmarks"
+     failed step: Scrolling DOWN until "Benchmarks" is visible with speed 40, visibility percentage 100%, timeout 30000 ms, with centering disabled
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-wod/out-ios/.work/debug/attempt2/.maestro/tests/2026-10-07_183349/screenshot-❌-1791390991497-(hi).png
+     on screen: WOD Tracker | ट्रेन | 15 मिनट AMRAP, AMRAP · 15:00 | repeat.circle | AMRAP · 15:00 | चलाएँ | 20 मिनट For Time, For Time · सीमा 20:00 | विराम घड़ी | 20 मिनट For Time | For Time · सीमा 20:00 | Tabata (8 राउंड), Tabata · 8 × 0:20 / 0: | फ़्लैश
+FAIL tr       1/4 screenshots (retried)  No visible element found: "Benchmarks"
+     failed step: Scrolling DOWN until "Benchmarks" is visible with speed 40, visibility percentage 100%, timeout 30000 ms, with centering disabled
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-wod/out-ios/.work/debug/attempt2/.maestro/tests/2026-10-07_183349/screenshot-❌-1791390911187-(tr).png
+     on screen: WOD Tracker | Antrenman | 12 dakika EMOM, EMOM · 12 × 1:00 | clock.arrow.circlepath | EMOM · 12 × 1:00 | Oynat | 15 dakika AMRAP, AMRAP · 15:00 | repeat.circle | 15 dakika AMRAP | AMRAP · 15:00 | 20 dakika For Time, For Time · Sınır 20: | Kronometre
+captured 0/2 locales in 352s on 1 simulators
+
+checked 2 screenshots in 2 languages: 0 problem(s)
+rc=1 killed=0
