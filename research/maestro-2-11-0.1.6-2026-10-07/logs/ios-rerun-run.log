@@ -1,0 +1,27 @@
+
+== iPhone 17 Pro Max
+memory pressure is elevated: using 1 devices instead of 2
+warning: this Mac is short of memory: 1 device at once would be safer than 2 (this run uses 1) (macOS reports elevated memory pressure). Seen: 7.7 GB memory available, 17.4 GB swap in use, load 4 on 10 cores, 1 other simulators/emulators booted. A loaded Mac makes flows time out and the retries add load. Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 4 locales on 1 simulators...
+ok   de       2/2 screenshots
+ok   ja       2/2 screenshots
+ok   ar       2/2 screenshots
+ok   tr       2/2 screenshots
+captured 4/4 locales in 74s on 1 simulators
+
+checked 8 screenshots in 4 languages: 0 problem(s)
+
+== iPad Pro 13-inch (M5)
+memory pressure is elevated: using 1 devices instead of 2
+warning: this Mac is short of memory: 1 device at once would be safer than 2 (this run uses 1) (7.3 GB of memory available, 2 devices want about 7.5 GB; 18.6 GB of swap in use (above 10 GB the Mac thrashes)). Seen: 7.3 GB memory available, 18.6 GB swap in use, load 161 on 10 cores, 1 other simulators/emulators booted. A loaded Mac makes flows time out and the retries add load. Close Xcode, Android Studio and other simulators, run ./gradlew --stop for idle Gradle daemons, then run again; or lower `parallel`.
+booting 1 simulators (iPad-Pro-13-inch-M5-12GB, iOS-26-4)
+simulator shotfleet-ipad-pro-13-inch-m5-12gb-1 stopped answering last run; replacing it with a new one
+capturing 4 locales on 1 simulators...
+ok   de       2/2 screenshots
+ok   ja       2/2 screenshots
+ok   ar       2/2 screenshots
+ok   tr       2/2 screenshots
+captured 4/4 locales in 271s on 1 simulators
+
+checked 8 screenshots in 4 languages: 0 problem(s)

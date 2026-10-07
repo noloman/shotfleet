@@ -4398,5 +4398,20 @@
   "layer": "site",
   "assertion": "One recorded run on the owner's app, 2026-10-07.",
   "fix": ""
+ },
+ {
+  "id": "C266",
+  "claim": "Docs: Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both)",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both)"
+  ],
+  "status": "evidence",
+  "proof": "research/maestro-2-11-0.1.6-2026-10-07/NOTES.md and logs/: on Maestro 2.11.0 (doctor line 'ok maestro 2.11.0 (tested: 2.0.10, 2.11.0)'), main b8c9305 (0.1.6), iOS 26.4 pinned: Android fixture e2e 30/30 (108 s); iOS fixture e2e 36/36 (518 s, iPhone and iPad, de/ja/ar/tr, 0 problems, 1 simulator at a time because macOS reported elevated memory pressure). A first iOS attempt on the same day passed the iPhone half and lost the iPad half to simulators that stopped answering at 18-21 GB of swap (logs/ios-attempt1-...); the same hang had hit the 0.1.6 gate that morning on 2.0.10. On 2.0.10 the 0.1.6 gate passed 65/65 (36 iOS + 29 Android, 2026-10-07 09:52, shotfleet-rc-build/0.1.6/RESUME.md; the gate log does not print the Maestro version, `maestro` on its PATH was ~/.maestro/bin/maestro = 2.0.10, checked by the coordinator). Limits: fixture app only, not CrossfitTracker or other real apps; timings not comparable (loaded Mac); the guide's manual routes and the home-page timings were NOT re-run on 2.11.0 and stay labelled 2.0.10.",
+  "layer": "fixture",
+  "assertion": "One recorded fixture e2e run per platform on Maestro 2.11.0, 2026-10-07; the 2.0.10 side is the 0.1.6 release gate.",
+  "fix": ""
  }
 ]

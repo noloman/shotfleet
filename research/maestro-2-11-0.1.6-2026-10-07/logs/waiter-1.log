@@ -1,0 +1,7 @@
+14:21:17 waiter armed (max 4 h)
+15:53:13 waiter armed (max 4 h)
+15:53:43 waiter armed (max 4 h)
+16:01:29 lock taken; free disk 63.9 GB
+16:18:19 ios exit 1 in 1009 s
+16:20:07 android exit 0 in 108 s
+16:20:07 lock released, pin reverted; results {'ios': (1, 1009), 'android': (0, 108)}

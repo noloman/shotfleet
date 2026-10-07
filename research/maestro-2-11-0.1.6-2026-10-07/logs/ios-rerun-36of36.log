@@ -1,0 +1,59 @@
+work dir: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.sxbKYK
+SKIP android: not requested (pass --android or set SHOTFLEET_E2E_ANDROID=1; the fixture is tools/fixture-app-android)
+== build the fixture app
+PASS build exits 0
+PASS build: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.sxbKYK/build/FleetFixture.app has an Info.plist
+     [build the fixture app took 3 s]
+== shotfleet init
+PASS init exits 0
+PASS init wrote shotfleet.toml and flow.yaml
+     [shotfleet init took 0 s]
+== shotfleet doctor
+PASS doctor exits 0
+PASS doctor says iOS: ready
+     [shotfleet doctor took 65 s]
+== shotfleet run (iPhone, then iPad)
+PASS run exits 0
+     [shotfleet run (iPhone, then iPad) took 447 s]
+== shotfleet check
+PASS check exits 0
+     [shotfleet check took 1 s]
+== shotfleet export --fastlane
+PASS export exits 0
+     [shotfleet export --fastlane took 0 s]
+== assertions on the output
+PASS an iPhone and an iPad set in the output
+PASS ipad-pro-13-inch-m5-12gb: 2 screenshots in every language
+PASS ipad-pro-13-inch-m5-12gb: every raw PNG exists and is a real image
+PASS ipad-pro-13-inch-m5-12gb: no two languages share an identical image
+PASS ipad-pro-13-inch-m5-12gb: de/01_welcome.png shows 'Weiter'
+PASS ipad-pro-13-inch-m5-12gb: de/02_settings.png shows 'Fertig'
+PASS ipad-pro-13-inch-m5-12gb: the report has 0 problems
+PASS ipad-pro-13-inch-m5-12gb: run.json has every language captured ok
+PASS iphone-17-pro-max: 2 screenshots in every language
+PASS iphone-17-pro-max: every raw PNG exists and is a real image
+PASS iphone-17-pro-max: no two languages share an identical image
+PASS iphone-17-pro-max: de/01_welcome.png shows 'Weiter'
+PASS iphone-17-pro-max: de/02_settings.png shows 'Fertig'
+PASS iphone-17-pro-max: the report has 0 problems
+PASS iphone-17-pro-max: run.json has every language captured ok
+PASS export: de-DE has 4 screenshots (one set per device)
+PASS export: ja has 4 screenshots (one set per device)
+PASS export: ar-SA has 4 screenshots (one set per device)
+PASS export: tr has 4 screenshots (one set per device)
+PASS hook before_run fired (hooks.log)
+PASS hook after_run fired (hooks.log)
+PASS hook before_export fired (hooks.log)
+PASS hook after_export fired (hooks.log)
+     [assertions on the output took 0 s]
+== planted failures (copies of the output, the real output is untouched)
+copy: ipad-pro-13-inch-m5-12gb/raw/ja/01_welcome.png
+PASS check-copy exits 1
+delete: ipad-pro-13-inch-m5-12gb/raw/tr/02_settings.png
+PASS check-delete exits 1
+PASS check named ja for a planted defect (shows de|identical image)
+PASS check named tr for a planted defect (missing)
+     [planted failures (copies of the output, the real output is untouched) took 2 s]
+total 8 min 38 s
+PASS: all 36 assertions passed
+work dir kept: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.sxbKYK

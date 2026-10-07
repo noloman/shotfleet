@@ -1,0 +1,76 @@
+work dir: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X
+SKIP android: not requested (pass --android or set SHOTFLEET_E2E_ANDROID=1; the fixture is tools/fixture-app-android)
+== build the fixture app
+PASS build exits 0
+PASS build: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X/build/FleetFixture.app has an Info.plist
+     [build the fixture app took 6 s]
+== shotfleet init
+PASS init exits 0
+PASS init wrote shotfleet.toml and flow.yaml
+     [shotfleet init took 0 s]
+== shotfleet doctor
+PASS doctor exits 0
+PASS doctor says iOS: ready
+     [shotfleet doctor took 66 s]
+== shotfleet run (iPhone, then iPad)
+FAIL run exits 0: got 1, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X/logs/run.log
+     | simulator FA297EA4-324B-4E22-9C93-787A5D31A44C stopped answering (simctl uninstall did not answer within 60 s: simulator FA297EA4-324B-4E22-9C93-787A5D31A44C is not responding. Shut it down with `xcrun simctl shutdown FA297EA4-324B-4E22-9C93-787A5D31A44C` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | simulator 11153791-9FD2-4823-8321-A071E219C6E3 stopped answering (simctl uninstall did not answer within 60 s: simulator 11153791-9FD2-4823-8321-A071E219C6E3 is not responding. Shut it down with `xcrun simctl shutdown 11153791-9FD2-4823-8321-A071E219C6E3` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | simulator 0A08D7E8-1325-4D08-A1B1-33C02037B52A stopped answering (simctl uninstall did not answer within 60 s: simulator 0A08D7E8-1325-4D08-A1B1-33C02037B52A is not responding. Shut it down with `xcrun simctl shutdown 0A08D7E8-1325-4D08-A1B1-33C02037B52A` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | simulator 18F13E9D-6C9D-411C-82DC-FF1693A63371 stopped answering (simctl uninstall did not answer within 60 s: simulator 18F13E9D-6C9D-411C-82DC-FF1693A63371 is not responding. Shut it down with `xcrun simctl shutdown 18F13E9D-6C9D-411C-82DC-FF1693A63371` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | not retrying: no simulator answers any more. Shut down shotfleet's simulators (your other simulators are left alone): `xcrun simctl shutdown FA297EA4-324B-4E22-9C93-787A5D31A44C; xcrun simctl shutdown 11153791-9FD2-4823-8321-A071E219C6E3; xcrun simctl shutdown 0A08D7E8-1325-4D08-A1B1-33C02037B52A; xcrun simctl shutdown 18F13E9D-6C9D-411C-82DC-FF1693A63371` and run again; the next run replaces the ones that stopped answering with new ones. This usually means the Mac is short of memory: close other simulators and heavy apps first
+     | FAIL de       0/2 screenshots  no result (see maestro log)
+     | FAIL ja       0/2 screenshots  no result (see maestro log)
+     | FAIL ar       0/2 screenshots  no result (see maestro log)
+     | FAIL tr       0/2 screenshots  no result (see maestro log)
+     | captured 0/4 locales in 322s on 4 simulators
+     | no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs
+     | the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types
+     [shotfleet run (iPhone, then iPad) took 935 s]
+== shotfleet check
+FAIL check exits 0: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X/logs/check.log
+     | shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.seVQ6X/proj/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>
+     [shotfleet check took 0 s]
+== shotfleet export --fastlane
+FAIL export exits 0: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X/logs/export.log
+     | shotfleet: the app runs on iPad, so the App Store requires 13" iPad screenshots; add "iPad Pro 13-inch (M5)" to device_types and run again
+     | the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types
+     [shotfleet export --fastlane took 0 s]
+== assertions on the output
+PASS an iPhone and an iPad set in the output
+FAIL ipad-pro-13-inch-m5-12gb: 2 screenshots in every language: wrong or missing in {'de': [], 'ja': [], 'ar': [], 'tr': []}
+FAIL ipad-pro-13-inch-m5-12gb: every raw PNG exists and is a real image: {'de/01_welcome.png': 'missing', 'de/02_settings.png': 'missing', 'ja/01_welcome.png': 'missing', 'ja/02_settings.png': 'missing', 'ar/01_welcome.png': 'missing', 'ar/02_settings.png': 'missing', 'tr/01_welcome.png': 'missing', 'tr/02_settings.png': 'missing'}
+PASS ipad-pro-13-inch-m5-12gb: no two languages share an identical image
+FAIL ipad-pro-13-inch-m5-12gb: de/01_welcome.png shows 'Weiter': text was ''
+FAIL ipad-pro-13-inch-m5-12gb: de/02_settings.png shows 'Fertig': text was ''
+FAIL ipad-pro-13-inch-m5-12gb: the report has 0 problems: ['no readable check.json']
+FAIL ipad-pro-13-inch-m5-12gb: run.json has every language captured ok: not ok: ['de', 'ja', 'ar', 'tr']
+PASS iphone-17-pro-max: 2 screenshots in every language
+PASS iphone-17-pro-max: every raw PNG exists and is a real image
+PASS iphone-17-pro-max: no two languages share an identical image
+PASS iphone-17-pro-max: de/01_welcome.png shows 'Weiter'
+PASS iphone-17-pro-max: de/02_settings.png shows 'Fertig'
+PASS iphone-17-pro-max: the report has 0 problems
+PASS iphone-17-pro-max: run.json has every language captured ok
+FAIL export: de-DE has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+FAIL export: ja has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+FAIL export: ar-SA has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+FAIL export: tr has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+PASS hook before_run fired (hooks.log)
+FAIL hook after_run fired (hooks.log): hooks.log was 'before_run locales=de,ja,ar,tr\nafter_run exit=1 problems=0\nbefore_export\n'
+PASS hook before_export fired (hooks.log)
+FAIL hook after_export fired (hooks.log): hooks.log was 'before_run locales=de,ja,ar,tr\nafter_run exit=1 problems=0\nbefore_export\n'
+     [assertions on the output took 0 s]
+== planted failures (copies of the output, the real output is untouched)
+copy: ipad-pro-13-inch-m5-12gb/raw/ja/01_welcome.png
+FAIL check-copy exits 1: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X/logs/check-copy.log
+     | shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.seVQ6X/plant-copy/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>
+delete: ipad-pro-13-inch-m5-12gb/raw/tr/02_settings.png
+FAIL check-delete exits 1: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X/logs/check-delete.log
+     | shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.seVQ6X/plant-delete/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>
+FAIL check named ja for a planted defect (shows de|identical image): no line names ja with /shows de|identical image/; got: "shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.seVQ6X/plant-copy/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>\n"
+FAIL check named tr for a planted defect (missing): no line names tr with /missing/; got: "shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.seVQ6X/plant-delete/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>\n"
+     [planted failures (copies of the output, the real output is untouched) took 1 s]
+total 16 min 49 s (over the 10 minute target)
+FAIL: 19 of 36 assertions failed
+work dir kept: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.seVQ6X

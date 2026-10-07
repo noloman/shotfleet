@@ -1,0 +1,16 @@
+ok   maestro 2.11.0 (tested: 2.0.10, 2.11.0) (both)
+ok   java 17+             (both)
+ok   swiftc (OCR checks)  (both)
+ok   xcrun simctl         (iOS)
+ok   adb                  (Android)
+ok   emulator             (Android)
+ok   avdmanager           (Android)
+ok   aapt2                (Android)
+ok   system image android-36 google_apis (Android)
+ok   iOS Simulator runtime iOS 27.0 (iOS)
+Android SDK: /Users/manu/Library/Android/sdk
+...  text recognition   (first use can take a few minutes while macOS prepares it; doctor waits at most 60 s)
+note: text recognition: slow to start (the Mac is busy or this is the first run: it compiles a model once, up to a few minutes); doctor waited 60 s and went on. `shotfleet check` waits for it, then finishes and marks screens it couldn't read as not verified. Now: macOS text recognition didn't answer in time: macOS is still compiling its text-reading model (ANECompilerService). A first-time compile on a busy Mac can take minutes, and the result is kept for next time
+
+iOS: ready   Android: ready
+next: shotfleet init  (needs a Debug-iphonesimulator .app and/or a debug .apk of your app)
