@@ -337,6 +337,14 @@ class DockerPending(unittest.TestCase):
                 if self.PUBLISHED: self.assertNotIn("DOCKER-PENDING", text, "published: remove the markers")
                 else: self.assertNotIn("noloman/shotfleet-check", re.sub(r"<!--.*?-->", "", text, flags=re.S))
 
+    def test_the_readme_follows_the_same_flag(self):
+        text = (ROOT / "README.md").read_text()
+        self.assertEqual(text.count("<!-- DOCKER-PENDING"), text.count("DOCKER-PENDING -->"))
+        if self.PUBLISHED: self.assertNotIn("DOCKER-PENDING", text, "published: remove the markers")
+        else:
+            visible = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+            for word in ("docker", "ghcr", "noloman/shotfleet-check", "linux and ci"): self.assertNotIn(word, visible.lower())
+
 
 class ByocPending(unittest.TestCase):
     """Bring your own capture ([capture], your own XCUITest tests on iOS) has no passing device test yet. Until site/BYOC_DEVICE_PROVEN
