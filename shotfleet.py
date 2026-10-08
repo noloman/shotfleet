@@ -57,12 +57,12 @@ def inside(root, *parts):
 
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
-KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int, "capacity": str},
+KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int, "capacity": str, "settle_ms": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
         "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
-EXPECT_KEYS = ("any", "all", "not")
+EXPECT_KEYS = ("any", "all", "not", "key")  # key = the app's own string key; its text, in the screenshot's language, must be on screen
 EXAMPLE_SETUP = {"shell": '"setprop debug.myapp.demo 1"', "simctl": '"ui $UDID appearance dark"'}
 HOOK_EVENTS = ("before_run", "after_run", "before_export", "after_export")
 # [capture] (iOS): run the team's own XCUITest screenshot tests instead of a Maestro flow (research/byoc-ios-experiment-2026-10-06.md)
@@ -125,8 +125,10 @@ def check_expect(expect, name):
             if k not in EXPECT_KEYS or isinstance(v, dict):
                 near = difflib.get_close_matches(k, EXPECT_KEYS, n=1)
                 raise Fail(f"[{where}] in {name} has an unknown setting '{k}'" + (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(EXPECT_KEYS)}"))
+            if k == "key" and isinstance(v, str): v = [v]  # key = "title" is one key
             if not (isinstance(v, list) and v and all(isinstance(t, str) and t.strip() for t in v)):
-                raise Fail(f"[{where}] {k} in {name} should be a list of texts, e.g. {k} = [\"Senior iOS Engineer\"]")
+                raise Fail(f"[{where}] {k} in {name} should be " + ("the key of a string in your app, e.g. key = \"benchmarks_title\"" if k == "key"
+                           else f"a list of texts, e.g. {k} = [\"Senior iOS Engineer\"]"))
     for shot, table in expect.items():
         if not isinstance(table, dict):
             raise Fail(f"[expect] in {name}: '{shot}' should be a table named after a screenshot, e.g. [expect.{shot}] with any = [\"text\"]")
@@ -174,6 +176,8 @@ def check_section(cfg, platform, name):
             raise Fail(f"[{platform}] {key} in {name} should be a {names}, not {value!r}")
     for key in ("parallel", "timeout_s", "stall_s"):  # the command line refuses --parallel 0; the config must too ("booting 0 simulators")
         if key in cfg and cfg[key] < 1: raise Fail(f"[{platform}] {key} in {name} should be 1 or more, not {cfg[key]}")
+    if "settle_ms" in cfg and not 0 <= cfg["settle_ms"] <= 10000:
+        raise Fail(f"[{platform}] settle_ms in {name} should be 0 (off) to 10000 milliseconds, not {cfg['settle_ms']}")
     if cfg.get("capacity") == "adjust": raise Fail(f"[{platform}] capacity = \"adjust\" in {name} is not available yet; use \"warn\" (the default) or \"off\"")
     if cfg.get("capacity", "warn") not in ("warn", "off"): raise Fail(f"[{platform}] capacity in {name} should be \"warn\" or \"off\", not {cfg['capacity']!r}")
     for key in ("locales", "device_types", "devices", "strings"):
@@ -295,8 +299,8 @@ def store_code(app_locale, store):
 # lproj code -> language NLLanguageRecognizer reports (differs only for these)
 EXPECTED_LANG = {"nb": "nb", "zh-Hans": "zh-Hans", "zh-Hant": "zh-Hant"}
 SELECTOR_KEYS = ("tapOn", "doubleTapOn", "longPressOn", "assertVisible", "assertNotVisible",
-                 "scrollUntilVisible", "text", "copyTextFrom", "visible", "notVisible",
-                 "below", "above", "leftOf", "rightOf", "childOf", "containsChild")  # relative anchors are text too
+                 "scrollUntilVisible", "element", "text", "copyTextFrom", "visible", "notVisible",
+                 "below", "above", "leftOf", "rightOf", "childOf", "containsChild")  # relative anchors are text too; `element` is scrollUntilVisible's plain-string form
 
 def sh(cmd, **kw):
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
@@ -859,14 +863,19 @@ FRAMEWORKS = [  # (name, marker in the build's file names, candidate `strings` g
 ]
 HINTED = set()  # hints already printed, so a run over many devices says each once
 
-def framework_hint(build, strings_set, root="."):
-    """Print (to stderr, once, never blocking) what to add to shotfleet.toml when `build` is Flutter, React Native, MAUI or
-    Unity, whose translations are compiled into code shotfleet can't read, and warn about debug builds whose screenshots
-    would show a banner or a red box. ponytail: file-name markers only, not confirmed on real builds of every version."""
+def framework_of(build):
+    """(framework name, candidate `strings` globs, the build's file names) for a Flutter, React Native, MAUI or Unity build; (None, None, text) otherwise."""
     b = Path(build)
     names = [p.relative_to(b).as_posix() for p in b.rglob("*")] if b.is_dir() else zipfile.ZipFile(b).namelist() if zipfile.is_zipfile(b) else []
     text = "\n".join(names)
     name, _, globs = next((f for f in FRAMEWORKS if re.search(f[1], text)), (None, None, None))
+    return name, globs, text
+
+def framework_hint(build, strings_set, root="."):
+    """Print (to stderr, once, never blocking) what to add to shotfleet.toml when `build` is Flutter, React Native, MAUI or
+    Unity, whose translations are compiled into code shotfleet can't read, and warn about debug builds whose screenshots
+    would show a banner or a red box. ponytail: file-name markers only, not confirmed on real builds of every version."""
+    name, globs, text = framework_of(build)
     if not name: return
     msgs = []
     if not strings_set:
@@ -881,6 +890,12 @@ def framework_hint(build, strings_set, root="."):
                     "dev server: screenshots show the red box or fail offline. Build Release (--configuration Release on iOS, --variant release on Android)")
     for m in msgs:
         if m not in HINTED: HINTED.add(m); print("hint: " + m, file=sys.stderr)
+
+def no_translations_message(app):
+    """Why check found no strings in this build, and the exact option to pass instead when it is a framework build (Flutter keeps its text in compiled code)."""
+    name, globs, _ = framework_of(app)
+    return (f"{Path(app).name} contains no translations shotfleet can read" +
+            (f". This is a {name} build: pass --strings '{globs[0]}' (your translation files)" if name else " (no .lproj strings, String Catalogs or resources)"))
 
 def shipped_locales(strings, base="en", min_coverage=0.5):
     """Locales the app itself is translated into.
@@ -911,7 +926,7 @@ WRAPPED_RE = re.compile(r"^(\.\*)?(.+?)(\.\*)?$", re.S)
 
 SELECTOR_RE = re.compile(r"^(\s*-?\s*(?:%s):\s*)(.+?)\s*$" % "|".join(SELECTOR_KEYS))
 
-INLINE_RE = re.compile(r"(\b(?:%s)\s*:\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
+INLINE_RE = re.compile(r"(\b(?:%s)\s*:(?!\s*\{)\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
 
 def with_fallback(strings, lp):
     """The strings the app shows in lp, the way iOS and Android resolve them: lp's own, then its parents'
@@ -1155,7 +1170,7 @@ def apple_locale(lproj):
     store = store_code(lproj, APP_STORE) or lproj
     return {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
 
-def localize_flow(flow, lproj, shots_dir, env=None):
+def localize_flow(flow, lproj, shots_dir, env=None, settle_ms=0):
     """Make a translated flow self-contained for one locale.
 
     Maestro can only run several simulators at once from one process (--shard-split), which hands
@@ -1199,6 +1214,7 @@ def localize_flow(flow, lproj, shots_dir, env=None):
             started = True
         else:
             started = started or bool(re.match(r"^\s*-", line))
+            settle_before(out, line, settle_ms)
             out.append(line); redirect_screenshot(out, shots_dir)
             nxt = next((l for l in lines[i:] if l.strip()), "")
             if screenshot_ends(out, nxt): out += pause_after_screenshot(out)
@@ -1213,6 +1229,15 @@ def screenshot_ends(out, nxt):
     if any(l.strip() and ind(l) <= pad for l in out[j + 1:]): return False  # something else came after it (or the pause)
     if re.match(r"^\s*- takeScreenshot:\s*$", out[j]) and j == len(out) - 1: return False  # map form: keys follow
     return not nxt.strip() or ind(nxt) <= pad
+
+SETTLE_MS = 1000  # the most shotfleet waits for a still screen before one screenshot (config: settle_ms; 0 = off)
+
+def settle_before(out, line, ms):
+    """Before a takeScreenshot step, wait (at most `ms`) until the screen stops changing: Maestro's own waitForAnimationToEnd compares
+    two frames in a row. A splash that fades, a sheet that slides in or a first paint finishes before the picture is taken.
+    It never fails the flow; a screen that never stops moving costs `ms` once per screenshot."""
+    if ms and (m := re.match(r"^(\s*)- takeScreenshot:", line)):
+        out += [f"{m.group(1)}- waitForAnimationToEnd:", f"{m.group(1)}    timeout: {ms}"]
 
 def pause_after_screenshot(out, ms=1500):
     """A pause while shotfleet reads the screen's text from the app (exact, any script; see capture_texts)."""
@@ -1285,7 +1310,7 @@ def replace_hung(name, udid):
     """Delete a pool simulator that stopped answering last run, so make_pool creates a fresh one under its name. Delete, not
     erase: a new simulator comes from make_pool's create path, gets a new UDID (the marker can't match it again) and no state
     of the old one survives. False (it stays in use, as before) when it can't be deleted."""
-    print(f"simulator {name} stopped answering last run; replacing it with a new one", flush=True)
+    print(f"simulator {name} stopped answering last run; replacing it with a new one (same name, new id)", flush=True)
     try:
         sh(["xcrun", "simctl", "shutdown", udid], timeout=SIM_QUICK_TIMEOUT_S)  # fails harmlessly when already shut down
         if sh(["xcrun", "simctl", "delete", udid], timeout=SIM_QUICK_TIMEOUT_S).returncode == 0:
@@ -1660,7 +1685,15 @@ INFRA_ERRORS = ("unknown error", "unable to clear state",  # Maestro's words whe
                 "no result", "flow never ran",              # Maestro died or was stopped before it reported
                 "no progress for", "did not answer", "not responding", "stopped answering",
                 "offline", "emulator did not boot", "emulators did not boot", "can't find service", "not found: emulator",
-                "blank screenshot(s)")                      # blank_note()'s wording: a late first paint can heal on the second try
+                "blank screenshot(s)",                      # blank_note()'s wording: a late first paint can heal on the second try
+                "driver not ready", "driver did not start")  # Maestro's iOS driver on a simulator's first boot (and no_result's wording for it)
+
+def no_result(log):
+    """The error for a flow Maestro never reported on. When its log says the device driver did not come up in time (a simulator's
+    first boot on a busy Mac), say that: it is a device problem, so the run tries once more (INFRA_ERRORS)."""
+    try: said = "driver not ready in time" in Path(log).read_text(errors="replace").lower()
+    except OSError: said = False
+    return "no result: Maestro's driver did not start in time (a slow first boot; see maestro log)" if said else "no result (see maestro log)"
 
 def is_infra_error(error):
     """True when a failed language's error looks like a device or infrastructure problem (INFRA_ERRORS), so one more try can help."""
@@ -1949,13 +1982,13 @@ def capture_platform(platform, cfg, path, only, parallel):
         return max(codes + [ipad_set_missing(path(cfg.get("out", "out")).resolve())])
     return ios_run(cfg, path, only, parallel)
 
-def ipad_set_missing(parent):
+def ipad_set_missing(parent, say=True):
     """Across a multi-device run (parent/<device>/): an app that runs on iPad needs a 13" iPad set somewhere. 1 if missing."""
     subs = device_runs(parent)
     app = next((json.loads((d / "run.json").read_text()).get("app") for d in subs), None)
     if not app or "2" not in plist_value(Path(app) / "Info.plist", "UIDeviceFamily"): return 0
     if any(apple_class(image_info(p)[0]) == 'iPad 13"' for d in subs for p in (d / "raw").glob("*/*.png")): return 0
-    print('the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types')
+    if say: print('the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types')
     return 1
 
 def shutdown_sims():
@@ -2037,7 +2070,9 @@ def ios_run_inner(cfg, path, only, parallel):
         only, prev = retry_setup(cfg, out)
         if not only: print(f"nothing to retry in {out}: every language passed"); return 0
         print(f"retrying the languages that failed in the last run: {', '.join(only)}")
-    locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings, base_locale))
+    asked, notes = match_locales(only or cfg.get("locales") or [], strings)
+    for n in notes: print(n if n.startswith("note:") else f"warning: {n}", flush=True)
+    locales = cap_locales(asked or shipped_locales(strings, base_locale))
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results;
     # raw/<locale> is cleared per locale below, so a partial rerun keeps the other languages
     for d in ("flows", "debug", "shots"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
@@ -2056,7 +2091,7 @@ def ios_run_inner(cfg, path, only, parallel):
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
-        inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp)))
+        inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp), cfg.get("settle_ms", SETTLE_MS)))
         report["locales"][lp] = {"untranslated_selectors": missing}
     print_untranslated(report)
 
@@ -2114,7 +2149,7 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in lps:
             shots = len(list((out / "raw" / lp).glob("*.png")))
             # Maestro skips its report when a shard crashes; the screenshots on disk are the ground truth then
-            r_ = res.get(lp) or {"ok": shots == expected, "error": None if shots == expected else "no result (see maestro log)"}
+            r_ = res.get(lp) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro{attempt}.log")}
             if r_["ok"] and shots != expected:
                 r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {expected} screenshots"}
             if r_["ok"] and (note := blank_note(out / "raw" / lp)):
@@ -2205,6 +2240,7 @@ def ios_run_inner(cfg, path, only, parallel):
     report["simulators"] = n
     report["app"] = cfg["app"]
     report["platform"] = "ios"  # export hooks get SHOTFLEET_PLATFORM from run.json
+    report["multi_device"] = bool(cfg.get("multi_device"))  # check: this folder is one device of several (the iPad set may be in a sibling)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
     if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
@@ -2623,13 +2659,19 @@ def hierarchy_supported(version):
     except ValueError: return False
     return bool(v) and (v + (0, 0, 0))[:3] >= HIER_MIN
 
+def no_hierarchy_note(version):
+    """Why Android screens are read by OCR on this Maestro, and what to do about it (shown at the start and again in the run summary)."""
+    return (f"Maestro {version or '(version unreadable)'} saves no screen hierarchy on Android (that needs {'.'.join(map(str, HIER_MIN))} or newer), "
+            f"so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. "
+            f"Maestro {MAESTRO_PIN['version']} gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`")
+
 def hierarchy_marker(indent, shot):
     """The step that makes Maestro save the screen hierarchy: an optional assertTrue on `false` ends WARNED (the flow
     carries on) and a warned step writes screen-hierarchy/step-NNN-assertCondition.json."""
     label = HIER_LABEL + re.sub(r"[^\w.-]", "_", Path(shot).name)
     return [f"{indent}- assertTrue:", f"{indent}    condition: ${{false}}", f"{indent}    label: {json.dumps(label)}", f"{indent}    optional: true"]
 
-def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False):
+def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False, settle_ms=0):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
     No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself.
     `mapped` names (see android_vars) are read from the script's output.v, after a runScript step at the top.
@@ -2663,6 +2705,7 @@ def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False):
             elif m := re.match(r"^(\s*)- takeScreenshot:\s*$", line): pending = [m.group(1), None]
         elif pending and not pending[1] and (m := re.match(r"^\s*path:\s*['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line)):
             pending[1] = m.group(1)
+        settle_before(out, line, settle_ms)
         out.append(line); redirect_screenshot(out, shots_dir)
     close()
     return header + "\n---\n" + "\n".join(out) + "\n"
@@ -2735,7 +2778,9 @@ def android_run_inner(cfg, path, out, only, parallel):
     strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
     base = strings[cfg.get("base_locale", "en")]
     note_partly_translated(strings, cfg.get("base_locale", "en"), only or cfg.get("locales") or None)
-    locales = cap_locales(only or cfg.get("locales") or shipped_locales(strings))
+    asked, notes = match_locales(only or cfg.get("locales") or [], strings)
+    for n in notes: print(n if n.startswith("note:") else f"warning: {n}", flush=True)
+    locales = cap_locales(asked or shipped_locales(strings))
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
     if any(isinstance(v, dict) for v in cfg.get("_inputs", {}).values()):
@@ -2744,9 +2789,7 @@ def android_run_inner(cfg, path, out, only, parallel):
     # stale flows, logs and JUnit files from an earlier run must never be read as this run's results
     version = read_maestro_version()
     hier = hierarchy_supported(version)
-    if not hier:
-        print(f"note: Maestro {version or '(version unreadable)'} saves no per-step screen hierarchy (needs {'.'.join(map(str, HIER_MIN))}); "
-              "Android screen text is read from pixels (OCR)")
+    if not hier: print("note: " + no_hierarchy_note(version))
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
@@ -2787,7 +2830,7 @@ def android_run_inner(cfg, path, out, only, parallel):
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
             if vars_js: (fdir / VARS_JS).write_text(vars_js)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped, hier))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped, hier, cfg.get("settle_ms", SETTLE_MS)))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
@@ -2810,7 +2853,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shutil.rmtree(dst, ignore_errors=True)
                 collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
-                r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else "no result"}
+                r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro_{tag}.log")}
                 if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
                 results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname),
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
@@ -2861,6 +2904,7 @@ def android_run_inner(cfg, path, out, only, parallel):
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
         return 1
+    if not hier: print("note: " + no_hierarchy_note(version))  # again, where people look: with the result
     return max(cmd_check(out, strings, expect=cfg.get("_expect")), 0 if all(r_["ok"] for r_ in final.values()) else 1)
 
 # ---------- check ----------
@@ -3401,14 +3445,28 @@ def ocr_can_read(text):
 def content_rules(table, label, lp):
     """The any/all/not lists of one [expect.<screenshot>] table that apply to a screenshot of this language: its own
     lists plus those of every [expect.<screenshot>.<locale>] naming the language (`pt` covers pt-BR). Also the locale keys used."""
-    rules, used = {k: list(v) for k, v in table.items() if isinstance(v, list)}, []
+    as_list = lambda v: [v] if isinstance(v, str) else list(v)
+    rules, used = {k: as_list(v) for k, v in table.items() if isinstance(v, (list, str))}, []
     mine = {c for c in (label, lp) if c} | {canon(c) for c in (label, lp) if c}
     for key, sub in table.items():
         if not isinstance(sub, dict) or key in EXPECT_KEYS: continue
         if key in mine or canon(key) in mine or canon(key) in {m.split("-")[0] for m in mine}:
             used.append(key)
-            for k, v in sub.items(): rules.setdefault(k, []).extend(v)
+            for k, v in sub.items(): rules.setdefault(k, []).extend(as_list(v))
     return rules, used
+
+def key_texts(keys, strings, lp):
+    """(texts, problems) for `key = ...` in an [expect.<screenshot>] table: the app's own text for each key in language `lp`,
+    to be required on screen like an `all` entry. Catches the right screenshot showing the wrong screen (a Benchmarks
+    screenshot that shows Train) without typing every translation into the config."""
+    texts, bad = [], []
+    for key in keys:
+        if not strings: bad.append(f'key "{key}" needs the app\'s strings: pass --app or --strings')
+        elif not any(key in t for t in strings.values()): bad.append(f'key "{key}": the app has no string with that key')
+        elif not (text := (with_fallback(strings, lp).get(key) if lp in strings else None)): bad.append(f'key "{key}": the app has no text for it in this language')
+        elif has_format(text): bad.append(f'key "{key}": its text has a placeholder ({text!r}), so it cannot be matched; use all = [...] with the words around it')
+        else: texts.append(text)
+    return texts, bad
 
 def check_content(rules, screen):
     """(problems, could-not-verify) for one screen's text against any/all/not lists, normalised like judge_screen does.
@@ -3571,7 +3629,7 @@ def compare_html(cmp):
     return f'<h2>Changes since the last release</h2><ul>{"".join(f"<li>{html.escape(x.strip())}</li>" for x in L)}</ul>'
 
 @ocr_budget()
-def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=True,
+def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=None, ocr_command=None, ipad_rule=None,
               play_folder="phoneScreenshots", expect=None, locale=None, strict=False, compare=None):
     """Check screenshots: each shows its own language's strings, none is a copy of another language,
     and no language is missing a screen. Works on shotfleet's output or any fastlane/plain folder.
@@ -3599,8 +3657,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             raise Fail(f"{folder} holds {'Android' if layout_android else 'iOS'} screenshots but --app is "
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         framework_hint(app, bool(strings_files))
-        if strings is None: strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)  # check_build read them already
-        if not strings: raise Fail(f"{app.name} contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)")
+        if strings is None and strings_files: strings = load_strings_files(strings_files)  # --strings with --app: the files are the translations (Flutter, React Native...), the app says which store
+        elif strings is None: strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)  # check_build read them already
+        if not strings: raise Fail(no_translations_message(app))
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings_files:  # Flutter, React Native, .NET, Unity, exports: translations from source files
         strings = load_strings_files(strings_files)
@@ -3633,8 +3692,9 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     ios_app = app if app is not None and Path(app).suffix == ".app" else \
         (json.loads(run_json.read_text()).get("app") if run_json.exists() else None)
     here = Path(folder).resolve()  # in device_runs(here.parent), without listing the parent (a folder in $TMPDIR: 68,000 entries, 15 s)
-    if (here / "run.json").exists() and not (here.parent / "run.json").exists():
-        ipad_rule = False  # one device of a multi-device run: the iPad set lives next to it (ipad_set_missing checks that)
+    if ipad_rule is None:  # a direct check: one device of a multi-device run leaves the iPad set to the whole run (check_any asks for that)
+        own = json.loads(run_json.read_text()).get("multi_device") if run_json.exists() else None
+        ipad_rule = not (own if own is not None else (here / "run.json").exists() and not (here.parent / "run.json").exists())  # older run.json: the folder layout
     ipad = ipad_rule and bool(ios_app) and "2" in plist_value(Path(ios_app) / "Info.plist", "UIDeviceFamily")
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
     tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
@@ -3742,7 +3802,11 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         if (stem := Path(screen[f"{label}/{png.name}"]).stem) in (expect or {}):  # [expect.01Home] covers screengrab's 01Home_<timestamp>.png
             rules, used = content_rules(expect[stem], label, lp)
             expected_used.update((stem, k) for k in used)
+            keys = rules.pop("key", [])
+            texts, kbad = key_texts(keys, strings, lp) if keys else ([], [])
+            if texts: rules["all"] = rules.get("all", []) + texts
             bad, unsure = check_content(rules, r)
+            bad = kbad + bad
             why = "text recognition can't read that script"
             if f"{label}/{png.name}" in unread_files: bad, unsure, why = [], bad + unsure, "the text reader found nothing on this screenshot"
             if busy: bad, unsure, why = [], bad + unsure, gave_up
@@ -4228,16 +4292,18 @@ def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
         ("aapt2", has_aapt2, f"sdkmanager build-tools {later}", "Android"),
         (f"system image {' '.join(image.split(';')[1:3])}" if image else "system image (API 33+)", has_image, f"sdkmanager a system image of API 33 or newer for {ABI} {later}", "Android"),
     ]
-    runtimes = None
+    runtimes, runtime_note = None, ""
     if mac and next(ok for n, ok, _, _ in checks if n == "xcrun simctl") and (runtimes := ios_runtimes()) is not None:
-        checks.append((f"iOS Simulator runtime {runtimes[-1]}" if runtimes else "iOS Simulator runtime", bool(runtimes),
+        used, runtime_note = doctor_runtime(runtimes, config)
+        checks.append((f"iOS Simulator runtime {used}" if runtimes else "iOS Simulator runtime", bool(runtimes),
                        "xcodebuild -downloadPlatform iOS  (or Xcode > Settings > Components)", "iOS"))
     if runtimes and all(bad_runtime_reason({"name": n}) for n in runtimes):
-        print(f"WARNING iOS Simulator runtime {runtimes[-1]}: {bad_runtime_reason({'name': runtimes[-1]})}. It is the only one installed, so `run` has to use it. "
+        print(f"WARNING iOS Simulator runtime {used}: {bad_runtime_reason({'name': used})}. It is the only one installed, so `run` has to use it. "
               "Install another (xcodebuild -downloadPlatform iOS), then pin it with runtime = \"...\" under [ios] in shotfleet.toml "
               "(the identifiers are in `xcrun simctl list runtimes`)")
     for name, ok, how, platform in checks:  # not `fix`: that is the --fix flag, and shadowing it made a plain `doctor` run the fix plan
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
+    if runtime_note: print(f"note: {runtime_note}")
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
     if capture: print(f"note: {config} runs your XCUITest tests on iOS ([capture]), so iOS needs Xcode, not Maestro or Java")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
@@ -4788,6 +4854,18 @@ def pick_ios_runtime(runtimes, bad=None):
     if good: return pick["identifier"], f"using {label(pick)}: {label(skipped[-1])} is installed, but {bad_runtime_reason(skipped[-1], bad)}; {how}"
     return pick["identifier"], f"warning: the only iOS runtime installed is {label(pick)}, and {bad_runtime_reason(pick, bad)}; install another one (xcodebuild -downloadPlatform iOS) and pin it with runtime = ... in [ios]"
 
+def doctor_runtime(names, config="shotfleet.toml"):
+    """(the runtime `run` will use, a note saying why when that is not simply the newest) for the installed runtime names (['iOS 26.4', 'iOS 27.0']).
+    The same choice as pick_ios_runtime, or the config's own `runtime = ...`, which is never second-guessed."""
+    try: pinned = tomllib.loads(Path(config).read_text()).get("ios", {}).get("runtime")
+    except (OSError, ValueError, AttributeError): pinned = None
+    ident = lambda n: "com.apple.CoreSimulator.SimRuntime." + n.replace(" ", "-").replace(".", "-")
+    if isinstance(pinned, str) and (m := next((n for n in names if ident(n) == pinned), None)):
+        return m, f"{Path(config).name} sets runtime = \"{pinned}\", so `run` uses {m}"
+    if not names: return None, ""
+    chosen, note = pick_ios_runtime([{"name": n, "identifier": ident(n)} for n in names])
+    return next(n for n in names if ident(n) == chosen), ("`run` will be " + note if note.startswith("using") else "")
+
 def latest_ios_runtime():
     try: listed = simctl_sh("list", "runtimes", "-j")
     except OSError: raise Fail(NO_XCRUN)
@@ -5296,6 +5374,29 @@ FREE_TIER_NOTE = None  # set when the cap actually cut the languages; the MCP ru
 class NoLicence(Fail):
     """No valid licence: `export` stops; `run` falls back to the free tier."""
 
+def match_locales(asked, have):
+    """Map the languages the user asked for to the codes this app ships, only when there is one right answer:
+    zh-Hans <-> zh-CN, zh-Hant <-> zh-TW, he <-> iw, case (pt-br), and pt <-> pt-BR when the app ships no other pt.
+    Returns (codes, notes): a note says each change, or why a code was left alone (two possible answers: say which one you mean)."""
+    out, notes = [], []
+    for code in asked:
+        if code in have: found = code
+        else:
+            c, kin = canon(code), None
+            same = [h for h in have if canon(h) == c] or [h for h in have if h.casefold() == code.casefold()]
+            lang = c.split("-")[0]
+            if not same and lang != "zh":  # a Chinese script is never guessed
+                kin = [h for h in have if canon(h).split("-")[0] == lang]
+                same = kin if len(kin) == 1 and ("-" not in code or ("-" not in kin[0] and code.casefold() == PRIMARY.get(lang, "").casefold())) else []  # pt-BR -> pt (bare pt means pt-BR here), not de-DE -> de
+            if len(same) != 1:
+                many = sorted(same) if len(same) > 1 else sorted(kin) if kin and len(kin) > 1 and "-" not in code else []
+                if many: notes.append(f"{code} could mean {', '.join(many)} in this app. Write the one you want, e.g. locales = [\"{many[0]}\"]")
+                out.append(code); continue
+            found = same[0]
+            notes.append(f"note: {code} is {found} in this app, so shotfleet uses {found}")
+        if found not in out: out.append(found)
+    return out, notes
+
 def cap_locales(locales):
     global FREE_TIER_NOTE
     if LOCALE_CAP is None or len(locales) <= LOCALE_CAP: return locales
@@ -5668,10 +5769,13 @@ def check_any(folder, app=None, strings_files=None, ocr_command=None, report=Non
                                    report_dir=base / k if len(kinds) > 1 else base, play_folder=k, expect=expect, strict=strict, compare=compare))
         return max(codes)
     if subs := device_runs(folder):
-        codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=False,
+        # the iPad set is missing from every device: each device's check says so (iPad column "missing", a problem line), so the
+        # numbers and the exit code agree. Present in one device's folder: the others leave it to that one
+        ipad_missing = bool(ipad_set_missing(folder, say=False))
+        codes = [cmd_check(d, app=app, strings_files=strings_files, ocr_command=ocr_command, ipad_rule=ipad_missing,
                            report_dir=Path(report) / d.name if report else None, expect=expect, strict=strict,
                            compare=(Path(compare) / d.name if compare and (Path(compare) / d.name).is_dir() else compare)) for d in subs]
-        return max(codes + [ipad_set_missing(folder)])
+        return max(codes)
     return cmd_check(folder, strings=strings, app=app, report_dir=report, strings_files=strings_files, ocr_command=ocr_command, expect=expect, locale=locale, strict=strict, compare=compare)
 
 def main_dispatch(a):
