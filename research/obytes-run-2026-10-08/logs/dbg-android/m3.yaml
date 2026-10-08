@@ -1,0 +1,13 @@
+appId: com.obytes.development
+---
+- launchApp
+- extendedWaitUntil:
+    visible: "Obytes Starter"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 3000
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<6000){}})()}
+- takeScreenshot: m3a
+- tapOn: "Let's Get Started.*"
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<4000){}})()}
+- takeScreenshot: m3b

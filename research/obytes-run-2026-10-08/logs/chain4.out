@@ -1,0 +1,9 @@
+2026-10-08 15:10:48 GATE ios_build: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 15:11:48 GATE ios_build try 1: disk=56 load1=23.78 free%=65 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 15:11:48 STEP ios_build START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=xcodebuild -workspace ios/ObytesApp.xcworkspace -scheme ObytesApp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build -jobs 2 ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.1 CODE_SIGNING_ALLOWED=NO build log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/ios_build.log
+2026-10-08 15:12:48 METRICS ios_build start: disk_free_GiB=57 load1=14.12 free_mem%=67 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 15:12:48 STEP ios_build pid/pgid=57306
+2026-10-08 15:18:49 MONITOR ios_build: disk=56 load1=11.91 free%=58 swapouts/60s=0
+2026-10-08 15:21:26 STEP ios_build END rc=0 wall=8m37s
+2026-10-08 15:22:26 METRICS ios_build end: disk_free_GiB=53 load1=26.78 free_mem%=54 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 15:22:26 CHAIN done: ios_build

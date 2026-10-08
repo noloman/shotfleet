@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="shotfleet_android" tests="1" failures="1" time="25.0">
+    <testcase id="r1_f0" name="r1_f0" classname="r1_f0" time="25.0" status="ERROR">
+      <failure>Assertion is false: id: login-button is visible</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

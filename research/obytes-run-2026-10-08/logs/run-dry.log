@@ -1,0 +1,14 @@
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Obytes Starter'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 1 locales on 1 simulators...
+retrying 1: en
+FAIL en       2/6 screenshots (retried)  Assertion is false: "Dark.*" is visible
+     failed step: Assert that "Dark.*" is visible
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/out-ios/.work/debug/attempt2/.maestro/tests/2026-10-08_175043/screenshot-❌-1791474700644-(en).png
+     on screen: ObytesApp | close modal | Bottom Sheet | 17:51 | 4 of 4 bars, signal strength | Mobile Service | SSID, 3 of 3 Wi-Fi bars | 100% battery power
+captured 0/1 locales in 157s on 1 simulators
+
+checked 2 screenshots in 1 languages: 0 problem(s)
+rc=1 killed=0

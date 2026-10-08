@@ -1,0 +1,36 @@
+{
+ "locales": {
+  "ar": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Obytes Starter"
+   ],
+   "lproj": "ar",
+   "ok": true,
+   "seconds": 58,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "en": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Obytes Starter"
+   ],
+   "lproj": "en",
+   "ok": true,
+   "seconds": 79,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/shotfleet.toml",
+ "strings": [
+  "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/src/translations/*.json"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 149,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/app/ObytesApp.app"
+}
