@@ -1,0 +1,57 @@
+{
+ "screenshots": [
+  {
+   "file": "en/01_settings.png",
+   "src": "../out-android-hd-run1/raw/en/01_settings.png",
+   "sha": "dcbcb12f8735",
+   "lang": "en",
+   "chars": 178,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/02_settings_more.png",
+   "src": "../out-android-hd-run1/raw/en/02_settings_more.png",
+   "sha": "edc89100d301",
+   "lang": "en",
+   "chars": 176,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/03_theme_sheet.png",
+   "src": "../out-android-hd-run1/raw/en/03_theme_sheet.png",
+   "sha": "a2b24afd1b27",
+   "lang": "en",
+   "chars": 121,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/04_settings_dark.png",
+   "src": "../out-android-hd-run1/raw/en/04_settings_dark.png",
+   "sha": "b1d0ec808981",
+   "lang": "en",
+   "chars": 168,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/05_settings_dark_more.png",
+   "src": "../out-android-hd-run1/raw/en/05_settings_dark_more.png",
+   "sha": "770abf3fdd7d",
+   "lang": "en",
+   "chars": 164,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/06_language_sheet.png",
+   "src": "../out-android-hd-run1/raw/en/06_language_sheet.png",
+   "sha": "cbe6dc576859",
+   "lang": "en",
+   "chars": 117,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [
+  "ar: the app has no ar translation, so this listing shows another language; translate the app into it or remove the listing"
+ ],
+ "notes": [],
+ "unverified": []
+}

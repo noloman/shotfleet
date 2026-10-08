@@ -1,0 +1,10 @@
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Obytes Starter'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 1 locales on 1 simulators...
+ok   en       6/6 screenshots
+captured 1/1 locales in 154s on 1 simulators
+
+checked 6 screenshots in 1 languages: 0 problem(s)
+rc=0 killed=0

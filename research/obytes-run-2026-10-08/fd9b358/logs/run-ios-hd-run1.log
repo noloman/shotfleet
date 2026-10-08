@@ -1,0 +1,13 @@
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Obytes Starter'
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   en       6/6 screenshots
+ok   ar       6/6 screenshots
+captured 2/2 locales in 143s on 1 simulators
+another shotfleet is preparing macOS text recognition; waiting
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 12 screenshots in 2 languages: 0 problem(s)
+rc=0 killed=0

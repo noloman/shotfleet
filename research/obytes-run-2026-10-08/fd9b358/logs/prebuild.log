@@ -1,0 +1,9 @@
+env: load .env
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_VAR_NUMBER EXPO_PUBLIC_VAR_BOOL SECRET_KEY APP_BUILD_ONLY_VAR
+✅ Environment variables validated successfully
+- Creating native directories (./ios and ./android)
+✔ Created native directories
+- Updating package.json
+✔ Updated package.json | no changes
+- Running prebuild
+✔ Finished prebuild

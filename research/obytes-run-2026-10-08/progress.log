@@ -264,3 +264,195 @@
 2026-10-08 18:21:40 LOCK RELEASED (load=13.49 free%=54% disk_free_GiB=48)
 2026-10-08 18:21:41 queue line replaced by DONE line (queue-edit.sh)
 2026-10-08 18:21:41 ANDROID CLEANUP end
+2026-10-08 18:39:29 BUILD SESSION fd9b358 START (rebuild from unmodified upstream fd9b358ed11913d2a49fd9ffa6582fe03ba130e7 for iOS then Android; builds only, no device); disk: /dev/disk3s5       926  834        55    94% 10313549 579053240    2%   /System/Volumes/Data
+2026-10-08 18:39:29 cache sizes before:  36G /Users/manu/.gradle 2.9G /Users/manu/Library/pnpm/store 6.4G /Users/manu/.npm 750M /Users/manu/Library/Caches/CocoaPods 
+2026-10-08 18:40:17 DOWNLOAD obytes/react-native-template-obytes (git clone --depth 50 + tags depth 1) from github.com, ~36 MB estimate
+2026-10-08 18:40:17 STEP clone START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes cmd=sh -c 'set -e; cd /Users/manu/Developer/shotfleet-rc-build/showcase-obytes; git clone --depth 50 https://github.com/obytes/react-native-template-obytes.git src; cd src; git fetch --tags --depth 1 origin; git cat-file -e fd9b358ed11913d2a49fd9ffa6582fe03ba130e7^{commit}; git checkout --detach fd9b358ed11913d2a49fd9ffa6582fe03ba130e7; test "$(git rev-parse HEAD)" = fd9b358ed11913d2a49fd9ffa6582fe03ba130e7; test "$(git describe)" = v9.0.0-10-gfd9b358; git status --short | wc -l; git rev-parse HEAD; git describe; du -sh .git' log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/clone.log
+2026-10-08 18:41:17 METRICS clone start: disk_free_GiB=55 load1=6.79 free_mem%=52 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:41:17 STEP clone pid/pgid=90156
+2026-10-08 18:41:26 STEP clone END rc=0 wall=0m09s
+2026-10-08 18:42:26 METRICS clone end: disk_free_GiB=55 load1=8.67 free_mem%=50 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:42:26 DOWNLOAD pnpm@10.12.3 from registry.npmjs.org (npm install --prefix tools), ~20 MB estimate
+2026-10-08 18:42:26 STEP pnpm_tool START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes cmd=npm install --prefix /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/tools --no-audit --no-fund pnpm@10.12.3 log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/pnpm_tool.log
+2026-10-08 18:43:27 METRICS pnpm_tool start: disk_free_GiB=55 load1=5.16 free_mem%=50 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:43:27 STEP pnpm_tool pid/pgid=95415
+2026-10-08 18:43:29 STEP pnpm_tool END rc=0 wall=0m02s
+2026-10-08 18:44:29 METRICS pnpm_tool end: disk_free_GiB=55 load1=12.47 free_mem%=45 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:44:29 GATE install: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 18:45:29 GATE install try 1: disk=55 load1=8.01 free%=48 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 18:45:29 DOWNLOAD npm packages (pnpm install --frozen-lockfile, ~1300 packages) from registry.npmjs.org into pnpm-store inside showcase-obytes, estimate 0.5-1.5 GB; plus only-allow via npx (preinstall)
+2026-10-08 18:45:29 STEP install START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm install --frozen-lockfile --network-concurrency 4 log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/install.log
+2026-10-08 18:46:29 METRICS install start: disk_free_GiB=53 load1=7.36 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:46:29 STEP install pid/pgid=13921
+2026-10-08 18:47:24 STEP install END rc=0 wall=0m54s
+2026-10-08 18:48:24 METRICS install end: disk_free_GiB=54 load1=64.37 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:48:24 DOWNLOAD expo-template-bare-minimum tarball (expo prebuild) from registry.npmjs.org, small (<1 MB est)
+2026-10-08 18:48:24 STEP prebuild START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm exec expo prebuild --no-install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/prebuild.log
+2026-10-08 18:49:24 METRICS prebuild start: disk_free_GiB=54 load1=39.96 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:49:24 STEP prebuild pid/pgid=24486
+2026-10-08 18:49:31 STEP prebuild END rc=0 wall=0m07s
+2026-10-08 18:50:31 METRICS prebuild end: disk_free_GiB=54 load1=35.24 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:50:32 GATE pod: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 18:51:32 GATE pod try 1: disk=54 load1=33.73 free%=49 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 18:51:32 DOWNLOAD CocoaPods specs + pods (pod install) from cdn.cocoapods.org, github.com, repo1.maven.org (prebuilt RN/Hermes if used), estimate 0.3-0.6 GB
+2026-10-08 18:51:32 STEP pod START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/ios cmd=pod install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/pod.log
+2026-10-08 18:52:32 METRICS pod start: disk_free_GiB=54 load1=33.58 free_mem%=50 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:52:32 STEP pod pid/pgid=34981
+2026-10-08 18:53:31 STEP pod END rc=0 wall=0m59s
+2026-10-08 18:54:31 METRICS pod end: disk_free_GiB=53 load1=30.65 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:54:31 GATE ios_build: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 18:55:31 GATE ios_build try 1: disk=52 load1=21.97 free%=48 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 18:55:31 STEP ios_build START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=xcodebuild -workspace ios/ObytesApp.xcworkspace -scheme ObytesApp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build -jobs 2 ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.1 CODE_SIGNING_ALLOWED=NO build log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/ios_build.log
+2026-10-08 18:56:32 METRICS ios_build start: disk_free_GiB=50 load1=21.0 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:56:32 STEP ios_build pid/pgid=36988
+2026-10-08 19:02:32 MONITOR ios_build: disk=51 load1=74.8 free%=48 swapouts/60s=0
+2026-10-08 19:04:58 STEP ios_build END rc=0 wall=8m26s
+2026-10-08 19:05:58 METRICS ios_build end: disk_free_GiB=50 load1=26.59 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 19:05:58 GATE android_build: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 19:06:58 GATE android_build try 1: disk=49 load1=23.48 free%=49 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 19:06:58 DOWNLOAD Gradle wrapper dist (services.gradle.org) + Maven Central/Google Maven/Gradle plugin portal artifacts missing from ~/.gradle, estimate 0.2-1.2 GB
+2026-10-08 19:06:58 STEP android_build START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/android cmd=./gradlew assembleRelease --no-daemon -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs=-Xmx2g -Pkotlin.compiler.execution.strategy=in-process -PreactNativeArchitectures=arm64-v8a log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/android_build.log
+2026-10-08 19:07:58 METRICS android_build start: disk_free_GiB=49 load1=17.97 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 19:07:58 STEP android_build pid/pgid=43086
+2026-10-08 19:12:55 STEP android_build END rc=0 wall=4m56s
+2026-10-08 19:13:55 METRICS android_build end: disk_free_GiB=47 load1=41.88 free_mem%=50 vm_pressure_level=2 swapouts_per_60s=0
+2026-10-08 19:13:55 CHAIN done: clone pnpm_tool install prebuild pod ios_build android_build
+2026-10-08 19:16:21 DOWNLOAD SIZES (fd9b358 rebuild, measured on disk): obytes template clone from github.com: src/.git 33 MB (HEAD fd9b358); pnpm@10.12.3 from registry.npmjs.org: tools/ 20 MB; npm packages (pnpm install, registry.npmjs.org): pnpm-store 632 MB, src/node_modules 1.9 GB (hoisted, from the store); expo-template-bare-minimum (expo prebuild, registry.npmjs.org): not separately measurable (<1 MB, prebuild 7 s); pods (pod install, cdn.cocoapods.org/github.com/repo1.maven.org): src/ios/Pods 460 MB, ~/Library/Caches/CocoaPods 750M before and after (cache warm); Gradle: no "Downloading" line in android_build.log, ~/.gradle 36G before and after, wrapper gradle-8.14.3-bin already cached
+2026-10-08 19:16:21 cache sizes after:  36G /Users/manu/.gradle 2.9G /Users/manu/Library/pnpm/store 6.4G /Users/manu/.npm 750M /Users/manu/Library/Caches/CocoaPods 
+2026-10-08 19:16:21 BUILD SESSION fd9b358 END: iOS ok 8m26s, Android ok 4m56s, no retries; artifacts app/ObytesApp.app app/app-release.apk; disk: /dev/disk3s5       926  842        47    95% 10618323 496077360    2%   /System/Volumes/Data
+2026-10-08 19:19:32 chain-android started pid 47682 (waiting for the start rule: lock free, earlier queue lines done, quiet check x3 60 s apart; up to 4 h)
+2026-10-08 19:19:32 wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|
+2026-10-08 19:20:19 [ios-hd] chain-iphone-hd started pid 47881 (waiting for the start rule: lock free, every earlier queue line DONE, quiet check x3 60 s apart; gives up after 5 h)
+2026-10-08 19:20:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:21:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:22:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:23:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:24:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:25:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:26:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:27:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:28:19 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 18:56 shotfleet 0.1.8 release gate (release builder): fix|- 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 19:29:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:29:33 wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:30:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:31:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:32:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:33:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:34:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:35:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:36:19 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:37:20 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:38:20 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:39:20 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:40:20 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:41:20 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:42:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:43:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:44:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:45:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:46:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:47:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:48:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:49:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:50:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:51:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:52:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:53:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:54:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:55:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:56:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:57:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:58:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 19:59:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:00:23 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:01:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:02:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:03:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:04:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:05:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:06:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:07:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:08:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:09:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:10:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:11:24 [ios-hd] wait: lock held by: shotfleet 0.1.8 release builder: gate + Maestro 2.11.0 leg | started 19:28 | est. 50 min, 
+2026-10-08 20:11:36 quiet check rc=1 'not quiet: load 655 (>=300);' load=655.40 free%=63% disk_free_GiB=38
+2026-10-08 20:12:24 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 20:12:36 quiet check 1/3 rc=0 'quiet: free 70%, load 255' load=255.02 free%=70% disk_free_GiB=38
+2026-10-08 20:13:24 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 20:13:36 quiet check 2/3 rc=0 'quiet: free 66%, load 100' load=100.51 free%=66% disk_free_GiB=37
+2026-10-08 20:14:24 [ios-hd] wait: earlier queue line(s) not DONE: - 2026-10-08 19:17 Obytes starter showcase RE-RUN Android (OCR session|
+2026-10-08 20:14:36 quiet check 3/3 rc=0 'quiet: free 68%, load 106' load=106.07 free%=68% disk_free_GiB=38
+2026-10-08 20:14:37 LOCK TAKEN at 20:14:37 (load=106.07 free%=68% disk_free_GiB=38); avds: kuokka_smoke shotfleet_android shotfleet_android_tablet ; adb: 0 emulators; qemu:        0
+2026-10-08 20:14:37 android-hd-dry (en) started, limit 1800s, flow sha 0da4f152c2dc; load=106.07 free%=68% disk_free_GiB=38
+2026-10-08 20:15:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:16:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:17:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:17:37 android-hd-dry done rc=0 killed=0 wall=180s; captured 1/1 locales in 85s on 1 emulators ; load=17.60 free%=66% disk_free_GiB=38
+2026-10-08 20:17:37 dry run finished: lock still held; waiting up to 20 min for /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/android-hd.cmd ('run NAME LOCALES' | 'end')
+2026-10-08 20:18:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:19:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:20:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:21:08 unknown cmd 'ping'
+2026-10-08 20:21:23 android-hd-run1 (en,ar) started, limit 1800s, flow sha 0da4f152c2dc; load=4.16 free%=69% disk_free_GiB=38
+2026-10-08 20:21:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:22:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:23:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:24:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:25:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:26:24 android-hd-run1: progress check 5 min in: load=23.69 free%=69% disk_free_GiB=38; adb: ; lines in log:       11, files in out:       27
+2026-10-08 20:26:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:27:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:28:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:29:24 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:30:04 android-hd-run1 done rc=0 killed=0 wall=521s; captured 2/2 locales in 180s on 1 emulators ; load=10.49 free%=73% disk_free_GiB=38
+2026-10-08 20:30:04 android-hd-run1 finished: waiting for the next android-hd.cmd
+2026-10-08 20:30:14 android-hd-run2 (ar,en) started, limit 1800s, flow sha 0da4f152c2dc; load=11.22 free%=73% disk_free_GiB=38
+2026-10-08 20:30:25 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:31:25 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:32:25 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:33:25 [ios-hd] wait: lock held by: Obytes starter showcase RE-RUN Android (OCR session) | shotfleet 0.1.6 on obytes fd9b358 R
+2026-10-08 20:33:35 android-hd-run2 done rc=0 killed=0 wall=201s; captured 2/2 locales in 164s on 1 emulators ; load=16.34 free%=69% disk_free_GiB=38
+2026-10-08 20:33:35 android-hd-run2 finished: waiting for the next android-hd.cmd
+2026-10-08 20:33:50 end requested
+2026-10-08 20:33:50 ALL ANDROID DEVICE RUNS DONE
+2026-10-08 20:33:50 ANDROID CLEANUP start
+2026-10-08 20:34:10 after emu kill: adb devices: 0 emulator(s); qemu processes:        0; avds: kuokka_smoke shotfleet_android shotfleet_android_tablet 
+2026-10-08 20:34:10 LOCK RELEASED (load=18.47 free%=69% disk_free_GiB=40)
+2026-10-08 20:34:10 queue line replaced by DONE line (queue-edit.sh)
+2026-10-08 20:34:10 ANDROID CLEANUP end
+2026-10-08 20:34:25 [ios-hd] quiet check 1/3 rc=0 'quiet: free 69%, load 16' load=16.77 free%=69% swap=14219.88Mfree=1140.12M disk_free_GiB=40
+2026-10-08 20:35:25 [ios-hd] quiet check 2/3 rc=0 'quiet: free 72%, load 23' load=23.94 free%=72% swap=14171.88Mfree=1188.12M disk_free_GiB=40
+2026-10-08 20:36:25 [ios-hd] quiet check 3/3 rc=0 'quiet: free 72%, load 14' load=14.34 free%=72% swap=14035.88Mfree=1324.12M disk_free_GiB=40
+2026-10-08 20:36:26 [ios-hd] LOCK TAKEN at 20:36:26 (load=14.34 free%=72% swap=14035.88Mfree=1324.12M disk_free_GiB=40); hd-sims.before saved
+2026-10-08 20:36:26 [ios-hd] dry (en) started, limit 1800s, flow sha 24e0c491bcc6; load=14.34 free%=72% swap=14035.88Mfree=1324.12M disk_free_GiB=40
+2026-10-08 20:36:46 [ios-hd] dry: progress (log 0 bytes,        0 png)
+2026-10-08 20:37:06 [ios-hd] dry: progress (log 219 bytes,        0 png)
+2026-10-08 20:39:06 [ios-hd] dry: progress (log 219 bytes,        2 png)
+2026-10-08 20:39:26 [ios-hd] dry: progress (log 219 bytes,        6 png)
+2026-10-08 20:39:46 [ios-hd] dry: progress (log 346 bytes,        6 png)
+2026-10-08 20:39:46 [ios-hd] dry done rc=0 killed=0 png=6/6 good=1 wall=200s; captured 1/1 locales in 154s on 1 simulators ; load=95.03 free%=65% swap=13995.81Mfree=1364.19M disk_free_GiB=40
+2026-10-08 20:39:46 [ios-hd] run1 (en,ar) started, limit 1800s, flow sha 24e0c491bcc6; load=95.03 free%=65% swap=13995.81Mfree=1364.19M disk_free_GiB=40
+2026-10-08 20:40:06 [ios-hd] run1: progress (log 0 bytes,        0 png)
+2026-10-08 20:40:47 [ios-hd] run1: progress (log 219 bytes,        0 png)
+2026-10-08 20:41:47 [ios-hd] run1: progress (log 219 bytes,        3 png)
+2026-10-08 20:42:07 [ios-hd] run1: progress (log 219 bytes,        6 png)
+2026-10-08 20:42:47 [ios-hd] run1: progress (log 219 bytes,        9 png)
+2026-10-08 20:43:07 [ios-hd] run1: progress (log 387 bytes,       12 png)
+2026-10-08 20:43:27 [ios-hd] run1: progress (log 532 bytes,       12 png)
+2026-10-08 20:44:27 [ios-hd] run1: progress (log 585 bytes,       12 png)
+2026-10-08 20:44:27 [ios-hd] run1 done rc=0 killed=0 png=12/12 good=1 wall=281s; captured 2/2 locales in 143s on 1 simulators ; load=72.60 free%=63% swap=13979.81Mfree=1380.19M disk_free_GiB=40
+2026-10-08 20:44:27 [ios-hd] run2 (ar,en) started, limit 1800s, flow sha 24e0c491bcc6; load=72.60 free%=63% swap=13979.81Mfree=1380.19M disk_free_GiB=40
+2026-10-08 20:44:47 [ios-hd] run2: progress (log 0 bytes,        0 png)
+2026-10-08 20:45:08 [ios-hd] run2: progress (log 219 bytes,        0 png)
+2026-10-08 20:46:08 [ios-hd] run2: progress (log 219 bytes,        3 png)
+2026-10-08 20:46:28 [ios-hd] run2: progress (log 219 bytes,        6 png)
+2026-10-08 20:47:08 [ios-hd] run2: progress (log 219 bytes,        9 png)
+2026-10-08 20:47:28 [ios-hd] run2: progress (log 219 bytes,       12 png)
+2026-10-08 20:47:48 [ios-hd] run2: progress (log 377 bytes,       12 png)
+2026-10-08 20:47:48 [ios-hd] run2 done rc=0 killed=0 png=12/12 good=1 wall=201s; captured 2/2 locales in 149s on 1 simulators ; load=40.55 free%=65% swap=13963.81Mfree=1396.19M disk_free_GiB=39
+2026-10-08 20:47:48 [ios-hd] plan finished, releasing
+2026-10-08 20:47:48 [ios-hd] CLEANUP start
+2026-10-08 20:47:51 [ios-hd] LOCK RELEASED (load=37.39 free%=65% swap=13963.81Mfree=1396.19M disk_free_GiB=39)
+2026-10-08 20:47:52 [ios-hd] queue line replaced by DONE line (queue-edit.sh)
+2026-10-08 20:47:52 [ios-hd] CLEANUP end

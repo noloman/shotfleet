@@ -1,0 +1,72 @@
+Lockfile is up to date, resolution step is skipped
+Packages: +1821
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 0, downloaded 1, added 0
+Progress: resolved 0, reused 0, downloaded 15, added 14
+Progress: resolved 0, reused 0, downloaded 30, added 26
+Progress: resolved 0, reused 0, downloaded 37, added 31
+Progress: resolved 0, reused 0, downloaded 44, added 39
+Progress: resolved 0, reused 0, downloaded 51, added 45
+Progress: resolved 0, reused 0, downloaded 67, added 59
+Progress: resolved 0, reused 0, downloaded 98, added 80
+Progress: resolved 0, reused 0, downloaded 128, added 113
+Progress: resolved 0, reused 0, downloaded 140, added 121
+Progress: resolved 0, reused 0, downloaded 150, added 129
+Progress: resolved 0, reused 0, downloaded 157, added 138
+Progress: resolved 0, reused 0, downloaded 191, added 177
+Progress: resolved 0, reused 0, downloaded 219, added 206
+Progress: resolved 0, reused 0, downloaded 238, added 225
+Progress: resolved 0, reused 0, downloaded 264, added 253
+Progress: resolved 0, reused 0, downloaded 291, added 284
+Progress: resolved 0, reused 0, downloaded 323, added 317
+Progress: resolved 0, reused 0, downloaded 358, added 349
+Progress: resolved 0, reused 0, downloaded 401, added 395
+Progress: resolved 0, reused 0, downloaded 452, added 447
+Progress: resolved 0, reused 0, downloaded 496, added 499
+Progress: resolved 0, reused 0, downloaded 527, added 531
+Progress: resolved 0, reused 0, downloaded 568, added 575
+Progress: resolved 0, reused 0, downloaded 604, added 612
+Progress: resolved 0, reused 0, downloaded 639, added 643
+Progress: resolved 0, reused 0, downloaded 677, added 681
+Progress: resolved 0, reused 0, downloaded 720, added 720
+Progress: resolved 0, reused 0, downloaded 766, added 775
+Progress: resolved 0, reused 0, downloaded 792, added 800
+Progress: resolved 0, reused 0, downloaded 806, added 813
+Progress: resolved 0, reused 0, downloaded 830, added 839
+Progress: resolved 0, reused 0, downloaded 862, added 872
+Progress: resolved 0, reused 0, downloaded 892, added 901
+Progress: resolved 0, reused 0, downloaded 943, added 950
+Progress: resolved 0, reused 0, downloaded 988, added 994
+Progress: resolved 0, reused 0, downloaded 1042, added 1050
+Progress: resolved 0, reused 0, downloaded 1091, added 1097
+Progress: resolved 0, reused 0, downloaded 1110, added 1119
+Progress: resolved 0, reused 0, downloaded 1131, added 1138
+Progress: resolved 0, reused 0, downloaded 1167, added 1173
+Progress: resolved 0, reused 0, downloaded 1201, added 1209
+Progress: resolved 0, reused 0, downloaded 1253, added 1260
+Progress: resolved 0, reused 0, downloaded 1269, added 1278
+Progress: resolved 0, reused 0, downloaded 1300, added 1334
+Progress: resolved 0, reused 0, downloaded 1328, added 1375
+Progress: resolved 0, reused 0, downloaded 1349, added 1404
+Progress: resolved 0, reused 0, downloaded 1392, added 1475
+Progress: resolved 0, reused 0, downloaded 1437, added 1530
+Progress: resolved 0, reused 0, downloaded 1480, added 1579
+Progress: resolved 0, reused 0, downloaded 1520, added 1650
+Progress: resolved 0, reused 0, downloaded 1549, added 1680
+Progress: resolved 0, reused 0, downloaded 1598, added 1736
+Progress: resolved 0, reused 0, downloaded 1653, added 1799
+Progress: resolved 0, reused 0, downloaded 1673, added 1821, done
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @parcel/watcher, esbuild, unrs-resolver.            │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+> obytesapp@9.0.0 prepare /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src
+> husky
+
+HUSKY=0 skip installDone in 54.4s using pnpm v10.12.3
