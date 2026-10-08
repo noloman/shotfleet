@@ -8,7 +8,7 @@ description: Install, set up, run, check and troubleshoot shotfleet, a macOS com
 shotfleet rewrites one English Maestro flow into every language an app ships, runs all languages in parallel on
 simulators or emulators, and checks every screenshot against the app's own strings (text recognition on macOS,
 or the app's own text for iOS runs). It also checks screenshots you already have (fastlane snapshot, screengrab, a plain folder per language), with no simulator.
-Needs an Apple silicon Mac, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+; iOS needs Xcode, Android needs the Android SDK. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
+Needs an Apple silicon Mac, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+; iOS needs Xcode, Android needs the Android SDK. Built for macOS 13 or later on Apple silicon. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.6, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 
 Start with `shotfleet --version`. If it is missing, the installer from https://shotfleet.com/docs is
 `curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script.
