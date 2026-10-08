@@ -4403,17 +4403,17 @@
  },
  {
   "id": "C266",
-  "claim": "Docs: Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both; 0.1.7 was run on 2.0.10 only)",
+  "claim": "Docs: Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 and 0.1.8 fixture runs passed on both; 0.1.7 was run on 2.0.10 only)",
   "where": [
    "site/public/docs.html"
   ],
   "where_text": [
-   "Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both; 0.1.7 was run on 2.0.10 only)"
+   "Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 and 0.1.8 fixture runs passed on both; 0.1.7 was run on 2.0.10 only)"
   ],
   "status": "evidence",
-  "proof": "research/maestro-2-11-0.1.6-2026-10-07/NOTES.md and logs/: on Maestro 2.11.0 (doctor line 'ok maestro 2.11.0 (tested: 2.0.10, 2.11.0)'), main b8c9305 (0.1.6), iOS 26.4 pinned: Android fixture e2e 30/30 (108 s); iOS fixture e2e 36/36 (518 s, iPhone and iPad, de/ja/ar/tr, 0 problems, 1 simulator at a time because macOS reported elevated memory pressure). A first iOS attempt on the same day passed the iPhone half and lost the iPad half to simulators that stopped answering at 18-21 GB of swap (logs/ios-attempt1-...); the same hang had hit the 0.1.6 gate that morning on 2.0.10. On 2.0.10 the 0.1.6 gate passed 65/65 (36 iOS + 29 Android, 2026-10-07 09:52, shotfleet-rc-build/0.1.6/RESUME.md; the gate log does not print the Maestro version, `maestro` on its PATH was ~/.maestro/bin/maestro = 2.0.10, checked by the coordinator). Limits: fixture app only, not CrossfitTracker or other real apps; timings not comparable (loaded Mac); the guide's manual routes and the home-page timings were NOT re-run on 2.11.0 and stay labelled 2.0.10. 2026-10-08: the 0.1.7 device check and gate (research/017-device-check-2026-10-07/, docs/compat.md 'Maestro 2.0.10, with 0.1.7' row) used Maestro 2.0.10 only; 2.11.0 was not run with 0.1.7.",
+  "proof": "research/maestro-2-11-0.1.6-2026-10-07/NOTES.md and logs/: on Maestro 2.11.0 (doctor line 'ok maestro 2.11.0 (tested: 2.0.10, 2.11.0)'), main b8c9305 (0.1.6), iOS 26.4 pinned: Android fixture e2e 30/30 (108 s); iOS fixture e2e 36/36 (518 s, iPhone and iPad, de/ja/ar/tr, 0 problems, 1 simulator at a time because macOS reported elevated memory pressure). A first iOS attempt on the same day passed the iPhone half and lost the iPad half to simulators that stopped answering at 18-21 GB of swap (logs/ios-attempt1-...); the same hang had hit the 0.1.6 gate that morning on 2.0.10. On 2.0.10 the 0.1.6 gate passed 65/65 (36 iOS + 29 Android, 2026-10-07 09:52, shotfleet-rc-build/0.1.6/RESUME.md; the gate log does not print the Maestro version, `maestro` on its PATH was ~/.maestro/bin/maestro = 2.0.10, checked by the coordinator). Limits: fixture app only, not CrossfitTracker or other real apps; timings not comparable (loaded Mac); the guide's manual routes and the home-page timings were NOT re-run on 2.11.0 and stay labelled 2.0.10. 2026-10-08: the 0.1.7 device check and gate (research/017-device-check-2026-10-07/, docs/compat.md 'Maestro 2.0.10, with 0.1.7' row) used Maestro 2.0.10 only; 2.11.0 was not run with 0.1.7. 2026-10-08, 0.1.8 release gate (the signed build from 1fa3ef6, iOS 26.4): fixture e2e on Maestro 2.0.10 PASS 65 of 65 (19:28 to 19:53), then on Maestro 2.11.0 Android 30 of 30 (19:53 to 19:54) and iOS 36 of 36 (19:54 to 20:11); research/018-gate-2026-10-08/g3-018.log and g3-018-maestro2110.log, docs/compat.md row 'Maestro 2.11.0 and 2.0.10, with 0.1.8'. The legs print 'Maestro on PATH for the legs: 2.11.0' (g3-018.log and g3-018-maestro2110.log); the gate step before them prints no Maestro version, and 2.0.10 for it is as the compat row records it (the default ~/.maestro/bin/maestro of that Mac).",
   "layer": "fixture",
-  "assertion": "One recorded fixture e2e run per platform on Maestro 2.11.0, 2026-10-07; the 2.0.10 side is the 0.1.6 release gate.",
+  "assertion": "One recorded fixture e2e run per platform on Maestro 2.11.0 (2026-10-07 for 0.1.6, 2026-10-08 for 0.1.8); the 2.0.10 side is the release gate of the same version.",
   "fix": ""
  },
  {
@@ -4868,13 +4868,15 @@
   "id": "C293",
   "claim": "Below Maestro 2.7.0 (2.0.10 is one) Android has no screen hierarchy, so check reads Android screenshots by text recognition; run says so and suggests 2.11.0",
   "where": [
-   "README.md"
+   "README.md",
+   "site/public/docs.html"
   ],
   "where_text": [
-   "Below Maestro 2.7.0 (2.0.10 is one) Android has no screen hierarchy, so `check` reads Android screenshots by text recognition; `run` says so and suggests 2.11.0."
+   "Below Maestro 2.7.0 (2.0.10 is one) Android has no screen hierarchy, so `check` reads Android screenshots by text recognition; `run` says so and suggests 2.11.0.",
+   "Below Maestro 2.7.0 (2.0.10 is one) Android has no screen hierarchy, so <code>check</code> reads Android screenshots by text recognition; <code>run</code> says so and suggests 2.11.0."
   ],
   "status": "partial",
-  "proof": "AndroidWithoutAHierarchy.test_the_note_says_ocr_why_and_what_to_do, AndroidWithoutAHierarchy.test_the_run_prints_it_at_the_start_and_again_with_the_result (tests/test_018_capture_check.py). The 2.7.0 threshold is the one in research/limits-text.md 1f (run on 2.11.0); Android on 2.0.10 reading by OCR is how 0.1.6 and earlier behaved (README line 23).",
+  "proof": "AndroidWithoutAHierarchy.test_the_note_says_ocr_why_and_what_to_do, AndroidWithoutAHierarchy.test_the_run_prints_it_at_the_start_and_again_with_the_result (tests/test_018_capture_check.py). The 2.7.0 threshold is the one in research/limits-text.md 1f (run on 2.11.0); Android on 2.0.10 reading by OCR is how 0.1.6 and earlier behaved (README line 23). 2026-10-08 (site review of 0.1.8): the same words are now in docs.html too; they were only in the README.",
   "layer": "unit",
   "assertion": "The note's wording and its two places in the run are tested; the run itself on Maestro 2.0.10 is not repeated.",
   "fix": ""
@@ -4900,13 +4902,15 @@
   "id": "C295",
   "claim": "shotfleet doctor names the iOS runtime run will use and why, or the one the config sets",
   "where": [
-   "README.md"
+   "README.md",
+   "site/public/docs.html"
   ],
   "where_text": [
-   "`shotfleet doctor` names the runtime `run` will use and why, or the one your config sets."
+   "`shotfleet doctor` names the runtime `run` will use and why, or the one your config sets.",
+   "<code>doctor</code> names the runtime <code>run</code> will use and why, or the one your config sets."
   ],
   "status": "proven",
-  "proof": "DoctorSaysWhichRuntimeRunUses.test_with_26_4_and_27_0_it_says_26_4_and_why, DoctorSaysWhichRuntimeRunUses.test_nothing_extra_when_there_is_nothing_to_explain, DoctorSaysWhichRuntimeRunUses.test_a_runtime_in_the_config_is_what_run_uses (tests/test_018_capture_check.py).",
+  "proof": "DoctorSaysWhichRuntimeRunUses.test_with_26_4_and_27_0_it_says_26_4_and_why, DoctorSaysWhichRuntimeRunUses.test_nothing_extra_when_there_is_nothing_to_explain, DoctorSaysWhichRuntimeRunUses.test_a_runtime_in_the_config_is_what_run_uses (tests/test_018_capture_check.py). 2026-10-08 (site review of 0.1.8): the same words are now in docs.html too; they were only in the README.",
   "layer": "unit",
   "assertion": "Unit test with fakes; no device.",
   "fix": ""
@@ -4930,13 +4934,15 @@
   "id": "C297",
   "claim": "Maestro's iOS driver not starting in time counts as a device failure and is retried once",
   "where": [
-   "README.md"
+   "README.md",
+   "site/public/docs.html"
   ],
   "where_text": [
+   "a boot timeout, Maestro's iOS driver not starting in time, Maestro dying before it reported)",
    "a boot timeout, Maestro's iOS driver not starting in time, Maestro dying before it reported)"
   ],
   "status": "proven",
-  "proof": "DriverNotReady.test_the_drivers_words_and_the_runs_are_both_device_failures, DriverNotReady.test_other_logs_keep_the_old_error (tests/test_018_capture_check.py). Seen in showcase-wger/out-iphone-dry-failed-0917/maestro1.log and research/maestro-2-11.md.",
+  "proof": "DriverNotReady.test_the_drivers_words_and_the_runs_are_both_device_failures, DriverNotReady.test_other_logs_keep_the_old_error (tests/test_018_capture_check.py). Seen in showcase-wger/out-iphone-dry-failed-0917/maestro1.log and research/maestro-2-11.md. 2026-10-08 (site review of 0.1.8): the same words are now in docs.html too; they were only in the README.",
   "layer": "unit",
   "assertion": "Unit test with fakes; no device.",
   "fix": ""
@@ -4945,13 +4951,15 @@
   "id": "C298",
   "claim": "With device_types, check out reports a missing 13-inch iPad set as a problem in each device's check (iPad column missing) and the exit code agrees",
   "where": [
-   "README.md"
+   "README.md",
+   "site/public/docs.html"
   ],
   "where_text": [
-   "If your app runs on iPad and none of them has a 13-inch iPad set, each device's check reports it as a problem (the iPad column reads `missing`) and the exit code is 1."
+   "If your app runs on iPad and none of them has a 13-inch iPad set, each device's check reports it as a problem (the iPad column reads `missing`) and the exit code is 1.",
+   "If your app runs on iPad and none of them has a 13-inch iPad set, each device's check reports it as a problem (the iPad column reads <code>missing</code>) and the exit code is 1."
   ],
   "status": "proven",
-  "proof": "ParentOfSeveralDevices.test_missing_ipad_is_a_problem_in_the_summary_and_the_exit_code_agrees, ParentOfSeveralDevices.test_an_ipad_set_somewhere_in_the_run_is_fine_and_the_iphone_folder_does_not_need_one, ParentOfSeveralDevices.test_one_device_of_a_multi_device_run_leaves_the_ipad_set_to_the_whole_run_but_a_single_run_does_not (tests/test_018_capture_check.py). Found in research/017-device-check-2026-10-07/README.md.",
+  "proof": "ParentOfSeveralDevices.test_missing_ipad_is_a_problem_in_the_summary_and_the_exit_code_agrees, ParentOfSeveralDevices.test_an_ipad_set_somewhere_in_the_run_is_fine_and_the_iphone_folder_does_not_need_one, ParentOfSeveralDevices.test_one_device_of_a_multi_device_run_leaves_the_ipad_set_to_the_whole_run_but_a_single_run_does_not (tests/test_018_capture_check.py). Found in research/017-device-check-2026-10-07/README.md. 2026-10-08 (site review of 0.1.8): the same words are now in docs.html too; they were only in the README.",
   "layer": "unit",
   "assertion": "Unit test with fakes; no device.",
   "fix": ""
@@ -5708,9 +5716,26 @@
    "<code>scrollUntilVisible</code> with a plain text is translated now, and <code>zh-Hans</code> on an Android app that ships <code>zh-CN</code> just works."
   ],
   "status": "partial",
-  "proof": "One claim per item: C288 (scrollUntilVisible), C289 and C290 (settle step), C291 (language codes), C292 ([expect] key), C293 (Android OCR note), C294 (Flutter hint), C295 (doctor runtime), C297 (driver not ready), C298 (parent folder), C350 (regex selectors), C351 (port 7001), C352 (splash), C353 (failure screenshot), with tests in tests/test_018_capture_check.py and tests/test_018b_fixes.py. Device, 2026-10-08, Maestro 2.0.10: research/018-device-check-2026-10-08/ covers the scrollUntilVisible translation, the settle step, zh-Hans as zh-CN, the Flutter hint, the parent folder, [expect] key, doctor and the Android note. The regex warning, port 7001, the splash message and the kept failure screenshot were tested with fakes only, and the page says so. Maestro 2.11.0 with 0.1.8: see docs/compat.md after the release gate.",
+  "proof": "One claim per item: C288 (scrollUntilVisible), C289 and C290 (settle step), C291 (language codes), C292 ([expect] key), C293 (Android OCR note), C294 (Flutter hint), C295 (doctor runtime), C297 (driver not ready), C298 (parent folder), C350 (regex selectors), C351 (port 7001), C352 (splash), C353 (failure screenshot), with tests in tests/test_018_capture_check.py and tests/test_018b_fixes.py. Device, 2026-10-08, Maestro 2.0.10: research/018-device-check-2026-10-08/ covers the scrollUntilVisible translation, the settle step, zh-Hans as zh-CN, the Flutter hint, the parent folder, [expect] key, doctor and the Android note. The regex warning, port 7001, the splash message and the kept failure screenshot were tested with fakes only, and the page says so. Maestro 2.11.0 with 0.1.8: the release gate's two 2.11.0 legs passed (Android 30 of 30, iOS 36 of 36, 2026-10-08), docs/compat.md and research/018-gate-2026-10-08/; they ran the fixture app, so they say nothing about the four fakes-only items.",
   "layer": "unit",
   "assertion": "The tests named in C288 to C298 and C350 to C353; the device check README for the items it covers.",
+  "fix": ""
+ },
+ {
+  "id": "C377",
+  "claim": "Demo page: dated 0.1.8 evidence lines (release gate 65 of 65 on Maestro 2.0.10 in 24 min 55 s, then Android 30 of 30 and iOS 36 of 36 on Maestro 2.11.0; the device check of the new changes from source, with the fakes-only items named)",
+  "where": [
+   "site/public/demo.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "<b>2026-10-08, release 0.1.8.</b> The signed, notarized build passed 65 of 65 assertions",
+   "<b>2026-10-08, the new 0.1.8 changes, from source.</b>"
+  ],
+  "status": "evidence",
+  "proof": "Gate: research/018-gate-2026-10-08/g3-018.log, 'PASS: all 65 assertions passed', 'total 24 min 55 s', e2e result PASS (gate step 19:28:37 to 19:53:32), signed build from 1fa3ef6 (docs/compat.md row 'Maestro 2.11.0 and 2.0.10, with 0.1.8'). Legs: research/018-gate-2026-10-08/g3-018-maestro2110.log: Android 'PASS: all 30 assertions passed', 'total 1 min 13 s'; iOS 'PASS: all 36 assertions passed', 'total 16 min 40 s (over the 10 minute target)'; Maestro 2.11.0 on PATH; swap 16 to 17 GB of 17 GB used throughout. Device check: research/018-device-check-2026-10-08/README.md (items A1 to A3, B6 to B8, C9, C10; the regex warning, port 7001, the splash message and the kept failure screenshot are not in it and the page says fakes only).",
+  "layer": "site",
+  "assertion": "Open the records and compare the numbers.",
   "fix": ""
  }
 ]
