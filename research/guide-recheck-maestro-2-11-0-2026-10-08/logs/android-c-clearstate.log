@@ -1,0 +1,29 @@
+/Users/manu/.maestro-tests/2.11.0/bin/maestro --device emulator-5760 test -e APP_LANG=de -e NEXT=Weiter /Users/manu/Developer/shotfleet-rc-build/guide-recheck-2.11.0/out-20261008-133114/android/flows/clearstate.yaml
+Running on shotfleet_android
+ > Flow clearstate
+Launch app "com.shotfleet.fixture" with clear state... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot shots/${APP_LANG}/01_welcome... COMPLETED
+Tap on "${NEXT}"... FAILED
+
+Element not found: Text matching regex: Weiter
+
+Element with Text matching regex: Weiter not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/Users/manu/Developer/shotfleet-rc-build/guide-recheck-2.11.0/home/.maestro/tests/2026-10-08_133447
+╭────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                │
+│   Debug tests faster by easy access to test recordings, maestro logs, screenshots, and more.   │
+│                                                                                                │
+│   Run your flows on Maestro Cloud:                                                             │
+│   maestro cloud app_file flows_folder/                                                         │
+│                                                                                                │
+╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+

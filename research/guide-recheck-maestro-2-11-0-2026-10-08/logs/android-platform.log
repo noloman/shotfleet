@@ -1,0 +1,9 @@
+/Users/manu/.maestro-tests/2.11.0/bin/maestro --device emulator-5760 test /Users/manu/Developer/shotfleet-rc-build/guide-recheck-2.11.0/out-20261008-133114/android/flows/platform.yaml
+Running on shotfleet_android
+ > Flow platform
+Launch app "com.shotfleet.fixture"... COMPLETED
+Run flow when Platform is IOS...
+Run flow when Platform is IOS... SKIPPED
+Run flow when Platform is ANDROID...
+  Take screenshot plat/android_block... COMPLETED
+Run flow when Platform is ANDROID... COMPLETED

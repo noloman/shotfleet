@@ -1,0 +1,12 @@
+13:31:14 sim 9A0CBD08-E4D8-4D45-8A10-B63B644F37D8
+13:31:15 boot rc 0
+13:31:54 bootstatus rc 0
+13:32:08 install rc 0
+13:33:59 deleted my sim rc 0
+13:34:11 emulator-5760 booted after ~12 s
+13:34:13 install Performing Streamed Install
+Success
+13:34:13 emulator-5762 booted after ~0 s
+13:34:15 install Performing Streamed Install
+Success
+13:36:34 done {"ios_sim": "9A0CBD08-E4D8-4D45-8A10-B63B644F37D8", "ios": {"loop-en": {"rc": 0, "pngs": ["home/.maestro/tests/2026-10-08_133215/guide/takeScreenshot/shots/en/01_welcome.png", "home/.maestro/tests/2026-10-08_133215/guide/takeScreenshot/shots/en/02_settings.png"]}, "loop-de": {"rc": 0, "pngs": ["home

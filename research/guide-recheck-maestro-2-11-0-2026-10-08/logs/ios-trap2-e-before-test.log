@@ -1,0 +1,27 @@
+/Users/manu/.maestro-tests/2.11.0/bin/maestro --device 9A0CBD08-E4D8-4D45-8A10-B63B644F37D8 -e APP_LANG=de test /Users/manu/Developer/shotfleet-rc-build/guide-recheck-2.11.0/out-20261008-133114/ios/flows/guide.yaml
+Unknown options: '-e', 'APP_LANG=de'
+Usage: maestro [-hv] [--[no-]ansi] [--verbose] [-p=<platform>] [--udid=<deviceId>] [COMMAND]
+  -h, --help      Display help message
+      --[no-]ansi, --[no-]color
+                  Enable / disable colors and ansi output
+  -p, --platform=<platform>
+                  (Optional) Select a platform to run on
+      --udid, --device=<deviceId>
+                  (Optional) Device ID to run on explicitly, can be a comma separated list of IDs: --device "Emulator_1,Emulator_2"
+  -v, --version   Display CLI version
+      --verbose   Enable verbose logging
+Commands:
+  test                Test a Flow or set of Flows on a local iOS Simulator or Android Emulator
+  cloud               Upload your flows on Cloud by using `maestro cloud sample/app.apk flows_folder/` (https://app.maestro.dev)
+  record              Render a beautiful video of your Flow - Great for demos and bug reports
+  hierarchy           Print out the view hierarchy of the connected device
+  download-samples    Download sample apps and flows for trying out maestro without setting up your own app
+  login               Log into Maestro Cloud
+  logout              Log out of Maestro Cloud
+  bugreport           Report a bug - Help us improve your experience!
+  start-device        Starts or creates an iOS Simulator or Android Emulator similar to the ones in Maestro Cloud
+  list-devices        List local devices available, grouped by platform
+  list-cloud-devices  List devices available on Maestro Cloud, grouped by platform
+  check-syntax        Check syntax of Maestro code
+  mcp                 Starts the Maestro MCP server, exposing Maestro device and automation commands as Model Context Protocol (MCP) tools over STDIO for LLM
+                        agents and automation clients.

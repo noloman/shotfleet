@@ -1,0 +1,22 @@
+/Users/manu/.maestro-tests/2.11.0/bin/maestro --device 9A0CBD08-E4D8-4D45-8A10-B63B644F37D8 test -e APP_LANG=en -e APP_LOCALE=en_US -e NEXT=Next /Users/manu/Developer/shotfleet-rc-build/guide-recheck-2.11.0/out-20261008-133114/ios/flows/guide.yaml
+Running on guide-recheck-iphone - iOS 26.4 - 9A0CBD08-E4D8-4D45-8A10-B63B644F37D8
+ > Flow guide
+Launch app "dev.shotfleet.fixture" with clear state (launch arguments: {AppleLanguages=(${APP_LANG}), AppleLocale=${APP_LOCALE}})... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot shots/${APP_LANG}/01_welcome... COMPLETED
+Tap on "${NEXT}"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot shots/${APP_LANG}/02_settings... COMPLETED
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                                                         │
+│   Try out our new Analyze with Ai feature.                                                                                              │
+│                                                                                                                                         │
+│   See what's new:                                                                                                                       │
+│   > https://maestro.mobile.dev/cli/test-suites-and-reports#analyze                                                                      │
+│   Analyze command:                                                                                                                      │
+│   $ maestro test flow-file.yaml --analyze | bash                                                                                        │
+│                                                                                                                                         │
+│   To disable this notification, set MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED environment variable to "true" before running Maestro.   │
+│                                                                                                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+

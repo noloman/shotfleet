@@ -5225,5 +5225,23 @@
   "assertion": "Same as C145 and C131.",
   "layer": "site",
   "fix": ""
+ },
+ {
+  "id": "C315",
+  "claim": "Guide 2: what I saw on Maestro 2.11.0: takeScreenshot writes to Maestro's output folder, not the working directory; header default beats -e; -e before test fails with exit 2; the Android language and clearState behaviour is unchanged; two parallel maestro test processes on two emulators passed in both attempts",
+  "where": [
+   "site/public/guides/maestro-one-flow-every-language.html"
+  ],
+  "where_text": [
+   "but the files go to Maestro's own output folder",
+   "On 2.11.0 I got the same result:",
+   "On 2.11.0 I got the same message and exit code 2.",
+   "On Maestro 2.11.0 I could not reproduce it:"
+  ],
+  "status": "evidence",
+  "proof": "research/guide-recheck-maestro-2-11-0-2026-10-08/NOTES.md, summary.json, logs/ and images/ (2026-10-08, Maestro 2.11.0, fixture apps, iOS 26.4 simulator, two API 36 emulators). Limits stated in NOTES.md: only two attempts for the parallel run, one run for the straight-after-launch image, no versions between 2.0.10 and 2.11.0, no --shard-split.",
+  "layer": "fixture",
+  "assertion": "One recorded run on 2.11.0, 2026-10-08, of the same steps as the 2.0.10 run of 2026-10-03 (C254).",
+  "fix": ""
  }
 ]

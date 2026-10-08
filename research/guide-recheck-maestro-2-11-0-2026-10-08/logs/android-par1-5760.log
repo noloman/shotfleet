@@ -1,0 +1,8 @@
+Running on shotfleet_android
+ > Flow guide
+Launch app "com.shotfleet.fixture"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot shots/${APP_LANG}/01_welcome... COMPLETED
+Tap on "${NEXT}"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot shots/${APP_LANG}/02_settings... COMPLETED

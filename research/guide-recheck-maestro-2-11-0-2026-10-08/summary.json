@@ -1,0 +1,118 @@
+{
+ "ios_sim": "9A0CBD08-E4D8-4D45-8A10-B63B644F37D8",
+ "ios": {
+  "loop-en": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133215/guide/takeScreenshot/shots/en/01_welcome.png",
+    "home/.maestro/tests/2026-10-08_133215/guide/takeScreenshot/shots/en/02_settings.png"
+   ]
+  },
+  "loop-de": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133241/guide/takeScreenshot/shots/de/01_welcome.png",
+    "home/.maestro/tests/2026-10-08_133241/guide/takeScreenshot/shots/de/02_settings.png"
+   ]
+  },
+  "loop-ja": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133302/guide/takeScreenshot/shots/ja/01_welcome.png",
+    "home/.maestro/tests/2026-10-08_133302/guide/takeScreenshot/shots/ja/02_settings.png"
+   ]
+  },
+  "header-default": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133318/header-default/takeScreenshot/t1/en_welcome.png"
+   ]
+  },
+  "race": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133332/race/takeScreenshot/race/de_straight_after_launch.png"
+   ]
+  },
+  "platform": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133343/platform/takeScreenshot/plat/ios_block.png"
+   ]
+  },
+  "trap2": {
+   "rc": 2,
+   "first": [
+    "Unknown options: '-e', 'APP_LANG=de'",
+    "Usage: maestro [-hv] [--[no-]ansi] [--verbose] [-p=<platform>] [--udid=<deviceId>] [COMMAND]",
+    "  -h, --help      Display help message"
+   ]
+  }
+ },
+ "maestro_version": "2.11.0",
+ "android": {
+  "after_set_de": "Locales for com.shotfleet.fixture for user 0 are [de]",
+  "no_clearState": {
+   "rc": 0,
+   "locales_after": "Locales for com.shotfleet.fixture for user 0 are [de]",
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133419/guide/takeScreenshot/shots/de/01_welcome.png",
+    "home/.maestro/tests/2026-10-08_133419/guide/takeScreenshot/shots/de/02_settings.png"
+   ]
+  },
+  "clearState": {
+   "rc": 1,
+   "locales_after": "Locales for com.shotfleet.fixture for user 0 are []",
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133447/clearstate/screenshots/step-006-tapOnElement-${NEXT}.png",
+    "home/.maestro/tests/2026-10-08_133447/clearstate/takeScreenshot/shots/de/01_welcome.png"
+   ]
+  },
+  "pm_clear_after_set_de": "Locales for com.shotfleet.fixture for user 0 are []",
+  "platform": {
+   "rc": 0,
+   "pngs": [
+    "home/.maestro/tests/2026-10-08_133523/platform/takeScreenshot/plat/android_block.png"
+   ]
+  },
+  "parallel": [
+   {
+    "attempt": 1,
+    "listen7001_java_at_10s": "0\n7",
+    "procs": {
+     "5760": {
+      "rc": 0,
+      "TimeoutException": false,
+      "NoSuchFileException": false,
+      "pngs": []
+     },
+     "5762": {
+      "rc": 0,
+      "TimeoutException": false,
+      "NoSuchFileException": false,
+      "pngs": []
+     }
+    }
+   },
+   {
+    "attempt": 2,
+    "listen7001_java_at_10s": "0\n7",
+    "procs": {
+     "5760": {
+      "rc": 0,
+      "TimeoutException": false,
+      "NoSuchFileException": false,
+      "pngs": []
+     },
+     "5762": {
+      "rc": 0,
+      "TimeoutException": false,
+      "NoSuchFileException": false,
+      "pngs": []
+     }
+    }
+   }
+  ]
+ },
+ "elapsed_s": 320
+}

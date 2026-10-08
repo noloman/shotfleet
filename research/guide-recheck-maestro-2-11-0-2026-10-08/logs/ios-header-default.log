@@ -1,0 +1,6 @@
+/Users/manu/.maestro-tests/2.11.0/bin/maestro --device 9A0CBD08-E4D8-4D45-8A10-B63B644F37D8 test -e APP_LANG=de -e APP_LOCALE=de_DE /Users/manu/Developer/shotfleet-rc-build/guide-recheck-2.11.0/out-20261008-133114/ios/flows/header-default.yaml
+Running on guide-recheck-iphone - iOS 26.4 - 9A0CBD08-E4D8-4D45-8A10-B63B644F37D8
+ > Flow header-default
+Launch app "dev.shotfleet.fixture" with clear state (launch arguments: {AppleLanguages=(${APP_LANG}), AppleLocale=${APP_LOCALE}})... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot t1/${APP_LANG}_welcome... COMPLETED
