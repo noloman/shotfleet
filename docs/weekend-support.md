@@ -46,6 +46,18 @@ Do not test `hello@shotfleet.com` by mailing it from the Gmail account it forwar
 
 Checkout with FOUNDER29 for a Dutch buyer: $49 - $20 = $29, VAT 21% added on top ($6.09), total $35.09. The seller got a "New sale" email and the buyer a receipt within seconds (receipt: from Gumroad, VAT line, the 14-day refund line, "Contact ... by replying", and replies go to `hello@shotfleet.com`). The content page showed the key and the "5 activations" text. With that key on the live 0.1.6 build in fake home folders: the first `activate` counted 1 use, repeating it in the same home counted none, four more fresh homes made 5, the sixth was refused ("this key has used all 5 activations. Email hello@shotfleet.com and I'll reset the count") and cost nothing, a CI key (`SHOTFLEET_KEY`) passed the licence gate, and without a key `export` was refused with the buy link. Creator test purchases do not appear in Sales, so a test sale cannot be refunded or reset; the reset, disable and refund steps above stay **[unverified]** until the first real sale.
 
+## If the watchdog alerts
+
+Each alert line names the failing probe. Check it yourself first (`curl -sI` the URL) before acting; a single failure can be a network blip, and the watchdog only notifies on a new failure and again on recovery.
+
+| Alert | Likely cause | What to do |
+|---|---|---|
+| a site page or `install.sh` is not 200 | Cloudflare or a bad deploy | Check https://www.cloudflarestatus.com. If the site was just deployed, roll back by hand: `docs/engineering/06-packaging-and-release.md` section 6.13 B (the earliest `rollback-<version>-*.txt` in `shotfleet-rc-build/release-archive/state/` holds the id; `cd site && npx wrangler@latest rollback <id> -y`, then check `/download/VERSION`) |
+| live version is not 0.1.6 | An unannounced publish | Ask the coordinator session; roll back as above if it was not intended. If 0.1.7 was published on purpose, change `EXPECT_VERSION` in `weekend-watch/watch.sh` |
+| download missing or checksum mismatch | Half-finished deploy or cache | Retry in 5 minutes; if it persists, roll back as above. Buyers see "download is corrupt" from the installer and are not harmed |
+| Gumroad product page down, unpublished or price changed | Gumroad outage, or the product was edited | Open the product in Gumroad (id `naydxx`) and check Published and the $49 price with the FOUNDER29 banner. Never delete or recreate the product |
+| Gumroad licence API unexpected answer | Gumroad outage | Nothing to fix on our side: a key already on a Mac keeps working for up to 30 days offline. Tell any buyer who cannot activate to try again later |
+
 ## Who to tell
 
 Anything that looks like a bug in shotfleet itself: open an issue note for the owner with the buyer's `shotfleet --version`, `shotfleet doctor` output and the command that failed. Do not paste the buyer's email or key.
