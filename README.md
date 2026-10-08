@@ -520,6 +520,31 @@ The object form with `text:` ran on iOS and Android (WOD Tracker). Use it on 0.1
 - takeScreenshot: 01_train
 ```
 
+**Wait for a web view's own text.** In one of my apps a detail page is a web view, and its screenshot came out blank. The flow took the picture before the page had loaded. Wait for a text from the page, then let the animation finish. shotfleet's own wait before a screenshot helps with animations, not with late network or web content, so the flow has to wait for that content itself. Seen once, on 2026-10-08 (shotfleet 0.1.6); I did not write down the Maestro version for this one. "A text from the page" stands for a text from your own page.
+
+```yaml
+- extendedWaitUntil:
+    visible: "A text from the page"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03_detail
+```
+
+**`back` may not leave a screen on iOS.** On Maestro 2.0.10 with an iOS 26.4 simulator, the `back` step did not pop the navigation stack in one of my apps, and the next screenshot showed the same screen. Tapping the back chevron in the navigation bar did work, either with a `point` tap on its spot or by its id. I saw this on 2.0.10 only, and I have not checked it on 2.11.0, so it may be fixed there. Ran on iOS (2026-10-08). "nav-back" stands for the id your app gives the chevron.
+
+```yaml
+- tapOn:
+    id: "nav-back"
+```
+
+**Two Android emulators at once: one lost its Wi-Fi icon.** With two emulators running in parallel, the screenshots from one of them had no Wi-Fi status icon. Putting `svc wifi enable` in the `shell` list under `[android]` fixed it. shotfleet runs those commands on every emulator after it boots, on every run (see Device setup). Seen once, in one of my apps on 2026-10-08, and I do not know why the icon went missing.
+
+```toml
+[android]
+shell = ["svc wifi enable"]
+```
+
 **`check` does not prove that a tap hit the right button.** It reads pictures: it sees a wrong language, copies, missing screens, blank frames and wrong sizes. It cannot know which screen you meant to reach. In one WOD Tracker iPhone attempt the run exited 0 with 8 of 8 screenshots and `check` said 0 problems, but the Hindi "Benchmarks" frame showed the Train screen, because my tap hit the tab bar. A Train screen in Hindi is a good screen. I found it by looking at every frame. A guard in the flow fails the language instead: put an `assertVisible` on a text that only the target screen has (not one the tab bar shows too) between the tap and the screenshot. Not run; I had no guard in that attempt. "Benchmark results" stands for a text from your own screen. The `[expect]` tables (see Expected content above) can do the same job after the run, with a literal text per language. And look at the frames of a new flow once before you trust it.
 
 ```yaml

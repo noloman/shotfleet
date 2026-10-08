@@ -52,7 +52,7 @@ Sources fetched 2026-10-02:
 
 You wrote a Maestro flow for your app and now want the same screens in German, Japanese and Arabic, for screenshots or for a smoke test. The docs are short on this, and the failure mode is quiet: every run goes green and the images are in English.
 
-I build a tool around this problem (shotfleet, mentioned once near the end). Everything before that is plain Maestro and `adb`.
+I build a tool around this problem (shotfleet, which comes up in the last three sections). Everything before that is plain Maestro and `adb`.
 
 ## What the docs say
 
@@ -133,7 +133,7 @@ All four traps pass. The only way to catch them is to look at the output, or to 
 
 ## Where shotfleet fits
 
-Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so `tapOn: "Next"` becomes `Weiter` in German, or `(Nächste|Weiter)` if your app has two translations for it. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac. That is one app and Maestro 2.0.10, so treat it as a data point. `run` is free for 2 languages; a licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once, 14-day refund.
+Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so `tapOn: "Next"` becomes `Weiter` in German, or `(Nächste|Weiter)` if your app has two translations for it. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac. That is one app and Maestro 2.0.10, so treat it as a data point. `run` is free for 2 languages; a licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund.
 
 ## When not to use shotfleet
 

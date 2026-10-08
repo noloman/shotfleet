@@ -40,7 +40,7 @@ Sources used (fetched 2026-10-02):
 
 You set `languages(["en-US", "de-DE", "ja"])` in your Snapfile, ran `fastlane snapshot`, and opened the folders. German and Japanese are there, and every image is in English.
 
-I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The first four steps below need nothing from me.
+I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The five causes below need nothing from me.
 
 ## How snapshot is supposed to set the language
 
@@ -66,11 +66,11 @@ Compare that list with your Snapfile. The app's base language may not be listed:
 
 **5. The app remembers something.** If your app stores its own language choice or onboarding state, a reused install can show the old language. snapshot has `reinstall_app` and `erase_simulator` for this. On a small test app that saves its own language, launching with German arguments still gave English, and uninstalling and installing the app again gave German (I did that by hand, not with snapshot's option). This and the previous cause are not documented cases from the issue threads, so test them on your app.
 
-## Step 1: stop guessing, look at every image
+## Then: look at every image
 
 With 18 languages and 4 screens that is 72 images. Opening them by hand works until the day you skip one. A faster way is to compare each screenshot with the text your app really contains.
 
-## Step 2: check the folder you already have
+## Then: check the folder you already have
 
 shotfleet's `check` command does that, and it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders. It runs on a Mac and reads each image with the text recognition built into macOS. Give it a simulator build of your app, so it knows your real strings:
 
@@ -112,6 +112,6 @@ If your screenshots are already right in every language, you do not need it. If 
 
 ## Where to go from here
 
-If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` needs Maestro, Java and a flow; on iOS, your own XCUITest or `SnapshotHelper` tests work instead (new in 0.1.6). `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once (14-day refund). Details at [shotfleet.com/#price](https://shotfleet.com/#price).
+If `check` finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. `run` needs Maestro, Java and a flow; on iOS, your own XCUITest or `SnapshotHelper` tests work instead (new in 0.1.6). `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund. Details at [shotfleet.com/#price](https://shotfleet.com/#price).
 
 The free part is the `check` command above. Install it, point it at your `fastlane/` folder and read the grid.
