@@ -1,0 +1,49 @@
+2026-10-08 12:58:47 phase A: read iPhone record, repo, sources; src extracted with git archive 285c7897 (minus android/fastlane/.env*, iosApp/Kuokka.xcarchive)
+2026-10-08 12:59:14 re-extracted src from origin/main eba7746e (2.0.15, versionCode 114); 285c7897 (iPhone run) is not in origin/main (squashed as #78)
+2026-10-08 13:00:28 PLAN.md, flow.draft.yaml, shotfleet.draft.toml, RESUME.md written
+2026-10-08 13:02:00 gate wait (0): disk=63G load=113.55 free=38% level=2 swapouts60s=0 |  load=113.55; free=38%;
+2026-10-08 13:04:00 gate wait (1): disk=64G load=40.99 free=39% level=2 swapouts60s=0 |  free=39%;
+2026-10-08 13:06:00 GATE PASS: disk=64G load=33.27 free=41% level=2 swapouts60s=0 | 
+2026-10-08 13:06:00 BUILD START attempt 1
+2026-10-08 13:06:00 gradle pid=27067 (own session/pgid), log logs/build.1.log
+2026-10-08 13:09:05 BUILD END attempt 1 rc=0 wall=185s stopped=0
+2026-10-08 13:09:05 BUILD DONE
+2026-10-08 13:09:37 ARTIFACTS.txt written; apk sha256 30682243...0030b0; no downloads; no leftover processes of mine
+2026-10-08 13:13:05 device job: flow.android.yaml v1 + shotfleet.android.toml written from the drafts; APK sha256 verified (30682243...0030b0); shotfleet --version = 0.1.6; starting chain-android-run.sh (waits for queue/lock)
+2026-10-08 13:13:05 chain-android-run started pid 33003 (waiting for queue, 3 quiet checks, lock; up to 4 h)
+2026-10-08 13:13:05 earlier queue line(s) still open (       4): - 2026-10-08 12:27 Remoti store screenshots recapture PART 2 (App stor|- 2026-10-08 12:44 Guide re-check on Maestro 2.11.0 (maestro-version-c|- 2026-10-08 12:46 Same-build A/B on Maestro 2.0.10 vs 2.11.0 (maestro|- 2026-10-08 12:50 Remoti store screenshots PART 2: RUNNING, holding t|
+2026-10-08 13:28:06 earlier queue line(s) still open (       3): - 2026-10-08 12:44 Guide re-check on Maestro 2.11.0 (maestro-version-c|- 2026-10-08 12:46 Same-build A/B on Maestro 2.0.10 vs 2.11.0 (maestro|- 2026-10-08 12:50 Remoti store screenshots PART 2: RUNNING, holding t|
+2026-10-08 13:29:06 earlier queue line(s) still open (       2): - 2026-10-08 12:44 Guide re-check on Maestro 2.11.0 (maestro-version-c|- 2026-10-08 12:46 Same-build A/B on Maestro 2.0.10 vs 2.11.0 (maestro|
+2026-10-08 13:37:06 quiet check pass 1/3: quiet: free 52%, load 38; load=38.48 free%=52% disk_free_GiB=63
+2026-10-08 13:38:07 quiet check pass 2/3: quiet: free 55%, load 19; load=19.13 free%=55% disk_free_GiB=63
+2026-10-08 13:39:07 quiet check pass 3/3: quiet: free 55%, load 14; load=14.44 free%=55% disk_free_GiB=64
+2026-10-08 13:39:07 LOCK TAKEN: Kuokka Android showcase (OCR session) | shotfleet 0.1.6 on Kuokka 2.0.15 debug APK, 1 emulator | started 13:39 | est. 40 min, hard limit 90 (ends 15:09); load=14.44 free%=55% disk_free_GiB=64; avds: kuokka_smoke shotfleet_android shotfleet_android_tablet ; adb: 0 emulators; qemu:        0
+2026-10-08 13:39:07 lock held, idle: waiting up to 25 min for /Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/android.cmd ('run NAME LOCALES' or 'end'); lock still held
+2026-10-08 13:39:22 dry (en) started, limit 1800s; load=14.04 free%=57% disk_free_GiB=63
+2026-10-08 13:41:42 dry done rc=0 killed=0 wall=140s; captured 1/1 locales in 45s on 1 emulators ; load=14.47 free%=61% disk_free_GiB=64
+2026-10-08 13:41:42 dry finished rc=0: waiting up to 25 min for the next android.cmd
+2026-10-08 13:42:16 dry (en) rc=0, 5/5 frames, all 5 looked at: fine, no flow fix needed (fix count 0). Output folder renamed out-dry -> out-android-dry. Next: run1 de,ja,ko
+2026-10-08 13:42:18 android-run1 (de,ja,ko) started, limit 1800s; load=15.80 free%=54% disk_free_GiB=64
+2026-10-08 13:46:18 android-run1 done rc=0 killed=0 wall=240s; captured 3/3 locales in 139s on 1 emulators ; load=8.88 free%=52% disk_free_GiB=64
+2026-10-08 13:46:18 android-run1 finished rc=0: waiting up to 25 min for the next android.cmd
+2026-10-08 13:46:47 run1: de+ja 10 frames looked at (fine), ko 05 fine; starting run2 es,fr,pt-BR while looking at ko 01-04 (flow unchanged, fix count 0)
+2026-10-08 13:46:48 android-run2 (es,fr,pt-BR) started, limit 1800s; load=7.06 free%=55% disk_free_GiB=64
+2026-10-08 13:46:54 run1: all 15 frames looked at (de, ja, ko x 5): right screens, right language, no dialog, no live HN content
+2026-10-08 13:50:49 android-run2 done rc=0 killed=0 wall=241s; captured 3/3 locales in 126s on 1 emulators ; load=15.30 free%=57% disk_free_GiB=64
+2026-10-08 13:50:49 android-run2 finished rc=0: waiting up to 25 min for the next android.cmd
+2026-10-08 13:51:09 end requested
+2026-10-08 13:51:09 ALL ANDROID DEVICE RUNS DONE
+2026-10-08 13:51:09 ANDROID CLEANUP start
+2026-10-08 13:51:29 after emu kill: adb devices: 0 emulator(s); qemu processes:        0
+2026-10-08 13:51:29 LOCK RELEASED (load=9.29 free%=58% disk_free_GiB=64)
+2026-10-08 13:51:29 queue line replaced by DONE line
+2026-10-08 13:51:29 ANDROID CLEANUP end
+2026-10-08 13:51:39 check android-dry started (lock already released)
+2026-10-08 13:51:41 check android-dry done: checked 5 screenshots in 1 languages: 0 problem(s) report: check-android-dry/index.html rc=0 
+2026-10-08 13:51:41 check android-run1 started (lock already released)
+2026-10-08 13:51:44 check android-run1 done: checked 15 screenshots in 3 languages: 0 problem(s) report: check-android-run1/index.html rc=0 
+2026-10-08 13:51:44 check android-run2 started (lock already released)
+2026-10-08 13:51:47 check android-run2 done: checked 15 screenshots in 3 languages: 0 problem(s) report: check-android-run2/index.html rc=0 
+2026-10-08 13:51:47 all android checks (--app form) done
+2026-10-08 13:52:04 run2: all 15 frames (es, fr, pt-BR x 5) looked at: fine. Total frames looked at: 5 dry + 15 + 15 = 35
+2026-10-08 13:54:23 record/ built (NOTES.md, 35 frames table); checks: --app form and --strings form both rc 0, 0 problems; lock was released 13:51:29

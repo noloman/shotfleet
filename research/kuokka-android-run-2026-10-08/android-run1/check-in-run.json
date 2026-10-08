@@ -1,0 +1,127 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_radar.png",
+   "src": "raw/de/01_radar.png",
+   "sha": "c565aa73c1f9",
+   "lang": "de",
+   "chars": 249,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/02_bookmarks.png",
+   "src": "raw/de/02_bookmarks.png",
+   "sha": "4afe100fa15e",
+   "lang": "de",
+   "chars": 203,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/03_account.png",
+   "src": "raw/de/03_account.png",
+   "sha": "35e633b9fbf6",
+   "lang": "de",
+   "chars": 301,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/04_settings.png",
+   "src": "raw/de/04_settings.png",
+   "sha": "3ffe34c51248",
+   "lang": "de",
+   "chars": 381,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/05_search.png",
+   "src": "raw/de/05_search.png",
+   "sha": "abbef5e27b56",
+   "lang": "de",
+   "chars": 175,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/01_radar.png",
+   "src": "raw/ja/01_radar.png",
+   "sha": "ba1e2fb38511",
+   "lang": "ja",
+   "chars": 147,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/02_bookmarks.png",
+   "src": "raw/ja/02_bookmarks.png",
+   "sha": "caf39b183752",
+   "lang": "ja",
+   "chars": 109,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/03_account.png",
+   "src": "raw/ja/03_account.png",
+   "sha": "7f6953bcf3eb",
+   "lang": "ja",
+   "chars": 178,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/04_settings.png",
+   "src": "raw/ja/04_settings.png",
+   "sha": "41ef9fd8c6be",
+   "lang": "ja",
+   "chars": 171,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ja/05_search.png",
+   "src": "raw/ja/05_search.png",
+   "sha": "fe0539500ab9",
+   "lang": "ja",
+   "chars": 122,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/01_radar.png",
+   "src": "raw/ko/01_radar.png",
+   "sha": "51dd6dc3fca7",
+   "lang": "ko",
+   "chars": 129,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/02_bookmarks.png",
+   "src": "raw/ko/02_bookmarks.png",
+   "sha": "e3efde1c901b",
+   "lang": "ko",
+   "chars": 97,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/03_account.png",
+   "src": "raw/ko/03_account.png",
+   "sha": "b5750e1f59e7",
+   "lang": "ko",
+   "chars": 172,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/04_settings.png",
+   "src": "raw/ko/04_settings.png",
+   "sha": "895f128da7e2",
+   "lang": "ko",
+   "chars": 169,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ko/05_search.png",
+   "src": "raw/ko/05_search.png",
+   "sha": "ff9e8f7f348d",
+   "lang": "ko",
+   "chars": 104,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

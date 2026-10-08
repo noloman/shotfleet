@@ -1,0 +1,12 @@
+Kuokka Android debug APK (phase B), built 2026-10-08
+Source: git archive of origin/main eba7746e (HackerNewsKMP, read-only), extracted to /Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/src (minus android/fastlane/.env*, iosApp/Kuokka.xcarchive)
+APK: /Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/app/composeApp-debug.apk  (40345829 bytes)
+sha256: 30682243ad3be5df4dddc3dfc033c65997dbd460bb50ca890e15bca37e0030b0
+Original: /Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/src/composeApp/build/outputs/apk/debug/composeApp-debug.apk (identical copy)
+aapt2 badging (full text in app-info.txt): package me.manulorenzo.hackernewskmp, versionName 2.0.15, versionCode 114, label Kuokka, minSdk 24, targetSdk 36, compileSdk 36, ABIs arm64-v8a armeabi-v7a x86 x86_64; Compose strings as assets/composeResources/.../values-*/strings.commonMain.cvr
+Command: nice -n 10 ./gradlew --no-daemon --console=plain --info -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1024M" -Dorg.gradle.cache.cleanup=DISABLED -Pkotlin.compiler.execution.strategy=in-process :composeApp:assembleDebug  (JDK 21.0.10-tem, Gradle 9.4.1)
+Gate (13:06:00 PASS after 2 waits from 13:02, load 113 -> 33): disk=64G load=33.27 free=41% level=2 swapouts60s=0 | 
+Wall: gate wait ~6 min (13:00-13:06); build 185 s by the script, "BUILD SUCCESSFUL in 2m 37s" by Gradle; 1 attempt, 0 retries
+Downloads: none (no Download lines in logs/build.1.log; no new files in ~/.gradle/caches/modules-2 or wrapper; no contact with maven.pkg.jetbrains.space)
+Placeholders created: none (composeApp/google-services.json is committed in the repo)
+Disk free /Users/manu: 65 GiB before, 62 GiB after; 327M used under the work folder

@@ -1,0 +1,19 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 27,
+   "error": null,
+   "screenshots": 5,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/shotfleet.android.toml",
+ "wall_seconds": 45,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/app/composeApp-debug.apk",
+ "device": "phone",
+ "hierarchy_markers": false
+}

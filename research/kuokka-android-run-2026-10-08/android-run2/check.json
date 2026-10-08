@@ -1,0 +1,127 @@
+{
+ "screenshots": [
+  {
+   "file": "es/01_radar.png",
+   "src": "../out-android-run2/raw/es/01_radar.png",
+   "sha": "589b0e2a3d7d",
+   "lang": "es",
+   "chars": 248,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/02_bookmarks.png",
+   "src": "../out-android-run2/raw/es/02_bookmarks.png",
+   "sha": "81f0d27ead34",
+   "lang": "es",
+   "chars": 177,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/03_account.png",
+   "src": "../out-android-run2/raw/es/03_account.png",
+   "sha": "e1fea83a3443",
+   "lang": "es",
+   "chars": 257,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/04_settings.png",
+   "src": "../out-android-run2/raw/es/04_settings.png",
+   "sha": "1d27cf9d6bc8",
+   "lang": "es",
+   "chars": 355,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/05_search.png",
+   "src": "../out-android-run2/raw/es/05_search.png",
+   "sha": "3a710d4e93ea",
+   "lang": "es",
+   "chars": 175,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/01_radar.png",
+   "src": "../out-android-run2/raw/fr/01_radar.png",
+   "sha": "6a40c2a78651",
+   "lang": "fr",
+   "chars": 251,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/02_bookmarks.png",
+   "src": "../out-android-run2/raw/fr/02_bookmarks.png",
+   "sha": "ca40a2a15309",
+   "lang": "fr",
+   "chars": 199,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/03_account.png",
+   "src": "../out-android-run2/raw/fr/03_account.png",
+   "sha": "a8c1771a5811",
+   "lang": "fr",
+   "chars": 285,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/04_settings.png",
+   "src": "../out-android-run2/raw/fr/04_settings.png",
+   "sha": "6034a0f10d6c",
+   "lang": "fr",
+   "chars": 399,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/05_search.png",
+   "src": "../out-android-run2/raw/fr/05_search.png",
+   "sha": "d123208c5453",
+   "lang": "fr",
+   "chars": 192,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/01_radar.png",
+   "src": "../out-android-run2/raw/pt-BR/01_radar.png",
+   "sha": "d67525bb36ff",
+   "lang": "pt-BR",
+   "chars": 249,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/02_bookmarks.png",
+   "src": "../out-android-run2/raw/pt-BR/02_bookmarks.png",
+   "sha": "0de283f2a6b9",
+   "lang": "pt-BR",
+   "chars": 170,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/03_account.png",
+   "src": "../out-android-run2/raw/pt-BR/03_account.png",
+   "sha": "b8053227e07a",
+   "lang": "pt-BR",
+   "chars": 235,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/04_settings.png",
+   "src": "../out-android-run2/raw/pt-BR/04_settings.png",
+   "sha": "e5cf32683f71",
+   "lang": "pt-BR",
+   "chars": 371,
+   "evidence": "ocr"
+  },
+  {
+   "file": "pt-BR/05_search.png",
+   "src": "../out-android-run2/raw/pt-BR/05_search.png",
+   "sha": "1df3d1fef50d",
+   "lang": "pt-BR",
+   "chars": 176,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}
