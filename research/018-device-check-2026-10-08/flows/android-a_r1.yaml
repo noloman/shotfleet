@@ -1,0 +1,17 @@
+appId: com.shotfleet.fixture
+name: r1_f0
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element: '下一步'
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 'r1_f0/01_welcome'
+- tapOn: '下一步'
+- waitForAnimationToEnd:
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 'r1_f0/02_settings'

@@ -1,0 +1,2 @@
+env: Snitch.app/Contents/Components:/usr/local/go/bin:/Applications/Conveyor.app/Contents/MacOS:/Users/manu/.docker/bin:/Users/manu/Library/Application: No such file or directory
+rc=127 killed=0 wall=15s

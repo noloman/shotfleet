@@ -1,0 +1,3 @@
+/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-shotfleet-agent-coordination-aa962a/9b79205e-a843-4254-b127-bc10ba4eb389/scratchpad/dc/build-ios/FleetFixture.app: replacing existing signature
+built /private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-shotfleet-agent-coordination-aa962a/9b79205e-a843-4254-b127-bc10ba4eb389/scratchpad/dc/build-ios/FleetFixture.app
+sh tools/fixture-app/build.sh $W/build-ios  4.00s user 2.28s system 69% cpu 9.089 total

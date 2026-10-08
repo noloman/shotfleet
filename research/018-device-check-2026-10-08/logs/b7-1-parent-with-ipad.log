@@ -1,0 +1,17 @@
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  -            -            ok (2)    ok (0)
+  ja  -            -            ok (2)    ok (0)
+report: rep1/ipad-pro-13-inch-m5-12gb/index.html
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  ok (2)       -            -         ok (0)
+  ja  ok (2)       -            -         ok (0)
+report: rep1/iphone-17-pro-max/index.html
+rc=0

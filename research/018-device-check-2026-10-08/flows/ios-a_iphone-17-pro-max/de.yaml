@@ -1,0 +1,29 @@
+appId: dev.shotfleet.fixture
+name: de
+---
+- launchApp:
+    clearState: true
+    arguments:
+      AppleLanguages: "(de)"
+      AppleLocale: "de_DE"
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element: 'Weiter'
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 'de/01_welcome'
+- extendedWaitUntil:
+    visible: "__shotfleet_reading_screen__"
+    timeout: 1500
+    optional: true
+- tapOn: 'Weiter'
+- waitForAnimationToEnd:
+    timeout: 5000
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: 'de/02_settings'
+- extendedWaitUntil:
+    visible: "__shotfleet_reading_screen__"
+    timeout: 1500
+    optional: true

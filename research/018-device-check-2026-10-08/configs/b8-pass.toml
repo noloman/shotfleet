@@ -1,0 +1,8 @@
+[ios]
+app = "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-shotfleet-agent-coordination-aa962a/9b79205e-a843-4254-b127-bc10ba4eb389/scratchpad/dc/build-ios/FleetFixture.app"
+
+[expect.01_welcome]
+key = "Welcome"
+
+[expect.02_settings]
+key = "Settings"

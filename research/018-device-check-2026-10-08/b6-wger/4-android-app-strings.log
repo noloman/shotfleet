@@ -1,0 +1,12 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 18 screenshots in 3 languages: 0 problem(s)
+
+Google Play coverage (language x device class):
+      phone
+  fr  ok (6)
+  hr  ok (6)
+  uk  ok (6)
+report: /private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-shotfleet-agent-coordination-aa962a/9b79205e-a843-4254-b127-bc10ba4eb389/scratchpad/dc/b6final/4.rep/index.html
+rc=0
