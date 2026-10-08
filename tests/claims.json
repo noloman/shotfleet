@@ -4982,5 +4982,137 @@
   "layer": "site",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
+ },
+ {
+  "id": "C335",
+  "claim": "Kuokka Android, 2026-10-08, shotfleet 0.1.6: two runs of three languages (de,ja,ko and es,fr,pt-BR), 5 screens each = 30 screenshots on 1 emulator, 0 retries, 139 s and 126 s",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "It was 1 emulator and two runs of three languages, 5 screens each, 30 screenshots, 0 retries, 139 s and 126 s.",
+   "1 emulator, two runs of three languages, 5 screens each, 30 screenshots, 0 retries, 139 s and 126 s."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/android-run1/run.json and android-run2/run.json: wall_seconds 139 and 126, emulators 1, locales de,ja,ko and es,fr,pt-BR each ok true with screenshots 5, platform android, device emulator-5702; android-run1/run.log and android-run2/run.log: 'captured 3/3 locales in 139s / 126s on 1 emulators', rc=0 killed=0, no retried locale (run.json has no attempts field; a retry would show as retried). shotfleet 0.1.6 and Maestro 2.0.10 (NOTES.md, What ran). The English dry run (android-dry, 5 screenshots) is an extra run and is not counted in the 30. Device lock 13:39:07 to 13:51:29 (progress.log). Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C336",
+  "claim": "Kuokka Android, 2026-10-08: check found 0 problems in both runs, with the APK (--app) and also with the app's strings.xml (--strings); both gave 0 problems",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Check found 0 problems in both runs. It worked with the APK and also with the app’s strings.xml file, and both gave 0 problems.",
+   "Check found 0 problems, with the APK and also with the app’s strings.xml."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/android-run1/check.json and android-run2/check.json (shotfleet check out-android-runN --app composeApp-debug.apk, rc=0): screenshots 15, problems 0, notes 0, unverified 0; android-run1/check-stringsonly.json and android-run2/check-stringsonly.json (shotfleet check ... --strings .../composeResources/values*/strings.xml, no --app, rc=0): checked 15 screenshots in 3 languages: 0 problem(s); check-in-run.json (the check shotfleet ran inside the run) says the same. Logs: check.log and check-stringsonly.log in each run folder, 'rc=0'. Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C337",
+  "claim": "Kuokka Android, 2026-10-08: Maestro 2.0.10 saves no screen hierarchy on Android, so check read all the pictures by text recognition (evidence ocr), which is weaker evidence than on iPhone",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Maestro 2.0.10 saves no screen hierarchy on Android, so check read the pictures by text recognition, which is weaker evidence.",
+   "Maestro 2.0.10 saves no screen hierarchy on Android, so check read the pictures by text recognition only, which is weaker evidence."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/android-run1/run.log line 1: 'Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)'; android-run1/run.json and android-run2/run.json: hierarchy_markers false; check.json and check-stringsonly.json list every screenshot with evidence 'ocr' (15 of 15 in each run). Same limit as the WOD Tracker Android runs (claim C284). Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C338",
+  "claim": "Kuokka Android: check reading the pictures does not prove that every tap hit the right button; on Android it cannot tell live content or a wrong but translated screen either",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "It still doesn’t prove that every tap hit the right button."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/NOTES.md, Checks after the lock (the check reads text, not meaning: it cannot tell that a frame shows live Hacker News content or the wrong screen, which is why all 35 frames were also looked at); the same limit is recorded for the iPhone run in C263 (run1 with wrong taps also ended with 0 problems, research/kuokka-run-2026-10-07/logs/run1-first-flow-de-ja.log). Wording matches the existing sentence on the page for the iPhone run. Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C339",
+  "claim": "Kuokka Android: the Android build is a debug build of 2.0.15 from main (eba7746e, built 2026-10-08), a different build from the iPhone frames (2.0.14, an unreleased branch)",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On Android I ran shotfleet 0.1.6 on 2026-10-08, on a debug build of Kuokka 2.0.15 from main.",
+   "That is a different build from the iPhone frames above, which are 2.0.14.",
+   "On 2026-10-08 I ran it on Android too, with shotfleet 0.1.6 on a debug build of 2.0.15 from main, which is a different build from the iPhone one (2.0.14)."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/ARTIFACTS.txt and app-info.txt (aapt2 dump badging): package me.manulorenzo.hackernewskmp, versionName 2.0.15, versionCode 114, debug APK, sha256 30682243ad3be5df4dddc3dfc033c65997dbd460bb50ca890e15bca37e0030b0, built from origin/main eba7746e on 2026-10-08; NOTES.md, What ran: not the same code as the iPhone frames (2.0.14 build 289, simulator build from the unreleased branch review-prompt-redesign, commit 285c7897, not an ancestor of main; iPhone record research/kuokka-run-2026-10-07/NOTES.md). shotfleet --version printed 0.1.6 (the page goes live with the next release). Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C340",
+  "claim": "Kuokka Android showcase: the 6 home-page frames are shotfleet's own raw output from the 2026-10-08 runs, resized to 360 px wide WebP; 6 of the 30 in the counted runs, picked after looking at all of them (all 35 frames were looked at)",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "The six below are 6 of the 30, picked by me after looking at all of them.",
+   "Record: research/kuokka-android-run-2026-10-08/"
+  ],
+  "status": "evidence",
+  "proof": "Source frames (/Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/): out-android-run1/raw/de/01_radar.png, out-android-run1/raw/ja/04_settings.png, out-android-run1/raw/ko/01_radar.png, out-android-run2/raw/es/03_account.png, out-android-run2/raw/fr/01_radar.png, out-android-run2/raw/pt-BR/03_account.png, converted with cwebp -q 80 -resize 360 0 into site/public/img/showcase/kuokka_android_<lang>_<screen>.webp (9 to 11 KB each, 360x640, no captions, frames or edits; the table 'Frames reviewed' in research/kuokka-android-run-2026-10-08/NOTES.md marks each pick). Every frame was looked at and judged public-safe, and the six were looked at again as WebP on 2026-10-08: right language, no account, no typed text, no live Hacker News content. Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C341",
+  "claim": "Kuokka Android: none of the 30 counted screenshots shows live Hacker News content because the flow never opens a story (the Home feed is passed through and never shot); the analytics question is answered with Not now",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "None of the 30 show live Hacker News content, because my flow never opens a story, and the flow turns the analytics question down in every language."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/flow.android.yaml: screens 05_search, 01_radar, 02_bookmarks, 03_account, 04_settings only; 'NO STORY IS EVER OPENED', Home never shot, nothing typed; the analytics dialog is declined by an optional tap on 'Not now' (translated per language), then 'Skip' on onboarding. NOTES.md, What ran and Looked at before counting: 35 of 35 frames looked at, 0 live Hacker News content, 0 dialogs in any frame. Unsure: the Maestro logs hold no per-step lines, so the 'Not now' tap in each language rests on the runner's notes (NOTES.md lists the six button texts) and on the flow reaching 'Skip' with no dialog in any frame; no network capture was taken. Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C342",
+  "claim": "Kuokka Android: app oddities seen in the frames and named on the page: the Settings screen has a tall blank band above its title, a few lines wrap with one word left over, and the Search chips stay English",
+  "where": [
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "Some oddities are the app’s own. The Settings screen has a tall blank band above its title and a few lines wrap with one word left over. The Search chips stay in English."
+  ],
+  "status": "evidence",
+  "proof": "research/kuokka-android-run-2026-10-08/NOTES.md, Looked at before counting, findings (1) the tall blank band above the Settings title in every language (the app's collapsing top bar), (3) orphan wraps (ja Radar 'う。', ko Account '요', es Account 'News.'), (4) the Search chips AI / Open source / Startups are English in every language; the ja Settings frame on the page shows the blank band. Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
+  "layer": "site",
+  "assertion": "One recorded run on the owner's app, 2026-10-08.",
+  "fix": ""
  }
 ]
