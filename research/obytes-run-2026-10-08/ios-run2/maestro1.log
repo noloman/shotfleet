@@ -1,0 +1,8 @@
+Will split 2 flows across 1 shards (2 flows per shard)
+
+Waiting for flows to complete...
+[Passed] en (1m 19s)
+[Passed] ar (58s)
+
+2/2 Flows Passed in 2m 17s
+

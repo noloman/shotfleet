@@ -1,0 +1,87 @@
+Lockfile is up to date, resolution step is skipped
+Packages: +1821
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 0, reused 0, downloaded 1, added 0
+Progress: resolved 0, reused 0, downloaded 13, added 13
+Progress: resolved 0, reused 0, downloaded 34, added 29
+Progress: resolved 0, reused 0, downloaded 45, added 39
+Progress: resolved 0, reused 0, downloaded 60, added 54
+Progress: resolved 0, reused 0, downloaded 88, added 69
+Progress: resolved 0, reused 0, downloaded 115, added 99
+Progress: resolved 0, reused 0, downloaded 133, added 115
+Progress: resolved 0, reused 0, downloaded 142, added 120
+Progress: resolved 0, reused 0, downloaded 148, added 126
+Progress: resolved 0, reused 0, downloaded 159, added 137
+Progress: resolved 0, reused 0, downloaded 182, added 161
+Progress: resolved 0, reused 0, downloaded 208, added 190
+Progress: resolved 0, reused 0, downloaded 231, added 216
+Progress: resolved 0, reused 0, downloaded 251, added 238
+Progress: resolved 0, reused 0, downloaded 277, added 267
+Progress: resolved 0, reused 0, downloaded 307, added 298
+Progress: resolved 0, reused 0, downloaded 344, added 336
+Progress: resolved 0, reused 0, downloaded 371, added 364
+Progress: resolved 0, reused 0, downloaded 410, added 400
+Progress: resolved 0, reused 0, downloaded 449, added 442
+Progress: resolved 0, reused 0, downloaded 476, added 478
+Progress: resolved 0, reused 0, downloaded 504, added 508
+Progress: resolved 0, reused 0, downloaded 530, added 532
+Progress: resolved 0, reused 0, downloaded 557, added 562
+Progress: resolved 0, reused 0, downloaded 585, added 591
+Progress: resolved 0, reused 0, downloaded 614, added 619
+Progress: resolved 0, reused 0, downloaded 642, added 643
+Progress: resolved 0, reused 0, downloaded 669, added 670
+Progress: resolved 0, reused 0, downloaded 700, added 701
+Progress: resolved 0, reused 0, downloaded 749, added 753
+Progress: resolved 0, reused 0, downloaded 782, added 787
+Progress: resolved 0, reused 0, downloaded 797, added 802
+Progress: resolved 0, reused 0, downloaded 807, added 812
+Progress: resolved 0, reused 0, downloaded 823, added 829
+Progress: resolved 0, reused 0, downloaded 858, added 865
+Progress: resolved 0, reused 0, downloaded 872, added 878
+Progress: resolved 0, reused 0, downloaded 895, added 902
+Progress: resolved 0, reused 0, downloaded 919, added 925
+Progress: resolved 0, reused 0, downloaded 946, added 948
+Progress: resolved 0, reused 0, downloaded 979, added 983
+Progress: resolved 0, reused 0, downloaded 1016, added 1020
+Progress: resolved 0, reused 0, downloaded 1050, added 1053
+Progress: resolved 0, reused 0, downloaded 1089, added 1093
+Progress: resolved 0, reused 0, downloaded 1107, added 1113
+Progress: resolved 0, reused 0, downloaded 1125, added 1129
+Progress: resolved 0, reused 0, downloaded 1149, added 1153
+Progress: resolved 0, reused 0, downloaded 1183, added 1188
+Progress: resolved 0, reused 0, downloaded 1204, added 1209
+Progress: resolved 0, reused 0, downloaded 1227, added 1231
+Progress: resolved 0, reused 0, downloaded 1255, added 1258
+Progress: resolved 0, reused 0, downloaded 1262, added 1265
+Progress: resolved 0, reused 0, downloaded 1278, added 1301
+Progress: resolved 0, reused 0, downloaded 1297, added 1329
+Progress: resolved 0, reused 0, downloaded 1313, added 1355
+Progress: resolved 0, reused 0, downloaded 1330, added 1374
+Progress: resolved 0, reused 0, downloaded 1345, added 1397
+Progress: resolved 0, reused 0, downloaded 1367, added 1428
+Progress: resolved 0, reused 0, downloaded 1392, added 1471
+Progress: resolved 0, reused 0, downloaded 1412, added 1497
+Progress: resolved 0, reused 0, downloaded 1421, added 1507
+Progress: resolved 0, reused 0, downloaded 1442, added 1532
+Progress: resolved 0, reused 0, downloaded 1465, added 1561
+Progress: resolved 0, reused 0, downloaded 1493, added 1596
+Progress: resolved 0, reused 0, downloaded 1524, added 1654
+Progress: resolved 0, reused 0, downloaded 1553, added 1684
+Progress: resolved 0, reused 0, downloaded 1594, added 1732
+Progress: resolved 0, reused 0, downloaded 1639, added 1785
+Progress: resolved 0, reused 0, downloaded 1672, added 1819
+Progress: resolved 0, reused 0, downloaded 1673, added 1821, done
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: @parcel/watcher, esbuild, unrs-resolver.            │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+> obytesapp@9.0.0 prepare /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src
+> husky
+
+HUSKY=0 skip installDone in 1m 9.6s using pnpm v10.12.3

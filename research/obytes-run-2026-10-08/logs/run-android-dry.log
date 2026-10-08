@@ -1,0 +1,14 @@
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Obytes Starter'
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 1 locales on 1 emulators, 1 rounds...
+retrying 1: en
+FAIL en       0/6 screenshots (retried)  Assertion is false: id: login-button is visible
+     failed step: Assert that id: login-button is visible
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/out-android/.work/debug/retry1/.maestro/tests/2026-10-08_180903/screenshot-❌-1791475773055-(retry1_f0).png
+     on screen: Obytes Starter | The right way to build your mobile app | 🚀 Production-ready | 🥷 Developer experience + Productivity | 🧩 Minimal code and dependencies | 💪 well maintained third-party libraries | Let's Get Started
+captured 0/1 locales in 81s on 1 emulators
+no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs
+rc=1 killed=0

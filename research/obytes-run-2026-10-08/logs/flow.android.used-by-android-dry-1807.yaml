@@ -1,0 +1,151 @@
+# Obytes starter showcase, ANDROID flow. Copy of the final iPhone flow.yaml (sha of the source: see logs/), adapted only where Android needs it.
+# Attempt 1 (this file as first written): the Theme/Language sheet steps use TEXT waits and a text tap ("Dark.*") instead of the iPhone's
+# fixed wait + percent-point tap, because on Android the sheet options are probably in the hierarchy. If the dry run proves otherwise,
+# the fix is the iPhone's position tap (see flow.android.attempt*-failed.yaml for what failed).
+# Below this line: the iPhone flow's own header.
+# DRAFT for the Obytes starter showcase, ONE flow for iOS and Android (not run; nothing here has touched a device).
+# Planned name in the run folder: flow.yaml. English only: shotfleet translates every tap per language.
+# Target: react-native-template-obytes v9.0.0 (Expo SDK 54, RN 0.81.5), Release build, fresh install in every language.
+# Bundle id / package: com.obytes.development on both platforms (env.ts, EXPO_PUBLIC_APP_ENV=development, the template's own .env). No appId here.
+#
+# What it shows: ONLY the Settings screen, the one screen the template translates (22 of its 25 strings are used there). The flow walks through
+# onboarding and the demo login to get there, but takes NO screenshot of them: they are hard-coded English (shotfleet's `check` would flag
+# `ar` for them, correctly), and the first frames of a Release build are where a splash or blank frame can slip in.
+# Login is local only: LoginScreen.onSubmit stores a fixed fake token in MMKV and pushes "/"; nothing is sent anywhere. Any e-mail and password work.
+# The Feed tab (first tab after login) fetches https://dummyjson.com/posts in the background; the flow never looks at it.
+#
+# Six frames, same on both platforms; the best 4 (iPhone) and 5 or 6 (Android) are picked after looking at all of them.
+# On a tall iPhone the whole Settings list may fit, so 02 and 05 can equal 01 and 04 there (expected; then they are not used).
+#   01_settings        light theme, top of the list: General (Language, Theme), About (App Name, Version), Support Us ...
+#   02_settings_more   scrolled to Logout: Support Us, Links, Logout
+#   03_theme_sheet     the Theme bottom sheet (Dark, Light, System)
+#   04_settings_dark   Dark picked: the same list in the dark theme
+#   05_settings_dark_more   dark, scrolled to Logout
+#   06_language_sheet  the Language bottom sheet (English, Arabic) on the dark list. The flow NEVER picks a language: picking one calls
+#                      RNRestart and persists `local`, which would override the OS language.
+#
+# Selectors (English values of src/translations/en.json; shotfleet turns them into the run's language):
+#   General, Language, Theme, Dark, English, Logout.
+# Rows are tapped with ".*": RN's Pressable is one accessible element, so on iOS its label is the row text plus its value ("Language English").
+# On Android the TextViews stay separate nodes and "Language.*" matches the one text. In 0.1.6 the STRING form of scrollUntilVisible's `element`
+# is not translated, so every scrollUntilVisible below uses {text: ...}.
+# Collisions checked in en.json and ar.json: none of these selectors is a prefix of another text on the same screen
+# (Settings title "Settings" and the tab "Settings" are never selected; "Support" / "Support Us" are never selected).
+# The app's own English that stays English in `ar` (the tab bar, onboarding, login) is selected only with ids and three plain texts:
+#   "Obytes Starter", "Let's Get Started" and "Not Now" will show up in run.json as untranslated_selectors. That is the app's own English and
+#   the report is right (it was the same on 2026-10-03). Not Now is a system button.
+#
+# PROVEN on an older template version (research/real-apps-2026-10-03/obytes-ios and obytes-android, same ids): launch, wait "Obytes Starter",
+#   tap "Let's Get Started.*", wait id login-button, type name/email/password (digits only: Latin letters are dropped in a secure field in Arabic
+#   on iOS), the iOS "Return" key, hideKeyboard on Android, tap login-button, optional "Not Now", tap id settings-tab.
+# UNVERIFIED until the dry run (INFERENCE): "General" as the wait text, the ".*" taps on the rows, the bottom-sheet taps while it animates,
+#   the dark theme switching without a restart, scrollUntilVisible UP back to General, whether the dark choice leaks into the next language
+#   (it must not: state is cleared per language; look at 01 of the ar run: it must be light).
+- launchApp
+# Release JS boots slowly on a fresh emulator: wait for the first onboarding text (not captured)
+- extendedWaitUntil:
+    visible: "Obytes Starter"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn: "Let's Get Started.*"
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 20000
+- tapOn:
+    id: "name"
+- inputText: "Alex"
+- tapOn:
+    id: "email-input"
+- inputText: "alex@example.com"
+- tapOn:
+    id: "password-input"
+- waitForAnimationToEnd:
+    timeout: 2000
+- inputText: "123456"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "Return"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- tapOn:
+    id: "login-button"
+# iOS asks "Save Password?" after the form; it swallowed the next tap on 2026-10-03
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "settings-tab"
+    timeout: 20000
+- tapOn:
+    id: "settings-tab"
+- extendedWaitUntil:
+    visible: "General"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 3000
+# a real 2 s pause (waitForAnimationToEnd returns at once on a still screen; wger's splash frame taught that)
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<2000){}})()}
+# 01: Settings, light, top
+- takeScreenshot: 01_settings
+
+# 02: scrolled to the end (Logout is only looked at, never tapped)
+- scrollUntilVisible:
+    element:
+      text: "Logout.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 02_settings_more
+
+# 03: Theme sheet
+- scrollUntilVisible:
+    element:
+      text: "General"
+    direction: UP
+- tapOn: "Theme.*"
+# Android attempt 1: text wait on the first option, then a real 2 s pause for the sheet animation
+- extendedWaitUntil:
+    visible: "Dark.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<2000){}})()}
+- takeScreenshot: 03_theme_sheet
+
+# 04: pick Dark (the sheet closes by itself; the choice is kept in MMKV and cleared with the app data for the next language)
+- tapOn: "Dark.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<2000){}})()}
+- assertVisible: "General"
+- takeScreenshot: 04_settings_dark
+
+# 05: dark, scrolled to the end
+- scrollUntilVisible:
+    element:
+      text: "Logout.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 05_settings_dark_more
+
+# 06: Language sheet. Look only: do not tap English or Arabic.
+- scrollUntilVisible:
+    element:
+      text: "General"
+    direction: UP
+- tapOn: "Language.*"
+- extendedWaitUntil:
+    visible: "English.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<2000){}})()}
+- takeScreenshot: 06_language_sheet

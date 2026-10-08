@@ -1,0 +1,34 @@
+Obytes starter (react-native-template-obytes) v9.0.0 builds, 2026-10-08. Builds only, no device, no simulator, no shotfleet run.
+Source: tag v9.0.0 (annotated tag object f6309e9d9c43f212079dfc800156578707ad7954), commit a8ded50fdb41e75ec2e919ae2410bcdc2fdad0c8, clone src/ detached.
+  One tracked file got rewritten by the build (not by me): uniwind-types.d.ts (formatting only; the uniwind Metro plugin regenerates it). No other tracked change; ios/ and android/ are generated and gitignored.
+Config: template's own tracked .env (placeholders, API_URL=https://dummyjson.com/), EXPO_PUBLIC_APP_ENV=development, STRICT_ENV_VALIDATION=1 for prebuild. Nothing created or edited, no secrets.
+Versions: Expo ~54.0.32, React Native 0.81.5, React 19.1.0, expo-router ~6.0.22, reanimated ~4.1.6, worklets 0.7.2, new architecture on.
+Toolchain: node v26.11.0, pnpm 10.12.3 (private copy in tools/), CocoaPods 1.17.0, Xcode 27.0 (27A266a), iphonesimulator SDK 27.0, JDK 17.0.5-tem (Gradle), Gradle 8.14.3 (wrapper), Android build-tools 37.0.0 (aapt2), NDK/CMake from the installed SDK.
+
+== iOS (Release, simulator) ==
+Path: app/ObytesApp.app (built at src/ios/build/Build/Products/Release-iphonesimulator/ObytesApp.app)
+Command: xcodebuild -workspace ios/ObytesApp.xcworkspace -scheme ObytesApp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build -jobs 2 ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.1 CODE_SIGNING_ALLOWED=NO build   (no -destination; SDK iphonesimulator27.0, arm64 only, nice -n 10)
+CFBundleIdentifier com.obytes.development; CFBundleShortVersionString 9.0.0; CFBundleVersion 1; CFBundleDisplayName ObytesApp
+DTPlatformName iphonesimulator; DTSDKName iphonesimulator27.0; DTXcode 2700; MinimumOSVersion 15.1; archs: arm64
+Size 41 MB (.app), main executable 14.7 MB; main.jsbundle 6.3 MB embedded (no Metro needed)
+sha256 of executable ObytesApp: dba19951990420334014c138afe4b85f2830ba722f29bce4846ae94e288dd699
+Built 2026-10-08, xcodebuild wall 8m37s (15:12:48 to 15:21:26), "** BUILD SUCCEEDED **", no retry of the build itself.
+
+== Android (Release, debug-keystore signed) ==
+Path: app/app-release.apk (built at src/android/app/build/outputs/apk/release/app-release.apk)
+Command: ./gradlew assembleRelease --no-daemon -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs=-Xmx2g -Pkotlin.compiler.execution.strategy=in-process -PreactNativeArchitectures=arm64-v8a (JAVA_HOME 17.0.5-tem, nice -n 10)
+package com.obytes.development; versionName 9.0.0; versionCode 1; label ObytesApp; minSdk 24; targetSdk 36; compileSdk 36
+launchable activity com.obytes.development.MainActivity (android:exported=true); native-code arm64-v8a only (libreanimated.so and libworklets.so are in the APK)
+Signed with the expo template debug.keystore (CN=Android Debug), V2 verified by apksigner.
+Size 51290535 bytes (48.9 MB); embedded assets/index.android.bundle 4.1 MB
+sha256: 3e124d9128a6dedf747f16663fa21d024ce5cd957f099e31950b16d78052fb5d
+Built 2026-10-08, Gradle wall 14m03s (15:23:38 to 15:37:41), BUILD SUCCESSFUL, 1008 tasks executed, no retry (the worklets .so path bug from 2026-10-03 did not recur).
+
+== Gate numbers (load1 / free mem % / swapouts per 60 s / disk free GiB) ==
+install     gate PASS 14:22 (11th try): 96.1 / 43 / 0 / 64;  start 50.6 / 51 / 0 / 64;  end 21.0 / 54 / 0 / 63;  wall pnpm install 1m09s
+prebuild    try 1 failed (race, see progress.log), try 2 ok 9 s
+pod         gate PASS 14:58 (14th try): 79.9 / 67 / 0 / 59;  try 1 failed on a connection reset (curl 56, 78.5 MB tarball from repo1.maven.org) after 7m06s; try 2 ok in 1m31s (start 30.9 / 59 / 0 / 59, end 26.3 / 65 / 0 / 57)
+ios_build   gate PASS 15:11 (1st try): 23.8 / 65 / 0 / 56;  start 14.1 / 67 / 0 / 57;  mid 11.9 / 58 / 0 / 56;  end 26.8 / 54 / 0 / 53
+android     gate PASS 15:22 (1st try): 24.0 / 52 / 0 / 53;  start 24.0 / 49 / 0 / 53;  mid 85.5 / 44 / 0 / 50, 121.6 / 46 / 0 / 48;  end 32.2 / 49 / 0 / 48
+(the Mac was at load 100 to 900 from other sessions between 14:00 and 14:58; the install and pod gates waited 20 min and 27 min for it)
+Disk free: 65 GiB at the start, 48 GiB after the Android build (floor 30 never reached).

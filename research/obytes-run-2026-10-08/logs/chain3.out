@@ -1,0 +1,9 @@
+2026-10-08 15:07:07 GATE pod: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 15:08:07 GATE pod try 1: disk=59 load1=39.2 free%=60 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 15:08:07 DOWNLOAD CocoaPods specs + pods (pod install) from cdn.cocoapods.org, github.com, repo1.maven.org (prebuilt RN/Hermes if used), estimate 0.3-0.6 GB
+2026-10-08 15:08:07 STEP pod START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/ios cmd=pod install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/pod.log
+2026-10-08 15:09:08 METRICS pod start: disk_free_GiB=59 load1=30.85 free_mem%=59 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 15:09:08 STEP pod pid/pgid=36398
+2026-10-08 15:10:39 STEP pod END rc=0 wall=1m31s
+2026-10-08 15:11:39 METRICS pod end: disk_free_GiB=57 load1=26.34 free_mem%=65 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 15:11:39 CHAIN done: pod

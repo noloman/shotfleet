@@ -1,0 +1,20 @@
+== Devices ==
+-- iOS 18.0 --
+-- iOS 18.6 --
+-- iOS 26.4 --
+    shotfleet-1 (70E61AA0-F75B-4035-8AF6-18EE8ED425FE) (Shutdown) 
+    shotfleet-2 (FBF7B1C2-55BE-4988-BC35-683316F24C68) (Shutdown) 
+    shotfleet-3 (6D2695A4-E078-49AA-B843-CAB1AAE2116C) (Shutdown) 
+    shotfleet-4 (2A71A612-763D-45FA-9F01-6C7E0B098937) (Shutdown) 
+    shotfleet-iphone-17-pro-max-1 (8410BB9C-5461-459F-A5A6-75F0A098C02C) (Shutdown) 
+    shotfleet-iphone-17-pro-max-2 (CE29592F-5E8D-4B2C-BAEF-5670D455F47D) (Shutdown) 
+    shotfleet-iphone-17-pro-max-3 (617D354A-34A7-463F-A260-B5D259C2399F) (Shutdown) 
+    shotfleet-iphone-17-pro-max-4 (E168BBDC-301E-406F-A537-51B1676361BB) (Shutdown) 
+    iPhone 15 Pro (18DBDD79-86AD-4251-981A-E69D28652298) (Booted) 
+    shotfleet-ipad-pro-13-inch-m5-12gb-2 (22461B95-C89A-45A2-ABFA-1038AB41E567) (Shutdown) 
+    shotfleet-ipad-pro-13-inch-m5-12gb-3 (DE28F162-D689-4DDC-9D94-B106AAE66661) (Shutdown) 
+    shotfleet-ipad-pro-13-inch-m5-12gb-4 (2BAC4025-B53A-441A-8881-E243BABFDF27) (Shutdown) 
+-- iOS 27.0 --
+    shotfleet-1 (5DD72EB0-355B-4343-9048-5ED1EE9C440F) (Shutdown) 
+-- watchOS 26.5 --
+-- watchOS 27.0 --

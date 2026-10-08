@@ -1,0 +1,29 @@
+2026-10-08 14:29:32 DOWNLOAD expo-template-bare-minimum tarball (expo prebuild) from registry.npmjs.org, small (<1 MB est)
+2026-10-08 14:29:32 STEP prebuild START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm exec expo prebuild --no-install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/prebuild.log
+2026-10-08 14:30:32 METRICS prebuild start: disk_free_GiB=58 load1=736.86 free_mem%=39 vm_pressure_level=2 swapouts_per_60s=78920
+2026-10-08 14:30:32 STEP prebuild pid/pgid=62720
+2026-10-08 14:30:41 STEP prebuild END rc=0 wall=0m09s
+2026-10-08 14:31:41 METRICS prebuild end: disk_free_GiB=58 load1=717.52 free_mem%=38 vm_pressure_level=2 swapouts_per_60s=0
+2026-10-08 14:31:41 GATE pod: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 14:32:42 GATE pod try 1: disk=58 load1=675.8 free%=40 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:34:42 GATE pod try 2: disk=58 load1=640.66 free%=43 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:36:42 GATE pod try 3: disk=57 load1=688.87 free%=49 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:38:42 GATE pod try 4: disk=53 load1=381.51 free%=36 pr=2 swapouts/60s=116272 -> wait
+2026-10-08 14:40:44 GATE pod try 5: disk=54 load1=251.21 free%=34 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:42:44 GATE pod try 6: disk=52 load1=658.57 free%=36 pr=2 swapouts/60s=22076 -> wait
+2026-10-08 14:44:44 GATE pod try 7: disk=57 load1=910.98 free%=39 pr=2 swapouts/60s=12192 -> wait
+2026-10-08 14:46:44 GATE pod try 8: disk=58 load1=441.0 free%=46 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:48:44 GATE pod try 9: disk=58 load1=294.58 free%=46 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:50:44 GATE pod try 10: disk=58 load1=483.44 free%=64 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:52:44 GATE pod try 11: disk=57 load1=278.45 free%=69 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:54:44 GATE pod try 12: disk=57 load1=259.08 free%=72 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:56:44 GATE pod try 13: disk=58 load1=280.13 free%=61 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:58:45 GATE pod try 14: disk=59 load1=79.88 free%=67 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 14:58:45 DOWNLOAD CocoaPods specs + pods (pod install) from cdn.cocoapods.org, github.com, repo1.maven.org (prebuilt RN/Hermes if used), estimate 0.3-0.6 GB
+2026-10-08 14:58:45 STEP pod START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/ios cmd=pod install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/pod.log
+2026-10-08 14:59:45 METRICS pod start: disk_free_GiB=58 load1=66.47 free_mem%=62 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 14:59:45 STEP pod pid/pgid=25666
+2026-10-08 15:06:51 STEP pod END rc=1 wall=7m06s
+2026-10-08 15:07:17 MONITOR pod: disk=59 load1=58.2 free%=65 swapouts/60s=22446
+2026-10-08 15:07:51 METRICS pod end: disk_free_GiB=59 load1=43.26 free_mem%=66 vm_pressure_level=1 swapouts_per_60s=22446
+2026-10-08 15:07:51 CHAIN stopped: stage pod rc=1

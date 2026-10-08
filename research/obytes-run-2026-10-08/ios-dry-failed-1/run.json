@@ -1,0 +1,24 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Obytes Starter"
+   ],
+   "lproj": "en",
+   "ok": false,
+   "seconds": 52,
+   "error": "Assertion is false: \"Dark.*\" is visible",
+   "screenshots": 2,
+   "attempts": 2
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/shotfleet.toml",
+ "strings": [
+  "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/src/translations/*.json"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 157,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/app/ObytesApp.app"
+}

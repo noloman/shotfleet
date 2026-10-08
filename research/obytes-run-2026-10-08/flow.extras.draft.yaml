@@ -1,0 +1,68 @@
+# OPTIONAL, English only, never counted, never shown unless the coordinator wants it: the screens the template does NOT translate.
+# Run once per platform in the same lock as the dry run:  shotfleet run shotfleet.extras.toml --locales en   (copy of the toml with flow = "flow.extras.yaml", out = "out-*-extras")
+# Why: the record can then say with pictures what is hard-coded English (onboarding, login, tab bar, Style demo) instead of only reading the code.
+# In `ar` these would come out in English and `check` would flag them, which is right, so they are not in the counted flow.
+# Frame 01 is the first frame of a Release build: it may be the splash (the Obytes logo mark on a dark blue background). Look at it, do not use it.
+- launchApp
+- extendedWaitUntil:
+    visible: "Obytes Starter"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 3000
+- evalScript: ${(function(){var t=Date.now();while(Date.now()-t<4000){}})()}
+- takeScreenshot: x01_onboarding
+- tapOn: "Let's Get Started.*"
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: x02_login
+# empty form: the validation messages (hard-coded English, no request is made)
+- tapOn:
+    id: "login-button"
+- extendedWaitUntil:
+    visible: "Email is required"
+    timeout: 10000
+- takeScreenshot: x03_login_errors
+- tapOn:
+    id: "name"
+- inputText: "Alex"
+- tapOn:
+    id: "email-input"
+- inputText: "alex@example.com"
+- tapOn:
+    id: "password-input"
+- waitForAnimationToEnd:
+    timeout: 2000
+- inputText: "123456"
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn:
+          id: "Return"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - hideKeyboard
+- tapOn:
+    id: "login-button"
+- tapOn:
+    text: "Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "style-tab"
+    timeout: 20000
+- tapOn:
+    id: "style-tab"
+- extendedWaitUntil:
+    visible: "Typography"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: x04_style
+# Feed is deliberately not captured: it shows posts fetched live from dummyjson.com, content that is not the template's.
