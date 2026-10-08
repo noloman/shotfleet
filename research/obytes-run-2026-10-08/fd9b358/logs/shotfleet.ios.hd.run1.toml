@@ -1,0 +1,11 @@
+# iPhone RE-RUN of the Obytes starter showcase on UNMODIFIED upstream commit fd9b358 (v9.0.0 + 10 commits), shotfleet 0.1.6 released binary.
+# Derived from shotfleet.toml. One private simulator (shotfleet-iphone-17-pro-max-1), iOS 26.4 pinned (NEVER 27.0).
+# strings is config-relative like in the first iPhone job (the config lives in showcase-obytes/, the clone is src/).
+[ios]
+app = "app/ObytesApp.app"
+strings = "src/src/translations/*.json"
+flow = "flow.ios.hd.yaml"
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
+parallel = 1
+out = "out-ios-hd"
+locales = ["en", "ar"]

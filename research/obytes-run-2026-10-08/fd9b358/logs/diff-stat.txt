@@ -1,0 +1,21 @@
+ .github/actions/eas-build/action.yml               |    9 +-
+ .../{eas-build-qa.yml => eas-build-preview.yml}    |    2 +-
+ assets/adaptive-icon.png                           |  Bin 103774 -> 25507 bytes
+ assets/favicon.png                                 |  Bin 1466 -> 938 bytes
+ assets/icon.png                                    |  Bin 174940 -> 41151 bytes
+ assets/splash-icon.png                             |  Bin 29965 -> 20311 bytes
+ cli/package.json                                   |    2 +-
+ cli/setup-project.js                               |    2 +-
+ docs/astro.config.mjs                              |   18 +-
+ docs/ec.config.mjs                                 |    9 -
+ docs/package.json                                  |    5 +-
+ docs/pnpm-lock.yaml                                | 4151 +++++++++-----------
+ docs/public/reviews/brandon.png                    |  Bin 78418 -> 34075 bytes
+ docs/src/components/LastUpdated.astro              |    5 +-
+ docs/src/content.config.ts                         |    8 +
+ docs/src/content/config.ts                         |    7 -
+ .../content/docs/ci-cd/workflows-references.mdx    |    4 +-
+ docs/src/content/docs/overview.md                  |    2 +-
+ src/app/(app)/_layout.tsx                          |   14 +-
+ src/app/_layout.tsx                                |   23 +-
+ 20 files changed, 1854 insertions(+), 2407 deletions(-)

@@ -1,0 +1,14 @@
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+selectors not found in the app's strings (left as-is; they may fail outside English):
+   "Let's Get Started"
+   'Obytes Starter'
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 2 locales on 1 emulators, 2 rounds...
+ok   en       6/6 screenshots
+ok   ar       6/6 screenshots
+captured 2/2 locales in 180s on 1 emulators
+another shotfleet is preparing macOS text recognition; waiting
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 12 screenshots in 2 languages: 0 problem(s)
+rc=0 killed=0

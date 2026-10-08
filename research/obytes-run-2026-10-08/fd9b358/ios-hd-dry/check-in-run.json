@@ -1,0 +1,55 @@
+{
+ "screenshots": [
+  {
+   "file": "en/01_settings.png",
+   "src": "raw/en/01_settings.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/02_settings_more.png",
+   "src": "raw/en/02_settings_more.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/03_theme_sheet.png",
+   "src": "raw/en/03_theme_sheet.png",
+   "sha": "cf58393992d2",
+   "lang": "en",
+   "chars": 174,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/04_settings_dark.png",
+   "src": "raw/en/04_settings_dark.png",
+   "sha": "b32bef9498f1",
+   "lang": "en",
+   "chars": 393,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/05_settings_dark_more.png",
+   "src": "raw/en/05_settings_dark_more.png",
+   "sha": "b32bef9498f1",
+   "lang": "en",
+   "chars": 393,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/06_language_sheet.png",
+   "src": "raw/en/06_language_sheet.png",
+   "sha": "9b83ab2fa5eb",
+   "lang": "en",
+   "chars": 176,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

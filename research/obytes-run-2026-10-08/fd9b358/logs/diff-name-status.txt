@@ -1,0 +1,20 @@
+M	.github/actions/eas-build/action.yml
+R098	.github/workflows/eas-build-qa.yml	.github/workflows/eas-build-preview.yml
+M	assets/adaptive-icon.png
+M	assets/favicon.png
+M	assets/icon.png
+M	assets/splash-icon.png
+M	cli/package.json
+M	cli/setup-project.js
+M	docs/astro.config.mjs
+D	docs/ec.config.mjs
+M	docs/package.json
+M	docs/pnpm-lock.yaml
+M	docs/public/reviews/brandon.png
+M	docs/src/components/LastUpdated.astro
+A	docs/src/content.config.ts
+D	docs/src/content/config.ts
+M	docs/src/content/docs/ci-cd/workflows-references.mdx
+M	docs/src/content/docs/overview.md
+M	src/app/(app)/_layout.tsx
+M	src/app/_layout.tsx

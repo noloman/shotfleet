@@ -1,0 +1,12 @@
+# Obytes starter showcase, ANDROID re-run on fd9b358. shotfleet 0.1.6 released binary, Maestro 2.0.10. ONE private emulator, AVD shotfleet_android.
+# ANDROID_HOME=/Users/manu/Library/Android/sdk must be set. Release APK (arm64-v8a only, template debug keystore), paths config-relative.
+# dry run: --locales en;  counted: --locales en,ar --parallel 1
+[android]
+apk = "app/app-release.apk"
+package = "com.obytes.development"
+strings = "src/src/translations/*.json"
+flow = "flow.android.hd.yaml"
+avd = "shotfleet_android"
+parallel = 1
+out = "out-android-hd"
+locales = ["en", "ar"]

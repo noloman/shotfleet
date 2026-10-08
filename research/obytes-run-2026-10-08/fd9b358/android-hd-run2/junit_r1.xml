@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="shotfleet_android" tests="1" failures="0" time="67.0">
+    <testcase id="r1_f0" name="r1_f0" classname="r1_f0" time="67.0" status="SUCCESS"/>
+  </testsuite>
+</testsuites>

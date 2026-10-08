@@ -1,0 +1,6 @@
+hint: React Native keeps its translations inside compiled code, which shotfleet cannot read from the build. Add this to shotfleet.toml (point it at your translation files): strings = "src/locales/*/translation.json"
+
+checked 6 screenshots in 2 languages: 1 problem(s)
+  - ar: the app has no ar translation, so this listing shows another language; translate the app into it or remove the listing
+report: check-android-hd-run1-app/index.html
+rc=1

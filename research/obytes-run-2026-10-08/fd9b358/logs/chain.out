@@ -1,0 +1,51 @@
+2026-10-08 18:40:17 DOWNLOAD obytes/react-native-template-obytes (git clone --depth 50 + tags depth 1) from github.com, ~36 MB estimate
+2026-10-08 18:40:17 STEP clone START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes cmd=sh -c 'set -e; cd /Users/manu/Developer/shotfleet-rc-build/showcase-obytes; git clone --depth 50 https://github.com/obytes/react-native-template-obytes.git src; cd src; git fetch --tags --depth 1 origin; git cat-file -e fd9b358ed11913d2a49fd9ffa6582fe03ba130e7^{commit}; git checkout --detach fd9b358ed11913d2a49fd9ffa6582fe03ba130e7; test "$(git rev-parse HEAD)" = fd9b358ed11913d2a49fd9ffa6582fe03ba130e7; test "$(git describe)" = v9.0.0-10-gfd9b358; git status --short | wc -l; git rev-parse HEAD; git describe; du -sh .git' log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/clone.log
+2026-10-08 18:41:17 METRICS clone start: disk_free_GiB=55 load1=6.79 free_mem%=52 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:41:17 STEP clone pid/pgid=90156
+2026-10-08 18:41:26 STEP clone END rc=0 wall=0m09s
+2026-10-08 18:42:26 METRICS clone end: disk_free_GiB=55 load1=8.67 free_mem%=50 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:42:26 DOWNLOAD pnpm@10.12.3 from registry.npmjs.org (npm install --prefix tools), ~20 MB estimate
+2026-10-08 18:42:26 STEP pnpm_tool START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes cmd=npm install --prefix /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/tools --no-audit --no-fund pnpm@10.12.3 log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/pnpm_tool.log
+2026-10-08 18:43:27 METRICS pnpm_tool start: disk_free_GiB=55 load1=5.16 free_mem%=50 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:43:27 STEP pnpm_tool pid/pgid=95415
+2026-10-08 18:43:29 STEP pnpm_tool END rc=0 wall=0m02s
+2026-10-08 18:44:29 METRICS pnpm_tool end: disk_free_GiB=55 load1=12.47 free_mem%=45 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:44:29 GATE install: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 18:45:29 GATE install try 1: disk=55 load1=8.01 free%=48 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 18:45:29 DOWNLOAD npm packages (pnpm install --frozen-lockfile, ~1300 packages) from registry.npmjs.org into pnpm-store inside showcase-obytes, estimate 0.5-1.5 GB; plus only-allow via npx (preinstall)
+2026-10-08 18:45:29 STEP install START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm install --frozen-lockfile --network-concurrency 4 log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/install.log
+2026-10-08 18:46:29 METRICS install start: disk_free_GiB=53 load1=7.36 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:46:29 STEP install pid/pgid=13921
+2026-10-08 18:47:24 STEP install END rc=0 wall=0m54s
+2026-10-08 18:48:24 METRICS install end: disk_free_GiB=54 load1=64.37 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:48:24 DOWNLOAD expo-template-bare-minimum tarball (expo prebuild) from registry.npmjs.org, small (<1 MB est)
+2026-10-08 18:48:24 STEP prebuild START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm exec expo prebuild --no-install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/prebuild.log
+2026-10-08 18:49:24 METRICS prebuild start: disk_free_GiB=54 load1=39.96 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:49:24 STEP prebuild pid/pgid=24486
+2026-10-08 18:49:31 STEP prebuild END rc=0 wall=0m07s
+2026-10-08 18:50:31 METRICS prebuild end: disk_free_GiB=54 load1=35.24 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:50:32 GATE pod: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 18:51:32 GATE pod try 1: disk=54 load1=33.73 free%=49 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 18:51:32 DOWNLOAD CocoaPods specs + pods (pod install) from cdn.cocoapods.org, github.com, repo1.maven.org (prebuilt RN/Hermes if used), estimate 0.3-0.6 GB
+2026-10-08 18:51:32 STEP pod START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/ios cmd=pod install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/pod.log
+2026-10-08 18:52:32 METRICS pod start: disk_free_GiB=54 load1=33.58 free_mem%=50 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:52:32 STEP pod pid/pgid=34981
+2026-10-08 18:53:31 STEP pod END rc=0 wall=0m59s
+2026-10-08 18:54:31 METRICS pod end: disk_free_GiB=53 load1=30.65 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:54:31 GATE ios_build: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 18:55:31 GATE ios_build try 1: disk=52 load1=21.97 free%=48 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 18:55:31 STEP ios_build START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=xcodebuild -workspace ios/ObytesApp.xcworkspace -scheme ObytesApp -configuration Release -sdk iphonesimulator -derivedDataPath ios/build -jobs 2 ARCHS=arm64 ONLY_ACTIVE_ARCH=YES IPHONEOS_DEPLOYMENT_TARGET=15.1 CODE_SIGNING_ALLOWED=NO build log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/ios_build.log
+2026-10-08 18:56:32 METRICS ios_build start: disk_free_GiB=50 load1=21.0 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 18:56:32 STEP ios_build pid/pgid=36988
+2026-10-08 19:02:32 MONITOR ios_build: disk=51 load1=74.8 free%=48 swapouts/60s=0
+2026-10-08 19:04:58 STEP ios_build END rc=0 wall=8m26s
+2026-10-08 19:05:58 METRICS ios_build end: disk_free_GiB=50 load1=26.59 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 19:05:58 GATE android_build: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 19:06:58 GATE android_build try 1: disk=49 load1=23.48 free%=49 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 19:06:58 DOWNLOAD Gradle wrapper dist (services.gradle.org) + Maven Central/Google Maven/Gradle plugin portal artifacts missing from ~/.gradle, estimate 0.2-1.2 GB
+2026-10-08 19:06:58 STEP android_build START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/android cmd=./gradlew assembleRelease --no-daemon -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs=-Xmx2g -Pkotlin.compiler.execution.strategy=in-process -PreactNativeArchitectures=arm64-v8a log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs-fd9b358/android_build.log
+2026-10-08 19:07:58 METRICS android_build start: disk_free_GiB=49 load1=17.97 free_mem%=48 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 19:07:58 STEP android_build pid/pgid=43086
+2026-10-08 19:12:55 STEP android_build END rc=0 wall=4m56s
+2026-10-08 19:13:55 METRICS android_build end: disk_free_GiB=47 load1=41.88 free_mem%=50 vm_pressure_level=2 swapouts_per_60s=0
+2026-10-08 19:13:55 CHAIN done: clone pnpm_tool install prebuild pod ios_build android_build
