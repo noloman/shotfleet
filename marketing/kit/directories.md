@@ -95,7 +95,7 @@ Subject: shotfleet: localized store screenshots from one Maestro flow (free tier
 >
 > Why it may be interesting: `shotfleet check` is free and works on screenshots made by anything (fastlane snapshot, by hand). `run` is free for 2 languages; a licence unlocks every language and export. It is closed source, signed and notarized, with `--json` output and stable exit codes (0 ok, 1 problems found, 2 setup error) for CI, an MCP server for agents, and docs in the README. Install is one command.
 >
-> Limits, up front: Apple silicon Mac only; needs Xcode, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. No frames, captions or store upload. Flutter and Expo work from translation files, and I have run one public Flutter app (wger) and one Expo template (obytes) end to end on iOS and Android; other Flutter or Expo apps and bare React Native I have not run.
+> Limits, up front: Apple silicon Mac only; needs Xcode, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. No frames, captions or store upload. Flutter and Expo work from translation files, and I have run one public Flutter app (wger) and one Expo template (obytes; template commit not recorded) end to end on iOS and Android; other Flutter or Expo apps and bare React Native I have not run.
 >
 > Price: $29 for the first 100 buyers, then $49 once per developer, with a 14-day refund.
 >

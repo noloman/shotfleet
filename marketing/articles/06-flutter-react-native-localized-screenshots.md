@@ -37,7 +37,7 @@ Sources used (read 2026-10-06):
 
 If your app is Flutter or React Native, you can take its store screenshots in every language with one Maestro flow, on iOS and Android, without changing the app. You need three things: a way to start the app in each language, text selectors that match in each language, and a wait that's long enough for your framework's first frame.
 
-I make a tool that does this (shotfleet, more below). What follows comes from running it on two real open-source apps on 2026-10-03: wger (Flutter) and the obytes template (Expo with i18next), on iOS and Android.
+I make a tool that does this (shotfleet, more below). What follows comes from running it on two real open-source apps on 2026-10-03: wger (Flutter) and the obytes template (Expo with i18next; template commit not recorded), on iOS and Android.
 
 ## Does the language reach the app?
 

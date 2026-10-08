@@ -80,7 +80,7 @@
   <p class="label">Guide</p>
 <h1>Localized App Store and Google Play screenshots for a Flutter or React Native app, from one Maestro flow</h1>
 <p>If your app is Flutter or React Native, you can take its store screenshots in every language with one Maestro flow, on iOS and Android, without changing the app. You need three things: a way to start the app in each language, text selectors that match in each language, and a wait that's long enough for your framework's first frame.</p>
-<p>I make a tool that does this (shotfleet, more below). What follows comes from running it on two real open-source apps on 2026-10-03: wger (Flutter) and the obytes template (Expo with i18next), on iOS and Android.</p>
+<p>I make a tool that does this (shotfleet, more below). What follows comes from running it on two real open-source apps on 2026-10-03: wger (Flutter) and the obytes template (Expo with i18next; template commit not recorded), on iOS and Android.</p>
 <h2>Does the language reach the app?</h2>
 <p>Yes, on both platforms, with no code change. On iOS the app is started with <code>-AppleLanguages</code>, and it reached Flutter and the Expo app (i18next takes its language from <code>expo-localization</code>, and nothing was saved on a fresh install). On Android 13 and newer, the per-app language (<code>cmd locale set-app-locales</code>) reached both. Arabic switched the Expo app to right to left on both platforms.</p>
 <p>Maestro itself sets the language for the whole device when it starts it (<code>maestro start-device --device-locale de_DE</code>), and there's no place inside a flow to set it.</p>

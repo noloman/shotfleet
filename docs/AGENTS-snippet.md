@@ -33,7 +33,7 @@ Rules:
 3. Never edit, move or delete files in the fastlane folder, and never upload to App Store Connect or Google Play. Only `shotfleet export`, when the user asks, writes there.
 4. Never put the licence key in the repo, a config file, a log or chat. Do not read `~/Library/Application Support/shotfleet/licence.json`.
 5. iOS needs a Debug simulator build (not an `.ipa` or archive); Android needs a debug APK and API 33+ emulators.
-6. Do not claim Flutter or React Native work beyond reading their translation files (`strings = "<glob>"`); it was run end to end only on wger (Flutter) and the obytes template (Expo), on iOS and Android, 2026-10-03; say "not yet run" for any other app or bare React Native.
+6. Do not claim Flutter or React Native work beyond reading their translation files (`strings = "<glob>"`); it was run end to end only on wger (Flutter) and the obytes template (Expo; template commit not recorded), on iOS and Android, 2026-10-03; say "not yet run" for any other app or bare React Native.
 7. Problems: count issues, not lines; say which languages to recapture and whether the cause is in the app (untranslated string, button off-screen in a long language) or in the flow.
 8. Details: the shotfleet skill and its `references/` folder. If `.claude/skills/shotfleet/` or `.agents/skills/shotfleet/` is missing, ask the user to run `shotfleet skill install --project`.
 

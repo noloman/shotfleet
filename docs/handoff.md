@@ -76,7 +76,7 @@ Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, 
 |---|---|---|---|
 | 1 | Maestro 2.11.0 on iOS and Android, then promote it | your Mac, ~40 min, a quiet machine | no simulator |
 | 2 | E1: the Android fixture on Linux with KVM | a Linux box with `/dev/kvm` and 4+ cores | passed with ONE emulator on a 2-core GitHub runner (PR #33); two emulators and the 18-language timing still open |
-| 3 | A real Flutter, Expo and React Native app captured end to end | **done 2026-10-03 on a Mac** (wger, obytes, kotlinconf-app; `research/frameworks.md` section 15); bare React Native and Linux/KVM runs still open | |
+| 3 | A real Flutter, Expo and React Native app captured end to end | **done 2026-10-03 on a Mac** (wger, obytes (template commit not recorded), kotlinconf-app; `research/frameworks.md` section 15); bare React Native and Linux/KVM runs still open | |
 | 5 | Android `[inputs]` on Maestro 2.11.0 | an emulator | no emulator |
 | 8 | Python 3.14 final | the final release | the suite passes on 3.14.0rc2; the final release is not out |
 | 9 | A real activation with a real key (the proxy half is done) | a live Gumroad product and a test key | not live yet |
@@ -148,7 +148,7 @@ Then the real one: `shotfleet run` of 18 languages on a real app on that machine
 
 ## 3. Real Flutter, Expo and Compose apps, end to end
 
-**Done 2026-10-03 on a Mac** (iOS and Android; evidence in `research/frameworks.md` section 15 and `research/real-apps-2026-10-03/`): wger (Flutter), the obytes template (Expo, Release) and JetBrains' kotlinconf-app (Compose Multiplatform) were built, `init`ed with no arguments, run in two languages each and checked; README, `site/public/docs.html`, `skill/` and claims C035 and C121 name those apps and nothing more. Language reached all three on both platforms; `-AppleLanguages` and `set-app-locales` need no change.
+**Done 2026-10-03 on a Mac** (iOS and Android; evidence in `research/frameworks.md` section 15 and `research/real-apps-2026-10-03/`): wger (Flutter), the obytes template (Expo, Release; template commit not recorded) and JetBrains' kotlinconf-app (Compose Multiplatform) were built, `init`ed with no arguments, run in two languages each and checked; README, `site/public/docs.html`, `skill/` and claims C035 and C121 name those apps and nothing more. Language reached all three on both platforms; `-AppleLanguages` and `set-app-locales` need no change.
 
 **Still open from this item**
 - Bare React Native (Rocket.Chat or Ignite from section 12), and a Flutter or Expo app that is not one of these two.
