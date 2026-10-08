@@ -95,7 +95,7 @@ Subject: shotfleet: localized store screenshots from one Maestro flow (free tier
 >
 > Why it may be interesting: `shotfleet check` is free and works on screenshots made by anything (fastlane snapshot, by hand). `run` is free for 2 languages; a licence unlocks every language and export. It is closed source, signed and notarized, with `--json` output and stable exit codes (0 ok, 1 problems found, 2 setup error) for CI, an MCP server for agents, and docs in the README. Install is one command.
 >
-> Limits, up front: Apple silicon Mac only; needs Xcode, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. No frames, captions or store upload. Flutter and React Native work from translation files, but I have not yet run a real Flutter or React Native app.
+> Limits, up front: Apple silicon Mac only; needs Xcode, Maestro 2.x and Java 17+, and Android needs API 33+ emulators. No frames, captions or store upload. Flutter and Expo work from translation files, and I have run one public Flutter app (wger) and one Expo template (obytes) end to end on iOS and Android; other Flutter or Expo apps and bare React Native I have not run.
 >
 > Price: $29 for the first 100 buyers, then $49 once per developer, with a 14-day refund.
 >
@@ -149,5 +149,5 @@ See marketing/kit/maestro-community.md for the order, entry text and disclosure.
 ## Before you submit anything
 
 1. Re-open the directory's rules page the same day; the rules above are from a research pass on 2026-10-02 and some were read through a summary (S, not V).
-2. Check the site loads on the domain, the installer works on a clean Mac (a `/download/VERSION` 404 on the old workers.dev address means no release was published at research time), and the price line says $29 for the first 100 buyers.
+2. Check the site loads on the domain, the installer works on a clean Mac (`/download/VERSION` on the domain returns the current release number), and the price line says $29 for the first 100 buyers.
 3. Keep a log: directory, date submitted, status, the visit count by `utm_source` after two weeks.

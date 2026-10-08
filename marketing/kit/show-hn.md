@@ -40,7 +40,7 @@ URL to submit: `https://shotfleet.com/?utm_source=hn` (the homepage; the funnel 
 > - Needs Maestro 2.x and Java 17+ (Maestro needs it), Xcode for iOS, the Android SDK for Android, and API 33+ emulators for Android per-app languages.
 > - You write the flow (`shotfleet init` writes a starter). No frames, no captions, no store upload.
 > - Closed source, one signed binary for Apple silicon.
-> - Flutter and React Native work from your translation files. I have tested that on real translation files but not on a real Flutter or React Native app, so I do not claim it works there yet.
+> - Flutter and React Native work from your translation files. I have run it end to end on one public Flutter app (wger) and one Expo template (obytes), on iOS and Android; other Flutter or Expo apps and bare React Native I have not run, so I do not claim it works there.
 > - The checks read text, they do not understand layout. Scripts macOS text recognition cannot read (Greek, Hebrew, most Indic scripts) only get the weaker checks unless you plug in Tesseract.
 >
 > Price and free tier: `shotfleet check` is free (no account, no licence) and works on fastlane snapshot/screengrab folders and on a plain folder per language (I have not tried other tools' exports). `run` is free for 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, with a year of updates and a 14-day refund.
