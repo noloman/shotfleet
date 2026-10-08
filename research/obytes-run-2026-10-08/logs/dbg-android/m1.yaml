@@ -1,0 +1,7 @@
+appId: com.obytes.development
+---
+- tapOn: "Let's Get Started.*"
+- extendedWaitUntil:
+    visible:
+      id: "login-button"
+    timeout: 15000

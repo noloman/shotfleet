@@ -1,0 +1,23 @@
+{
+ "screenshots": [
+  {
+   "file": "en/01_settings.png",
+   "src": "raw/en/01_settings.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/02_settings_more.png",
+   "src": "raw/en/02_settings_more.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

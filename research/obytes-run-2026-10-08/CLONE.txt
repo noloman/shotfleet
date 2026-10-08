@@ -1,0 +1,4 @@
+HEAD fd9b358ed11913d2a49fd9ffa6582fe03ba130e7
+nearest tag v9.0.0 (+10 commits), tag sha f6309e9d9c43f212079dfc800156578707ad7954
+remote https://github.com/obytes/react-native-template-obytes.git
+cloned 2026-10-08 12:43

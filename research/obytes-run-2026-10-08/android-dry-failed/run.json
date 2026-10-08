@@ -1,0 +1,27 @@
+{
+ "locales": {
+  "en": {
+   "untranslated_selectors": [
+    "Let's Get Started",
+    "Obytes Starter"
+   ],
+   "ok": false,
+   "seconds": 25,
+   "error": "Assertion is false: id: login-button is visible",
+   "screenshots": 0,
+   "device": "emulator-5702",
+   "retried": true
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/shotfleet.android.toml",
+ "strings": [
+  "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/src/translations/*.json"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 81,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/app/app-release.apk",
+ "device": "phone",
+ "hierarchy_markers": false
+}

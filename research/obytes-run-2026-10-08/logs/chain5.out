@@ -1,0 +1,11 @@
+2026-10-08 15:21:38 GATE android_build: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 15:22:38 GATE android_build try 1: disk=53 load1=24.04 free%=52 pr=1 swapouts/60s=0 -> PASS
+2026-10-08 15:22:38 DOWNLOAD Gradle wrapper dist (services.gradle.org) + Maven Central/Google Maven/Gradle plugin portal artifacts missing from ~/.gradle, estimate 0.2-1.2 GB
+2026-10-08 15:22:38 STEP android_build START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src/android cmd=./gradlew assembleRelease --no-daemon -Dorg.gradle.workers.max=2 -Dorg.gradle.jvmargs=-Xmx2g -Pkotlin.compiler.execution.strategy=in-process -PreactNativeArchitectures=arm64-v8a log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/android_build.log
+2026-10-08 15:23:38 METRICS android_build start: disk_free_GiB=53 load1=23.99 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 15:23:38 STEP android_build pid/pgid=72886
+2026-10-08 15:29:39 MONITOR android_build: disk=50 load1=85.47 free%=44 swapouts/60s=0
+2026-10-08 15:34:39 MONITOR android_build: disk=48 load1=121.58 free%=46 swapouts/60s=0
+2026-10-08 15:37:41 STEP android_build END rc=0 wall=14m03s
+2026-10-08 15:38:41 METRICS android_build end: disk_free_GiB=48 load1=32.19 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 15:38:41 CHAIN done: android_build

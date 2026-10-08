@@ -1,0 +1,31 @@
+2026-10-08 13:59:13 DOWNLOAD pnpm@10.12.3 from registry.npmjs.org (npm install --prefix tools), ~20 MB estimate
+2026-10-08 13:59:13 STEP pnpm_tool START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes cmd=npm install --prefix /Users/manu/Developer/shotfleet-rc-build/showcase-obytes/tools --no-audit --no-fund pnpm@10.12.3 log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/pnpm_tool.log
+2026-10-08 14:00:13 METRICS pnpm_tool start: disk_free_GiB=65 load1=84.68 free_mem%=51 vm_pressure_level=2 swapouts_per_60s=0
+2026-10-08 14:00:13 STEP pnpm_tool pid/pgid=18447
+2026-10-08 14:00:15 STEP pnpm_tool END rc=0 wall=0m01s
+2026-10-08 14:01:15 METRICS pnpm_tool end: disk_free_GiB=63 load1=195.36 free_mem%=47 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 14:01:15 GATE install: start (disk>=30, load<100, free>=40%, pressure<=2, swapouts<2000/60s; poll 2 min, up to 60 min)
+2026-10-08 14:02:15 GATE install try 1: disk=65 load1=222.55 free%=45 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:04:15 GATE install try 2: disk=64 load1=158.2 free%=41 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:06:15 GATE install try 3: disk=64 load1=120.56 free%=46 pr=1 swapouts/60s=0 -> wait
+2026-10-08 14:08:15 GATE install try 4: disk=64 load1=137.49 free%=40 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:10:15 GATE install try 5: disk=64 load1=147.9 free%=41 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:12:15 GATE install try 6: disk=64 load1=131.18 free%=38 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:14:15 GATE install try 7: disk=64 load1=124.69 free%=38 pr=2 swapouts/60s=71968 -> wait
+2026-10-08 14:16:15 GATE install try 8: disk=64 load1=113.89 free%=41 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:18:16 GATE install try 9: disk=63 load1=237.33 free%=43 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:20:16 GATE install try 10: disk=64 load1=133.29 free%=44 pr=2 swapouts/60s=0 -> wait
+2026-10-08 14:22:16 GATE install try 11: disk=64 load1=96.14 free%=43 pr=2 swapouts/60s=0 -> PASS
+2026-10-08 14:22:16 DOWNLOAD npm packages (pnpm install --frozen-lockfile, ~1300 packages) from registry.npmjs.org into pnpm-store inside showcase-obytes, estimate 0.5-1.5 GB; plus only-allow via npx (preinstall)
+2026-10-08 14:22:16 STEP install START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm install --frozen-lockfile --network-concurrency 4 log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/install.log
+2026-10-08 14:23:16 METRICS install start: disk_free_GiB=64 load1=50.57 free_mem%=51 vm_pressure_level=2 swapouts_per_60s=0
+2026-10-08 14:23:16 STEP install pid/pgid=49450
+2026-10-08 14:24:26 STEP install END rc=0 wall=1m09s
+2026-10-08 14:25:26 METRICS install end: disk_free_GiB=63 load1=20.96 free_mem%=54 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 14:25:26 DOWNLOAD expo-template-bare-minimum tarball (expo prebuild) from registry.npmjs.org, small (<1 MB est)
+2026-10-08 14:25:26 STEP prebuild START cwd=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/src cmd=pnpm exec expo prebuild --no-install log=/Users/manu/Developer/shotfleet-rc-build/showcase-obytes/logs/prebuild.log
+2026-10-08 14:26:26 METRICS prebuild start: disk_free_GiB=63 load1=23.54 free_mem%=49 vm_pressure_level=1 swapouts_per_60s=0
+2026-10-08 14:26:26 STEP prebuild pid/pgid=50981
+2026-10-08 14:27:17 STEP prebuild END rc=1 wall=0m50s
+2026-10-08 14:28:19 METRICS prebuild end: disk_free_GiB=60 load1=229.08 free_mem%=32 vm_pressure_level=2 swapouts_per_60s=14340
+2026-10-08 14:28:20 CHAIN stopped: stage prebuild rc=1

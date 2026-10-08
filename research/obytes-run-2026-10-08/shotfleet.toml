@@ -1,0 +1,27 @@
+# WORKING config for the Obytes starter showcase (shotfleet 0.1.6 released binary). Used for the iPhone job 2026-10-08 (shotfleet 0.1.6 released binary).
+# Nothing has been run. The build paths exist only after PLAN.md section 3 has been done.
+# The template ships exactly two languages (src/translations/en.json and ar.json), so there is one pair run per platform:
+#   dry run:   shotfleet run shotfleet.toml --platform ios --locales en --parallel 1        (look at the 6 frames first)
+#   counted:   shotfleet run shotfleet.toml --platform ios --locales en,ar --parallel 1     (2 languages: inside the free tier either way)
+#   Android:   same with --platform android
+# Codes: iOS en / ar; Android en / ar (no zh-Hans / zh-CN question here).
+[ios]
+app = "app/ObytesApp.app"
+strings = "src/src/translations/*.json"     # Expo + i18next: read the app's own JSON files (config-relative: clone is src/, translations are src/src/translations)
+flow = "flow.yaml"                          # one flow serves both platforms
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"   # NOT iOS 27.0
+parallel = 1
+out = "out-ios"
+locales = ["en", "ar"]
+
+[android]
+apk = "src/android/app/build/outputs/apk/release/app-release.apk"
+strings = "src/src/translations/*.json"
+flow = "flow.yaml"
+avd = "shotfleet_android"
+parallel = 1
+out = "out-android"
+locales = ["en", "ar"]
+
+# No [hooks] before_run on purpose: the apps are built once, by hand, outside the device lock (PLAN.md section 3).
+# `shotfleet check <out> --strings 'src/src/translations/*.json'` afterwards. Do NOT use `check --app` (fails on Flutter, untested here).

@@ -1,0 +1,103 @@
+{
+ "screenshots": [
+  {
+   "file": "ar/01_settings.png",
+   "src": "../out-ios-run1/raw/ar/01_settings.png",
+   "sha": "4633958917af",
+   "lang": "ar",
+   "chars": 390,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/02_settings_more.png",
+   "src": "../out-ios-run1/raw/ar/02_settings_more.png",
+   "sha": "4633958917af",
+   "lang": "ar",
+   "chars": 390,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/03_theme_sheet.png",
+   "src": "../out-ios-run1/raw/ar/03_theme_sheet.png",
+   "sha": "7fb26f0c29ee",
+   "lang": "ar",
+   "chars": 146,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ar/04_settings_dark.png",
+   "src": "../out-ios-run1/raw/ar/04_settings_dark.png",
+   "sha": "13163e018188",
+   "lang": "ar",
+   "chars": 387,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/05_settings_dark_more.png",
+   "src": "../out-ios-run1/raw/ar/05_settings_dark_more.png",
+   "sha": "13163e018188",
+   "lang": "ar",
+   "chars": 387,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/06_language_sheet.png",
+   "src": "../out-ios-run1/raw/ar/06_language_sheet.png",
+   "sha": "f33c7dfbf8fd",
+   "lang": "ar",
+   "chars": 165,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/01_settings.png",
+   "src": "../out-ios-run1/raw/en/01_settings.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/02_settings_more.png",
+   "src": "../out-ios-run1/raw/en/02_settings_more.png",
+   "sha": "294708141597",
+   "lang": "en",
+   "chars": 396,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/03_theme_sheet.png",
+   "src": "../out-ios-run1/raw/en/03_theme_sheet.png",
+   "sha": "cf58393992d2",
+   "lang": "en",
+   "chars": 174,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/04_settings_dark.png",
+   "src": "../out-ios-run1/raw/en/04_settings_dark.png",
+   "sha": "b32bef9498f1",
+   "lang": "en",
+   "chars": 393,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/05_settings_dark_more.png",
+   "src": "../out-ios-run1/raw/en/05_settings_dark_more.png",
+   "sha": "b32bef9498f1",
+   "lang": "en",
+   "chars": 393,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "en/06_language_sheet.png",
+   "src": "../out-ios-run1/raw/en/06_language_sheet.png",
+   "sha": "9b83ab2fa5eb",
+   "lang": "en",
+   "chars": 176,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}
