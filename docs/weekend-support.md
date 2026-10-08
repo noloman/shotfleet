@@ -35,7 +35,7 @@ Rules: reply within two business days; never ask for or paste a licence key, car
 | macOS is older than 13 | Not supported. Live 0.1.6 is proven on macOS 14.8.9, 15.7.9 and 27 (`research/macos-14-15-live-0.1.6-2026-10-08.md`); macOS 13 and 26.0 to 26.1 are not tested |
 | `doctor` shows MISSING for emulator, avdmanager, aapt2 or system image | Android only; `doctor` prints the exact `sdkmanager` commands. iOS-only users can ignore it |
 | `doctor` says text recognition is slow, waited 60 s | First run on a Mac compiles macOS's text model once (ANECompilerService), up to a few minutes on a busy Mac. Wait, run `doctor` again; `check` waits for it by itself |
-| iOS 27.0 simulator runtime problems | 0.1.7 adds a guard that prefers another runtime (for example 26.4) when one is installed; live is 0.1.6, so suggest installing an older iOS runtime |
+| iOS 27.0 simulator runtime problems | Since 0.1.7, `run` skips iOS 27.0 when another runtime (for example 26.4) is installed, and `doctor` says which one it will use (0.1.8). Ask them to update to the live version and install iOS 26.4 if they only have 27.0 |
 | Maestro version | `doctor` lists the tested versions (2.0.10 and 2.11.0); for any other version, ask which one they run |
 
 ## Testing the forward
@@ -55,7 +55,7 @@ Each alert line names the failing probe. Check it yourself first (`curl -sI` the
 | Alert | Likely cause | What to do |
 |---|---|---|
 | a site page or `install.sh` is not 200 | Cloudflare or a bad deploy | Check https://www.cloudflarestatus.com. If the site was just deployed, roll back by hand: `docs/engineering/06-packaging-and-release.md` section 6.13 B (the earliest `rollback-<version>-*.txt` in `shotfleet-rc-build/release-archive/state/` holds the id; `cd site && npx wrangler@latest rollback <id> -y`, then check `/download/VERSION`) |
-| live version is not 0.1.6 | An unannounced publish | Ask the coordinator session; roll back as above if it was not intended. If 0.1.7 was published on purpose, change `EXPECT_VERSION` in `weekend-watch/watch.sh` |
+| live version is not 0.1.8 | An unannounced publish | Ask the coordinator session; roll back as above if it was not intended. If a newer version was published on purpose, change `EXPECT_VERSION` in `weekend-watch/watch.sh` |
 | download missing or checksum mismatch | Half-finished deploy or cache | Retry in 5 minutes; if it persists, roll back as above. Buyers see "download is corrupt" from the installer and are not harmed |
 | Gumroad product page down, unpublished or price changed | Gumroad outage, or the product was edited | Open the product in Gumroad (id `naydxx`) and check Published and the $49 price with the FOUNDER29 banner. Never delete or recreate the product |
 | Gumroad licence API unexpected answer | Gumroad outage | Nothing to fix on our side: a key already on a Mac keeps working for up to 30 days offline. Tell any buyer who cannot activate to try again later |
