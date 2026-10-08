@@ -5876,38 +5876,42 @@
  },
  {
   "id": "C460",
-  "claim": "Obytes starter, 2026-10-08, shotfleet 0.1.6, iPhone: two counting runs of two languages (en,ar / ar,en), 6 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator, iOS 26.4, 0 retries, 129 s and 149 s",
+  "claim": "Obytes starter, 2026-10-08, shotfleet 0.1.6, iPhone: two counting runs of two languages (en,ar / ar,en), 6 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator, iOS 26.4, 0 retries, 143 s and 149 s, release build from commit fd9b358",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
    "site/public/demo.html"
   ],
   "where_text": [
-   "I did two counting runs, English then Arabic and Arabic then English, 12 screenshots each, on 1 iPhone 17 Pro Max simulator with iOS 26.4.",
-   "They took 129 and 149 seconds, with 0 retries.",
-   "iPhone only: 2 runs of 2 languages, 6 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator (iOS 26.4), 0 retries, 129 s and 149 s."
+   "On each platform I did two counting runs, English then Arabic and Arabic then English, 12 screenshots each, with 0 retries and 1 simulator or emulator.",
+   "On iPhone (an iPhone 17 Pro Max simulator, iOS 26.4) they took 143 and 149 seconds.",
+   "iPhone: 2 runs of 2 languages, 6 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator (iOS 26.4), 0 retries, 143 s and 149 s."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/ios-run1/run.json, ios-run2/run.json: wall_seconds 129 and 149; locales en,ar and ar,en each ok, screenshots 6, attempts 1; simulators 1; logs/run-ios-run1.log, run-ios-run2.log; shotfleet 0.1.6 and iOS 26.4 in NOTES.md and shotfleet.toml. The English dry run (ios-dry, 6 screenshots, 71 s) and the failed first dry attempt (ios-dry-failed-1) are extra and not counted in the 24. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/fd9b358/ios-hd-run1/run.json, research/obytes-run-2026-10-08/fd9b358/ios-hd-run2/run.json: wall_seconds 143 and 149; locales en,ar and ar,en each ok, screenshots 6, attempts 1; simulators 1; research/obytes-run-2026-10-08/fd9b358/logs/run-ios-hd-run1.log, run-ios-hd-run2.log; shotfleet 0.1.6 binary and iOS 26.4 in NOTES.md and research/obytes-run-2026-10-08/fd9b358/flows/shotfleet.ios.hd.toml. The English dry run (research/obytes-run-2026-10-08/fd9b358/ios-hd-dry, 6 screenshots, 154 s) is extra and not counted in the 24. Counting runs on the tag build (129 s and 149 s, ios-run1, ios-run2) are history and no longer on the page. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C461",
-  "claim": "Obytes starter: a release build I compiled myself from the tag v9.0.0 (open-source Expo template, MIT) on 2026-10-08, captured with shotfleet 0.1.6, which read the template's own translation files",
+  "claim": "Obytes starter: release builds I compiled myself on 2026-10-08 from the unmodified upstream commit fd9b358 (version 9.0.0 plus ten later commits, which include the upstream splash fix, PR #531), captured with shotfleet 0.1.6, which read the template's own translation files",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
+   "site/public/index.html",
+   "site/public/demo.html",
    "site/public/demo.html"
   ],
   "where_text": [
-   "On 2026-10-08 I built v9.0.0 myself as a release build and captured it with shotfleet 0.1.6.",
-   "shotfleet read the template’s own translation files.",
-   "shotfleet 0.1.6 on a release build I compiled from the tag v9.0.0."
+   "On 2026-10-08 I built it myself as a release build from commit fd9b358.",
+   "That’s version 9.0.0 plus ten later commits, which include the upstream splash fix (PR #531).",
+   "I captured it with shotfleet 0.1.6. shotfleet read the template’s own translation files.",
+   "shotfleet 0.1.6 on release builds I compiled from commit fd9b358.",
+   "That’s version 9.0.0 plus ten later commits, which include the upstream splash fix (PR #531)."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/ARTIFACTS.txt (xcodebuild Release simulator build, 2026-10-08, bundle id, version 9.0.0), CLONE.txt (tag v9.0.0, tag object f6309e9d, commit a8ded50), NOTES.md (What ran); shotfleet.toml (strings = src/src/translations/*.json); ios-run1/run.json (strings: the template's en.json and ar.json, base_locale en, untranslated_selectors only the two onboarding texts); logs/run-ios-run1.log (shotfleet 0.1.6 binary). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/fd9b358/ARTIFACTS-fd9b358.txt (unmodified commit fd9b358ed11913d2a49fd9ffa6582fe03ba130e7, git describe v9.0.0-10-gfd9b358, package.json 9.0.0; 'git diff --stat v9.0.0 fd9b358' = 20 files: 2 app-code files (src/app/_layout.tsx, src/app/(app)/_layout.tsx, splash handling), 4 app images, 14 CI/docs/cli files; research/obytes-run-2026-10-08/fd9b358/logs/diff-name-status.txt; Xcode Release simulator build and Gradle release APK, checksums); CLONE.txt; NOTES.md (How it went). The upstream fix PR #531 'fix: hide splash screen from root layout', merged 2026-06-02, is the merge that ARTIFACTS-fd9b358.txt names as fd9b358 (merge date 2026-06-02 as given by the coordinator; I did not re-check it on GitHub). research/obytes-run-2026-10-08/fd9b358/flows/shotfleet.ios.hd.toml and shotfleet.android.hd.toml (strings = src/src/translations/*.json); research/obytes-run-2026-10-08/fd9b358/ios-hd-run1/run.json and android-hd-run1/run.json (strings: the template's en.json and ar.json, base_locale en, untranslated_selectors only the two onboarding texts); logs show the shotfleet 0.1.6 binary. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
@@ -5926,7 +5930,7 @@
    "Onboarding and the local demo login (no server call) are walked through but not captured."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/flow.yaml (the flow: onboarding taps, demo values 'alex@example.com' and digits only, no capture before Settings; the header comment says LoginScreen.onSubmit stores a fixed fake token and pushes '/'), NOTES.md (What ran). The template's login code was read by me, not instrumented: no network capture was made. After login the Feed does one background GET to the template's own mock API; the Feed is never captured. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/fd9b358/flows/flow.ios.hd.yaml and flow.android.hd.yaml (onboarding taps, demo values 'alex@example.com' and digits only, no capture before Settings; the header comment says LoginScreen.onSubmit stores a fixed fake token and pushes '/'), NOTES.md (What ran). The template's login code was read by me, not instrumented: no network capture was made. After login the Feed does one background GET to the template's own mock API; the Feed is never captured. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
@@ -5945,28 +5949,36 @@
    "A thin example: the template ships only English and Arabic, and only its Settings screen is translated, so the tab bar stays English in the Arabic run."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/NOTES.md (What ran: 22 of 25 strings translated; Frames reviewed: ar/01_settings shows Arabic labels with the English tab bar Feed, Style, Settings); ios-run1/run.json (locales en and ar only; untranslated_selectors Let's Get Started and Obytes Starter, the app's own hard-coded English). Frames: research/obytes-run-2026-10-08 describes ios-run1/raw/ar/01_settings.png (PNG not kept in the repo). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (What ran: 22 of 25 strings translated; Frames reviewed: ar/01_settings shows Arabic labels with the English tab bar Feed, Style, Settings on iPhone, and the same labels with the tab bar mirrored on Android); research/obytes-run-2026-10-08/fd9b358/ios-hd-run1/run.json and android-hd-run1/run.json (locales en and ar only; untranslated_selectors Let's Get Started and Obytes Starter, the app's own hard-coded English). Frames: PNGs are not kept in the repo; the WebP images on the page are derived from them. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C464",
-  "claim": "Obytes starter: check found 0 problems in both counting runs; it read the view hierarchy for most frames and the pictures by text recognition for the two sheet frames (Theme and Language), which is weaker",
+  "claim": "Obytes starter: check found 0 problems in all four counting runs; on iPhone it read the view hierarchy for most frames and the pictures by text recognition for the two sheet frames (Theme and Language); on Android it read the pictures for every frame (Maestro 2.0.10 saves no hierarchy there), which is weaker",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
    "site/public/index.html",
+   "site/public/index.html",
+   "site/public/index.html",
+   "site/public/demo.html",
+   "site/public/demo.html",
    "site/public/demo.html"
   ],
   "where_text": [
    "Check found 0 problems.",
-   "For most frames it read the app’s view hierarchy.",
-   "The two sheet frames (Theme and Language) aren’t in the hierarchy, so there it read the pictures by text recognition, which is weaker.",
-   "It read the view hierarchy for most frames and the pictures by text recognition for the two sheet frames, which is weaker evidence."
+   "On iPhone it read the app’s view hierarchy for most frames.",
+   "The two sheet frames (Theme and Language) aren’t in the hierarchy, so there it read the pictures by text recognition.",
+   "On Android it read the pictures for every frame, because Maestro 2.0.10 saves no hierarchy there.",
+   "That’s weaker, so I looked at every Android frame myself.",
+   "Check found 0 problems in all four runs (the check reads the screens; it does not prove that every tap hit the right button).",
+   "On iPhone it read the view hierarchy for most frames and the pictures by text recognition for the two sheet frames.",
+   "On Android it read the pictures for every frame, which is weaker evidence."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/ios-run1/check.json, ios-run2/check.json (problems [], notes [], unverified []; 12 rows each): evidence 'hierarchy' for 01, 02, 04, 05 in both languages and 'ocr' for 03 and 06; ios-run1/check-in-run.json, ios-run2/check-in-run.json (the copies shotfleet writes in the run folder); logs/check-ios-run1.log, check-ios-run2.log ('checked 12 screenshots in 2 languages: 0 problem(s)'). The sheet options are not in the iOS hierarchy (NOTES.md, The one flow fix; Findings for shotfleet 1). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/fd9b358/ios-hd-run1/check.json, ios-hd-run2/check.json (problems 0, notes 0, unverified 0; 12 rows each): evidence 'hierarchy' for 01, 02, 04, 05 in both languages and 'ocr' for 03 and 06; research/obytes-run-2026-10-08/fd9b358/android-hd-run1/check.json, android-hd-run2/check.json (problems 0; 12 rows each, evidence 'ocr' on every row); the in-run copies check-in-run.json say the same; research/obytes-run-2026-10-08/fd9b358/logs/check-*-hd-*.log ('checked 12 screenshots in 2 languages: 0 problem(s)'). The dry runs also had 0 problems. The Android run header says Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0), so Android text comes from pixels (research/obytes-run-2026-10-08/fd9b358/logs/run-android-hd-run1.log). The sheet options are not in the iOS hierarchy (NOTES.md, Findings 1). 'I looked at every Android frame myself': NOTES.md, Frames reviewed (all 30 raw frames). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
@@ -5983,52 +5995,54 @@
    "(the check reads the screens; it does not prove that every tap hit the right button)"
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/ios-run1/check.json (what check compares: strings against the screen hierarchy or the recognised text per frame, not tap outcomes); same wording as the wger, WOD and Kuokka claims (C320 to C328 and their neighbours). NOTES.md (check section). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/fd9b358/ios-hd-run1/check.json and android-hd-run1/check.json (what check compares: strings against the screen hierarchy or the recognised text per frame, not tap outcomes); same wording as the wger, WOD and Kuokka claims (C320 to C328 and their neighbours). NOTES.md (check section). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C466",
-  "claim": "Obytes starter, Android: the release build never got past its splash screen on a fresh install on my emulator, so there are no Android frames; that may be my setup (observation on one emulator, cause not established)",
+  "claim": "Obytes starter, first try on the v9.0.0 tag: iPhone worked there; on Android the release build never got past its splash screen on a fresh install on my emulator (observed on one emulator; the cause is consistent with the upstream splash fix but not proven)",
   "where": [
-   "site/public/index.html",
    "site/public/index.html",
    "site/public/demo.html"
   ],
   "where_text": [
-   "On Android, the release build never got past its splash screen on a fresh install on my emulator, so there are no Android frames.",
-   "That may be my setup.",
-   "On Android, the release build never got past its splash screen on a fresh install on my emulator, so there are no Android frames."
+   "My first try was on the v9.0.0 tag. iPhone worked there. On Android the release build never got past its splash screen on a fresh install on my emulator.",
+   "My first try was on the v9.0.0 tag: iPhone worked there, and on Android the release build never got past its splash screen on a fresh install on my emulator,"
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/NOTES.md (Android: no frames; evidence level stated there), android-dry-failed/run.json (dry run: 81 s, 2 attempts, 0 of 6 screenshots, rc 1; failure 'Assertion is false: id: login-button is visible'), logs/manual-emulator.log, logs/dbg-android/u1.xml (view tree behind the splash). Observed on my own emulator (AVD shotfleet_android, arm64, API 36, hand-booted with shotfleet's snapshot flags): dumpsys activity showed the splash window displayed and reportedDrawn=false in 8 of 8 launches; taps did nothing. NOT tested: a debug build, a real device, another emulator image. The cause is not established. My reading of the template's code (the splash hide timer being cleared on a fresh install) is inference, is kept only in NOTES.md, and is deliberately not on the page. No Android frames and no check exist, and the page makes no Android claim beyond this sentence. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (What happened on the tag) and NOTES-tag-v9.0.0.md; android-dry-failed/run.json (dry run on the tag APK: 81 s, 2 attempts, 0 of 6 screenshots, rc 1; failure 'Assertion is false: id: login-button is visible'), logs/manual-emulator.log, logs/dbg-android/u1.xml (view tree behind the splash). Observed on my own emulator (AVD shotfleet_android, arm64, API 36, hand-booted with shotfleet's snapshot flags): dumpsys activity showed the splash window displayed and reportedDrawn=false in 8 of 8 launches; taps did nothing. Cause: consistent with, not proven: my reading of the tag's code (the only hide call was a timer a redirect unmounts) fits upstream's later fix (PR #531, hide the splash from the root layout) and the fd9b358 APK getting past the splash in all three runs; I did not run the tag APK again, did not test a debug build, a real device or another emulator image, and the page states no cause. iPhone on the tag worked: NOTES-tag-v9.0.0.md, ios-run1/run.json. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C467",
-  "claim": "Obytes starter: the two frames shown are 2 of the 8 different ones from the counting run, picked by me after looking at all of them; of the 6 screens per language, two are identical to others, so 4 different frames per language",
+  "claim": "Obytes starter: the four frames shown (iPhone en dark theme, iPhone ar light, Android en light, Android ar light) were picked by me after looking at all of them; iPhone has 4 different frames per language (02 and 05 repeat 01 and 04), Android has 6 per language; I skipped the two scrolled Android frames because the list runs under the status bar",
   "where": [
+   "site/public/index.html",
+   "site/public/index.html",
    "site/public/index.html",
    "site/public/index.html",
    "site/public/demo.html"
   ],
   "where_text": [
-   "The two frames below are 2 of the 8 different ones, picked by me after looking at all of them.",
-   "Two of those are identical to others, because the whole list fits on the screen, so that’s 4 different frames per language and 8 in all.",
-   "Two of the 6 are identical to others, so 4 different frames per language."
+   "I picked the four frames below after looking at all of them.",
+   "On iPhone there are 4 different frames per language, because two of the six repeat others when the whole list fits on the screen.",
+   "On Android the list scrolls, so there are 6 per language.",
+   "I skipped the two scrolled ones, because the list runs under the status bar.",
+   "iPhone has 4 different frames per language and Android has 6; I picked four frames after looking at all of them."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/NOTES.md (Frames reviewed: frames 02 and 05 byte-identical to 01 and 04 in every run, md5 prefixes listed; 4 distinct per language, 8 in all; all 12 frames of run2 byte-identical to run1); ios-run1/check.json (sha per frame: 01 = 02 and 04 = 05 in each language, e.g. en 294708141597 twice). Shown: site/public/img/showcase/obytes_iphone_en_theme_dark.webp from ios-run1/raw/en/04_settings_dark.png and obytes_iphone_ar_settings_light.webp from ios-run1/raw/ar/01_settings.png, made with: cwebp -q 80 -resize 360 0 (both 360x783). Both looked at before use. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (Frames reviewed, both platforms; the Android table notes the status-bar overlap in 02 and 05). research/obytes-run-2026-10-08/fd9b358/ios-hd-run1/check.json: per language 6 rows, 4 distinct sha (01 = 02, 04 = 05); research/obytes-run-2026-10-08/fd9b358/android-hd-run1/check.json: per language 6 rows, 6 distinct sha. iPhone frames of the fd9b358 runs are byte-identical to the tag build's frames (NOTES.md), so site/public/img/showcase/obytes_iphone_en_theme_dark.webp (en/04_settings_dark.png) and obytes_iphone_ar_settings_light.webp (ar/01_settings.png) stay valid (360x783). New Android images from out-android-hd-run1/raw/en/01_settings.png and raw/ar/01_settings.png: obytes_android_en_settings.webp (8792 bytes) and obytes_android_ar_settings.webp (7018 bytes), cwebp -q 80 -resize 360 0 (360x640); both looked at before use (right language, light theme, ObytesApp in the About row, no logo, no splash, nothing private). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C468",
-  "claim": "Obytes starter attribution: MIT licence, copyright 2021 Obytes, repo link, screenshots captured by me with shotfleet from a release build I compiled, not affiliated with shotfleet and does not endorse it, no Obytes logo",
+  "claim": "Obytes starter attribution: MIT licence, copyright 2021 Obytes, repo link, version 9.0.0 plus ten later commits (fd9b358), screenshots captured by me with shotfleet from a release build I compiled, not affiliated with shotfleet and does not endorse it, no Obytes logo",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
@@ -6038,47 +6052,81 @@
   ],
   "where_text": [
    "The Obytes starter, an open-source Expo and React Native template, is licensed under the MIT licence, copyright 2021 Obytes: <a href=\"https://github.com/obytes/react-native-template-obytes\">github.com/obytes/react-native-template-obytes</a>.",
-   "These are screenshots of the open-source Obytes starter (version 9.0.0), captured by me with shotfleet from a release build I compiled myself.",
+   "These are screenshots of the open-source Obytes starter (version 9.0.0 plus ten later commits, fd9b358), captured by me with shotfleet from a release build I compiled myself.",
    "The project isn’t affiliated with shotfleet and doesn’t endorse it.",
    "No Obytes logo is shown.",
    "The Obytes starter is licensed under the MIT licence and isn’t affiliated with shotfleet."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/NOTES.md (Open items: the attribution block, from the showcase PLAN.md section 1; Frames reviewed: the Obytes logo is in no counted frame, it only shows on the splash and the app icon, which were never captured). Licence: MIT, copyright 2021 Obytes (the template's LICENSE file, tag v9.0.0, CLONE.txt). Repo: https://github.com/obytes/react-native-template-obytes. No logo or other brand asset is used on the page. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (Open items: the attribution block; Frames reviewed: the Obytes logo is in no frame, it only shows on the splash and the app icon, which were never captured, on either platform). Licence: MIT, copyright 2021 Obytes (the template's LICENSE file, CLONE.txt). Repo: https://github.com/obytes/react-native-template-obytes. No logo or other brand asset is used on the page. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C469",
-  "claim": "Obytes starter, Arabic: the app's own oddities, 'System' stays in English and the tab bar isn't mirrored; the plain text 'ObytesApp' shows in the About row",
+  "claim": "Obytes starter: the plain text 'ObytesApp' shows in the About row of the frames shown (the app's own App Name value); no logo is in any counted frame",
   "where": [
-   "site/public/index.html",
    "site/public/index.html"
   ],
   "where_text": [
-   "The app has an oddity of its own in Arabic: “System” stays in English and the tab bar isn’t mirrored.",
    "The plain text “ObytesApp” shows in the About row."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/NOTES.md (Frames reviewed, ar/01_settings: Theme value 'System' stays English, tab bar English and not mirrored; every frame: 'ObytesApp' is the plain App Name value in the About row); the picture site/public/img/showcase/obytes_iphone_ar_settings_light.webp shows both. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (Frames reviewed: 'ObytesApp' is the plain App Name value in the About row of every frame that shows it, on both platforms; Obytes logo in no frame); the pictures site/public/img/showcase/obytes_*.webp show it. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
  },
  {
   "id": "C470",
-  "claim": "Obytes starter: an earlier dry run failed at the Theme sheet (its options are not in the iPhone view hierarchy); the flow was fixed with fixed pauses and one tap by position",
+  "claim": "Obytes starter: I rebuilt both platforms from the later commit with no change to the code; the iPhone frames came out the same as on the tag, and Android got past the splash",
   "where": [
    "site/public/index.html",
    "site/public/demo.html"
   ],
   "where_text": [
-   "An earlier dry run failed at the Theme sheet, and I fixed that with fixed pauses and one tap by position.",
-   "An earlier dry run failed at the Theme sheet, whose options aren’t in the iPhone view hierarchy; I fixed the flow with fixed pauses and one tap by position."
+   "So I rebuilt both from the later commit, with no change to the code. The iPhone frames came out the same as on the tag, and Android got past the splash.",
+   "so I rebuilt both from the later commit with no change to the code. The iPhone frames are the same on both."
   ],
   "status": "evidence",
-  "proof": "research/obytes-run-2026-10-08/ios-dry-failed-1/run.json (157 s, 2 attempts, 2 of 6 screenshots, rc 1), ios-dry-failed-1/maestro1.log, maestro2.log, flow.attempt1-failed.yaml vs flow.yaml (waitForAnimationToEnd, 3 s busy-wait, tap point 50%,74%), NOTES.md (The one flow fix). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply at the time of writing); the page stays on the branch claude/site-showcase-obytes until Manu has seen it and the maintainers have had their say.",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (How it went; Frames reviewed, iPhone: all frames of the fd9b358 runs are byte-identical, md5 and cmp, to the tag build's frames; the iOS executable has the same sha256, only the JS bundle and four images differ, research/obytes-run-2026-10-08/fd9b358/ARTIFACTS-fd9b358.txt); research/obytes-run-2026-10-08/fd9b358/logs/diff-name-status.txt (the 20-file difference between the tag and fd9b358); research/obytes-run-2026-10-08/fd9b358/android-hd-run1/run.json (12/12) and android-hd-dry/run.json (6/6, the login-button wait that failed on the tag APK passed). I made no source edit (ARTIFACTS-fd9b358.txt: the build itself rewrote only uniwind-types.d.ts, formatting). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C471",
+  "claim": "Obytes starter, 2026-10-08, shotfleet 0.1.6, Android: two counting runs of two languages (en,ar / ar,en), 6 screens each = 24 screenshots on 1 emulator (shotfleet_android, API 36), 0 retries, 180 s and 164 s, release APK from commit fd9b358; English dry run 85 s, 6/6",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On each platform I did two counting runs, English then Arabic and Arabic then English, 12 screenshots each, with 0 retries and 1 simulator or emulator.",
+   "On Android they took 180 and 164 seconds.",
+   "Android: 2 runs of 2 languages, 6 screens each = 24 screenshots on 1 emulator, 0 retries, 180 s and 164 s."
+  ],
+  "status": "evidence",
+  "proof": "research/obytes-run-2026-10-08/fd9b358/android-hd-run1/run.json, research/obytes-run-2026-10-08/fd9b358/android-hd-run2/run.json: wall_seconds 180 and 164; locales en,ar and ar,en each ok, screenshots 6; emulators 1 (device emulator-5702), platform android; run.json has no attempts or retried field when nothing is retried, and research/obytes-run-2026-10-08/fd9b358/logs/run-android-hd-run1.log, run-android-hd-run2.log have no retry line (NOTES.md says so); research/obytes-run-2026-10-08/fd9b358/android-hd-dry/run.json: 85 s, en, 6/6 (not counted in the 24). adb, qemu and AVD lists before and after are identical (research/obytes-run-2026-10-08/fd9b358/logs/adb.*.txt, avds.*.txt, qemu.*.txt). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C472",
+  "claim": "Obytes starter, Arabic: the tab bar is mirrored on Android and not on iPhone, and 'System' stays in English on both (the app's own string); on Android the sheet options are mirrored too, on iPhone they are left-aligned",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "In Arabic the tab bar is mirrored on Android and not on iPhone, and “System” stays in English on both.",
+   "In Arabic the tab bar is mirrored on Android and not on iPhone."
+  ],
+  "status": "evidence",
+  "proof": "research/obytes-run-2026-10-08/NOTES.md (Frames reviewed: iPhone ar/01_settings tab bar English and not mirrored, ar/03 and ar/06 sheet options left-aligned; Android ar/01_settings tab bar order mirrored (Settings, Style, Feed) with English labels, ar/03 and ar/06 right-aligned; 'System' stays English in both). The two Arabic pictures on the page show the tab bars: site/public/img/showcase/obytes_iphone_ar_settings_light.webp and obytes_android_ar_settings.webp. The sheet-options part is in the notes only, not on the page. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/obytes/react-native-template-obytes/discussions/542, no reply as far as I know); the page stays on the branch claude/site-showcase-obytes-r2 until Manu has seen it and the maintainers have had their say.",
   "layer": "device",
   "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
   "fix": ""
