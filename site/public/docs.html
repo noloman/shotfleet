@@ -439,6 +439,31 @@ name = "田中"</code></pre>
 - takeScreenshot: 01_train</code></pre>
   <p>Ran on iOS (Maestro 2.0.10, WOD Tracker). <code>extendedWaitUntil</code> takes its timeout in milliseconds. <code>waitForAnimationToEnd</code> does not fail: Maestro's docs say it carries on when its timeout (15000 ms by default) runs out, so on its own it is not proof that the screen is still. The text goes first for that reason. A Flutter debug build can take 30 s to draw on a fresh emulator, so give that wait a long timeout.</p>
 
+  <h3 id="tip-webview">Wait for a web view's own text</h3>
+  <p>In one of my apps a detail page is a web view, and its screenshot came out blank. The flow took the picture before the page had loaded. Wait for a text from the page, then let the animation finish. shotfleet's own wait before a screenshot helps with animations, not with late network or web content, so the flow has to wait for that content itself:</p>
+<pre><code>- extendedWaitUntil:
+    visible: "A text from the page"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03_detail</code></pre>
+  <p>Seen once, on 2026-10-08 (shotfleet 0.1.6); I did not write down the Maestro version for this one. "A text from the page" stands for a text from your own page.</p>
+
+  <h3 id="tip-back">back may not leave a screen on iOS</h3>
+  <p>On Maestro 2.0.10 with an iOS 26.4 simulator, the <code>back</code> step did not pop the navigation stack in one of my apps, and the next screenshot showed the same screen. Tapping the back chevron in the navigation bar did work, either with a <code>point</code> tap on its spot or by its id:</p>
+<pre><code>- tapOn:
+    id: "nav-back"</code></pre>
+  <p>Ran on iOS (Maestro 2.0.10, 2026-10-08). I saw this on 2.0.10 only, and I have not checked it on 2.11.0, so it may be fixed there. "nav-back" stands for the id your app gives the chevron.</p>
+
+  <h3 id="tip-regex">A regex or a format-string text only matches in the base language</h3>
+  <p>shotfleet translates a selector by finding its text among your app's strings. A wildcard around a whole string, such as <code>.*Register</code>, is fine: it translates the string and keeps the wildcard. But <code>Interviewing on.*</code> is only the start of a text my app builds from the format string <code>%@ on %@</code>, so there is no string to find. It stays as you wrote it, matches in English and nothing in the other languages. In the run where this happened (shotfleet 0.1.6) the flow passed in English and failed in every other language, and nothing warned me before the 37 minutes were spent. After a run, read the "not found in the app's strings (left as-is)" list: a selector on it will fail outside English. Give the view an id and tap that instead.</p>
+
+  <h3 id="tip-wifi">Two Android emulators at once: one lost its Wi-Fi icon</h3>
+  <p>With two emulators running in parallel, the screenshots from one of them had no Wi-Fi status icon. Putting <code>svc wifi enable</code> in the <code>shell</code> list under <code>[android]</code> fixed it. shotfleet runs those commands on every emulator after it boots, on every run (see <a href="#device-setup">Device setup</a>):</p>
+<pre><code>[android]
+shell = ["svc wifi enable"]</code></pre>
+  <p>Seen once, in one of my apps on 2026-10-08, and I do not know why the icon went missing.</p>
+
   <h3 id="tip-check">check does not prove that a tap hit the right button</h3>
   <p><code>check</code> reads pictures. It sees a wrong language, a copy of another language's image, a missing screen, a blank frame and a wrong size. It cannot know which screen you meant to reach. In one WOD Tracker iPhone attempt the run exited 0 with 8 of 8 screenshots and <code>check</code> said 0 problems, but the Hindi "Benchmarks" frame showed the Train screen. The row sat behind the tab bar and my tap hit the Train tab. A Train screen in Hindi is a perfectly good screen. I found it by looking at every frame.</p>
   <p>A guard in the flow fails the language when the tap went wrong. Put an <code>assertVisible</code> on a text that only the target screen has (not one the tab bar shows too) between the tap and the screenshot, and shotfleet translates it for each language:</p>

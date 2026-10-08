@@ -5530,5 +5530,135 @@
   "layer": "site",
   "assertion": "One recorded run on the owner's app, 2026-10-08.",
   "fix": ""
+ },
+ {
+  "id": "C370",
+  "claim": "On Maestro 2.0.10 with an iOS 26.4 simulator, the back step did not pop the navigation stack in one app; tapping the nav bar's back chevron (a point tap or its id) did",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "step did not pop the navigation stack in one of my apps"
+  ],
+  "status": "evidence",
+  "proof": "Plan item 15. Source: the Remoti ASO session of 2026-10-08 (shotfleet 0.1.6), as listed in /Users/manu/Developer/shotfleet-rc-build/plan-0.1.8.md; owner report, not rerun for this docs change. The page says it was seen on 2.0.10 only and does not claim it for any other version.",
+  "layer": "device",
+  "assertion": "One recorded run on one app, Maestro 2.0.10, iOS 26.4, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C371",
+  "claim": "The back-step problem has not been checked on Maestro 2.11.0",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "have not checked it on 2.11.0, so it may be fixed there"
+  ],
+  "status": "evidence",
+  "proof": "Plan item 15 says 'Check on 2.11.0 and document'; no 2.11.0 run of this flow exists, so the page says it was not checked. Revisit when the 0.1.8 gate's 2.11.0 run covers a flow with a back step.",
+  "layer": "device",
+  "assertion": "States an absence: no 2.11.0 check was made.",
+  "fix": ""
+ },
+ {
+  "id": "C372",
+  "claim": "A web-view detail page was captured blank until the flow waited for a text from the page (extendedWaitUntil visible, then waitForAnimationToEnd)",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "its screenshot came out blank"
+  ],
+  "status": "evidence",
+  "proof": "Plan item 16. Source: the Remoti ASO session of 2026-10-08 (shotfleet 0.1.6), as listed in /Users/manu/Developer/shotfleet-rc-build/plan-0.1.8.md; owner report, not rerun for this docs change. The page says the Maestro version was not written down.",
+  "layer": "device",
+  "assertion": "One recorded run on one app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C373",
+  "claim": "shotfleet's own wait before a screenshot helps with animations, not with late network or web content",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "helps with animations, not with late network or web content"
+  ],
+  "status": "evidence",
+  "proof": "Plan item 16 (the settle wait of item A2 is for animations). Source: the Remoti ASO session of 2026-10-08 (shotfleet 0.1.6), as listed in /Users/manu/Developer/shotfleet-rc-build/plan-0.1.8.md; owner report, not rerun for this docs change.",
+  "layer": "device",
+  "assertion": "Consistent with the one run above; no test of the settle wait against web content.",
+  "fix": ""
+ },
+ {
+  "id": "C374",
+  "claim": "With two Android emulators in parallel, one lost its Wi-Fi status icon in the screenshots; svc wifi enable in the [android] shell list fixed it",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "svc wifi enable"
+  ],
+  "status": "evidence",
+  "proof": "Plan item 23. Source: the Remoti ASO session of 2026-10-08 (shotfleet 0.1.6), as listed in /Users/manu/Developer/shotfleet-rc-build/plan-0.1.8.md; owner report, not rerun for this docs change. The config key is [android] shell (a list of adb shell commands): shotfleet.py KEYS['android'] has 'shell', and the page says seen once and the cause unknown.",
+  "layer": "device",
+  "assertion": "One recorded run on one app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C375",
+  "claim": "shotfleet runs the [android] shell commands on every emulator after it boots, on every run",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "shotfleet runs those commands on every emulator after it boots, on every run"
+  ],
+  "status": "proven",
+  "proof": "SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop (same code as C120: shotfleet.py run_setup(e, 'shell', cfg.get('shell', ())) per emulator in android_pool).",
+  "layer": "unit",
+  "assertion": "Fake devices; not run on a real emulator.",
+  "fix": "",
+  "test": "SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop"
+ },
+ {
+  "id": "C376",
+  "claim": "A wildcard around a whole app string (.*Register) is translated with the wildcard kept; a text that is only part of a string, such as the start of a format string, is not found, is left as written, and is listed as not found in the app's strings",
+  "where": [
+   "README.md"
+  ],
+  "where_text": [
+   "it translates the string and keeps the wildcard",
+   "selector on it will fail outside English"
+  ],
+  "status": "proven",
+  "proof": "TranslateFlow.test_wildcard_around_a_known_label_is_kept_and_the_label_translated (Nope.* is left alone and reported) and TranslateFlow.test_unknown_selector_is_reported_and_left_alone. Also run by hand on main 2026-10-08: base {'%@ on %@', 'Next'}, selector 'Interviewing on.*' came back unchanged with 'Interviewing on' in the missing list, '.*Next' became '.*Weiter'.",
+  "layer": "unit",
+  "assertion": "Unit level, on main at 57c89b9.",
+  "fix": "",
+  "test": "TranslateFlow.test_wildcard_around_a_known_label_is_kept_and_the_label_translated"
+ },
+ {
+  "id": "C377",
+  "claim": "In the run where a selector built from the format string %@ on %@ (Interviewing on.*) was used, the flow passed in English and failed in every other language, and nothing warned before the 37 minutes were spent",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "the flow passed in English and failed in every other language"
+  ],
+  "status": "evidence",
+  "proof": "Plan item 17. Source: the Remoti ASO session of 2026-10-08 (shotfleet 0.1.6), as listed in /Users/manu/Developer/shotfleet-rc-build/plan-0.1.8.md; owner report, not rerun for this docs change. Says shotfleet 0.1.6; the current code does list such a selector in the 'left as-is' list (C376), so the page does not say the warning is missing today.",
+  "layer": "device",
+  "assertion": "One recorded run on one app (0.1.6), 2026-10-08.",
+  "fix": ""
  }
 ]
