@@ -134,3 +134,10 @@ How the code copes (`:3158-3342`):
 - Give it a unit test with a faked reader (see `tests/test_check_quality.py`, `tests/test_flat_check.py`, [08](08-testing.md)).
 - If the rule is user-visible, add its line to `skill/shotfleet-review/SKILL.md`'s table (a test checks fragments exist in the program), a CHANGELOG bullet, and a claim row if public text promises it ([10](10-contributing.md)).
 - To make `check` read a new language: `TESSERACT` (`:3345`), `OSD_SCRIPT` for scripts needing detection, `LATIN_UNLISTED` for Latin-script languages Vision lacks, `TWINS` for pairs detection confuses; extend the Docker image's `LANGS`; measure with `tools/langmatrix.py` and a real screenshot set.
+
+## 3.x Added after 0.1.7 (branch `claude/018-capture-check`; search by name)
+
+- `framework_of` / `no_translations_message`: `check --app` on a Flutter, React Native, MAUI or Unity build names the `--strings` glob to pass. With `--app` and `--strings` together, `cmd_check` loads the files (the app still decides the store).
+- `cmd_check(ipad_rule=None)`: `None` means "decide": `run.json`'s `multi_device` (written by the iOS run), else the old folder-layout guess. `check_any` on a parent of device folders asks `ipad_set_missing(..., say=False)` first and passes the answer, so every device's check shows the iPad column as `missing`, lists the problem, and the exit code agrees.
+- `[expect.<shot>] key = "..."`: `EXPECT_KEYS` has `key`; `content_rules` reads a string or list; `key_texts` turns keys into the app's text for the screenshot's language (`with_fallback`) and `cmd_check` adds them to `all`. Wrong key, no strings, a placeholder text and no text for that language are problem lines.
+- `doctor_runtime`: the runtime `doctor` reports is the one `run` picks (`pick_ios_runtime`), or the config's `runtime`.

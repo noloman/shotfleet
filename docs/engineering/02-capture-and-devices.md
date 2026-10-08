@@ -134,3 +134,12 @@ For teams that already have XCUITest screenshot tests (`XCTAttachment` or fastla
 ## 2.10 Hooks and config commands
 
 `[hooks]` (shell, around `run` and `export`), `[capture] build` (shell), `[ios] simctl` (host `xcrun simctl`) and `[android] shell` (device `adb shell`) are the config's four ways to run a command. `config_commands` (`:1869`) lists them; `refuse_config_commands` (`:1878`) is the last guard that stops them from running over MCP unless `hooks: true` was passed. A config from a cloned repo can hold any command, which is why the gate exists. See [04](04-setup-mcp-skills.md).
+
+## 2.11 Added after 0.1.7 (branch `claude/018-capture-check`; line anchors above are from 0.1.7, search by name)
+
+- `SELECTOR_KEYS` now has `element` (scrollUntilVisible's plain-text form); `INLINE_RE` skips a value that opens a nested `{`, so `{ element: { text: ... } }` is translated once, through `text`.
+- `settle_before` / `SETTLE_MS`: `localize_flow` and `android_flow` take `settle_ms` (default 0, so old callers and tests see no change); `ios_run_inner` and `android_run_inner` pass `cfg.get("settle_ms", SETTLE_MS)`. Config key `settle_ms`, 0 to 10000.
+- `match_locales`: maps the languages the user asked for onto the codes the build ships (canon equality, case, a language alone to its only regional variant and back; never across a Chinese script or a different region); both run paths call it before `cap_locales`.
+- `no_result` / `INFRA_ERRORS`: a flow Maestro never reported on gets "driver did not start in time" when its log says so (still a device failure, so retried once).
+- `no_hierarchy_note`: the Android OCR fallback text, printed at the start and again before the check.
+- `replace_hung` keeps the name (`make_pool` creates `shotfleet-<i>` again); the message says so.
