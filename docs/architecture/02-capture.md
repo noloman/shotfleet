@@ -99,6 +99,10 @@ Output: `(flow, untranslated_selectors, collisions)`.
 - **Overrides.** `override_pattern` makes `[overrides.<locale>]` win over the app's strings; a `re:` prefix passes a regular expression.
 - Selectors it cannot find anywhere are returned as `untranslated_selectors`, left as written, and printed ("selectors not found in the app's
   strings"). They may still work in English.
+- **Regex selectors.** A selector that is not an app text is tried as a regex against every base value (`regex_fits`; placeholders count as any
+  text, so `Interviewing on.*` fits `%@ on %@`). If it fits one and the target language's text for that key is different and does not fit,
+  it cannot be translated: `(selector, base text)` goes to the optional `base_only` list (`run.json`: `base_only_selectors`), and `run` warns
+  that it only matches in the base language.
 
 `with_fallback(strings, lp)` builds the table the app actually shows for `lp` the way the OS does: `zh-Hant-HK`, then `zh-Hant`, then `zh`.
 

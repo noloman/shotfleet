@@ -3,7 +3,7 @@ the failure screenshot after a retry. Fakes only: no simulator, emulator, Maestr
 
 Run: python3 -m unittest tests.test_018b_fixes
 """
-import contextlib, io, subprocess, sys, tempfile, unittest
+import contextlib, io, json, re, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -193,3 +193,158 @@ class PictureVersusTree(unittest.TestCase):  # item 24, iOS
     def test_android_does_not_read_the_picture_when_the_tree_has_texts(self):
         got, ocr = self.details(["Loading"], "android")
         ocr.assert_not_called(); self.assertFalse(any("other text" in l for l in got))
+
+
+class FailureScreenshotKept(unittest.TestCase):  # item 25
+    def folders(self, shots=(True, True)):
+        """An output folder with the debug folders of two tries (attempt1, attempt2); shots says which of them saved a failure screenshot."""
+        from tests.test_failure_messages import debug_dir
+        out = Path(tempfile.mkdtemp()); self.addCleanup(lambda: __import__("shutil").rmtree(out, ignore_errors=True))
+        tries = []
+        for i, shot in enumerate(shots, 1):
+            d = out / ".work" / "debug" / f"attempt{i}"
+            png = debug_dir(d, flow="de", shot=shot)
+            if shot: png.write_bytes(b"\x89PNG try %d" % i)
+            tries.append((d, "de"))
+        return out, tries[::-1]  # latest first
+
+    def test_the_retrys_picture_is_copied_to_a_named_file_and_named_in_the_message(self):
+        out, tries = self.folders()
+        kept = sf.keep_failure_screenshot(out, "de", tries)
+        self.assertEqual(kept, out / "failures" / "de.png"); self.assertEqual(kept.read_bytes(), b"\x89PNG try 2")
+        got = sf.failure_details(*tries[0], kept=kept)
+        self.assertIn(f"failure screenshot: {kept}", got); self.assertFalse(any(".maestro" in l for l in got))
+
+    def test_it_stays_when_the_debug_folders_are_cleared(self):
+        out, tries = self.folders()
+        kept = sf.keep_failure_screenshot(out, "de", tries)
+        __import__("shutil").rmtree(out / ".work")  # the next run does this
+        self.assertTrue(kept.is_file())
+
+    def test_when_the_retry_saved_no_picture_the_first_tries_is_kept_and_says_so(self):
+        out, tries = self.folders((True, False))
+        kept = sf.keep_failure_screenshot(out, "de", tries)
+        self.assertEqual(kept.name, "de-first-try.png"); self.assertEqual(kept.read_bytes(), b"\x89PNG try 1")
+        self.assertIn(f"failure screenshot: {kept} (the first try's: the retry saved none)", sf.failure_details(*tries[0], kept=kept))
+        self.assertEqual(sf.keep_failure_screenshot(out, "de", [None, tries[1]]).name, "de-first-try.png")  # a missing try is skipped, not an error
+
+    def test_a_language_that_passed_loses_an_old_picture_and_no_picture_makes_no_folder(self):
+        out, tries = self.folders()
+        sf.keep_failure_screenshot(out, "de", tries); (out / "failures" / "de-first-try.png").write_bytes(b"old")
+        self.assertIsNone(sf.keep_failure_screenshot(out, "de", []))
+        self.assertEqual(list((out / "failures").iterdir()), [])
+        out2, tries2 = self.folders((False, False))
+        self.assertIsNone(sf.keep_failure_screenshot(out2, "de", tries2)); self.assertFalse((out2 / "failures").exists())
+
+    def test_other_languages_pictures_are_left_alone(self):
+        out, tries = self.folders()
+        (out / "failures").mkdir(); (out / "failures" / "ja.png").write_bytes(b"ja")
+        sf.keep_failure_screenshot(out, "de", tries)
+        self.assertEqual((out / "failures" / "ja.png").read_bytes(), b"ja")
+
+
+class FailureKeptInARun(unittest.TestCase):  # item 25, a whole iOS run on the 0.1.7 fakes
+    def setUp(self):
+        from tests import test_reliability_017 as r17
+        if sys.platform != "darwin": self.skipTest("iOS run path is macOS only")
+        self.run_ = r17.IosRetries("run_it"); self.run_.setUp(); self.addCleanup(self.run_.doCleanups)
+        self.calls, plain = 0, self.run_.fake_maestro
+        def maestro(cmd, **kw):
+            """The fake Maestro, plus the failure screenshot Maestro leaves in --debug-output (only on the calls in self.pictures)."""
+            self.calls += 1
+            done = plain(cmd, **kw)
+            if self.calls in self.pictures:
+                junit = Path(cmd[cmd.index("--output") + 1]).read_text()
+                for lp in re.findall(r'<testcase name="(\w+)" time="2"><failure>', junit):
+                    shot = Path(cmd[cmd.index("--debug-output") + 1]) / ".maestro/tests/2026/commands"
+                    shot.mkdir(parents=True, exist_ok=True)
+                    (shot / f"screenshot-❌-1-({lp}).png").write_bytes(b"\x89PNG call %d" % self.calls)
+            return done
+        self.run_.fake_maestro = maestro
+        self.pictures = {1, 2}
+
+    def go(self):
+        with mock.patch.object(sf, "screenshot_texts", return_value=[]):
+            code, out = self.run_.run_it()
+        return code, out, (self.run_.d / "out").resolve()
+
+    def test_a_failed_retry_leaves_its_picture_in_the_output_and_names_it(self):
+        self.run_.outcomes = {"de": ["Unknown error"]}
+        code, out, folder = self.go()
+        self.assertEqual(code, 1, out)
+        self.assertEqual((folder / "failures/de.png").read_bytes(), b"\x89PNG call 2")
+        self.assertIn(f"failure screenshot: {folder / 'failures/de.png'}", out)
+        self.assertEqual(self.run_.run_json()["de"]["failure_screenshot"], "failures/de.png")
+        self.assertNotIn("failure_screenshot", self.run_.run_json()["fr"])
+        self.assertEqual(list((folder / "failures").iterdir()), [folder / "failures/de.png"])
+
+    def test_a_retry_that_saved_no_picture_leaves_the_first_tries(self):
+        self.pictures = {1}
+        self.run_.outcomes = {"de": ["Unknown error"]}
+        code, out, folder = self.go()
+        self.assertEqual((folder / "failures/de-first-try.png").read_bytes(), b"\x89PNG call 1")
+        self.assertIn("(the first try's: the retry saved none)", out); self.assertEqual(self.run_.run_json()["de"]["failure_screenshot"], "failures/de-first-try.png")
+
+    def test_a_later_run_that_passes_removes_the_old_picture(self):
+        self.run_.outcomes = {"de": ["Unknown error"]}
+        self.go()
+        self.run_.outcomes = {}; self.calls = 0
+        code, out, folder = self.go()
+        self.assertEqual(code, 0, out); self.assertEqual(list((folder / "failures").iterdir()), [])
+        self.assertNotIn("failure_screenshot", self.run_.run_json()["de"])
+
+
+from tests.test_claims_unit import FleetCase  # a project with fake simulators, emulators and Maestro
+
+
+class AndroidFailureInARun(FleetCase):  # items 24 and 25, a whole Android run on the fakes
+    """One emulator, one language (en), a Maestro that fails the flow the way self.error says and leaves its failure screenshot on the calls in self.pictures."""
+    dump = WINDOWS % SPLASH_WINDOW.replace(PKG, "p.q")
+
+    def setUp(self):
+        super().setUp()
+        self.tries, self.pictures, self.error = 0, {1, 2}, "Assertion is false: id: login-button is visible"
+        p = mock.patch.object(sf, "screenshot_texts", return_value=[]); p.start(); self.addCleanup(p.stop)
+
+    def fake_android_pool(self, n, cfg, pool):
+        test = self
+        class Emu:
+            serial = "emulator-5702"
+            def adb(self, *a, check=True, timeout=180): return test.dump if a == ("shell", "dumpsys", "window") else ""
+        pool.append(Emu())
+
+    def fake_maestro(self, cmd, env=None, timeout=None, cwd=None, **kw):
+        self.tries += 1
+        junit, dbg = Path(cmd[cmd.index("--output") + 1]), Path(cmd[cmd.index("--debug-output") + 1])
+        (dbg / ".maestro/tests/x").mkdir(parents=True, exist_ok=True)
+        flow = next(Path(cmd[cmd.index("test") + 1]).glob("*.yaml")).stem
+        (dbg / "maestro.log").write_text(f"Selected device emulator-5702 using port 7001 with execution plan ExecutionPlan(flowsToRun=[/x/{flow}.yaml], sequence=x)\n")
+        if self.tries in self.pictures: (dbg / f".maestro/tests/x/screenshot-❌-1-({flow}).png").write_bytes(b"\x89PNG call %d" % self.tries)
+        junit.write_text(f'<testsuites><testsuite><testcase name="{flow}" time="1"><failure>{self.error}</failure></testcase></testsuite></testsuites>')
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    def go(self):
+        code, out, err = self.main("run", self.config(ios=None, android='locales = ["en"]\n'))
+        folder = (self.d / "out").resolve()
+        return code, out, json.loads((folder / "run.json").read_text())["locales"]["en"], folder
+
+    def test_a_stuck_splash_is_named_and_the_picture_stays_in_the_output(self):
+        code, out, en, folder = self.go()
+        self.assertEqual(code, 1, out); self.assertEqual(self.tries, 1)
+        self.assertIn("     the app's splash screen is still showing; taps can't reach the app", out)
+        self.assertIn(f"failure screenshot: {folder / 'failures/en.png'}", out)
+        self.assertEqual((folder / "failures/en.png").read_bytes(), b"\x89PNG call 1"); self.assertEqual(en["failure_screenshot"], "failures/en.png")
+        self.assertFalse(any(k.startswith("_") for k in en))
+
+    def test_without_the_splash_window_the_message_does_not_claim_one(self):
+        self.dump = WINDOWS % ""
+        code, out, en, folder = self.go()
+        self.assertNotIn("splash screen is still showing", out)
+
+    def test_a_failed_retry_without_a_picture_leaves_the_first_tries(self):
+        self.error, self.pictures = "Unknown error", {1}
+        code, out, en, folder = self.go()
+        self.assertEqual(code, 1, out); self.assertEqual(self.tries, 2)
+        self.assertEqual((folder / "failures/en-first-try.png").read_bytes(), b"\x89PNG call 1")
+        self.assertIn(f"failure screenshot: {folder / 'failures/en-first-try.png'} (the first try's: the retry saved none)", out)
+        self.assertEqual(en["failure_screenshot"], "failures/en-first-try.png"); self.assertIn("the app's splash screen is still showing", out)

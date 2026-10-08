@@ -1887,16 +1887,37 @@ def app_splash_showing(emulator, package):
     try: return splash_showing(emulator.adb("shell", "dumpsys", "window", check=False, timeout=30), package)
     except RuntimeError: return False  # the emulator stopped answering: say nothing about the splash
 
-def failure_details(debug, flow, flow_text="", platform="ios", splash=False):
+def failure_screenshot(debug, flow):
+    """The newest failure screenshot (Maestro names it screenshot-❌-...) that `flow` left under `debug`, or None."""
+    pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
+    return max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
+
+FIRST_TRY = "-first-try"
+
+def keep_failure_screenshot(out, lp, tries):
+    """Copy a failed language's failure screenshot to out/failures/<lp>.png, because .work/debug is cleared by the next run and the picture is
+    what tells you why the flow failed. tries: (debug dir, flow name) of each try, latest first; when the retry left no picture the first
+    try's is kept as <lp>-first-try.png. A language that passed (tries empty) loses an older picture. Returns the path or None."""
+    keep = Path(out) / "failures"
+    for old in (f"{lp}.png", f"{lp}{FIRST_TRY}.png"): (keep / old).unlink(missing_ok=True)
+    for i, t in enumerate(tries):
+        if t and (png := failure_screenshot(*t)):
+            keep.mkdir(exist_ok=True); dst = keep / (f"{lp}{FIRST_TRY}.png" if i else f"{lp}.png")
+            try: shutil.copy2(png, dst)
+            except OSError: return None
+            return dst
+    return None
+
+def failure_details(debug, flow, flow_text="", platform="ios", splash=False, kept=None):
     """Lines that say where a failed flow stopped: the failing step and its selector as Maestro's log names it, the failure screenshot,
     up to FAIL_TEXTS texts on that screen (from the hierarchy Maestro saved, else one OCR of the screenshot), and the iOS landscape hint.
+    kept: where keep_failure_screenshot put the picture (named instead of the one in Maestro's debug folder).
     splash: Android's window list showed the app's splash still up, so the hierarchy's texts are behind it. On iOS the screenshot is read
     even when there is a hierarchy, and a picture that shows none of the tree's texts is said so. Called once per failed language, after the retry."""
     out, (lines, steps) = [], flow_steps(debug, flow)
     if step := next((d for _, d, st in reversed(steps) if st == "FAILED"), None): out.append(f"failed step: {step[:160]}")
-    pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
-    png = max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
-    if png: out.append(f"failure screenshot: {png}")
+    png = kept or failure_screenshot(debug, flow)
+    if png: out.append(f"failure screenshot: {png}" + (" (the first try's: the retry saved none)" if kept and kept.stem.endswith(FIRST_TRY) else ""))
     tree = failed_hierarchy(debug, flow)
     clean = lambda ts: [t[:40] for t in dict.fromkeys(" ".join(t.split()) for t in ts) if len(t) > 1][:FAIL_TEXTS]
     listed = clean(hierarchy_lines(tree) if tree else [])
@@ -1910,8 +1931,8 @@ def failure_details(debug, flow, flow_text="", platform="ios", splash=False):
     if platform == "ios" and (hint := landscape_tap_hint(lines, steps, flow_text)): out.append(hint)
     return out
 
-def print_failure(debug, flow, flow_text="", platform="ios", splash=False):
-    for line in failure_details(debug, flow, flow_text, platform, splash): print(f"     {line}")
+def print_failure(debug, flow, flow_text="", platform="ios", splash=False, kept=None):
+    for line in failure_details(debug, flow, flow_text, platform, splash, kept): print(f"     {line}")
 
 # ---------- run ----------
 
@@ -2313,7 +2334,11 @@ def ios_run_inner(cfg, path, only, parallel):
     results = []
     for lp, r_ in final.items():
         print_result(lp, r_, expected)
-        if not r_["ok"] and not capture: print_failure(out / ".work" / "debug" / f"attempt{r_.get('attempts', 1)}", lp, flow, "ios")  # Maestro's logs; [capture] runs keep xcodebuild's log instead
+        if capture: results.append({"lproj": lp, **r_}); continue  # [capture] runs keep xcodebuild's log instead of Maestro's
+        debugs = [(out / ".work" / "debug" / f"attempt{a}", lp) for a in range(r_.get("attempts", 1), 0, -1)]
+        kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else debugs)
+        if kept: r_["failure_screenshot"] = kept.relative_to(out).as_posix()
+        if not r_["ok"]: print_failure(debugs[0][0], lp, flow, "ios", kept=kept)  # Maestro's logs
         results.append({"lproj": lp, **r_})
     if not all(r["ok"] for r in results):
         print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
@@ -2970,14 +2995,17 @@ def android_run_inner(cfg, path, out, only, parallel):
             busy_warn(cfg, "android", n)
             print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
             for i in range(0, len(retry), n):
-                for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items(): final[lp] = {**r_, "retried": True, "attempts": 2}
+                for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items():
+                    final[lp] = {**r_, "retried": True, "attempts": 2, "_before": final[lp].get("_maestro"), "_splash": r_.get("_splash") or final[lp].get("_splash", False)}
         for r_ in final.values(): r_.setdefault("attempts", 1)
     finally:
         stop_emulators(pool)
     for lp in todo:
-        r_ = final[lp]; where = r_.pop("_maestro", None); splash = r_.pop("_splash", False)
+        r_ = final[lp]; where = r_.pop("_maestro", None); before = r_.pop("_before", None); splash = r_.pop("_splash", False)
+        kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else [where, before])
+        if kept: r_["failure_screenshot"] = kept.relative_to(out).as_posix()
         print_result(lp, r_, expected)
-        if not r_["ok"] and where: print_failure(*where, flow, "android", splash)
+        if not r_["ok"] and (where or before): print_failure(*(where or before), flow, "android", splash, kept)
         report["locales"][lp].update(r_)
     if not all(r_["ok"] for r_ in final.values()): print(port_clash_note(out, [r_.get("error") for r_ in final.values() if not r_["ok"]]), end="")
     kept = keep_earlier(report, prev)

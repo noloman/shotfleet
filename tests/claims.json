@@ -5581,5 +5581,22 @@
   "assertion": "Unit tests with sample window lists and a fake emulator; not run on a device.",
   "layer": "unit",
   "fix": ""
+ },
+ {
+  "id": "C353",
+  "claim": "When a language fails, run copies the failure screenshot into out/failures/<language>.png, names it in the failure message and in run.json (failure_screenshot); if the retry saved none, the first try's is kept as <language>-first-try.png and the message says so; a language that passes later loses its old picture",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "`run` copies the failure screenshot Maestro took into `out/failures/<language>.png`",
+   "<code>run</code> copies the failure screenshot Maestro took into <code>out/failures/&lt;language&gt;.png</code>"
+  ],
+  "status": "proven",
+  "proof": "FailureScreenshotKept.test_the_retrys_picture_is_copied_to_a_named_file_and_named_in_the_message, FailureScreenshotKept.test_it_stays_when_the_debug_folders_are_cleared, FailureScreenshotKept.test_when_the_retry_saved_no_picture_the_first_tries_is_kept_and_says_so, FailureScreenshotKept.test_a_language_that_passed_loses_an_old_picture_and_no_picture_makes_no_folder, FailureKeptInARun.test_a_failed_retry_leaves_its_picture_in_the_output_and_names_it, FailureKeptInARun.test_a_retry_that_saved_no_picture_leaves_the_first_tries, FailureKeptInARun.test_a_later_run_that_passes_removes_the_old_picture, AndroidFailureInARun.test_a_stuck_splash_is_named_and_the_picture_stays_in_the_output, AndroidFailureInARun.test_a_failed_retry_without_a_picture_leaves_the_first_tries (tests/test_018b_fixes.py). Seen in the obytes Android dry run, 2026-10-08: the failure screenshot was gone after the retry also failed and 13 minutes of lock time went on reproducing it (shotfleet-rc-build/showcase-obytes/record/NOTES-android.md, finding 2). Whole runs on fake Maestro, simulators and emulators; not run on a device.",
+  "layer": "unit",
+  "assertion": "Unit test with fakes; no device.",
+  "fix": ""
  }
 ]
