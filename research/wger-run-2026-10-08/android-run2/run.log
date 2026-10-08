@@ -1,0 +1,12 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 1 emulators, 3 rounds...
+ok   fr       6/6 screenshots
+ok   hr       6/6 screenshots
+ok   uk       6/6 screenshots
+captured 3/3 locales in 204s on 1 emulators
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 18 screenshots in 3 languages: 0 problem(s)
+rc=0 killed=0

@@ -1,0 +1,151 @@
+{
+ "screenshots": [
+  {
+   "file": "fr/01_login.png",
+   "src": "../out-android-run2/raw/fr/01_login.png",
+   "sha": "b7d89b14e957",
+   "lang": "fr",
+   "chars": 181,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/02_advanced.png",
+   "src": "../out-android-run2/raw/fr/02_advanced.png",
+   "sha": "4e4a35250be2",
+   "lang": "fr",
+   "chars": 398,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/03_self_hosted.png",
+   "src": "../out-android-run2/raw/fr/03_self_hosted.png",
+   "sha": "065f7a850c0c",
+   "lang": "fr",
+   "chars": 522,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/04_token_login.png",
+   "src": "../out-android-run2/raw/fr/04_token_login.png",
+   "sha": "6623958ee4f8",
+   "lang": "fr",
+   "chars": 366,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/05_register.png",
+   "src": "../out-android-run2/raw/fr/05_register.png",
+   "sha": "e8be976584e4",
+   "lang": "fr",
+   "chars": 157,
+   "evidence": "ocr"
+  },
+  {
+   "file": "fr/06_register_errors.png",
+   "src": "../out-android-run2/raw/fr/06_register_errors.png",
+   "sha": "f23b393d16cf",
+   "lang": "fr",
+   "chars": 210,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hr/01_login.png",
+   "src": "../out-android-run2/raw/hr/01_login.png",
+   "sha": "a22009bf60ce",
+   "lang": "hr",
+   "chars": 160,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hr/02_advanced.png",
+   "src": "../out-android-run2/raw/hr/02_advanced.png",
+   "sha": "c5e0591dee6a",
+   "lang": "hr",
+   "chars": 370,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hr/03_self_hosted.png",
+   "src": "../out-android-run2/raw/hr/03_self_hosted.png",
+   "sha": "f4aa5ca8a15f",
+   "lang": "hr",
+   "chars": 469,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hr/04_token_login.png",
+   "src": "../out-android-run2/raw/hr/04_token_login.png",
+   "sha": "371ea1838adf",
+   "lang": "hr",
+   "chars": 372,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hr/05_register.png",
+   "src": "../out-android-run2/raw/hr/05_register.png",
+   "sha": "0ae2c872956d",
+   "lang": "hr",
+   "chars": 110,
+   "evidence": "ocr"
+  },
+  {
+   "file": "hr/06_register_errors.png",
+   "src": "../out-android-run2/raw/hr/06_register_errors.png",
+   "sha": "7ee270970e40",
+   "lang": "hr",
+   "chars": 77,
+   "evidence": "ocr"
+  },
+  {
+   "file": "uk/01_login.png",
+   "src": "../out-android-run2/raw/uk/01_login.png",
+   "sha": "d17ee85c2f38",
+   "lang": "uk",
+   "chars": 147,
+   "evidence": "ocr"
+  },
+  {
+   "file": "uk/02_advanced.png",
+   "src": "../out-android-run2/raw/uk/02_advanced.png",
+   "sha": "a919f998724a",
+   "lang": "uk",
+   "chars": 349,
+   "evidence": "ocr"
+  },
+  {
+   "file": "uk/03_self_hosted.png",
+   "src": "../out-android-run2/raw/uk/03_self_hosted.png",
+   "sha": "cf3bf1a122bc",
+   "lang": "uk",
+   "chars": 468,
+   "evidence": "ocr"
+  },
+  {
+   "file": "uk/04_token_login.png",
+   "src": "../out-android-run2/raw/uk/04_token_login.png",
+   "sha": "b1130297eb4e",
+   "lang": "uk",
+   "chars": 324,
+   "evidence": "ocr"
+  },
+  {
+   "file": "uk/05_register.png",
+   "src": "../out-android-run2/raw/uk/05_register.png",
+   "sha": "4cb3bee4b86e",
+   "lang": "uk",
+   "chars": 149,
+   "evidence": "ocr"
+  },
+  {
+   "file": "uk/06_register_errors.png",
+   "src": "../out-android-run2/raw/uk/06_register_errors.png",
+   "sha": "0b4b2ac0b6b1",
+   "lang": "uk",
+   "chars": 211,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

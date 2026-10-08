@@ -1,0 +1,39 @@
+{
+ "locales": {
+  "ar": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 47,
+   "error": null,
+   "screenshots": 6,
+   "device": "emulator-5702"
+  },
+  "de": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 38,
+   "error": null,
+   "screenshots": 6,
+   "device": "emulator-5702"
+  },
+  "es": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 33,
+   "error": null,
+   "screenshots": 6,
+   "device": "emulator-5702"
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/shotfleet.android.toml",
+ "strings": [
+  "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/src/lib/l10n/*.arb"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 177,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/app/wger-2.1.1-debug.apk",
+ "device": "phone",
+ "hierarchy_markers": false
+}

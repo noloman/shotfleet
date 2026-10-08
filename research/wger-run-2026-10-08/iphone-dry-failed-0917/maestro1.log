@@ -1,0 +1,33 @@
+Will split 1 flows across 1 shards (1 flows per shard)
+
+iOS driver not ready in time, consider increasing timeout by configuring MAESTRO_DRIVER_STARTUP_TIMEOUT env variable
+
+The stack trace was:
+xcuitest.installer.LocalXCTestInstaller$IOSDriverTimeoutException: iOS driver not ready in time, consider increasing timeout by configuring MAESTRO_DRIVER_STARTUP_TIMEOUT env variable
+	at xcuitest.installer.LocalXCTestInstaller.start$lambda$3(LocalXCTestInstaller.kt:129)
+	at maestro.utils.Metrics.measured(Metrics.kt:48)
+	at xcuitest.installer.LocalXCTestInstaller.start(LocalXCTestInstaller.kt:99)
+	at xcuitest.XCTestDriverClient.restartXCTestRunner(XCTestDriverClient.kt:40)
+	at ios.xctest.XCTestIOSDevice.open(XCTestIOSDevice.kt:26)
+	at ios.LocalIOSDevice.open(LocalIOSDevice.kt:27)
+	at maestro.drivers.IOSDriver.open$lambda$3(IOSDriver.kt:77)
+	at maestro.utils.Metrics.measured(Metrics.kt:48)
+	at maestro.utils.Metrics.measured$default(Metrics.kt:42)
+	at maestro.drivers.IOSDriver.open(IOSDriver.kt:76)
+	at maestro.Maestro$Companion.ios(Maestro.kt:620)
+	at maestro.cli.session.MaestroSessionManager.createIOS(MaestroSessionManager.kt:424)
+	at maestro.cli.session.MaestroSessionManager.createMaestro(MaestroSessionManager.kt:209)
+	at maestro.cli.session.MaestroSessionManager.newSession(MaestroSessionManager.kt:104)
+	at maestro.cli.session.MaestroSessionManager.newSession$default(MaestroSessionManager.kt:65)
+	at maestro.cli.command.TestCommand.runShardSuite(TestCommand.kt:454)
+	at maestro.cli.command.TestCommand.access$runShardSuite(TestCommand.kt:80)
+	at maestro.cli.command.TestCommand$handleSessions$1$results$1$1.invokeSuspend(TestCommand.kt:413)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:111)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:99)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:585)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:802)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:706)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:693)
+

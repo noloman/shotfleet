@@ -1,0 +1,103 @@
+{
+ "screenshots": [
+  {
+   "file": "ar/01_login.png",
+   "src": "../out-iphone-run1/raw/ar/01_login.png",
+   "sha": "4e3a7021c8b9",
+   "lang": "ar",
+   "chars": 285,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/02_advanced.png",
+   "src": "../out-iphone-run1/raw/ar/02_advanced.png",
+   "sha": "9914b8761b77",
+   "lang": "ar",
+   "chars": 407,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/03_self_hosted.png",
+   "src": "../out-iphone-run1/raw/ar/03_self_hosted.png",
+   "sha": "2c437aea364f",
+   "lang": "ar",
+   "chars": 498,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/04_token_login.png",
+   "src": "../out-iphone-run1/raw/ar/04_token_login.png",
+   "sha": "ab65cc79845a",
+   "lang": "ar",
+   "chars": 442,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/05_register.png",
+   "src": "../out-iphone-run1/raw/ar/05_register.png",
+   "sha": "4d7531df78df",
+   "lang": "ar",
+   "chars": 208,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "ar/06_register_errors.png",
+   "src": "../out-iphone-run1/raw/ar/06_register_errors.png",
+   "sha": "fae721a9c86a",
+   "lang": "ar",
+   "chars": 255,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/01_login.png",
+   "src": "../out-iphone-run1/raw/de/01_login.png",
+   "sha": "7ef4a1687d0b",
+   "lang": "de",
+   "chars": 233,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/02_advanced.png",
+   "src": "../out-iphone-run1/raw/de/02_advanced.png",
+   "sha": "e52ff65365d0",
+   "lang": "de",
+   "chars": 492,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/03_self_hosted.png",
+   "src": "../out-iphone-run1/raw/de/03_self_hosted.png",
+   "sha": "97b9f4c62dc9",
+   "lang": "de",
+   "chars": 619,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/04_token_login.png",
+   "src": "../out-iphone-run1/raw/de/04_token_login.png",
+   "sha": "97305cdc1e0c",
+   "lang": "de",
+   "chars": 412,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/05_register.png",
+   "src": "../out-iphone-run1/raw/de/05_register.png",
+   "sha": "bea0a311ad4c",
+   "lang": "de",
+   "chars": 213,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "de/06_register_errors.png",
+   "src": "../out-iphone-run1/raw/de/06_register_errors.png",
+   "sha": "20ae28a4454e",
+   "lang": "de",
+   "chars": 288,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

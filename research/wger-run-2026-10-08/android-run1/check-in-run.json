@@ -1,0 +1,151 @@
+{
+ "screenshots": [
+  {
+   "file": "ar/01_login.png",
+   "src": "raw/ar/01_login.png",
+   "sha": "7744a9dcdb25",
+   "lang": "ar",
+   "chars": 208,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ar/02_advanced.png",
+   "src": "raw/ar/02_advanced.png",
+   "sha": "b2a6868e3e95",
+   "lang": "ar",
+   "chars": 301,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ar/03_self_hosted.png",
+   "src": "raw/ar/03_self_hosted.png",
+   "sha": "02116016595f",
+   "lang": "ar",
+   "chars": 392,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ar/04_token_login.png",
+   "src": "raw/ar/04_token_login.png",
+   "sha": "c84937b2d10b",
+   "lang": "ar",
+   "chars": 368,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ar/05_register.png",
+   "src": "raw/ar/05_register.png",
+   "sha": "055391f4fb05",
+   "lang": "ar",
+   "chars": 134,
+   "evidence": "ocr"
+  },
+  {
+   "file": "ar/06_register_errors.png",
+   "src": "raw/ar/06_register_errors.png",
+   "sha": "ad7cc2878961",
+   "lang": "ar",
+   "chars": 176,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/01_login.png",
+   "src": "raw/de/01_login.png",
+   "sha": "f819e27d3cca",
+   "lang": "de",
+   "chars": 145,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/02_advanced.png",
+   "src": "raw/de/02_advanced.png",
+   "sha": "4e11db39b790",
+   "lang": "de",
+   "chars": 386,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/03_self_hosted.png",
+   "src": "raw/de/03_self_hosted.png",
+   "sha": "346b85e3747b",
+   "lang": "de",
+   "chars": 513,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/04_token_login.png",
+   "src": "raw/de/04_token_login.png",
+   "sha": "b25e410b0a5f",
+   "lang": "de",
+   "chars": 319,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/05_register.png",
+   "src": "raw/de/05_register.png",
+   "sha": "a995875550c8",
+   "lang": "de",
+   "chars": 141,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/06_register_errors.png",
+   "src": "raw/de/06_register_errors.png",
+   "sha": "29e3c0e3fc1c",
+   "lang": "de",
+   "chars": 204,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/01_login.png",
+   "src": "raw/es/01_login.png",
+   "sha": "ad438a85b12e",
+   "lang": "es",
+   "chars": 192,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/02_advanced.png",
+   "src": "raw/es/02_advanced.png",
+   "sha": "7cce13b8bcfc",
+   "lang": "es",
+   "chars": 374,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/03_self_hosted.png",
+   "src": "raw/es/03_self_hosted.png",
+   "sha": "0fc61fb0b871",
+   "lang": "es",
+   "chars": 518,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/04_token_login.png",
+   "src": "raw/es/04_token_login.png",
+   "sha": "dd4dc7a09d7d",
+   "lang": "es",
+   "chars": 366,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/05_register.png",
+   "src": "raw/es/05_register.png",
+   "sha": "d3c2e69dd7bc",
+   "lang": "es",
+   "chars": 166,
+   "evidence": "ocr"
+  },
+  {
+   "file": "es/06_register_errors.png",
+   "src": "raw/es/06_register_errors.png",
+   "sha": "c349f5b2c6ed",
+   "lang": "es",
+   "chars": 229,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

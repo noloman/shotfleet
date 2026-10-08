@@ -1,0 +1,10 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 1 locales on 1 simulators...
+retrying 1: en
+simulator 066F83BB-29F0-4F92-B7C7-9F24BA8278E2 stopped answering (simctl uninstall did not answer within 60 s: simulator 066F83BB-29F0-4F92-B7C7-9F24BA8278E2 is not responding. Shut it down with `xcrun simctl shutdown 066F83BB-29F0-4F92-B7C7-9F24BA8278E2` and run again; if it stays stuck, restart the Mac); carrying on without it
+not retrying: no simulator answers any more. Shut down shotfleet's simulators (your other simulators are left alone): `xcrun simctl shutdown 066F83BB-29F0-4F92-B7C7-9F24BA8278E2` and run again; the next run replaces the ones that stopped answering with new ones. This usually means the Mac is short of memory: close other simulators and heavy apps first
+FAIL en       0/6 screenshots  no result (see maestro log)
+captured 0/1 locales in 313s on 1 simulators
+no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs
+rc=1 killed=0

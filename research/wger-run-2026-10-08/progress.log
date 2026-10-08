@@ -1,0 +1,90 @@
+2026-10-08T06:20:00Z DOWNLOAD wger-project/flutter from github.com, 244M
+2026-10-08T06:25:57Z NOTE also ran 'git fetch --depth 1 origin refs/tags/*' (tags only, same official repo) to read the latest tag; src now 506M
+2026-10-08 08:32:18 ANDROID chain start; foreign java pids before: 8077 8190 
+2026-10-08 08:33:18 GATE(android-pubget) load1=10.20 free%=69 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=65
+2026-10-08 08:33:18 GATE(android-pubget) OPEN
+2026-10-08 08:33:18 DOWNLOAD pub.dev packages via flutter pub get (size: see logs/pub-get.log / cache growth)
+2026-10-08 08:33:58 pubget build started pid/pgid=86843 user=manu limit=1200s
+2026-10-08 08:34:18 pub get ok
+2026-10-08 08:34:31 NOTE pub get finished in 20 s; log shows no package downloaded (all already in ~/.pub-cache); pubspec.lock unchanged
+2026-10-08 08:35:57 GATE(android-build) load1=5.73 free%=65 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=65
+2026-10-08 08:35:57 GATE(android-build) OPEN
+2026-10-08 08:36:57 ANDROID-START load1=9.77 free%=61 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=65
+2026-10-08 08:36:57 android build started pid/pgid=89079 user=manu limit=3600s
+2026-10-08 08:38:57 ANDROID-END load1=8.03 free%=54 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=65
+2026-10-08 08:38:57 ANDROID build finished status=1 rc=1 wall=60s
+2026-10-08 08:39:23 RETRY 1/2 android: HEAD 57d2ee4 failed in 55 s (kernel compile: flutter_html-3.0.0 calls html.matches(), removed in html 0.15.7 which HEAD's pubspec.lock bumped from 0.15.6). Fix: git checkout --detach tag 2.1.1 (cf12708, identical lib/ios/android, lock has html 0.15.6). No source file edited.
+2026-10-08 08:39:23 ANDROID chain (retry 1, tag 2.1.1) start; foreign java pids before: 8077 8190 
+2026-10-08 08:39:32 ANDROID chain done
+2026-10-08 08:40:23 GATE(android-pubget) load1=15.77 free%=48 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=65
+2026-10-08 08:40:23 GATE(android-pubget) OPEN
+2026-10-08 08:40:23 pub get again on tag 2.1.1 lock (pub.dev, cached packages expected)
+2026-10-08 08:40:59 pubget build started pid/pgid=91289 user=manu limit=1200s
+2026-10-08 08:41:09 pub get ok
+2026-10-08 08:42:51 GATE(android-build) load1=13.92 free%=49 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=64
+2026-10-08 08:42:51 GATE(android-build) OPEN
+2026-10-08 08:43:51 ANDROID-START load1=18.44 free%=47 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=63
+2026-10-08 08:43:51 android build started pid/pgid=91691 user=manu limit=3600s
+2026-10-08 08:47:21 ANDROID-END load1=54.91 free%=51 pressure_level=1 swapouts_per_60s=0 disk_free_GiB=59
+2026-10-08 08:47:21 ANDROID build finished status=0 rc=0 wall=150s
+2026-10-08 08:47:57 ANDROID debug APK built on tag 2.1.1 (cf12708) in 146 s gradle / 150 s wall; no gradle/kotlin/java process of mine remains (only foreign pids 8077 8190 as before)
+2026-10-08T06:37:00Z DOWNLOAD powersync-sqlite-core libpowersync_core.so x3 ABIs (arm64-v8a/armeabi-v7a/x86_64 files 417152+475864+280472 B) from github.com/powersync-ja/powersync-sqlite-core releases, 1.1 MB total, SHA-256 verified by hook (fetched 08:37 local during attempt 1; cached under src/.dart_tool)
+2026-10-08T06:37:00Z DOWNLOAD sqlite3 libsqlite3.so x3 ABIs (1872620+1831784+1808568 B) from github.com/simolus3/sqlite3.dart releases, 5.3 MB total, SHA-256 verified by hook
+2026-10-08 08:47:57 NOTE Maven/Gradle: ~/.gradle grew 32704944 -> 32738892 KiB across pub get + android build (about 33 MB), pub-cache 1951008 -> 2100856 KiB (+146 MB, mostly during pub get? see cache-growth.log)
+2026-10-08 08:47:57 NOTE release APK SKIPPED: android/app/build.gradle signingConfigs.release reads fastlane/metadata/envfiles/key.properties (only gpg-encrypted .gpg in repo, no plain file) -> storeFile/keyAlias null; needs secrets, not creating fake ones
+2026-10-08 08:47:57 IOS chain start
+2026-10-08 08:48:03 CORRECTION to the 08:34 NOTE: ~/.pub-cache grew 1951008 -> 2100856 KiB (+146 MB) across the pub get step, so pub get DID fetch packages from pub.dev (about 146 MB; other sessions may add a little). pubspec.lock unchanged by it.
+2026-10-08T06:34:00Z DOWNLOAD pub.dev packages via flutter pub get, about 146 MB (pub-cache growth)
+2026-10-08 08:48:05 ANDROID chain done
+2026-10-08 08:49:01 GATE(ios-build) load1=31.25 free%=42 pressure_level=2 swapouts_per_60s=12294 disk_free_GiB=59
+2026-10-08 08:51:01 GATE(ios-build) load1=28.59 free%=41 pressure_level=2 swapouts_per_60s=0 disk_free_GiB=75
+2026-10-08 08:51:01 GATE(ios-build) OPEN
+2026-10-08 08:52:01 IOS-START load1=23.67 free%=41 pressure_level=2 swapouts_per_60s=0 disk_free_GiB=75
+2026-10-08 08:52:01 ios build started pid/pgid=96282 user=manu limit=3600s
+2026-10-08 08:55:31 IOS-END load1=58.18 free%=48 pressure_level=2 swapouts_per_60s=0 disk_free_GiB=73
+2026-10-08 08:55:31 IOS build finished status=0 rc=0 wall=150s
+2026-10-08 08:55:33 IOS chain done
+2026-10-08 08:56:19 DOWNLOAD (iOS build hooks, github.com releases, SHA-256 verified by hooks) libsqlite3.dylib x2 (1719720+1714976 B, simolus3/sqlite3.dart) and libpowersync_core.dylib x2 (366992+404076 B, powersync-ja/powersync-sqlite-core): 4.2 MB total
+2026-10-08 08:56:19 NOTE iOS: no SwiftPM/Pod download (swiftpm cache 408 KiB), no Podfile created. IOS built OK, 150 s wall (xcode 109 s). CORRECTION: ~/.gradle grew 32704944 -> 33535288 KiB (+830 MB) over pub get+android; pub-cache 1951008 -> 2650504 -> 2624200 KiB; both shared with other sessions, not attributable to this build alone.
+2026-10-08 08:56:19 DONE android debug APK + ios simulator Runner.app; copied to app/. ARTIFACTS.txt written. src/build NOT cleaned.
+2026-10-08 08:59:08 chain-iphone started pid 501 (waiting for the start rule: lock free, earlier queue lines done, quiet check x3 60 s apart)
+2026-10-08 08:59:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:00:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:01:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:02:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:03:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:04:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:05:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:06:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:07:08 wait: lock held by: remoti-embeddings-spike | dev app end-to-end run with side-loaded model on headless emulator | 08:45 | est. 15 min
+2026-10-08 09:08:08 quiet check 1/3 rc=0 'quiet: free 50%, load 10' load=10.18 free%=50% disk_free_GiB=72
+2026-10-08 09:09:08 quiet check 2/3 rc=0 'quiet: free 51%, load 12' load=12.69 free%=52% disk_free_GiB=72
+2026-10-08 09:10:09 quiet check 3/3 rc=0 'quiet: free 43%, load 13' load=13.23 free%=43% disk_free_GiB=71
+2026-10-08 09:10:09 LOCK TAKEN at 09:10:09 (load=13.23 free%=43% disk_free_GiB=71); sims.before saved
+2026-10-08 09:10:19 iphone-dry (en) started, limit 1800s; load=13.58 free%=44% disk_free_GiB=71
+2026-10-08 09:17:01 iphone-dry done rc=1 killed=0 wall=402s; captured 0/1 locales in 313s on 1 simulators no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs ; load=158.47 free%=49% disk_free_GiB=70
+2026-10-08 09:17:29 dry run attempt 1 FAILED (infra, not the flow): Maestro 'iOS driver not ready in time' at load ~160 from other sessions, then simctl uninstall on shotfleet-1 (066F83BB) did not answer 60 s; kept as out-iphone-dry-failed-0917; retrying the identical dry run
+2026-10-08 09:17:31 iphone-dry (en) started, limit 1800s; load=100.41 free%=57% disk_free_GiB=70
+2026-10-08 09:21:12 iphone-dry done rc=1 killed=0 wall=221s; captured 0/1 locales in 128s on 1 simulators ; load=257.62 free%=44% disk_free_GiB=75
+2026-10-08 09:22:14 dry run attempt 2 (en): 5/6 frames, step 06 assertion wrong (empty e-mail shows no error) and 01_login frame is the SPLASH screen. Kept out-iphone-dry-failed-0921. Flow fix 1+2 (assert on username error; real 6 s wait before 01). Rerun dry.
+2026-10-08 09:22:17 iphone-dry (en) started, limit 1800s; load=97.40 free%=48% disk_free_GiB=75
+2026-10-08 09:24:38 iphone-dry done rc=0 killed=0 wall=141s; captured 1/1 locales in 98s on 1 simulators ; load=211.35 free%=47% disk_free_GiB=72
+2026-10-08 09:24:46 dry run (en) OK 6/6 after flow fixes; flow.yaml final. Starting run1 (ar,de)
+2026-10-08 09:24:48 iphone-run1 (ar,de) started, limit 1800s; load=180.74 free%=48% disk_free_GiB=72
+2026-10-08 09:27:49 iphone-run1 done rc=0 killed=0 wall=181s; captured 2/2 locales in 136s on 1 simulators ; load=157.73 free%=46% disk_free_GiB=71
+2026-10-08 09:27:58 run1 (ar,de) rc=0 12/12, reviewing frames; starting run2 (es,fr) meanwhile
+2026-10-08 09:27:59 iphone-run2 (es,fr) started, limit 1800s; load=137.64 free%=50% disk_free_GiB=71
+2026-10-08 09:28:27 run1 (ar,de) frames reviewed: all 12 right screen/language, RTL ok; run1 counts
+2026-10-08 09:31:39 iphone-run2 done rc=0 killed=0 wall=220s; captured 2/2 locales in 144s on 1 simulators ; load=167.04 free%=45% disk_free_GiB=68
+2026-10-08 09:31:50 run2 (es,fr) rc=0 12/12; starting run3 (hr,uk) while reviewing run2 frames
+2026-10-08 09:31:55 iphone-run3 (hr,uk) started, limit 1800s; load=131.89 free%=48% disk_free_GiB=67
+2026-10-08 09:32:07 run2 (es,fr) frames reviewed: all 12 ok
+2026-10-08 09:35:15 iphone-run3 done rc=0 killed=0 wall=201s; captured 2/2 locales in 129s on 1 simulators ; load=234.37 free%=50% disk_free_GiB=65
+2026-10-08 09:35:35 cmd release
+2026-10-08 09:35:35 CLEANUP start
+2026-10-08 09:35:38 shut down + deleted NEW simulator 351FADAD-EB7C-4182-B86D-C20D7F566684
+2026-10-08 09:35:42 LOCK RELEASED (load=226.51 free%=56% disk_free_GiB=65)
+2026-10-08 09:35:42 queue line replaced by DONE line
+2026-10-08 09:35:42 CLEANUP end
+2026-10-08 09:36:21 run3 (hr,uk) frames reviewed: all 12 ok; starting checks (lock already released)
+2026-10-08 09:37:15 CORRECTION to the 09:17 note: load was 13 at the start of the first dry run (it rose to 100-250 during runs, mostly this job's own Maestro/simulator plus other sessions); the 'iOS driver not ready in time' failure happened on the first boot of the pool simulator, cause not proven. Checks: --app Runner.app alone and with --strings both exit 2 ('contains no translations shotfleet can read', Flutter), so check ran with --strings only (rc 0 for all four)

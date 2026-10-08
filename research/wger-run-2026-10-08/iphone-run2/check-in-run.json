@@ -1,0 +1,103 @@
+{
+ "screenshots": [
+  {
+   "file": "es/01_login.png",
+   "src": "raw/es/01_login.png",
+   "sha": "3f2174101df1",
+   "lang": "es",
+   "chars": 268,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/02_advanced.png",
+   "src": "raw/es/02_advanced.png",
+   "sha": "8325bb487940",
+   "lang": "es",
+   "chars": 480,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/03_self_hosted.png",
+   "src": "raw/es/03_self_hosted.png",
+   "sha": "e72179ee601f",
+   "lang": "es",
+   "chars": 622,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/04_token_login.png",
+   "src": "raw/es/04_token_login.png",
+   "sha": "84412f76a1ea",
+   "lang": "es",
+   "chars": 458,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/05_register.png",
+   "src": "raw/es/05_register.png",
+   "sha": "11f04f99ae44",
+   "lang": "es",
+   "chars": 238,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "es/06_register_errors.png",
+   "src": "raw/es/06_register_errors.png",
+   "sha": "f5c20d6f23fb",
+   "lang": "es",
+   "chars": 312,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/01_login.png",
+   "src": "raw/fr/01_login.png",
+   "sha": "8141386cc96a",
+   "lang": "fr",
+   "chars": 255,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/02_advanced.png",
+   "src": "raw/fr/02_advanced.png",
+   "sha": "06abbd317e3f",
+   "lang": "fr",
+   "chars": 500,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/03_self_hosted.png",
+   "src": "raw/fr/03_self_hosted.png",
+   "sha": "55d7d0ea5f81",
+   "lang": "fr",
+   "chars": 622,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/04_token_login.png",
+   "src": "raw/fr/04_token_login.png",
+   "sha": "f955639fa63b",
+   "lang": "fr",
+   "chars": 485,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/05_register.png",
+   "src": "raw/fr/05_register.png",
+   "sha": "e99b41515806",
+   "lang": "fr",
+   "chars": 229,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "fr/06_register_errors.png",
+   "src": "raw/fr/06_register_errors.png",
+   "sha": "5aee0fed8f3d",
+   "lang": "fr",
+   "chars": 291,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

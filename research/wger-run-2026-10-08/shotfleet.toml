@@ -1,0 +1,11 @@
+# wger showcase, iPhone (working config built from shotfleet.draft.toml). shotfleet 0.1.6 released binary.
+# Dry run:  shotfleet run shotfleet.toml --platform ios --locales en --parallel 1
+# Runs:     --locales ar,de  |  es,fr  |  hr,uk   (the output folder `out-ios` is renamed to out-iphone-dry / out-iphone-runN after each run)
+# Paths are absolute (the app and the translation files are not inside the run folder).
+[ios]
+app = "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/app/Runner.app"
+strings = "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/src/lib/l10n/*.arb"   # Flutter: translations come from the .arb files of the clone (tag 2.1.1)
+flow = "flow.yaml"
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"   # NOT iOS 27.0
+parallel = 1
+out = "out-ios"
