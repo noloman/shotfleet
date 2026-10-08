@@ -42,6 +42,10 @@ Rules: reply within two business days; never ask for or paste a licence key, car
 
 Do not test `hello@shotfleet.com` by mailing it from the Gmail account it forwards to: Gmail hides the forwarded copy of a message you sent yourself, and Cloudflare then mails a "Missing email?" notice. Send from a different address, or read the proof in Cloudflare, Email Routing, Activity log (a line with Result "Forwarded"). On 2026-10-08 a test from the owner's Gmail showed "Forwarded" there, so the route works.
 
+## Rehearsed on 2026-10-08 (Gumroad creator test purchase, no charge)
+
+Checkout with FOUNDER29 for a Dutch buyer: $49 - $20 = $29, VAT 21% added on top ($6.09), total $35.09. The seller got a "New sale" email and the buyer a receipt within seconds (receipt: from Gumroad, VAT line, the 14-day refund line, "Contact ... by replying", and replies go to `hello@shotfleet.com`). The content page showed the key and the "5 activations" text. With that key on the live 0.1.6 build in fake home folders: the first `activate` counted 1 use, repeating it in the same home counted none, four more fresh homes made 5, the sixth was refused ("this key has used all 5 activations. Email hello@shotfleet.com and I'll reset the count") and cost nothing, a CI key (`SHOTFLEET_KEY`) passed the licence gate, and without a key `export` was refused with the buy link. Creator test purchases do not appear in Sales, so a test sale cannot be refunded or reset; the reset, disable and refund steps above stay **[unverified]** until the first real sale.
+
 ## Who to tell
 
 Anything that looks like a bug in shotfleet itself: open an issue note for the owner with the buyer's `shotfleet --version`, `shotfleet doctor` output and the command that failed. Do not paste the buyer's email or key.
