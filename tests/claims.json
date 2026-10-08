@@ -5695,5 +5695,22 @@
   "assertion": "Fake devices; not run on a real emulator.",
   "fix": "",
   "test": "SetupCommands.test_android_shell_commands_run_per_emulator_after_the_demo_mode_loop"
+ },
+ {
+  "id": "C376",
+  "claim": "What's new 0.1.8 and the home page's New in 0.1.8: plain-text scrollUntilVisible and zh-Hans on an Android app that ships zh-CN work; run waits for the screen to settle before each screenshot; regex and format-string selectors are warned about by name; a failed language keeps its screenshot and the message names a never-hiding splash screen or a clash on port 7001; check names what to pass on a Flutter build, shows a missing iPad set in a parent folder and can require a screen's own text with key",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "<code>scrollUntilVisible</code> with a plain text (<code>element: &quot;Settings&quot;</code>) is now translated, like the object form.",
+   "<code>scrollUntilVisible</code> with a plain text is translated now, and <code>zh-Hans</code> on an Android app that ships <code>zh-CN</code> just works."
+  ],
+  "status": "partial",
+  "proof": "One claim per item: C288 (scrollUntilVisible), C289 and C290 (settle step), C291 (language codes), C292 ([expect] key), C293 (Android OCR note), C294 (Flutter hint), C295 (doctor runtime), C297 (driver not ready), C298 (parent folder), C350 (regex selectors), C351 (port 7001), C352 (splash), C353 (failure screenshot), with tests in tests/test_018_capture_check.py and tests/test_018b_fixes.py. Device, 2026-10-08, Maestro 2.0.10: research/018-device-check-2026-10-08/ covers the scrollUntilVisible translation, the settle step, zh-Hans as zh-CN, the Flutter hint, the parent folder, [expect] key, doctor and the Android note. The regex warning, port 7001, the splash message and the kept failure screenshot were tested with fakes only, and the page says so. Maestro 2.11.0 with 0.1.8: see docs/compat.md after the release gate.",
+  "layer": "unit",
+  "assertion": "The tests named in C288 to C298 and C350 to C353; the device check README for the items it covers.",
+  "fix": ""
  }
 ]

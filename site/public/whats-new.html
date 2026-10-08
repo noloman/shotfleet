@@ -61,6 +61,19 @@
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
 
+    <h2 id="v0-1-8">0.1.8, 2026-10-08</h2>
+    <ul>
+      <li><code>scrollUntilVisible</code> with a plain text (<code>element: &quot;Settings&quot;</code>) is now translated, like the object form. Before, the plain string stayed in English, so the step failed in every other language.</li>
+      <li>Before each <code>takeScreenshot</code>, <code>run</code> waits up to one second for the screen to stop moving, so a sliding sheet or a splash on its way out is less likely to end up in the picture. <code>settle_ms</code> in the config changes the time, and <code>0</code> turns it off. An app that holds one splash image for several seconds still needs a wait for a text on its first real screen.</li>
+      <li>Ask for <code>zh-Hans</code> on an Android app that ships <code>zh-CN</code> and <code>run</code> now uses <code>zh-CN</code> and says so, instead of telling you the app has none of your languages. <code>zh-Hant</code> and <code>zh-TW</code> work the same way, and so do <code>pt</code> and <code>pt-BR</code>. When two codes would fit, it doesn’t guess: it names the ones the app has.</li>
+      <li>A text selector that is a regex, or that comes from a format string like <code>%@ on %@</code>, can’t be translated. <code>run</code> now says so by name before it starts and suggests an <code>id:</code> or a label the app translates. Before, such a flow passed in English and failed in every other language with nothing said.</li>
+      <li>When a language fails, the failure screenshot is kept in <code>out/failures/</code> and named in the message, also after a failed retry. “iOS driver not ready in time” on a simulator’s first boot counts as a device failure now, so it is retried once.</li>
+      <li>Two causes that used to fail with no hint now get a name: a splash screen that never hides (on Android) and a second Maestro job using port 7001. I tested these messages with fakes, not yet on a device.</li>
+      <li><code>check --app</code> on a Flutter build tells you to pass <code>--strings &#39;lib/l10n/*.arb&#39;</code>, and <code>--strings</code> together with <code>--app</code> now works. On the parent folder of a multi-device run, a missing iPad set shows as <code>missing</code> and the exit code agrees with the problem count.</li>
+      <li>You can add <code>key = &quot;benchmarks_title&quot;</code> to an <code>[expect.&lt;screenshot&gt;]</code> table. <code>check</code> then needs the app’s own text for that string key, in the screenshot’s language, to be on screen, which catches a green run that captured the wrong screen. Nothing changes unless you add it.</li>
+      <li><code>doctor</code> says which iOS runtime <code>run</code> will use, and why when a newer one is skipped. On Android with a Maestro older than 2.7.0, <code>run</code> says that <code>check</code> will read the text by OCR and suggests Maestro 2.11.0.</li>
+    </ul>
+
     <h2 id="v0-1-7">0.1.7, 2026-10-08</h2>
     <ul>
       <li><code>check</code> now ends with a store coverage table: one row per language, one column per device class (App Store: iPhone 6.9&quot;, iPhone 6.5&quot;, iPad 13&quot;; Google Play: phone, 7&quot; tablet, 10&quot; tablet), each cell <code>ok</code>, <code>missing</code>, <code>too many</code> or <code>wrong size</code>. It is also in <code>index.html</code> and <code>check.json</code>, and it changes no exit code.</li>
