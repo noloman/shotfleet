@@ -1,0 +1,13 @@
+note: Maestro 2.0.10 saves no per-step screen hierarchy (needs 2.7.0); Android screen text is read from pixels (OCR)
+warning fr: 'Search' -> 'Recherche' also means 'Researching'; anchor that step (below:/above:) if it taps the wrong element
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 3 locales on 1 emulators, 3 rounds...
+ok   es       5/5 screenshots
+ok   fr       5/5 screenshots
+ok   pt-BR    5/5 screenshots
+captured 3/3 locales in 126s on 1 emulators
+another shotfleet is preparing macOS text recognition; waiting
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 15 screenshots in 3 languages: 0 problem(s)
+rc=0 killed=0

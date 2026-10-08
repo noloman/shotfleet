@@ -1,0 +1,53 @@
+# Kuokka showcase, Android (DRAFT, not run yet). English only; shotfleet translates every selector per language.
+# Build: debug APK 2.0.15 (114) from origin/main eba7746e. Fresh install, no account, no story is ever opened.
+# Screens (all without live Hacker News content): 01_radar (empty state), 02_bookmarks (empty state), 03_account (signed out), 04_settings.
+# The Home feed is live HN (titles, usernames): it is passed through but never shot.
+appId: me.manulorenzo.hackernewskmp
+name: "Kuokka showcase, Android"
+---
+- launchApp:
+    clearState: true          # verify on the dry run whether shotfleet already starts from a fresh install
+    permissions:
+      all: allow
+# 1. The analytics dialog ("Help improve Kuokka") sits on top of onboarding on a fresh install: decline it.
+- extendedWaitUntil:
+    visible: "Not now"
+    timeout: 60000
+    optional: true
+- tapOn:
+    text: "Not now"
+    optional: true
+# 2. Onboarding page 1 -> Skip (no intent, so no starter Radar rule and no paywall afterwards)
+- extendedWaitUntil:
+    visible: "Your premium Hacker News experience"
+    timeout: 60000
+- tapOn: "Skip"
+# 3. Home loads (live feed). Wait for the bottom bar, shoot nothing here.
+- extendedWaitUntil:
+    visible: "Radar"
+    timeout: 90000
+- waitForAnimationToEnd:
+    timeout: 8000
+# Radar: empty state with the preset chips
+- tapOn: "Radar"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: 01_radar
+# Bookmarks: empty on a fresh install ("continue reading" appears only after a story was opened, which this flow never does).
+# If a translated tab label collides with other on-screen text, replace by the 4th tab's position (like the iPhone flow):
+#   - tapOn:
+#       point: "70%,95%"      # check the nav bar y on the AVD first (3-button vs gesture bar)
+- tapOn: "Bookmarks"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 02_bookmarks
+# Account: signed out, "Optional: Kuokka works fully without an account"
+- tapOn: "Account"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 03_account
+# Settings: gear icon in the Account top bar (content description "Settings")
+- tapOn: "Settings"
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 04_settings
