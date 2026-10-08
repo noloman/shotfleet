@@ -891,6 +891,12 @@ def framework_hint(build, strings_set, root="."):
     for m in msgs:
         if m not in HINTED: HINTED.add(m); print("hint: " + m, file=sys.stderr)
 
+def build_strings(app):
+    """The strings compiled into a native build, for check. A Flutter, React Native, MAUI or Unity build (the ones framework_hint
+    explains) keeps its text in code, so what's readable is the libraries' (every language looks untranslated): ask for --strings instead."""
+    if framework_of(app)[0]: raise Fail(no_translations_message(app))
+    return load_strings_apk(app) if Path(app).suffix == ".apk" else load_strings(Path(app))
+
 def no_translations_message(app):
     """Why check found no strings in this build, and the exact option to pass instead when it is a framework build (Flutter keeps its text in compiled code)."""
     name, globs, _ = framework_of(app)
@@ -3774,8 +3780,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         framework_hint(app, bool(strings_files))
         if strings is None and strings_files: strings = load_strings_files(strings_files)  # --strings with --app: the files are the translations (Flutter, React Native...), the app says which store
-        elif strings is None and app.suffix == ".apk" and framework_of(app)[0]: raise Fail(no_translations_message(app))  # an APK of Flutter, React Native... holds only the libraries' strings: checking against them reports every language as untranslated
-        elif strings is None: strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)  # check_build read them already
+        elif strings is None: strings = build_strings(app)  # a Flutter, React Native... build asks for --strings
         if not strings: raise Fail(no_translations_message(app))
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
     elif strings_files:  # Flutter, React Native, .NET, Unity, exports: translations from source files
@@ -3788,7 +3793,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             strings = config_strings({"strings": run["strings"], "base_locale": run.get("base_locale", "en")}, Path)
         elif not Path(src).exists():
             raise Fail(f"the app this run used is gone ({src}); pass the build with --app")
-        else: strings = load_strings_apk(src) if run.get("platform") == "android" else load_strings(Path(src))
+        else: strings = build_strings(src)
     tables = string_tables(strings or {})
     report = Path(report_dir) if report_dir else (folder if run_json.exists() else Path("shotfleet-check"))
     report.mkdir(parents=True, exist_ok=True)
@@ -5863,7 +5868,9 @@ def check_build(folder, cwd=None):
         return None, None, None, guess.format(f"no app build found in {cwd}" + (f" for these {'Android' if android and not ios else 'iOS'} screenshots"
                                                                               if builds else ""))
     app = Path(fits[0])
-    strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)
+    name, globs, _ = framework_of(app)
+    if name: return None, None, None, guess.format(f"{app} is a {name} build, whose translations shotfleet can't read (pass --strings '{globs[0]}')")
+    strings = build_strings(app)
     if not strings:
         return None, None, None, guess.format(f"{app} holds no translations shotfleet can read")
     return app, None, strings, f"no --app given: using {app} for strings (pass --app to choose another)"

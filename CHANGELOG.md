@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **`check` on any framework build asks for `--strings`, every time:** 0.1.8 did it for the Flutter APK only. The APK of a React Native or Expo app (the Obytes template) still printed the `--strings` hint and then reported "ar: the app has no ar translation", exit 1, because the build holds only the libraries' strings. Now every Flutter, React Native, MAUI and Unity build, APK or iOS `.app`, given with `--app`, found through the run's `run.json` or picked up from the current folder, exits 2 with the `--strings` instruction (or, for the one picked up from the folder, checks by language detection and says why) and reports no "no <language> translation" problems.
+
 ## 0.1.8 (2026-10-08)
 - **`scrollUntilVisible` with a plain text is translated:** `element: "Settings"` stayed in English; only `element: { text: "Settings" }` was translated. Both are now, in the block form and on one line.
 - **Language codes that differ between platforms:** asking for `zh-Hans` on an Android app that ships `zh-CN` (or the reverse, `zh-Hant` and `zh-TW`, `pt` and `pt-BR`) used to end with "none of those languages are in the app". `run` now uses the code the app ships and says so. When two codes would fit (`pt` with both `pt-BR` and `pt-PT`) it doesn't guess and names the codes the app has.

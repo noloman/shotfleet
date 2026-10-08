@@ -5737,5 +5737,21 @@
   "layer": "site",
   "assertion": "Open the records and compare the numbers.",
   "fix": ""
+ },
+ {
+  "id": "C390",
+  "claim": "check on a Flutter, React Native, MAUI or Unity build without --strings (APK or iOS app, from --app, from the run's run.json, or found in the folder) asks for --strings instead of reporting every language as untranslated: exit 2 with the instruction, no 'no <language> translation' problem",
+  "where": [
+   "CHANGELOG.md"
+  ],
+  "where_text": [
+   "**`check` on any framework build asks for `--strings`, every time:**"
+  ],
+  "status": "proven",
+  "proof": "FrameworkBuildNeedsStrings in tests/test_019_rn_check.py: test_every_framework_apk_asks_for_strings, test_every_framework_ios_app_asks_for_strings, test_the_build_a_run_used_asks_for_strings_too, test_a_build_found_in_the_folder_is_not_compared_with, test_an_ordinary_apk_still_reads_its_strings. Found on the Obytes Expo template v9.0.0+10 (fd9b358), 2026-10-08: showcase-obytes/check-android-hd-run1-app.log (run with the 0.1.6 binary) shows the hint, then 'ar: the app has no ar translation', rc=1. Read-only run of main with the same APK and folder before this change: rc=2 (00d7346 had fixed the --app path); the run.json path, iOS apps and a build found in the folder were still unguarded.",
+  "layer": "unit",
+  "assertion": "Unit tests with fakes; no device. The real Obytes APK was only read, not changed.",
+  "fix": "",
+  "test": "FrameworkBuildNeedsStrings.test_every_framework_apk_asks_for_strings"
  }
 ]
