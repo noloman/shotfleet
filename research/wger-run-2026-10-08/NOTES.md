@@ -67,7 +67,7 @@ f. Earlier WOD findings: the `scrollUntilVisible` text form (the string form of 
 
 ## Open items
 
-- **Courtesy note to the wger maintainers: posted** at https://github.com/wger-project/flutter/discussions/1389 (by the coordinator). The runner's earlier text here said "not posted"; that is corrected. The wger section goes live **only if the maintainers do not object**. Fallback if they do: drop frame 01 or the name ("an open-source Flutter workout app").
+- **Courtesy note to the wger maintainers: posted** at https://github.com/wger-project/flutter/discussions/1389 (by the coordinator). The runner's earlier text here said "not posted"; that is corrected. rolandgeider, a wger maintainer, replied "Hey! Sure, go ahead!" on that discussion on 2026-10-08, and the section went live on shotfleet.com at 14:45 that day. (If they had objected, the plan was to drop frame 01 or the name, "an open-source Flutter workout app".)
 - Owner approval: Manu, 2026-10-08, "the more examples the better".
 - Attribution block (from PLAN.md section 1, as the runner wrote it): "wger, the free open-source workout, nutrition and weight manager: github.com/wger-project/flutter, licensed under the GNU AGPL-3.0-or-later (with an app-store exception), version 2.1.1. These are screenshots of the open-source app, captured by me with shotfleet from a debug build I compiled myself. The wger project is not affiliated with shotfleet and does not endorse it. The images show the app's own interface; the wger logo is as the app draws it." The site text uses a shorter version of this in plain words.
 
