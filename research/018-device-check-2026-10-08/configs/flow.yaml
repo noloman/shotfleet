@@ -1,0 +1,10 @@
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 5000
+- scrollUntilVisible:
+    element: "Next"
+- takeScreenshot: 01_welcome
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 02_settings

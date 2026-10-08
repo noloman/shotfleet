@@ -48,7 +48,7 @@ Back to the [index](../ARCHITECTURE.md).
 | **Table** | a locale's normalised strings plus its format regex, used by `judge_screen`. |
 | **Texts.json** | `<shot>.texts.json`, the app text for one screenshot. |
 | **Twins** | language pairs detection cannot separate (`ms`/`id`, `hr`/`sl`). |
-| **Update window** | the "a year of updates" rule: a build covers a purchase when its baked-in release date (`RELEASE_DATE`, from the frozen `_release` module) is on or before the same calendar date a year after Gumroad's sale date (`check_update_window`, `shotfleet.py:5042`). See [05](05-licensing.md#the-update-window). |
+| **Update window** | the "a year of updates" rule: a build covers a purchase when its baked-in release date (`RELEASE_DATE`, from the frozen `_release` module) is on or before the same calendar date a year after Gumroad's sale date (`check_update_window`, `shotfleet.py`). See [05](05-licensing.md#the-update-window). |
 | **Versioned downloads** | permanent `/download/<version>/` files, immutable. |
 | **Vision** | Apple's text recognition framework, used through `ocr.swift`. |
 | **XCUITest / xctestrun** | Apple's UI test framework / the file describing a prebuilt test run. |

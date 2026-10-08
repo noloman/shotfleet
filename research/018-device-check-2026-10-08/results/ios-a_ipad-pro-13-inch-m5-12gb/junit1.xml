@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="shotfleet-ipad-pro-13-inch-m5-12gb-1 - iOS 26.4 - E224BF74-0F79-426F-95E4-6AB84E0F3539" tests="2" failures="0" time="31.0">
+    <testcase id="ja" name="ja" classname="ja" time="17.0" status="SUCCESS"/>
+    <testcase id="de" name="de" classname="de" time="14.0" status="SUCCESS"/>
+  </testsuite>
+</testsuites>

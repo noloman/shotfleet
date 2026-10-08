@@ -34,6 +34,7 @@ Keys valid in `[ios]` and `[android]`:
 | `base_locale` | string | `en` | the language the flow is written in |
 | `strings` | string or list | read from the build | translation file globs (relative to the config) for Flutter, React Native, MAUI, Unity, exports |
 | `stall_s` | whole number | 900 | seconds without a new screenshot before a run is stopped as hung (a stuck simulator or flow) and retried once |
+| `settle_ms` | whole number | 1000 | before each screenshot, wait up to this many milliseconds for the screen to stop moving (a `waitForAnimationToEnd` step with that limit); `0` turns it off, 10000 is the most |
 | `timeout_s` | whole number | 600 | time limit in seconds for one round of flows (accepted by the config check; not described in the docs) |
 
 `[ios]` only:
@@ -167,9 +168,11 @@ any = ["Senior iOS Engineer"]     # at least one on screen
 all = ["Steinmännchen"]           # every one on screen
 [expect.03_log]
 not = ["No workouts yet"]         # must not be on screen
+[expect.02_benchmarks]
+key = "benchmarks_title"          # the app's own text for this string key, in each language
 ```
 
-Keys are `any`, `all`, `not`, each a non-empty list of texts; a typo is refused (`unknown setting 'anny'; did you mean 'any'?`).
+Keys are `any`, `all`, `not`, each a non-empty list of texts, and `key`, the key of one of the app's own strings (`key = "benchmarks_title"`): its text in the screenshot's language must be on screen, so a green run that captured the wrong screen gets a problem. It needs the app's strings (`--app` or `--strings` for `check`); a typo is refused (`unknown setting 'anny'; did you mean 'any'?`).
 `run` applies them itself; `shotfleet check <out> --content [shotfleet.toml]` applies them to existing screenshots (free,
 no licence; put `--content` after the folder). Problems are `<locale>/<file>: expected "text" on screen` or `... must not be on
 screen`, a table naming no screenshot is a problem, and a locale table matching no language is a note. Case, accents and spacing are ignored.

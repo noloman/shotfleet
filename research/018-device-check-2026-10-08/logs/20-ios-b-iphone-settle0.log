@@ -1,0 +1,17 @@
+
+== iPhone 17 Pro Max
+warning: this Mac is very busy (swap is 97% full; load 259 on 10 cores); simulators may stop answering. Close other builds or use fewer parallel devices.
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   de       2/2 screenshots
+ok   ja       2/2 screenshots
+captured 2/2 locales in 155s on 1 simulators
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  ok (2)       -            -         ok (0)
+  ja  ok (2)       -            -         ok (0)
+the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types
+rc=1 killed=0 wall=259s

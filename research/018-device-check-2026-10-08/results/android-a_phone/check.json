@@ -1,0 +1,62 @@
+{
+ "screenshots": [
+  {
+   "file": "de/01_welcome.png",
+   "src": "raw/de/01_welcome.png",
+   "sha": "b6b7382ffdea",
+   "lang": "de",
+   "chars": 59,
+   "evidence": "ocr"
+  },
+  {
+   "file": "de/02_settings.png",
+   "src": "raw/de/02_settings.png",
+   "sha": "a942f152ab14",
+   "lang": "de",
+   "chars": 69,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/01_welcome.png",
+   "src": "raw/zh-CN/01_welcome.png",
+   "sha": "97956ff4a4c7",
+   "lang": "zh-CN",
+   "chars": 23,
+   "evidence": "ocr"
+  },
+  {
+   "file": "zh-CN/02_settings.png",
+   "src": "raw/zh-CN/02_settings.png",
+   "sha": "2fead1586cf9",
+   "lang": "zh-CN",
+   "chars": 22,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [
+  "2 listing(s) (de, zh-CN) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations"
+ ],
+ "unverified": [],
+ "coverage": {
+  "store": "Google Play",
+  "columns": [
+   "phone"
+  ],
+  "locales": {
+   "de": {
+    "phone": {
+     "status": "ok",
+     "count": 2
+    }
+   },
+   "zh-CN": {
+    "phone": {
+     "status": "ok",
+     "count": 2
+    }
+   }
+  },
+  "summary": []
+ }
+}

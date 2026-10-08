@@ -162,6 +162,7 @@
       <li><a href="#hooks">Hooks</a></li>
       <li><a href="#overrides">Overrides</a></li>
       <li><a href="#inputs">Inputs</a></li>
+      <li><a href="#flow-tips">Flow tips for every language</a></li>
       <li><a href="#device-setup">Device setup</a></li>
       <li><a href="#expect">Expected content</a></li>
       <li><a href="#licence">Licence</a></li>
@@ -326,6 +327,7 @@ apk = "path/to/app-debug.apk"</code></pre>
       <tr><td><code>out</code></td><td>ios, android</td><td><code>out</code>, or <code>out-ios</code> and <code>out-android</code> when the file has both platforms</td><td>Output folder.</td></tr>
       <tr><td><code>parallel</code></td><td>ios, android</td><td>4</td><td>Simulators (emulators on Android).</td></tr>
       <tr><td><code>locales</code></td><td>ios, android</td><td>every language the app has</td><td>Languages to capture, for example <code>["de", "ja"]</code>.</td></tr>
+      <tr><td><code>settle_ms</code></td><td>ios, android</td><td>1000</td><td>Before each screenshot, wait up to this many milliseconds for the screen to stop moving. <code>0</code> turns it off.</td></tr>
       <tr><td><code>base_locale</code></td><td>ios, android</td><td><code>en</code></td><td>The language your flow is written in.</td></tr>
       <tr><td><code>strings</code></td><td>ios, android</td><td>read from the build</td><td>Translation files as globs, relative to the config (see below).</td></tr>
       <tr><td><code>bundle_id</code></td><td>ios</td><td>read from the app</td><td>The bundle id. On Android the package is read from the APK.</td></tr>
@@ -341,6 +343,7 @@ flow = "flow.yaml"
 out = "out"
 parallel = 4
 stall_s = 900   # seconds without a new screenshot before a hung simulator or flow is stopped and retried
+settle_ms = 1000   # before each screenshot, wait up to this many milliseconds for the screen to stop moving (0 turns it off)
 locales = ["de", "ja"]
 base_locale = "de"
 device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]
@@ -381,6 +384,68 @@ name = "Alex"
 name = "田中"</code></pre>
   <p>The value goes into that language's flow as a Maestro <code>env:</code> entry. This works on iOS. Maestro hands any flow to any emulator, so on Android a name that has a per-language value is read from a small script (<code>shotfleet_vars.js</code>) that picks the emulator's row by <code>MAESTRO_DEVICE_UDID</code>. Maestro 2.11.0 sets that variable to the emulator's serial: German and Japanese values showed up as typed in screenshots (device run 2026-10-04, one emulator, one language after the other; two emulators at once and Arabic not run). Maestro 2.0.10 does not define it, so on 2.0.10 Android runs type the <code>[inputs]</code> defaults only. Check the first screenshots in a script like Japanese or Arabic. Text you type is not translated by itself: it stays the same in every language unless you set <code>[inputs]</code> (iOS; on Android it needs a Maestro that sets <code>MAESTRO_DEVICE_UDID</code>, which 2.11.0 does and 2.0.10 does not).</p>
 
+  <h2 id="flow-tips">Flow tips for every language</h2>
+  <p>A flow that works in English can still break in Turkish or Chinese. These tips come from runs on my own apps. They are about Maestro; shotfleet only translates the texts you write in selectors. I read <a href="https://docs.maestro.dev">Maestro's docs</a> for every snippet on 2026-10-08. Where I say "ran", I ran it on Maestro 2.0.10, the version of all the runs in this section. Where I say "not run", the snippet comes from Maestro's docs and I have not tried it on a device.</p>
+
+  <h3 id="tip-id">Tap by id where you can</h3>
+  <p>An id has no language. shotfleet leaves <code>id:</code> selectors alone, so the step taps the same view in German, Arabic and Japanese. Use ids for icons and tabs, and for any button your app lets you name (an accessibility identifier on iOS, a resource id on Android).</p>
+<pre><code>- tapOn:
+    id: "login-button"</code></pre>
+  <p>Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03). Maestro reads <code>text</code> and <code>id</code> as regular expressions, so keep an id specific.</p>
+
+  <h3 id="tip-collisions">When two texts are the same word</h3>
+  <p>Two real cases from my runs. In Turkish, "İleri" means both "Next" and "Advanced". An onboarding page had an "Advanced" option and a "Next" button, and the tap on "Next" hit the option, so Turkish failed on every screenshot on Android (0 of 6). shotfleet warned about it before the run (<code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>). In Chinese, a small pill on a card read "基准" and so did the Benchmarks row below it. A scroll that waits for the text stopped at the pill, and the tap on the row found nothing.</p>
+  <p>Pin the step to a neighbour with <code>below:</code> or <code>above:</code>. shotfleet translates the anchor text too:</p>
+<pre><code>- tapOn:
+    text: "Next"
+    below:
+      text: "3+ years of dedicated training"</code></pre>
+  <p>Ran on iOS and Android, Turkish included (Maestro 2.0.10, WOD Tracker, 2026-10-07). Or pick the nth match with <code>index:</code>. Maestro counts from 0, so <code>index: 1</code> is the second match. Not run, and the order of matches is Maestro's, so look at the frame:</p>
+<pre><code>- tapOn:
+    text: "Next"
+    index: 1</code></pre>
+  <p>Or skip the text and swipe a fixed distance. Where the list is longer than the screen, a few swipes to the end leave only one of the two texts on screen:</p>
+<pre><code>- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,80%"
+          end: "50%,15%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- tapOn: "Benchmarks"</code></pre>
+  <p>Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (Maestro 2.0.10, WOD Tracker, 2026-10-07). Maestro's docs write the pair with a space, <code>start: 90%, 50%</code>; the form without a space is the one I ran.</p>
+
+  <h3 id="tip-scroll">scrollUntilVisible has two forms</h3>
+  <p>Maestro takes the element as a plain string or as a selector object. Both are valid:</p>
+<pre><code>- scrollUntilVisible:
+    element: "Benchmarks"
+
+- scrollUntilVisible:
+    element:
+      text: "Benchmarks"
+    direction: DOWN
+    timeout: 30000</code></pre>
+  <p>The object form with <code>text:</code> ran on iOS and Android (Maestro 2.0.10, WOD Tracker). Use it on 0.1.7 and older: those versions translate the text in the object form and leave the plain string in English, so on an iPhone run in Hindi and Turkish the plain string failed both languages (0 of 2). From 0.1.8 both forms are translated. Maestro's defaults are <code>direction: DOWN</code> and a <code>timeout</code> of 20000 ms, and the step fails when the timeout runs out. If the row ends up behind a tab bar, <code>centerElement: true</code> keeps scrolling until the element is more than 30% away from the edge of the screen (not run). In my Hindi run the row stopped behind the tab bar and the tap hit the Train tab instead.</p>
+
+  <h3 id="tip-wait">Wait for a stable screen before the first screenshot</h3>
+  <p>A screenshot taken while the screen is still drawing can show a blank frame or a half-loaded one. Wait for a text that only that screen has, then let the animation finish:</p>
+<pre><code>- extendedWaitUntil:
+    visible: "Start here"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 01_train</code></pre>
+  <p>Ran on iOS (Maestro 2.0.10, WOD Tracker). <code>extendedWaitUntil</code> takes its timeout in milliseconds. <code>waitForAnimationToEnd</code> does not fail: Maestro's docs say it carries on when its timeout (15000 ms by default) runs out, so on its own it is not proof that the screen is still. The text goes first for that reason. A Flutter debug build can take 30 s to draw on a fresh emulator, so give that wait a long timeout.</p>
+
+  <h3 id="tip-check">check does not prove that a tap hit the right button</h3>
+  <p><code>check</code> reads pictures. It sees a wrong language, a copy of another language's image, a missing screen, a blank frame and a wrong size. It cannot know which screen you meant to reach. In one WOD Tracker iPhone attempt the run exited 0 with 8 of 8 screenshots and <code>check</code> said 0 problems, but the Hindi "Benchmarks" frame showed the Train screen. The row sat behind the tab bar and my tap hit the Train tab. A Train screen in Hindi is a perfectly good screen. I found it by looking at every frame.</p>
+  <p>A guard in the flow fails the language when the tap went wrong. Put an <code>assertVisible</code> on a text that only the target screen has (not one the tab bar shows too) between the tap and the screenshot, and shotfleet translates it for each language:</p>
+<pre><code>- tapOn: "Benchmarks"
+- assertVisible: "Benchmark results"
+- takeScreenshot: 02_benchmarks</code></pre>
+  <p>Not run; I had no such guard in that attempt, which is the point. "Benchmark results" stands for a text from your own screen. <a href="#expect">Expected content</a> can do the same job after the run, with a literal text per language. And look at the frames of a new flow once before you trust it.</p>
+
   <h2 id="device-setup">Device setup</h2>
   <p>Device setup runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:</p>
 <pre><code>[ios]
@@ -396,8 +461,11 @@ any = ["Senior iOS Engineer"]          # at least one of these is on screen
 [expect.01_home.de]                    # only for the German screenshot (pt covers pt-BR)
 all = ["Steinmännchen"]                # every one of these is on screen
 [expect.03_log]
-not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show</code></pre>
+not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show
+[expect.02_benchmarks]
+key = "benchmarks_title"               # the text of this string key of your app, in each language, is on screen</code></pre>
   <p><code>run</code> checks these automatically; for screenshots you already have, use <code>shotfleet check out/ --content shotfleet.toml</code> (free, no licence). A missing or forbidden text is a problem line, and a table for a screenshot that does not exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, <code>could not verify</code>, never as a pass. This proves the strings you list are present, not that the data looks right.</p>
+  <p><code>key</code> names a string of your app (its key in your <code>.strings</code>, <code>.arb</code> or <code>strings.xml</code>). <code>check</code> looks for that string's text in the screenshot's own language, so you do not type the translations, and a green run that captured the wrong screen gets a problem line. It needs the app's strings (<code>run</code> has them; for <code>check</code> pass <code>--app</code> or <code>--strings</code>). A wrong key, or a text with a placeholder in it, is reported. Like the other expectations it does nothing until you add an <code>[expect...]</code> table.</p>
 
   <h3 id="more">Plugins and the rest</h3>
   <p><code>shotfleet foo</code> runs <code>shotfleet-foo</code> from your PATH (like <code>git</code> and <code>gh</code>), when <code>foo</code> is not a built-in command. <code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code> and use stable exit codes, so they script like any other tool; <code>SHOTFLEET_OCR</code> or <code>--ocr-command</code> swaps the text reader; <code>strings = "glob"</code> swaps the translation source.</p>
@@ -445,13 +513,15 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
   <ul>
     <li><strong>Where strings come from:</strong> <code>.strings</code>, <code>.stringsdict</code> and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), <code>strings.xml</code> and <code>&lt;plurals&gt;</code> on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see above). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.</li>
     <li>Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</li>
-    <li>If you pass <code>init</code>, <code>run</code> or <code>check</code> a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a <code>hint:</code> on stderr with the <code>strings =</code> line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run.</li>
+    <li>If you pass <code>init</code>, <code>run</code> or <code>check</code> a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a <code>hint:</code> on stderr with the <code>strings =</code> line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run. <code>check --app Runner.app</code> on a Flutter build says "This is a Flutter build: pass --strings 'lib/l10n/*.arb'" (the other frameworks get their usual folder), and <code>--strings</code> together with <code>--app</code> uses your translation files and still takes the store rules from the build.</li>
     <li><strong>Text recognition</strong> is macOS's. It reads 33 languages (the macOS 27 number; older macOS versions read fewer), including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. A language outside that list but written in Latin script (Catalan, Croatian, Hungarian, Slovak, Slovenian) is judged by language detection on every macOS, like a listed one; macOS reads it with its Latin model, and accents can be lost (Hungarian). Older macOS versions list fewer languages, so on those more of your languages fall under this rule (not tested on macOS 13). For scripts it cannot read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), <code>check</code> still catches screens in another language, copies and missing screens, and says which screens it could not read.</li>
     <li>If macOS text recognition stops answering (the first time, macOS compiles its text model in <code>ANECompilerService</code>, which can take minutes on a loaded Mac and once took me about 40 minutes on a quiet one), <code>check</code> waits while that compile is working, up to 8 minutes for the whole check. If it still gets no answer it says what happened and switches to Tesseract when it is installed (<code>brew install tesseract tesseract-lang</code>), saying so in its output. Without Tesseract, <code>check</code> still finishes: screens with the app's own text are judged from it, store sizes and missing screens are checked, and the screens it couldn't read are marked "not verified" in its output, the report and <code>unverified</code> in <code>--json</code>. Unread screens that are identical across languages get a note, not a problem: only their text can tell a copy from a screen with no text. Run check again later, or install Tesseract. No restart needed: macOS finishes the compile by itself. Not verified screens don't change the exit code; with <code>--strict</code> they make it 1. Two checks at once on one Mac take turns preparing text recognition, so they don't slow each other's compile down. iOS runs mostly aren't affected: they read the app's own text, and only screens where that text proves little go to OCR.</li>
     <li>For full verification of those scripts, give <code>check</code> an OCR that reads them, for example Tesseract (about 700 MB): <code>--ocr-command "tesseract {image} stdout -l {tesseract}"</code> (or set <code>SHOTFLEET_OCR</code>). It is used only for languages macOS cannot read; <code>{lang}</code> is the language code if your tool wants that instead.</li>
     <li><strong>Free memory before a run:</strong> idle Gradle daemons can hold gigabytes. Run <code>./gradlew --stop</code> (once per Gradle version you use) before <code>shotfleet run</code>, and close apps you do not need. Four simulators on a loaded Mac can take many times longer.</li>
     <li><strong>Permission prompts</strong> ("Allow While Using App", "Don't Allow") are drawn by iOS and Android in the device language, which stays English even while your app runs in German. Write those taps in English; shotfleet keeps the English text matchable. Better still, skip the prompts: on iOS start the flow with a <code>launchApp</code> block that has <code>permissions: all: allow</code> (shotfleet adds its language arguments to your options). On Android shotfleet installs with every permission granted.</li>
-    <li><strong>Dialogs that appear late</strong> (disclaimers, consent screens): dismiss them in a loop until your first real screen is visible, not with a fixed wait. Longer languages push buttons off-screen: add <code>scrollUntilVisible</code> before tapping them.</li>
+    <li><strong>Dialogs that appear late</strong> (disclaimers, consent screens): dismiss them in a loop until your first real screen is visible, not with a fixed wait. Longer languages push buttons off-screen: add <code>scrollUntilVisible</code> before tapping them. Both ways of naming the element are translated for each language: <code>element: "Settings"</code> and <code>element: { text: "Settings" }</code>.</li>
+    <li><strong>A screen that is still moving:</strong> before every <code>takeScreenshot</code>, shotfleet adds a <code>waitForAnimationToEnd</code> step that waits at most 1 second for the screen to stop changing, so a sheet that is still sliding in or a splash that is fading out gets a moment to finish. <code>settle_ms</code> in the config changes that limit, and <code>settle_ms = 0</code> turns it off. It cannot help when the app keeps one splash image on screen for several seconds: wait for a text on your first real screen.</li>
+    <li><strong>Language codes differ between platforms:</strong> iOS names Simplified Chinese <code>zh-Hans</code> and Android usually <code>zh-CN</code> (<code>zh-Hant</code> and <code>zh-TW</code> for Traditional). If you write one and the build ships the other, <code>run</code> uses the code the build ships and says so in one line. The same goes for <code>pt</code> and <code>pt-BR</code> when the app has only one of them. When two codes would fit, for example <code>pt</code> in an app with both <code>pt-BR</code> and <code>pt-PT</code>, it does not guess: it names the codes the app has so you can pick one in <code>locales</code>.</li>
     <li><strong>Flutter rows and cards are one label:</strong> Flutter joins a row's title and detail line into one label with a newline (<code>Self-hosted\nConnect to your own instance</code>), so tap it as <code>"Self-hosted.*"</code>; shotfleet translates the part before the <code>.*</code> (<code>.*Register</code> works too). A line like <code>New to wger? Register</code> is one label as well.</li>
     <li><strong>A language the app only half translates</strong> (wger's Japanese is 30%): the app shows its base language for every missing string. <code>run</code> warns when you ask for such a language by name, and <code>check</code> reports the screenshots that came out in the base language.</li>
     <li><strong>Building the app on Xcode 27</strong> (found on wger, the obytes template and kotlinconf-app, 2026-10-03; not shotfleet's doing, but it stops you before the first screenshot): <code>npx expo run:ios</code> ends with "Can't determine id of Simulator app" because Xcode 27 has no Simulator.app, so build the generated project yourself, <code>xcodebuild -workspace ios/&lt;App&gt;.xcworkspace -scheme &lt;App&gt; -configuration Release -sdk iphonesimulator -derivedDataPath ios/build build IPHONEOS_DEPLOYMENT_TARGET=15.1</code> (Xcode 27 refuses the old deployment targets of some pods), and <code>init</code> finds it in <code>ios/build</code>. A Kotlin Multiplatform app needs <code>ARCHS=arm64</code> on its <code>xcodebuild</code> ("Architecture Not Configured in Gradle: ios_x64"; <code>init</code> prints it).</li>

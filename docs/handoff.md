@@ -6,6 +6,8 @@ changes, into `tests/claims.json` and the README in the same commit. The rule of
 
 **Each open item that a local agent can do now has its own prompt in [docs/agent-tasks/](agent-tasks/README.md)** (start a session on your Mac and say: read the file and do it).
 
+**This file stops on 2026-10-06.** It was not kept up after that. For anything newer read [CHANGELOG.md](../CHANGELOG.md) (newest release first), the state of the repo itself, and the engineering guide in [docs/engineering/](engineering/README.md). Line numbers and branch names below are history.
+
 Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, then the rest.
 
 | # | Item | Needs | Why not done here |

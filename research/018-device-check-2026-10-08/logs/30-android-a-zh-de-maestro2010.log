@@ -1,0 +1,22 @@
+
+== phone
+note: zh-Hans is zh-CN in this app, so shotfleet uses zh-CN
+note: Maestro 2.0.10 saves no screen hierarchy on Android (that needs 2.7.0 or newer), so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. Maestro 2.11.0 gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`
+warning: this Mac is very busy (swap is 96% full; load 161 on 10 cores); simulators may stop answering. Close other builds or use fewer parallel devices.
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 2 locales on 1 emulators, 2 rounds...
+ok   zh-CN    2/2 screenshots
+ok   de       2/2 screenshots
+captured 2/2 locales in 57s on 1 emulators
+note: Maestro 2.0.10 saves no screen hierarchy on Android (that needs 2.7.0 or newer), so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. Maestro 2.11.0 gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 4 screenshots in 2 languages: 0 problem(s)
+notes (1, not blocking):
+  - 2 listing(s) (de, zh-CN) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+
+Google Play coverage (language x device class):
+         phone
+  de     ok (2)
+  zh-CN  ok (2)
+rc=0 killed=0 wall=120s

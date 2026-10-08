@@ -4,10 +4,7 @@ This is the entry point for engineers who will change shotfleet's code. It expla
 how to change it without breaking it. It describes the code, not the marketing. Where a doc disagrees with the code, the doc is wrong and the
 mismatch is listed in [appendix: doc/code mismatches](architecture/13-mismatches.md).
 
-**Snapshot.** Written against `origin/main` at `285e099` (`VERSION = "0.1.6"`; that is `cb32bca`, the merge of the licence and security fixes, plus the release commit that set the
-dates and CHANGELOG wording, which touched no code). Every `shotfleet.py:LINE` anchor is for that commit. Line numbers drift with every edit; function and constant names are the
-stable handle, so grep for the name when a line is off. The first version of this guide was written at `c18473f`; the 0.1.6 licence and security work has since been merged and the
-chapters describe it as code on main. Whether 0.1.6 has been published is not recorded here (check `STATUS.md` and `https://shotfleet.com/download/VERSION`). Known gaps that are not fixed are listed as gaps, not as work in flight.
+**Snapshot.** Written against `origin/main` at `285e099` (0.1.6). The code has moved on (0.1.7 added several features), and the line numbers that this guide used to quote are gone: they drifted by up to about 560 lines. Function and constant names are the handle; grep for the name, or use the generated [function map](engineering/12-function-map.md) for line numbers. Where this guide and the code disagree, the code wins. Known gaps that are not fixed are listed as gaps, not as work in flight. The newer, more complete guide is [docs/engineering/](engineering/README.md).
 
 ## Contents
 
@@ -60,7 +57,7 @@ It is not:
 
 ### The commands
 
-`COMMANDS` is defined at `shotfleet.py:4745` and the parser is built in `main()` at `shotfleet.py:4769`.
+`COMMANDS` and the parser built in `main()` are in `shotfleet.py`.
 
 | Command | What it does | Needs licence? | Typical exit codes |
 |---|---|---|---|
@@ -72,7 +69,7 @@ It is not:
 | `activate <key>` / `deactivate` | Stores or removes the Gumroad licence on this Mac. | n/a | 0, 2 |
 | `mcp` | MCP server on stdin/stdout. | `run` over MCP has the same free-tier cap | n/a |
 | `skill install [--project] [--dir D] [--force]` | Copies the agent skills into `~/.claude/skills` and `~/.agents/skills` (or the project's). | no | 0, 2 |
-| `shotfleet foo` | If `foo` is not a built-in command and `shotfleet-foo` is on the PATH, `exec`s it (plugin mechanism like `git foo`), `shotfleet.py:4772`. | n/a | the plugin's |
+| `shotfleet foo` | If `foo` is not a built-in command and `shotfleet-foo` is on the PATH, `exec`s it (plugin mechanism like `git foo`). | n/a | the plugin's |
 
 Exit codes mean the same everywhere (details in [01-code-layout.md](architecture/01-code-layout.md#exit-codes)): `0` fine, `1` the work ran and
 found problems, `2` setup error with a one-line message, `130` interrupted.
@@ -104,40 +101,40 @@ flowchart TD
 
 The same flow as numbered steps, with the code that does each one:
 
-1. **Parse and validate the config.** `read_doc` (`shotfleet.py:137`) parses TOML and refuses unknown tables; `check_section` (`:161`) refuses
-   unknown or mistyped keys; `load_config` (`:197`) validates the build (is it a simulator `.app`? an `.apk` whose package name can be read?) and fills
+1. **Parse and validate the config.** `read_doc` parses TOML and refuses unknown tables; `check_section` refuses
+   unknown or mistyped keys; `load_config` validates the build (is it a simulator `.app`? an `.apk` whose package name can be read?) and fills
    defaults. Every mistake is a `Fail` with a sentence that says how to fix it.
-2. **Read the app's strings.** iOS: every `*.lproj/*.strings`, `.stringsdict` and String Catalog inside the `.app` (`load_strings`, `:394`). Android:
-   `aapt2 dump resources` of the APK (`load_strings_apk`, `:794`). Flutter, React Native, MAUI, Unity and translation-platform exports: source files named
-   by `strings = "glob"` (`config_strings`, `:758`; `read_translation_file`, `:646`).
-3. **Decide the languages.** `shipped_locales` (`:885`) separates the app's own strings from libraries' near-universal ones and keeps languages the app
-   translates at least half-way. `locales` in the config or `--locales` override it. Without a licence the list is cut to two (`cap_locales`, `:4994`).
-4. **Rewrite the flow per language.** `translate_flow` (`:949`) maps each English text selector to a regex that matches any of that language's
+2. **Read the app's strings.** iOS: every `*.lproj/*.strings`, `.stringsdict` and String Catalog inside the `.app` (`load_strings`). Android:
+   `aapt2 dump resources` of the APK (`load_strings_apk`). Flutter, React Native, MAUI, Unity and translation-platform exports: source files named
+   by `strings = "glob"` (`config_strings`; `read_translation_file`).
+3. **Decide the languages.** `shipped_locales` separates the app's own strings from libraries' near-universal ones and keeps languages the app
+   translates at least half-way. `locales` in the config or `--locales` override it. Without a licence the list is cut to two (`cap_locales`).
+4. **Rewrite the flow per language.** `translate_flow` maps each English text selector to a regex that matches any of that language's
    translations of the same key, handles format strings (`Round %d of %d`), plurals, `.*` wildcards, system dialogs that stay English and
    `[overrides.<locale>]`. It returns the translated flow, the selectors it could not translate and the translation collisions.
-5. **Make each flow self-contained.** `localize_flow` (`:1158`, iOS) adds the language as launch arguments (`AppleLanguages`, `AppleLocale`) because
-   Maestro hands any flow to any simulator; `android_flow` (`:2527`) does the Android equivalent. Screenshots are redirected into a per-locale folder.
-6. **Boot devices and run.** `make_pool` (`:1304`, iOS) and `android_pool` (`:2448`) create or reuse a pool named `shotfleet-<device>-N`. iOS runs
-   one sharded Maestro process over all simulators (`ios_run_inner`, `:1917`); Android runs rounds of one language per emulator
-   (`android_run_inner`, `:2622`). The `[capture]` path runs `xcodebuild test-without-building` per language instead.
-7. **Collect text while the screenshot is on screen.** On iOS a background thread (`capture_texts`, `:1367`) reads the accessibility tree from the
+5. **Make each flow self-contained.** `localize_flow` (iOS) adds the language as launch arguments (`AppleLanguages`, `AppleLocale`) because
+   Maestro hands any flow to any simulator; `android_flow` does the Android equivalent. Screenshots are redirected into a per-locale folder.
+6. **Boot devices and run.** `make_pool` (iOS) and `android_pool` create or reuse a pool named `shotfleet-<device>-N`. iOS runs
+   one sharded Maestro process over all simulators (`ios_run_inner`); Android runs rounds of one language per emulator
+   (`android_run_inner`). The `[capture]` path runs `xcodebuild test-without-building` per language instead.
+7. **Collect text while the screenshot is on screen.** On iOS a background thread (`capture_texts`) reads the accessibility tree from the
    Maestro iOS driver the moment a PNG appears and writes `<shot>.texts.json`. On Android a marker step after each `takeScreenshot` makes Maestro save
    the hierarchy (`android_flow`, `hierarchy_texts`, `save_hierarchy_texts`). This is the app's own exact text, in every script.
 8. **Retry once, device failures only.** Languages that failed with an infrastructure error (`INFRA_ERRORS`: a simulator that stopped answering, Maestro dying before it reported, an emulator that is offline or did not boot) are retried once on the devices that still answer (`retry_choice`, then `ios_run_inner`; Android `safe_round`). A failed flow or app is not retried. `run --retry-failed` reruns the languages that failed in `out/run.json` (`retry_setup`, `keep_earlier`).
-9. **Check.** `cmd_check` (`:3329`) finds the screenshots in whatever layout they are in, reads their text (app text first, then OCR), judges the
+9. **Check.** `cmd_check` finds the screenshots in whatever layout they are in, reads their text (app text first, then OCR), judges the
    language, finds copies and missing screens, applies the store rules and writes `check.json` and `index.html`.
-10. **Export.** `cmd_export` (`:4691`) copies the screenshots of every language with no problem into fastlane's folders, mapping app locales to
+10. **Export.** `cmd_export` copies the screenshots of every language with no problem into fastlane's folders, mapping app locales to
     store codes (`de` to `de-DE`).
 
 `run` is capture plus check: both `ios_run_inner` and `android_run_inner` end by calling `cmd_check` and return the worse of the two exit codes.
 
 ## 3. Reading order for the code
 
-1. `main()` at `shotfleet.py:4769`, `main_cmd` at `:5299` and `main_dispatch` at `:5357` (how a command is routed, where exit codes are made).
-2. `cmd_run` (`:1770`), `run_platform` (`:1814`), `capture_platform` (`:1831`), `ios_run_inner` (`:1917`).
-3. `translate_flow` (`:949`) with its tests in `tests/test_shotfleet.py` (class `TranslateFlow`).
-4. `cmd_check` (`:3329`) and `judge_screen` (`:2890`).
-5. `require_licence` (`:5255`), then `key_licence` (`:5199`) and `mac_licence` (`:5220`).
+1. `main()`, `main_cmd` and `main_dispatch` (how a command is routed, where exit codes are made).
+2. `cmd_run`, `run_platform`, `capture_platform`, `ios_run_inner`.
+3. `translate_flow` with its tests in `tests/test_shotfleet.py` (class `TranslateFlow`).
+4. `cmd_check` and `judge_screen`.
+5. `require_licence`, then `key_licence` and `mac_licence`.
 
 Then read the research note behind whatever you are touching; [10-making-changes.md](architecture/10-making-changes.md) lists them per area.
 

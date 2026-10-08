@@ -1,0 +1,29 @@
+{
+ "locales": {
+  "zh-CN": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 11,
+   "error": null,
+   "screenshots": 2,
+   "device": "emulator-5702",
+   "attempts": 1
+  },
+  "de": {
+   "untranslated_selectors": [],
+   "ok": true,
+   "seconds": 7,
+   "error": null,
+   "screenshots": 2,
+   "device": "emulator-5702",
+   "attempts": 1
+  }
+ },
+ "config": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-shotfleet-agent-coordination-aa962a/9b79205e-a843-4254-b127-bc10ba4eb389/scratchpad/dc/android-a/shotfleet.toml",
+ "wall_seconds": 57,
+ "emulators": 1,
+ "platform": "android",
+ "apk": "/private/tmp/claude-501/-Users-manu-Developer-shotfleet--claude-worktrees-shotfleet-agent-coordination-aa962a/9b79205e-a843-4254-b127-bc10ba4eb389/scratchpad/dc/build-android-zh/FleetFixture.apk",
+ "device": "phone",
+ "hierarchy_markers": false
+}

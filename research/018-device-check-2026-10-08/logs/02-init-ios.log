@@ -1,0 +1,5 @@
+wrote shotfleet.toml
+wrote flow.yaml
+dev.shotfleet.fixture: 5 languages (ar, de, en, ja, tr)
+next: edit flow.yaml, then try one language (boots simulators, takes a few minutes):
+  shotfleet run shotfleet.toml --locales en

@@ -299,6 +299,7 @@ out = "out"               # default "out", or "out-ios" / "out-android" when the
 parallel = 4              # simulators (emulators on Android); default 4
 capacity = "warn"         # warn (default) prints a note when the Mac is short of memory or swapping; "off" silences it; the run is never changed
 stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped and the languages retried (default 900)
+settle_ms = 1000          # before each screenshot, wait up to this many milliseconds for the screen to stop moving (default 1000; 0 turns it off)
 locales = ["de", "ja"]    # default: every language the app ships
 base_locale = "de"        # the language your flow is written in (default en)
 bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
@@ -398,9 +399,13 @@ any = ["Senior iOS Engineer"]          # at least one of these is on screen
 all = ["Steinmännchen"]                # every one of these is on screen
 [expect.03_log]
 not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show
+[expect.02_benchmarks]
+key = "benchmarks_title"               # the text of this string key of your app, in each language, is on screen
 ```
 
 `run` checks these automatically; for screenshots you already have, use `shotfleet check out/ --content shotfleet.toml` (free, no licence). A missing or forbidden text is a problem line (`de/01_home.png: expected "Steinmännchen" on screen`), and a table for a screenshot that doesn't exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, `could not verify`, never as a pass; `--ocr-command` helps there. This proves the strings you list are present, not that the data looks right.
+
+`key` names a string of your app (its key in your `.strings`, `.arb` or `strings.xml`). `check` looks for that string's text in the screenshot's own language, so you don't type the translations, and a green run that captured the wrong screen gets a problem line. It needs the app's strings (`run` has them; for `check` pass `--app` or `--strings`). A wrong key, or a text with a placeholder in it, is reported. Like the other expectations it does nothing until you add an `[expect...]` table.
 
 **Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH (like `git` and `gh`), when `foo` isn't a built-in command.
 
@@ -419,7 +424,7 @@ translation source.
       commands:
         - tapOn: { text: "Accept", optional: true }
   ```
-- **Longer languages push buttons off-screen:** add `scrollUntilVisible` before tapping them.
+- **Longer languages push buttons off-screen:** add `scrollUntilVisible` before tapping them. Both ways of naming the element are translated for each language: `element: "Settings"` and `element: { text: "Settings" }`.
 - **Permission prompts** ("Allow While Using App", "Don’t Allow") are drawn by iOS and Android in the device language, which stays English even while your app runs in German. Write those taps in English; shotfleet keeps the English text matchable. Better still, skip the prompts: on iOS start the flow with
   ```yaml
   - launchApp:
@@ -428,22 +433,102 @@ translation source.
   ```
   (shotfleet adds its language arguments to your options). On Android shotfleet installs with every permission granted.
 - **A first screenshot that comes out blank** (Flutter debug builds and Compose put their text in the accessibility tree before they paint): start with `extendedWaitUntil: {visible: "<a text on that screen>", timeout: 60000}`, and if it still happens add a short pause (`extendedWaitUntil: {notVisible: {id: "none"}, timeout: 3000}`). A Flutter debug build can take 30 s to draw on a fresh emulator.
+- **A screen that is still moving:** before every `takeScreenshot`, shotfleet adds a `waitForAnimationToEnd` step that waits at most 1 second for the screen to stop changing, so a sheet that is still sliding in or a splash that is fading out gets a moment to finish. `settle_ms` in the config changes that limit, and `settle_ms = 0` turns it off. It can't help when the app keeps one splash image on screen for several seconds: wait for a text on your first real screen, as in the tip above.
+- **Language codes differ between platforms:** iOS names Simplified Chinese `zh-Hans` and Android usually `zh-CN` (`zh-Hant` and `zh-TW` for Traditional). If you write one and the build ships the other, `run` uses the code the build ships and says so in one line. The same goes for `pt` and `pt-BR` when the app has only one of them. When two codes would fit, for example `pt` in an app with both `pt-BR` and `pt-PT`, it doesn't guess: it names the codes the app has so you can pick one in `locales`.
 - **Flutter rows and cards are one label:** Flutter joins a row's title and detail line into one label with a newline (`Self-hosted\nConnect to your own instance`), so tap it as `"Self-hosted.*"`; shotfleet translates the part before the `.*` (`.*Register` works too). A line like `New to wger? Register` is one label as well.
 - **A language the app only half translates** (wger's Japanese is 30%): the app shows its base language for every missing string. `run` warns when you ask for such a language by name, and `check` reports the screenshots that came out in the base language.
 - **Building the app on Xcode 27** (found on wger, the obytes template and kotlinconf-app, 2026-10-03; not shotfleet's doing, but it stops you before the first screenshot): `npx expo run:ios` ends with "Can't determine id of Simulator app" because Xcode 27 has no Simulator.app, so build the generated project yourself, `xcodebuild -workspace ios/<App>.xcworkspace -scheme <App> -configuration Release -sdk iphonesimulator -derivedDataPath ios/build build IPHONEOS_DEPLOYMENT_TARGET=15.1` (Xcode 27 refuses the old deployment targets of some pods), and `init` finds it in `ios/build`. A Kotlin Multiplatform app needs `ARCHS=arm64` on its `xcodebuild` ("Architecture Not Configured in Gradle: ios_x64"; `init` prints it). It also fails with "cannot find X in scope" unless both `:shared:assembleSharedDebugXCFramework` and `:shared:assembleSharedReleaseXCFramework` were built first (a stale release slice gives the same error); `init` says so next to the `xcodebuild` line.
 - **Typing a password on iOS in Arabic:** `inputText` into a secure (password) field drops Latin letters when the app runs in Arabic (seen on the Expo app, iOS 26.4: `abcdef` typed nothing, `abc123` typed only `123`, `123456` typed all six); name and e-mail fields are fine. Use digits for a demo password.
-- **iOS 27.0 simulators:** they froze at boot in some of my own runs, so when your config sets no `runtime`, `run` skips iOS 27.0 and uses the newest other runtime you have installed. It says which one it picked and why, in one line. If iOS 27.0 is the only runtime installed it uses it and warns, and `shotfleet doctor` warns too. To use a runtime on purpose, set `runtime = "..."` under `[ios]` (`xcrun simctl list runtimes` shows the ids); a runtime you set is never second-guessed.
+- **iOS 27.0 simulators:** they froze at boot in some of my own runs, so when your config sets no `runtime`, `run` skips iOS 27.0 and uses the newest other runtime you have installed. It says which one it picked and why, in one line. If iOS 27.0 is the only runtime installed it uses it and warns, and `shotfleet doctor` warns too. To use a runtime on purpose, set `runtime = "..."` under `[ios]` (`xcrun simctl list runtimes` shows the ids); a runtime you set is never second-guessed. `shotfleet doctor` names the runtime `run` will use and why, or the one your config sets.
+- **Your pool simulators:** shotfleet makes its own simulators and names them `shotfleet-1`, `shotfleet-2` and so on (with the device in the name when you use `device_types`). If one stops answering, the next run deletes it and makes a new one with the same name. The id changes, so a script that finds simulators by name keeps working and one that remembers ids doesn't.
+- **iPhone and iPad in one run:** with `device_types`, `check out` looks at every device's folder. If your app runs on iPad and none of them has a 13-inch iPad set, each device's check reports it as a problem (the iPad column reads `missing`) and the exit code is 1.
 - **A very busy Mac:** when swap is almost full (90% or more), macOS reports critical memory pressure, or the load is far above the number of cores, `run` prints one warning before it starts ("this Mac is very busy; simulators may stop answering") and suggests fewer parallel devices. It checks again before a retry and between Android rounds, and warns at most once per run. It never refuses to run, and `capacity = "off"` silences it. Every `simctl` and `adb` call has a time limit, so a simulator that stops answering ends the run with a message instead of hanging it.
-- **Retries and `--retry-failed`:** when a language fails because the device broke (a simulator or emulator that stopped answering, a boot timeout, Maestro dying before it reported) or its screenshot came out blank (the app painted its first frame late), `run` retries it once by itself. When the flow or the app failed (an element not found, a wrong number of screenshots), it does not: a second try would fail the same way, and it says so. `run.json` counts the tries per language (`attempts`). To rerun only the languages that failed in this config's last run, use `shotfleet run --retry-failed`. The languages that passed stay as they were and are still listed in `run.json`, and the tries of the retried ones add up. It can't be combined with `--locales`, and it stops with a message if there is no earlier `run.json`.
+- **Retries and `--retry-failed`:** when a language fails because the device broke (a simulator or emulator that stopped answering, a boot timeout, Maestro's iOS driver not starting in time, Maestro dying before it reported) or its screenshot came out blank (the app painted its first frame late), `run` retries it once by itself. When the flow or the app failed (an element not found, a wrong number of screenshots), it does not: a second try would fail the same way, and it says so. `run.json` counts the tries per language (`attempts`). To rerun only the languages that failed in this config's last run, use `shotfleet run --retry-failed`. The languages that passed stay as they were and are still listed in `run.json`, and the tries of the retried ones add up. It can't be combined with `--locales`, and it stops with a message if there is no earlier `run.json`.
 - **Free memory before a run:** idle Gradle daemons can hold gigabytes. Run `./gradlew --stop` (once per Gradle version you use) before `shotfleet run`, and close apps you do not need. Four simulators on a loaded Mac can take many times longer.
 - **Fresh state:** each language starts from a clean install. On iOS that's `clearState`; on Android shotfleet clears the app data itself, because `clearState` would also erase the app language.
+
+## Flow tips for every language
+
+A flow that works in English can still break in Turkish or Chinese. These tips come from runs on my own apps. They are about Maestro; shotfleet only translates the texts you write in selectors. I read [Maestro's docs](https://docs.maestro.dev) for every snippet on 2026-10-08. "Ran" means I ran it on Maestro 2.0.10, the version of all the runs here. "Not run" means it comes from Maestro's docs and I have not tried it on a device.
+
+**Tap by id where you can.** An id has no language, and shotfleet leaves `id:` selectors alone, so the step taps the same view in every language. Ran on iOS and Android (obytes Expo template, 2026-10-03). Maestro reads `text` and `id` as regular expressions, so keep an id specific.
+
+```yaml
+- tapOn:
+    id: "login-button"
+```
+
+**When two texts are the same word,** pin the step. Two real cases: in Turkish "İleri" means both "Next" and "Advanced", so a tap on "Next" hit an "Advanced" option and Turkish failed on Android (0 of 6 screenshots). In Chinese a pill on a card read "基准", and so did the Benchmarks row below it, so a scroll that waits for the text stopped at the pill. Pin the step to a neighbour with `below:` or `above:` (shotfleet translates the anchor too). Ran on iOS and Android, Turkish included (WOD Tracker, 2026-10-07):
+
+```yaml
+- tapOn:
+    text: "Next"
+    below:
+      text: "3+ years of dedicated training"
+```
+
+Or pick the nth match with `index:`. Maestro counts from 0. Not run, and the order of matches is Maestro's, so look at the frame:
+
+```yaml
+- tapOn:
+    text: "Next"
+    index: 1
+```
+
+Or swipe a fixed distance until only one of the two texts is left on screen. Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (WOD Tracker, 2026-10-07). Maestro's docs write the pair with a space (`start: 90%, 50%`); the form without a space is the one I ran.
+
+```yaml
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,80%"
+          end: "50%,15%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- tapOn: "Benchmarks"
+```
+
+**`scrollUntilVisible` has two forms.** Maestro takes the element as a plain string or as a selector object, and both are valid:
+
+```yaml
+- scrollUntilVisible:
+    element: "Benchmarks"
+
+- scrollUntilVisible:
+    element:
+      text: "Benchmarks"
+    direction: DOWN
+    timeout: 30000
+```
+
+The object form with `text:` ran on iOS and Android (WOD Tracker). Use it on 0.1.7 and older: those versions translate the text in the object form and leave the plain string in English, so on an iPhone run in Hindi and Turkish the plain string failed both languages. From 0.1.8 both forms are translated. Maestro's defaults are `direction: DOWN` and a `timeout` of 20000 ms, and the step fails when it runs out. If the row ends up behind a tab bar, `centerElement: true` keeps scrolling until the element is more than 30% away from the screen edge (not run). In my Hindi run the row stopped behind the tab bar and the tap hit the Train tab.
+
+**Wait for a stable screen before the first screenshot.** Wait for a text that only that screen has, then let the animation finish. Ran on iOS (WOD Tracker). `waitForAnimationToEnd` does not fail: Maestro's docs say it carries on when its timeout (15000 ms by default) runs out, so on its own it does not prove the screen is still. A Flutter debug build can take 30 s to draw on a fresh emulator, so give the wait a long timeout.
+
+```yaml
+- extendedWaitUntil:
+    visible: "Start here"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 01_train
+```
+
+**`check` does not prove that a tap hit the right button.** It reads pictures: it sees a wrong language, copies, missing screens, blank frames and wrong sizes. It cannot know which screen you meant to reach. In one WOD Tracker iPhone attempt the run exited 0 with 8 of 8 screenshots and `check` said 0 problems, but the Hindi "Benchmarks" frame showed the Train screen, because my tap hit the tab bar. A Train screen in Hindi is a good screen. I found it by looking at every frame. A guard in the flow fails the language instead: put an `assertVisible` on a text that only the target screen has (not one the tab bar shows too) between the tap and the screenshot. Not run; I had no guard in that attempt. "Benchmark results" stands for a text from your own screen. The `[expect]` tables (see Expected content above) can do the same job after the run, with a literal text per language. And look at the frames of a new flow once before you trust it.
+
+```yaml
+- tapOn: "Benchmarks"
+- assertVisible: "Benchmark results"
+- takeScreenshot: 02_benchmarks
+```
 
 ## Limits
 
 - The installed program brings its own Python. Running from source needs Python 3.11+ (macOS's own `python3` is 3.9; `brew install python`).
 - Strings are read from the build: `.strings`, `.stringsdict` and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), `strings.xml` and `<plurals>` on Android, and Compose Multiplatform resources on both (run end to end on JetBrains' KotlinConf app, iOS and Android, de and en, 2026-10-03). Other frameworks read source files (see Config). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.
 - Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).
-- If you pass `init`, `run` or `check` a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run.
+- If you pass `init`, `run` or `check` a Flutter, React Native, .NET MAUI or Unity build, shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files, and a warning for a Flutter debug build (DEBUG banner) or a React Native Debug build (Metro dev server). It detects these builds from file names in the bundle, so it may miss some versions, and it never stops a run. `check --app Runner.app` on a Flutter build says "This is a Flutter build: pass --strings 'lib/l10n/*.arb'" (the other frameworks get their usual folder), and `--strings` together with `--app` uses your translation files and still takes the store rules from the build.
 - Text recognition is macOS's. It reads 33 languages (the macOS 27 number; older macOS versions read fewer), including Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese and Korean scripts. A language outside that list but written in Latin script (Catalan, Croatian, Hungarian, Slovak, Slovenian) is judged by language detection on every macOS, like a listed one; macOS reads it with its Latin model, and accents can be lost (Hungarian). Older macOS versions list fewer languages, so on those more of your languages fall under this rule (not tested on macOS 13). For scripts it can't read (Greek, Hebrew, Armenian, Georgian, most Indic and Southeast Asian scripts), `check` still catches screens in another language, copies and missing screens, and says which screens it couldn't read.
 - If macOS text recognition stops answering (the first time, macOS compiles its text model in `ANECompilerService`, which can take minutes on a loaded Mac and once took about 40 minutes on a quiet one), `check` waits while that compile is working, up to 8 minutes for the whole check. If it still gets no answer it says what happened and switches to Tesseract when it's installed (`brew install tesseract tesseract-lang`), saying so in its output. Without Tesseract, `check` still finishes: screens with the app's own text are judged from it, store sizes and missing screens are checked, and the screens it couldn't read are marked "not verified" in its output, the report and `unverified` in `--json`. Unread screens that are identical across languages get a note, not a problem: only their text can tell a copy from a screen with no text. Run check again later, or install Tesseract. No restart needed: macOS finishes the compile by itself. Not verified screens don't change the exit code; with `--strict` they make it 1. Two checks at once on one Mac take turns preparing text recognition, so they don't slow each other's compile down. iOS runs mostly aren't affected: they read the app's own text, and only screens where that text proves little go to OCR.
 - With Tesseract installed (`brew install tesseract tesseract-lang`), `check` uses it automatically for those scripts: measured on 85 languages, 84 are then verified by reading instead of 66. Another OCR works too: `--ocr-command "<cmd> {image}"` (or `SHOTFLEET_OCR`); placeholders: `{image}`, `{lang}` (ISO code), `{tesseract}` (Tesseract's code), `{tesseract_with_english}` (e.g. `eng+ell`).
@@ -452,7 +537,7 @@ translation source.
 - Built to run on macOS 13 or later on Apple silicon (the build declares 13.0 as its minimum), but I haven't run it on macOS 13. My full runs, with simulators and emulators, were all on macOS 27. On macOS 14 and 15 I ran the installer, doctor and check for version 0.1.1, and on macOS 26.2 in a virtual machine for 0.1.2. Other macOS versions are not tested yet.
 - Tested with Xcode 27.0. The default simulator is the iPhone 17 Pro Max, which needs Xcode 26 or newer; with an older Xcode set `device_type` in the config. Xcode 26.x has not been run.
 - iOS 27: one simulator and one language ran with 0 problems (2026-10-05). A run on four simulators at once has not been tried on iOS 27; pin an older runtime if you need a tested setup. iOS 27.0 simulators also froze at boot in some of my runs, so `run` skips that runtime unless you set it (see Tips).
-- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6) needs neither. `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0.
+- macOS on Apple silicon only (the installer refuses Intel Macs). Needs Xcode for iOS, the Android SDK for Android, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+ (Maestro needs it). On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6) needs neither. `shotfleet doctor` and `run` say so when yours is another version; other 2.x versions may still work. `shotfleet doctor --fix` installs 2.11.0. Below Maestro 2.7.0 (2.0.10 is one) Android has no screen hierarchy, so `check` reads Android screenshots by text recognition; `run` says so and suggests 2.11.0.
 - Android needs API 33+ emulators for per-app languages. shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`, Homebrew's `android-commandlinetools`, or next to an `adb` on your PATH, and uses any installed arm64 `google_apis` or `google_apis_playstore` image of API 33 or newer (or the `system_image` from the config). `shotfleet doctor` prints the `sdkmanager` commands for whatever is missing. The first Android run creates its own emulator, `shotfleet_android`, from that image; your other emulators are not touched.
 - Linux: `check` and the Android readers run from source on Linux (see [docs/linux.md](docs/linux.md)): they need Tesseract, there is no Linux installer yet, and `run` on a Linux emulator has not been tried. iOS needs a Mac. <!-- DOCKER-PENDING (not published yet: packaging/README.md step 9) For `check` there is also a Docker image (see Linux and CI). DOCKER-PENDING -->
 - Text you type isn't translated by itself: it stays the same in every language unless you set `[inputs]` (iOS; on Android it needs a Maestro that sets `MAESTRO_DEVICE_UDID`, which 2.11.0 does and 2.0.10 doesn't; see above).

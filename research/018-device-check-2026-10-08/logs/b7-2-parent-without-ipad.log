@@ -1,0 +1,13 @@
+
+checked 4 screenshots in 2 languages: 2 problem(s)
+  - de: the app runs on iPad, so the App Store requires 13" iPad screenshots
+  - ja: the app runs on iPad, so the App Store requires 13" iPad screenshots
+
+App Store coverage (language x device class):
+      iPhone 6.9"  iPhone 6.5"  iPad 13"  other sizes
+  de  ok (2)       -            missing   ok (0)
+  ja  ok (2)       -            missing   ok (0)
+  - de: iPad 13" missing (the App Store needs it because your app runs on iPad)
+  - ja: iPad 13" missing (the App Store needs it because your app runs on iPad)
+report: rep2/iphone-17-pro-max/index.html
+rc=1
