@@ -40,7 +40,7 @@ Sources used (fetched 2026-10-02):
 
 You set `languages(["en-US", "de-DE", "ja"])` in your Snapfile, ran `fastlane snapshot`, and opened the folders. German and Japanese are there, and every image is in English.
 
-I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The first four causes below need nothing from me.
+I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The five causes below need nothing from me.
 
 ## How snapshot is supposed to set the language
 

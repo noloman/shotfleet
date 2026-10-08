@@ -80,7 +80,7 @@
   <p class="label">Guide</p>
 <h1>Why your fastlane snapshot screenshots are all in English (and how to check every language)</h1>
 <p>You set <code>languages(["en-US", "de-DE", "ja"])</code> in your Snapfile, ran <code>fastlane snapshot</code>, and opened the folders. German and Japanese are there, and every image is in English.</p>
-<p>I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The first four causes below need nothing from me.</p>
+<p>I build a tool in this area (shotfleet, which comes up at the end), so read this with that in mind. The five causes below need nothing from me.</p>
 <h2>How snapshot is supposed to set the language</h2>
 <p>fastlane's docs say the language reaches your UI tests "via a temporary file which is written by snapshot before running the tests". Your test target includes <code>SnapshotHelper.swift</code>, and the docs tell you to call <code>setupSnapshot(app)</code> before <code>app.launch()</code>. That helper reads the file and passes the language to your app as launch arguments. There is also an option, <code>localize_simulator</code>, that sets the Simulator's own system language.</p>
 <p>So there are several places where the chain can break. The GitHub issues are old but show the pattern. In #8895 the Simulator language "stays en-US" after an Xcode update. In #12917 the reporter got English from <code>fastlane snapshot</code> while a manual Xcode run with the generated language file switched correctly. In #11457 the reporter found that <code>localize_simulator true</code> worked but changed the status bar because the simulator was erased. I did not reproduce any of these; they are the documented symptom, from 2017 and 2018. All three are closed.</p>
