@@ -1782,6 +1782,38 @@ def flow_parse_note(out):
                     "Fix that YAML; this is not a slow-simulator problem.\n")
     return ""
 
+def port_7001_holder():
+    """(pid, command) of the process that listens on port 7001, the one Maestro's driver talks to, or None: nobody does, or there is no lsof."""
+    try:
+        r = sh(["lsof", "-nP", "-iTCP:7001", "-sTCP:LISTEN", "-Fp"], timeout=15)
+        pid = next(l[1:] for l in r.stdout.splitlines() if l[:1] == "p" and l[1:].isdigit())
+        return int(pid), " ".join(sh(["ps", "-o", "command=", "-p", pid], timeout=15).stdout.split())[:90] or "?"
+    except (OSError, subprocess.SubprocessError, StopIteration): return None
+
+def port_7001_message(holder):
+    pid, cmd = holder
+    who = "another Maestro driver" if "maestro" in cmd.lower() else "another program"
+    return f"port 7001 is already used by {who} (pid {pid}, {cmd})"
+
+def warn_port_7001():
+    """Two Maestro jobs at once (iOS and Android) both use 127.0.0.1:7001, and the second fails with `io.grpc.StatusRuntimeException: UNAVAILABLE`.
+    Say so before the run when something already listens there. Nothing is stopped: it may be another job's driver."""
+    if holder := port_7001_holder():
+        print(f"warning: {port_7001_message(holder)}. A Maestro run that starts now fails with UNAVAILABLE. Wait for that job to end, "
+              "or run one job at a time; shotfleet does not stop it", flush=True)
+
+def port_clash_note(out, errors=()):
+    """When a failure or a Maestro log under `out` says the driver was UNAVAILABLE (io.grpc.StatusRuntimeException), the plain reason, else "".
+    Names the process on port 7001 when there is one. Like flow_parse_note it ends in a newline."""
+    texts = [e or "" for e in errors]
+    for log in sorted(Path(out).glob("maestro*.log")):
+        try: texts.append(log.read_text(errors="replace"))
+        except OSError: pass
+    if not any("StatusRuntimeException: UNAVAILABLE" in t for t in texts): return ""
+    holder = port_7001_holder()
+    return ("note: " + (port_7001_message(holder) if holder else "Maestro's driver on port 7001 did not answer (UNAVAILABLE), and nothing listens there now")
+            + ". Two Maestro jobs at the same time share that port: run one job at a time. shotfleet does not stop the other one.\n")
+
 LANDSCAPE_HINT = ("Maestro taps at portrait coordinates in iOS landscape (a Maestro issue): capture iPad in portrait, "
                   "or open the screen with a launch argument or deep link.")
 STEP_LINE = re.compile(r"TestSuiteInteractor\.runFlow\S*: (?:\[shard (\d+)\] )?\s*(.*?) (RUNNING|COMPLETED|FAILED)\s*$")
@@ -2130,6 +2162,7 @@ def ios_run_inner(cfg, path, only, parallel):
     want = min(parallel or cfg.get("parallel", 4), len(report["locales"]))
     n = fit_parallel(want)
     capacity_warn(cfg, want, "ios", n)
+    if not capture: warn_port_7001()
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
     pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()))
     OUR_SIMS.update(s.udid for s in pool)
@@ -2263,6 +2296,7 @@ def ios_run_inner(cfg, path, only, parallel):
         results.append({"lproj": lp, **r_})
     if not all(r["ok"] for r in results):
         print(flow_parse_note(out) or overload_note(want, n, [r.get("error") for r in results if not r["ok"]]), end="")
+        if not capture: print(port_clash_note(out, [r.get("error") for r in results if not r["ok"]]), end="")
     for r in results: report["locales"][r["lproj"]].update(r)
     kept = keep_earlier(report, prev)
     report["wall_seconds"] = round(time.time() - t0)
@@ -2837,6 +2871,7 @@ def android_run_inner(cfg, path, out, only, parallel):
     want = min(parallel or cfg.get("parallel", 4), len(todo))
     n = fit_emulators(fit_parallel(want))
     capacity_warn(cfg, want, "android", n)
+    warn_port_7001()
     kind = ANDROID_DEVICES[cfg.get("device", "phone")]
     name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
     print(f"booting {n} emulators ({name}, {kind['size'][0]}x{kind['size'][1]})", flush=True)
@@ -2922,6 +2957,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         print_result(lp, r_, expected)
         if not r_["ok"] and where: print_failure(*where, flow, "android")
         report["locales"][lp].update(r_)
+    if not all(r_["ok"] for r_ in final.values()): print(port_clash_note(out, [r_.get("error") for r_ in final.values() if not r_["ok"]]), end="")
     kept = keep_earlier(report, prev)
     if hier:
         got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())

@@ -3,8 +3,10 @@ the failure screenshot after a retry. Fakes only: no simulator, emulator, Maestr
 
 Run: python3 -m unittest tests.test_018b_fixes
 """
-import contextlib, io, sys, unittest
+import contextlib, io, subprocess, sys, tempfile, unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -58,3 +60,53 @@ class RegexSelectorsInThePreCheck(unittest.TestCase):  # item 17
         _, text = quiet(sf.print_untranslated, report)
         self.assertEqual(text.count("Interviewing on.*"), 1)
         self.assertIn("'Interviewing on.*' matches '%@ on %@' in the base language only", text); self.assertIn("use an id", text)
+
+
+def fake_sh(lsof="", ps="", fail=None):
+    """sf.sh with lsof and ps answered from here: no real port is looked at."""
+    def sh(cmd, **kw):
+        if fail and cmd[0] == "lsof": raise fail
+        return SimpleNamespace(stdout={"lsof": lsof, "ps": ps}[cmd[0]], stderr="", returncode=0)
+    return mock.patch.object(sf, "sh", side_effect=sh)
+
+
+class Port7001(unittest.TestCase):  # item 22
+    JAVA = "java -Dapple.awt.UIElement=true -classpath /opt/maestro/lib/maestro-cli.jar maestro.cli.AppKt --device 6A7B test flow"
+    UNAVAILABLE = "[Failed] de (25s) (io.grpc.StatusRuntimeException: UNAVAILABLE: io exception)"
+
+    def test_the_holder_is_read_from_lsof_and_ps(self):
+        with fake_sh("p4321\n", self.JAVA + "\n"):
+            pid, cmd = sf.port_7001_holder()
+        self.assertEqual(pid, 4321); self.assertTrue(cmd.startswith("java -Dapple.awt.UIElement=true")); self.assertLessEqual(len(cmd), 90)
+
+    def test_nobody_listening_and_no_lsof_both_give_none(self):
+        with fake_sh(""): self.assertIsNone(sf.port_7001_holder())
+        with fake_sh(fail=FileNotFoundError("lsof")): self.assertIsNone(sf.port_7001_holder())
+        with fake_sh(fail=subprocess.TimeoutExpired("lsof", 15)): self.assertIsNone(sf.port_7001_holder())
+
+    def test_the_message_says_it_in_plain_words_and_names_pid_and_command(self):
+        self.assertEqual(sf.port_7001_message((4321, self.JAVA[:20] + " maestro")), "port 7001 is already used by another Maestro driver (pid 4321, java -Dapple.awt.UIE maestro)")
+        self.assertIn("another program (pid 7, node server.js)", sf.port_7001_message((7, "node server.js")))
+
+    def test_a_run_warns_before_it_starts_and_stops_nothing(self):
+        with fake_sh("p4321\n", self.JAVA), mock.patch.object(sf, "kill_stale_drivers", side_effect=AssertionError("kills nothing")):
+            _, text = quiet(sf.warn_port_7001)
+        self.assertIn("port 7001 is already used by another Maestro driver (pid 4321, java", text); self.assertIn("does not stop it", text)
+        with fake_sh(""): self.assertEqual(quiet(sf.warn_port_7001)[1], "")
+
+    def test_a_failure_that_says_unavailable_gets_the_reason(self):
+        with tempfile.TemporaryDirectory() as d, fake_sh("p4321\n", self.JAVA):
+            note = sf.port_clash_note(d, ["Assertion is false", self.UNAVAILABLE])
+            (Path(d) / "maestro1.log").write_text("io.grpc.StatusRuntimeException: UNAVAILABLE: io exception\n")
+            from_log = sf.port_clash_note(d, ["no result (see maestro log)"])
+        for got in (note, from_log):
+            self.assertIn("port 7001 is already used by another Maestro driver (pid 4321, java", got); self.assertTrue(got.endswith("\n"))
+
+    def test_a_clash_found_after_the_other_job_ended_is_still_explained(self):
+        with tempfile.TemporaryDirectory() as d, fake_sh(""):
+            got = sf.port_clash_note(d, [self.UNAVAILABLE])
+        self.assertIn("nothing listens there now", got); self.assertIn("one job at a time", got)
+
+    def test_other_failures_get_no_note_and_no_lsof_call(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "sh", side_effect=AssertionError("no lookup")):
+            self.assertEqual(sf.port_clash_note(d, ["Assertion is false: id: login is visible", None]), "")

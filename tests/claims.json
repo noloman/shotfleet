@@ -5547,5 +5547,22 @@
   "layer": "unit",
   "assertion": "Unit test with fakes; no device.",
   "fix": ""
+ },
+ {
+  "id": "C351",
+  "claim": "run warns before it starts when another process listens on port 7001 (Maestro's driver port), naming the pid and command and saying it is another Maestro driver when the command is Maestro's, and after a failure with io.grpc.StatusRuntimeException: UNAVAILABLE it says the same; it needs lsof, says nothing without it, and stops nothing",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "port 7001 is already used by another Maestro driver",
+   "port 7001 is already used by another Maestro driver"
+  ],
+  "status": "proven",
+  "proof": "Port7001.test_the_holder_is_read_from_lsof_and_ps, Port7001.test_nobody_listening_and_no_lsof_both_give_none, Port7001.test_the_message_says_it_in_plain_words_and_names_pid_and_command, Port7001.test_a_run_warns_before_it_starts_and_stops_nothing, Port7001.test_a_failure_that_says_unavailable_gets_the_reason, Port7001.test_a_clash_found_after_the_other_job_ended_is_still_explained (tests/test_018b_fixes.py). Seen in a Remoti run, 2026-10-08: an iOS and an Android job at once both failed with UNAVAILABLE (shotfleet-rc-build/plan-0.1.8.md, item 22). Two jobs at once were not run on a device for this fix.",
+  "layer": "unit",
+  "assertion": "Unit test with fakes; no device.",
+  "fix": ""
  }
 ]
