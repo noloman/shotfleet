@@ -1,0 +1,6 @@
+[ios]
+app = "/Users/manu/Developer/shotfleet-rc-build/ab-1.6.7-maestro/app/Crossfit Tracker.app"
+bundle_id = "me.manulorenzo.crossfittracker"
+flow = "/Users/manu/Developer/shotfleet-rc-build/ab-1.6.7-maestro/work/flow.ios.yaml"
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"
+out = "out"
