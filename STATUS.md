@@ -132,6 +132,7 @@ Build order for code (shared `shotfleet.py` with the core-product session, who o
 9. Refresh this file.
 
 ## Changelog of this file
+- 2026-10-08: Obytes starter showcase (open-source Expo template, v9.0.0, release build) recorded in research/obytes-run-2026-10-08/ and drafted for the site on branch claude/site-showcase-obytes (claims C343 to C353): iPhone only, 2 languages, 1 translated screen, 2 runs of 12 screenshots, check 0 problems; the Android release build never got past its splash screen on my emulator, so no Android frames. Not live: it waits for Manu's yes and for the maintainers.
 - 2026-10-05 (evening, later): 0.1.2 live since 16:07 (first real `packaging/publish.sh` run; Cloudflare version d5ef4236, rollback target b64119e0; device gate 65 of 65): sections "Release state" and "Next release" now describe 0.1.2 and point to 0.1.3; 0.1.1 kept as history; claim counts re-read, unchanged (131 claims, 47 not green); no restart is needed for text recognition (correction); the update email is not needed yet (no sales).
 - 2026-10-05 (evening): 0.1.1 live since 13:27: sections "Release state" and "Next release" now describe 0.1.1 and point to 0.1.2; claim counts refreshed (131 claims, 47 not green); Manu-only list extended.
 - 2026-10-05: final release state: 0.1.0 live; sections "Release state" and "What is left to do" added; gate rows 1, 3, 5, 6, 12 updated; pre-launch lists marked as history.
