@@ -16,9 +16,6 @@ LAYERS = {"unit", "site", "fixture", "device", "legal"}
 TESTS = "\n".join(p.read_text() for p in sorted((ROOT / "tests").glob("test_*.py")))
 
 
-LIVE = "<!-- WAITLIST -->" not in (ROOT / "site/public/index.html").read_text()
-
-
 def text_of(rel):
     return (ROOT / rel).read_text()
 
@@ -42,7 +39,6 @@ class Register(unittest.TestCase):
             for rel in c["where"]: self.assertTrue((ROOT / rel).is_file(), f"{c['id']}: {rel} is missing")
             for i, quote in enumerate(c["where_text"]):
                 files = [c["where"][i]] if len(c["where"]) == len(c["where_text"]) else c["where"]
-                if LIVE and files == ["site/public/index.html"]: continue  # go-live.sh drops the waitlist copy on purpose; refresh the register then
                 with self.subTest(id=c["id"], quote=quote[:60]):
                     self.assertTrue(any(quote in text_of(f) for f in files), f"{c['id']}: {quote!r} is no longer in {files}")
 

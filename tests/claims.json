@@ -792,11 +792,11 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none. Unlimited apps.",
+   "Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none. The spare activations work from 0.1.6; 0.1.5 and older stop at 3. Unlimited apps.",
    "One licence is for one developer. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset. Your CI uses none.",
    "Unlimited apps and projects, including client and commercial work.",
    "From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset.",
-   "A key can be activated 5 times: use it on up to 3 of your Macs, and the spare activations cover reinstalls."
+   "The spare activations work from 0.1.6; 0.1.5 and older stop at 3."
   ],
   "status": "partial",
   "proof": "Client: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (the 6th activation is refused and spends nothing; 0.1.5 and earlier stop at the 4th), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does). 2026-10-06 (0.1.6, L2, owner decision): '3 activations' made a reinstall burn one of the 3 Macs. MAX_MACS is now 5 and every page says 'use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset' (the terms, docs and README also say the key has 5). Exact limit: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (activations 1 to 5 work, the 6th is refused and burns nothing); the wording: GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email; pages and code agree: Offer.test_limits_match_the_code. The device assertion below now means: the 6th is refused with 'all 5 activations' and Uses reads 5. Gumroad's own product description must say the same (licence-review/gumroad-description-new.txt; Manu edits Gumroad).",
@@ -3836,8 +3836,7 @@
    "README.md",
    "site/public/docs.html",
    "README.md",
-   "site/public/docs.html",
-   "site/public/index.html"
+   "site/public/docs.html"
   ],
   "where_text": [
    "It builds your test bundle once, then runs it on several simulators at the same time, one language each, collects what your tests saved and checks it.",
@@ -3851,8 +3850,7 @@
    "On iOS, a config with `[capture]` (your own XCUITest tests, new in 0.1.6) needs neither.",
    "(on iOS, <code>run</code> can use your own XCUITest tests instead, new in 0.1.6)",
    "and you don't need Maestro or Java for this (new in 0.1.6; tested on iOS 26.4 simulators).",
-   "and you don't need Maestro or Java for this (new in 0.1.6; tested on iOS 26.4 simulators).",
-   "On iOS, <code>run</code> can use your own XCUITest screenshot tests instead of a Maestro flow (new in 0.1.6)."
+   "and you don't need Maestro or Java for this (new in 0.1.6; tested on iOS 26.4 simulators)."
   ],
   "status": "proven",
   "layer": "device",
@@ -3906,7 +3904,7 @@
   "where_text": [
    "<code>check</code> understands fastlane supply’s file names",
    "On a real Google Play set in 15 languages, 15 false “missing” lines are gone.",
-   "<code>check</code> reads fastlane supply’s file names and no longer calls a Russian screen Kazakh."
+   "15 were false “missing” lines from a bug in how 0.1.4 read fastlane supply’s file names (fixed in 0.1.6)"
   ],
   "status": "proven",
   "layer": "unit",
@@ -3919,12 +3917,10 @@
   "id": "C239",
   "claim": "What's new 0.1.6: a Russian screen read as Kazakh passes when the app's Russian strings match it; a Ukrainian screen in the Russian folder is still caught",
   "where": [
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "A Russian screen with English job titles in it is no longer called Kazakh",
-   "no longer calls a Russian screen Kazakh."
+   "A Russian screen with English job titles in it is no longer called Kazakh"
   ],
   "status": "proven",
   "layer": "unit",
@@ -3937,12 +3933,10 @@
   "id": "C240",
   "claim": "What's new 0.1.6: a failed language names the step it stopped on, the failure screenshot's path and up to 12 texts on that screen",
   "where": [
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "When a language fails, <code>run</code> now says where it stopped",
-   "<code>run</code> says where a failed language stopped: the step, the screenshot, and what was on screen."
+   "When a language fails, <code>run</code> now says where it stopped"
   ],
   "status": "proven",
   "layer": "unit",
@@ -5398,7 +5392,7 @@
    "site/public/demo.html"
   ],
   "where_text": [
-   "wger, the open-source workout app, is licensed under the AGPL-3.0-or-later with an app-store exception: github.com/wger-project/flutter. These are screenshots of the open-source wger app, captured by me with shotfleet from a debug build I compiled myself (version 2.1.1). The project isn’t affiliated with shotfleet and doesn’t endorse it. The only logo is the one the app draws itself.",
+   "wger, the open-source workout app, is licensed under the AGPL-3.0-or-later with an app-store exception: <a href=\"https://github.com/wger-project/flutter\">github.com/wger-project/flutter</a>. These are screenshots of the open-source wger app, captured by me with shotfleet from a debug build I compiled myself (version 2.1.1). The project isn’t affiliated with shotfleet and doesn’t endorse it. The only logo is the one the app draws itself.",
    "wger is licensed under the AGPL-3.0-or-later and isn’t affiliated with shotfleet."
   ],
   "status": "evidence",
