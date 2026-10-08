@@ -4768,5 +4768,226 @@
   "layer": "site",
   "assertion": "One recorded run on the owner's app, 2026-10-07.",
   "fix": ""
+ },
+ {
+  "id": "C288",
+  "claim": "Flow tips: in Turkish 'İleri' means both Next and Advanced; an onboarding tap on Next hit the Advanced option and Turkish failed on every Android screenshot (0 of 6)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "and the tap on \"Next\" hit the option, so Turkish failed on every screenshot on Android (0 of 6)",
+   "so a tap on \"Next\" hit an \"Advanced\" option and Turkish failed on Android (0 of 6 screenshots)"
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/NOTES.md, What went wrong, Android item 2 (run1 first try: hi 6/6, zh-CN 6/6, tr 0/6 after one retry) and Findings (d); the warning text 'Next' -> 'İleri' also means 'Advanced' is C017.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07 (Maestro 2.0.10).",
+  "fix": ""
+ },
+ {
+  "id": "C289",
+  "claim": "Flow tips: in Chinese a card pill and the Benchmarks row both read 基准, so a scrollUntilVisible stopped at the pill and the later tap found nothing",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "A scroll that waits for the text stopped at the pill, and the tap on the row found nothing.",
+   "so a scroll that waits for the text stopped at the pill"
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/NOTES.md, What went wrong, iPhone item 5 (run 2 first try: zh-Hans 1/4 screenshots, pl 4/4) and Findings (c).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07 (Maestro 2.0.10).",
+  "fix": ""
+ },
+ {
+  "id": "C290",
+  "claim": "Flow tips: a WOD Tracker iPhone attempt exited 0 with 8 of 8 screenshots and check said 0 problems, but the Hindi Benchmarks frame showed the Train screen because the tap hit the tab bar; found by looking",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "but the Hindi \"Benchmarks\" frame showed the Train screen",
+   "but the Hindi \"Benchmarks\" frame showed the Train screen"
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/NOTES.md, What went wrong, iPhone item 4, and Findings (b); logs/failed-attempts/run1-attemptA-hi-tr-rc0-but-hi-02-benchmarks-shows-Train.log. Same event as C287.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07 (Maestro 2.0.10).",
+  "fix": ""
+ },
+ {
+  "id": "C291",
+  "claim": "Flow tips: Maestro takes scrollUntilVisible's element as a plain string or as a selector object; as of 0.1.7 shotfleet translates the text in the object form only, and the plain string stayed English (Hindi and Turkish iPhone run failed, 0 of 2)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "as of 0.1.7, shotfleet translates the text in the object form and leaves the plain string in English",
+   "as of 0.1.7 shotfleet translates the text in the object form and leaves the plain string in English"
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/NOTES.md, What went wrong, iPhone item 3 and Findings (a). Re-checked on cf43aa6 on 2026-10-08 by calling shotfleet.translate_flow on a flow with both forms: `element: {text: ...}` came back translated, `element: \"...\"` unchanged. No unit test pins this on purpose: the 0.1.8 plan (A1) translates both forms, and this sentence is dated 'as of 0.1.7'. Maestro's docs (docs.maestro.dev, scrollUntilVisible, read 2026-10-08) show both forms.",
+  "layer": "unit",
+  "assertion": "Run shotfleet.translate_flow on a flow with both forms (done by hand on cf43aa6); one iPhone run in hi and tr (2026-10-07). After 0.1.8, reword the sentence or delete the claim.",
+  "fix": ""
+ },
+ {
+  "id": "C292",
+  "claim": "Flow tips: a text-plus-below: tap pins the Next button and was run on iOS and Android, Turkish included (Maestro 2.0.10, WOD Tracker)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Ran on iOS and Android, Turkish included (Maestro 2.0.10, WOD Tracker, 2026-10-07).",
+   "Ran on iOS and Android, Turkish included (WOD Tracker, 2026-10-07):"
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/flow.yaml and flow.android.yaml (the `below:` step before the Experience Level 'Next'); the iPhone tr and hi runs passed 4/4 and the Android tr rerun passed 3/3 (NOTES.md, Runs). Unit side: C017 and the translate_flow tests translate `below` texts (SELECTOR_KEYS).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07 (Maestro 2.0.10).",
+  "fix": ""
+ },
+ {
+  "id": "C293",
+  "claim": "Flow tips: four fixed swipes to the end of the list, then a plain tap on the row, ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (Maestro 2.0.10, WOD Tracker)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (Maestro 2.0.10, WOD Tracker, 2026-10-07).",
+   "Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (WOD Tracker, 2026-10-07)."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/flow.yaml (final, used by run 2 and run 3: zh-Hans, pl, nl, pt; 4/4 screenshots each, 0 problems) and NOTES.md, Runs. The 'x%,y%' spelling without a space is what ran; Maestro's docs (swipe page, read 2026-10-08) write 'x%, y%' and do not say whether the space is required.",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07 (Maestro 2.0.10).",
+  "fix": ""
+ },
+ {
+  "id": "C294",
+  "claim": "Flow tips: tapping by id ran on iOS and Android (Maestro 2.0.10, obytes Expo template, 2026-10-03); shotfleet leaves id selectors alone",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03).",
+   "Ran on iOS and Android (obytes Expo template, 2026-10-03)."
+  ],
+  "status": "evidence",
+  "proof": "research/real-apps-2026-10-03/obytes-ios/flow.yaml and obytes-android/flow.yaml (tapOn with id: \"login-button\" and others), with run.json and check.log in the same folders; docs/compat.md Maestro 2.0.10 row (every real run until 2026-10-03 used 2.0.10). Id pass-through is C016 (TranslateFlow.test_map_form_text_is_translated_and_id_selectors_pass_through).",
+  "layer": "device",
+  "assertion": "One recorded run on the template app, 2026-10-03.",
+  "fix": ""
+ },
+ {
+  "id": "C295",
+  "claim": "Flow tips: Maestro counts index from 0; index: 1 is the second match (from Maestro's docs, not run on a device)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Maestro counts from 0, so <code>index: 1</code> is the second match. Not run",
+   "Maestro counts from 0. Not run"
+  ],
+  "status": "partial",
+  "proof": "Maestro docs, Core Selectors page (docs.maestro.dev/reference/selectors/core-selectors), read 2026-10-08: \"The index is 0-based.\" translate_flow passes an index: line through unchanged (checked by hand on cf43aa6). No device run.",
+  "layer": "device",
+  "assertion": "Device run: a fixture flow with two buttons of the same text and `index: 1` taps the second one, in de and ja.",
+  "fix": ""
+ },
+ {
+  "id": "C296",
+  "claim": "Flow tips: scrollUntilVisible defaults to direction DOWN and a 20000 ms timeout and fails when it runs out; centerElement: true keeps scrolling until the element is more than 30% from the screen edge (from Maestro's docs, centerElement not run)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "keeps scrolling until the element is more than 30% away from the edge of the screen (not run)",
+   "keeps scrolling until the element is more than 30% away from the screen edge (not run)"
+  ],
+  "status": "partial",
+  "proof": "Maestro docs, scrollUntilVisible page (docs.maestro.dev/api-reference/commands/scrollUntilVisible), read 2026-10-08: defaults DOWN and 20000 ms, 'The test fails if the element isn't found in time', centerElement description. No device run of centerElement.",
+  "layer": "device",
+  "assertion": "Device run of a flow with scrollUntilVisible and centerElement: true on a row that sits behind a tab bar.",
+  "fix": ""
+ },
+ {
+  "id": "C297",
+  "claim": "Flow tips: waitForAnimationToEnd does not fail; Maestro carries on when its timeout (15000 ms by default) runs out",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Maestro's docs say it carries on when its timeout (15000 ms by default) runs out",
+   "Maestro's docs say it carries on when its timeout (15000 ms by default) runs out"
+  ],
+  "status": "partial",
+  "proof": "Maestro docs, waitForAnimationToEnd page (docs.maestro.dev/api-reference/commands/waitforanimationtoend), read 2026-10-08. Not tested on a device that the command passes with a still-moving screen.",
+  "layer": "device",
+  "assertion": "Device run: a flow on a screen with a looping animation and `waitForAnimationToEnd: {timeout: 1000}` passes.",
+  "fix": ""
+ },
+ {
+  "id": "C298",
+  "claim": "Flow tips: extendedWaitUntil on a text only the screen has, then waitForAnimationToEnd, then takeScreenshot, ran on iOS (Maestro 2.0.10, WOD Tracker)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Ran on iOS (Maestro 2.0.10, WOD Tracker).",
+   "Ran on iOS (WOD Tracker)."
+  ],
+  "status": "evidence",
+  "proof": "research/wod-tracker-run-2026-10-07/flow.yaml (extendedWaitUntil visible 'Start here', timeout 60000, waitForAnimationToEnd 4000, takeScreenshot 01_train; 4/4 screenshots in hi, tr, zh-Hans, pl, nl, pt). The README Flutter-debug 30 s sentence repeats the older Tips line (Flutter wger run, research/frameworks.md section 15).",
+  "layer": "device",
+  "assertion": "One recorded run on the owner's app, 2026-10-07 (Maestro 2.0.10).",
+  "fix": ""
+ },
+ {
+  "id": "C299",
+  "claim": "Flow tips: an assertVisible between the tap and the screenshot fails the language when the tap went wrong; the [expect] tables can do the same after the run (not run for this case; no such guard was in the wrong-frame attempt)",
+  "where": [
+   "site/public/docs.html",
+   "README.md"
+  ],
+  "where_text": [
+   "Not run; I had no such guard in that attempt, which is the point.",
+   "Not run; I had no guard in that attempt."
+  ],
+  "status": "partial",
+  "proof": "research/wod-tracker-run-2026-10-07/NOTES.md Findings (b) proposes the guard ('would catch it') and says it was not used. assertVisible texts are translated by translate_flow (SELECTOR_KEYS); the [expect] tables are described in the docs under 'Expected content'.",
+  "layer": "device",
+  "assertion": "Device run: the Hindi Benchmarks flow with the row behind the tab bar and an assertVisible on a Benchmarks-only text fails hi instead of passing.",
+  "fix": ""
+ },
+ {
+  "id": "C300",
+  "claim": "CHANGELOG 0.1.5 and docs/linux.md say the check Docker image and the GitHub Action are built but not published yet (an earlier line said they shipped)",
+  "where": [
+   "CHANGELOG.md",
+   "docs/linux.md"
+  ],
+  "where_text": [
+   "I did not publish either one, so `ghcr.io/noloman/shotfleet-check` and the Action are not there for you to use yet",
+   "built but not published yet, so `ghcr.io/noloman/shotfleet-check` is not there to pull"
+  ],
+  "status": "evidence",
+  "proof": "Owner's statement (coordinator brief for the 0.1.8 docs, 2026-10-08): the image and the Action were never published. In the repo: site/draft/docker-pending.txt holds the held-back public text, site/DOCKER_PUBLISHED is absent, test_site.DockerPending. Registry state itself was not queried. docs/engineering/README.md, Documentation corrections 3 and 27.",
+  "layer": "site",
+  "assertion": "Human: after the image is pushed, add site/DOCKER_PUBLISHED, put the held-back text back and change these two lines.",
+  "fix": ""
  }
 ]

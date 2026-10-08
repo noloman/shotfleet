@@ -438,6 +438,82 @@ translation source.
 - **Free memory before a run:** idle Gradle daemons can hold gigabytes. Run `./gradlew --stop` (once per Gradle version you use) before `shotfleet run`, and close apps you do not need. Four simulators on a loaded Mac can take many times longer.
 - **Fresh state:** each language starts from a clean install. On iOS that's `clearState`; on Android shotfleet clears the app data itself, because `clearState` would also erase the app language.
 
+## Flow tips for every language
+
+A flow that works in English can still break in Turkish or Chinese. These tips come from runs on my own apps. They are about Maestro; shotfleet only translates the texts you write in selectors. I read [Maestro's docs](https://docs.maestro.dev) for every snippet on 2026-10-08. "Ran" means I ran it on Maestro 2.0.10, the version of all the runs here. "Not run" means it comes from Maestro's docs and I have not tried it on a device.
+
+**Tap by id where you can.** An id has no language, and shotfleet leaves `id:` selectors alone, so the step taps the same view in every language. Ran on iOS and Android (obytes Expo template, 2026-10-03). Maestro reads `text` and `id` as regular expressions, so keep an id specific.
+
+```yaml
+- tapOn:
+    id: "login-button"
+```
+
+**When two texts are the same word,** pin the step. Two real cases: in Turkish "İleri" means both "Next" and "Advanced", so a tap on "Next" hit an "Advanced" option and Turkish failed on Android (0 of 6 screenshots). In Chinese a pill on a card read "基准", and so did the Benchmarks row below it, so a scroll that waits for the text stopped at the pill. Pin the step to a neighbour with `below:` or `above:` (shotfleet translates the anchor too). Ran on iOS and Android, Turkish included (WOD Tracker, 2026-10-07):
+
+```yaml
+- tapOn:
+    text: "Next"
+    below:
+      text: "3+ years of dedicated training"
+```
+
+Or pick the nth match with `index:`. Maestro counts from 0. Not run, and the order of matches is Maestro's, so look at the frame:
+
+```yaml
+- tapOn:
+    text: "Next"
+    index: 1
+```
+
+Or swipe a fixed distance until only one of the two texts is left on screen. Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (WOD Tracker, 2026-10-07). Maestro's docs write the pair with a space (`start: 90%, 50%`); the form without a space is the one I ran.
+
+```yaml
+- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,80%"
+          end: "50%,15%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- tapOn: "Benchmarks"
+```
+
+**`scrollUntilVisible` has two forms.** Maestro takes the element as a plain string or as a selector object, and both are valid:
+
+```yaml
+- scrollUntilVisible:
+    element: "Benchmarks"
+
+- scrollUntilVisible:
+    element:
+      text: "Benchmarks"
+    direction: DOWN
+    timeout: 30000
+```
+
+The object form with `text:` ran on iOS and Android (WOD Tracker). Use it: as of 0.1.7 shotfleet translates the text in the object form and leaves the plain string in English, so on an iPhone run in Hindi and Turkish the plain string failed both languages. Maestro's defaults are `direction: DOWN` and a `timeout` of 20000 ms, and the step fails when it runs out. If the row ends up behind a tab bar, `centerElement: true` keeps scrolling until the element is more than 30% away from the screen edge (not run). In my Hindi run the row stopped behind the tab bar and the tap hit the Train tab.
+
+**Wait for a stable screen before the first screenshot.** Wait for a text that only that screen has, then let the animation finish. Ran on iOS (WOD Tracker). `waitForAnimationToEnd` does not fail: Maestro's docs say it carries on when its timeout (15000 ms by default) runs out, so on its own it does not prove the screen is still. A Flutter debug build can take 30 s to draw on a fresh emulator, so give the wait a long timeout.
+
+```yaml
+- extendedWaitUntil:
+    visible: "Start here"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 01_train
+```
+
+**`check` does not prove that a tap hit the right button.** It reads pictures: it sees a wrong language, copies, missing screens, blank frames and wrong sizes. It cannot know which screen you meant to reach. In one WOD Tracker iPhone attempt the run exited 0 with 8 of 8 screenshots and `check` said 0 problems, but the Hindi "Benchmarks" frame showed the Train screen, because my tap hit the tab bar. A Train screen in Hindi is a good screen. I found it by looking at every frame. A guard in the flow fails the language instead: put an `assertVisible` on a text that only the target screen has (not one the tab bar shows too) between the tap and the screenshot. Not run; I had no guard in that attempt. "Benchmark results" stands for a text from your own screen. The `[expect]` tables (see Expected content above) can do the same job after the run, with a literal text per language. And look at the frames of a new flow once before you trust it.
+
+```yaml
+- tapOn: "Benchmarks"
+- assertVisible: "Benchmark results"
+- takeScreenshot: 02_benchmarks
+```
+
 ## Limits
 
 - The installed program brings its own Python. Running from source needs Python 3.11+ (macOS's own `python3` is 3.9; `brew install python`).

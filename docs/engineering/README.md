@@ -176,6 +176,8 @@ Each chapter ends with, or contains, its own list; the main open points:
 
 Statements in existing documents that are stale or wrong against the code at `7e5176c`. They were found while writing this folder and are **not** fixed in place (documentation-only task; the owner reviews). Severity: low unless marked. The code wins in every case.
 
+**Fixed on branch `claude/018-docs` (2026-10-08):** rows 3 and 27 (the CHANGELOG 0.1.5 line and `docs/linux.md` now say the image and the Action are built, not published), row 5 (`docs/ARCHITECTURE.md` and `docs/architecture/*` no longer quote line numbers; the function map has them), row 13 and the first part of row 34 (`STATUS.md`, `docs/handoff.md` and `LAUNCH.md` point to the CHANGELOG instead of naming versions) and the 0.1.7 row of row 24 (`docs/compat.md`). The other rows are still open. The tables below are left as written.
+
 ### Found in the program's own text and the buyer docs
 
 | # | Where | Says | The code does |
