@@ -1654,11 +1654,13 @@ def capacity_warn(cfg, want, platform, using=None):
 
 SLOW_SIM_ERRORS = ("Unknown error", "Unable to clear state")
 # What a failed language's error says when the device or Maestro broke, not the flow or the app (lowercase). Only these are retried by themselves:
-# a flow that fails on a missing element, a wrong screenshot count or a blank screen fails the same way a second time. Add a phrase when a new device failure shows up.
+# a flow that fails on a missing element or a wrong screenshot count fails the same way a second time. A blank screenshot is the exception: an app that paints
+# its first frame late can miss it once, so it is captured again once (docs promise this) and reported if it stays blank. Add a phrase when a new device failure shows up.
 INFRA_ERRORS = ("unknown error", "unable to clear state",  # Maestro's words when a slow simulator times its simctl calls out
                 "no result", "flow never ran",              # Maestro died or was stopped before it reported
                 "no progress for", "did not answer", "not responding", "stopped answering",
-                "offline", "emulator did not boot", "emulators did not boot", "can't find service", "not found: emulator")
+                "offline", "emulator did not boot", "emulators did not boot", "can't find service", "not found: emulator",
+                "blank screenshot(s)")                      # blank_note()'s wording: a late first paint can heal on the second try
 
 def is_infra_error(error):
     """True when a failed language's error looks like a device or infrastructure problem (INFRA_ERRORS), so one more try can help."""
@@ -2832,7 +2834,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         for i in range(0, len(todo), n):
             if i: busy_warn(cfg, "android", n)  # between rounds the Mac may have got worse
             final.update(safe_round(todo[i:i + n], f"r{i // n + 1}"))
-        retry, skipped = retry_choice(final)  # only failures that look like the device's (INFRA_ERRORS) get another try
+        retry, skipped = retry_choice(final)  # only failures that look like the device's or a late first paint (INFRA_ERRORS) get another try
         if not broken: say_not_retried(skipped)
         if retry and not broken:
             busy_warn(cfg, "android", n)

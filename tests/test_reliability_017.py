@@ -149,6 +149,14 @@ class OverloadAdvisor(unittest.TestCase):
         self.assertAlmostEqual(sf.parse_swap_used_gb(line), 6.62, places=2)
 
 
+def _blank_png(w=60, h=300):
+    import struct, zlib
+    raw = b"".join(b"\0" + b"\xff\xff\xff" * w for _ in range(h))
+    chunk = lambda k, d: struct.pack(">I", len(d)) + k + d + b"\0\0\0\0"
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+BLANK_PNG = _blank_png()
+
+
 class InfraErrors(unittest.TestCase):
     def test_device_failures_are_told_apart_from_flow_failures(self):
         for e in ("Unknown error", "Unable to clear state", "no result (see maestro log)", "flow never ran (see maestro log)",
@@ -158,6 +166,12 @@ class InfraErrors(unittest.TestCase):
         for e in (None, "", "Element not found: Text matching regex: Weiter", "flow passed but took 2 of 3 screenshots",
                   "screenshot 02.png is blank (all one colour)", "xcodebuild failed (exit 65; log: x)", "Assertion is false: 'Weiter' is visible"):
             self.assertFalse(sf.is_infra_error(e), e)
+
+    def test_the_blank_screenshot_message_is_retryable(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "01.png").write_bytes(BLANK_PNG)
+            note = sf.blank_note(d)
+        self.assertTrue(note and sf.is_infra_error(note), note)
 
     def test_only_failures_that_look_like_the_device_are_chosen_for_the_retry(self):
         final = {"de": {"ok": False, "error": "Unknown error"}, "fr": {"ok": False, "error": "Element not found"}, "ja": {"ok": True, "error": None}}
@@ -194,9 +208,9 @@ class IosRetries(unittest.TestCase):
         cases = []
         for lp in lps:
             plan = self.outcomes.get(lp, ["ok"]); res = plan.pop(0) if len(plan) > 1 else plan[0]
-            if res == "ok":
-                (Path(cwd) / lp).mkdir(parents=True, exist_ok=True); (Path(cwd) / lp / "01.png").write_bytes(b"x")
-            cases.append(f'<testcase name="{lp}" time="2">{"" if res == "ok" else f"<failure>{res}</failure>"}</testcase>')
+            if res in ("ok", "blank"):  # "blank": the flow passed but the screenshot is one flat colour
+                (Path(cwd) / lp).mkdir(parents=True, exist_ok=True); (Path(cwd) / lp / "01.png").write_bytes(BLANK_PNG if res == "blank" else b"x")
+            cases.append(f'<testcase name="{lp}" time="2">{"" if res in ("ok", "blank") else f"<failure>{res}</failure>"}</testcase>')
         Path(cmd[cmd.index("--output") + 1]).write_text(f"<testsuites><testsuite>{''.join(cases)}</testsuite></testsuites>")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
@@ -229,6 +243,16 @@ class IosRetries(unittest.TestCase):
         self.assertEqual(code, 0, out); self.assertEqual(self.maestro_calls, [["de", "fr"], ["de"]])
         self.assertIn("retrying 1: de", out); self.assertIn("(retried)", out)
         self.assertEqual((self.run_json()["de"]["attempts"], self.run_json()["fr"]["attempts"]), (2, 1))
+
+    def test_a_blank_screenshot_is_captured_again_once_then_reported(self):
+        self.outcomes = {"de": ["blank", "ok"]}  # a late first paint that heals
+        code, out = self.run_it()
+        self.assertEqual(code, 0, out); self.assertEqual(self.maestro_calls, [["de", "fr"], ["de"]]); self.assertIn("retrying 1: de", out)
+        self.maestro_calls.clear(); self.outcomes = {"de": ["blank"]}  # an app that always paints late
+        code, out = self.run_it()
+        self.assertEqual(code, 1); self.assertEqual(len(self.maestro_calls), 2)  # tried exactly twice
+        de = self.run_json()["de"]
+        self.assertEqual((de["ok"], de["attempts"]), (False, 2)); self.assertIn("blank screenshot", de["error"])
 
     def test_a_device_failure_that_stays_is_tried_twice_only(self):
         self.outcomes = {"de": ["Unknown error"]}
