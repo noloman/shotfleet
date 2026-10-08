@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.7 (2026-10-07)
+## 0.1.7 (2026-10-08)
 - **A store coverage table at the end of `check`:** one row per language and one column per device class (App Store: iPhone 6.9", iPhone 6.5", iPad 13"; Google Play: phone, 7" tablet, 10" tablet), each cell `ok`, `missing`, `too many` or `wrong size`, with plain lines such as `ja: iPad 13" missing (the App Store needs it because your app runs on iPad)`. It is in the console, `index.html`, `check.json` and `--json` (`coverage`) and changes no exit code.
 - **`check --compare <earlier folder>`:** lists per language and screen what is new, removed or changed since an earlier shotfleet output or fastlane folder (image hashes, plus the text lines added and removed where both sides have the app's `.texts.json`). Report only, no text recognition, exit code unchanged; it is in `check.json` as `compare`.
 - **`export --print-upload`:** prints the `fastlane deliver` or `fastlane supply` command that uploads the exported screenshots. It only prints; shotfleet still never uploads. The README and docs now also show the `asc screenshots upload` route.
