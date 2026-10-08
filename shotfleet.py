@@ -924,6 +924,19 @@ def regex_literal(s):
 
 WRAPPED_RE = re.compile(r"^(\.\*)?(.+?)(\.\*)?$", re.S)
 
+VARIES = re.compile(r"\\[dwsDWS][*+?]?|\([^()]*\)[*+?]?|\[[^\]]*\][*+?]?|\.[*+?]?|[*+?]")  # the parts of a regex that match different text
+
+def regex_fits(sel, text):
+    """True if the regex selector `sel` can match the app string `text`. %@, %d and {name} in `text` count as any text
+    (the app fills them in): `Interviewing on.*` fits `%@ on %@`."""
+    try: rx = re.compile(sel, re.S)
+    except re.error: return False
+    if not has_format(text): return bool(rx.fullmatch(text))
+    if len(re.sub(r"\W", "", SPEC.sub("", text))) < 2: return False  # "%@" alone fits everything
+    pieces = [re.sub(r"\\(.)", r"\1", p) for p in VARIES.split(sel)]
+    return (any(re.fullmatch(format_regex(text), f.join(pieces), re.S) for f in ("", "x", "1", " x"))
+            or any(rx.fullmatch(SPEC.sub(f, text)) for f in ("x", "1")))
+
 SELECTOR_RE = re.compile(r"^(\s*-?\s*(?:%s):\s*)(.+?)\s*$" % "|".join(SELECTOR_KEYS))
 
 INLINE_RE = re.compile(r"(\b(?:%s)\s*:(?!\s*\{)\s*)(\"[^\"]*\"|'[^']*'|[^,}]+?)(\s*[,}])" % "|".join(SELECTOR_KEYS))
@@ -961,9 +974,11 @@ def override_pattern(overrides, text):
     pats = [(o[text][3:] if o[text].startswith("re:") else regex_literal(o[text])) for o in (overrides or []) if text in o]
     return None if not pats else pats[0] if len(pats) == 1 else "(" + "|".join(dict.fromkeys(pats)) + ")"
 
-def translate_flow(flow, base, target, overrides=None):
+def translate_flow(flow, base, target, overrides=None, base_only=None):
     """Rewrite English text selectors to the target language. Returns (flow, untranslated selectors, collisions).
-    overrides: a list of {English text: wanted text} dicts, one per target language, that win over the app's strings."""
+    overrides: a list of {English text: wanted text} dicts, one per target language, that win over the app's strings.
+    base_only: a list that gets (selector, base text) for each regex or format-string selector that matches a base text
+    but cannot be translated, so it only matches in the base language."""
     by_text = {}
     for k, v in base.items():
         by_text.setdefault(v, []).append(k)
@@ -974,7 +989,7 @@ def translate_flow(flow, base, target, overrides=None):
     def tr_format(text):
         """'Round 2 of 12' -> every target form of the matching format, filled with 2 and 12."""
         for k, rx in formats:
-            if m := rx.match(text):
+            if (m := rx.match(text)) and not any(re.search(r"\.[*+?]|\\[dwsDWS]|\[[^\]]*\][*+?]", v) for v in m.groupdict().values()):  # not "Hello, .* today": that is a regex
                 family = k.split("#")[0]
                 forms = {fill_format(v, m.groupdict()) for tg in targets for o, v in tg.items()
                          if o == k or o.split("#")[0] == family and "#" in o}
@@ -984,13 +999,15 @@ def translate_flow(flow, base, target, overrides=None):
 
     def tr(raw):
         """Translated YAML value for one selector value, or None to leave it as it is."""
-        text = yaml_unquote(raw)
+        text = yaml_unquote(raw); part = []
         if (pat := override_pattern(overrides, text)) is not None: return yaml_single_quote(pat)
         if text not in by_text and (m := WRAPPED_RE.match(text)) and (m[1] or m[3]):
             # ".*Register", "Self-hosted.*": Flutter and others merge a row's texts into one label ("Title\nDetail"), so a flow
             # matches the part it knows; translate that part and keep the wildcard
+            n = len(missing)
             inner = tr(yaml_single_quote(m[2]))
-            return None if inner is None else "'" + (m[1] or "") + inner[1:-1] + (m[3] or "") + "'"
+            if len(missing) == n: return None if inner is None else "'" + (m[1] or "") + inner[1:-1] + (m[3] or "") + "'"
+            part = missing[n:]; del missing[n:]  # the part is no app string: maybe the whole thing is a regex that fits one (below)
         keys = by_text.get(text) or by_text.get(text.replace("'", "\u2019"))
         system = text.replace("'", "\u2019") in SYSTEM_BUTTONS
         if not keys and system:  # the OS's own dialog: stays English (iOS spells it with a curly apostrophe)
@@ -998,7 +1015,14 @@ def translate_flow(flow, base, target, overrides=None):
         if not keys:
             forms = tr_format(text)
             if forms is None:
-                missing.append(text); return None
+                hits = [k for k, v in base.items() if regex_fits(text, v)]
+                if not hits: missing.extend(part or [text])
+                else:  # `Interviewing on.*` fits "%@ on %@": it can't be translated, so it only works where the base text is shown
+                    for k in hits:
+                        if any((t := tg.get(k)) and t != base[k] and not regex_fits(text, t) for tg in targets):
+                            if base_only is not None: base_only.append((text, base[k]))
+                            break
+                return None
             pattern = "|".join(map(regex_literal, forms))  # any plural form: no per-language plural rules needed
             return yaml_single_quote(pattern if len(forms) == 1 else f"({pattern})")
         cands = sorted({tg.get(k, text) for tg in targets for k in keys} | ({text} if system else set()))
@@ -1069,6 +1093,10 @@ def print_untranslated(report):
     if miss:
         print("selectors not found in the app's strings (left as-is; they may fail outside English):")
         for m in miss: print(f"   {m!r}")
+    only = sorted({tuple(m) for v in report["locales"].values() for m in v.get("base_only_selectors", [])})
+    for sel, text in only:
+        print(f"warning: {sel!r} matches {text!r} in the base language only (a regex or a format string can't be translated per language): "
+              "use an id, or an anchor that reads the same in every language")
 
 def print_result(lp, r, expected):
     print(f"{'ok  ' if r['ok'] else 'FAIL'} {lp:8} {r['screenshots']}/{expected} screenshots"
@@ -2088,11 +2116,12 @@ def ios_run_inner(cfg, path, only, parallel):
         if capture:
             shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
             report["locales"][lp] = {"untranslated_selectors": []}; continue
-        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
+        only = []
+        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
         inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp), cfg.get("settle_ms", SETTLE_MS)))
-        report["locales"][lp] = {"untranslated_selectors": missing}
+        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
     print_untranslated(report)
 
     if not report["locales"]:
@@ -2795,9 +2824,10 @@ def android_run_inner(cfg, path, out, only, parallel):
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
-        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})])
+        only = []
+        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
-        report["locales"][lp] = {"untranslated_selectors": missing}
+        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
         shutil.rmtree(inside(out, "raw", lp), ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])

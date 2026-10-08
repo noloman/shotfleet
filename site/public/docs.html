@@ -394,6 +394,9 @@ name = "田中"</code></pre>
     id: "login-button"</code></pre>
   <p>Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03). Maestro reads <code>text</code> and <code>id</code> as regular expressions, so keep an id specific.</p>
 
+  <h3 id="tip-regex">A regex can't be translated</h3>
+  <p>A step like <code>assertVisible: 'Interviewing on.*'</code> passes in English because the app builds that line from <code>%@ on %@</code>. shotfleet has no way to turn a regex into German, so it keeps the English words and the step fails in every other language. In one of my runs it passed in English and failed in all 17 others. Before the first device starts, <code>run</code> now matches each selector that isn't an app text against the app's English texts, where <code>%@</code>, <code>%d</code>, <code>%1$s</code> and <code>{name}</code> stand for any text. If it fits one, you get a warning with the selector's name: <code>'Interviewing on.*' matches '%@ on %@' in the base language only</code>. Use an <code>id:</code>, or pin the step to a nearby label that is in your app's strings, which shotfleet does translate. Unit tested, not run on a device.</p>
+
   <h3 id="tip-collisions">When two texts are the same word</h3>
   <p>Two real cases from my runs. In Turkish, "İleri" means both "Next" and "Advanced". An onboarding page had an "Advanced" option and a "Next" button, and the tap on "Next" hit the option, so Turkish failed on every screenshot on Android (0 of 6). shotfleet warned about it before the run (<code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>). In Chinese, a small pill on a card read "基准" and so did the Benchmarks row below it. A scroll that waits for the text stopped at the pill, and the tap on the row found nothing.</p>
   <p>Pin the step to a neighbour with <code>below:</code> or <code>above:</code>. shotfleet translates the anchor text too:</p>

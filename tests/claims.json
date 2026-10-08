@@ -5530,5 +5530,22 @@
   "layer": "site",
   "assertion": "One recorded run on the owner's app, 2026-10-08.",
   "fix": ""
+ },
+ {
+  "id": "C350",
+  "claim": "run warns by name about a regex or format-string text selector that matches an app text but cannot be translated per language (it only matches in the base language), and suggests an id or a label the app translates; 0.1.7 and older skipped it",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "'Interviewing on.*' matches '%@ on %@' in the base language only",
+   "'Interviewing on.*' matches '%@ on %@' in the base language only"
+  ],
+  "status": "proven",
+  "proof": "RegexSelectorsInThePreCheck.test_a_regex_built_from_a_format_string_warns_by_name, RegexSelectorsInThePreCheck.test_the_other_placeholder_styles_do_too, RegexSelectorsInThePreCheck.test_a_regex_that_reads_the_same_in_the_target_language_is_not_a_warning, RegexSelectorsInThePreCheck.test_run_prints_the_warning_with_the_fix (tests/test_018b_fixes.py). Seen on a Remoti run, 2026-10-08: a flow passed in en and failed in the 17 other languages with no warning (shotfleet-rc-build/plan-0.1.8.md, item 17). Not run on a device.",
+  "layer": "unit",
+  "assertion": "Unit test with fakes; no device.",
+  "fix": ""
  }
 ]

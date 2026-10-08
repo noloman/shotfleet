@@ -458,6 +458,8 @@ A flow that works in English can still break in Turkish or Chinese. These tips c
     id: "login-button"
 ```
 
+**A regex can't be translated.** A step like `assertVisible: 'Interviewing on.*'` passes in English because the app builds that line from `%@ on %@`. shotfleet has no way to turn a regex into German, so it keeps the English words and the step fails in every other language. In one of my runs it passed in English and failed in all 17 others. Before the first device starts, `run` now matches each selector that isn't an app text against the app's English texts, where `%@`, `%d`, `%1$s` and `{name}` stand for any text. If it fits one, you get a warning with the selector's name: `'Interviewing on.*' matches '%@ on %@' in the base language only`. Use an `id:`, or pin the step to a nearby label that is in your app's strings, which shotfleet does translate. Unit tested, not run on a device.
+
 **When two texts are the same word,** pin the step. Two real cases: in Turkish "İleri" means both "Next" and "Advanced", so a tap on "Next" hit an "Advanced" option and Turkish failed on Android (0 of 6 screenshots). In Chinese a pill on a card read "基准", and so did the Benchmarks row below it, so a scroll that waits for the text stopped at the pill. Pin the step to a neighbour with `below:` or `above:` (shotfleet translates the anchor too). Ran on iOS and Android, Turkish included (WOD Tracker, 2026-10-07):
 
 ```yaml
