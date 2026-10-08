@@ -1,0 +1,13 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+simulator shotfleet-1 stopped answering last run; replacing it with a new one
+capturing 1 locales on 1 simulators...
+retrying 1: en
+FAIL en       5/6 screenshots (retried)  Assertion is false: ".*Please enter a valid e-mail address.*" is visible
+     failed step: Assert that ".*Please enter a valid e-mail address.*" is visible
+     failure screenshot: /Users/manu/Developer/shotfleet-rc-build/showcase-wger/out-ios/.work/debug/attempt2/.maestro/tests/2026-10-08_092007/screenshot-❌-1791444055592-(en).png
+     on screen: wger | Username | Please enter a valid username | E-mail address | Password | Please enter a value | Confirm password | Register | Already have an account? Log in | ADVANCED | 09:20 | 4 of 4 bars, signal strength
+captured 0/1 locales in 128s on 1 simulators
+
+checked 5 screenshots in 1 languages: 0 problem(s)
+rc=1 killed=0

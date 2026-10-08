@@ -1,0 +1,55 @@
+{
+ "screenshots": [
+  {
+   "file": "en/01_login.png",
+   "src": "raw/en/01_login.png",
+   "sha": "c9537372efea",
+   "lang": "en",
+   "chars": 131,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/02_advanced.png",
+   "src": "raw/en/02_advanced.png",
+   "sha": "562012c09efa",
+   "lang": "en",
+   "chars": 327,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/03_self_hosted.png",
+   "src": "raw/en/03_self_hosted.png",
+   "sha": "54ce2d0459c3",
+   "lang": "en",
+   "chars": 446,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/04_token_login.png",
+   "src": "raw/en/04_token_login.png",
+   "sha": "1eb6157934ba",
+   "lang": "en",
+   "chars": 309,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/05_register.png",
+   "src": "raw/en/05_register.png",
+   "sha": "139a2c6512a1",
+   "lang": "en",
+   "chars": 126,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/06_register_errors.png",
+   "src": "raw/en/06_register_errors.png",
+   "sha": "5bd08e5e495e",
+   "lang": "en",
+   "chars": 165,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

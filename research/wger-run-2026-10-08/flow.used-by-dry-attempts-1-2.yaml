@@ -1,0 +1,93 @@
+# wger showcase flow (iPhone job, 2026-10-08), from flow.draft.yaml. ONE flow for iOS and Android.
+# Planned name in the run folder: flow.yaml. English only: shotfleet translates every tap per language.
+# Target: wger 2.1.1+280 (tag 2.1.1, clone HEAD 57d2ee4: same app code), Debug build, fresh install in every language.
+#
+# What it shows: only screens an unauthenticated user reaches. NO login, NO typing, NO network call is made by this flow:
+#   - launch with no saved session goes straight to the login screen (AuthNotifier._tryAutoLogin: "no saved session")
+#   - the Register button with empty fields stops at form validation (AuthCard._submit: validate() fails, returns before any request)
+#   - the "Other sign-in options" link (opens the system browser) is never tapped
+# The debug build pre-fills the project's published test account in the login form (user name "user", masked password): see PLAN.md risks.
+#
+# Selector sources (English ARB values at 57d2ee4, lib/l10n/app_en.arb):
+#   Log in, Advanced, Self-hosted, "The official server", Refresh token, Done, Register, Sign in with token,
+#   "URL of the wger instance", "Confirm password", "Please enter a valid e-mail address".
+# Flutter joins a row's texts into ONE label with a newline ("Self-hosted\nConnect to your own instance"), and "New to wger? Register" is one label
+# too, so rows are tapped with ".*" (shotfleet translates the words next to the .*; in 0.1.6 this does NOT work for the string form of
+# scrollUntilVisible's `element`, so that one is written as {text: ...}).
+# PROVEN on this same app code (research/real-apps-2026-10-03, tag 2.1.1): launch -> "Log in" wait, tapOn "Advanced" (matches the upper-case
+# footer), tapOn "Self-hosted.*", the three frames 01 to 03.
+# UNVERIFIED until the dry run (INFERENCE): the ".*The official server" row; "Refresh token.*", "Done" and "Register" positions on a 1080x1920
+# emulator without scrolling (the scrollUntilVisible lines cover it); ".*Register" on the link; whether the semantics label of a field carries
+# its validation error (the assert on 06). If an assert is the only thing that fails, remove it and decide by looking at the frame.
+- launchApp
+# The first frame of a Flutter debug build can be blank for up to 30 s on a fresh emulator: wait for a text of this screen, then pause
+- extendedWaitUntil:
+    visible: "Log in"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 3000
+# 01: the login screen (wger logo, form, "New to wger? Register", ADVANCED)
+- takeScreenshot: 01_login
+
+# 02: the Advanced sheet, default state (official server selected, sign-in by user name and password)
+- tapOn: "Advanced"
+- extendedWaitUntil:
+    visible: "Done"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 02_advanced
+
+# 03: Self-hosted selected: the server URL field, its hint and the "Allow self-signed certificates" switch (red warning text)
+- tapOn: "Self-hosted.*"
+- extendedWaitUntil:
+    visible: ".*URL of the wger instance.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03_self_hosted
+
+# back to the official server, so the footer on 04 does not show a custom host
+- tapOn: ".*The official server"
+- waitForAnimationToEnd:
+    timeout: 3000
+# sign-in method: Refresh token (may be below the fold of the sheet on Android)
+- scrollUntilVisible:
+    element:
+      text: "Refresh token.*"
+- tapOn: "Refresh token.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- scrollUntilVisible:
+    element:
+      text: "Done"
+- tapOn: "Done"
+- extendedWaitUntil:
+    visible: "Sign in with token"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+# 04: the token login form (refresh-token field with its long helper text, "Sign in with token", footer "ADVANCED . Token")
+- takeScreenshot: 04_token_login
+
+# 05: Register mode: user name, e-mail, password, confirm password (the debug pre-fill is cleared when the mode switches)
+- tapOn: ".*Register"
+- extendedWaitUntil:
+    visible: ".*Confirm password.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 05_register
+
+# 06: the translated validation messages. Tapping Register with empty fields makes NO request (validate() fails first).
+# After the switch the link reads "Already have an account? Log in", so the word "Register" is only the submit button.
+- scrollUntilVisible:
+    element:
+      text: "Register"
+- tapOn: "Register"
+- extendedWaitUntil:
+    visible: ".*Please enter a valid e-mail address.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 06_register_errors
