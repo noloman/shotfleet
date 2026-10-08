@@ -32,7 +32,7 @@ Rules: reply within two business days; never ask for or paste a licence key, car
 | `shotfleet: command not found` after install | The installer prints a line to add its folder to PATH; open a new Terminal window afterwards |
 | "needs an Apple silicon Mac" | Intel Mac: not supported, offer the refund |
 | "download is corrupt (checksum mismatch)" | Retry; if it repeats, tell the owner (the watchdog should also have alerted) |
-| macOS is older than 13 | Not supported |
+| macOS is older than 13 | Not supported. Live 0.1.6 is proven on macOS 14.8.9, 15.7.9 and 27 (`research/macos-14-15-live-0.1.6-2026-10-08.md`); macOS 13 and 26.0 to 26.1 are not tested |
 | `doctor` shows MISSING for emulator, avdmanager, aapt2 or system image | Android only; `doctor` prints the exact `sdkmanager` commands. iOS-only users can ignore it |
 | `doctor` says text recognition is slow, waited 60 s | First run on a Mac compiles macOS's text model once (ANECompilerService), up to a few minutes on a busy Mac. Wait, run `doctor` again; `check` waits for it by itself |
 | iOS 27.0 simulator runtime problems | 0.1.7 adds a guard that prefers another runtime (for example 26.4) when one is installed; live is 0.1.6, so suggest installing an older iOS runtime |
