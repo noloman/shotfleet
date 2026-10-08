@@ -18,7 +18,7 @@ Rules: reply within two business days; never ask for or paste a licence key, car
 |---|---|---|
 | Refund inside 14 days | Gumroad, Sales, the sale, Refund fully **[unverified]**. Full steps: `docs/refund-runbook.md` section 2 | Template A in the runbook. The key locks at its next weekly check |
 | Refund after 14 days | Runbook section 7 (ask what failed first; refund up to about 30 days if unfixable) | Template B |
-| "I lost my key / no email" | Ask for the order email; the buyer can use "Get your download link" on the product page, or find the sale in Gumroad Sales and resend the receipt **[unverified]** | Check spam; the key is in the receipt, never type it into chat |
+| "I lost my key / no email" | Self-service: the buyer enters the purchase email at https://gumroad.com/license-key-lookup (linked as "Already bought this? View your information" on the product page) and Gumroad emails the receipt with the key. Tested 2026-10-08: it answered "emailed to you" and the mail arrived within seconds, for an older purchase; a shotfleet key through it is unproven because creator test purchases are not found. Fallback: find the sale in Gumroad Sales and resend the receipt **[unverified]** | Check spam; never type the key into chat |
 | "Key is rejected / used too many times" | A key allows 5 activations (3 Macs plus 2 spare, from 0.1.6). In Sales, Manage license keys, reset Uses to 0 or the number of Macs still in use **[unverified]**. | "Reset done, run `shotfleet activate KEY` again" |
 | "That doesn't look like a shotfleet key" | The key shape is four groups of 8. Other stores' keys are refused on purpose | Point to the Gumroad receipt |
 | Install fails | See the table below | Ask for `shotfleet --version` and `shotfleet doctor` output |
