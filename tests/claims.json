@@ -5353,7 +5353,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "None of the 30 show live Hacker News content, because my flow never opens a story, and I said no to the analytics question in every language."
+   "None of the 30 show live Hacker News content, because my flow never opens a story, and the flow turns the analytics question down in every language."
   ],
   "status": "evidence",
   "proof": "research/kuokka-android-run-2026-10-08/flow.android.yaml: screens 05_search, 01_radar, 02_bookmarks, 03_account, 04_settings only; 'NO STORY IS EVER OPENED', Home never shot, nothing typed; the analytics dialog is declined by an optional tap on 'Not now' (translated per language), then 'Skip' on onboarding. NOTES.md, What ran and Looked at before counting: 35 of 35 frames looked at, 0 live Hacker News content, 0 dialogs in any frame. Unsure: the Maestro logs hold no per-step lines, so the 'Not now' tap in each language rests on the runner's notes (NOTES.md lists the six button texts) and on the flow reaching 'Skip' with no dialog in any frame; no network capture was taken. Owner approval: Manu said in chat on 2026-10-07 and 2026-10-08 that the shotfleet examples are fine to make public (the more examples the better) and that the Kuokka name is public.",
