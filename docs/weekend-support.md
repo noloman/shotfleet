@@ -38,6 +38,10 @@ Rules: reply within two business days; never ask for or paste a licence key, car
 | iOS 27.0 simulator runtime problems | 0.1.7 adds a guard that prefers another runtime (for example 26.4) when one is installed; live is 0.1.6, so suggest installing an older iOS runtime |
 | Maestro version | `doctor` lists the tested versions (2.0.10 and 2.11.0); for any other version, ask which one they run |
 
+## Testing the forward
+
+Do not test `hello@shotfleet.com` by mailing it from the Gmail account it forwards to: Gmail hides the forwarded copy of a message you sent yourself, and Cloudflare then mails a "Missing email?" notice. Send from a different address, or read the proof in Cloudflare, Email Routing, Activity log (a line with Result "Forwarded"). On 2026-10-08 a test from the owner's Gmail showed "Forwarded" there, so the route works.
+
 ## Who to tell
 
 Anything that looks like a bug in shotfleet itself: open an issue note for the owner with the buyer's `shotfleet --version`, `shotfleet doctor` output and the command that failed. Do not paste the buyer's email or key.
