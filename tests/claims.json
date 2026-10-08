@@ -604,9 +604,9 @@
    "site/public/alternatives.html"
   ],
   "where_text": [
-   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
-   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
-   "has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native."
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template (template commit not recorded), on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
+   "Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template (template commit not recorded), on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).",
+   "has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template; template commit not recorded), not on other apps or on bare React Native."
   ],
   "status": "evidence",
   "proof": "Real runs on this Mac, 2026-10-03, Maestro 2.0.10, Xcode 27, Flutter 3.47.6 (research/frameworks.md section 15, screenshots and logs in research/real-apps-2026-10-03/): wger (Flutter, debug build) iOS and Android, de and ja: `init` with no arguments found the build and wrote strings = lib/l10n/*.arb, 0 untranslated selectors, German on every screenshot on both platforms (the DEBUG banner shows); ja falls back to English because wger's Japanese is 30% done, and check says so ('the app has no ja translation'). obytes template (Expo, Release build) iOS and Android, en and ar: init wrote strings = src/translations/*.json, Arabic and right-to-left reach the translated Settings screen on both platforms; the app's onboarding and login screens are hard-coded English, so 3 selectors are reported as untranslated and check flags those 2 screenshots (correctly). Not run: bare React Native, other Flutter or Expo apps, Maestro 2.11.",
@@ -2785,7 +2785,7 @@
   ],
   "where_text": [
    "works end to end on wger, iOS and Android (de and ja), see research/frameworks.md section 15; other Flutter apps not run.",
-   "works end to end on the obytes template, iOS and Android (en and ar), see research/frameworks.md section 15; other Expo apps and bare React Native not run"
+   "works end to end on the obytes template (template commit not recorded), iOS and Android (en and ar), see research/frameworks.md section 15; other Expo apps and bare React Native not run"
   ],
   "status": "evidence",
   "proof": "research/frameworks.md section 15 (2026-10-03), the same runs as C035; the two compat rows still said 'works up to the build; no device run' (research/site-claims-audit-2026-10-06.md item 22).",
@@ -3489,7 +3489,7 @@
    "site/public/docs.html"
   ],
   "where_text": [
-   "I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
+   "I ran it end to end on one real Flutter app (wger) and one real Expo app (the obytes template; template commit not recorded), on iOS and Android, on 2026-10-03. Other apps and bare React Native are not run yet."
   ],
   "status": "evidence",
   "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). The same runs as C035 (research/frameworks.md section 15, research/real-apps-2026-10-03/).",
@@ -4174,7 +4174,7 @@
    "it runs simulators and emulators on your Mac",
    "It needs an Apple silicon Mac, Maestro 2.x and Java 17+, and Android needs API 33+ emulators.",
    "It makes no frames or captions and does not upload to the stores.",
-   "I have run that end to end on one real Flutter app (wger) and one real Expo app (the obytes template), on iOS and Android, and not yet on any other."
+   "I have run that end to end on one real Flutter app (wger) and one real Expo app (the obytes template; template commit not recorded), on iOS and Android, and not yet on any other."
   ],
   "status": "evidence",
   "layer": "unit",
@@ -5074,8 +5074,8 @@
    "README.md"
   ],
   "where_text": [
-   "Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03).",
-   "Ran on iOS and Android (obytes Expo template, 2026-10-03)."
+   "Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03; template commit not recorded).",
+   "Ran on iOS and Android (obytes Expo template, 2026-10-03; template commit not recorded)."
   ],
   "status": "evidence",
   "proof": "research/real-apps-2026-10-03/obytes-ios/flow.yaml and obytes-android/flow.yaml (tapOn with id: \"login-button\" and others), with run.json and check.log in the same folders; docs/compat.md Maestro 2.0.10 row (every real run until 2026-10-03 used 2.0.10). Id pass-through is C016 (TranslateFlow.test_map_form_text_is_translated_and_id_selectors_pass_through).",

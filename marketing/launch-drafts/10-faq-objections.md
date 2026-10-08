@@ -44,7 +44,7 @@ Every reply already reads as you, the maker. In a thread where you haven't said 
 
 ### "Does it work with Flutter / React Native?"
 
-> It works from your translation files (for Flutter, ARB), because those apps don't keep their strings readable in the build. I've run one real Flutter app end to end (wger, iOS and Android) and one real Expo app (the obytes template). Not more yet, and not bare React Native. If you try yours, I'd like to hear how it goes.
+> It works from your translation files (for Flutter, ARB), because those apps don't keep their strings readable in the build. I've run one real Flutter app end to end (wger, iOS and Android) and one real Expo app (the obytes template; template commit not recorded). Not more yet, and not bare React Native. If you try yours, I'd like to hear how it goes.
 
 ### "Does it need changes in my app?"
 
