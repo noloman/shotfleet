@@ -5243,5 +5243,160 @@
   "layer": "fixture",
   "assertion": "One recorded run on 2.11.0, 2026-10-08, of the same steps as the 2.0.10 run of 2026-10-03 (C254).",
   "fix": ""
+ },
+ {
+  "id": "C320",
+  "claim": "wger, 2026-10-08, shotfleet 0.1.6, iPhone: three runs of two languages (ar,de / es,fr / hr,uk), 6 screens each = 36 screenshots on 1 iPhone 17 Pro Max simulator, iOS 26.4, 0 retries, 136 s, 144 s and 129 s",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On iPhone I did three runs of two languages (ar and de, then es and fr, then hr and uk), 6 screens each, so 36 screenshots on 1 iPhone 17 Pro Max simulator with iOS 26.4. They took 136, 144 and 129 seconds, with 0 retries.",
+   "iPhone: 3 runs of 2 languages, 6 screens each = 36 screenshots on 1 iPhone 17 Pro Max simulator (iOS 26.4), 0 retries, 136 s, 144 s and 129 s."
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/iphone-run1/run.json, iphone-run2/run.json, iphone-run3/run.json: wall_seconds 136, 144, 129; locales ar,de / es,fr / hr,uk each ok, screenshots 6, attempts 1; simulators 1; logs/run-iphone-run1.log, run-iphone-run2.log, run-iphone-run3.log; shotfleet 0.1.6 and iOS 26.4 in NOTES.md and shotfleet.toml. The English dry run (iphone-dry, 6 screenshots) and the failed dry attempts are extra and not counted in the 36. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C321",
+  "claim": "wger, 2026-10-08, shotfleet 0.1.6, Android: two runs of three languages (ar,de,es / fr,hr,uk), 6 screens each = 36 screenshots on 1 emulator, 0 retries, 177 s and 204 s",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On Android I did two runs of three languages (ar, de and es, then fr, hr and uk), also 36 screenshots, on 1 emulator, in 177 and 204 seconds, with 0 retries.",
+   "Android: 2 runs of 3 languages, 6 screens each = 36 screenshots on 1 emulator, 0 retries, 177 s and 204 s."
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/android-run1/run.json, android-run2/run.json: wall_seconds 177, 204; locales ar,de,es / fr,hr,uk each ok, screenshots 6, no retried locale; emulators 1 (serial emulator-5702, AVD shotfleet_android); run.log of each run; NOTES.md (Runs table). The English dry run (android-dry) is extra and not counted. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C322",
+  "claim": "wger showcase: open-source Flutter app (wger-project/flutter, not the owner's), built by the owner from tag 2.1.1 (cf12708) as debug builds because the repo HEAD did not build on Android; shotfleet 0.1.6 read the app's own .arb files; only screens reachable without an account, never logged in; the DEBUG banner shows",
+  "where": [
+   "site/public/index.html",
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "wger is an open-source workout app made with Flutter (wger-project/flutter). It isn’t my app.",
+   "On 2026-10-08 I built it myself from the tag 2.1.1, as a debug build, and captured it with shotfleet 0.1.6. I used the tag because the latest commit wouldn’t build on Android. shotfleet read the app’s own translation files (.arb). I only took the screens you can reach without an account, which means the login screen and the few sheets and forms around it. I never logged in, and the red DEBUG banner shows on every frame.",
+   "Only the screens you can reach without an account; I never logged in."
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/NOTES.md (What ran): tag 2.1.1 = commit cf1270845e1843dfa77784153b4a571126e4023f (cf12708), Flutter 3.47.6, debug builds on 2026-10-08 (flutter build ios --simulator --debug, flutter build apk --debug); HEAD 57d2ee4 failed on Android (html 0.15.7 removed a method flutter_html 3.0.0 uses; Findings e) so the tag was built; strings = lib/l10n/*.arb in shotfleet.toml and shotfleet.android.toml; screens 01 to 06 in flow.yaml (no login, no typing); DEBUG banner on every frame (frames reviewed tables). No release build possible (signing key is gpg-encrypted). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "site",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C323",
+  "claim": "wger, 2026-10-08: shotfleet check found 0 problems in all five counted runs",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Check found 0 problems in all five runs.",
+   "Check found 0 problems in all five runs"
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/iphone-run1/check.json, iphone-run2/check.json, iphone-run3/check.json, android-run1/check.json, android-run2/check.json (shotfleet check <run> --strings \"lib/l10n/*.arb\", rc 0): screenshots 12, 12, 12, 18, 18; problems 0, notes 0, unverified 0 each; check-in-run.json is the check shotfleet ran inside each run; logs/check-iphone-run*.log, android-run*/check.log. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C324",
+  "claim": "wger, 2026-10-08: the check reads the screens and does not prove that every tap hit the right button",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "Check reads the screens; it doesn’t prove that every tap hit the right button.",
+   "the check reads the screens; it does not prove that every tap hit the right button"
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/NOTES.md (Check results and the evidence difference, Findings a): a clean check only shows the screens carry the right language. In a failed attempt the first frame was a splash screen while the hierarchy already listed 'Log in'. The same limit is recorded for WOD Tracker (C283, C287). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C325",
+  "claim": "wger, 2026-10-08: on iPhone check read the view hierarchy; on Android Maestro 2.0.10 saves none, so check read the pictures by text recognition, which is weaker evidence",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "On iPhone it read the app’s view hierarchy. Maestro 2.0.10 saves none on Android, so there it read the pictures by text recognition, which is weaker.",
+   "On iPhone it read the view hierarchy; on Android it read the pictures by text recognition, which is weaker evidence."
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/iphone-run1/check.json, iphone-run2/check.json, iphone-run3/check.json: evidence 'hierarchy' in every row (12 rows each); android-run1/check.json, android-run2/check.json: evidence 'ocr' in every row (18 rows each), run.json has hierarchy_markers false; NOTES.md (Check results and the evidence difference). Maestro version 2.0.10. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C326",
+  "claim": "wger showcase: in one failed iPhone attempt frame 01 was the splash screen while the hierarchy already listed 'Log in'; found by looking, a wait was added before the first shot; the owner thinks check would have passed it (inferred, not tested)",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "In one failed iPhone attempt, frame 01 was the app’s splash screen, even though the screen list already said Log in. I think check would have passed it, since on iPhone it reads that list. I only saw it by looking, and I added a wait before the first shot.",
+   "In a failed attempt the first frame was the splash screen; I caught it by looking, and it is not shown."
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/NOTES.md (What went wrong, item 3; Findings a): dry attempt 2 (iphone-dry-failed-0921, rc 1, 5 of 6) took 01_login as the splash (logo on grey) while the hierarchy listed 'Log in'; flow.yaml has the real 6 s wait plus waitForAnimationToEnd before 01 (flow.used-by-dry-attempts-1-2.yaml is the version before). That attempt failed on step 06, so check was not run on it: that check would have passed the frame is an inference from its hierarchy evidence, which the page words as 'I think'. The splash PNG is in the build folder, not in the record. Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "device",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C327",
+  "claim": "wger showcase: the twelve frames are 12 of the 72 captured in the runs that count, picked after looking at all of them; the app has some odd translations of its own",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "These twelve are 12 of the 72 frames from the runs that count, picked by me after looking at all of them. The app has some odd translations of its own.",
+   "Twelve frames are on the"
+  ],
+  "status": "evidence",
+  "proof": "research/wger-run-2026-10-08/NOTES.md (Frames reviewed, iPhone and Android tables with the WEB PICK column; 'I looked at each PNG'); picks: iPhone ar 06_register_errors (iphone-run1), de 02_advanced (run1), es 05_register (run2), fr 03_self_hosted (run2), hr 06_register_errors (run3), uk 02_advanced (run3); Android ar 06_register_errors (android-run1), de 03_self_hosted (run1), es 02_advanced (run1), fr 05_register (android-run2), hr 06_register_errors (run2), uk 03_self_hosted (run2); sources under showcase-wger/out-iphone-run1..3/raw/<lang>/ and out-android-run1..2/raw/<lang>/. Converted with: cwebp -quiet -q 80 -resize 360 0 <frame>.png -o site/public/img/showcase/wger_<platform>_<lang>_<screen>.webp (360x783 iPhone, 360x640 Android, 8 to 18 KB each). Odd translations of the app itself noted in the review tables (French 'Insérer un valeur', German Sie/du mix, Croatian 'URL wger instance'). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "site",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
+ },
+ {
+  "id": "C328",
+  "claim": "wger showcase attribution: project wger, licensed under the AGPL-3.0-or-later with an app-store exception, link to github.com/wger-project/flutter; screenshots of the open-source app captured by the owner with shotfleet from a debug build he compiled (version 2.1.1); the project is not affiliated with shotfleet and does not endorse it; the only logo is the app's own UI",
+  "where": [
+   "site/public/index.html",
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "wger, the open-source workout app, is licensed under the AGPL-3.0-or-later with an app-store exception: github.com/wger-project/flutter. These are screenshots of the open-source wger app, captured by me with shotfleet from a debug build I compiled myself (version 2.1.1). The project isn’t affiliated with shotfleet and doesn’t endorse it. The only logo is the one the app draws itself.",
+   "wger is licensed under the AGPL-3.0-or-later and isn’t affiliated with shotfleet."
+  ],
+  "status": "evidence",
+  "proof": "showcase-wger/PLAN.md section 1 (licence verdict: AGPL-3.0-or-later with an app-store exception, no trademark policy, no restriction on screenshots; attribution block; the build is not distributed, the .app and .apk stay on the owner's Mac) and research/wger-run-2026-10-08/NOTES.md (What ran, Open items). The page uses the plain-words version of the PLAN block. Not affiliated: no contact with the wger project beyond the courtesy note at https://github.com/wger-project/flutter/discussions/1389. Fallback if the maintainers object: drop frame 01 or the name ('an open-source Flutter workout app'). Owner approval: Manu, 2026-10-08, 'the more examples the better'; the coordinator posted the courtesy note to the maintainers (https://github.com/wger-project/flutter/discussions/1389); the section goes live only if they do not object.",
+  "layer": "site",
+  "assertion": "One recorded run on a third-party open-source app, 2026-10-08.",
+  "fix": ""
  }
 ]
