@@ -225,6 +225,27 @@ class FlutterBuildInCheck(unittest.TestCase):  # item 6
         self.assertEqual(json.loads((self.d / "rep/check.json").read_text())["problems"], [])
 
 
+class FlutterApkInCheck(FlutterBuildInCheck):  # item 6, Android: the APK of a Flutter app holds only the libraries' strings (wger: fr, hr, uk "not translated", 0 screenshots checked)
+    def setUp(self):
+        super().setUp()
+        self.apk = self.d / "app-debug.apk"
+        import zipfile
+        with zipfile.ZipFile(self.apk, "w") as z: z.writestr("assets/flutter_assets/AssetManifest.bin", b"x"); z.writestr("resources.arsc", b"x")
+        self.lib = {"en": {"ok": "OK"}, "de": {"ok": "OK"}, "fr": {"ok": "OK"}}  # what load_strings_apk finds in a Flutter APK
+
+    def run_check(self, **kw):
+        with mock.patch.object(sf, "load_strings_apk", return_value=self.lib): return super().run_check(**kw)
+
+    def test_the_message_names_the_option_to_pass(self):
+        with self.assertRaises(sf.Fail) as e: self.run_check(app=self.apk)
+        self.assertIn("This is a Flutter build: pass --strings 'lib/l10n/*.arb'", str(e.exception))
+
+    def test_strings_together_with_the_apk_are_used(self):
+        code, out = self.run_check(app=self.apk, strings_files=[self.arb])
+        self.assertEqual(code, 0, out)
+        self.assertEqual(json.loads((self.d / "rep/check.json").read_text())["problems"], [])
+
+
 REAL_STORE_RULES = sf.store_rules
 
 

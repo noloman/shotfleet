@@ -3658,6 +3658,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
                        f"{'an iOS app' if app.suffix == '.app' else 'an APK'}")
         framework_hint(app, bool(strings_files))
         if strings is None and strings_files: strings = load_strings_files(strings_files)  # --strings with --app: the files are the translations (Flutter, React Native...), the app says which store
+        elif strings is None and app.suffix == ".apk" and framework_of(app)[0]: raise Fail(no_translations_message(app))  # an APK of Flutter, React Native... holds only the libraries' strings: checking against them reports every language as untranslated
         elif strings is None: strings = load_strings_apk(app) if app.suffix == ".apk" else load_strings(app)  # check_build read them already
         if not strings: raise Fail(no_translations_message(app))
         strings = {lp: strings[lp] for lp in shipped_locales(strings)}  # not libraries' en-GB/pt-BR/zh-TW strings
