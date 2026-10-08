@@ -34,7 +34,8 @@ class LandscapeHint(unittest.TestCase):
     def details(self, log=LOG, flow_text=FLOW, platform="ios"):
         with tempfile.TemporaryDirectory() as d:
             debug_dir(d, log)
-            return sf.failure_details(d, "en", flow_text, platform)
+            with mock.patch.object(sf, "screenshot_texts", return_value=[]):  # on iOS the picture is read too
+                return sf.failure_details(d, "en", flow_text, platform)
 
     def test_the_real_ipad_failure_gets_the_hint(self):
         self.assertIn(sf.LANDSCAPE_HINT, self.details())
@@ -64,14 +65,14 @@ class LandscapeHint(unittest.TestCase):
         tagged = re.sub(r"(runFlow\S*: ) ?", r"\1[shard 2] ", LOG)
         other = ("18:21:01.000 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow: [shard 1]  Running flow de\n"
                  "18:21:50.000 [ INFO] maestro.cli.runner.TestSuiteInteractor.runFlow$lambda$18$lambda$10: [shard 1] Tap on \"Weiter\" FAILED\n")
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "screenshot_texts", return_value=[]):
             debug_dir(d, other + tagged)
             got = sf.failure_details(d, "en", FLOW)
             self.assertIn("failed step: Assert that id: jobDecision.title is visible", got)
             self.assertIn(sf.LANDSCAPE_HINT, got)
         # another shard's tap lands inside this flow's tap window: which tap was whose is not in the log, so say nothing
         busy = tagged.replace("Tapping at (97, 677)", "Tapping at (97, 677) using x\n18:21:08.548 [ INFO] maestro.Maestro.screenshotBasedTap-hbl3e4M: Tapping at (186, 352)")
-        with tempfile.TemporaryDirectory() as d:
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "screenshot_texts", return_value=[]):
             debug_dir(d, other + busy)
             self.assertNotIn(sf.LANDSCAPE_HINT, sf.failure_details(d, "en", FLOW))
 
@@ -80,7 +81,7 @@ class FailureLine(unittest.TestCase):
     def test_names_the_step_the_screenshot_and_up_to_12_texts_from_the_hierarchy(self):
         with tempfile.TemporaryDirectory() as d:
             png = debug_dir(d)
-            with mock.patch.object(sf, "screenshot_texts", side_effect=AssertionError("no OCR when a hierarchy exists")):
+            with mock.patch.object(sf, "screenshot_texts", return_value=["AnywhereRoles", "Filter jobs"]):  # the picture agrees with the tree
                 got = sf.failure_details(d, "en", FLOW)
         self.assertEqual(got[0], "failed step: Assert that id: jobDecision.title is visible")
         self.assertEqual(got[1], f"failure screenshot: {png}")

@@ -110,3 +110,86 @@ class Port7001(unittest.TestCase):  # item 22
     def test_other_failures_get_no_note_and_no_lsof_call(self):
         with tempfile.TemporaryDirectory() as d, mock.patch.object(sf, "sh", side_effect=AssertionError("no lookup")):
             self.assertEqual(sf.port_clash_note(d, ["Assertion is false: id: login is visible", None]), "")
+
+
+PKG = "com.obytes.development"
+WINDOWS = """WINDOW MANAGER WINDOWS (dumpsys window windows)
+  Window #4 Window{5d1 u0 NavigationBar0}:
+    isReadyForDisplay()=true
+%s  Window #2 Window{9f3 u0 com.obytes.development/com.obytes.MainActivity}:
+    isReadyForDisplay()=false
+"""
+SPLASH_WINDOW = "  Window #3 Window{1a2b3c u0 Splash Screen com.obytes.development}:\n    mHasSurface=true isReadyForDisplay()=true\n"
+RECORD = """  ActivityRecord{77aa u0 com.obytes.development/.MainActivity t12}:
+    app=ProcessRecord{b1 4242:com.obytes.development/u0a190}
+    %s
+    startingDisplayed=%s startingMoved=false
+    reportedDrawn=%s reportedVisible=false
+"""
+
+
+class StuckSplash(unittest.TestCase):  # item 24, Android
+    def test_a_splash_window_that_is_still_up_is_found(self):
+        self.assertTrue(sf.splash_showing(WINDOWS % SPLASH_WINDOW, PKG))
+        self.assertTrue(sf.splash_showing(WINDOWS % SPLASH_WINDOW.replace("Splash Screen", "Starting"), PKG))  # before Android 12
+
+    def test_a_normal_screen_and_other_apps_splashes_are_not(self):
+        self.assertFalse(sf.splash_showing(WINDOWS % "", PKG))
+        self.assertFalse(sf.splash_showing(WINDOWS % SPLASH_WINDOW.replace(PKG, "com.other.app"), PKG))
+        self.assertFalse(sf.splash_showing(WINDOWS % SPLASH_WINDOW.replace(PKG, PKG + ".debug"), PKG))  # another package that starts with ours
+
+    def test_an_activity_that_never_reported_drawn_behind_its_starting_window_is_found(self):
+        self.assertTrue(sf.splash_showing(RECORD % ("startingWindow=Window{1 u0 splash}", "true", "false"), PKG))
+        self.assertFalse(sf.splash_showing(RECORD % ("startingWindow=null", "false", "false"), PKG))  # not drawn, but no splash: not our message
+        self.assertFalse(sf.splash_showing(RECORD % ("startingWindow=null", "false", "true"), PKG))
+        self.assertFalse(sf.splash_showing(RECORD % ("", "true", "false"), "com.other.app"))
+
+    def emulator(self, dump=None, error=None):
+        calls = []
+        def adb(*args, **kw):
+            calls.append(args)
+            if error: raise error
+            return dump
+        return SimpleNamespace(adb=adb, calls=calls)
+
+    def test_the_check_asks_the_emulator_for_the_window_list_and_gives_up_quietly(self):
+        e = self.emulator(WINDOWS % SPLASH_WINDOW)
+        self.assertTrue(sf.app_splash_showing(e, PKG)); self.assertEqual(e.calls, [("shell", "dumpsys", "window")])
+        self.assertFalse(sf.app_splash_showing(self.emulator(WINDOWS % ""), PKG))
+        self.assertFalse(sf.app_splash_showing(self.emulator(error=RuntimeError("not responding")), PKG))
+
+    def test_the_failure_message_says_so_and_calls_the_listed_texts_hidden(self):
+        from tests.test_failure_messages import debug_dir, FLOW
+        with tempfile.TemporaryDirectory() as d:
+            debug_dir(d)
+            got = sf.failure_details(d, "en", FLOW, "android", True)
+            plain = sf.failure_details(d, "en", FLOW, "android")
+        self.assertIn("the app's splash screen is still showing; taps can't reach the app", got)
+        self.assertTrue(any(l.startswith("behind the splash, the screen tree lists: AnywhereRoles") for l in got)); self.assertFalse(any(l.startswith("on screen") for l in got))
+        self.assertTrue(any(l.startswith("on screen: AnywhereRoles") for l in plain)); self.assertNotIn(sf.SPLASH_LINE, plain)
+
+
+class PictureVersusTree(unittest.TestCase):  # item 24, iOS
+    def details(self, seen, platform="ios"):
+        from tests.test_failure_messages import debug_dir, FLOW
+        with tempfile.TemporaryDirectory() as d:
+            debug_dir(d)
+            with mock.patch.object(sf, "screenshot_texts", return_value=seen) as ocr:
+                return sf.failure_details(d, "en", FLOW, platform), ocr
+
+    def test_a_picture_that_shows_none_of_the_trees_texts_is_said(self):
+        got, ocr = self.details(["Loading", "Please wait"])
+        line = next(l for l in got if l.startswith("the picture shows other text than the screen tree lists"))
+        self.assertIn("The picture reads: Loading | Please wait.", line); self.assertIn("The tree lists: AnywhereRoles | Filter jobs | 4 jobs", line)
+        self.assertIn("splash screen", line); self.assertTrue(any(l.startswith("on screen: AnywhereRoles") for l in got)); ocr.assert_called_once()
+
+    def test_a_picture_that_shows_the_trees_texts_says_nothing_more(self):
+        got, _ = self.details(["anywhereroles", "4 Jobs", "Something else"])
+        self.assertFalse(any("other text" in l for l in got))
+
+    def test_nothing_read_from_the_picture_says_nothing_more(self):
+        self.assertFalse(any("other text" in l for l in self.details([])[0]))
+
+    def test_android_does_not_read_the_picture_when_the_tree_has_texts(self):
+        got, ocr = self.details(["Loading"], "android")
+        ocr.assert_not_called(); self.assertFalse(any("other text" in l for l in got))

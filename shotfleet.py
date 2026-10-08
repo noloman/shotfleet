@@ -1872,25 +1872,46 @@ def screenshot_texts(png):
     except (RuntimeError, OSError, ValueError): return []  # OcrBusy is a RuntimeError
     return [l.get("text", "") for l in got.get("lines") or []] or str(got.get("text", "")).splitlines()
 
-def failure_details(debug, flow, flow_text="", platform="ios"):
+SPLASH_LINE = "the app's splash screen is still showing; taps can't reach the app"
+
+def splash_showing(dump, package):
+    """True if `adb shell dumpsys window` shows the app's splash (its starting window) still up: a window called "Splash Screen <package>"
+    ("Starting <package>" before Android 12), or the app's activity that never reported drawn while its starting window is displayed.
+    A splash that never hides passes every text wait, because the texts behind it are in the view tree."""
+    pkg = re.escape(package)
+    if re.search(rf"(?:Splash Screen|Starting) {pkg}(?![\w.])", dump): return True
+    return any("reportedDrawn=false" in b and "startingDisplayed=true" in b
+               for b in re.split(r"\n(?=\s*ActivityRecord\{)", dump) if re.match(rf"\s*ActivityRecord\{{\S+ u\d+ {pkg}/", b))
+
+def app_splash_showing(emulator, package):
+    try: return splash_showing(emulator.adb("shell", "dumpsys", "window", check=False, timeout=30), package)
+    except RuntimeError: return False  # the emulator stopped answering: say nothing about the splash
+
+def failure_details(debug, flow, flow_text="", platform="ios", splash=False):
     """Lines that say where a failed flow stopped: the failing step and its selector as Maestro's log names it, the failure screenshot,
     up to FAIL_TEXTS texts on that screen (from the hierarchy Maestro saved, else one OCR of the screenshot), and the iOS landscape hint.
-    Called once per failed language, after the retry."""
+    splash: Android's window list showed the app's splash still up, so the hierarchy's texts are behind it. On iOS the screenshot is read
+    even when there is a hierarchy, and a picture that shows none of the tree's texts is said so. Called once per failed language, after the retry."""
     out, (lines, steps) = [], flow_steps(debug, flow)
     if step := next((d for _, d, st in reversed(steps) if st == "FAILED"), None): out.append(f"failed step: {step[:160]}")
     pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
     png = max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
     if png: out.append(f"failure screenshot: {png}")
     tree = failed_hierarchy(debug, flow)
-    texts = hierarchy_lines(tree) if tree else []
-    if not texts and png: texts = screenshot_texts(png)
-    texts = [t[:40] for t in dict.fromkeys(" ".join(t.split()) for t in texts) if len(t) > 1][:FAIL_TEXTS]
-    if texts: out.append("on screen: " + " | ".join(texts))
+    clean = lambda ts: [t[:40] for t in dict.fromkeys(" ".join(t.split()) for t in ts) if len(t) > 1][:FAIL_TEXTS]
+    listed = clean(hierarchy_lines(tree) if tree else [])
+    seen = clean(screenshot_texts(png)) if png and (not listed or platform == "ios") else []
+    texts = listed or seen
+    if splash: out.append(SPLASH_LINE)
+    if texts: out.append(("behind the splash, the screen tree lists: " if splash else "on screen: ") + " | ".join(texts))
+    if listed and seen and not splash and not any(norm(t) in norm(" ".join(seen)) for t in listed):  # a splash or an overlay covers a screen the tree still lists
+        out.append("the picture shows other text than the screen tree lists, so something may cover the app (a splash screen?). The picture reads: "
+                   + " | ".join(seen) + ". The tree lists: " + " | ".join(listed))
     if platform == "ios" and (hint := landscape_tap_hint(lines, steps, flow_text)): out.append(hint)
     return out
 
-def print_failure(debug, flow, flow_text="", platform="ios"):
-    for line in failure_details(debug, flow, flow_text, platform): print(f"     {line}")
+def print_failure(debug, flow, flow_text="", platform="ios", splash=False):
+    for line in failure_details(debug, flow, flow_text, platform, splash): print(f"     {line}")
 
 # ---------- run ----------
 
@@ -2920,7 +2941,8 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shots = len(list(dst.glob("*.png")))
                 r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro_{tag}.log")}
                 if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname),
+                splash = not (r_["ok"] and shots == expected) and app_splash_showing(next(e for e in pool if e.serial == dev), pkg)  # while the emulator still shows it
+                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname), "_splash": splash,
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
@@ -2953,9 +2975,9 @@ def android_run_inner(cfg, path, out, only, parallel):
     finally:
         stop_emulators(pool)
     for lp in todo:
-        r_ = final[lp]; where = r_.pop("_maestro", None)
+        r_ = final[lp]; where = r_.pop("_maestro", None); splash = r_.pop("_splash", False)
         print_result(lp, r_, expected)
-        if not r_["ok"] and where: print_failure(*where, flow, "android")
+        if not r_["ok"] and where: print_failure(*where, flow, "android", splash)
         report["locales"][lp].update(r_)
     if not all(r_["ok"] for r_ in final.values()): print(port_clash_note(out, [r_.get("error") for r_ in final.values() if not r_["ok"]]), end="")
     kept = keep_earlier(report, prev)

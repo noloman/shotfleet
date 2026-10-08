@@ -5564,5 +5564,22 @@
   "layer": "unit",
   "assertion": "Unit test with fakes; no device.",
   "fix": ""
+ },
+ {
+  "id": "C352",
+  "claim": "After a failed step on Android, run asks the emulator for dumpsys window and, if the app's splash window is still up, says the app's splash screen is still showing and that taps can't reach the app (the listed texts are labelled as behind it); on iOS it reads the failure screenshot and, when the picture shows none of the tree's texts, prints what the picture reads next to what the tree lists",
+  "where": [
+   "README.md",
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "the app's splash screen is still showing; taps can't reach the app",
+   "the app's splash screen is still showing; taps can't reach the app"
+  ],
+  "status": "partial",
+  "proof": "StuckSplash.test_a_splash_window_that_is_still_up_is_found, StuckSplash.test_a_normal_screen_and_other_apps_splashes_are_not, StuckSplash.test_an_activity_that_never_reported_drawn_behind_its_starting_window_is_found, StuckSplash.test_the_check_asks_the_emulator_for_the_window_list_and_gives_up_quietly, StuckSplash.test_the_failure_message_says_so_and_calls_the_listed_texts_hidden, PictureVersusTree.test_a_picture_that_shows_none_of_the_trees_texts_is_said, PictureVersusTree.test_a_picture_that_shows_the_trees_texts_says_nothing_more (tests/test_018b_fixes.py). The window lists in the tests are written from the fields in shotfleet-rc-build/showcase-obytes/record/NOTES-android.md (startingWindow Splash Screen, reportedDrawn=false, startingDisplayed=true); the real dumpsys window output of a stuck splash was not captured, and nothing was run on a device. A logo-only splash on iOS reads as no text, so iOS says nothing then.",
+  "assertion": "Unit tests with sample window lists and a fake emulator; not run on a device.",
+  "layer": "unit",
+  "fix": ""
  }
 ]
