@@ -5933,7 +5933,7 @@
  },
  {
   "id": "C463",
-  "claim": "Obytes starter is thin on purpose: only English and Arabic, only the Settings screen translated (22 of 25 strings), the tab bar, onboarding, login and Style demo hard-coded English",
+  "claim": "Obytes starter is thin: only English and Arabic, only the Settings screen translated (22 of 25 strings), the tab bar, onboarding, login and Style demo hard-coded English",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
