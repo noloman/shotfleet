@@ -4500,10 +4500,10 @@
    "README.md"
   ],
   "where_text": [
-   "`run` retries it once by itself. When the flow or the app failed (an element not found, a wrong number of screenshots, a blank screen), it does not: a second try would fail the same way, and it says so. `run.json` counts the tries per language (`attempts`)."
+   "`run` retries it once by itself. When the flow or the app failed (an element not found, a wrong number of screenshots), it does not: a second try would fail the same way, and it says so. `run.json` counts the tries per language (`attempts`)."
   ],
   "status": "proven",
-  "proof": "InfraErrors.test_device_failures_are_told_apart_from_flow_failures, IosRetries.test_a_flow_failure_is_not_retried_and_run_json_says_one_try, IosRetries.test_a_device_failure_is_retried_once_and_the_try_is_counted, IosRetries.test_a_device_failure_that_stays_is_tried_twice_only (tests/test_reliability_017.py, fake Maestro). The list of device-failure phrases is from Maestro's and simctl's messages seen so far; a new phrase is not retried until it is added.",
+  "proof": "InfraErrors.test_device_failures_are_told_apart_from_flow_failures, IosRetries.test_a_flow_failure_is_not_retried_and_run_json_says_one_try, IosRetries.test_a_device_failure_is_retried_once_and_the_try_is_counted, IosRetries.test_a_device_failure_that_stays_is_tried_twice_only, IosRetries.test_a_blank_screenshot_is_captured_again_once_then_reported (tests/test_reliability_017.py, fake Maestro). The list of device-failure phrases is from Maestro's and simctl's messages seen so far; a new phrase is not retried until it is added.",
   "layer": "unit",
   "assertion": "The proof's tests; the quoted words in the README.",
   "fix": "",
