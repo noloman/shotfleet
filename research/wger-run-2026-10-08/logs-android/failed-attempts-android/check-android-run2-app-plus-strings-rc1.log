@@ -1,0 +1,8 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+
+checked 0 screenshots in 3 languages: 3 problem(s)
+  - fr: the app has no fr translation, so this listing shows another language; translate the app into it or remove the listing
+  - hr: the app has no hr translation, so this listing shows another language; translate the app into it or remove the listing
+  - uk: the app has no uk translation, so this listing shows another language; translate the app into it or remove the listing
+report: check-android-run2/index.html
+rc=1

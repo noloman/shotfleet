@@ -1,0 +1,13 @@
+# wger showcase, Android (built from shotfleet.toml of the iPhone job + the draft's [android] section). shotfleet 0.1.6 released binary.
+# ANDROID_HOME=/Users/manu/Library/Android/sdk must be set. ONE private emulator, shotfleet's own AVD shotfleet_android. DEBUG APK (no release APK exists).
+# Dry run:  shotfleet run shotfleet.android.toml --platform android --locales en --parallel 1
+# Runs:     --locales ar,de,es  |  fr,hr,uk   (the output folder `out-android` is renamed to out-android-dry / out-android-runN after each run)
+# Paths are absolute (the app and the translation files are not inside the run folder).
+[android]
+apk = "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/app/wger-2.1.1-debug.apk"
+package = "de.wger.flutter.debug"
+strings = "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/src/lib/l10n/*.arb"   # Flutter: translations come from the .arb files of the clone (tag 2.1.1)
+flow = "flow.android.yaml"
+avd = "shotfleet_android"
+parallel = 1
+out = "out-android"

@@ -1,0 +1,3 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+shotfleet: Runner.app contains no translations shotfleet can read (no .lproj strings, String Catalogs or resources)
+rc=2

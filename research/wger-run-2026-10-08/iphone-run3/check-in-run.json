@@ -1,0 +1,103 @@
+{
+ "screenshots": [
+  {
+   "file": "hr/01_login.png",
+   "src": "raw/hr/01_login.png",
+   "sha": "3e6a4dab05bf",
+   "lang": "hr",
+   "chars": 274,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hr/02_advanced.png",
+   "src": "raw/hr/02_advanced.png",
+   "sha": "901740a9f511",
+   "lang": "hr",
+   "chars": 468,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hr/03_self_hosted.png",
+   "src": "raw/hr/03_self_hosted.png",
+   "sha": "81bc898a0687",
+   "lang": "hr",
+   "chars": 562,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hr/04_token_login.png",
+   "src": "raw/hr/04_token_login.png",
+   "sha": "a5db0a90dd25",
+   "lang": "hr",
+   "chars": 465,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hr/05_register.png",
+   "src": "raw/hr/05_register.png",
+   "sha": "aac41485c817",
+   "lang": "hr",
+   "chars": 199,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "hr/06_register_errors.png",
+   "src": "raw/hr/06_register_errors.png",
+   "sha": "fc7552d4fb1b",
+   "lang": "hr",
+   "chars": 245,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/01_login.png",
+   "src": "raw/uk/01_login.png",
+   "sha": "71132144092a",
+   "lang": "uk",
+   "chars": 235,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/02_advanced.png",
+   "src": "raw/uk/02_advanced.png",
+   "sha": "a80195086867",
+   "lang": "uk",
+   "chars": 463,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/03_self_hosted.png",
+   "src": "raw/uk/03_self_hosted.png",
+   "sha": "c784c0b957ea",
+   "lang": "uk",
+   "chars": 580,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/04_token_login.png",
+   "src": "raw/uk/04_token_login.png",
+   "sha": "9daa715e0272",
+   "lang": "uk",
+   "chars": 430,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/05_register.png",
+   "src": "raw/uk/05_register.png",
+   "sha": "837b22d8ccd3",
+   "lang": "uk",
+   "chars": 220,
+   "evidence": "hierarchy"
+  },
+  {
+   "file": "uk/06_register_errors.png",
+   "src": "raw/uk/06_register_errors.png",
+   "sha": "77413bb9f243",
+   "lang": "uk",
+   "chars": 295,
+   "evidence": "hierarchy"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

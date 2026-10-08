@@ -1,0 +1,30 @@
+{
+ "locales": {
+  "es": {
+   "untranslated_selectors": [],
+   "lproj": "es",
+   "ok": true,
+   "seconds": 40,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  },
+  "fr": {
+   "untranslated_selectors": [],
+   "lproj": "fr",
+   "ok": true,
+   "seconds": 81,
+   "error": null,
+   "screenshots": 6,
+   "attempts": 1
+  }
+ },
+ "config": "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/shotfleet.toml",
+ "strings": [
+  "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/src/lib/l10n/*.arb"
+ ],
+ "base_locale": "en",
+ "wall_seconds": 144,
+ "simulators": 1,
+ "app": "/Users/manu/Developer/shotfleet-rc-build/showcase-wger/app/Runner.app"
+}

@@ -1,0 +1,9 @@
+hint: this is a Flutter debug build: screenshots show the DEBUG banner unless the app sets debugShowCheckedModeBanner: false (iOS simulators only run debug builds; on Android use flutter build apk --release)
+booting 1 simulators (iPhone-17-Pro-Max, iOS-26-4)
+capturing 2 locales on 1 simulators...
+ok   es       6/6 screenshots
+ok   fr       6/6 screenshots
+captured 2/2 locales in 144s on 1 simulators
+
+checked 12 screenshots in 2 languages: 0 problem(s)
+rc=0 killed=0
