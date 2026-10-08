@@ -1,0 +1,47 @@
+{
+ "screenshots": [
+  {
+   "file": "en/01_radar.png",
+   "src": "../out-android-dry/raw/en/01_radar.png",
+   "sha": "4d657cbad571",
+   "lang": "en",
+   "chars": 211,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/02_bookmarks.png",
+   "src": "../out-android-dry/raw/en/02_bookmarks.png",
+   "sha": "01a9368329ca",
+   "lang": "en",
+   "chars": 155,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/03_account.png",
+   "src": "../out-android-dry/raw/en/03_account.png",
+   "sha": "cc0534359a78",
+   "lang": "en",
+   "chars": 234,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/04_settings.png",
+   "src": "../out-android-dry/raw/en/04_settings.png",
+   "sha": "52f6b9bf70ef",
+   "lang": "en",
+   "chars": 332,
+   "evidence": "ocr"
+  },
+  {
+   "file": "en/05_search.png",
+   "src": "../out-android-dry/raw/en/05_search.png",
+   "sha": "6fd456a51e59",
+   "lang": "en",
+   "chars": 154,
+   "evidence": "ocr"
+  }
+ ],
+ "problems": [],
+ "notes": [],
+ "unverified": []
+}

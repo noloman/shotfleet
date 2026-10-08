@@ -1,0 +1,12 @@
+# Kuokka showcase, Android. shotfleet 0.1.6 released binary, Maestro 2.0.10. ONE private emulator, shotfleet's own AVD shotfleet_android (arm64, API 36, 1080x1920).
+# ANDROID_HOME=/Users/manu/Library/Android/sdk must be set. Compose Multiplatform strings (.cvr in the APK) and androidMain strings are read from the APK: no `strings =` line.
+# Dry run:  shotfleet run shotfleet.android.toml --platform android --locales en --parallel 1
+# Run 1:    --locales de,ja,ko       Run 2:  --locales es,fr,pt-BR     (`out-android` is renamed to out-android-dry / -run1 / -run2 after each)
+# The APK path is absolute (the app is not inside the run folder).
+[android]
+apk = "/Users/manu/Developer/shotfleet-rc-build/showcase-kuokka-android/app/composeApp-debug.apk"
+package = "me.manulorenzo.hackernewskmp"
+flow = "flow.android.yaml"
+avd = "shotfleet_android"
+parallel = 1
+out = "out-android"
