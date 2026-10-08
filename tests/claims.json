@@ -4864,7 +4864,7 @@
  },
  {
   "id": "C322",
-  "claim": "wger showcase: open-source Flutter app (wger-project/flutter, not the owner's), built by the owner from tag 2.1.1 (cf12708) as debug builds because the repo HEAD did not build on Android; shotfleet 0.1.6 read the app's own .arb files; only screens reachable without an account, never logged in; the DEBUG banner shows",
+  "claim": "wger showcase: open-source Flutter app (wger-project/flutter, not the owner's), built by the owner from tag 2.1.1 (cf12708) as debug builds because the repo HEAD did not build on Android that day (the maintainer has since pushed the fix); shotfleet 0.1.6 read the app's own .arb files; only screens reachable without an account, never logged in; the DEBUG banner shows",
   "where": [
    "site/public/index.html",
    "site/public/index.html",
@@ -4872,7 +4872,7 @@
   ],
   "where_text": [
    "wger is an open-source workout app made with Flutter (wger-project/flutter). It isn’t my app.",
-   "On 2026-10-08 I built it myself from the tag 2.1.1, as a debug build, and captured it with shotfleet 0.1.6. I used the tag because the latest commit wouldn’t build on Android. shotfleet read the app’s own translation files (.arb). I only took the screens you can reach without an account, which means the login screen and the few sheets and forms around it. I never logged in, and the red DEBUG banner shows on every frame.",
+   "On 2026-10-08 I built it myself from the tag 2.1.1, as a debug build, and captured it with shotfleet 0.1.6. I used the tag because the latest commit wouldn’t build on Android that day (the maintainer has since pushed the fix). shotfleet read the app’s own translation files (.arb). I only took the screens you can reach without an account, which means the login screen and the few sheets and forms around it. I never logged in, and the red DEBUG banner shows on every frame.",
    "Only the screens you can reach without an account; I never logged in."
   ],
   "status": "evidence",
