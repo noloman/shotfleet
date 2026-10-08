@@ -1,6 +1,6 @@
 # Launch: your part (about 30 minutes in Gumroad, then Gumroad's first-payout review)
 
-> **Status, 2026-10-05:** go-live ran 2026-10-05 (5fa4f7c, 5bbec86). Sections 4 to 6 are the record and the template for the next release. Section 8 (purge the waitlist 30 days after the launch email) is still live and is a promise on the privacy page.
+> **Status, 2026-10-05:** go-live ran 2026-10-05 (5fa4f7c, 5bbec86). Sections 4 to 6 are the record of that first launch only. Later releases are built, gated and published with `packaging/publish.sh`; see [docs/engineering/06-packaging-and-release.md](docs/engineering/06-packaging-and-release.md), and [CHANGELOG.md](CHANGELOG.md) for what each release held. Section 8 (purge the waitlist 30 days after the launch email) is still live and is a promise on the privacy page.
 
 > **2026-10-02: Polar was dropped.** Polar pays out through Stripe, and Stripe will ask a Dutch resident for a KvK number.
 > The sale moves to **Gumroad**, which you already use for Keysi (Individual account, EUR bank payout, no KvK entered).

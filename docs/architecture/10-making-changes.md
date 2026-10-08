@@ -16,17 +16,17 @@ test as a pointer, not an obstacle.
 
 ## Add a language or a translation-file format
 
-*Adding a store listing language:* add the code to `APP_STORE` and/or `PLAY` (`shotfleet.py:252-258`, copied from fastlane's folder names; `marketing/store-locales.md`), then check `store_code` maps your
+*Adding a store listing language:* add the code to `APP_STORE` and/or `PLAY` (copied from fastlane's folder names; `marketing/store-locales.md`), then check `store_code` maps your
 app locales onto it (`PRIMARY` if the language has several regions, `CANON`/`LANG_CANON` for alias spellings). Add a test next to `Export` or the store-code tests.
 
-*Making `check` read a language:* add its code to `TESSERACT` (`:3231`) and, for scripts needing script detection, `OSD_SCRIPT`; if it is Latin script that Vision lacks, `LATIN_UNLISTED`; if
+*Making `check` read a language:* add its code to `TESSERACT` and, for scripts needing script detection, `OSD_SCRIPT`; if it is Latin script that Vision lacks, `LATIN_UNLISTED`; if
 detection confuses it with another, `TWINS`. Extend the Docker image's `LANGS`. Measure with `tools/langmatrix.py` and a real screenshot set.
 
 *A new translation-file format* (for `strings = "glob"` and `check --strings`):
-1. Add a branch to `read_translation_file` (`:646`) returning `{locale: {key: text}}`; plurals as `key#form` (use `icu_forms` for ICU text); take the locale from the file when it says one,
-   else `locale_from_path` (`:486`).
+1. Add a branch to `read_translation_file` returning `{locale: {key: text}}`; plurals as `key#form` (use `icu_forms` for ICU text); take the locale from the file when it says one,
+   else `locale_from_path`.
 2. If files of this kind are named by convention, teach `locale_from_path` and the "unsupported" message at the end of the function.
-3. If a framework uses it: add an entry to `FRAMEWORKS` (`:853`) for `framework_hint` and, for `init`, a branch in `detect_project` (`:4272`) with its translation glob, build folders and build commands.
+3. If a framework uses it: add an entry to `FRAMEWORKS` for `framework_hint` and, for `init`, a branch in `detect_project` with its translation glob, build folders and build commands.
 4. Tests in `SourceFiles` or `LocalizationFormats` (`tests/test_shotfleet.py`) and `tests/test_projects.py`; update README "Supported" list, the docs page config table, `skill/shotfleet/references/config.md`
    (`test_config_md_lists_every_key_table_and_hook_event`). Never **execute** user files: parse them as data.
 5. Say in README and the skills only what you ran. Flutter and React Native are "run end to end once each"; keep claims that narrow.
@@ -43,14 +43,14 @@ See [04-export-and-store-rules.md](04-export-and-store-rules.md#43-changing-a-st
 
 ## Add a config key
 
-1. Add it to `KEYS` (`:60`) with its type (or `CAPTURE_KEYS`, `TABLES`, `HOOK_EVENTS`, `EXPECT_KEYS` for tables), and validate value ranges in `check_section` (`:161`) with a message that says the fix.
+1. Add it to `KEYS` with its type (or `CAPTURE_KEYS`, `TABLES`, `HOOK_EVENTS`, `EXPECT_KEYS` for tables), and validate value ranges in `check_section` with a message that says the fix.
 2. Use it in the run code with a default that equals the old behaviour.
 3. Document it: README "Config", `docs.html` config table, `skill/shotfleet/references/config.md`. Tests that compare these lists with `KEYS` will fail until all agree.
 4. If it can run a command, it is a trust-boundary change: see [11](11-security-and-privacy.md) and MCP's `hooks` gate.
 
 ## Add a CLI command or flag
 
-Add the subparser in `main()` (`:4769`), the name to `COMMANDS` (`:4745`), a branch in `main_dispatch` (`:5357`), and decide: needs licence? (call `require_licence()` or `apply_free_tier()` there), `--json`
+Add the subparser in `main()`, the name to `COMMANDS`, a branch in `main_dispatch`, and decide: needs licence? (call `require_licence()` or `apply_free_tier()` there), `--json`
 support (`main()` handles any command with a `json` attribute), exit codes ([01](01-code-layout.md#exit-codes)). Update the module docstring (it is already incomplete), README, docs page, skills and the agents
 snippet (`tests/test_agent_skills.py` parses every documented command with the real parser).
 

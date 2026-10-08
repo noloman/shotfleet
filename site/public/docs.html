@@ -162,6 +162,7 @@
       <li><a href="#hooks">Hooks</a></li>
       <li><a href="#overrides">Overrides</a></li>
       <li><a href="#inputs">Inputs</a></li>
+      <li><a href="#flow-tips">Flow tips for every language</a></li>
       <li><a href="#device-setup">Device setup</a></li>
       <li><a href="#expect">Expected content</a></li>
       <li><a href="#licence">Licence</a></li>
@@ -382,6 +383,68 @@ name = "Alex"
 [inputs.ja]                            # the language as shotfleet names it; pt covers pt-BR too
 name = "田中"</code></pre>
   <p>The value goes into that language's flow as a Maestro <code>env:</code> entry. This works on iOS. Maestro hands any flow to any emulator, so on Android a name that has a per-language value is read from a small script (<code>shotfleet_vars.js</code>) that picks the emulator's row by <code>MAESTRO_DEVICE_UDID</code>. Maestro 2.11.0 sets that variable to the emulator's serial: German and Japanese values showed up as typed in screenshots (device run 2026-10-04, one emulator, one language after the other; two emulators at once and Arabic not run). Maestro 2.0.10 does not define it, so on 2.0.10 Android runs type the <code>[inputs]</code> defaults only. Check the first screenshots in a script like Japanese or Arabic. Text you type is not translated by itself: it stays the same in every language unless you set <code>[inputs]</code> (iOS; on Android it needs a Maestro that sets <code>MAESTRO_DEVICE_UDID</code>, which 2.11.0 does and 2.0.10 does not).</p>
+
+  <h2 id="flow-tips">Flow tips for every language</h2>
+  <p>A flow that works in English can still break in Turkish or Chinese. These tips come from runs on my own apps. They are about Maestro; shotfleet only translates the texts you write in selectors. I read <a href="https://docs.maestro.dev">Maestro's docs</a> for every snippet on 2026-10-08. Where I say "ran", I ran it on Maestro 2.0.10, the version of all the runs in this section. Where I say "not run", the snippet comes from Maestro's docs and I have not tried it on a device.</p>
+
+  <h3 id="tip-id">Tap by id where you can</h3>
+  <p>An id has no language. shotfleet leaves <code>id:</code> selectors alone, so the step taps the same view in German, Arabic and Japanese. Use ids for icons and tabs, and for any button your app lets you name (an accessibility identifier on iOS, a resource id on Android).</p>
+<pre><code>- tapOn:
+    id: "login-button"</code></pre>
+  <p>Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03). Maestro reads <code>text</code> and <code>id</code> as regular expressions, so keep an id specific.</p>
+
+  <h3 id="tip-collisions">When two texts are the same word</h3>
+  <p>Two real cases from my runs. In Turkish, "İleri" means both "Next" and "Advanced". An onboarding page had an "Advanced" option and a "Next" button, and the tap on "Next" hit the option, so Turkish failed on every screenshot on Android (0 of 6). shotfleet warned about it before the run (<code>tr: 'Next' -&gt; 'İleri' also means 'Advanced'</code>). In Chinese, a small pill on a card read "基准" and so did the Benchmarks row below it. A scroll that waits for the text stopped at the pill, and the tap on the row found nothing.</p>
+  <p>Pin the step to a neighbour with <code>below:</code> or <code>above:</code>. shotfleet translates the anchor text too:</p>
+<pre><code>- tapOn:
+    text: "Next"
+    below:
+      text: "3+ years of dedicated training"</code></pre>
+  <p>Ran on iOS and Android, Turkish included (Maestro 2.0.10, WOD Tracker, 2026-10-07). Or pick the nth match with <code>index:</code>. Maestro counts from 0, so <code>index: 1</code> is the second match. Not run, and the order of matches is Maestro's, so look at the frame:</p>
+<pre><code>- tapOn:
+    text: "Next"
+    index: 1</code></pre>
+  <p>Or skip the text and swipe a fixed distance. Where the list is longer than the screen, a few swipes to the end leave only one of the two texts on screen:</p>
+<pre><code>- repeat:
+    times: 4
+    commands:
+      - swipe:
+          start: "50%,80%"
+          end: "50%,15%"
+      - waitForAnimationToEnd:
+          timeout: 1500
+- tapOn: "Benchmarks"</code></pre>
+  <p>Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (Maestro 2.0.10, WOD Tracker, 2026-10-07). Maestro's docs write the pair with a space, <code>start: 90%, 50%</code>; the form without a space is the one I ran.</p>
+
+  <h3 id="tip-scroll">scrollUntilVisible has two forms</h3>
+  <p>Maestro takes the element as a plain string or as a selector object. Both are valid:</p>
+<pre><code>- scrollUntilVisible:
+    element: "Benchmarks"
+
+- scrollUntilVisible:
+    element:
+      text: "Benchmarks"
+    direction: DOWN
+    timeout: 30000</code></pre>
+  <p>The object form with <code>text:</code> ran on iOS and Android (Maestro 2.0.10, WOD Tracker). Use it on 0.1.7 and older: those versions translate the text in the object form and leave the plain string in English, so on an iPhone run in Hindi and Turkish the plain string failed both languages (0 of 2). From 0.1.8 both forms are translated. Maestro's defaults are <code>direction: DOWN</code> and a <code>timeout</code> of 20000 ms, and the step fails when the timeout runs out. If the row ends up behind a tab bar, <code>centerElement: true</code> keeps scrolling until the element is more than 30% away from the edge of the screen (not run). In my Hindi run the row stopped behind the tab bar and the tap hit the Train tab instead.</p>
+
+  <h3 id="tip-wait">Wait for a stable screen before the first screenshot</h3>
+  <p>A screenshot taken while the screen is still drawing can show a blank frame or a half-loaded one. Wait for a text that only that screen has, then let the animation finish:</p>
+<pre><code>- extendedWaitUntil:
+    visible: "Start here"
+    timeout: 60000
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: 01_train</code></pre>
+  <p>Ran on iOS (Maestro 2.0.10, WOD Tracker). <code>extendedWaitUntil</code> takes its timeout in milliseconds. <code>waitForAnimationToEnd</code> does not fail: Maestro's docs say it carries on when its timeout (15000 ms by default) runs out, so on its own it is not proof that the screen is still. The text goes first for that reason. A Flutter debug build can take 30 s to draw on a fresh emulator, so give that wait a long timeout.</p>
+
+  <h3 id="tip-check">check does not prove that a tap hit the right button</h3>
+  <p><code>check</code> reads pictures. It sees a wrong language, a copy of another language's image, a missing screen, a blank frame and a wrong size. It cannot know which screen you meant to reach. In one WOD Tracker iPhone attempt the run exited 0 with 8 of 8 screenshots and <code>check</code> said 0 problems, but the Hindi "Benchmarks" frame showed the Train screen. The row sat behind the tab bar and my tap hit the Train tab. A Train screen in Hindi is a perfectly good screen. I found it by looking at every frame.</p>
+  <p>A guard in the flow fails the language when the tap went wrong. Put an <code>assertVisible</code> on a text that only the target screen has (not one the tab bar shows too) between the tap and the screenshot, and shotfleet translates it for each language:</p>
+<pre><code>- tapOn: "Benchmarks"
+- assertVisible: "Benchmark results"
+- takeScreenshot: 02_benchmarks</code></pre>
+  <p>Not run; I had no such guard in that attempt, which is the point. "Benchmark results" stands for a text from your own screen. <a href="#expect">Expected content</a> can do the same job after the run, with a literal text per language. And look at the frames of a new flow once before you trust it.</p>
 
   <h2 id="device-setup">Device setup</h2>
   <p>Device setup runs your own commands once per simulator or emulator, right after it boots (iOS: after the status bar is set), so an app with a screenshot switch, dark mode, a location or a granted permission looks the way you want:</p>

@@ -2,7 +2,7 @@
 
 What works, what is untried, and what cannot work. Status 2026-10-03, from source (`python3 shotfleet.py ...`, Python 3.11+).
 `packaging/build-linux.sh` builds a 20 MB folder (PyInstaller, unsigned, 13 s on x86_64); that folder ran `check` and `doctor` on the test machine. There is no Linux installer or published release build yet (`install.sh` still refuses non-Macs).
-For `check` there is a Docker image, `ghcr.io/noloman/shotfleet-check` (`Dockerfile`, `packaging/docker-check.sh`; README "Linux and CI"). On 2026-10-06 it gave the Mac's verdict on the 72-screenshot CrossfitTracker Android set with `--app` (0 problems clean; 3 of 3 planted faults), on both arm64 and amd64 (amd64 emulated by Docker Desktop on an Apple silicon Mac).
+For `check` there is a Docker image, built but not published yet, so `ghcr.io/noloman/shotfleet-check` is not there to pull (`Dockerfile`, `packaging/docker-check.sh`; README "Linux and CI"). On 2026-10-06 it gave the Mac's verdict on the 72-screenshot CrossfitTracker Android set with `--app` (0 problems clean; 3 of 3 planted faults), on both arm64 and amd64 (amd64 emulated by Docker Desktop on an Apple silicon Mac).
 
 | | Linux | Evidence |
 |---|---|---|

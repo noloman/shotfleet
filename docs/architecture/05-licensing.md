@@ -1,9 +1,9 @@
 # 5. Licensing
 
-Back to the [index](../ARCHITECTURE.md). Anchors are `shotfleet.py:LINE` at `origin/main` `285e099`. Everything below is code on main; the 0.1.6 licence fixes and hardening
+Back to the [index](../ARCHITECTURE.md). Written at `285e099` (0.1.6). This guide gives names, not line numbers: lines drift with every release. For line numbers use [the generated function map](../engineering/12-function-map.md). Everything below is code on main; the 0.1.6 licence fixes and hardening
 (`claude/016-licence-fixes`, `claude/016-licence-harden`) are merged.
 
-The licence code is the last big section of `shotfleet.py` (`:4979-5297`, then `main_cmd` and `main_dispatch`). It is small and deliberately simple, and it is an honesty system: it keeps honest
+The licence code is the last big section of `shotfleet.py` (then `main_cmd` and `main_dispatch`). It is small and deliberately simple, and it is an honesty system: it keeps honest
 buyers honest and makes no attempt to stop a determined person (see [known limits](#known-limits-of-client-side-licensing)). Sold through Gumroad as one
 product ($29 for the first 100 buyers through a Gumroad offer code, then $49, one payment, a year of updates, a 14-day refund; the site's terms page is the legal
 text). Why Gumroad and not Polar or Lemon Squeezy: `research/gumroad-setup.md` (Polar's Stripe account needs a Dutch KvK number); the Polar and Lemon
@@ -14,12 +14,12 @@ Squeezy code was removed on 2026-10-03.
 | Command | Without a licence | With one |
 |---|---|---|
 | `check`, `doctor`, `init`, `skill`, `mcp`, `activate`, `deactivate` | works; never touches the licence code | same |
-| `run` (iOS, Android, `[capture]`, MCP `run`) | captures **2 languages** (`FREE_LANGUAGES`, `:4988`) | every language |
+| `run` (iOS, Android, `[capture]`, MCP `run`) | captures **2 languages** (`FREE_LANGUAGES`) | every language |
 | `export` | refused, exit 2: "`export` and every language in `run` need a licence ..." | works |
 
-The gate lives in `main_dispatch` (`:5357`): `export` calls `require_licence()` (a `NoLicence`, which is a `Fail`, so exit 2); `run` calls
-`apply_free_tier()` (`:5286`), which turns a `NoLicence` into `LOCALE_CAP = 2` plus a stderr note instead of a refusal. `cap_locales` (`:4994`) then
-cuts the language list inside `ios_run_inner` (`:1917`) and `android_run_inner` (`:2622`) to the **first two** of the list (the sorted default list, or
+The gate lives in `main_dispatch`: `export` calls `require_licence()` (a `NoLicence`, which is a `Fail`, so exit 2); `run` calls
+`apply_free_tier()`, which turns a `NoLicence` into `LOCALE_CAP = 2` plus a stderr note instead of a refusal. `cap_locales` then
+cuts the language list inside `ios_run_inner` and `android_run_inner` to the **first two** of the list (the sorted default list, or
 the two named with `--locales`) and prints a `free tier:` line saying why. The cap counts languages only: both platforms, every device size and every screen are included.
 **The cap is per run**: two runs of two languages give four, and a pinned test (`FreeTierOnAFrozenBuild.test_the_cap_is_per_run_two_runs_of_two_languages_give_four` in `tests/test_claims_unit.py`)
 documents this on purpose, and `TierReachesBothPlatformRuns` pins that the cap reaches both platform runs; the owner chose on 2026-10-06 to leave it. What is really paid is `export` and doing it in one run. Nothing ends the free
@@ -31,20 +31,20 @@ tier: no date, no version switch.
 the MCP server calls it on every `run`: a key activated while the server is up lifts the cap on the next call (a stale cap was review finding F4).
 
 **The licence is enforced only in released (frozen) builds.** `require_licence` returns at once when `getattr(sys, "frozen", False)` is false
-(`:5257`): a source checkout runs everything unlicensed. Tests therefore patch `sys.frozen`. This is also why the source file is private.
+a source checkout runs everything unlicensed. Tests therefore patch `sys.frozen`. This is also why the source file is private.
 
-## The Gumroad call (`gumroad_verify`, `:5109`)
+## The Gumroad call (`gumroad_verify`)
 
 `POST <API>/verify` with form fields `product_id`, `license_key`, `increment_uses_count` ("true" or "false"). No token:
 the verify endpoint is public, and a token that could free activations (`deactivate` would need one) cannot ship inside a program.
-`GUMROAD_PRODUCT_ID` (`:4986`) is not secret and is written into the file by `packaging/go-live.sh`. TLS uses `tls_context()` (`:3737`; certifi's bundle
+`GUMROAD_PRODUCT_ID` is not secret and is written into the file by `packaging/go-live.sh`. TLS uses `tls_context()` (certifi's bundle
 inside the release, or `SSL_CERT_FILE` and friends for corporate proxies that re-sign HTTPS).
 
-**The API base cannot be swapped in a released build.** `GUMROAD_API` (`:4985`) is a constant, and `gumroad_api()` (`:5006`) returns it for any frozen build, whatever
+**The API base cannot be swapped in a released build.** `GUMROAD_API` is a constant, and `gumroad_api()` returns it for any frozen build, whatever
 `SHOTFLEET_GUMROAD_API` says, unless the build's product id starts with `RCTEST` (only `tools/release-candidate.sh` writes that, into a temp copy of the file). From source the variable is
 honoured, which is how the tests point the program at a fake server. Before 0.1.6 the variable worked in released builds, a one-line bypass (a dead host plus any well-formed key).
 
-**Time limit.** `gumroad_fetch` (`:5091`) runs the request in a daemon thread and stops waiting after `GUMROAD_TOTAL_SECONDS = 20` (`:4983`); the socket timeout of 15 s alone does not cover DNS or a server that
+**Time limit.** `gumroad_fetch` runs the request in a daemon thread and stops waiting after `GUMROAD_TOTAL_SECONDS = 20`; the socket timeout of 15 s alone does not cover DNS or a server that
 sends one byte a second. Any failure to get an answer is an `OSError` ("can't reach the licence server ...").
 
 `gumroad_verify` returns `(ok, uses, reason, sale)`, where `sale` is `purchase.sale_timestamp` as unix time (or None):
@@ -60,35 +60,35 @@ sends one byte a second. Any failure to get an answer is an `OSError` ("can't re
 `uses` is **one lifetime counter per key** that Gumroad increments on every call with `increment_uses_count=true`. It is not a count of Macs. There is
 no per-Mac id and none is sent.
 
-## Activation (`cmd_activate`, `:5145`)
+## Activation (`cmd_activate`)
 
 1. `is_gumroad_key`: four groups of eight hex characters.
 2. First call with `count_use=False`: refuses refused keys and reads `uses` and the sale date without burning anything.
 3. **The update window is checked here, before anything is counted** (`check_update_window(sale)`): a key from 2020 on a 2026 build is refused with "nothing was activated and no
    activation was used". (Review note N3: before the fix the key spent an activation and then ran as the free tier.)
 4. `known` = this Mac's `licence.json` already holds this exact key, **or** a file is there but unreadable. Either way it is a re-check and counts nothing.
-5. If not known: `uses >= MAX_MACS` (`:4987`, **5**) refuses with "this key has used all 5 activations. Email hello@shotfleet.com and I'll reset the count". The promise to buyers is **3 of your Macs**;
+5. If not known: `uses >= MAX_MACS` (**5**) refuses with "this key has used all 5 activations. Email hello@shotfleet.com and I'll reset the count". The promise to buyers is **3 of your Macs**;
    the other 2 are spare for reinstalls, because Gumroad's counter cannot be given back from the program. Terms, site, README and the skills all say "5 activations: 3 Macs and 2 spare".
-6. **Save first, count second.** `licence.json` is written with `pending: true` (`save_licence`, `:5138`) *before* the counted call. A folder that cannot be written fails before anything is charged, and if the reply is lost after Gumroad
+6. **Save first, count second.** `licence.json` is written with `pending: true` (`save_licence`) *before* the counted call. A folder that cannot be written fails before anything is charged, and if the reply is lost after Gumroad
    counted, this Mac remembers and the retry finds the key and does not count again ("Gumroad may have counted this activation, and this Mac remembers it ..."). A `pending` file makes `run` and `export` say "activating on this
    Mac didn't finish".
 7. If the counted call comes back refused, or `uses > MAX_MACS` (two people activated at the same instant and the other took the last slot), the previous file is restored (or removed) and the user is told; the count stays burned, which the owner resets by hand.
    The race itself is still accepted (a `ponytail:`-style limit): two simultaneous activations can pass the limit.
 8. Success writes `{"key", "store": "gumroad", "checked": <unix time>, "sale": <sale time>}` at
-   `~/Library/Application Support/shotfleet/licence.json` (`LICENCE_FILE`, `:4981`), plain text, unsigned. Treat the file like a password; the agent skills tell agents never to print it.
+   `~/Library/Application Support/shotfleet/licence.json` (`LICENCE_FILE`), plain text, unsigned. Treat the file like a password; the agent skills tell agents never to print it.
 
-**Atomic state files.** Both licence files are written by `write_json_atomic` (`:5061`): a private (0600) temp file in the same folder, then `os.replace`, so a reader never sees half a file and two runs
-cannot interleave. `read_licence` (`:5178`) returns `None` for anything wrong (not a dict, key not a non-empty string, `checked` not a believable time via `is_time`, `:5030`: finite, 0 to 1e11), and the message says to
+**Atomic state files.** Both licence files are written by `write_json_atomic`: a private (0600) temp file in the same folder, then `os.replace`, so a reader never sees half a file and two runs
+cannot interleave. `read_licence` returns `None` for anything wrong (not a dict, key not a non-empty string, `checked` not a believable time via `is_time`: finite, 0 to 1e11), and the message says to
 activate again, which re-checks online and **does not spend another activation**.
 
-`deactivate` (`:5186`) deletes the file. It **cannot** give the activation back (Gumroad needs the seller's access token for that), so a new macOS
+`deactivate` deletes the file. It **cannot** give the activation back (Gumroad needs the seller's access token for that), so a new macOS
 install, a new user account, or `deactivate` followed by `activate` consumes another one. The owner resets the count in the Gumroad dashboard
 (`docs/refund-runbook.md`). A `licence.json` from a store the program no longer uses (`store != "gumroad"`) is refused with a message saying to
 activate the Gumroad key.
 
-## Checking a licence (`require_licence`, `:5255`)
+## Checking a licence (`require_licence`)
 
-`require_licence` returns at once from source. With `SHOTFLEET_KEY` set it asks `key_licence` (`:5199`); if that refuses and a `licence.json` exists, `mac_licence` (`:5220`) gets a turn, so a stale key left in a
+`require_licence` returns at once from source. With `SHOTFLEET_KEY` set it asks `key_licence`; if that refuses and a `licence.json` exists, `mac_licence` gets a turn, so a stale key left in a
 shell profile does not hide a licence activated on this Mac (a warning says so, and says to unset the variable). Without the variable only `mac_licence` runs.
 
 ```mermaid
@@ -113,7 +113,7 @@ flowchart TD
     F -->|unreachable, 30 days or more, or future-dated| NO2
 ```
 
-- **Weekly re-check** (`LICENCE_RECHECK_DAYS = 7`, `:4982`): only when `run` or `export` is used, never counted.
+- **Weekly re-check** (`LICENCE_RECHECK_DAYS = 7`): only when `run` or `export` is used, never counted.
 - **Offline grace** (`LICENCE_OFFLINE_DAYS = 30`) after the last good check, for an activated Mac.
 - **A date in the future is not trusted and not fatal.** A `checked` in the future (age below zero) is treated as due for a re-check: online, the file is rewritten with today's date (a clock that was fast heals itself, F9);
   offline, the message says the licence is dated in the future and to set the clock or connect once. A hand-edited future date therefore cannot keep a licence from ever being re-checked.
@@ -121,7 +121,7 @@ flowchart TD
   `shotfleet activate` checks again. For a CI key, `key_licence` deletes `ci-checked.json` and marks a `licence.json` holding the same key. Why: otherwise blocking Gumroad after a refund brought the licence
   back for up to a month (review findings F6 and N5).
 - **`SHOTFLEET_KEY` (CI) is a gate, not a free pass.** Checked online on every run, it uses no activation. When Gumroad cannot be reached, it counts only on a machine where **that exact key passed a check in the last 30 days**:
-  `key_licence` writes `ci-checked.json` next to `licence.json` with a SHA-256 of the key (never the key), the time and the sale date, and `ci_seen` (`:5076`) also accepts a `licence.json` holding the same key.
+  `key_licence` writes `ci-checked.json` next to `licence.json` with a SHA-256 of the key (never the key), the time and the sale date, and `ci_seen` also accepts a `licence.json` holding the same key.
   On a fresh hosted runner during an outage the key is refused ("SHOTFLEET_KEY couldn't be checked ...") and `run` stops (above). The CI record tolerates a day of clock skew into the past (a record dated up to a day ahead still counts). Before 0.1.6 the
   CI path failed open with no time limit: any well-formed key passed while the API was blocked. The cost now: a hosted CI that starts clean every time gets no grace during an outage unless it caches that file
   (`~/Library/Application Support/shotfleet/ci-checked.json`, no secret in it). A read-only home only loses the grace (the write is best effort).
@@ -132,11 +132,11 @@ flowchart TD
 "A year of updates" is on the site, in the terms and in the README, and **main enforces it**.
 
 - **The release date is frozen into the program's code.** `packaging/build.sh` writes `build/_release.py` (`RELEASE_DATE = "YYYY-MM-DD"`, the build day in UTC, `date -u`) *after* `build/` is recreated and passes
-  `--paths $PWD/build --hidden-import _release` to PyInstaller, so the module is compiled into the program's PYZ archive. `baked_release_date()` (`:5012`) imports it into `RELEASE_DATE` (`:5023`); from source there is
+  `--paths $PWD/build --hidden-import _release` to PyInstaller, so the module is compiled into the program's PYZ archive. `baked_release_date()` imports it into `RELEASE_DATE`; from source there is
   no `_release`, so the value is None and no window applies. Why a module and not a data file: the first version shipped the date as a loose file in `_internal/`, and deleting it (one `rm`, no tools, and the code signature does
   not notice, since a bare Mach-O signature seals only the executable) turned the check off (review note N2). Now someone has to unpack and rewrite the archive. The date is the build day, not the publish day: a build
   is published days later, never earlier, so the window errs in the buyer's favour.
-- **The comparison never uses the Mac's clock.** `check_update_window(sale)` (`:5042`) compares the build's `RELEASE_DATE` with the purchase date from Gumroad's `purchase.sale_timestamp`. `updates_until` (`:5033`)
+- **The comparison never uses the Mac's clock.** `check_update_window(sale)` compares the build's `RELEASE_DATE` with the purchase date from Gumroad's `purchase.sale_timestamp`. `updates_until`
   is the **same calendar date a year later** (29 February counts to 1 March; a sale on 2027-03-01 is covered to 2028-03-01, not to 2028-02-29), so "a year" and "365 days" can differ by a day: the code is the calendar year. A release
   on that last day is still covered. Moving the clock changes nothing.
 - **What happens when the build is newer than the window.** `NoLicence` with a message that names the date the licence covers until, says this version "runs as the free tier", and says older versions keep working with the key
@@ -170,7 +170,7 @@ Two read-only reviews (kept outside the repo in `shotfleet-rc-build/code-review-
 | F7, F10, F12: tracebacks on odd replies, a missing `success` counted as a verdict, no overall time limit | fixed: `gumroad_fetch`, the `success` type check |
 | F11: a read-only `licence.json` stops `run` and `export` after a re-check | fixed: the save is best effort |
 | F13: an invalid `SHOTFLEET_KEY` overrides a valid activation | fixed: `require_licence` falls back to `mac_licence` |
-| F8: a proxy with its own CA can answer for Gumroad | accepted (a `ponytail:` comment at `:5003`) |
+| F8: a proxy with its own CA can answer for Gumroad | accepted (a `ponytail:` comment next to `gumroad_api`) |
 | Final review, low: an MCP `run` drops the free-tier cap note from its summary | open: the `languages` count shows it; an agent is not told why |
 | Final review, note: a `[capture]` build is refused over MCP even if the test bundle is already built | by design; `--no-build` has no MCP argument |
 

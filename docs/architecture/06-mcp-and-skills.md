@@ -1,17 +1,17 @@
 # 6. The MCP server and the agent skills
 
-Back to the [index](../ARCHITECTURE.md). Anchors are `shotfleet.py:LINE` at `origin/main` `285e099`, which includes the 0.1.6 security fixes.
+Back to the [index](../ARCHITECTURE.md). Written at `285e099` (0.1.6). This guide gives names, not line numbers: lines drift with every release. For line numbers use [the generated function map](../engineering/12-function-map.md).
 
 shotfleet reaches AI coding agents two ways. **Skills** are instruction files an agent reads (zero code, zero risk). The **MCP server** gives the agent
 callable tools (code that runs with the user's privileges). They overlap on purpose: the skills use the CLI, the MCP server wraps the same functions.
 
 ## 6.1 The MCP server
 
-`shotfleet mcp` (`cmd_mcp`, `:4949`) is a Model Context Protocol server on stdin and stdout: JSON-RPC 2.0, one message per line.
+`shotfleet mcp` (`cmd_mcp`) is a Model Context Protocol server on stdin and stdout: JSON-RPC 2.0, one message per line.
 
 ### Protocol behaviour
 
-- Only `2025-11-25` and `2025-06-18` (`MCP_VERSIONS`, `:4947`). `initialize` echoes the client's version when it is one of these, else answers with the
+- Only `2025-11-25` and `2025-06-18` (`MCP_VERSIONS`). `initialize` echoes the client's version when it is one of these, else answers with the
   newest. The comment above the constant says why not others: 2025-03-26 requires JSON-RPC batches, and 2026-07-28 has no `initialize` and needs
   `server/discover` and per-request `_meta`. A batch (a JSON array) gets error `-32600`. An unparseable line gets `-32700`; an unknown method `-32601`.
   Notifications (no `id`: `initialized`, `cancelled`) are ignored. `ping` returns `{}`.
@@ -21,7 +21,7 @@ callable tools (code that runs with the user's privileges). They overlap on purp
 - **Progress.** If the client passes `_meta.progressToken`, a heartbeat thread (`MCP_HEARTBEAT_S = 30`) sends `notifications/progress` carrying the
   last non-empty output line, because Claude Code drops a stdio call that is silent for 30 minutes and a `run` can take an hour.
 
-### Tools (`MCP_TOOLS`, `:4833`)
+### Tools (`MCP_TOOLS`)
 
 | Tool | Does | Input schema | Annotations |
 |---|---|---|---|
@@ -32,11 +32,11 @@ callable tools (code that runs with the user's privileges). They overlap on purp
 There is deliberately no `export` tool, no `activate`, no `init`, no `skill` over MCP. Licence handling stays in the user's terminal so the key never passes through an
 agent.
 
-`mcp_call(name, args, progress)` (`:4898`) is the dispatcher:
+`mcp_call(name, args, progress)` is the dispatcher:
 
 1. Resets `LAST_REPORT` and `REPORTS` so a call that never reaches `check` cannot return the previous call's report.
 2. Runs the tool with stdout and stderr captured in a `StringIO`.
-3. **Returns a short summary by default** (`mcp_summary`, `:4877`): `{"exit", "screenshots", "languages", "problems_total", "problems" (first 100, each cut to
+3. **Returns a short summary by default** (`mcp_summary`): `{"exit", "screenshots", "languages", "problems_total", "problems" (first 100, each cut to
    300 characters), "notes_total", "notes", "reports" (absolute paths of every check.json)}` plus a `more` hint when truncated. Why: a 40-language,
    10-screen full report is about 67,000 characters, and Claude Code moves tool results over 50,000 to a file. `full: true` returns
    `{"exit", ...reports_json()}` instead.
@@ -50,9 +50,9 @@ The threat is a prompt-injected agent, or a `shotfleet.toml` from a repo you jus
 
 | Gate | What it does | Limit |
 |---|---|---|
-| **Config commands are opt-in** (S1). `config_commands(config)` (`:1783`) lists every command a config makes `run` execute: `[hooks]` (shell), `[capture] build` (shell), `[ios] simctl` (`xcrun simctl` on the Mac), `[android] shell` (`adb shell`). `mcp_call` (`:4898`) refuses the call with a line naming them unless `hooks` is exactly `True` | with `hooks: true` the call sets `NO_HOOKS = False` and `CONFIG_COMMANDS = True`; without it, `[hooks]` are skipped, and a config that also has any of the other three is **refused before anything runs** ("... has commands that run on this Mac or its devices: [capture] build. Over MCP they only run when you pass hooks: true. Read them in the config first"). A string `"true"` does not count. A `finally` restores both flags | **the last guard:** `refuse_config_commands` (`:1792`) is called inside `capture_build` (`:2164`) and `run_setup` (`:1289`), so even a path that `config_commands` missed cannot run a command with `CONFIG_COMMANDS` false. `run_hook` honours `NO_HOOKS`. These are the only `/bin/sh` sites. Over MCP the **app and the test bundle still install and run on the simulators** (that is what `run` is for), so the tool description says to point it only at a project you trust. The CLI is unchanged |
-| **`check` runs no program** (S2). `mcp_call` returns an error as soon as `ocr_command` is among the arguments, whatever its value, and passes `None` to `check_any` | `shotfleet check --ocr-command` in a terminal is the only way. The tool is no longer marked `readOnlyHint`, because it overwrites `check.json` and `index.html` | `SHOTFLEET_OCR` in the **server's own environment** is still honoured by `cmd_check` (`:3409`): whoever configured the server set it |
-| **Arguments are validated** | `mcp_path` (`:4891`) accepts only a non-empty string and returns an absolute, `~`-expanded path, so a value is never read as an option by a program it is handed to; `strings` is a list of strings or one string (clients send one since 0.1.4); `locales` is a non-empty list, and every code goes through `check_locales` (`SAFE_LOCALE`, `:35`) in `cmd_run` | **`additionalProperties: false` is only in the `inputSchema` and advisory to clients; `mcp_call` never checks for extra keys** (`run` with `{"bogus": 1}` proceeds, and `full: "yes"` counts as true by truthiness). No valid call can break, but no unknown one is refused either |
+| **Config commands are opt-in** (S1). `config_commands(config)` lists every command a config makes `run` execute: `[hooks]` (shell), `[capture] build` (shell), `[ios] simctl` (`xcrun simctl` on the Mac), `[android] shell` (`adb shell`). `mcp_call` refuses the call with a line naming them unless `hooks` is exactly `True` | with `hooks: true` the call sets `NO_HOOKS = False` and `CONFIG_COMMANDS = True`; without it, `[hooks]` are skipped, and a config that also has any of the other three is **refused before anything runs** ("... has commands that run on this Mac or its devices: [capture] build. Over MCP they only run when you pass hooks: true. Read them in the config first"). A string `"true"` does not count. A `finally` restores both flags | **the last guard:** `refuse_config_commands` is called inside `capture_build` and `run_setup`, so even a path that `config_commands` missed cannot run a command with `CONFIG_COMMANDS` false. `run_hook` honours `NO_HOOKS`. These are the only `/bin/sh` sites. Over MCP the **app and the test bundle still install and run on the simulators** (that is what `run` is for), so the tool description says to point it only at a project you trust. The CLI is unchanged |
+| **`check` runs no program** (S2). `mcp_call` returns an error as soon as `ocr_command` is among the arguments, whatever its value, and passes `None` to `check_any` | `shotfleet check --ocr-command` in a terminal is the only way. The tool is no longer marked `readOnlyHint`, because it overwrites `check.json` and `index.html` | `SHOTFLEET_OCR` in the **server's own environment** is still honoured by `cmd_check`: whoever configured the server set it |
+| **Arguments are validated** | `mcp_path` accepts only a non-empty string and returns an absolute, `~`-expanded path, so a value is never read as an option by a program it is handed to; `strings` is a list of strings or one string (clients send one since 0.1.4); `locales` is a non-empty list, and every code goes through `check_locales` (`SAFE_LOCALE`) in `cmd_run` | **`additionalProperties: false` is only in the `inputSchema` and advisory to clients; `mcp_call` never checks for extra keys** (`run` with `{"bogus": 1}` proceeds, and `full: "yes"` counts as true by truthiness). No valid call can break, but no unknown one is refused either |
 | **Licence is re-read per call** | `run` calls `apply_free_tier()` like the CLI, which resets `LOCALE_CAP` and re-runs `require_licence`, so a key activated while the server is up lifts the cap. `check` needs no licence and never calls it | with `SHOTFLEET_KEY` set in the server's environment and refused, `apply_free_tier` raises and the call returns `isError` (no silent 2-language run). An MCP `run` skips the Maestro version refusal/warning that the CLI's `main_dispatch` does (the deny list `MAESTRO_BAD` is empty today, so nothing differs) |
 | **No licence key in the protocol** | no tool takes or returns one | `SHOTFLEET_KEY` can still be in the server's environment; README tells users not to pass it with `claude mcp add --env` because it lands in plain text in `~/.claude.json` |
 | **Annotations** | hints for the client's own permission UI | hints only; the client decides |
@@ -80,7 +80,7 @@ Remaining limits on main:
 
 Distribution paths:
 
-- **Inside the program.** `build.sh` passes `--add-data skill:skill`; `cmd_skill` (`:4747`) copies the folders to `~/.claude/skills` (Claude Code, Cursor) and
+- **Inside the program.** `build.sh` passes `--add-data skill:skill`; `cmd_skill` copies the folders to `~/.claude/skills` (Claude Code, Cursor) and
   `~/.agents/skills` (Codex, Gemini CLI, Copilot, Cursor); `--project` writes `./.claude/skills` and `./.agents/skills`; `--dir` writes one folder. Existing
   skills are kept unless `--force`. It finds the source at `sys._MEIPASS/skill` in a release or next to the file from source.
 - **Public repo.** `noloman/shotfleet-skills` (MIT, skills only, a Claude Code plugin with its own marketplace and `.mcp.json` that starts `shotfleet mcp`).
