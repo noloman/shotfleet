@@ -25,6 +25,7 @@ One line per note: date, what it decided, whether it was applied. Written 2026-1
 | `workarounds-maestro-resources-2026-10-05.md` | Maestro dependency and Mac resource appetite: measure on a quiet Mac first (2.0.10 took 404 s, 2.11.0 826 s with retries at 4 iOS simulators), capacity planner warn-only, a cheap Maestro watcher plus a deny list | Research; prototype on branch `claude/workarounds-maestro-resources`, not wired. 0.1.3 items |
 | `workarounds-text-recognition-2026-10-05.md` | Text recognition was not permanently wedged: cold compiles of the OCR helper by a root `ANECompilerService` take 35 to 122 s under load while shotfleet waits about 60 to 90 s; `usesCPUOnly` and the compute-device APIs do not avoid the compile | Research; proposal in `research/proposed-ocr/` on branch `claude/workarounds-text-recognition`, not applied. Corrects the earlier "needs a reboot" wording (`docs/handoff.md` section 15). 0.1.3 item |
 | `resume-limits-catalan-check.md` | Another session's resume file for the Catalan note | Leftover; the note it describes exists. Not edited here |
+| `reach-roadmap-2026-10-06.md` | Who can't use shotfleet and the cheapest unblock per segment; ranked roadmap (Linux Docker `check` + Action, fastlane `check`, pricing docs, Homebrew, false-problem fixes); `check` Tesseract-only parity measured on 72 real screenshots | Plan only; owner decisions in its section 5 |
 
 ## Earlier notes (history; statuses are in each file)
 
