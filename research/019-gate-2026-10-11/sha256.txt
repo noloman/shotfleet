@@ -1,0 +1,3 @@
+2061fab2030488bce7fbee27619918fea615ea63e80964655ad626697fcafb7b  shotfleet-0.1.9-macos-arm64.pkg
+f9544f32dea13273c0e01dc231af11b62518b8089625beefee379af944ccbbbd  shotfleet-0.1.9-macos-arm64.tar.gz
+30d56bc96bae6ced056d72dbdb186d4da8462d5c5c21285aeac3ba7ab3822b24  shotfleet-0.1.9-macos-arm64.zip

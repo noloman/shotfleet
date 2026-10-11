@@ -1,0 +1,15 @@
+== shotfleet-0.1.9-macos-arm64.tar.gz ==
+  ok    shotfleet-0.1.9-macos-arm64.tar.gz matches the manifest (10811351 bytes, sha256 f9544f32dea13273c0e01dc231af11b62518b8089625beefee379af944ccbbbd)
+  ok    all 3 Mach-O files pass codesign --verify --strict
+  ok    all 3 Mach-O files carry team id 2357A78TMR
+  ok    codesign --verify --deep --strict shotfleet
+  ok    shotfleet has the hardened runtime flag
+  ok    signed with a Developer ID Application certificate
+  ok    build needs macOS 13.0 or newer (maximum allowed: macOS 13)
+  ok    a quarantined copy runs: 'shotfleet 0.1.9'
+== shotfleet-0.1.9-macos-arm64.pkg ==
+  ok    shotfleet-0.1.9-macos-arm64.pkg matches the manifest (10829369 bytes, sha256 2061fab2030488bce7fbee27619918fea615ea63e80964655ad626697fcafb7b)
+  ok    pkg signed by Developer ID Installer (2357A78TMR)
+  ok    spctl -t install: accepted, Notarized Developer ID
+  ok    stapler validate: ticket stapled
+PASS: 12 checks, 0 failed

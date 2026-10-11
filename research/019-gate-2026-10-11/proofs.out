@@ -1,0 +1,215 @@
+##### F 0.1.9 change: check, run, init on a fake React Native build with no strings (frozen 0.1.9 vs frozen 0.1.8)
+################ OLD: shotfleet 0.1.8
+=== check --app rn.apk
+exit 2
+hint: React Native keeps its translations inside compiled code, which shotfleet cannot read from the build. Add this to shotfleet.toml (point it at your translation files): strings = "src/locales/*/translation.json"
+shotfleet: rn.apk contains no translations shotfleet can read. This is a React Native build: pass --strings 'src/locales/*/translation.json' (your translation files)
+=== check --app RN.app
+exit 2
+hint: React Native keeps its translations inside compiled code, which shotfleet cannot read from the build. Add this to shotfleet.toml (point it at your translation files): strings = "src/locales/*/translation.json"
+hint: this React Native build has no JavaScript bundle, so it is a Debug build that loads its code from the Metro dev server: screenshots show the red box or fail offline. Build Release (--configuration Release on iOS, --variant release on Android)
+shotfleet: RN.app contains no translations shotfleet can read. This is a React Native build: pass --strings 'src/locales/*/translation.json' (your translation files)
+=== run, ios config with RN.app and no strings
+exit 2
+note: `export` and every language in `run` need a licence: shotfleet activate <key> (buy one at https://shotfleet.com/#price; checkout is on Gumroad). `check` is free, and `run` captures up to 2 languages without one.
+shotfleet: Maestro isn't installed. Run shotfleet doctor --fix, or install it with: curl -Ls https://get.maestro.mobile.dev | bash
+=== init on RN.app
+exit 0
+com.x: 0 languages ()
+note: Maestro is not installed yet, and `run` needs it: shotfleet doctor --fix fetches it (and Java) first
+next: edit flow.yaml, then try one language (boots simulators, takes a few minutes):
+  shotfleet run shotfleet.toml --locales en
+flow.yaml
+shotfleet.toml
+################ NEW: shotfleet 0.1.9
+=== check --app rn.apk
+exit 2
+hint: React Native keeps its translations inside compiled code, which shotfleet cannot read from the build. Add this to shotfleet.toml (point it at your translation files): strings = "src/locales/*/translation.json"
+shotfleet: rn.apk contains no translations shotfleet can read. This is a React Native build: pass --strings 'src/locales/*/translation.json' (your translation files)
+=== check --app RN.app
+exit 2
+hint: React Native keeps its translations inside compiled code, which shotfleet cannot read from the build. Add this to shotfleet.toml (point it at your translation files): strings = "src/locales/*/translation.json"
+hint: this React Native build has no JavaScript bundle, so it is a Debug build that loads its code from the Metro dev server: screenshots show the red box or fail offline. Build Release (--configuration Release on iOS, --variant release on Android)
+shotfleet: RN.app contains no translations shotfleet can read. This is a React Native build: pass --strings 'src/locales/*/translation.json' (your translation files)
+=== run, ios config with RN.app and no strings
+exit 2
+note: `export` and every language in `run` need a licence: shotfleet activate <key> (buy one at https://shotfleet.com/#price; checkout is on Gumroad). `check` is free, and `run` captures up to 2 languages without one.
+shotfleet: Maestro isn't installed. Run shotfleet doctor --fix, or install it with: curl -Ls https://get.maestro.mobile.dev | bash
+=== init on RN.app
+exit 2
+hint: this React Native build has no JavaScript bundle, so it is a Debug build that loads its code from the Metro dev server: screenshots show the red box or fail offline. Build Release (--configuration Release on iOS, --variant release on Android)
+shotfleet: RN.app is a React Native build, whose translations shotfleet can't read from the build: set strings = 'src/locales/*/translation.json' (your translation files) in shotfleet.toml before `shotfleet run`
+wrote shotfleet.toml
+wrote flow.yaml
+flow.yaml
+shotfleet.toml
+3:# strings = "src/locales/*/translation.json"   # React Native keeps its translations in compiled code: point this at your translation files (run needs it)
+PROOF F FINISHED
+##### B quarantine/spctl/stapler/codesign
+shotfleet 0.1.9
+quarantined --version seconds: 0
+--- spctl pkg
+/Users/manu/Developer/shotfleet-rc-build/0.1.9/shotfleet-0.1.9-macos-arm64.pkg: accepted
+source=Notarized Developer ID
+origin=Developer ID Installer: Manuel Lorenzo Parejo (2357A78TMR)
+--- stapler
+The validate action worked!
+--- pkg signature
+Package "shotfleet-0.1.9-macos-arm64.pkg":
+   Status: signed by a developer certificate issued by Apple for distribution
+   Notarization: trusted by the Apple notary service
+   Signed with a trusted timestamp on: 2026-10-11 11:36:55 +0000
+   Certificate Chain:
+    1. Developer ID Installer: Manuel Lorenzo Parejo (2357A78TMR)
+       Expires: 2031-09-17 00:00:00 +0000
+       SHA256 Fingerprint:
+--- codesign verify (unpacked tarball)
+/Users/manu/Developer/shotfleet-rc-build/0.1.9/unpacked/shotfleet/shotfleet: valid on disk
+/Users/manu/Developer/shotfleet-rc-build/0.1.9/unpacked/shotfleet/shotfleet: satisfies its Designated Requirement
+CodeDirectory v=20500 size=5557 flags=0x10000(runtime) hashes=163+7 location=embedded
+Authority=Developer ID Application: Manuel Lorenzo Parejo (2357A78TMR)
+Authority=Developer ID Certification Authority
+Timestamp=11 Oct 2026 at 13:36:21
+TeamIdentifier=2357A78TMR
+##### minos
+--- 0.1.9
+   2 file(s)  arm64          needs macOS 11.0
+   1 file(s)  arm64          needs macOS 13.0
+this build needs macOS 13.0 or newer (not a promise that it works there: only a run on that macOS shows that)
+exit 0
+--- 0.1.8
+   2 file(s)  arm64          needs macOS 11.0
+   1 file(s)  arm64          needs macOS 13.0
+this build needs macOS 13.0 or newer (not a promise that it works there: only a run on that macOS shows that)
+exit 0
+--- per file minos, name: 0.1.9 | 0.1.8
+0.1.9 files:
+./_internal/libpython3.14.dylib 1 11.0
+./_internal/ocr 1 13.0
+./shotfleet 1 11.0
+0.1.8 files:
+./_internal/libpython3.14.dylib 1 11.0
+./_internal/ocr 1 13.0
+./shotfleet 1 11.0
+--- diff of the two lists (empty = identical files and minos)
+IDENTICAL
+--- vs the list stored by the 0.1.8 builder
+SAME-AS-STORED
+##### C clean env, TLS with made-up key
+--- env -i --version
+shotfleet 0.1.9
+exit 0
+--- 0.1.9 baked release date: --version stderr must NOT warn about a missing release date
+stderr bytes        0
+0
+(release date lives in the PyInstaller archive; see the stderr check)
+--- activate wrong format (local refusal)
+shotfleet: that doesn't look like a shotfleet key (four groups of 8 letters and digits, like ABCDEF12-34567890-ABCDEF12-34567890). Your key is in the Gumroad receipt email: https://shotfleet.com/#price
+exit 2
+--- activate made-up key in real format (must reach Gumroad and be refused)
+shotfleet: that key didn't activate: That license does not exist for the provided product. Your key is in the Gumroad receipt email: https://shotfleet.com/#price
+exit 2
+--- licence file written? (must be absent)
+ls: /Users/manu/Developer/shotfleet-rc-build/0.1.9/home-c/Library/Application Support/shotfleet: No such file or directory
+--- doctor env -i
+MISSING maestro              (both)  -> shotfleet doctor --fix  (or: curl -Ls https://get.maestro.mobile.dev | bash; shotfleet needs Maestro 2.x)
+ok   java 17+             (both)
+ok   swiftc (OCR checks)  (both)
+ok   xcrun simctl         (iOS)
+MISSING adb                  (Android)  -> sdkmanager platform-tools (command below)
+MISSING emulator             (Android)  -> sdkmanager emulator (command below)
+MISSING avdmanager           (Android)  -> sdkmanager command-line tools (command below)
+MISSING aapt2                (Android)  -> sdkmanager build-tools (command below)
+MISSING system image (API 33+) (Android)  -> sdkmanager a system image of API 33 or newer for arm64-v8a (command below)
+ok   iOS Simulator runtime iOS 26.4 (iOS)
+note: `run` will be using iOS 26.4: iOS 27.0 is installed, but its simulators freeze at boot (seen in our own device test runs); set runtime = "com.apple.CoreSimulator.SimRuntime.iOS-27-0" in [ios] to use iOS 27.0 anyway
+Android SDK: /Users/manu/Developer/shotfleet-rc-build/0.1.9/home-c/Library/Android/sdk  (nothing found there; set ANDROID_HOME if it lives elsewhere)
+doctor done in 62 s
+##### E install.sh in throwaway HOME
+19,24c19
+< for DIR in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin"; do
+<   if [ -n "$PICK" ]; then DIR=$PICK; mkdir -p "$DIR"; break; fi
+<   case "$DIR" in "$HOME"/*) ;; *) [ "$HOME" = "$REAL_HOME" ] || continue ;; esac
+<   if [ -d "$DIR" ] && [ -w "$DIR" ]; then break; fi
+<   [ "$DIR" = "$HOME/.local/bin" ] && mkdir -p "$DIR"
+< done
+---
+> DIR="$HOME/.local/bin"; mkdir -p "$DIR"
+=== good checksum
+installed shotfleet 0.1.9 to /Users/manu/Developer/shotfleet-rc-build/0.1.9/g7/home-ok/.local/bin
+add it to your PATH: echo 'export PATH="/Users/manu/Developer/shotfleet-rc-build/0.1.9/g7/home-ok/.local/bin:$PATH"' >> ~/.zshrc, then open a new Terminal window (until you do, "shotfleet" is not found)
+next: shotfleet doctor (add --fix to fetch Maestro and Java), then shotfleet init in your app's folder. Your key: shotfleet activate <key> (check is free without one)
+install exit 0
+--- link --version
+shotfleet 0.1.9
+--- quarantine xattr count on installed binary (0 = none)
+0
+=== wrong checksum
+download is corrupt (checksum mismatch); try again
+install exit 1
+--- anything installed under home-bad?
+/Users/manu/Developer/shotfleet-rc-build/0.1.9/g7/home-bad
+/Users/manu/Developer/shotfleet-rc-build/0.1.9/proofs.sh: line 6: 92991 Terminated: 15          python3 -m http.server 18751 --bind 127.0.0.1 --directory "$W/good" > "$W/server-good.log" 2>&1
+/Users/manu/Developer/shotfleet-rc-build/0.1.9/proofs.sh: line 6: 92992 Terminated: 15          python3 -m http.server 18752 --bind 127.0.0.1 --directory "$W/bad" > "$W/server-bad.log" 2>&1
+##### D OCR check on 72 real screenshots (frozen apk, frozen noapp, source apk)
+=== frozen-apk: /Users/manu/Developer/shotfleet-rc-build/0.1.9/unpacked/shotfleet/shotfleet
+exit 0 in 327 s
+  pt     ok (4)
+  ru     ok (4)
+  sv     ok (4)
+  tr     ok (4)
+  zh-CN  ok (4)
+report: /Users/manu/Developer/shotfleet-rc-build/0.1.9/home-d-frozen-apk/rep/index.html
+UNVERIFIED 0
+not-verified lines in log: 0
+=== frozen-noapp: /Users/manu/Developer/shotfleet-rc-build/0.1.9/unpacked/shotfleet/shotfleet
+exit 2 in 1 s
+shotfleet: the app this run used is gone (/Users/manu/Developer/CrossfitTracker/.claude/worktrees/onboarding-goals-scroll/androidApp/build/outputs/apk/debug/androidApp-debug.apk); pass the build with --app
+UNVERIFIED ? (no check.json)
+not-verified lines in log: 0
+=== source-apk: /opt/homebrew/bin/python3 /Users/manu/Developer/shotfleet-rc-build/0.1.9/src/shotfleet.py
+exit 127 in 0 s
+env: /opt/homebrew/bin/python3: No such file or directory
+UNVERIFIED ? (no check.json)
+not-verified lines in log: 0
+##### N1 screengrab folder copy (subscrifi fastlane/metadata/android), no --app
+=== sg-frozen: /Users/manu/Developer/shotfleet-rc-build/0.1.9/unpacked/shotfleet/shotfleet
+exit 1 in 21 s
+  en-US  ok (6)
+  es-ES  ok (6)
+  fr-FR  ok (6)
+  it-IT  ok (6)
+  ja-JP  ok (6)
+  ko-KR  ok (6)
+  pt-BR  ok (6)
+report: /Users/manu/Developer/shotfleet-rc-build/0.1.9/home-n-sg-frozen/rep/index.html
+UNVERIFIED 0
+not-verified lines in log: 0
+N1-frozen missing-with-timestamp lines: 0
+=== sg-source: /opt/homebrew/bin/python3 /Users/manu/Developer/shotfleet-rc-build/0.1.9/src/shotfleet.py
+exit 127 in 0 s
+env: /opt/homebrew/bin/python3: No such file or directory
+UNVERIFIED ? (no check.json)
+not-verified lines in log: 0
+N1-source missing-with-timestamp lines: 0
+##### N2 plain Android-size folder (72 x 1080x1920, language folders only), no --app
+=== plain-frozen: /Users/manu/Developer/shotfleet-rc-build/0.1.9/unpacked/shotfleet/shotfleet
+exit 1 in 30 s
+  nl     ok (4)
+  pl     ok (4)
+  pt     ok (4)
+  ru     ok (4)
+  sv     ok (4)
+  tr     ok (4)
+  zh-CN  ok (4)
+report: /Users/manu/Developer/shotfleet-rc-build/0.1.9/home-n-plain-frozen/rep/index.html
+UNVERIFIED 0
+not-verified lines in log: 0
+N2-frozen App Store size problem lines: 0
+=== plain-source: /opt/homebrew/bin/python3 /Users/manu/Developer/shotfleet-rc-build/0.1.9/src/shotfleet.py
+exit 127 in 0 s
+env: /opt/homebrew/bin/python3: No such file or directory
+UNVERIFIED ? (no check.json)
+not-verified lines in log: 0
+N2-source App Store size problem lines: 0
+##### ALL PROOFS FINISHED

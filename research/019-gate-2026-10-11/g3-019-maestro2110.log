@@ -1,0 +1,121 @@
+14:09:21 Maestro on PATH for the legs: 2.11.0
+14:09:21 STEP leg-android starts: /Users/manu/Developer/shotfleet-rc-build/0.1.9/gate-src/tools/fixture-e2e.sh --platform-only android --keep (step limit 20 min)
+14:09:21 START leg-android: load 39, free memory 47 %, pressure 2, swap [total = 15360.00M  used = 14326.75M  free = 1033.25M  (encrypted)]
+work dir: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.Y1zpjA
+== android: build the fixture app
+PASS android-build exits 0
+PASS android build: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.Y1zpjA/build-android/FleetFixture.apk exists
+     [android: build the fixture app took 2 s]
+== android: shotfleet init
+PASS android-init exits 0
+PASS android init wrote shotfleet.toml and flow.yaml
+     [android: shotfleet init took 0 s]
+== android: shotfleet doctor
+PASS android-doctor exits 0
+PASS doctor says Android: ready
+     [android: shotfleet doctor took 4 s]
+== android: shotfleet run (phone emulators)
+PASS android-run exits 0
+     [android: shotfleet run (phone emulators) took 113 s]
+== android: shotfleet check
+PASS android-check exits 0
+     [android: shotfleet check took 0 s]
+== android: shotfleet export --fastlane
+PASS android-export exits 0
+     [android: shotfleet export --fastlane took 0 s]
+== android: assertions on the output
+PASS a phone set in the output
+PASS phone: 2 screenshots in every language
+PASS phone: every raw PNG exists and is a real image
+PASS phone: no two languages share an identical image
+PASS phone: de/01_welcome.png shows 'Weiter'
+PASS phone: de/02_settings.png shows 'Fertig'
+PASS phone: the report has 0 problems
+PASS phone: run.json has every language captured ok
+PASS phone: every screenshot's text came from the UI hierarchy
+PASS export: de-DE has 2 screenshots (one set per device)
+PASS export: ja-JP has 2 screenshots (one set per device)
+PASS export: ar has 2 screenshots (one set per device)
+PASS export: tr-TR has 2 screenshots (one set per device)
+PASS hook before_run fired (hooks.log)
+PASS hook after_run fired (hooks.log)
+PASS hook before_export fired (hooks.log)
+PASS hook after_export fired (hooks.log)
+     [android: assertions on the output took 0 s]
+== android: planted failures (copies of the output, the real output is untouched)
+copy: phone/raw/ja/01_welcome.png
+PASS android-check-copy exits 1
+delete: phone/raw/tr/02_settings.png
+PASS android-check-delete exits 1
+PASS check named ja for a planted defect (shows de|identical image)
+PASS check named tr for a planted defect (missing)
+     [android: planted failures (copies of the output, the real output is untouched) took 1 s]
+total 2 min 0 s
+PASS: all 30 assertions passed
+work dir kept: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.Y1zpjA
+14:11:21 END leg-android: load 10, free memory 42 %, pressure 2, swap [total = 15360.00M  used = 14468.62M  free = 891.38M  (encrypted)]
+14:11:21 STEP leg-android: exit 0, PASS
+14:11:24 Maestro on PATH for the legs: 2.11.0
+14:11:24 STEP leg-ios starts: /Users/manu/Developer/shotfleet-rc-build/0.1.9/gate-src/tools/fixture-e2e.sh --platform-only ios --keep (step limit 35 min)
+14:11:24 START leg-ios: load 10, free memory 44 %, pressure 2, swap [total = 15360.00M  used = 14468.62M  free = 891.38M  (encrypted)]
+work dir: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.lVev4r
+SKIP android: not requested (pass --android or set SHOTFLEET_E2E_ANDROID=1; the fixture is tools/fixture-app-android)
+== build the fixture app
+PASS build exits 0
+PASS build: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.lVev4r/build/FleetFixture.app has an Info.plist
+     [build the fixture app took 1 s]
+== shotfleet init
+PASS init exits 0
+PASS init wrote shotfleet.toml and flow.yaml
+     [shotfleet init took 0 s]
+== shotfleet doctor
+PASS doctor exits 0
+PASS doctor says iOS: ready
+     [shotfleet doctor took 4 s]
+== shotfleet run (iPhone, then iPad)
+PASS run exits 0
+     [shotfleet run (iPhone, then iPad) took 937 s]
+== shotfleet check
+PASS check exits 0
+     [shotfleet check took 1 s]
+== shotfleet export --fastlane
+PASS export exits 0
+     [shotfleet export --fastlane took 0 s]
+== assertions on the output
+PASS an iPhone and an iPad set in the output
+PASS ipad-pro-13-inch-m5-12gb: 2 screenshots in every language
+PASS ipad-pro-13-inch-m5-12gb: every raw PNG exists and is a real image
+PASS ipad-pro-13-inch-m5-12gb: no two languages share an identical image
+PASS ipad-pro-13-inch-m5-12gb: de/01_welcome.png shows 'Weiter'
+PASS ipad-pro-13-inch-m5-12gb: de/02_settings.png shows 'Fertig'
+PASS ipad-pro-13-inch-m5-12gb: the report has 0 problems
+PASS ipad-pro-13-inch-m5-12gb: run.json has every language captured ok
+PASS iphone-17-pro-max: 2 screenshots in every language
+PASS iphone-17-pro-max: every raw PNG exists and is a real image
+PASS iphone-17-pro-max: no two languages share an identical image
+PASS iphone-17-pro-max: de/01_welcome.png shows 'Weiter'
+PASS iphone-17-pro-max: de/02_settings.png shows 'Fertig'
+PASS iphone-17-pro-max: the report has 0 problems
+PASS iphone-17-pro-max: run.json has every language captured ok
+PASS export: de-DE has 4 screenshots (one set per device)
+PASS export: ja has 4 screenshots (one set per device)
+PASS export: ar-SA has 4 screenshots (one set per device)
+PASS export: tr has 4 screenshots (one set per device)
+PASS hook before_run fired (hooks.log)
+PASS hook after_run fired (hooks.log)
+PASS hook before_export fired (hooks.log)
+PASS hook after_export fired (hooks.log)
+     [assertions on the output took 0 s]
+== planted failures (copies of the output, the real output is untouched)
+copy: ipad-pro-13-inch-m5-12gb/raw/ja/01_welcome.png
+PASS check-copy exits 1
+delete: ipad-pro-13-inch-m5-12gb/raw/tr/02_settings.png
+PASS check-delete exits 1
+PASS check named ja for a planted defect (shows de|identical image)
+PASS check named tr for a planted defect (missing)
+     [planted failures (copies of the output, the real output is untouched) took 1 s]
+total 15 min 45 s (over the 10 minute target)
+PASS: all 36 assertions passed
+work dir kept: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.lVev4r
+14:27:10 END leg-ios: load 416, free memory 54 %, pressure 1, swap [total = 18432.00M  used = 17179.19M  free = 1252.81M  (encrypted)]
+14:27:10 STEP leg-ios: exit 0, PASS

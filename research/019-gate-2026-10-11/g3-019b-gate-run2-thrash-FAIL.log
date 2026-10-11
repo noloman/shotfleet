@@ -1,0 +1,142 @@
+14:28:40 waiter armed (max 12 h), pid 23186; steps: gate
+14:28:40 queue: 1 line(s) ahead of mine : - 2026-10-11 14:30 Remoti on-device-embeddings app benchmark (Remoti local-LLM s
+14:48:41 queue: 0 line(s) ahead of mine , my turn
+14:49:42 start check: ok (1/3)
+14:50:43 start check: not yet: free 39% < 40 (swap 91%, load 25)
+14:51:44 start check: not yet: free 37% < 40; swapouts +47992 pages in 60 s (swap 95%, load 43)
+14:53:47 start check: not yet: load 116 >= 100; free 33% < 40; swapouts +124376 pages in 60 s (swap 98%, load 116)
+14:55:50 start check: not yet: swapouts +63564 pages in 60 s (swap 95%, load 58)
+14:56:51 start check: ok (1/3)
+14:57:52 start check: ok (2/3)
+14:58:53 start check: ok (3/3)
+14:58:53 lock taken; starting
+14:58:53 STEP gate starts: /Users/manu/Developer/shotfleet-rc-build/0.1.9/gate-src/tools/fixture-e2e.sh --android --keep (step limit 55 min)
+14:58:53 START gate: load 13, free memory 49 %, pressure 2, swap [total = 19456.00M  used = 18146.19M  free = 1309.81M  (encrypted)]
+work dir: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC
+== build the fixture app
+PASS build exits 0
+PASS build: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/build/FleetFixture.app has an Info.plist
+     [build the fixture app took 3 s]
+== shotfleet init
+PASS init exits 0
+PASS init wrote shotfleet.toml and flow.yaml
+     [shotfleet init took 0 s]
+== shotfleet doctor
+PASS doctor exits 0
+PASS doctor says iOS: ready
+     [shotfleet doctor took 7 s]
+== shotfleet run (iPhone, then iPad)
+FAIL run exits 0: got 1, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/logs/run.log
+     | simulator D2104217-A27A-4102-BE10-BFAA69A8284F stopped answering (simctl uninstall did not answer within 60 s: simulator D2104217-A27A-4102-BE10-BFAA69A8284F is not responding. Shut it down with `xcrun simctl shutdown D2104217-A27A-4102-BE10-BFAA69A8284F` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | simulator 22461B95-C89A-45A2-ABFA-1038AB41E567 stopped answering (simctl uninstall did not answer within 60 s: simulator 22461B95-C89A-45A2-ABFA-1038AB41E567 is not responding. Shut it down with `xcrun simctl shutdown 22461B95-C89A-45A2-ABFA-1038AB41E567` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | simulator DE28F162-D689-4DDC-9D94-B106AAE66661 stopped answering (simctl uninstall did not answer within 60 s: simulator DE28F162-D689-4DDC-9D94-B106AAE66661 is not responding. Shut it down with `xcrun simctl shutdown DE28F162-D689-4DDC-9D94-B106AAE66661` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | simulator 6FF3E810-2DC2-4E9A-A7A5-F85298630459 stopped answering (simctl uninstall did not answer within 60 s: simulator 6FF3E810-2DC2-4E9A-A7A5-F85298630459 is not responding. Shut it down with `xcrun simctl shutdown 6FF3E810-2DC2-4E9A-A7A5-F85298630459` and run again; if it stays stuck, restart the Mac); carrying on without it
+     | not retrying: no simulator answers any more. Shut down shotfleet's simulators (your other simulators are left alone): `xcrun simctl shutdown D2104217-A27A-4102-BE10-BFAA69A8284F; xcrun simctl shutdown 22461B95-C89A-45A2-ABFA-1038AB41E567; xcrun simctl shutdown DE28F162-D689-4DDC-9D94-B106AAE66661; xcrun simctl shutdown 6FF3E810-2DC2-4E9A-A7A5-F85298630459` and run again; the next run replaces the ones that stopped answering with new ones. This usually means the Mac is short of memory: close other simulators and heavy apps first
+     | FAIL de       0/2 screenshots  no result: Maestro's driver did not start in time (a slow first boot; see maestro log)
+     | FAIL ja       0/2 screenshots  no result: Maestro's driver did not start in time (a slow first boot; see maestro log)
+     | FAIL ar       0/2 screenshots  no result: Maestro's driver did not start in time (a slow first boot; see maestro log)
+     | FAIL tr       0/2 screenshots  no result: Maestro's driver did not start in time (a slow first boot; see maestro log)
+     | captured 0/4 locales in 323s on 4 simulators
+     | no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs
+     | the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types
+     [shotfleet run (iPhone, then iPad) took 1073 s]
+== shotfleet check
+FAIL check exits 0: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/logs/check.log
+     | shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.UYsqrC/proj/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>
+     [shotfleet check took 1 s]
+== shotfleet export --fastlane
+FAIL export exits 0: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/logs/export.log
+     | shotfleet: the app runs on iPad, so the App Store requires 13" iPad screenshots; add "iPad Pro 13-inch (M5)" to device_types and run again
+     | the app runs on iPad, so the App Store requires 13" iPad screenshots: add "iPad Pro 13-inch (M5)" to device_types
+     [shotfleet export --fastlane took 0 s]
+== assertions on the output
+PASS an iPhone and an iPad set in the output
+FAIL ipad-pro-13-inch-m5-12gb: 2 screenshots in every language: wrong or missing in {'de': [], 'ja': [], 'ar': [], 'tr': []}
+FAIL ipad-pro-13-inch-m5-12gb: every raw PNG exists and is a real image: {'de/01_welcome.png': 'missing', 'de/02_settings.png': 'missing', 'ja/01_welcome.png': 'missing', 'ja/02_settings.png': 'missing', 'ar/01_welcome.png': 'missing', 'ar/02_settings.png': 'missing', 'tr/01_welcome.png': 'missing', 'tr/02_settings.png': 'missing'}
+PASS ipad-pro-13-inch-m5-12gb: no two languages share an identical image
+FAIL ipad-pro-13-inch-m5-12gb: de/01_welcome.png shows 'Weiter': text was ''
+FAIL ipad-pro-13-inch-m5-12gb: de/02_settings.png shows 'Fertig': text was ''
+FAIL ipad-pro-13-inch-m5-12gb: the report has 0 problems: ['no readable check.json']
+FAIL ipad-pro-13-inch-m5-12gb: run.json has every language captured ok: not ok: ['de', 'ja', 'ar', 'tr']
+PASS iphone-17-pro-max: 2 screenshots in every language
+PASS iphone-17-pro-max: every raw PNG exists and is a real image
+PASS iphone-17-pro-max: no two languages share an identical image
+PASS iphone-17-pro-max: de/01_welcome.png shows 'Weiter'
+PASS iphone-17-pro-max: de/02_settings.png shows 'Fertig'
+PASS iphone-17-pro-max: the report has 0 problems
+PASS iphone-17-pro-max: run.json has every language captured ok
+FAIL export: de-DE has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+FAIL export: ja has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+FAIL export: ar-SA has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+FAIL export: tr has 4 screenshots (one set per device): missing or empty: ['ipad-pro-13-inch-m5-12gb_01_welcome.png', 'ipad-pro-13-inch-m5-12gb_02_settings.png', 'iphone-17-pro-max_01_welcome.png', 'iphone-17-pro-max_02_settings.png']
+PASS hook before_run fired (hooks.log)
+FAIL hook after_run fired (hooks.log): hooks.log was 'before_run locales=de,ja,ar,tr\nafter_run exit=1 problems=0\nbefore_export\n'
+PASS hook before_export fired (hooks.log)
+FAIL hook after_export fired (hooks.log): hooks.log was 'before_run locales=de,ja,ar,tr\nafter_run exit=1 problems=0\nbefore_export\n'
+     [assertions on the output took 0 s]
+== planted failures (copies of the output, the real output is untouched)
+copy: ipad-pro-13-inch-m5-12gb/raw/ja/01_welcome.png
+FAIL check-copy exits 1: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/logs/check-copy.log
+     | shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.UYsqrC/plant-copy/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>
+delete: ipad-pro-13-inch-m5-12gb/raw/tr/02_settings.png
+FAIL check-delete exits 1: got 2, log /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/logs/check-delete.log
+     | shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.UYsqrC/plant-delete/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>
+FAIL check named ja for a planted defect (shows de|identical image): no line names ja with /shows de|identical image/; got: "shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.UYsqrC/plant-copy/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>\n"
+FAIL check named tr for a planted defect (missing): no line names tr with /missing/; got: "shotfleet: no screenshots found in /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T/shotfleet-e2e.UYsqrC/plant-delete/out/ipad-pro-13-inch-m5-12gb. Expected one of: screenshots/<locale>/*.png (fastlane deliver), metadata/android/<locale>/images/phoneScreenshots/*.png (supply), or <locale>/*.png (.jpg files count too); a flat folder of one language's screenshots needs --locale <code>\n"
+     [planted failures (copies of the output, the real output is untouched) took 0 s]
+== android: build the fixture app
+PASS android-build exits 0
+PASS android build: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC/build-android/FleetFixture.apk exists
+     [android: build the fixture app took 3 s]
+== android: shotfleet init
+PASS android-init exits 0
+PASS android init wrote shotfleet.toml and flow.yaml
+     [android: shotfleet init took 0 s]
+== android: shotfleet doctor
+PASS android-doctor exits 0
+PASS doctor says Android: ready
+     [android: shotfleet doctor took 5 s]
+== android: shotfleet run (phone emulators)
+PASS android-run exits 0
+     [android: shotfleet run (phone emulators) took 87 s]
+== android: shotfleet check
+PASS android-check exits 0
+     [android: shotfleet check took 1 s]
+== android: shotfleet export --fastlane
+PASS android-export exits 0
+     [android: shotfleet export --fastlane took 0 s]
+== android: assertions on the output
+PASS a phone set in the output
+PASS phone: 2 screenshots in every language
+PASS phone: every raw PNG exists and is a real image
+PASS phone: no two languages share an identical image
+PASS phone: de/01_welcome.png shows 'Weiter'
+PASS phone: de/02_settings.png shows 'Fertig'
+PASS phone: the report has 0 problems
+PASS phone: run.json has every language captured ok
+PASS export: de-DE has 2 screenshots (one set per device)
+PASS export: ja-JP has 2 screenshots (one set per device)
+PASS export: ar has 2 screenshots (one set per device)
+PASS export: tr-TR has 2 screenshots (one set per device)
+PASS hook before_run fired (hooks.log)
+PASS hook after_run fired (hooks.log)
+PASS hook before_export fired (hooks.log)
+PASS hook after_export fired (hooks.log)
+     [android: assertions on the output took 71 s]
+== android: planted failures (copies of the output, the real output is untouched)
+copy: phone/raw/ja/01_welcome.png
+PASS android-check-copy exits 1
+delete: phone/raw/tr/02_settings.png
+PASS android-check-delete exits 1
+PASS check named ja for a planted defect (shows de|identical image)
+PASS check named tr for a planted defect (missing)
+     [android: planted failures (copies of the output, the real output is untouched) took 65 s]
+total 21 min 56 s (over the 10 minute target)
+FAIL: 19 of 65 assertions failed
+work dir kept: /var/folders/79/3589ym417djgrvvqhy6bhzsm0000gn/T//shotfleet-e2e.UYsqrC
+15:20:50 END gate: load 21, free memory 66 %, pressure 1, swap [total = 21504.00M  used = 20073.69M  free = 1430.31M  (encrypted)]
+15:20:50 STEP gate: exit 1, FAIL or NO RESULT
+15:20:50 e2e result: FAIL or NO RESULT
+15:20:50 END of job: load 21, free memory 66 %, pressure 1, swap [total = 21504.00M  used = 20073.69M  free = 1430.31M  (encrypted)]
+15:20:50 results: {'gate': 'FAIL (exit 1)'}
+15:20:50 lock released
