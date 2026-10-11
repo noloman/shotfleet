@@ -61,6 +61,12 @@
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
 
+    <h2 id="v0-1-9">0.1.9, 2026-10-11</h2>
+    <ul>
+      <li><code>check</code>, <code>run</code> and <code>init</code> now stop with exit code 2 on a Flutter, React Native, MAUI or Unity build that has no strings, and say what to pass: <code>--strings</code> for <code>check</code>, a <code>strings</code> line in <code>shotfleet.toml</code> for the other two. These builds only hold the libraries’ own text, so <code>check</code> on the APK of a React Native app then reported every language as untranslated and <code>run</code> went on and compared your flow with text that was never yours.</li>
+      <li><code>init</code> still writes the config, with a commented <code>strings</code> line for you to fill in, and no longer lists the libraries’ languages as your app’s. It exits 2 until the line is set, unless it finds translation files in your project.</li>
+    </ul>
+
     <h2 id="v0-1-8">0.1.8, 2026-10-08</h2>
     <ul>
       <li><code>scrollUntilVisible</code> with a plain text (<code>element: &quot;Settings&quot;</code>) is now translated, like the object form. Before, the plain string stayed in English, so the step failed in every other language.</li>

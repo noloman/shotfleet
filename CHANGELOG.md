@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.9 (2026-10-11)
 - **`run` and `init` stop on a framework build without `strings`, as `check` does:** for a Flutter, React Native, MAUI or Unity build with no `strings` in the config, `run` printed the hint and went on with the libraries' own text, so the strings pre-check complained about text that was never yours, or a flow was translated against the wrong strings. Now `run` exits 2 and says to set `strings = '<glob>'` in `shotfleet.toml`, before any simulator or emulator starts. `init` still writes the config (it has the build's path), with a commented `strings` line, but no longer lists the libraries' languages as the app's; it then exits 2 until you fill the line in. A `strings` key in the config, or translation files `init` finds in the project, count as set.
 - **`check` on any framework build asks for `--strings`, every time:** 0.1.8 did it for the Flutter APK only. The APK of a React Native or Expo app (the Obytes template) still printed the `--strings` hint and then reported "ar: the app has no ar translation", exit 1, because the build holds only the libraries' strings. Now every Flutter, React Native, MAUI and Unity build, APK or iOS `.app`, given with `--app`, found through the run's `run.json` or picked up from the current folder, exits 2 with the `--strings` instruction (or, for the one picked up from the folder, checks by language detection and says why) and reports no "no <language> translation" problems.
 

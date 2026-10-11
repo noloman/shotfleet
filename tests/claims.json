@@ -5700,14 +5700,12 @@
  },
  {
   "id": "C376",
-  "claim": "What's new 0.1.8 and the home page's New in 0.1.8: plain-text scrollUntilVisible and zh-Hans on an Android app that ships zh-CN work; run waits for the screen to settle before each screenshot; regex and format-string selectors are warned about by name; a failed language keeps its screenshot and the message names a never-hiding splash screen or a clash on port 7001; check names what to pass on a Flutter build, shows a missing iPad set in a parent folder and can require a screen's own text with key",
+  "claim": "What's new 0.1.8 (the home page's New in block moved on to 0.1.9, see C423): plain-text scrollUntilVisible and zh-Hans on an Android app that ships zh-CN work; run waits for the screen to settle before each screenshot; regex and format-string selectors are warned about by name; a failed language keeps its screenshot and the message names a never-hiding splash screen or a clash on port 7001; check names what to pass on a Flutter build, shows a missing iPad set in a parent folder and can require a screen's own text with key",
   "where": [
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "<code>scrollUntilVisible</code> with a plain text (<code>element: &quot;Settings&quot;</code>) is now translated, like the object form.",
-   "<code>scrollUntilVisible</code> with a plain text is translated now, and <code>zh-Hans</code> on an Android app that ships <code>zh-CN</code> just works."
+   "<code>scrollUntilVisible</code> with a plain text (<code>element: &quot;Settings&quot;</code>) is now translated, like the object form."
   ],
   "status": "partial",
   "proof": "One claim per item: C288 (scrollUntilVisible), C289 and C290 (settle step), C291 (language codes), C292 ([expect] key), C293 (Android OCR note), C294 (Flutter hint), C295 (doctor runtime), C297 (driver not ready), C298 (parent folder), C350 (regex selectors), C351 (port 7001), C352 (splash), C353 (failure screenshot), with tests in tests/test_018_capture_check.py and tests/test_018b_fixes.py. Device, 2026-10-08, Maestro 2.0.10: research/018-device-check-2026-10-08/ covers the scrollUntilVisible translation, the settle step, zh-Hans as zh-CN, the Flutter hint, the parent folder, [expect] key, doctor and the Android note. The regex warning, port 7001, the splash message and the kept failure screenshot were tested with fakes only, and the page says so. Maestro 2.11.0 with 0.1.8: the release gate's two 2.11.0 legs passed (Android 30 of 30, iOS 36 of 36, 2026-10-08), docs/compat.md and research/018-gate-2026-10-08/; they ran the fixture app, so they say nothing about the four fakes-only items.",
@@ -5792,6 +5790,24 @@
   ],
   "status": "proven",
   "proof": "The behaviour is proven by C390 (check), C420 (run) and C421 (init); this entry keeps the sentence in the README and docs.html in step with it.",
+  "layer": "unit",
+  "assertion": "Unit tests with fakes; no device.",
+  "fix": "",
+  "test": "InitNeedsStrings.test_a_framework_build_without_strings_writes_the_config_then_asks"
+ },
+ {
+  "id": "C423",
+  "claim": "What's new 0.1.9 and the home page's New in 0.1.9: check, run and init stop with exit 2 on a Flutter, React Native, MAUI or Unity build that has no strings and say what to pass (--strings for check, a strings line in shotfleet.toml for run and init); init still writes the config with a commented strings line",
+  "where": [
+   "site/public/whats-new.html",
+   "site/public/index.html"
+  ],
+  "where_text": [
+   "now stop with exit code 2 on a Flutter, React Native, MAUI or Unity build that has no strings",
+   "stop with exit 2 on a Flutter, React Native, MAUI or Unity build that has no strings, and say what to pass"
+  ],
+  "status": "proven",
+  "proof": "C390 (check, 1c7b085), C420 (run) and C421 (init), with tests in tests/test_019_run_init.py. The Obytes React Native APK on main exits 2 with the --strings instruction. Unit tests with fakes; the stop happens before any simulator or emulator starts, so there is nothing to run on a device. Gate on the signed build: docs/compat.md and research/019-gate-2026-10-11/.",
   "layer": "unit",
   "assertion": "Unit tests with fakes; no device.",
   "fix": "",
