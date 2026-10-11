@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.shotfleet/shotfleet",
+  "title": "shotfleet",
+  "description": "Capture and check localized App Store and Google Play screenshots from your AI agent.",
+  "repository": {
+    "url": "https://github.com/noloman/shotfleet-skills",
+    "source": "github"
+  },
+  "version": "0.1.9",
+  "websiteUrl": "https://shotfleet.com",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/noloman/shotfleet-skills/releases/download/mcpb-v0.1.9/shotfleet.mcpb",
+      "fileSha256": "cb9fd953572cd7f99b331ad220be329a699cf8082d1bcdcb102b7e04160054ea",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
