@@ -1,0 +1,40 @@
+{
+  "manifest_version": "0.3",
+  "name": "shotfleet",
+  "display_name": "shotfleet",
+  "version": "0.1.8",
+  "description": "Check and capture localized App Store and Google Play screenshots. Needs the shotfleet program installed on your Mac (Apple silicon).",
+  "long_description": "This connects your AI app to shotfleet, a macOS command-line tool that captures your App Store and Google Play screenshots in every language your app ships and checks that each screenshot is really in the right language.\n\nThe bundle contains no shotfleet program. It starts `shotfleet mcp` from your Mac, so install shotfleet first: curl -fsSL https://shotfleet.com/install.sh | sh. It works on macOS with Apple silicon only.\n\nTools: check (check a folder of screenshots, free), doctor (is Maestro, Xcode and the Android SDK ready; changes nothing), run (capture every language from a shotfleet.toml; boots simulators, takes minutes, 2 languages free, more needs a licence).\n\nCommands written in a config do not run over MCP unless a call passes hooks: true. Never put your licence key in an MCP setting: run `shotfleet activate <key>` once in Terminal.",
+  "author": {
+    "name": "Manuel Lorenzo Parejo",
+    "url": "https://shotfleet.com"
+  },
+  "homepage": "https://shotfleet.com",
+  "documentation": "https://shotfleet.com/docs.html",
+  "support": "https://github.com/noloman/shotfleet-skills/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/noloman/shotfleet-skills"
+  },
+  "license": "MIT",
+  "privacy_policies": ["https://shotfleet.com/privacy.html"],
+  "keywords": ["screenshots", "localization", "app-store", "google-play", "fastlane", "maestro"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/shotfleet-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/server/shotfleet-mcp",
+      "args": [],
+      "env": {}
+    }
+  },
+  "tools": [
+    {"name": "check", "description": "Check a folder of localized screenshots: each shows its own language, no copies across languages, none missing, store size and count rules. Writes check.json and index.html to a report folder."},
+    {"name": "doctor", "description": "Say whether Maestro, Xcode and the Android SDK are ready, and what is missing. Changes nothing."},
+    {"name": "run", "description": "Capture screenshots in every language from a shotfleet.toml, then check them. Boots simulators and emulators and takes minutes. Config commands run only with hooks: true."}
+  ],
+  "tools_generated": false,
+  "compatibility": {
+    "platforms": ["darwin"]
+  }
+}
