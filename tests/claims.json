@@ -4397,15 +4397,15 @@
  },
  {
   "id": "C266",
-  "claim": "Docs: Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 and 0.1.8 fixture runs passed on both; 0.1.7 was run on 2.0.10 only)",
+  "claim": "Docs: Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both, and so did the runs for 0.1.8 and 0.1.9; 0.1.7 was run on 2.0.10 only)",
   "where": [
    "site/public/docs.html"
   ],
   "where_text": [
-   "Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 and 0.1.8 fixture runs passed on both; 0.1.7 was run on 2.0.10 only)"
+   "Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both, and so did the runs for 0.1.8 and 0.1.9; 0.1.7 was run on 2.0.10 only)"
   ],
   "status": "evidence",
-  "proof": "research/maestro-2-11-0.1.6-2026-10-07/NOTES.md and logs/: on Maestro 2.11.0 (doctor line 'ok maestro 2.11.0 (tested: 2.0.10, 2.11.0)'), main b8c9305 (0.1.6), iOS 26.4 pinned: Android fixture e2e 30/30 (108 s); iOS fixture e2e 36/36 (518 s, iPhone and iPad, de/ja/ar/tr, 0 problems, 1 simulator at a time because macOS reported elevated memory pressure). A first iOS attempt on the same day passed the iPhone half and lost the iPad half to simulators that stopped answering at 18-21 GB of swap (logs/ios-attempt1-...); the same hang had hit the 0.1.6 gate that morning on 2.0.10. On 2.0.10 the 0.1.6 gate passed 65/65 (36 iOS + 29 Android, 2026-10-07 09:52, shotfleet-rc-build/0.1.6/RESUME.md; the gate log does not print the Maestro version, `maestro` on its PATH was ~/.maestro/bin/maestro = 2.0.10, checked by the coordinator). Limits: fixture app only, not CrossfitTracker or other real apps; timings not comparable (loaded Mac); the guide's manual routes and the home-page timings were NOT re-run on 2.11.0 and stay labelled 2.0.10. 2026-10-08: the 0.1.7 device check and gate (research/017-device-check-2026-10-07/, docs/compat.md 'Maestro 2.0.10, with 0.1.7' row) used Maestro 2.0.10 only; 2.11.0 was not run with 0.1.7. 2026-10-08, 0.1.8 release gate (the signed build from 1fa3ef6, iOS 26.4): fixture e2e on Maestro 2.0.10 PASS 65 of 65 (19:28 to 19:53), then on Maestro 2.11.0 Android 30 of 30 (19:53 to 19:54) and iOS 36 of 36 (19:54 to 20:11); research/018-gate-2026-10-08/g3-018.log and g3-018-maestro2110.log, docs/compat.md row 'Maestro 2.11.0 and 2.0.10, with 0.1.8'. The legs print 'Maestro on PATH for the legs: 2.11.0' (g3-018.log and g3-018-maestro2110.log); the gate step before them prints no Maestro version, and 2.0.10 for it is as the compat row records it (the default ~/.maestro/bin/maestro of that Mac).",
+  "proof": "research/maestro-2-11-0.1.6-2026-10-07/NOTES.md and logs/: on Maestro 2.11.0 (doctor line 'ok maestro 2.11.0 (tested: 2.0.10, 2.11.0)'), main b8c9305 (0.1.6), iOS 26.4 pinned: Android fixture e2e 30/30 (108 s); iOS fixture e2e 36/36 (518 s, iPhone and iPad, de/ja/ar/tr, 0 problems, 1 simulator at a time because macOS reported elevated memory pressure). A first iOS attempt on the same day passed the iPhone half and lost the iPad half to simulators that stopped answering at 18-21 GB of swap (logs/ios-attempt1-...); the same hang had hit the 0.1.6 gate that morning on 2.0.10. On 2.0.10 the 0.1.6 gate passed 65/65 (36 iOS + 29 Android, 2026-10-07 09:52, shotfleet-rc-build/0.1.6/RESUME.md; the gate log does not print the Maestro version, `maestro` on its PATH was ~/.maestro/bin/maestro = 2.0.10, checked by the coordinator). Limits: fixture app only, not CrossfitTracker or other real apps; timings not comparable (loaded Mac); the guide's manual routes and the home-page timings were NOT re-run on 2.11.0 and stay labelled 2.0.10. 2026-10-08: the 0.1.7 device check and gate (research/017-device-check-2026-10-07/, docs/compat.md 'Maestro 2.0.10, with 0.1.7' row) used Maestro 2.0.10 only; 2.11.0 was not run with 0.1.7. 2026-10-08, 0.1.8 release gate (the signed build from 1fa3ef6, iOS 26.4): fixture e2e on Maestro 2.0.10 PASS 65 of 65 (19:28 to 19:53), then on Maestro 2.11.0 Android 30 of 30 (19:53 to 19:54) and iOS 36 of 36 (19:54 to 20:11); research/018-gate-2026-10-08/g3-018.log and g3-018-maestro2110.log, docs/compat.md row 'Maestro 2.11.0 and 2.0.10, with 0.1.8'. The legs print 'Maestro on PATH for the legs: 2.11.0' (g3-018.log and g3-018-maestro2110.log); the gate step before them prints no Maestro version, and 2.0.10 for it is as the compat row records it (the default ~/.maestro/bin/maestro of that Mac). 2026-10-11, 0.1.9: see C450.",
   "layer": "fixture",
   "assertion": "One recorded fixture e2e run per platform on Maestro 2.11.0 (2026-10-07 for 0.1.6, 2026-10-08 for 0.1.8); the 2.0.10 side is the release gate of the same version.",
   "fix": ""
@@ -5808,6 +5808,67 @@
   ],
   "status": "proven",
   "proof": "C390 (check, 1c7b085), C420 (run) and C421 (init), with tests in tests/test_019_run_init.py. The Obytes React Native APK on main exits 2 with the --strings instruction. Unit tests with fakes; the stop happens before any simulator or emulator starts, so there is nothing to run on a device. Gate on the signed build: docs/compat.md and research/019-gate-2026-10-11/.",
+  "layer": "unit",
+  "assertion": "Unit tests with fakes; no device.",
+  "fix": "",
+  "test": "InitNeedsStrings.test_a_framework_build_without_strings_writes_the_config_then_asks"
+ },
+ {
+  "id": "C450",
+  "claim": "Docs Requirements: the 0.1.9 fixture runs passed on both Maestro 2.0.10 and 2.11.0",
+  "where": [
+   "site/public/docs.html"
+  ],
+  "where_text": [
+   "Maestro 2.x (tested with 2.0.10 and 2.11.0; the 0.1.6 fixture run passed on both, and so did the runs for 0.1.8 and 0.1.9; 0.1.7 was run on 2.0.10 only)"
+  ],
+  "status": "evidence",
+  "proof": "research/019-gate-2026-10-11/g3-019c-gate-PASS.log: 'PASS: all 65 assertions passed', 'total 31 min 37 s', e2e result PASS, Maestro 2.0.10 (the default ~/.maestro/bin/maestro of that Mac, as in docs/compat.md), signed build from a444c3a. research/019-gate-2026-10-11/g3-019-maestro2110.log: 'Maestro on PATH for the legs: 2.11.0', Android 'PASS: all 30 assertions passed' (total 2 min 0 s), iOS 'PASS: all 36 assertions passed' (total 15 min 45 s). docs/compat.md rows 'Maestro 2.11.0 and 2.0.10, with 0.1.9'.",
+  "layer": "fixture",
+  "assertion": "Open the logs and compare the numbers.",
+  "fix": ""
+ },
+ {
+  "id": "C451",
+  "claim": "Demo page: the dated 0.1.9 release line (65 of 65 on Maestro 2.0.10 in 31 min 37 s on the third gate run; the first run skipped 16 Android output assertions because of the wrong Python, the second failed on memory thrash, neither counts; Android 30 of 30 and iOS 36 of 36 on Maestro 2.11.0)",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "<b>2026-10-11, release 0.1.9.</b> The signed, notarized build passed 65 of 65 assertions"
+  ],
+  "status": "evidence",
+  "proof": "research/019-gate-2026-10-11/README.md lists the three runs. Run 1 (g3-019-run1-android-assertions-skipped.log): 'PASS: all 49 assertions passed', the 16 Android output assertions did not run, python3 on the job's PATH was 3.9. Run 2 (g3-019b-gate-run2-thrash-FAIL.log): iOS simulators stopped answering, swap 18 to 20 GB, 19 of 65 assertions failed. Run 3 (g3-019c-gate-PASS.log): 'PASS: all 65 assertions passed', 'total 31 min 37 s'. Legs (g3-019-maestro2110.log): Android 30 of 30 in 2 min 0 s, iOS 36 of 36 in 15 min 45 s, Maestro 2.11.0. Signed build from a444c3a.",
+  "layer": "site",
+  "assertion": "Open the records and compare the numbers.",
+  "fix": ""
+ },
+ {
+  "id": "C452",
+  "claim": "Demo page: on the shipped 0.1.9 build, check and init exit 2 on a made-up React Native app with no translation files (init exited 0 on 0.1.8), run stopped at the missing Maestro first so only the unit tests prove its stop; no device used",
+  "where": [
+   "site/public/demo.html"
+  ],
+  "where_text": [
+   "<b>2026-10-11, the new 0.1.9 stop, on the shipped build.</b>"
+  ],
+  "status": "evidence",
+  "proof": "research/019-gate-2026-10-11/proofs.out, proof F: check exit 2 on 0.1.8 and 0.1.9, init exit 0 on 0.1.8 and exit 2 on 0.1.9, run 'Maestro isn't installed' before the strings check. The run stop is proven by C420.",
+  "layer": "site",
+  "assertion": "Open proofs.out and compare the exit codes.",
+  "fix": ""
+ },
+ {
+  "id": "C453",
+  "claim": "llms.txt: since 0.1.9 check, run and init stop with exit 2 on a Flutter, React Native, MAUI or Unity build with no translation files; init still writes the config with the strings line commented out",
+  "where": [
+   "site/public/llms.txt"
+  ],
+  "where_text": [
+   "Since 0.1.9, `check`, `run` and `init` stop with exit 2 on such a build when there are no translation files"
+  ],
+  "status": "proven",
+  "proof": "Same behaviour as C422, C390, C420 and C421; this entry keeps llms.txt in step with it. Unit tests with fakes, not run on a device.",
   "layer": "unit",
   "assertion": "Unit tests with fakes; no device.",
   "fix": "",
