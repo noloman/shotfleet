@@ -1,0 +1,31 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.000
+First I install shotfleet with one line.
+Then I check the Mac.
+
+2
+00:00:02.000 --> 00:00:04.000
+doctor --fix looks for Maestro,
+Java, Xcode and the Android SDK.
+
+3
+00:00:04.000 --> 00:00:05.700
+Sped up 3x here.
+Real time: 5 seconds.
+
+4
+00:00:05.700 --> 00:00:09.500
+If something is missing, it shows me
+the plan and asks once.
+
+5
+00:00:09.500 --> 00:00:13.000
+On my Mac nothing was missing.
+iOS and Android are both ready.
+
+6
+00:00:13.000 --> 00:00:15.900
+It never uses sudo.
+Next step: shotfleet init.

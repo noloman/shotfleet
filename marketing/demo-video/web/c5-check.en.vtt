@@ -1,0 +1,34 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:02.000
+Catching the wrong language.
+
+2
+00:00:02.000 --> 00:00:07.000
+I copy the real output. Then I make
+a mistake on purpose:
+
+3
+00:00:07.000 --> 00:00:11.000
+I put the German welcome screen
+in the Japanese folder.
+
+4
+00:00:11.000 --> 00:00:15.500
+check reads the text: the Japanese
+screen shows German. Caught.
+
+5
+00:00:15.500 --> 00:00:19.500
+It also sees the same picture
+in two languages.
+
+6
+00:00:19.500 --> 00:00:25.700
+My real output passes:
+0 problems.
+
+7
+00:00:25.700 --> 00:00:27.700
+Every screenshot, checked.

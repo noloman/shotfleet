@@ -1,0 +1,11 @@
+{
+ "c1-doctor": ["Run on 2026-10-05 on an Apple silicon Mac (M1 Pro): every doctor line ok, 'iOS: ready   Android: ready'."],
+ "c2-init": ["init found 5 languages (ar, de, en, ja, tr) in the fixture app's iOS build and in its Android APK."],
+ "c3-run-ios": ["2026-10-06: 5 of 5 languages captured on 2 iPhone 17 Pro Max simulators (iOS 26.4) in 253 s, 10 screenshots, 0 problems.", "shotfleet used 2 simulators instead of 4 because the Mac was short on memory; it says so on screen.", "No iPad set in this run, so check prints the App Store's 13-inch iPad requirement."],
+ "c4-run-android": ["2026-10-06: 5 of 5 languages captured on 2 Android phone emulators (1080x1920) in 3 rounds, 94 s, 10 screenshots, 0 problems, one non-blocking Play note."],
+ "c5-check": ["A copy of the Android output with the German welcome screenshot placed in the Japanese folder: 2 problems ('shows de strings', identical image in 2 languages). The real output: 0 problems."],
+ "c6-check-existing": ["Two Japanese screenshots in a plain folder labelled --locale de: check reports both as showing Japanese strings. No simulator used."],
+ "c7-store-rules": ["iPhone-only output of an app that runs on iPad: the 13-inch iPad requirement is reported. One screenshot resized to 1000x2000: 'isn't an App Store screenshot size'."],
+ "c8-export": ["The 10 passing Android screenshots copied into fastlane/metadata/android/<locale>/images/phoneScreenshots/. The iOS set was not exported: export needs the iPad set the App Store requires."],
+ "c9-ci": ["The workflow file is the recipe from site/public/docs.html, shown, not run on GitHub here. check --json on the Android output: exit code 0."]
+}

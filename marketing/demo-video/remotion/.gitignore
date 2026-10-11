@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# made by ../prep.py from the session recordings
+public/rec/
+public/shots/
+public/srt/
+src/manifest.json
+public/fonts/
+public/favicon.svg
