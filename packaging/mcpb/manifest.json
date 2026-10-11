@@ -16,7 +16,7 @@
     "type": "git",
     "url": "https://github.com/noloman/shotfleet-skills"
   },
-  "license": "MIT",
+  "license": "Proprietary, see https://shotfleet.com/terms.html",
   "privacy_policies": ["https://shotfleet.com/privacy.html"],
   "keywords": ["screenshots", "localization", "app-store", "google-play", "fastlane", "maestro"],
   "server": {
