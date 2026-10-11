@@ -26,7 +26,7 @@ Written 2026-10-11 evening, against `origin/main` at `13a1d69`. Each fact here w
 
 ### On branches, not on main
 
-- `claude/site-showcase-obytes-r2` (tip `0906e34`): the obytes template showcase, iPhone and Android, claims C391 to C403. It merged cleanly on 2026-10-08, but it conflicts with today's main in `site/public/docs.html`, `site/public/llms.txt` and `tests/claims.json` (checked 2026-10-11), and its claim ids may collide with newer ones. Rebase it, renumber the claims, run `tools/check-claims.sh`, and only then think about a merge.
+- `claude/site-showcase-obytes-r3` (tip `905791a`, on main 49a30e7): the obytes template showcase, iPhone and Android, claims C460 to C472, merge-ready (full check rc=0). It stays unmerged until the obytes maintainers answer our note (discussion 542 on obytes/react-native-template-obytes, no reply as of 2026-10-11) and Manu has looked at it. Then: fetch main, rebase if main moved (renumber claims if they collide), run the check, merge, redeploy the site. The older `claude/site-showcase-obytes-r2` (tip `0906e34`) is superseded: do not use it.
 - The older `claude/site-showcase-obytes`, `claude/site-showcase-wger` and `claude/site-showcase-kuokka-android` branches are superseded by their `-r2` versions (wger and Kuokka Android are in main that way). Do not merge them.
 
 ### Held, and why
