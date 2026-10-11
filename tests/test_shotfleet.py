@@ -2611,10 +2611,11 @@ class FrameworkHints(unittest.TestCase):
         for build, expect in ((self.flutter(), 'strings = "lib/l10n/*.arb"'), (self.native(), None)):
             sf.HINTED.clear(); err, out = io.StringIO(), io.StringIO()
             with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
-                self.assertEqual(sf.cmd_init(str(build), self.dir / build.stem), 0)
-            if expect: self.assertIn(expect, err.getvalue()); self.assertIn("hint: ", err.getvalue())
-            else: self.assertNotIn("hint:", err.getvalue())
-            self.assertIn("languages", out.getvalue())
+                if expect:  # 0.1.9: no translation files found, so init writes the config and then asks for them (exit 2), listing no languages
+                    with self.assertRaisesRegex(sf.Fail, "set strings = 'lib/l10n/\\*.arb'"): sf.cmd_init(str(build), self.dir / build.stem)
+                else: self.assertEqual(sf.cmd_init(str(build), self.dir / build.stem), 0)
+            if expect: self.assertIn(expect, err.getvalue()); self.assertIn("hint: ", err.getvalue()); self.assertNotIn("languages (", out.getvalue())
+            else: self.assertNotIn("hint:", err.getvalue()); self.assertIn("languages", out.getvalue())
 
     @needs_mac
 

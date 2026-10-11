@@ -872,7 +872,7 @@ def framework_of(build):
     return name, globs, text
 
 def framework_hint(build, strings_set, root="."):
-    """Print (to stderr, once, never blocking) what to add to shotfleet.toml when `build` is Flutter, React Native, MAUI or
+    """Print (to stderr, once) what to add to shotfleet.toml when `build` is Flutter, React Native, MAUI or
     Unity, whose translations are compiled into code shotfleet can't read, and warn about debug builds whose screenshots
     would show a banner or a red box. ponytail: file-name markers only, not confirmed on real builds of every version."""
     name, globs, text = framework_of(build)
@@ -891,17 +891,18 @@ def framework_hint(build, strings_set, root="."):
     for m in msgs:
         if m not in HINTED: HINTED.add(m); print("hint: " + m, file=sys.stderr)
 
-def build_strings(app):
-    """The strings compiled into a native build, for check. A Flutter, React Native, MAUI or Unity build (the ones framework_hint
-    explains) keeps its text in code, so what's readable is the libraries' (every language looks untranslated): ask for --strings instead."""
-    if framework_of(app)[0]: raise Fail(no_translations_message(app))
-    return load_strings_apk(app) if Path(app).suffix == ".apk" else load_strings(Path(app))
+def build_strings(app, base="en", config=False):
+    """The strings compiled into a native build, for check, run and init. A Flutter, React Native, MAUI or Unity build (the ones framework_hint
+    explains) keeps its text in code, so what's readable is the libraries' (every language looks untranslated): ask for the translation files
+    instead (config=True: as `strings` in shotfleet.toml, for run, which has no --strings option)."""
+    if framework_of(app)[0]: raise Fail(no_translations_message(app, config))
+    return load_strings_apk(app, base) if Path(app).suffix == ".apk" else load_strings(Path(app))
 
-def no_translations_message(app):
+def no_translations_message(app, config=False):
     """Why check found no strings in this build, and the exact option to pass instead when it is a framework build (Flutter keeps its text in compiled code)."""
     name, globs, _ = framework_of(app)
     return (f"{Path(app).name} contains no translations shotfleet can read" +
-            (f". This is a {name} build: pass --strings '{globs[0]}' (your translation files)" if name else " (no .lproj strings, String Catalogs or resources)"))
+            (f". This is a {name} build: " + (f"set strings = '{globs[0]}' in shotfleet.toml" if config else f"pass --strings '{globs[0]}'") + " (your translation files)" if name else " (no .lproj strings, String Catalogs or resources)"))
 
 def shipped_locales(strings, base="en", min_coverage=0.5):
     """Locales the app itself is translated into.
@@ -2167,7 +2168,7 @@ def ios_run_inner(cfg, path, only, parallel):
     cfg["app"] = str(path(cfg["app"]))
     framework_hint(cfg["app"], "strings" in cfg, path("."))
     # default: the strings compiled into the app under test, so selectors always match the binary
-    strings = config_strings(cfg, path) or load_strings(Path(cfg["app"]))
+    strings = config_strings(cfg, path) or build_strings(cfg["app"], config=True)  # a Flutter, React Native... build needs `strings`
     flow = None if capture else with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), cfg["bundle_id"])
     base_locale = resolve_base(strings, cfg.get("base_locale", "en"), cfg["app"])
     en = strings[base_locale]
@@ -2890,7 +2891,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         print(f"retrying the languages that failed in the last run: {', '.join(only)}")
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     framework_hint(apk, "strings" in cfg, path("."))
-    strings = config_strings(cfg, path) or load_strings_apk(apk, cfg.get("base_locale", "en"))
+    strings = config_strings(cfg, path) or build_strings(apk, cfg.get("base_locale", "en"), config=True)
     base = strings[cfg.get("base_locale", "en")]
     note_partly_translated(strings, cfg.get("base_locale", "en"), only or cfg.get("locales") or None)
     asked, notes = match_locales(only or cfg.get("locales") or [], strings)
@@ -4844,6 +4845,14 @@ def keep_note(config, dest, builds, text):
     return (f", which points at {', '.join(sorted(named)) or 'no build'}, not at {', '.join(sorted(new - named))}. "
             f"Edit it, or delete it and run init again. To add the new build, put this in it:\n{text}")
 
+def strings_ask(app, source_strings, kept_section, needs_strings):
+    """For init: the commented `strings` line to put in a section whose build is a Flutter, React Native, MAUI or Unity one with no translation
+    files found (and none in the config that is already there); remembers the build in needs_strings. "" for every other build."""
+    name, globs, _ = framework_of(app)
+    if not name or source_strings or (isinstance(kept_section, dict) and "strings" in kept_section): return ""
+    needs_strings.append((app, name, globs[0]))
+    return f'\n# strings = "{globs[0]}"   # {name} keeps its translations in compiled code: point this at your translation files (run needs it)'
+
 def cmd_init(builds, dest="."):
     """Write shotfleet.toml + flow.yaml for one or more builds: a simulator .app (iOS) and/or an .apk (Android).
     No builds given: use the newest Debug ones found in the current folder (find_builds)."""
@@ -4853,6 +4862,9 @@ def cmd_init(builds, dest="."):
     builds = [unpack_build(b, dest / ".shotfleet/builds") if str(b).lower().endswith(ARCHIVES) else b for b in builds]
     sections, found, source_strings = [], [], None
     strings_line = ""
+    try: kept = tomllib.loads((dest / "shotfleet.toml").read_text())  # a config that is already there and names `strings` is all `run` needs
+    except (OSError, tomllib.TOMLDecodeError): kept = {}
+    needs_strings = []  # (build, framework name, glob): Flutter, React Native... builds whose translations are not in the build and not found in the project
     if project and project.strings:  # these frameworks keep translations in source files, not in the build
         rel = project.strings if dest.resolve() == Path.cwd().resolve() else os.path.join(os.path.relpath(Path.cwd(), dest), project.strings)
         try: source_strings = load_strings_files([str(Path.cwd() / project.strings)])
@@ -4874,17 +4886,19 @@ def cmd_init(builds, dest="."):
             m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(app)]).stdout)
             if not m: raise Fail(f"{app.name} doesn't look like a valid APK (aapt2 couldn't read its package name)")
             outside_note(app, config_path(app, dest))
-            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
+            ask = strings_ask(app, source_strings, kept.get("android"), needs_strings)
+            sections.append(f'[android]\napk = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}{ask}\n'
                             '# devices = ["phone", "tablet"]   # Android sets from one flow\n# locales = ["de", "ja"]   # default: every language the app ships')
-            found.append((m.group(1), shipped_locales(source_strings or load_strings_apk(app))))
+            if source_strings or not framework_of(app)[0]: found.append((m.group(1), shipped_locales(source_strings or build_strings(app))))
         elif app.suffix == ".app":
             if not (app / "Info.plist").is_file(): raise Fail(f"no simulator app at {app}")
             if device_build(app): raise Fail(device_build_message(app))
             outside_note(app, config_path(app, dest))
-            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}\n'
+            ask = strings_ask(app, source_strings, kept.get("ios"), needs_strings)
+            sections.append(f'[ios]\napp = {json.dumps(config_path(app, dest), ensure_ascii=False)}{strings_line}{ask}\n'
                             '# device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # iPhone and iPad sets from one flow\n'
                             '# locales = ["de", "ja"]   # default: every language the app ships')
-            found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(source_strings or load_strings(app))))
+            if source_strings or not framework_of(app)[0]: found.append((plist_value(app / "Info.plist", "CFBundleIdentifier"), shipped_locales(source_strings or build_strings(app))))
         else:
             raise Fail(build_hint(app))
     for build in builds: framework_hint(Path(build).expanduser().resolve(), bool(strings_line), dest)
@@ -4902,6 +4916,9 @@ def cmd_init(builds, dest="."):
             print(f"keeping existing {dest / name}" + (keep_note(dest / name, dest, builds, text) if name.endswith(".toml") else "")); continue
         (dest / name).write_text(text); print(f"wrote {dest / name}")
     for app_id, locales in found: print(f"{app_id}: {len(locales)} languages ({', '.join(locales)})")
+    if needs_strings:  # the files are written (they hold the app's path), but `run` would stop here too, so say so now
+        raise Fail("; ".join(f"{Path(b).name} is a {n} build, whose translations shotfleet can't read from the build: "
+                             f"set strings = '{g}' (your translation files) in {dest / 'shotfleet.toml'} before `shotfleet run`" for b, n, g in needs_strings))
     devices = {(True, False): "simulators", (False, True): "emulators"}.get((".app" in suffixes, ".apk" in suffixes), "simulators and emulators")
     if not maestro_cmd(): print("note: Maestro is not installed yet, and `run` needs it: shotfleet doctor --fix fetches it (and Java) first")
     print(f"next: edit {dest / 'flow.yaml'}, then try one language (boots {devices}, takes a few minutes):\n"

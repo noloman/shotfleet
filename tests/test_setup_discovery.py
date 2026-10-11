@@ -215,7 +215,7 @@ class CheckFindsBuilds(Tree):
         apk = touch(self.proj / "androidApp/build/outputs/apk/debug/androidApp-debug.apk", time.time() - 3600)
         with mock.patch.object(sf, "load_strings_apk", return_value={"en": {"a": "Home"}, "de": {"a": "Start"}}) as read:
             got, _, _, line = sf.check_build(self.shots("fastlane/metadata/android/de-DE/images/phoneScreenshots"), self.proj)
-        self.assertEqual(got, apk); read.assert_called_once_with(apk)
+        self.assertEqual(got, apk); read.assert_called_once_with(apk, "en")
         self.assertIn(f"using {apk} for strings", line)
 
     def test_nothing_found_says_so_in_one_line_and_runs_no_build_tool(self):
