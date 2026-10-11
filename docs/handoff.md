@@ -6,7 +6,69 @@ changes, into `tests/claims.json` and the README in the same commit. The rule of
 
 **Each open item that a local agent can do now has its own prompt in [docs/agent-tasks/](agent-tasks/README.md)** (start a session on your Mac and say: read the file and do it).
 
-**This file stops on 2026-10-06.** It was not kept up after that. For anything newer read [CHANGELOG.md](../CHANGELOG.md) (newest release first), the state of the repo itself, and the engineering guide in [docs/engineering/](engineering/README.md). Line numbers and branch names below are history.
+**The first section below, "State as of 2026-10-11", is the current one.** Everything after it is history: sections 1 to 17 stop on 2026-10-06, and line numbers and branch names in them are history. For the exact content of a release read [CHANGELOG.md](../CHANGELOG.md) (newest release first) and the engineering guide in [docs/engineering/](engineering/README.md).
+
+---
+
+## State as of 2026-10-11
+
+Written 2026-10-11 evening, against `origin/main` at `13a1d69`. Each fact here was checked against the repo, `CHANGELOG.md` and the coordinator log (`/Users/manu/Developer/shotfleet-rc-build/coordinator-state.md`, which is outside the repo and has the full timeline). If this section and the live site disagree, the site and the code win; `/download/VERSION` says what is live.
+
+### What is live
+
+- **shotfleet 0.1.9, live since 2026-10-11 17:48** (published by `packaging/publish.sh`; rollback id `c123f923`). Built from release commit `a444c3a`. Tarball sha256 `f9544f32dea13273c0e01dc231af11b62518b8089625beefee379af944ccbbbd`, installer package `2061fab2030488bce7fbee27619918fea615ea63e80964655ad626697fcafb7b`. The main change: `run` and `init` now stop with exit 2 on a Flutter, React Native, MAUI or Unity build without `strings`, and `check` asks for `--strings` on every such build instead of reporting false "no translation" problems. The full list is the top entry of `CHANGELOG.md`.
+- **Earlier releases that week:** 0.1.7 went live on 2026-10-08 at 13:09 and 0.1.8 on 2026-10-08 at 20:17 (rollback id `cf2ddc33`). Older ones are in the sections below.
+- **Gate for 0.1.9:** the full fixture run on the signed build passed all 65 assertions on its third attempt, and the Maestro 2.11.0 legs passed (Android 30 of 30, iOS 36 of 36). The first two attempts are kept on purpose: the first skipped 16 Android assertions because `python3` on the job's PATH was 3.9, the second failed from memory thrash. See `research/019-gate-2026-10-11/README.md`. After the publish, `claude /login` was done on this Mac and the `claude -p` half of the MCP client test passed (72 screenshots, 18 languages, 0 problems).
+- **Homebrew tap** (`noloman/tap`, commit `8d9ee54`) and the **public skills repo** (`noloman/shotfleet-skills`, commit `5bb01fd`) are on 0.1.9. The weekend watchdog (`/Users/manu/Developer/shotfleet-rc-build/weekend-watch/watch.sh`) expects 0.1.9.
+- **Site:** redeployed from main on 2026-10-11 at 17:57 after the post-release review; nothing under `site/public` has changed on main since. Showcases live: WOD Tracker, AnywhereRoles, Kuokka (iPhone and Android) and wger. The wger page went up after the maintainer answered the courtesy note (wger-project/flutter discussion 1389).
+- **Press:** Android Weekly issue 748 features the Maestro guide (checked 2026-10-11).
+- **Gumroad refunds and disabled keys, checked live.** Gumroad support said a full refund disables the key (verify answers 404 "This license key has been disabled"), a partial refund leaves it valid, and a chargeback does not disable it; there is no refund test mode. On 2026-10-09 a test sale's key was disabled and re-enabled from the Gumroad sales page and shotfleet answered correctly both times (refused with the refund-style message, then accepted with the use count unchanged). `shotfleet.py` matches this and needed no change. Still unproven: a refund of a real paid sale, which needs a buyer other than Manu. The live test is only in the coordinator log; the background is in `docs/refund-runbook.md` and `research/refund-process-2026-10-05.md`.
+
+### On branches, not on main
+
+- `claude/site-showcase-obytes-r2` (tip `0906e34`): the obytes template showcase, iPhone and Android, claims C391 to C403. It merged cleanly on 2026-10-08, but it conflicts with today's main in `site/public/docs.html`, `site/public/llms.txt` and `tests/claims.json` (checked 2026-10-11), and its claim ids may collide with newer ones. Rebase it, renumber the claims, run `tools/check-claims.sh`, and only then think about a merge.
+- The older `claude/site-showcase-obytes`, `claude/site-showcase-wger` and `claude/site-showcase-kuokka-android` branches are superseded by their `-r2` versions (wger and Kuokka Android are in main that way). Do not merge them.
+
+### Held, and why
+
+- **The obytes showcase waits for the obytes maintainers.** The courtesy note is discussion 542 on `obytes/react-native-template-obytes`. It had no reply on 2026-10-11. wger answered "go ahead" and went live; obytes stays off the site until someone there answers or Manu says otherwise. Merging it also means a site redeploy.
+- **Nothing outward without Manu.** Posts, emails, account settings, store or directory submissions, releases and deploys all need his word first. His "do it all, no questions" covers internal work only.
+
+### How to release (the 0.1.9 folder is the current pattern)
+
+Copy `/Users/manu/Developer/shotfleet-rc-build/0.1.9/` and adapt it; the 0.1.8 folder next to it is the same pattern one release earlier. Read `RESUME.md` there first, then `progress.log`.
+
+1. Release commit on main: `VERSION` in `shotfleet.py`, `packaging/mcpb/manifest.json`, the `CHANGELOG.md` heading, the "Last checked" line and `dateModified` in `site/public/docs.html`, the what's-new entry and the home page "New in" line, the compat row in `docs/compat.md`, and a claims row. Run `tools/check-claims.sh` first.
+2. Build, sign and notarize into that release folder (`build.py`, `build-run.sh`; `build-when-unlocked.sh` if the screen may lock, because the notary profile is in a keychain that locks with the screen). `tools/verify-release.sh` on the built files.
+3. Non-device proofs (`proofs.sh`, `proof-f.sh`, `run-proofs.sh`) and the MCP client test (`mcp-client-test.sh`, which exits with `claude -p`'s own exit code).
+4. Device gate: `waiter.py` (the `waiter-c.py` copy is the third and passing run) behind the device queue. Needs `PASS: all 65 assertions` in the log, plus the Maestro 2.11.0 legs. Never skip the 2.11.0 legs.
+5. Gate record on main (`research/019-gate-2026-10-11/` is the model), then `publish-019.sh`: first a look-only run (`PUBLISH_LOOK_ONLY=1`), then the real one only on Manu's go. It wraps `packaging/publish.sh` (dry run, real publish, automatic rollback, independent live check). Its drift guard refuses to publish if anything that goes into the signed files changed after the built commit.
+6. After the publish: bump Homebrew (`tools/bump-homebrew.sh`) and the skills repo (`tools/sync-public-skills.sh`), change `EXPECT_VERSION` in the weekend watchdog, redeploy the site if the review found fixes.
+
+Lessons that cost time, in the order they bit:
+
+- **Run `tools/check-claims.sh` under Python 3.11 or newer.** The default `python3` on this Mac is Xcode's 3.9. Use `PATH=/opt/homebrew/opt/python@3.14/libexec/bin:$PATH sh tools/check-claims.sh > out.log 2>&1; echo $? > rc.txt`, and push only when `rc.txt` says 0. Never pipe it, because a pipe hides the exit code. The same goes for the gate waiter's PATH: on 0.1.9 the 3.9 `python3` made 16 Android assertions silently count as nothing.
+- **Never use swap percentage as a device gate.** Swap stays full long after a Mac calms down. The start rule that worked: lock free, load under 100, free memory at least 40 percent, memory pressure level 2 or lower, and fewer than 2000 pages swapped out in 60 seconds, checked three times 60 seconds apart. "Not actively swapping" is the test, not "swap is empty".
+- **Device queue rules 5 to 7** live in the header of `/tmp/shotfleet-device-queue.md`, not in the repo: append only at the bottom (5); edit the file only with `sh /Users/manu/Developer/shotfleet-rc-build/queue-edit.sh append "<line>"` or `... done "<line prefix>" "<DONE line>"`, never with `>`, `>>` or an `open(..., 'w')` rewrite (6, after a plain write emptied the queue on 2026-10-08); and a free lock is not a free turn, so wait while any line above yours is not DONE, which keeps the right of way for 10 minutes after the lock is freed (7). `/tmp` does not survive a reboot; the backups are in `/Users/manu/Developer/shotfleet-rc-build/coordination-backup-1211/`. The shorter older protocol is `docs/device-queue.md`.
+- **Absolute paths and fail-closed deletes.** Never `rm` after a `cd` that might have failed. Check that the parent exists, name the target by its absolute path, and let the command stop if either check fails. Prove who owns a process or folder before killing or deleting it; this Mac is shared.
+- **A gate failure from thrash is rerun once on a calm Mac, with a new log name.** The same failure twice on a calm Mac means stop and report. Keep every log.
+
+### What to check after each release
+
+A site review of everything public against the version that shipped: `README.md`, `site/public/*.html`, `llms.txt`, the guides, the claims register. The 0.1.9 review (merged as `62a182f`, deployed 17:57) is the model; Then the live checks: `/download/VERSION`, both sha256 values against the manifest, `tools/verify-release.sh` on the downloaded files, `tools/golive/smoke.sh`, and a live install into a temporary HOME that prints the new version. Read the claims that quote a version or a date; a claim that is true only for the previous release is the usual leak.
+
+### Open items
+
+- **MCP bundle submissions need Manu.** The bundle is built and tested (`packaging/mcpb/`, `shotfleet.mcpb` in `/Users/manu/Developer/shotfleet-rc-build/mcpb-bundle/`, licence field "Proprietary, see terms"). Submitting it to the Anthropic directory, to Smithery and to the official MCP registry is outward work, and the registry also wants a public release URL and hash, so hosting the file counts as publishing. Not started, and nobody should start it without his yes.
+- **15 Oct, 10:30: the MCP-directory task** (scheduled task `shotfleet-promo-oct15`). It submits to the free MCP directories and republishes the two guides on DEV.to and Hashnode; Manu approved that on 2026-10-07. It is separate from the bundle submissions above. A launch-readiness check (`shotfleet-go-no-go`) runs the same day at 10:00 and only reads. The launch itself is planned for the week of 19 Oct, with a launch-day task on 20 Oct that asks Manu before any post.
+- **4 Dec: the day-60 sales rule** (scheduled task `shotfleet-day-60-sales-check`). Count the sales since launch and apply the rule from the marketing plan (`research/marketing-plan-2026-10-06.md`): 50 or more keep investing, 15 to 49 narrow to what sold, under 15 stop building and keep it as a free tool. The same task looks at the localization triggers.
+- **Watch, read-only:** obytes discussion 542 (no reply), the JetBrains thread 738 (no reply), and the daily mention watch.
+- **Done, so nobody redoes it:** `claude /login` on this Mac, for the `claude -p` half of the MCP client test.
+- **Still Manu's from earlier:** KvK and tax, a real paid sale by a second person to prove a refunded key is refused, and the other owner items in `STATUS.md` "What is left to do".
+
+---
+
+## History: the 2026-10-03 list
 
 Order: 1 and 2 first (they unblock the Maestro and Linux claims), then 3 and 5, then the rest.
 

@@ -4,7 +4,7 @@ This is the entry point for engineers who will change shotfleet's code. It expla
 how to change it without breaking it. It describes the code, not the marketing. Where a doc disagrees with the code, the doc is wrong and the
 mismatch is listed in [appendix: doc/code mismatches](architecture/13-mismatches.md).
 
-**Snapshot.** Written against `origin/main` at `285e099` (0.1.6). The code has moved on (0.1.7 added several features), and the line numbers that this guide used to quote are gone: they drifted by up to about 560 lines. Function and constant names are the handle; grep for the name, or use the generated [function map](engineering/12-function-map.md) for line numbers. Where this guide and the code disagree, the code wins. Known gaps that are not fixed are listed as gaps, not as work in flight. The newer, more complete guide is [docs/engineering/](engineering/README.md).
+**Snapshot.** Written against `origin/main` at `285e099` (0.1.6). The code has moved on: the live version is 0.1.9 (2026-10-11), and 0.1.7 to 0.1.9 added features this guide does not describe (see `CHANGELOG.md`). Also, the line numbers that this guide used to quote are gone: they drifted by up to about 560 lines. Function and constant names are the handle; grep for the name, or use the generated [function map](engineering/12-function-map.md) for line numbers. Where this guide and the code disagree, the code wins. Known gaps that are not fixed are listed as gaps, not as work in flight. The newer, more complete guide is [docs/engineering/](engineering/README.md).
 
 ## Contents
 
