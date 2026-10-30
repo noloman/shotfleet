@@ -1114,6 +1114,10 @@ def print_result(lp, r, expected):
           + (" (retried)" if r.get("retried") or r.get("attempts", 1) > 1 else "")
           + ("" if r["ok"] else f"  {r.get('error') or ''}"[:160]))
 
+def expected_for(report, lp, expected):
+    """How many screenshots language `lp` should take: all of the flow's, less those of blocks left out for it (apply_when_defined)."""
+    return expected - len(report["locales"].get(lp, {}).get("skipped_screenshots", ()))
+
 def count_screenshots(flow):
     return len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
 
@@ -1208,6 +1212,40 @@ def apple_locale(lproj):
     """The AppleLocale that goes with an app language: number and date formats follow the store locale (de -> de_DE, zh-Hans -> zh_CN)."""
     store = store_code(lproj, APP_STORE) or lproj
     return {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
+
+WHEN_DEFINED_RE = re.compile(r"^\s*when:\s*\{\s*defined:\s*([A-Za-z_]\w*)\s*\}\s*(#.*)?$")
+
+def input_defined(inputs, name, lp, base):
+    """True when the [inputs] value `name` is meant for language `lp`. If some [inputs.<locale>] table defines `name`, a language has it
+    only through its own table (exact, else the language part) or, for the base language, through the [inputs] default. If no table
+    defines it, the default is for every language."""
+    inputs = inputs or {}
+    if not any(isinstance(v, dict) and name in v for v in inputs.values()): return isinstance(inputs.get(name), str)
+    if any(isinstance(inputs.get(k), dict) and name in inputs[k] for k in (lp.split("-")[0], lp)): return True
+    return isinstance(inputs.get(name), str) and lp.split("-")[0] == base.split("-")[0]
+
+def apply_when_defined(flow, inputs, lp, base):
+    """Resolve `- runFlow: { when: { defined: <input> }, commands: [...] }` blocks for one language (Maestro has no such condition):
+    the block runs, without the `when`, where the input is defined for the language (input_defined), and is left out where it is not.
+    Returns (flow, screenshot names the left-out blocks would have taken)."""
+    lines, out, skipped, i = flow.splitlines(), [], [], 0
+    while i < len(lines):
+        line = lines[i]; i += 1
+        m = re.match(r"^(\s*)- runFlow:\s*$", line)
+        if not m: out.append(line); continue
+        ind = len(m.group(1))
+        block = []
+        while i < len(lines) and (not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > ind): block.append(lines[i]); i += 1
+        hit = next((k for k, l in enumerate(block) if WHEN_DEFINED_RE.match(l)), None)
+        width = 1
+        if hit is None:  # the two-line form: `when:` then `defined: name` under it
+            hit = next((k for k in range(len(block) - 1) if re.match(r"^\s*when:\s*$", block[k]) and re.match(r"^\s*defined:\s*[A-Za-z_]\w*\s*(#.*)?$", block[k + 1])), None)
+            width = 2
+        if hit is None: out.append(line); out += block; continue
+        name = (WHEN_DEFINED_RE.match(block[hit]) or re.search(r"defined:\s*([A-Za-z_]\w*)", block[hit + 1])).group(1)
+        if input_defined(inputs, name, lp, base): out.append(line); out += block[:hit] + block[hit + width:]
+        else: skipped += [(m2.group(1) if (m2 := SHOT_NAME_RE.match(l)) else "?") for l in block if re.match(r"^\s*- takeScreenshot:", l)]
+    return "\n".join(out) + "\n", skipped
 
 WAIT_EXPECTED_RE = re.compile(r"^(\s*)- waitForExpected:?\s*(\d+|\{\s*timeout:\s*(\d+)\s*\})?\s*(#.*)?$")
 SHOT_NAME_RE = re.compile(r"^\s*- takeScreenshot:\s*[\"']?([^\"'\s#]+)[\"']?\s*(#.*)?$")
@@ -2260,13 +2298,15 @@ def ios_run_inner(cfg, path, only, parallel):
             shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
             report["locales"][lp] = {"untranslated_selectors": []}; continue
         only = []
-        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
+        lp_flow, skipped = apply_when_defined(flow, cfg.get("_inputs"), lp, base_locale)
+        if skipped: print(f"note {lp}: input not defined for this language, so {len(skipped)} screenshot(s) are not taken: {', '.join(skipped)}")
+        text, missing, clash = translate_flow(lp_flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
         text, notes = expand_wait_expected(text, cfg.get("_expect"), [lp])
-        for n in notes: print(f"warning {lp}: {n}")
+        for msg in notes: print(f"warning {lp}: {msg}")
         inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp), cfg.get("settle_ms", SETTLE_MS)))
-        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
+        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only, **({"skipped_screenshots": skipped} if skipped else {})}
     print_untranslated(report)
 
     if not report["locales"]:
@@ -2325,12 +2365,13 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in lps:
             shots = len(list((out / "raw" / lp).glob("*.png")))
             # Maestro skips its report when a shard crashes; the screenshots on disk are the ground truth then
-            r_ = res.get(lp) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro{attempt}.log")}
-            if r_["ok"] and shots != expected:
-                r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {expected} screenshots"}
+            want = expected_for(report, lp, expected)
+            r_ = res.get(lp) or {"ok": shots == want, "error": None if shots == want else no_result(out / f"maestro{attempt}.log")}
+            if r_["ok"] and shots != want:
+                r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {want} screenshots"}
             if r_["ok"] and (note := blank_note(out / "raw" / lp)):
                 r_ = {**r_, "ok": False, "error": note}
-            out_[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "attempts": attempt}
+            out_[lp] = {**r_, "ok": r_["ok"] and shots == want, "screenshots": shots, "attempts": attempt}
         return out_
 
     def capture_step(sim, lp, work):
@@ -2405,7 +2446,7 @@ def ios_run_inner(cfg, path, only, parallel):
         expected = len(capture_names(out, report["locales"]))
     results = []
     for lp, r_ in final.items():
-        print_result(lp, r_, expected)
+        print_result(lp, r_, expected_for(report, lp, expected))
         if capture: results.append({"lproj": lp, **r_}); continue  # [capture] runs keep xcodebuild's log instead of Maestro's
         debugs = [(out / ".work" / "debug" / f"attempt{a}", lp) for a in range(r_.get("attempts", 1), 0, -1)]
         kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else debugs)
@@ -2985,9 +3026,11 @@ def android_run_inner(cfg, path, out, only, parallel):
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
         only = []
-        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
+        lp_flow, skipped = apply_when_defined(flow, cfg.get("_inputs"), lp, cfg.get("base_locale", "en"))
+        if skipped: print(f"note {lp}: input not defined for this language, so {len(skipped)} screenshot(s) are not taken: {', '.join(skipped)}")
+        _, missing, clash = translate_flow(lp_flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
-        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
+        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only, **({"skipped_screenshots": skipped} if skipped else {})}
         shutil.rmtree(inside(out, "raw", lp), ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])
@@ -3009,15 +3052,22 @@ def android_run_inner(cfg, path, out, only, parallel):
         def round_(lps, tag):
             """One locale per emulator. Maestro shards the identical flows across devices in an order we
             don't control; its log says which flow ran where, and each device's language is known."""
+            base_lp = cfg.get("base_locale", "en")
+            groups = {}  # languages that skip different blocks can't share a flow: one sub-round per kind
+            for lp in lps: groups.setdefault(apply_when_defined(flow, cfg.get("_inputs"), lp, base_lp)[0], []).append(lp)
+            if len(groups) > 1:
+                merged = {}
+                for k, group in enumerate(groups.values()): merged.update(round_(group, f"{tag}w{k + 1}"))
+                return merged
             lang = {}
             for e, lp in zip(pool, lps):
                 e.adb("shell", "pm", "clear", pkg)  # fresh onboarding; also resets the app language, so set it after
                 e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
                 for c in demo_mode(parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None): e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
-            text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
+            text, _, _ = translate_flow(apply_when_defined(flow, cfg.get("_inputs"), lps[0], base_lp)[0], base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             text, notes = expand_wait_expected(text, cfg.get("_expect"), lps)
-            for n in notes: print(f"warning {','.join(lps)}: {n}")
+            for msg in notes: print(f"warning {','.join(lps)}: {msg}")
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             staging = out / ".work" / "tmp" / tag; staging.mkdir(parents=True)  # the flows' screenshot names are relative to this
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
@@ -3046,10 +3096,11 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shutil.rmtree(dst, ignore_errors=True)
                 collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
-                r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro_{tag}.log")}
-                if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                splash = not (r_["ok"] and shots == expected) and app_splash_showing(next(e for e in pool if e.serial == dev), pkg)  # while the emulator still shows it
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname), "_splash": splash,
+                want = expected_for(report, lp, expected)
+                r_ = res.get(fname) or {"ok": shots == want, "error": None if shots == want else no_result(out / f"maestro_{tag}.log")}
+                if r_["ok"] and shots == want and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
+                splash = not (r_["ok"] and shots == want) and app_splash_showing(next(e for e in pool if e.serial == dev), pkg)  # while the emulator still shows it
+                results[lp] = {**r_, "ok": r_["ok"] and shots == want, "screenshots": shots, "device": dev, "_maestro": (dbg, fname), "_splash": splash,
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
@@ -3086,7 +3137,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         r_ = final[lp]; where = r_.pop("_maestro", None); before = r_.pop("_before", None); splash = r_.pop("_splash", False)
         kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else [where, before])
         if kept: r_["failure_screenshot"] = kept.relative_to(out).as_posix()
-        print_result(lp, r_, expected)
+        print_result(lp, r_, expected_for(report, lp, expected))
         if not r_["ok"] and (where or before): print_failure(*(where or before), flow, "android", splash, kept)
         report["locales"][lp].update(r_)
     if not all(r_["ok"] for r_ in final.values()): print(port_clash_note(out, [r_.get("error") for r_ in final.values() if not r_["ok"]]), end="")

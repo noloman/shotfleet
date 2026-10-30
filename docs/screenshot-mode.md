@@ -88,6 +88,25 @@ and give the elements a `Modifier.testTag("view_week")`. Then `- tapOn: { id: "v
 
 It does not change what your backend returns, set the date on iOS, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
 
+## Steps for only some languages
+
+If an input has a value in only some languages (Quickspan's quick add parses 12 of its 23), wrap the steps in a `runFlow` with `when: { defined: <input> }`:
+
+```yaml
+appId: com.example.myapp
+---
+- launchApp:
+    arguments:
+      SCREENSHOT_MODE: "1"
+- runFlow:
+    when: { defined: phrase }
+    commands:
+      - inputText: ${phrase}
+      - takeScreenshot: 02_chips
+```
+
+shotfleet resolves this per language (Maestro itself has no such condition): the block runs, without the `when`, where `phrase` is defined for the language, and is left out where it is not. "Defined" means an `[inputs.<locale>]` table has it (`pt` covers pt-BR), or, for the base language, the `[inputs]` default has it. If no `[inputs.<locale>]` table has the name at all, the default counts for every language. Write `when:` as shown, with `defined` as its only key. A language that leaves a block out is expected to take fewer screenshots: `run` prints which ones, `run.json` lists them as `skipped_screenshots`, and the run does not fail for them. What `check` and the coverage tables make of the gap is not tested. Not run on a device yet.
+
 ## Waiting for a screen that fills in late
 
 A parser, a list from a server or a chip that appears seconds after typing is not there when the screenshot is taken, and the text it shows differs per language ("1:00 PM", "13:00"). Put `- waitForExpected` before the `takeScreenshot: <name>`: in each language it waits for the `any` and `all` texts of `[expect.<name>]`, which you list anyway for the content check (README, "Expected content"). `waitForExpected: 30000` or `{ timeout: 30000 }` sets the limit (default 30000 ms). Texts must be literal; `not` and `key` are not waited for. Not run on a device yet.
