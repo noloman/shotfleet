@@ -61,6 +61,19 @@
     <h1>What’s new</h1>
     <p class="lede">What changed for you in each release, newest first.</p>
 
+    <h2 id="v0-1-10">0.1.10, 2026-10-30</h2>
+    <ul>
+      <li>Your own Android screenshot sizes: an entry of <code>[android] devices</code> can be a table with a <code>size</code>, a <code>density</code> and an <code>orientation</code> (<code>landscape</code> starts the emulator wider than tall), exported to the Play folder of the <code>base</code> device it names. A changed size creates a new emulator.</li>
+      <li>For apps whose demo data is built around &ldquo;today&rdquo;: <code>[android] clock = &quot;2026-10-27 10:00&quot;</code> sets the emulator&rsquo;s date and the status bar time, and <code>[android] root = true</code> runs <code>adb root</code> before your <code>shell</code> commands. <code>[ios] clock</code> sets the status bar time. Both need an emulator image that allows root; on a Play Store image the run stops and says so.</li>
+      <li>A new flow step, <code>- waitForExpected</code>, waits in every language for the texts of the next screenshot&rsquo;s <code>[expect]</code> table, for screens that fill in late with text that differs per language.</li>
+      <li><code>runFlow</code> takes <code>when: { defined: &lt;input&gt; }</code>, so a block of steps runs only in the languages that have a value for that input and is left out, and counted as skipped, in the others.</li>
+      <li><code>run</code> warns, once per run, when a text selector such as <code>Week</code> is the text of several unrelated strings, and suggests an <code>id:</code> or <code>index:</code> selector. A failing <code>[android] shell</code> command says when root is the reason.</li>
+      <li><code>init</code> and <code>run</code> say when your APK is a Jetpack Compose app and none of its screens exposed a resource id, and name the fix (<code>testTagsAsResourceId</code>). New devices <code>fold</code>, <code>fold-book</code> and <code>fold-tabletop</code> capture a foldable emulator in its unfolded, book and tabletop postures.</li>
+      <li><code>- dismissIfVisible: [&quot;Not now&quot;, &quot;Skip&quot;]</code> taps those texts while they are on screen and does nothing otherwise. <code>init</code> falls back to a non-debug Gradle variant (benchmarkRelease, staging, release) when there is no debug APK. The docs show how to skip onboarding, set a different app state per screenshot and screenshot the notification shade.</li>
+      <li>Fewer dead ends on a first run: a flow Maestro refuses to read is named instead of &ldquo;flow never ran&rdquo;, an empty <code>launchApp</code> is written the way Maestro accepts, a failed language still gets a failure screenshot, <code>run --devices phone,tablet</code> narrows the devices without editing the config, and a relative <code>apk</code> or flow path is looked for next to the config file.</li>
+      <li>These were tested with fakes and unit tests; they were not run on a device for this release.</li>
+    </ul>
+
     <h2 id="v0-1-9">0.1.9, 2026-10-11</h2>
     <ul>
       <li><code>check</code>, <code>run</code> and <code>init</code> now stop with exit code 2 on a Flutter, React Native, MAUI or Unity build that has no strings, and say what to pass: <code>--strings</code> for <code>check</code>, a <code>strings</code> line in <code>shotfleet.toml</code> for the other two. These builds only hold the libraries’ own text, so <code>check</code> on the APK of a React Native app then reported every language as untranslated and <code>run</code> went on and compared your flow with text that was never yours.</li>
