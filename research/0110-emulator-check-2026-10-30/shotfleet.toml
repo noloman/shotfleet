@@ -1,0 +1,15 @@
+[android]
+apk = "build/FleetFixture.apk"
+devices = ["phone", {name = "phone-landscape", base = "phone", size = "1920x1080", density = 320, orientation = "landscape"}]
+locales = ["en", "de"]
+clock = "2026-10-27 10:00"
+root = true
+parallel = 1
+
+[inputs.de]
+phrase = "hallo"
+
+[expect.01_welcome]
+any = ["Next"]
+[expect.01_welcome.de]
+any = ["Weiter"]
