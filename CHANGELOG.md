@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- **First-run screens, app state per screenshot, other build variants (#94, #88, #87):** `- dismissIfVisible: ["Not now", "Skip"]` in a flow taps those texts while they are on screen (up to 4 times each) and does nothing otherwise, translated per language; the docs show the Android intent-extra form of `launchApp: arguments:` for skipping onboarding and for a different app state in one flow (`stopApp`, then `launchApp` with other arguments). `init` falls back to non-debug Gradle variants (benchmarkRelease, staging, release) when there is no debug APK, and names the variant; `run` notes when the APK is not debuggable. Fakes only, not run on a device.
 - **Fixes from Quickspan's first real Android run (#92, #93, #95, #96):**
   - An Android flow whose `launchApp:` held only `clearState: true` no longer ends up as an empty `- launchApp:` that Maestro rejects; it is written as `- launchApp` (#95).
   - A flow Maestro refuses to read ("Incorrect Command Format") is named in the language's error ("Maestro rejected the flow: launchApp is written wrongly ...") instead of "flow never ran", and is not retried (#92).

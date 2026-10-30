@@ -88,6 +88,42 @@ and give the elements a `Modifier.testTag("view_week")`. Then `- tapOn: { id: "v
 
 It does not change what your backend returns, set the date on iOS, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
 
+## First-run screens, and different app state for one screenshot
+
+`run` starts every language from cleared app data, so an app that shows onboarding cards, a rating prompt or a "what's new" sheet on first start shows them in every screenshot. Two ways to deal with them, best first:
+
+1. **Skip them from the app.** A debug or benchmark build can read a launch argument and mark onboarding as done. On Android a Maestro `arguments:` entry arrives as an **intent extra** (on iOS as a launch argument), so the same `launchApp` works for both:
+
+```yaml
+appId: com.example.myapp
+---
+- launchApp:
+    arguments:
+      SCREENSHOT_MODE: "1"          # the app reads this extra and skips onboarding
+- takeScreenshot: 01_home
+```
+
+2. **Dismiss what shows, if it shows.** `- dismissIfVisible: ["Not now", "Looks right", "Skip"]` taps each of those texts while it is on screen (at most 4 times each) and does nothing when it is not, so the flow does not break when the app adds a card. The texts are translated per language like any selector. It is written out as a Maestro `repeat` with a `while: visible:` condition. Not run on a device yet.
+
+**Different state for one screenshot (a Pro and a free look in one flow).** `[android] shell` commands run once, at boot, so they cannot switch state between sections. Relaunch the app with other arguments instead; on Android, `launchApp` with `arguments:` passes them as intent extras again, and `stopApp` first makes sure the app starts fresh:
+
+```yaml
+appId: com.example.myapp
+---
+- launchApp:
+    arguments:
+      SCREENSHOT_MODE: "1"
+- takeScreenshot: 01_free
+- stopApp
+- launchApp:
+    arguments:
+      SCREENSHOT_MODE: "1"
+      SCREENSHOT_PRO: "1"           # the app reads this extra and shows the Pro look
+- takeScreenshot: 02_pro
+```
+
+shotfleet keeps the language it set for the app across those relaunches (it only drops `clearState` on Android). Not run on a device yet; whether your app picks the extras up on a relaunch is for you to check.
+
 ## Steps for only some languages
 
 If an input has a value in only some languages (Quickspan's quick add parses 12 of its 23), wrap the steps in a `runFlow` with `when: { defined: <input> }`:
