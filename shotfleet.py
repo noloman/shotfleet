@@ -1209,6 +1209,32 @@ def apple_locale(lproj):
     store = store_code(lproj, APP_STORE) or lproj
     return {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
 
+WAIT_EXPECTED_RE = re.compile(r"^(\s*)- waitForExpected:?\s*(\d+|\{\s*timeout:\s*(\d+)\s*\})?\s*(#.*)?$")
+SHOT_NAME_RE = re.compile(r"^\s*- takeScreenshot:\s*[\"']?([^\"'\s#]+)[\"']?\s*(#.*)?$")
+
+def expand_wait_expected(flow, expect, lps):
+    """Turn `- waitForExpected` (or `waitForExpected: 30000`, or `{ timeout: 30000 }`) into extendedWaitUntil steps that wait for the
+    texts the next `takeScreenshot: <name>` expects: the `any` and `all` lists of [expect.<name>] for these languages, so a screen
+    that fills in late (a parser's chips, a list from a server) is waited for in every language without typing the text twice.
+    Returns (flow, notes); a step with nothing to wait for, or no screenshot after it, is dropped with a note."""
+    lines, out, notes = flow.splitlines(), [], []
+    for i, line in enumerate(lines):
+        m = WAIT_EXPECTED_RE.match(line)
+        if not m: out.append(line); continue
+        timeout = int(m.group(3) or m.group(2) or 30000)
+        shot = next((sm.group(1) for l in lines[i + 1:] if (sm := SHOT_NAME_RE.match(l))), None)
+        if shot is None: notes.append("waitForExpected has no takeScreenshot after it, so it was dropped"); continue
+        table = (expect or {}).get(shot)
+        rules = [content_rules(table, shot, lp)[0] for lp in lps] if isinstance(table, dict) else []
+        anys = sorted({t for r in rules for t in r.get("any", [])}); alls = sorted({t for r in rules for t in r.get("all", [])})
+        if not anys and not alls:
+            notes.append(f"waitForExpected before {shot}: [expect.{shot}] has no any/all texts for {', '.join(lps)}, so it was dropped"); continue
+        pad = m.group(1)
+        for texts in ([anys] if anys else []) + [[t] for t in alls]:
+            pattern = ".*(" + "|".join(map(regex_literal, texts)) + ").*" if len(texts) > 1 else ".*" + regex_literal(texts[0]) + ".*"
+            out += [f"{pad}- extendedWaitUntil:", f"{pad}    visible: {yaml_single_quote(pattern)}", f"{pad}    timeout: {timeout}"]
+    return "\n".join(out) + "\n", sorted(set(notes))
+
 def localize_flow(flow, lproj, shots_dir, env=None, settle_ms=0):
     """Make a translated flow self-contained for one locale.
 
@@ -2237,6 +2263,8 @@ def ios_run_inner(cfg, path, only, parallel):
         text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
         for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
+        text, notes = expand_wait_expected(text, cfg.get("_expect"), [lp])
+        for n in notes: print(f"warning {lp}: {n}")
         inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp), cfg.get("settle_ms", SETTLE_MS)))
         report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
     print_untranslated(report)
@@ -2988,6 +3016,8 @@ def android_run_inner(cfg, path, out, only, parallel):
                 for c in demo_mode(parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None): e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
             text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
+            text, notes = expand_wait_expected(text, cfg.get("_expect"), lps)
+            for n in notes: print(f"warning {','.join(lps)}: {n}")
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             staging = out / ".work" / "tmp" / tag; staging.mkdir(parents=True)  # the flows' screenshot names are relative to this
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)

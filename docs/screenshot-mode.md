@@ -88,6 +88,10 @@ and give the elements a `Modifier.testTag("view_week")`. Then `- tapOn: { id: "v
 
 It does not change what your backend returns, set the date on iOS, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
 
+## Waiting for a screen that fills in late
+
+A parser, a list from a server or a chip that appears seconds after typing is not there when the screenshot is taken, and the text it shows differs per language ("1:00 PM", "13:00"). Put `- waitForExpected` before the `takeScreenshot: <name>`: in each language it waits for the `any` and `all` texts of `[expect.<name>]`, which you list anyway for the content check (README, "Expected content"). `waitForExpected: 30000` or `{ timeout: 30000 }` sets the limit (default 30000 ms). Texts must be literal; `not` and `key` are not waited for. Not run on a device yet.
+
 ## Checking that the content is really there
 
 `shotfleet check` compares each screenshot's text with your app's strings, and an `[expect.<screenshot>]` table in `shotfleet.toml` lists texts that must (`any`, `all`) or must not (`not`) be on a screen, per language. `run` checks them automatically; `shotfleet check <out> --content shotfleet.toml` checks screenshots you already have. See the README, "Expected content". It proves the texts you list are present, not that the data looks right.
