@@ -56,11 +56,13 @@ Keys valid in `[ios]` and `[android]`:
 | `apk` (required) | none | debug APK, API 33+ emulators |
 | `package` | read from the APK | refused if it differs |
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots`; `"tablet-7"` adds a 7" tablet, 1080x1920 at 280 dpi, exported to `sevenInchScreenshots` |
+| `devices` (foldables) | none | `"fold"` (unfolded), `"fold-book"` (half open, like a book) and `"fold-tabletop"` (half open, like a laptop, rotated) run on one foldable emulator (a Pixel Fold profile when the SDK has one), one language at a time, and export to `tenInchScreenshots`. The inner display is captured through the emulator console because `adb screencap` is black there; not yet verified on a device |
 | `devices` (tables) | none | entries of `devices` may also be tables `{name = "tablet-landscape", base = "tablet", size = "2560x1440", density = 320, orientation = "landscape"}`: your own size, exported to the Play folder of `base` (phone, tablet or tablet-7; default phone); `orientation = "landscape"` makes the emulator wider than tall. Only `name` is required |
 | `shell` | none | list of commands run as `adb -s <serial> shell <command>` once per emulator right after boot (after demo mode), e.g. `["setprop debug.myapp.demo 1"]`; not run on a real emulator yet |
 | `root` | false | runs `adb root` after boot and before `shell`; refused with the reason on Play Store images. `clock` implies it |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the docs) |
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the docs) |
+| `avd_fold` | `shotfleet_android_fold` | name of the foldable emulator when `devices` includes `"fold"`, `"fold-book"` or `"fold-tabletop"` (same note) |
 | `avd_tablet-7` | `shotfleet_android_tablet7` | name of the 7" tablet emulator when `devices` includes `"tablet-7"` (same note) |
 | `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
 

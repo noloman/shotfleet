@@ -59,7 +59,7 @@ def inside(root, *parts):
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int, "capacity": str, "settle_ms": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list, "clock": str},
-        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list, "root": bool, "clock": str}}
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list, "root": bool, "clock": str, "avd_fold": str}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not", "key")  # key = the app's own string key; its text, in the screenshot's language, must be on screen
@@ -188,7 +188,7 @@ def check_section(cfg, platform, name):
     check_locales(cfg.get("locales", []) + ([cfg["base_locale"]] if "base_locale" in cfg else []), f"[{platform}] in {name}")
     if "package" in cfg and not re.fullmatch(r"[A-Za-z0-9_.]+", cfg["package"]):  # it goes into `adb shell` commands: no shell characters
         raise Fail(f"[{platform}] package in {name} should be an Android application id like com.example.app, not {cfg['package']!r}")
-    for key in ("avd", "avd_tablet", "avd_tablet-7"):  # a folder name under ~/.android/avd and an emulator argument
+    for key in ("avd", "avd_tablet", "avd_tablet-7", "avd_fold"):  # a folder name under ~/.android/avd and an emulator argument
         if key in cfg and (not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]*", cfg[key]) or ".." in cfg[key]):
             raise Fail(f"[{platform}] {key} in {name} should be an emulator name (letters, digits, . _ -), not {cfg[key]!r}")
     if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
@@ -2872,6 +2872,12 @@ ANDROID_DEVICES = {
     "tablet-7": {"avd": "shotfleet_android_tablet7", "profile": "7in WSVGA (Tablet)", "size": (1080, 1920, 280),
                  "folder": "sevenInchScreenshots"},
 }
+# Foldables: one Pixel Fold-style emulator (its inner display is the screenshot), three postures. `avd_fold = "Pixel_10_Pro_Fold"` in [android]
+# reuses an emulator you already have. The postures are `adb emu posture <n>` values of that emulator (1 to 3); unfolded is how it boots.
+# Play has no foldable slot: the shots go to the 10-inch folder. "size" is the emulator's own (not rewritten).
+for _name, _fold in (("fold", {}), ("fold-book", {"posture": 3}), ("fold-tabletop", {"posture": 2, "rotate": 1})):
+    ANDROID_DEVICES[_name] = {"avd": "shotfleet_android_fold", "avd_key": "avd_fold", "profile": "pixel_fold", "size": None,
+                              "folder": "tenInchScreenshots", "fold": _fold}
 BUILTIN_ANDROID_DEVICES = tuple(ANDROID_DEVICES)
 CUSTOM_DEVICE_KEYS = ("name", "base", "size", "density", "orientation")
 
@@ -2894,7 +2900,8 @@ def custom_android_devices(devices, where):
         if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name): raise Fail(f"{where}: a device needs a name (letters, digits, . _ -), not {name!r}")
         if name in BUILTIN_ANDROID_DEVICES: raise Fail(f"{where}: the device name {name!r} is built in; choose another name for your own size")
         base = d.get("base", "phone")
-        if base not in BUILTIN_ANDROID_DEVICES: raise Fail(f"{where}: base of {name!r} should be one of {', '.join(BUILTIN_ANDROID_DEVICES)}, not {base!r}")
+        if base not in BUILTIN_ANDROID_DEVICES or ANDROID_DEVICES[base].get("size") is None:
+            raise Fail(f"{where}: base of {name!r} should be one of {', '.join(n for n in BUILTIN_ANDROID_DEVICES if ANDROID_DEVICES[n].get('size'))}, not {base!r}")
         w, h, dpi = ANDROID_DEVICES[base]["size"]
         if "size" in d:
             m = re.fullmatch(r"(\d{3,4})x(\d{3,4})", d["size"]) if isinstance(d["size"], str) else None
@@ -2928,12 +2935,34 @@ def require_api33(image, source):
                    f"Your app's minSdk can stay as low as it is: it runs on a newer emulator. Install an image with: {commands_text(sdkmanager_commands([DEFAULT_IMAGE]))}, "
                    "then set system_image (or avd, for an emulator that already exists) in the config")
 
+def android_avd_name(cfg, device):
+    """The emulator a device runs on: the config's `avd` (phone), `avd_<device>`, or `avd_fold` for the foldable devices, else the default name."""
+    kind = ANDROID_DEVICES[device]
+    return cfg.get(kind.get("avd_key") or ("avd" if device == "phone" else f"avd_{device}"), kind["avd"])
+
+def fold_profile(avdmanager):
+    """The hardware profile id of a foldable in this SDK (`avdmanager list device -c`): a pixel fold one, else any with 'fold' in its id, else None."""
+    try: ids = sh([str(avdmanager), "list", "device", "-c"], env={**os.environ, **java_env()}, timeout=60).stdout.split()
+    except (OSError, subprocess.TimeoutExpired): return None
+    return next((i for i in sorted(ids, reverse=True) if "fold" in i and i.startswith("pixel")), None) or next((i for i in ids if "fold" in i), None)
+
+def fold_state(e, kind):
+    """Put a foldable emulator in the posture the device asks for, with the screen awake: closing the fold locks it. `emu posture` and the
+    rotation are skipped for plain "fold" (unfolded is how the emulator boots)."""
+    f = kind.get("fold")
+    if f is None: return
+    if f.get("posture"): e.adb("emu", "posture", str(f["posture"]), check=False)
+    if f.get("rotate"):
+        e.adb("shell", "settings", "put", "system", "accelerometer_rotation", "0", check=False)
+        e.adb("shell", "settings", "put", "system", "user_rotation", str(f["rotate"]), check=False)
+    for c in ("input keyevent KEYCODE_WAKEUP", "wm dismiss-keyguard"): e.adb("shell", c, check=False)
+
 def android_pool(n, cfg, pool):
     """Boot n read-only copies of one AVD (created on first use as a 1080x1920 phone) into `pool`.
     The caller owns `pool` and kills it in a finally, so emulators never outlive a failed boot."""
     device = cfg.get("device", "phone")
     kind = ANDROID_DEVICES[device]
-    avd = cfg.get("avd" if device == "phone" else f"avd_{device}", kind["avd"])  # `avd` names the phone emulator
+    avd = android_avd_name(cfg, device)  # `avd` names the phone emulator
     avd_dir = avd_home() / f"{avd}.avd"
     if avd_dir.exists():
         try: sysdir = re.search(r"(?m)^image\.sysdir\.1\s*=\s*(.+)$", (avd_dir / "config.ini").read_text())
@@ -2946,15 +2975,16 @@ def android_pool(n, cfg, pool):
         if not avdmanager:
             raise Fail(f"avdmanager not found under {SDK}/cmdline-tools. Install it with: " + commands_text(sdkmanager_commands(["cmdline-tools;latest"])))
         avd_home().mkdir(parents=True, exist_ok=True)  # avdmanager refuses a named folder that does not exist
-        r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", kind["profile"]], input="no\n",
+        profile = (fold_profile(avdmanager) if kind.get("fold") is not None else None) or kind["profile"]
+        r = sh([str(avdmanager), "create", "avd", "-n", avd, "-k", image, "-d", profile], input="no\n",
                env={**os.environ, **java_env(), "ANDROID_AVD_HOME": str(avd_home())})
         if r.returncode != 0 or not (avd_dir / "config.ini").exists():
             detail = " ".join(l.strip() for l in (r.stderr + r.stdout).splitlines() if l.strip() and not l.startswith("["))[-300:]  # not inside the f-string: Python 3.11 rejects nested quotes there
             raise Fail(f"couldn't create the emulator {avd} from {image}: {detail}. "
                        f"Install the image with: {commands_text(sdkmanager_commands([image]))} (or set system_image in the config)")
         ini = avd_dir / "config.ini"
-        w, h, dpi = kind["size"]
-        ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
+        w, h, dpi = kind["size"] or (0, 0, 0)  # a foldable keeps its own display sizes: rewriting hw.lcd.* would break the hinge
+        if kind["size"]: ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
                        re.sub(r"(?m)^hw\.lcd\.height=.*", f"hw.lcd.height={h}",
                        re.sub(r"(?m)^hw\.lcd\.density=.*", f"hw.lcd.density={dpi}", ini.read_text()))))
         if kind.get("landscape"):  # a wider-than-tall screen starts in landscape
@@ -2975,11 +3005,60 @@ def android_pool(n, cfg, pool):
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:
+        fold_state(e, kind)
         clock = parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None
         if cfg.get("root") or clock: android_root(e)  # before the commands below: they may need it
         if clock: android_clock(e, clock)
         for c in demo_mode(clock): e.adb("shell", c, check=False)
         run_setup(e, "shell", cfg.get("shell", ()))  # after boot, every run: the snapshot boot discards properties
+
+INNER_JS = "shotfleet_inner.js"
+# Runs in Maestro, on the Mac: asks the shotfleet process (a local server, see InnerShots) to take the picture through the emulator console.
+INNER_SHOT_JS = ("// shotfleet: the picture of a foldable's inner display (adb screencap is black there), taken through the emulator console\n"
+                 "var r = http.get('http://127.0.0.1:' + PORT + '/shot?dev=' + DEV + '&name=' + NAME);\n")
+
+class InnerShots:
+    """A local server for foldable emulators: the flow calls it after each takeScreenshot (INNER_SHOT_JS) and it takes the picture with
+    `adb emu screenrecord screenshot <dir>`, the one capture that works on the inner display, into <folder>/<flow>/<shot>.png.
+    use_inner_shots() then lays those pictures over Maestro's own (black) ones. Port is None until started; falsy then."""
+    def __init__(self): self.port, self.folder, self.server = None, None, None
+    def __bool__(self): return self.server is not None
+    def start(self):
+        import http.server, urllib.parse
+        outer = self
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a): pass
+            def do_GET(self):
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                dev, name = (q.get("dev") or [""])[0], (q.get("name") or [""])[0]
+                if not re.fullmatch(r"emulator-\d+", dev) or not re.fullmatch(r"[\w.-]+/[\w.-]+", name):
+                    self.send_response(400); self.end_headers(); return
+                ok = outer.take(dev, name)
+                self.send_response(200 if ok else 500); self.end_headers(); self.wfile.write(b"ok" if ok else b"failed")
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+    def take(self, dev, name):
+        tmp = Path(tempfile.mkdtemp(prefix="inner-", dir=self.folder))
+        try:
+            sh([adb_cmd(), "-s", dev, "emu", "screenrecord", "screenshot", str(tmp)], timeout=30)
+            for _ in range(30):  # the console returns before the file is written
+                pngs = list(tmp.glob("*.png"))
+                if pngs and pngs[0].stat().st_size > 0: break
+                time.sleep(0.5)
+            else: return False
+            dst = Path(self.folder) / f"{name}.png"; dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(pngs[0]), str(dst)); return True
+        except (OSError, subprocess.TimeoutExpired): return False
+        finally: shutil.rmtree(tmp, ignore_errors=True)
+    def stop(self):
+        if self.server: self.server.shutdown(); self.server.server_close(); self.server = None
+
+def use_inner_shots(src, dst):
+    """Lay the pictures the console took (src/<shot>.png) over the same-named ones Maestro took into dst: on a foldable's inner display Maestro's are black."""
+    if not Path(src).is_dir(): return
+    for f in Path(src).glob("*.png"):
+        if (Path(dst) / f.name).exists(): shutil.move(str(f), str(Path(dst) / f.name))
 
 VARS_JS = "shotfleet_vars.js"
 
@@ -3020,7 +3099,7 @@ def hierarchy_marker(indent, shot):
     label = HIER_LABEL + re.sub(r"[^\w.-]", "_", Path(shot).name)
     return [f"{indent}- assertTrue:", f"{indent}    condition: ${{false}}", f"{indent}    label: {json.dumps(label)}", f"{indent}    optional: true"]
 
-def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False, settle_ms=0):
+def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False, settle_ms=0, inner=None):
     """Per-run copy of a translated flow: own name, own screenshot folder, starts with a plain launchApp.
     No clearState: on Android it wipes the per-app language shotfleet just set; shotfleet clears data itself.
     `mapped` names (see android_vars) are read from the script's output.v, after a runScript step at the top.
@@ -3056,6 +3135,9 @@ def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False, se
             pending[1] = m.group(1)
         settle_before(out, line, settle_ms)
         out.append(line); redirect_screenshot(out, shots_dir)
+        if inner and (m := re.match(r"^(\s*)- takeScreenshot:\s*['\"]?([^'\"#]+?)['\"]?\s*(?:#.*)?$", line)):  # a foldable: see InnerShots
+            out += [f"{m[1]}- runScript:", f"{m[1]}    file: {INNER_JS}", f"{m[1]}    env:", f'{m[1]}      PORT: "{inner["port"]}"',
+                    f'{m[1]}      DEV: "{inner["dev"]}"', f'{m[1]}      NAME: "{name}/{Path(m[2]).name}"']
     close()
     return header + "\n---\n" + "\n".join(collapse_empty_launch(out)) + "\n"
 
@@ -3070,6 +3152,28 @@ def collapse_empty_launch(lines):
             line = f"{m.group(1)}- launchApp"
         out.append(line)
     return out
+
+COMPOSE_HINT = ("`id:` selectors can't be used while the screens expose no resource ids; the flow can only select by visible text, and a label that appears "
+                "twice (a tab and a settings row) can hit the wrong one. In a debug or benchmark build, add Modifier.semantics { testTagsAsResourceId = true } "
+                "on the root composable and Modifier.testTag(\"...\") on the elements (docs/screenshot-mode.md, \"Compose apps\")")
+HIER_STATS = {"trees": 0, "ids": 0}  # screen hierarchies read in this run, and how many had a resource id of the app's own
+
+def compose_apk(apk):
+    """True when the APK looks like a Jetpack Compose app: its androidx.compose library version files, or (minified builds) the library's package
+    path in a dex file. Reads the zip only; False when it can't be read."""
+    try:
+        with zipfile.ZipFile(apk) as z:
+            names = z.namelist()
+            if any(n.startswith("META-INF/androidx.compose.") for n in names): return True
+            return any(b"androidx/compose/" in z.read(n) for n in names if re.fullmatch(r"classes\d*\.dex", n) and z.getinfo(n).file_size < 80_000_000)
+    except (OSError, zipfile.BadZipFile, KeyError, MemoryError): return False
+
+def has_app_resource_id(tree):
+    """True when any node of a Maestro hierarchy tree has a resource-id that is neither Android's nor the system UI's."""
+    if not isinstance(tree, dict): return False
+    rid = str((tree.get("attributes") or {}).get("resource-id") or "")
+    if rid and not rid.startswith(("com.android.systemui:", "android:")): return True
+    return any(has_app_resource_id(c) for c in tree.get("children") or [])
 
 def hierarchy_lines(tree):
     """The text of one Maestro screen-hierarchy tree, one string per line in screen order, without the status bar and
@@ -3100,7 +3204,10 @@ def hierarchy_texts(debug_dir, flow):
             if kind == "takeScreenshotCommand": shot = Path(str((body or {}).get("path", ""))).name or None
             elif shot and str((body or {}).get("label", "")).startswith(HIER_LABEL):
                 art = next((a["path"] for a in meta.get("artifacts") or [] if a.get("type") == "SCREEN_HIERARCHY"), None)
-                try: found[shot] = hierarchy_lines(json.loads((cj.parent / art).read_text())) if art else []
+                try:
+                    tree = json.loads((cj.parent / art).read_text()) if art else None
+                    found[shot] = hierarchy_lines(tree) if art else []
+                    if tree: HIER_STATS["trees"] += 1; HIER_STATS["ids"] += has_app_resource_id(tree)
                 except (OSError, ValueError): pass
                 shot = None
     return found
@@ -3141,6 +3248,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         print(f"retrying the languages that failed in the last run: {', '.join(only)}")
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     framework_hint(apk, "strings" in cfg, path("."))
+    HIER_STATS.update(trees=0, ids=0)
     if not apk_debuggable(apk): print(f"note: {Path(apk).name} is not debuggable (a release-type build). That works: shotfleet clears data and sets the app language through adb, "
                                       "which do not need a debuggable build. What it cannot do is anything that needs run-as or a debugger")
     strings = config_strings(cfg, path) or build_strings(apk, cfg.get("base_locale", "en"), config=True)
@@ -3183,12 +3291,17 @@ def android_run_inner(cfg, path, out, only, parallel):
     capacity_warn(cfg, want, "android", n)
     warn_port_7001()
     kind = ANDROID_DEVICES[cfg.get("device", "phone")]
-    name = cfg.get("avd" if cfg.get("device", "phone") == "phone" else f"avd_{cfg['device']}", kind["avd"])
-    print(f"booting {n} emulators ({name}, {kind['size'][0]}x{kind['size'][1]})", flush=True)
-    pool = []
+    name = android_avd_name(cfg, cfg.get("device", "phone"))
+    if kind.get("fold") is not None and n > 1:
+        n = 1  # the inner display is captured through the emulator console, one emulator at a time
+        print("note: a foldable runs on one emulator at a time, so its languages run one after another")
+    print(f"booting {n} emulators ({name}, " + (f"{kind['size'][0]}x{kind['size'][1]}" if kind["size"] else "foldable") + ")", flush=True)
+    pool, inner = [], InnerShots()
     try:
         android_pool(n, cfg, pool)
         for e in pool: e.adb("install", "-r", "-g", apk)
+        inner.folder = out / ".work" / "inner"
+        if kind.get("fold") is not None: inner.start()
 
         def round_(lps, tag):
             """One locale per emulator. Maestro shards the identical flows across devices in an order we
@@ -3205,6 +3318,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 e.adb("shell", "pm", "clear", pkg)  # fresh onboarding; also resets the app language, so set it after
                 e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
                 for c in demo_mode(parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None): e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
+                fold_state(e, kind)  # a foldable: posture and an awake screen
                 lang[e.serial] = lp
             text, _, _ = translate_flow(apply_when_defined(flow, cfg.get("_inputs"), lps[0], base_lp)[0], base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             text, notes = expand_wait_expected(text, cfg.get("_expect"), lps)
@@ -3213,8 +3327,12 @@ def android_run_inner(cfg, path, out, only, parallel):
             staging = out / ".work" / "tmp" / tag; staging.mkdir(parents=True)  # the flows' screenshot names are relative to this
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
             if vars_js: (fdir / VARS_JS).write_text(vars_js)
+            inner_dir = out / ".work" / "inner" / tag
+            if kind.get("fold") is not None:  # the inner display is black for screencap: the flows ask this process to take the picture
+                (fdir / INNER_JS).write_text(INNER_SHOT_JS); inner.folder = inner_dir; inner_dir.mkdir(parents=True, exist_ok=True)
             for j in range(len(lps)):
-                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped, hier, cfg.get("settle_ms", SETTLE_MS)))
+                (fdir / f"{tag}_f{j}.yaml").write_text(android_flow(text, f"{tag}_f{j}", Path(f"{tag}_f{j}"), inputs_for(cfg.get("_inputs"), "", defaults_only=True), mapped, hier, cfg.get("settle_ms", SETTLE_MS),
+                                                                 inner={"port": inner.port, "dev": pool[j].serial} if inner.port else None))
             junit, dbg = out / f"junit_{tag}.xml", out / ".work" / "debug" / tag
             junit.unlink(missing_ok=True); shutil.rmtree(dbg, ignore_errors=True)
             try:
@@ -3236,6 +3354,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 dst = inside(out, "raw", lp)
                 shutil.rmtree(dst, ignore_errors=True)
                 collect_shots(staging, dbg, fname, dst)
+                if inner.port: use_inner_shots(inner_dir / fname, dst)
                 shots = len(list(dst.glob("*.png")))
                 want = expected_for(report, lp, expected)
                 r_ = res.get(fname) or {"ok": shots == want, "error": None if shots == want else no_result(out / f"maestro_{tag}.log")}
@@ -3275,6 +3394,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         for r_ in final.values(): r_.setdefault("attempts", 1)
     finally:
         stop_emulators(pool)
+        if inner: inner.stop()
     for lp in todo:
         r_ = final[lp]; where = r_.pop("_maestro", None); before = r_.pop("_before", None); splash = r_.pop("_splash", False)
         kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else [where, before])
@@ -3292,6 +3412,7 @@ def android_run_inner(cfg, path, out, only, parallel):
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators" + partial_note(final, report, expected))
     if not all(r_["ok"] for r_ in final.values()): print(flow_parse_note(out), end="")
+    if HIER_STATS["trees"] and not HIER_STATS["ids"] and compose_apk(apk): print("note: this is a Jetpack Compose app and none of its screens exposed a resource id. " + COMPOSE_HINT)
     if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
@@ -5095,6 +5216,7 @@ def find_builds(cwd, derived=None, project=None):
             print(f"  build variant{'s' if len(variants) > 1 else ''} found: {', '.join(variants)}; this one is {apk.parent.name}. If your demo data comes from another variant, "
                   "name that APK: shotfleet init <app> path/to/app.apk")
         builds.append(str(apk))
+        if compose_apk(apk): print("  This looks like a Jetpack Compose app: " + COMPOSE_HINT)
     ios_cmd = "xcodebuild -scheme <scheme> -sdk iphonesimulator -configuration Debug build"
     if projects:
         proj = projects[0]
