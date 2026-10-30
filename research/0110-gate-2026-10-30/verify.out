@@ -1,0 +1,15 @@
+== ../shotfleet-0.1.10-macos-arm64.tar.gz ==
+  SKIP  no --manifest: the file's hash is not checked
+  ok    all 3 Mach-O files pass codesign --verify --strict
+  ok    all 3 Mach-O files carry team id 2357A78TMR
+  ok    codesign --verify --deep --strict shotfleet
+  ok    shotfleet has the hardened runtime flag
+  ok    signed with a Developer ID Application certificate
+  ok    build needs macOS 13.0 or newer (maximum allowed: macOS 13)
+  ok    a quarantined copy runs: 'shotfleet 0.1.10'
+== ../shotfleet-0.1.10-macos-arm64.pkg ==
+  SKIP  no --manifest: the file's hash is not checked
+  ok    pkg signed by Developer ID Installer (2357A78TMR)
+  ok    spctl -t install: accepted, Notarized Developer ID
+  ok    stapler validate: ticket stapled
+PASS: 10 checks, 0 failed
