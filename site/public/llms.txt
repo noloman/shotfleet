@@ -50,6 +50,7 @@
 - [Home](https://shotfleet.com/): what it does, sample results, price
 - [Docs](https://shotfleet.com/docs): install, quickstart, config keys, hooks, CI recipe, agent skills, requirements and limits
 - [What's new](https://shotfleet.com/whats-new): what changed for buyers in each release, newest first
+- [Real apps, real runs](https://shotfleet.com/examples): store screenshots from four apps, with what each run found
 - [See it work](https://shotfleet.com/demo): short clips of the commands, and a dated record of the real runs (release gates, macOS versions, real apps)
 - [Guides](https://shotfleet.com/guides): how-tos for localized App Store and Google Play screenshots
 - [Why your fastlane snapshot screenshots are all in English](https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english): five causes to rule out, and checking every language with the free `check`

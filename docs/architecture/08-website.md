@@ -7,8 +7,9 @@ Back to the [index](../ARCHITECTURE.md). The site is `https://shotfleet.com`. It
 ```
 site/
   public/            everything served as static assets (wrangler [assets] directory)
-    index.html       the sale page (home)               docs.html   the docs page (every command and key, tested)
+    index.html       the sale page (home: pitch, one real run, price)  docs.html   the docs page (every command and key, tested)
     alternatives.html comparison table                   demo.html   "See it work": nine real clips plus a dated evidence list
+    examples.html    real apps: the four runs and the store-screenshot gallery (moved off the home page, 2026-10-30)
     privacy.html, terms.html, whats-new.html             404.html, guides.html, guides/<slug>.html (two published guides)
     llms.txt, robots.txt, sitemap.xml, install.sh, _headers
     site.css, fonts/, img/, media/demo/ (mp4, poster webp, vtt captions)

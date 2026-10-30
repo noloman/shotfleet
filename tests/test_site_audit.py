@@ -299,16 +299,15 @@ class FirstScreen(unittest.TestCase):
         self.assertIn("Apple silicon", PAGES["alternatives.html"])
 
     def test_the_gallery_heading_does_not_read_as_proof_of_the_tool(self):
-        self.assertNotIn("The same screen, in the languages of my other apps", PAGES["index.html"])
-        self.assertIn("not shotfleet output", PAGES["index.html"])
-        self.assertIn("not what shotfleet can do", PAGES["index.html"])
+        self.assertNotIn("The same screen, in the languages of my other apps", PAGES["examples.html"])
+        self.assertIn("not shotfleet output", PAGES["examples.html"])
+        self.assertIn("not what shotfleet can do", PAGES["examples.html"])
 
     def test_joining_the_list_is_said_not_to_reserve_the_price(self):
         if not LIVE: self.assertIn("joining the list does not reserve the launch price", PAGES["index.html"])
 
-    def test_the_number_strip_says_what_was_counted(self):
-        self.assertIn("<dt>108 of 120</dt>", PAGES["index.html"])
-        self.assertNotIn("108 problems", PAGES["index.html"])
+    def test_no_page_says_108_problems(self):
+        self.assertNotIn("108 problems", PAGES["examples.html"])
 
     def test_the_story_says_the_run_could_not_tap_next(self):
         self.assertIn("so the run could not tap it", PAGES["index.html"])

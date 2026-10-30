@@ -94,7 +94,7 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "I didn’t add any code to the app for shotfleet. The one fix I made in it came from what the run found (further down).",
+   "I didn’t add any code to the app for shotfleet.",
    "You don’t keep a copy of the flow per language, and you don’t change the app."
   ],
   "status": "evidence",
@@ -704,8 +704,8 @@
   "id": "C041",
   "claim": "The gallery tabs are labelled Stressi Android and Cairn iPad",
   "where": [
-   "site/public/index.html",
-   "site/public/index.html"
+   "site/public/examples.html",
+   "site/public/examples.html"
   ],
   "where_text": [
    "Stressi <span>Android</span>",
@@ -1813,8 +1813,6 @@
    "site/public/index.html"
   ],
   "where_text": [
-   "languages times screens in one run: 72 screenshots, one English flow, one Mac",
-   "for that one run on iOS and on Android, on my M1 Pro with my app",
    "The 9 and 15 minutes were measured on Maestro 2.0.10."
   ],
   "status": "evidence",
@@ -1832,11 +1830,13 @@
   "where_text": [
    "shared one unreachable Next button on Android. English hid it"
   ],
-  "status": "evidence",
+  "status": "removed",
   "proof": "research/first-run.md; fix in CrossfitTracker commit 687ffccd (verticalScroll added to two pages).",
   "layer": "device",
   "assertion": "Keep the commit reference; if the app changes, keep the screenshot site/public/img/bug_zh.jpg.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the stats strip on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C107",
@@ -1847,11 +1847,13 @@
   "where_text": [
    "old App Store screenshots of AnywhereRoles, another of my apps, flagged by <code>shotfleet check</code>"
   ],
-  "status": "evidence",
+  "status": "removed",
   "proof": "research/real-apps.md line 85: remoti's committed fastlane screenshots, 120 screenshots in 20 languages, 108 problems, all 'shows en strings more than <lang>'; viewed de-DE/iphone-16-02-fit-trust.png.",
   "layer": "device",
   "assertion": "Re-run `shotfleet check` on that folder before launch and update the count if it differs.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the stats strip on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C108",
@@ -2480,11 +2482,13 @@
    "Without it, you write UI-test code for fastlane snapshot and screengrab, and iOS and Android each need their own.",
    "With shotfleet, you write one Maestro flow in English, and it works on both platforms."
   ],
-  "status": "evidence",
+  "status": "removed",
   "proof": "fastlane side: as on the alternatives page (C108; research/pricing-2026-10.md, vendor docs: XCUITest/Espresso test targets, snapshot for iOS and screengrab for Android). shotfleet side: as C020: Unit: SimpleConfig.test_bare_steps_and_one_flow_for_both_platforms, SimpleConfig.test_run_goes_through_every_platform_in_the_file, ReviewFixes.test_map_form_screenshots_are_redirected_on_both_platforms. Real: Kuokka and HackerNewsKMP, both platforms from one config and flow (research/pricing-2026-10.md, ROADMAP.md 2026-10-02); CrossfitTracker iOS and Android from one flow (PLAN.md). The 2026-10-03 fixture e2e passed on iOS (36/36) and on Android phone (29/29, tools/fixture-app-android).",
   "layer": "fixture",
   "assertion": "Fixture config with [ios] and [android]: one flow.yaml, `shotfleet run` produces out-ios/ and out-android/ each with N screenshots per locale.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the \"What it saves you\" list on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C155",
@@ -2496,11 +2500,13 @@
    "a UI-test target for fastlane, or a few lines in the app for simshot, which is iOS only.",
    "With shotfleet, nothing in your app’s code changes."
   ],
-  "status": "evidence",
+  "status": "removed",
   "proof": "Competitor side: C108 (simshot iOS only and needs a few lines in the app; fastlane adds a test target), research/pricing-2026-10.md. shotfleet side: as C006: Mechanism: LocalizeFlow.test_language_travels_as_launch_arguments_with_fresh_state_first (iOS -AppleLanguages / -AppleLocale launch arguments), AndroidFlow.test_adds_launch_strips_clear_state_and_moves_screenshots; research/frameworks.md cites AOSP for per-app locales without the app's cooperation. Real: CrossfitTracker iOS 18/18 in 8m54s and Android 18/18 in 15m24s, 0 problems (PLAN.md, 2026-10-01) and the 2026-10-03 fixture e2e (the fixture app has no shotfleet code; STATUS.md gate 9). It needs a Debug-iphonesimulator build and an API 33+ emulator (README.md Limits), which is a build, not a change to the app. Untested: apps that keep their own persisted in-app language picker.",
   "layer": "fixture",
   "assertion": "tools/fixture-app contains no shotfleet code: `run` on it produces German 'Willkommen' (accessibility text) - proves iOS needs no change. Add an Android fixture for `cmd locale set-app-locales`.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the \"What it saves you\" list on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C156",
@@ -2512,11 +2518,13 @@
    "With shotfleet, the same flow runs in every language.",
    "On my M1 Pro, with my app, one run of 18 languages × 4 screens took 9 minutes on iOS and 15 on Android."
   ],
-  "status": "evidence",
+  "status": "removed",
   "proof": "As C007 (same measurement, Maestro 2.0.10, stated next to the stats on the same page): PLAN.md:43 (2026-10-01: iOS 8m54s = 534 s, Android 15m24s, first attempt, 0 problems); README.md:11. Machine-, load- and OS-dependent; 4 parallel simulators on a 32 GB M1 Pro; cannot go stale in the code but any Maestro/Xcode update can change it. Re-run 2026-10-04 on a loaded Mac (swap 15-16 GB, 2 devices instead of 4): CrossfitTracker iOS 19 languages 772 s, Android phone 912 s and tablet 1078 s, 0 problems each; not comparable, so these numbers were not replaced. Also run 2026-10-04 on Maestro 2.11.0 (loaded Mac, load 10 to 760): CrossfitTracker iOS 19 languages 826 s capture on 4 simulators after 9 retries (two of four simulators' drivers had not started in time), Android phone 475 s and tablet 561 s, 0 problems each; not comparable with the 18-language 9 and 15 minutes either, so nothing was replaced. Quiet-Mac re-measure 2026-10-05 (same app, Maestro 2.0.10, Xcode 27, iOS 26.4, 4 devices, 19 languages): iOS 404 s capture (742 s whole run), Android phone 415 s capture (570 s whole run), 0 problems, no retries; load 86 at the start and 497 at the end of the iOS part, so not perfectly quiet. Both are at or below the claimed 9 and 15 minutes; the claim is conservative and unchanged. Which Maestro: the 9 and 15 minutes and the quiet re-measure ran on Maestro 2.0.10, while `doctor --fix` installs 2.11.0, where the only iOS run (2026-10-04, loaded Mac) needed shotfleet's retry for 9 of 19 languages and took 826 s of capture; docs.html (Limits) now says the times depend on the Mac and on Maestro.",
   "layer": "device",
   "assertion": "Not worth gating in CI. Record `captured N/N locales in Ns` from the fixture run and fail only if >3x the last recorded value; re-measure the 9/15 minute numbers on CrossfitTracker before each release.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the \"What it saves you\" list on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C157",
@@ -2527,11 +2535,13 @@
   "where_text": [
    "<code>check</code> reads every screenshot before you upload. It flags the wrong language, blank screens and sizes the stores don’t accept."
   ],
-  "status": "proven",
+  "status": "removed",
   "proof": "Wrong language as C026: ExternalOcr.test_scripts_macos_cant_read_go_to_the_ocr_command (el/2.png shows en), StuckOcrFallback.test_stuck_macos_ocr_falls_back_to_tesseract (ja shows en), JudgeScreen.test_screen_showing_another_locales_strings_fails. Blank as C127: BlankScreenshots.test_a_flat_frame_with_a_status_bar_is_blank. Sizes as C022: StoreRules.test_app_store_sizes_alpha_counts_and_required_class, test_google_play_limits_and_notes, test_image_info_reads_jpeg_size, MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices. Limits checked: 10 (App Store) / 8 (Play) per listing, 320-3840 px, no alpha, 6.9\" or 6.5\" iPhone set, 13\" iPad when UIDeviceFamily has 2. Rule data is Apple/Google's as of 2026-10-01 (research/store-specs.md) and can go stale.",
   "layer": "unit",
   "assertion": "As C026, C127 and C022.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the \"What it saves you\" list on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C158",
@@ -2543,11 +2553,13 @@
    "the Next button on one onboarding page was out of reach in Japanese, Korean, Chinese and Arabic on a small Android phone.",
    "The run got stuck on that page, and that’s how I found it."
   ],
-  "status": "evidence",
+  "status": "removed",
   "proof": "As C012 and C013: site/public/img/bug_zh.jpg (viewed 2026-10-02: Chinese onboarding page, no Next button, small 360x640 screen). No run log, flow or commit is kept in the repo; research/cold-test-2.md says a buyer cannot reproduce it. Only zh has an image; ja, ko, ar are asserted. The bug stopped the capture (the flow could not tap Next), i.e. `run` surfaced it. README.md:44 sits under 'Check screenshots made by any tool' and implies `check` finds such bugs; it cannot (a screenshot of a missing button is not a defect to `check`). PLAN.md:43 says the final Android run passed 'on the first attempt', which is the run after the fix. 2026-10-03 review (claims-unit): left partial. The sentence is history about one real run on CrossfitTracker, which no local test can prove, and README.md:46 still sits under 'Check screenshots made by any tool' (it says 'A run also surfaces', not that check does). A wording test would only prove where the sentence is; the fix above (move it) is a docs change.",
   "layer": "device",
   "assertion": "Keep the failing build as a fixture: an Android APK with a non-scrolling onboarding page and a long CJK/Arabic string on a 360x640 emulator; assert `run` reports the locale as failed (flow cannot tap Next) for ja,ko,zh,ar and passes for en.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "2026-10-30 site simplification: the \"What it saves you\" list on the home page repeated the run and first-catch sections, so it was deleted. The numbers stay in the run section and the examples page."
  },
  {
   "id": "C159",
@@ -3613,7 +3625,7 @@
   "id": "C222",
   "claim": "AnywhereRoles showcase: the 8 home-page frames are shotfleet's own raw output from the 2026-10-06 run, only resized to 360 px wide WebP",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "these are real shotfleet output, only made smaller for the web"
@@ -3628,7 +3640,7 @@
   "id": "C223",
   "claim": "AnywhereRoles, 2026-10-06, shotfleet 0.1.4: 120 Android screenshots (15 languages x 8) on 1 emulator in 1826 s with 0 retries",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "On 2026-10-06 I ran shotfleet 0.1.4 on AnywhereRoles, also my app: 120 Android screenshots (15 languages × 8 screens) on 1 emulator in 1826 s with 0 retries"
@@ -3643,7 +3655,7 @@
   "id": "C224",
   "claim": "AnywhereRoles, 2026-10-06, shotfleet 0.1.4: 108 iPhone screenshots (18 languages x 6) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "108 iPhone screenshots (18 languages × 6 screens) on 2 iPhone 17 Pro Max simulators with iOS 26.4 in 3420 s"
@@ -3658,7 +3670,7 @@
   "id": "C225",
   "claim": "AnywhereRoles iPhone run: the Mac was loaded and short of memory, shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each passed on a second try",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "My Mac was heavily loaded and short of memory, so shotfleet used 2 simulators instead of 4, and ja, tr and zh-Hans each needed a second try."
@@ -3673,7 +3685,7 @@
   "id": "C226",
   "claim": "AnywhereRoles, 2026-10-06: check found 0 problems in the 120 Android and the 108 iPhone screenshots",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "Check found 0 problems in both."
@@ -3688,7 +3700,7 @@
   "id": "C227",
   "claim": "Before the recapture, check on AnywhereRoles' old Google Play screenshots found 127 problems: 103 translated captions over an English UI (one English capture with translated captions), 15 false 'missing' lines from 0.1.4's reading of fastlane supply's file names (fixed in 0.1.6), and 9 others",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "check on the old Google Play screenshots I had made for it found 127 problems. 103 of them were translated captions over an app still in English: I had made one English capture and only translated the captions. Of the other 24, 15 were false “missing” lines from a bug in how 0.1.4 read fastlane supply’s file names (fixed in 0.1.6), and 9 were others."
@@ -3703,7 +3715,7 @@
   "id": "C228",
   "claim": "Writing and debugging AnywhereRoles' Android flow took several failed runs before the final one",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "writing and debugging the Android flow took me several failed runs before this one"
@@ -3899,7 +3911,7 @@
   "where": [
    "site/public/whats-new.html",
    "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "<code>check</code> understands fastlane supply’s file names",
@@ -4334,7 +4346,7 @@
   "id": "C262",
   "claim": "Kuokka, 2026-10-07, shotfleet 0.1.5: 30 iPhone screenshots (6 languages x 5 screens) on 1 iPhone 17 Pro Max simulator, iOS 26.4, in three runs of two languages, 0 retries, 154 s, 132 s and 252 s",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -4351,7 +4363,7 @@
   "id": "C263",
   "claim": "Kuokka, 2026-10-07: check found 0 problems in all three runs (with the app build as the strings source)",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -4368,7 +4380,7 @@
   "id": "C264",
   "claim": "Kuokka showcase: the 6 home-page frames are shotfleet's own raw output from the 2026-10-07 runs, resized to 360 px wide WebP; 6 of the 30, picked after looking at all 30",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "They are 6 of the 30, picked by me after looking at all of them."
@@ -4383,7 +4395,7 @@
   "id": "C265",
   "claim": "Kuokka showcase: the content is live Hacker News at capture time, the build was a debug build 2.0.14 from an unreleased branch, the runs were the third go (the first flow tapped the wrong spots, the second failed on a tap point written as 94.5%)",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "The content is live Hacker News at the moment of capture.",
@@ -4658,7 +4670,7 @@
   "id": "C281",
   "claim": "WOD Tracker, 2026-10-07, shotfleet 0.1.6, iPhone: three runs of two languages (hi,tr / zh-Hans,pl / nl,pt), 4 screens each = 24 screenshots on 1 iPhone 17 Pro Max simulator, iOS 26.4, 0 retries, 366 s, 400 s and 384 s",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -4675,7 +4687,7 @@
   "id": "C282",
   "claim": "WOD Tracker, 2026-10-07, shotfleet 0.1.6, Android: two runs of three languages (hi,tr,zh-CN / pl,nl,pt), 6 screens each = 36 screenshots on 1 emulator, 0 retries, 553 s and 528 s, demo data seeded through the app's debug link, no account",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -4692,7 +4704,7 @@
   "id": "C283",
   "claim": "WOD Tracker, 2026-10-07: shotfleet check found 0 problems in all five counted runs; the check reads the pictures and does not prove that every tap hit the right button",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -4709,7 +4721,7 @@
   "id": "C284",
   "claim": "WOD Tracker, 2026-10-07: on iPhone check read the app's view hierarchy; on Android Maestro 2.0.10 saves none, so check read the Android pictures by text recognition, which is weaker evidence",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -4726,7 +4738,7 @@
   "id": "C285",
   "claim": "WOD Tracker showcase: the 12 home-page frames are shotfleet's own raw output from the 2026-10-07 runs, resized to 360 px wide WebP; 12 of the 60 captured in the counted runs, picked after looking at all of them",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "These twelve are 12 of the 60 captured in the runs that count, picked by me after looking at all of them."
@@ -4741,9 +4753,9 @@
   "id": "C286",
   "claim": "WOD Tracker showcase: debug builds of version 1.6.7 that were in store review at the time (not the store version), captured with shotfleet 0.1.6; iPhone frames show the app empty with no paywall (empty store keys); Android frames show seeded demo data; English that stays is the app's own content",
   "where": [
-   "site/public/index.html",
-   "site/public/index.html",
-   "site/public/index.html"
+   "site/public/examples.html",
+   "site/public/examples.html",
+   "site/public/examples.html"
   ],
   "where_text": [
    "from a debug build of version 1.6.7, which was in store review at the time, so this is not the store version.",
@@ -4760,8 +4772,8 @@
   "id": "C287",
   "claim": "WOD Tracker showcase: in setting up, one iPhone attempt was green (exit 0, 8 of 8 screenshots) but its Hindi Benchmarks frame showed the Train screen; check said 0 problems; found by looking; those frames are not on the page",
   "where": [
-   "site/public/index.html",
-   "site/public/index.html"
+   "site/public/examples.html",
+   "site/public/examples.html"
   ],
   "where_text": [
    "In setting up the run, one iPhone attempt came out green (exit 0, 8 of 8 screenshots) but its Hindi Benchmarks frame showed the Train screen, because my tap landed on the tab bar.",
@@ -5250,7 +5262,7 @@
   "id": "C320",
   "claim": "wger, 2026-10-08, shotfleet 0.1.6, iPhone: three runs of two languages (ar,de / es,fr / hr,uk), 6 screens each = 36 screenshots on 1 iPhone 17 Pro Max simulator, iOS 26.4, 0 retries, 136 s, 144 s and 129 s",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5267,7 +5279,7 @@
   "id": "C321",
   "claim": "wger, 2026-10-08, shotfleet 0.1.6, Android: two runs of three languages (ar,de,es / fr,hr,uk), 6 screens each = 36 screenshots on 1 emulator, 0 retries, 177 s and 204 s",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5284,8 +5296,8 @@
   "id": "C322",
   "claim": "wger showcase: open-source Flutter app (wger-project/flutter, not the owner's), built by the owner from tag 2.1.1 (cf12708) as debug builds because the repo HEAD did not build on Android that day (the maintainer has since pushed the fix); shotfleet 0.1.6 read the app's own .arb files; only screens reachable without an account, never logged in; the DEBUG banner shows",
   "where": [
-   "site/public/index.html",
-   "site/public/index.html",
+   "site/public/examples.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5303,7 +5315,7 @@
   "id": "C323",
   "claim": "wger, 2026-10-08: shotfleet check found 0 problems in all five counted runs",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5320,7 +5332,7 @@
   "id": "C324",
   "claim": "wger, 2026-10-08: the check reads the screens and does not prove that every tap hit the right button",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5337,7 +5349,7 @@
   "id": "C325",
   "claim": "wger, 2026-10-08: on iPhone check read the view hierarchy; on Android Maestro 2.0.10 saves none, so check read the pictures by text recognition, which is weaker evidence",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5354,7 +5366,7 @@
   "id": "C326",
   "claim": "wger showcase: in one failed iPhone attempt frame 01 was the splash screen while the hierarchy already listed 'Log in'; found by looking, a wait was added before the first shot; the owner thinks check would have passed it (inferred, not tested)",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5371,7 +5383,7 @@
   "id": "C327",
   "claim": "wger showcase: the twelve frames are 12 of the 72 captured in the runs that count, picked after looking at all of them; the app has some odd translations of its own",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5388,7 +5400,7 @@
   "id": "C328",
   "claim": "wger showcase attribution: project wger, licensed under the AGPL-3.0-or-later with an app-store exception, link to github.com/wger-project/flutter; screenshots of the open-source app captured by the owner with shotfleet from a debug build he compiled (version 2.1.1); the project is not affiliated with shotfleet and does not endorse it; the only logo is the app's own UI",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5405,7 +5417,7 @@
   "id": "C335",
   "claim": "Kuokka Android, 2026-10-08, shotfleet 0.1.6: two runs of three languages (de,ja,ko and es,fr,pt-BR), 5 screens each = 30 screenshots on 1 emulator, 0 retries, 139 s and 126 s",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5422,7 +5434,7 @@
   "id": "C336",
   "claim": "Kuokka Android, 2026-10-08: check found 0 problems in both runs, with the APK (--app) and also with the app's strings.xml (--strings); both gave 0 problems",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5439,7 +5451,7 @@
   "id": "C337",
   "claim": "Kuokka Android, 2026-10-08: Maestro 2.0.10 saves no screen hierarchy on Android, so check read all the pictures by text recognition (evidence ocr), which is weaker evidence than on iPhone",
   "where": [
-   "site/public/index.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5456,7 +5468,7 @@
   "id": "C338",
   "claim": "Kuokka Android: check reading the pictures does not prove that every tap hit the right button; on Android it cannot tell live content or a wrong but translated screen either",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "It still doesn’t prove that every tap hit the right button."
@@ -5471,8 +5483,8 @@
   "id": "C339",
   "claim": "Kuokka Android: the Android build is a debug build of 2.0.15 from main (eba7746e, built 2026-10-08), a different build from the iPhone frames (2.0.14, an unreleased branch)",
   "where": [
-   "site/public/index.html",
-   "site/public/index.html",
+   "site/public/examples.html",
+   "site/public/examples.html",
    "site/public/demo.html"
   ],
   "where_text": [
@@ -5490,8 +5502,8 @@
   "id": "C340",
   "claim": "Kuokka Android showcase: the 6 home-page frames are shotfleet's own raw output from the 2026-10-08 runs, resized to 360 px wide WebP; 6 of the 30 in the counted runs, picked after looking at all of them (all 35 frames were looked at)",
   "where": [
-   "site/public/index.html",
-   "site/public/index.html"
+   "site/public/examples.html",
+   "site/public/examples.html"
   ],
   "where_text": [
    "The six below are 6 of the 30, picked by me after looking at all of them.",
@@ -5507,7 +5519,7 @@
   "id": "C341",
   "claim": "Kuokka Android: none of the 30 counted screenshots shows live Hacker News content because the flow never opens a story (the Home feed is passed through and never shot); the analytics question is answered with Not now",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "None of the 30 show live Hacker News content, because my flow never opens a story, and the flow turns the analytics question down in every language."
@@ -5522,7 +5534,7 @@
   "id": "C342",
   "claim": "Kuokka Android: app oddities seen in the frames and named on the page: the Settings screen has a tall blank band above its title, a few lines wrap with one word left over, and the Search chips stay English",
   "where": [
-   "site/public/index.html"
+   "site/public/examples.html"
   ],
   "where_text": [
    "Some oddities are the app’s own. The Settings screen has a tall blank band above its title and a few lines wrap with one word left over. The Search chips stay in English."
@@ -5799,12 +5811,10 @@
   "id": "C423",
   "claim": "What's new 0.1.9 and the home page's New in 0.1.9: check, run and init stop with exit 2 on a Flutter, React Native, MAUI or Unity build that has no strings and say what to pass (--strings for check, a strings line in shotfleet.toml for run and init); init still writes the config with a commented strings line",
   "where": [
-   "site/public/whats-new.html",
-   "site/public/index.html"
+   "site/public/whats-new.html"
   ],
   "where_text": [
-   "now stop with exit code 2 on a Flutter, React Native, MAUI or Unity build that has no strings",
-   "stop with exit 2 on a Flutter, React Native, MAUI or Unity build that has no strings, and say what to pass"
+   "now stop with exit code 2 on a Flutter, React Native, MAUI or Unity build that has no strings"
   ],
   "status": "proven",
   "proof": "C390 (check, 1c7b085), C420 (run) and C421 (init), with tests in tests/test_019_run_init.py. The Obytes React Native APK on main exits 2 with the --strings instruction. Unit tests with fakes; the stop happens before any simulator or emulator starts, so there is nothing to run on a device. Gate on the signed build: docs/compat.md and research/019-gate-2026-10-11/.",

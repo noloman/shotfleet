@@ -57,6 +57,7 @@ All pages are hand-written HTML sharing one stylesheet (`site/public/site.css`, 
 | Page (URL) | File | Scripts loaded (line) | GA4 + banner | First-party counter |
 |---|---|---|---|---|
 | `/` | `index.html` | `reveal.js` in head (91); then `forms.js` (476), `tabs.js` (477), `flow.js` (478), `analytics.js` (479), `ga.js` (480), `zoom.js` (481) | yes | yes (the only page) |
+| `/examples` | `examples.html` | `reveal.js` in head; then `tabs.js`, `ga.js`, `zoom.js` | yes | no |
 | `/docs` | `docs.html` | none | no | no |
 | `/alternatives` | `alternatives.html` | `ga.js` (130) | yes | no |
 | `/demo` | `demo.html` | `ga.js` (168) | yes | no |

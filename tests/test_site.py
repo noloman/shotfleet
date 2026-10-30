@@ -14,6 +14,7 @@ import shotfleet as sf
 PUB = ROOT / "site/public"
 PAGES = sorted(PUB.glob("*.html"))
 INDEX = (PUB / "index.html").read_text()
+EXAMPLES = (PUB / "examples.html").read_text()
 TERMS = (PUB / "terms.html").read_text()
 README = (ROOT / "README.md").read_text()
 EMAIL = (ROOT / "marketing/launch-email.md").read_text()
@@ -122,11 +123,11 @@ class Structure(unittest.TestCase):
         for p in (PUB / "img").rglob("*.jpg"): self.assertIn(p.name, used, f"{p.relative_to(PUB)} is not used by any page")
 
     def test_the_gallery_has_no_remoti_tab_and_defaults_to_the_first_tab(self):
-        self.assertNotIn("remoti", INDEX.lower())  # its UI is English under translated captions, the failure the product catches
-        tabs = re.findall(r'role="tab" id="tab-(\w+)"[^>]*aria-selected="(\w+)"', INDEX)
+        self.assertNotIn("remoti", EXAMPLES.lower())  # its UI is English under translated captions, the failure the product catches
+        tabs = re.findall(r'role="tab" id="tab-(\w+)"[^>]*aria-selected="(\w+)"', EXAMPLES)
         self.assertEqual(tabs, [("stressi", "true"), ("cairn", "false")])
         self.assertIn("show(tabs[0])", (PUB / "tabs.js").read_text())
-        self.assertEqual(set(re.findall(r'data-full="img/full/(\w+?)_', INDEX)), {"stressi", "cairn"})
+        self.assertEqual(set(re.findall(r'data-full="img/full/(\w+?)_', EXAMPLES)), {"stressi", "cairn"})
 
     def test_every_demo_video_loads_nothing_until_played_and_has_a_poster_and_english_captions(self):
         visible = re.sub(r"<!--.*?-->", "", (PUB / "demo.html").read_text(), flags=re.S)  # clips not recorded yet wait in comments
