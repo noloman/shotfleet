@@ -1145,7 +1145,30 @@ def with_app_id(flow, app_id):
     header, sep, body = flow.partition("\n---\n")
     if not sep: header, body = "", flow
     header = re.sub(r"(?m)^appId:.*\n?", "", header).strip("\n")
-    return f"appId: {app_id}\n{header}{chr(10) if header else ''}---\n{body}"
+    return f"appId: {app_id}\n{header}{chr(10) if header else ''}---\n{expand_dismiss_if_visible(body)}"
+
+DISMISS_RE = re.compile(r"^(\s*)- dismissIfVisible:\s*(\[.*\]|[^\[\s#][^#]*?)\s*(#.*)?$")
+
+def expand_dismiss_if_visible(body, times=4):
+    """`- dismissIfVisible: ["Not now", "Looks right"]` (or one text) becomes, for each text, a Maestro repeat that taps it while it is on
+    screen (at most `times` times), so a first-run card, a rating prompt or a "what's new" sheet is dismissed when the app shows it and
+    ignored when it does not. The texts are ordinary selectors: translated per language with the rest of the flow."""
+    out = []
+    for line in body.splitlines():
+        m = DISMISS_RE.match(line)
+        if not m: out.append(line); continue
+        pad, raw = m.group(1), m.group(2).strip()
+        if raw.startswith("["):
+            try: texts = json.loads(raw)
+            except ValueError: texts = None
+            if not isinstance(texts, list) or not all(isinstance(t, str) for t in texts):
+                raise ValueError(f"dismissIfVisible: write the texts as a JSON-style list of strings, e.g. dismissIfVisible: [\"Not now\", \"Skip\"] (got {raw})")
+        else: texts = [raw.strip("\"'")]
+        for t in texts:
+            q = json.dumps(t, ensure_ascii=False)
+            out += [f"{pad}- repeat:", f"{pad}    while:", f"{pad}      visible: {q}", f"{pad}    times: {times}",
+                    f"{pad}    commands:", f"{pad}      - tapOn: {q}"]
+    return "\n".join(out) + ("\n" if body.endswith("\n") else "")
 
 def inputs_for(inputs, lproj, defaults_only=False):
     """Text to type for one language: the [inputs] defaults, then [inputs.<locale>] (exact, else the language part: pt for pt-BR)."""
@@ -3105,6 +3128,11 @@ def android_run(cfg, path, out, only, parallel):
     with device_lock("android-emulators"):  # the emulators sit on fixed ports (5702, 5704...)
         return android_run_inner(cfg, path, out, only, parallel)
 
+def apk_debuggable(apk):
+    """False when `aapt2 dump badging` shows the APK is not debuggable; True when it is or when that can't be told."""
+    try: return "application-debuggable" in sh([aapt2(), "dump", "badging", str(apk)]).stdout
+    except (Fail, OSError): return True
+
 def android_run_inner(cfg, path, out, only, parallel):
     prev = None  # `run --retry-failed`: the last run's report, whose passed languages stay as they were
     if cfg.get("_retry_failed"):
@@ -3113,6 +3141,8 @@ def android_run_inner(cfg, path, out, only, parallel):
         print(f"retrying the languages that failed in the last run: {', '.join(only)}")
     apk, pkg = str(path(cfg["apk"])), cfg["package"]
     framework_hint(apk, "strings" in cfg, path("."))
+    if not apk_debuggable(apk): print(f"note: {Path(apk).name} is not debuggable (a release-type build). That works: shotfleet clears data and sets the app language through adb, "
+                                      "which do not need a debuggable build. What it cannot do is anything that needs run-as or a debugger")
     strings = config_strings(cfg, path) or build_strings(apk, cfg.get("base_locale", "en"), config=True)
     base = strings[cfg.get("base_locale", "en")]
     note_partly_translated(strings, cfg.get("base_locale", "en"), only or cfg.get("locales") or None)
@@ -4748,6 +4778,8 @@ FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text
 # - extendedWaitUntil:
 #     visible: "<a text on your first screen>"
 #     timeout: 60000
+# First-run cards or prompts in the way? Tap them if they show, skip them if not:
+# - dismissIfVisible: ["Not now", "Skip"]
 - takeScreenshot: 01_home
 # - tapOn: "Settings"
 # - takeScreenshot: 02_settings
@@ -4891,6 +4923,9 @@ def gradle_apks(cwd):
     cwd = Path(cwd)
     apks = [a for pat in ("build/outputs/apk/**/debug/*.apk", "*/build/outputs/apk/**/debug/*.apk", "*/*/build/outputs/apk/**/debug/*.apk") for a in cwd.glob(pat)
             if not any(x.startswith(".") or x == "androidTest" for x in a.relative_to(cwd).parts)]
+    if not apks:  # no debug build: the app's own variants (benchmarkRelease, staging, release), in the folders Gradle uses for them
+        apks = [a for pat in ("build/outputs/apk/*/*.apk", "*/build/outputs/apk/*/*.apk", "*/*/build/outputs/apk/*/*.apk") for a in cwd.glob(pat)
+                if not any(x.startswith(".") or x == "androidTest" for x in a.relative_to(cwd).parts) and not a.name.endswith(("-androidTest.apk", "-unsigned.apk"))]
     return sorted(((a.stat().st_mtime, a) for a in set(apks)), reverse=True)
 
 def is_watch_apk(apk):
@@ -5054,7 +5089,11 @@ def find_builds(cwd, derived=None, project=None):
         builds.append(str(app))
     if apks:
         t, apk = apks[0]
-        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} " + ("Gradle debug APK(s)" if not own else "APK(s)") + f" under {cwd}")
+        variants = sorted({a.parent.name for _, a in apks})
+        print(f"Android: using {apk.relative_to(cwd)}: built {age(t)}, the newest of {len(apks)} " + ("Gradle debug APK(s)" if not own and variants == ["debug"] else "APK(s)") + f" under {cwd}")
+        if variants != ["debug"] and not own:
+            print(f"  build variant{'s' if len(variants) > 1 else ''} found: {', '.join(variants)}; this one is {apk.parent.name}. If your demo data comes from another variant, "
+                  "name that APK: shotfleet init <app> path/to/app.apk")
         builds.append(str(apk))
     ios_cmd = "xcodebuild -scheme <scheme> -sdk iphonesimulator -configuration Debug build"
     if projects:
