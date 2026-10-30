@@ -245,7 +245,8 @@ def load_config(config_path, platform=None):
     else:
         apk = path(cfg["apk"])
         if not apk.is_file() or apk.suffix.lower() != ".apk":
-            raise Fail(f"{apk} isn't an APK: {not_a_build(apk, 'android')}" if apk.exists() else f"no APK at {apk}")
+            raise Fail(f"{apk} isn't an APK: {not_a_build(apk, 'android')}" if apk.exists() else
+                       f"no APK at {apk}" + (f" (a relative path in the config is looked for next to the config file, in {Path(cfg_path).resolve().parent}, not in the folder you ran shotfleet from)" if not Path(cfg["apk"]).is_absolute() else ""))
         m = re.search(r"package: name='([^']+)'", sh([aapt2(), "dump", "badging", str(apk)]).stdout)
         if m and cfg.get("package") and m.group(1) != cfg["package"]:
             raise Fail(f"package is {cfg['package']} but the APK is {m.group(1)}")
@@ -933,6 +934,11 @@ def regex_literal(s):
     # Maestro matches text selectors as a full Java regex; escape metacharacters
     return re.sub(r"([\\.^$|?*+()\[\]{}])", r"\\\1", s)
 
+def looks_like_pattern(text):
+    """True for a selector whose dot stands for a space or any character inside a word, like the wait-only `1:00.PM`: that is no label the
+    app translates, so "not found in the app's strings" would be noise. Other regexes (`Nothing like [0-9]+`) are still reported."""
+    return bool(re.search(r"\w\.\w", re.sub(r"^\.[*+]|\.[*+]$", "", text)))
+
 WRAPPED_RE = re.compile(r"^(\.\*)?(.+?)(\.\*)?$", re.S)
 
 VARIES = re.compile(r"\\[dwsDWS][*+?]?|\([^()]*\)[*+?]?|\[[^\]]*\][*+?]?|\.[*+?]?|[*+?]")  # the parts of a regex that match different text
@@ -1027,7 +1033,7 @@ def translate_flow(flow, base, target, overrides=None, base_only=None):
             forms = tr_format(text)
             if forms is None:
                 hits = [k for k, v in base.items() if regex_fits(text, v)]
-                if not hits: missing.extend(part or [text])
+                if not hits and not looks_like_pattern("".join(part) if part else text): missing.extend(part or [text])
                 else:  # `Interviewing on.*` fits "%@ on %@": it can't be translated, so it only works where the base text is shown
                     for k in hits:
                         if any((t := tg.get(k)) and t != base[k] and not regex_fits(text, t) for tg in targets):
@@ -1116,6 +1122,15 @@ def print_result(lp, r, expected):
     print(f"{'ok  ' if r['ok'] else 'FAIL'} {lp:8} {r['screenshots']}/{expected} screenshots"
           + (" (retried)" if r.get("retried") or r.get("attempts", 1) > 1 else "")
           + ("" if r["ok"] else f"  {r.get('error') or ''}"[:160]))
+
+def say_checking_after_failure():
+    """Between the failure lines and the check's output: a wait for text recognition (first use on a Mac) that follows is the check's, not the failure's cause."""
+    print("\nchecking the screenshots that were taken. Anything it waits for below (such as text recognition starting up) is separate from the failure above")
+
+def partial_note(results, report, expected):
+    """", incomplete sets kept in raw/: en 2 of 5" for languages that failed after taking some screenshots (they are checked, not thrown away), or ""."""
+    kept = [f"{lp} {r_['screenshots']} of {expected_for(report, lp, expected)}" for lp, r_ in results.items() if not r_["ok"] and r_.get("screenshots")]
+    return f"; incomplete sets kept in raw/: {', '.join(kept)}" if kept else ""
 
 def expected_for(report, lp, expected):
     """How many screenshots language `lp` should take: all of the flow's, less those of blocks left out for it (apply_when_defined)."""
@@ -1829,9 +1844,13 @@ INFRA_ERRORS = ("unknown error", "unable to clear state",  # Maestro's words whe
 def no_result(log):
     """The error for a flow Maestro never reported on. When its log says the device driver did not come up in time (a simulator's
     first boot on a busy Mac), say that: it is a device problem, so the run tries once more (INFRA_ERRORS)."""
-    try: said = "driver not ready in time" in Path(log).read_text(errors="replace").lower()
-    except OSError: said = False
-    return "no result: Maestro's driver did not start in time (a slow first boot; see maestro log)" if said else "no result (see maestro log)"
+    try: text = Path(log).read_text(errors="replace")
+    except OSError: text = ""
+    if m := re.search(r"Incorrect Command Format: (\w+)(?:.*\n)*?.*?(The command `\w+` [^\n│]*?)\s*│", text):  # the flow is invalid, not the device: not retried
+        return f"Maestro rejected the flow: {m[1]} is written wrongly ({m[2].strip()}) (see maestro log)"
+    if m := re.search(r"^> (.*(?:Syntax error|Incorrect Command Format|Unknown command|not a valid).*)$", text, re.M):
+        return f"Maestro rejected the flow: {m[1].strip()[:150]} (see maestro log)"
+    return "no result: Maestro's driver did not start in time (a slow first boot; see maestro log)" if "driver not ready in time" in text.lower() else "no result (see maestro log)"
 
 def is_infra_error(error):
     """True when a failed language's error looks like a device or infrastructure problem (INFRA_ERRORS), so one more try can help."""
@@ -2002,6 +2021,18 @@ def failure_screenshot(debug, flow):
     pngs = [*Path(debug).glob(f"**/screenshot-*❌*({flow}).png"), *Path(debug).glob(f"**/{flow}/screenshot-*❌*.png")]
     return max(pngs, key=lambda p: p.stat().st_mtime) if pngs else None
 
+def device_failure_screenshot(emu, debug, flow):
+    """When Maestro left no failure screenshot (it does not on every kind of failure, or on every version), take one from the emulator now,
+    while it still shows where the flow stopped, under the name failure_screenshot() looks for. Returns the path or None. Best effort."""
+    if failure_screenshot(debug, flow): return failure_screenshot(debug, flow)
+    dst = Path(debug) / flow / f"screenshot-❌-shotfleet-from-device-({flow}).png"
+    try:
+        r = subprocess.run([adb_cmd(), "-s", emu.serial, "exec-out", "screencap", "-p"], capture_output=True, timeout=30)
+        if r.returncode != 0 or not r.stdout.startswith(b"\x89PNG"): return None
+        dst.parent.mkdir(parents=True, exist_ok=True); dst.write_bytes(r.stdout)
+    except (OSError, subprocess.TimeoutExpired): return None
+    return dst
+
 FIRST_TRY = "-first-try"
 
 def keep_failure_screenshot(out, lp, tries):
@@ -2109,6 +2140,15 @@ def cmd_run(config_path, only=None, parallel=None, platform=None, retry_failed=F
         codes.append(run_platform(config_path, only, parallel, p, retry_failed))
     return max(codes)
 
+DEVICES_ONLY = None  # `run --devices phone,tablet`: only these entries of [android] devices / [ios] device_types
+
+def pick_devices(devices, wanted, what):
+    """The entries of `devices` named in `wanted` (a list), or a Fail that lists the ones the config has."""
+    if wanted is None: return devices
+    unknown = [w for w in wanted if w not in devices]
+    if unknown: raise Fail(f"--devices {', '.join(unknown)}: not in the config's {what} ({', '.join(devices)})")
+    return [d for d in devices if d in wanted]
+
 NO_HOOKS = False
 NO_BUILD = False  # `run --no-build`: skip the [capture] build
 CONFIG_COMMANDS = True  # False over MCP without hooks: true: the [capture] build and the [ios] simctl / [android] shell commands don't run
@@ -2171,6 +2211,10 @@ def run_platform(config_path, only, parallel, platform, retry_failed=False):
 def capture_platform(platform, cfg, path, only, parallel):
     if platform == "android":
         out = path(cfg.get("out", "out")).resolve(); out.mkdir(parents=True, exist_ok=True)
+        if DEVICES_ONLY is not None:  # the config's own list (a bare config means the phone), narrowed
+            only_devices = pick_devices(cfg.get("devices") or ["phone"], DEVICES_ONLY, "[android] devices")
+            if not cfg.get("devices") and only_devices == ["phone"]: return android_run(cfg, path, out, only, parallel)
+            cfg = {**cfg, "devices": only_devices}
         if devices := cfg.get("devices"):  # phone and tablet sets from one flow: out/<device>/ each
             unknown = [d for d in devices if d not in ANDROID_DEVICES]
             if unknown: raise Fail(f"unknown Android device {', '.join(unknown)}; use {', '.join(ANDROID_DEVICES)}")
@@ -2184,6 +2228,7 @@ def capture_platform(platform, cfg, path, only, parallel):
         return android_run(cfg, path, out, only, parallel)
     if cfg.get("_capture") and not NO_BUILD: capture_build(cfg["_capture"], cfg["_config"], path(cfg.get("out", "out")).resolve())
     if devices := cfg.get("device_types"):  # iPhone and iPad sets from one flow: out/<device>/ each
+        devices = pick_devices(devices, DEVICES_ONLY, "[ios] device_types")
         codes = []
         clear_single_run(path(cfg.get("out", "out")).resolve())
         for d in devices:
@@ -2434,7 +2479,7 @@ def ios_run_inner(cfg, path, only, parallel):
             say_not_retried(skipped)
             if retry:
                 busy_warn(cfg, "ios", n)  # the Mac may have got worse since the start
-                print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
+                print(f"retrying {len(retry)}: " + ", ".join(f"{lp} ({str(final[lp].get('error'))[:80]})" for lp in retry), flush=True)
                 for lp in retry: shutil.rmtree(inside(out, "raw", lp)); (out / "raw" / lp).mkdir()
                 # Maestro's clearState uninstalls and reinstalls the app; when a slow simulator makes that time out halfway,
                 # the app is gone and every flow of the retry would fail within seconds ("Unknown error")
@@ -2470,12 +2515,14 @@ def ios_run_inner(cfg, path, only, parallel):
     report["platform"] = "ios"  # export hooks get SHOTFLEET_PLATFORM from run.json
     report["multi_device"] = bool(cfg.get("multi_device"))  # check: this folder is one device of several (the iPad set may be in a sibling)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
-    print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators")
+    print(f"captured {sum(r['ok'] for r in results)}/{len(results)} locales in {report['wall_seconds']}s on {n} simulators"
+          + partial_note({r["lproj"]: r for r in results if "lproj" in r}, report, expected))
     if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
     failed = [r["lproj"] for r in results if not r["ok"]]
     if not any((out / "raw").glob("*/*.png")):
         print(f"no screenshots were captured, so there's nothing to check; see the errors above and the {'xcodebuild' if capture else 'maestro'} logs")
         return 1
+    if failed: say_checking_after_failure()
     return max(cmd_check(out, strings, ipad_rule=not cfg.get("multi_device"), expect=cfg.get("_expect")), 1 if failed else 0)
 
 # ---------- bring your own capture (iOS): the team's XCUITest screenshot tests on the pool ----------
@@ -2987,7 +3034,19 @@ def android_flow(text, name, shots_dir, env=None, mapped=(), hierarchy=False, se
         settle_before(out, line, settle_ms)
         out.append(line); redirect_screenshot(out, shots_dir)
     close()
-    return header + "\n---\n" + "\n".join(out) + "\n"
+    return header + "\n---\n" + "\n".join(collapse_empty_launch(out)) + "\n"
+
+def collapse_empty_launch(lines):
+    """`- launchApp:` with nothing under it (dropping clearState emptied it) is invalid for Maestro ("requires additional options"):
+    write it as the bare `- launchApp`."""
+    out = []
+    for i, line in enumerate(lines):
+        m = re.match(r"^(\s*)- launchApp:\s*(#.*)?$", line)
+        nxt = next((l for l in lines[i + 1:] if l.strip()), "")
+        if m and not (nxt.strip() and len(nxt) - len(nxt.lstrip()) > len(m.group(1))):
+            line = f"{m.group(1)}- launchApp"
+        out.append(line)
+    return out
 
 def hierarchy_lines(tree):
     """The text of one Maestro screen-hierarchy tree, one string per line in screen order, without the status bar and
@@ -3151,6 +3210,7 @@ def android_run_inner(cfg, path, out, only, parallel):
                 want = expected_for(report, lp, expected)
                 r_ = res.get(fname) or {"ok": shots == want, "error": None if shots == want else no_result(out / f"maestro_{tag}.log")}
                 if r_["ok"] and shots == want and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
+                if not (r_["ok"] and shots == want): device_failure_screenshot(next(e for e in pool if e.serial == dev), dbg, fname)  # Maestro does not always leave one
                 splash = not (r_["ok"] and shots == want) and app_splash_showing(next(e for e in pool if e.serial == dev), pkg)  # while the emulator still shows it
                 results[lp] = {**r_, "ok": r_["ok"] and shots == want, "screenshots": shots, "device": dev, "_maestro": (dbg, fname), "_splash": splash,
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
@@ -3178,7 +3238,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         if not broken: say_not_retried(skipped)
         if retry and not broken:
             busy_warn(cfg, "android", n)
-            print(f"retrying {len(retry)}: {', '.join(retry)}", flush=True)
+            print(f"retrying {len(retry)}: " + ", ".join(f"{lp} ({str(final[lp].get('error'))[:80]})" for lp in retry), flush=True)
             for i in range(0, len(retry), n):
                 for lp, r_ in safe_round(retry[i:i + n], f"retry{i // n + 1}").items():
                     final[lp] = {**r_, "retried": True, "attempts": 2, "_before": final[lp].get("_maestro"), "_splash": r_.get("_splash") or final[lp].get("_splash", False)}
@@ -3200,12 +3260,14 @@ def android_run_inner(cfg, path, out, only, parallel):
     report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk,
                   device=cfg.get("device", "phone"), play_folder=kind["folder"], hierarchy_markers=hier)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
-    print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators")
+    print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators" + partial_note(final, report, expected))
+    if not all(r_["ok"] for r_ in final.values()): print(flow_parse_note(out), end="")
     if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
     if not any((out / "raw").glob("*/*.png")):
         print("no screenshots were captured, so there's nothing to check; see the errors above and the maestro logs")
         return 1
     if not hier: print("note: " + no_hierarchy_note(version))  # again, where people look: with the result
+    if not all(r_["ok"] for r_ in final.values()): say_checking_after_failure()
     return max(cmd_check(out, strings, expect=cfg.get("_expect")), 0 if all(r_["ok"] for r_ in final.values()) else 1)
 
 # ---------- check ----------
@@ -4561,6 +4623,12 @@ def capture_mode(config="shotfleet.toml"):
     except (OSError, ValueError): return False, True  # tomllib.TOMLDecodeError and UnicodeDecodeError are ValueErrors
     return "capture" in doc and "ios" in doc, "android" in doc
 
+def config_has_locale_inputs(config):
+    """True when the config has an [inputs.<locale>] table (typed text that differs per language)."""
+    try: doc = tomllib.loads(Path(config).read_text())
+    except (OSError, ValueError): return False
+    return any(isinstance(v, dict) for v in (doc.get("inputs") or {}).values())
+
 def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
     """Check the tools shotfleet drives; print how to fix what's missing. With fix=True, offer to fetch what it can (fix_plan).
     A config with [capture] (the team's XCUITest tests on iOS) needs Maestro and Java only for its Android section."""
@@ -4607,6 +4675,9 @@ def cmd_doctor(fix=False, yes=False, config="shotfleet.toml"):
         print(f"{'ok  ' if ok else 'MISSING'} {name:20} ({platform})" + ("" if ok else f"  -> {how}"))
     if runtime_note: print(f"note: {runtime_note}")
     if has_maestro and (w := maestro_warning(maestro_v)): print(f"note: {w}")
+    if has_maestro and android and maestro_v and tuple(int(x) for x in re.findall(r"\d+", maestro_v)[:3]) < (2, 11, 0) and config_has_locale_inputs(config):
+        print(f"note: {config} has [inputs.<locale>] and Maestro {maestro_v} may not tell each Android emulator which language it is (2.0.10 does not; 2.11.0 does): "
+              "on such a Maestro Android types the [inputs] defaults in every language. Update Maestro with `shotfleet doctor --fix`")
     if capture: print(f"note: {config} runs your XCUITest tests on iOS ([capture]), so iOS needs Xcode, not Maestro or Java")
     print(f"Android SDK: {SDK}" + ("" if any((SDK / part).is_dir() for part in SDK_PARTS) else "  (nothing found there; set ANDROID_HOME if it lives elsewhere)"))
     sdkmanager = cmdline_tool("sdkmanager")
@@ -5489,6 +5560,7 @@ def main(argv=None):
     p.add_argument("--platform", choices=("ios", "android"), help="only this platform when the config has both")
     p.add_argument("--locales", help="only these languages, comma-separated (e.g. de,ja)")
     p.add_argument("--parallel", type=int, help="how many simulators or emulators to use (default: the config's, or 4)")
+    p.add_argument("--devices", help="only these entries of the config's [android] devices or [ios] device_types, comma-separated (e.g. phone,tablet)")
     p.add_argument("--retry-failed", action="store_true", help="rerun only the languages that failed in this config's last run (out/run.json); the ones that passed stay as they were")
     p.add_argument("--json", action="store_true", help="print the check report as JSON on stdout (progress goes to stderr)")
     p.add_argument("--no-hooks", action="store_true", help="don't run the [hooks] commands from the config")
@@ -6104,8 +6176,9 @@ def main_dispatch(a):
         if a.cmd == "mcp": return cmd_mcp()
         if a.cmd == "skill": return cmd_skill(a.dir, a.project, a.force)
         if a.cmd == "init": return cmd_init_capture(a.builds, a.dir) if a.capture else cmd_init(a.builds, a.dir)
-        global NO_HOOKS, NO_BUILD
+        global NO_HOOKS, NO_BUILD, DEVICES_ONLY
         NO_HOOKS, NO_BUILD = bool(getattr(a, "no_hooks", False)), bool(getattr(a, "no_build", False))
+        DEVICES_ONLY = [d.strip() for d in a.devices.split(",") if d.strip()] if getattr(a, "devices", None) else None
         if a.cmd in ("run", "export") and os.environ.get("SHOTFLEET_IMAGE") == "check":  # set by the Dockerfile
             raise Fail(f"`{a.cmd}` doesn't work in the shotfleet-check Docker image: it has no simulators, emulators or Maestro, "
                        "so it only runs `check`. Use `run` and `export` on a Mac")
