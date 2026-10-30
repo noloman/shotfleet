@@ -315,6 +315,10 @@ device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes 
 devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
                           # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
                           # "tablet-7" adds a 7" tablet, 1080x1920 at 280 dpi, exported to sevenInchScreenshots
+                          # your own size, in the Play folder of its base (phone, tablet or tablet-7; default phone):
+                          # devices = ["phone", {name = "tablet-landscape", base = "tablet", size = "2560x1440", density = 320, orientation = "landscape"}]
+                          # `size` is WxH (320 to 3840 px); `orientation = "landscape"` makes the emulator wider than tall and starts it that way;
+                          # all keys but name are optional. The emulator is created for that size (a changed size makes a new one)
 root = true               # run `adb root` after boot, before `shell` (Google APIs emulator images only; `clock` turns it on by itself)
 ```
 

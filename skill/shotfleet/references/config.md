@@ -56,6 +56,7 @@ Keys valid in `[ios]` and `[android]`:
 | `apk` (required) | none | debug APK, API 33+ emulators |
 | `package` | read from the APK | refused if it differs |
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots`; `"tablet-7"` adds a 7" tablet, 1080x1920 at 280 dpi, exported to `sevenInchScreenshots` |
+| `devices` (tables) | none | entries of `devices` may also be tables `{name = "tablet-landscape", base = "tablet", size = "2560x1440", density = 320, orientation = "landscape"}`: your own size, exported to the Play folder of `base` (phone, tablet or tablet-7; default phone); `orientation = "landscape"` makes the emulator wider than tall. Only `name` is required |
 | `shell` | none | list of commands run as `adb -s <serial> shell <command>` once per emulator right after boot (after demo mode), e.g. `["setprop debug.myapp.demo 1"]`; not run on a real emulator yet |
 | `root` | false | runs `adb root` after boot and before `shell`; refused with the reason on Play Store images. `clock` implies it |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the docs) |

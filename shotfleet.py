@@ -180,7 +180,9 @@ def check_section(cfg, platform, name):
         raise Fail(f"[{platform}] settle_ms in {name} should be 0 (off) to 10000 milliseconds, not {cfg['settle_ms']}")
     if cfg.get("capacity") == "adjust": raise Fail(f"[{platform}] capacity = \"adjust\" in {name} is not available yet; use \"warn\" (the default) or \"off\"")
     if cfg.get("capacity", "warn") not in ("warn", "off"): raise Fail(f"[{platform}] capacity in {name} should be \"warn\" or \"off\", not {cfg['capacity']!r}")
+    if platform == "android" and isinstance(cfg.get("devices"), list): custom_android_devices(cfg["devices"], f"[android] devices in {name}")
     for key in ("locales", "device_types", "devices", "strings"):
+        if key == "devices" and platform == "android": continue  # names or tables: checked above
         if isinstance(cfg.get(key), list) and not all(isinstance(v, str) for v in cfg[key]):
             raise Fail(f"[{platform}] {key} in {name} should be a list of strings, e.g. {key} = [\"de\", \"ja\"]")
     check_locales(cfg.get("locales", []) + ([cfg["base_locale"]] if "base_locale" in cfg else []), f"[{platform}] in {name}")
@@ -209,6 +211,7 @@ def load_config(config_path, platform=None):
     if platform not in doc: raise Fail(f"{cfg_path.name} has no [{platform}] section")
     cfg = doc[platform]
     check_section(cfg, platform, cfg_path.name)
+    if platform == "android" and cfg.get("devices"): cfg["devices"] = custom_android_devices(cfg["devices"], f"[android] devices in {cfg_path.name}")
     if "capture" in doc and "ios" not in doc:
         raise Fail(f"[capture] in {cfg_path.name} runs your XCUITest tests on iOS simulators, so it needs an [ios] section (Android still uses a Maestro flow)")
     capture = doc.get("capture") if platform == "ios" else None
@@ -2799,6 +2802,45 @@ ANDROID_DEVICES = {
     "tablet-7": {"avd": "shotfleet_android_tablet7", "profile": "7in WSVGA (Tablet)", "size": (1080, 1920, 280),
                  "folder": "sevenInchScreenshots"},
 }
+BUILTIN_ANDROID_DEVICES = tuple(ANDROID_DEVICES)
+CUSTOM_DEVICE_KEYS = ("name", "base", "size", "density", "orientation")
+
+def custom_android_devices(devices, where):
+    """The names in an [android] `devices` list whose entries are built-in names or tables like
+    `{name = "tablet-10-landscape", base = "tablet", size = "2560x1600", density = 320, orientation = "landscape"}`.
+    Each table is added to ANDROID_DEVICES: a new emulator of that size (its name holds the size, so a changed size makes a new one),
+    in the Play folder of its `base` (phone, tablet or tablet-7; default phone). `orientation = "landscape"` makes the emulator
+    wider than tall (swapping the size if needed) and starts it that way. Without `size` the base's size is used."""
+    import difflib
+    names = []
+    for d in devices:
+        if isinstance(d, str): names.append(d); continue
+        if not isinstance(d, dict): raise Fail(f"{where}: each device should be a name or a table like {{name = \"tablet-landscape\", base = \"tablet\", orientation = \"landscape\"}}, not {d!r}")
+        for k in d:
+            if k not in CUSTOM_DEVICE_KEYS:
+                near = difflib.get_close_matches(k, CUSTOM_DEVICE_KEYS, n=1)
+                raise Fail(f"{where}: a device has an unknown setting '{k}'" + (f"; did you mean '{near[0]}'?" if near else f". Known settings: {', '.join(CUSTOM_DEVICE_KEYS)}"))
+        name = d.get("name")
+        if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name): raise Fail(f"{where}: a device needs a name (letters, digits, . _ -), not {name!r}")
+        if name in BUILTIN_ANDROID_DEVICES: raise Fail(f"{where}: the device name {name!r} is built in; choose another name for your own size")
+        base = d.get("base", "phone")
+        if base not in BUILTIN_ANDROID_DEVICES: raise Fail(f"{where}: base of {name!r} should be one of {', '.join(BUILTIN_ANDROID_DEVICES)}, not {base!r}")
+        w, h, dpi = ANDROID_DEVICES[base]["size"]
+        if "size" in d:
+            m = re.fullmatch(r"(\d{3,4})x(\d{3,4})", d["size"]) if isinstance(d["size"], str) else None
+            if not m or not all(320 <= int(v) <= 3840 for v in m.groups()): raise Fail(f"{where}: size of {name!r} should look like \"2560x1600\" (320 to 3840 px each way), not {d['size']!r}")
+            w, h = int(m[1]), int(m[2])
+        if "density" in d:
+            if not isinstance(d["density"], int) or isinstance(d["density"], bool) or not 120 <= d["density"] <= 640: raise Fail(f"{where}: density of {name!r} should be a whole number from 120 to 640, not {d['density']!r}")
+            dpi = d["density"]
+        orientation = d.get("orientation")
+        if orientation not in (None, "portrait", "landscape"): raise Fail(f"{where}: orientation of {name!r} should be \"portrait\" or \"landscape\", not {orientation!r}")
+        if (orientation == "landscape") == (w < h) and orientation: w, h = h, w
+        slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+        ANDROID_DEVICES[name] = {"avd": f"shotfleet_{slug}_{w}x{h}_{dpi}", "profile": ANDROID_DEVICES[base]["profile"], "size": (w, h, dpi),
+                                 "folder": ANDROID_DEVICES[base]["folder"], "landscape": w > h}
+        names.append(name)
+    return names
 
 def avd_home():
     """Where shotfleet keeps its emulators: ANDROID_AVD_HOME, ANDROID_USER_HOME/avd, else ~/.android/avd. Named explicitly to avdmanager
@@ -2845,6 +2887,10 @@ def android_pool(n, cfg, pool):
         ini.write_text(re.sub(r"(?m)^hw\.lcd\.width=.*", f"hw.lcd.width={w}",
                        re.sub(r"(?m)^hw\.lcd\.height=.*", f"hw.lcd.height={h}",
                        re.sub(r"(?m)^hw\.lcd\.density=.*", f"hw.lcd.density={dpi}", ini.read_text()))))
+        if kind.get("landscape"):  # a wider-than-tall screen starts in landscape
+            text = ini.read_text()
+            ini.write_text(re.sub(r"(?m)^hw\.initialOrientation=.*", "hw.initialOrientation=landscape", text) if re.search(r"(?m)^hw\.initialOrientation=", text)
+                           else text.rstrip("\n") + "\nhw.initialOrientation=landscape\n")
     if not (avd_dir / "snapshots" / SNAPSHOT).exists():  # one-time: boot writable, save a snapshot copies start from
         e = Emu(5700); p = e.proc = start_emu(avd, e.port, read_only=False); pool.append(e)  # killed by the caller if this fails
         wait_booted([e]); time.sleep(20)
@@ -3152,7 +3198,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         got, total = sum(r_.get("hierarchy_texts", 0) for r_ in final.values()), sum(r_["screenshots"] for r_ in final.values())
         print(f"screen text from the UI hierarchy for {got} of {total} screenshots" + ("" if got == total else "; the rest are read from pixels (OCR)"))
     report.update(wall_seconds=round(time.time() - t0), emulators=n, platform="android", apk=apk,
-                  device=cfg.get("device", "phone"), hierarchy_markers=hier)
+                  device=cfg.get("device", "phone"), play_folder=kind["folder"], hierarchy_markers=hier)
     (out / "run.json").write_text(json.dumps(report, indent=1, ensure_ascii=False))
     print(f"captured {sum(r_['ok'] for r_ in final.values())}/{len(todo)} locales in {report['wall_seconds']}s on {n} emulators")
     if prev: print(f"kept the other {kept} language{'s' if kept != 1 else ''} of the last run as they were; run.json lists all {len(report['locales'])}")
@@ -3952,10 +3998,11 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
         ipad_rule = not (own if own is not None else (here / "run.json").exists() and not (here.parent / "run.json").exists())  # older run.json: the folder layout
     ipad = ipad_rule and bool(ios_app) and "2" in plist_value(Path(ios_app) / "Info.plist", "UIDeviceFamily")
     device = json.loads(run_json.read_text()).get("device", "phone") if run_json.exists() else "phone"
-    tablet = play_folder != "phoneScreenshots" or ANDROID_DEVICES.get(device, {}).get("folder") not in (None, "phoneScreenshots")
+    run_folder = (json.loads(run_json.read_text()).get("play_folder") if run_json.exists() else None) or ANDROID_DEVICES.get(device, {}).get("folder")  # a custom device is not in ANDROID_DEVICES here
+    tablet = play_folder != "phoneScreenshots" or run_folder not in (None, "phoneScreenshots")
     store_problems, notes = store_rules(images, android, ipad, tablet)
     if android:
-        kind = play_folder if play_folder != "phoneScreenshots" else ANDROID_DEVICES.get(device, {}).get("folder") or "phoneScreenshots"
+        kind = play_folder if play_folder != "phoneScreenshots" else run_folder or "phoneScreenshots"
         sets = {kind: images}
         for k in play_folders(folder):  # a supply folder holds the phone and tablet sets side by side
             if k != kind:
@@ -5377,7 +5424,7 @@ def cmd_export(out, fastlane, name_prefix=""):
     done = []
     for folder, lp in sorted(targets.items()):
         if lp in bad: print(f"skip {folder}: {lp} failed checks (see {out / 'check.json'})"); continue
-        dst = inside(root, folder, "images", ANDROID_DEVICES[run.get("device", "phone")]["folder"]) if android else inside(root, folder)
+        dst = inside(root, folder, "images", run.get("play_folder") or ANDROID_DEVICES[run.get("device", "phone")]["folder"]) if android else inside(root, folder)
         dst.mkdir(parents=True, exist_ok=True)
         new = sorted((shots / lp).glob("*.png"))
         sizes = {png_size(p) for p in new}
