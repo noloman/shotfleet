@@ -1,6 +1,16 @@
 # Changelog
 
 ## Unreleased
+- **Fixes from Quickspan's first real Android run (#92, #93, #95, #96):**
+  - An Android flow whose `launchApp:` held only `clearState: true` no longer ends up as an empty `- launchApp:` that Maestro rejects; it is written as `- launchApp` (#95).
+  - A flow Maestro refuses to read ("Incorrect Command Format") is named in the language's error ("Maestro rejected the flow: launchApp is written wrongly ...") instead of "flow never ran", and is not retried (#92).
+  - When Maestro leaves no failure screenshot, `run` takes one from the emulator, so `out/failures/<lang>.png` exists (#92).
+  - A retry says why it happens ("retrying en (no result ...)"), and a failed language that took some screenshots says "incomplete sets kept in raw/: en 2 of 5" in the summary (#96).
+  - `run --devices phone,tablet` narrows the config's devices without editing it (#96).
+  - Wait-only regexes such as `1:00.PM.*` are no longer reported as "not found in the app's strings" (#96).
+  - `doctor` warns when the config has `[inputs.<locale>]` and Maestro is older than 2.11.0, which may not tell each emulator its language (#96).
+  - After a failure, a line says the check that follows (and any wait for text recognition) is separate from the failure (#96).
+  - The "no APK" error says a relative path is looked for next to the config file; the README states the rule and the from-source install (#93, #96). Fakes only, not run on a device.
 - **Your own Android screenshot sizes, and landscape (#83, first two parts):** an entry of `[android] devices` can be a table, `{name = "tablet-landscape", base = "tablet", size = "2560x1440", density = 320, orientation = "landscape"}`: an emulator of that size (landscape starts it wider than tall), exported to the Play folder of its `base`. A changed size creates a new emulator, so an old one is not reused. `run.json` records `play_folder`, so `check` and `export` work for these names. The foldable device with postures is not built. Fakes only, not run on an emulator.
 - **`runFlow` with `when: { defined: <input> }` (#80):** a block of steps runs only in languages that have a value for that `[inputs]` name, and is left out in the others, whose screenshot count and `run.json` (`skipped_screenshots`) account for it, so a language with no valid phrase is not a failure or a wrong-language shot. Android languages that skip different blocks run in separate sub-rounds. Fakes only, not run on a device; the `check` coverage tables are untouched.
 - **`- waitForExpected` flow step (#84):** waits, in every language, for the `any` and `all` texts of the next screenshot's `[expect.<name>]` table, for screens that fill in late (a parser's chips) with text that differs per language. Dropped with a warning when there is nothing to wait for. I chose this over a "wait until the screen stops changing" step because a screen that is still before the late content appears looks stable. Fakes only, not run on a device.
