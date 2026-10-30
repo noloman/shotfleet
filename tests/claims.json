@@ -5891,7 +5891,7 @@
    "site/public/whats-new.html"
   ],
   "where_text": [
-   "These were tested with fakes and unit tests; they were not run on a device for this release."
+   "After the release, clock and root, your own sizes with landscape, waitForExpected and runFlow with when: defined were run on an Android emulator (2026-10-30). One thing came out of it: check calls a screenshot that a language skips on purpose missing; that is not fixed yet. The foldables, the Compose hint and the notification recipes were tested with fakes and unit tests only, not run on a device."
   ],
   "status": "proven",
   "proof": "CHANGELOG 0.1.10 (#79-#84): tests/test_custom_devices.py, tests/test_clock.py, tests/test_wait_expected.py, tests/test_when_defined.py and tests/test_shotfleet.py. Unit tests with fakes; the page says none of it ran on a device.",

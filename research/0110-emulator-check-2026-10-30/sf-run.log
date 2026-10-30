@@ -1,0 +1,49 @@
+
+== phone
+note: FleetFixture.apk is not debuggable (a release-type build). That works: shotfleet clears data and sets the app language through adb, which do not need a debuggable build. What it cannot do is anything that needs run-as or a debugger
+note: on Android [inputs.<locale>] values are found by MAESTRO_DEVICE_UDID (Maestro hands any flow to any emulator); Maestro 2.11.0 sets it; Maestro 2.0.10 doesn't, so on 2.0.10 Android types the [inputs] defaults
+note: Maestro 2.0.10 saves no screen hierarchy on Android (that needs 2.7.0 or newer), so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. Maestro 2.11.0 gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`
+note en: input not defined for this language, so 1 screenshot(s) are not taken: 01b_phrase
+booting 1 emulators (shotfleet_android, 1080x1920)
+capturing 2 locales on 1 emulators, 2 rounds...
+ok   en       2/2 screenshots
+ok   de       3/3 screenshots
+captured 2/2 locales in 167s on 1 emulators
+note: Maestro 2.0.10 saves no screen hierarchy on Android (that needs 2.7.0 or newer), so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. Maestro 2.11.0 gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`
+macOS is preparing its text recognition, a one-off wait of about 30 seconds (a few minutes on a busy Mac). Nothing is wrong if this stays quiet.
+
+checked 5 screenshots in 2 languages: 1 problem(s)
+content: [expect] checked on 2 screens, 0 expectation(s) could not be verified (see notes)
+  - en: missing 01b_phrase.png
+notes (1, not blocking):
+  - 2 listing(s) (de, en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+
+Google Play coverage (language x device class):
+      phone
+  de  ok (3)
+  en  ok (2)
+
+== phone-landscape
+note: FleetFixture.apk is not debuggable (a release-type build). That works: shotfleet clears data and sets the app language through adb, which do not need a debuggable build. What it cannot do is anything that needs run-as or a debugger
+note: on Android [inputs.<locale>] values are found by MAESTRO_DEVICE_UDID (Maestro hands any flow to any emulator); Maestro 2.11.0 sets it; Maestro 2.0.10 doesn't, so on 2.0.10 Android types the [inputs] defaults
+note: Maestro 2.0.10 saves no screen hierarchy on Android (that needs 2.7.0 or newer), so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. Maestro 2.11.0 gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`
+note en: input not defined for this language, so 1 screenshot(s) are not taken: 01b_phrase
+booting 1 emulators (shotfleet_phone_landscape_1920x1080_320, 1920x1080)
+capturing 2 locales on 1 emulators, 2 rounds...
+warning: this Mac is very busy (swap is 92% full); simulators may stop answering. Close other builds or use fewer parallel devices.
+ok   en       2/2 screenshots
+ok   de       3/3 screenshots
+captured 2/2 locales in 63s on 1 emulators
+note: Maestro 2.0.10 saves no screen hierarchy on Android (that needs 2.7.0 or newer), so `check` reads the screenshots' text from pixels (OCR), which cannot verify every script. Maestro 2.11.0 gives the exact text (it passed our Android runs): update Maestro with `curl -Ls https://get.maestro.mobile.dev | bash`
+
+checked 5 screenshots in 2 languages: 1 problem(s)
+content: [expect] checked on 2 screens, 0 expectation(s) could not be verified (see notes)
+  - en: missing 01b_phrase.png
+notes (1, not blocking):
+  - 2 listing(s) (de, en) have fewer than 4 screenshots at 1080px+ in exactly 9:16 or 16:9 (e.g. 1080x1920), so Google Play won't consider them for recommendations
+
+Google Play coverage (language x device class):
+      phone
+  de  ok (3)
+  en  ok (2)
+exit=1

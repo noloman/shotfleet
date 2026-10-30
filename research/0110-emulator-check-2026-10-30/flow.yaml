@@ -1,0 +1,11 @@
+- launchApp
+- waitForExpected
+- takeScreenshot: 01_welcome
+- runFlow:
+    when: { defined: phrase }
+    commands:
+      - takeScreenshot: 01b_phrase
+- tapOn: "Next"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 02_settings
