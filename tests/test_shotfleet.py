@@ -3043,7 +3043,7 @@ def g1_image(salt, size=(1320, 2868)):
     return png_c(*size) + salt.encode()
 
 
-def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, folder="shots", **kw):
+def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, folder="shots", run=None, **kw):
     """Run cmd_check on {label: {name: lines | (lines, size) | (lines, size, salt)}}. Lines are the app's own text (.texts.json, as an iOS
     run saves them) unless `ocr` is True: then a fake text recognition reads them from <name>.png.txt. -> (code, report, stdout)."""
     d = Path(tempfile.mkdtemp())
@@ -3053,6 +3053,7 @@ def g1_check(spec, strings=G1_STRINGS, readable=("en", "de", "ja"), ocr=None, fo
             png = d / folder / label / name; png.parent.mkdir(parents=True, exist_ok=True); png.write_bytes(g1_image(salt, size))
             if ocr: Path(f"{png}.txt").write_text("\n".join(lines))
             else: png.with_suffix(".texts.json").write_text(json.dumps(lines, ensure_ascii=False))
+    if run is not None: (d / folder / "run.json").write_text(json.dumps(run))
     def fake_ocr(_ocr, png, timeout=120):
         text = Path(f"{png}.txt").read_text()
         return {"text": text, "chars": len(text), "lang": "en" if "Next" in text else None, "langs": {"en": 0.9} if "Next" in text else {}}
@@ -3120,6 +3121,13 @@ class G1CheckDetectors(unittest.TestCase):
         spec = {**self.CLEAN, "ja": {"01.png": G1_SHOWS["ja"]}}
         code, report, _ = g1_check(spec)
         self.assertEqual((code, report["problems"]), (1, ["ja: missing 02.png"]))
+
+    def test_a_screenshot_a_language_skipped_on_purpose_is_not_missing(self):  # #107: run.json lists skipped_screenshots (when: {defined})
+        spec = {"de": {"01.png": G1_SHOWS["de"], "02.png": G1_SHOWS["de"]}, "en": {"01.png": G1_SHOWS["en"]}}
+        code, report, _ = g1_check(spec, run={"locales": {"en": {"skipped_screenshots": ["02"]}, "de": {}}})
+        self.assertEqual(report["problems"], [])
+        code, report, _ = g1_check(spec, run={"locales": {"en": {}, "de": {}}})  # not listed as skipped: still missing
+        self.assertEqual(report["problems"], ["en: missing 02.png"])
 
     def test_a_listing_in_a_language_the_app_does_not_have_is_named_and_not_read_as_another_language(self):  # C024
         spec = {**self.CLEAN, "fr-FR": {"01.png": G1_SHOWS["en"], "02.png": G1_SHOWS["en"]}}

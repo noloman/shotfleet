@@ -4346,6 +4346,7 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
     if same := [f for hits in busy_hash.values() if len({lp for lp, _ in hits}) > 1 for _, f in hits]:
         notes.append(f"{len(same)} unverified screens are identical across languages; run check again when text recognition answers "
                      f"to tell whether they're copies ({', '.join(same)})")
+    run_skipped = {lp: v.get("skipped_screenshots", ()) for lp, v in (json.loads(run_json.read_text()).get("locales", {}) if run_json.exists() else {}).items()}
     names = {screen[r["file"]] for r in rows}  # expected set = union across languages, screengrab timestamps and supply's _<locale> aside
     for label in sorted(set(images) - set(unmapped)):
         have, seen = {}, {}
@@ -4354,7 +4355,8 @@ def cmd_check(folder, strings=None, app=None, report_dir=None, strings_files=Non
             if len(files) > 1:
                 problems.append(f"{label}: {', '.join(files)} are the same screen saved {len(files)} times (only screengrab's timestamp "
                                 "differs); keep the newest and delete the rest")
-        if missing := names - set(seen):
+        skipped = set(run_skipped.get(label, ()))  # left out for this language on purpose (`when: {defined}`): not missing
+        if missing := {n for n in names - set(seen) if Path(n).stem not in skipped}:
             problems.append(f"{label}: missing {', '.join(sorted(missing))}")
     stems = {Path(screen[r["file"]]).stem for r in rows}
     for name in sorted(expect or {}):  # an [expect] for a screenshot that doesn't exist would never be checked: a typo
