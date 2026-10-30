@@ -84,6 +84,46 @@ Modifier.semantics { testTagsAsResourceId = true }   // once, on the root compos
 
 and give the elements a `Modifier.testTag("view_week")`. Then `- tapOn: { id: "view_week" }` works in every language. When a text selector fits more than one string in the app, `run` prints a warning per language naming the strings; use an `id:` or `index:` selector for that step. Not run on a device yet.
 
+## Screenshots of system UI: the notification shade and notification cards (Android)
+
+Maestro drives your app; the shade and notifications belong to the system. Two things cover most of it, and neither needs anything new from shotfleet.
+
+**Post a notification you control.** `[android] shell` runs after every boot on every emulator, so put the notification there instead of relying on whatever the emulator holds. Clear the others first so the shade holds only yours:
+
+```toml
+[android]
+shell = [
+  "cmd notification cancel_all",
+  "cmd notification post -S bigtext -t 'Dentist at 3 PM' reminder 'Leave in 20 minutes'",
+]
+```
+
+The text is yours and is not translated by shotfleet, so the notification is in the same words in every language. If the language matters, post it from your app in screenshot mode instead (the app writes it in the language Android set for it), as in the rules at the top.
+
+**Open the shade from the flow.** A swipe down from the top edge opens it, and a swipe up closes it. After it opens, `takeScreenshot` takes the shade as it is:
+
+```yaml
+appId: com.example.app
+---
+- launchApp:
+    arguments:
+      SCREENSHOT_MODE: "1"
+- swipe:
+    start: 50%, 0%
+    end: 50%, 80%
+- extendedWaitUntil:
+    visible: "Leave in 20 minutes"
+    timeout: 5000
+- takeScreenshot: 05_notification
+- swipe:
+    start: 50%, 80%
+    end: 50%, 0%
+```
+
+Two swipes are sometimes needed for the full shade. If the notification text is in your language file, `extendedWaitUntil` with `visible:` is translated per language like any other text. The demo-mode setting shotfleet applies (`notifications visible false`) hides the status-bar icons only, not the shade's cards.
+
+**What is out of scope.** A screen that listens to the microphone ("Listening...") needs audio the emulator does not have. The emulator can play a host audio file as the microphone (Extended controls, Microphone), but shotfleet does not drive that, so make the screen reachable in screenshot mode with a canned state instead. A notification's own buttons (a "Join" action) can be tapped from the open shade by text, like any other button. I have not run these recipes on a device; the commands are the ones Android documents for `cmd notification` and the swipes are plain Maestro.
+
 ## What shotfleet will not do for you
 
 It does not change what your backend returns, set the date on iOS, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
