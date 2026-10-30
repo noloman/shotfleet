@@ -63,13 +63,16 @@ shotfleet can run a `setprop` on every emulator right after it boots: put the co
 
 ## Apps that seed demo data relative to now
 
-If your demo data is built around today's date (a calendar, a planner, a habit tracker), screenshots are only consistent on a fixed date. shotfleet has no clock option yet (it is tracked in the repository's issues); you can set the date yourself with `[android] shell` on an emulator that allows root:
+If your demo data is built around today's date (a calendar, a planner, a habit tracker), screenshots are only consistent on a fixed date. Set it in `shotfleet.toml`:
 
-- Use a **Google APIs** emulator image. Play Store images do not allow `adb root`, and `adb shell` then runs as the shell user, where `date` fails.
-- Turn off automatic time and time zone first, or the clock snaps back.
-- `[android] shell` runs `adb shell <command>`, so run `adb root` yourself before the run (for example in a `before_run` hook) and keep the commands in the list to what the shell user may do after that.
+```toml
+[android]
+clock = "2026-10-27 10:00"   # date and time, 24-hour, in the emulator's time zone
+```
 
-A failing `[android] shell` command stops the run (exit 2); for `date` and system settings the message now says that root is the usual reason. The status bar clock shotfleet shows is fixed (9:41): a screen that also shows the app's own "now" will disagree with it until the clock option exists.
+On Android this runs `adb root`, turns off automatic time and time zone, sets the date and makes the status bar show the same time (instead of 9:41), on every emulator after boot. It needs a **Google APIs** emulator image: Play Store images do not allow root, and shotfleet stops with a message that says so. `root = true` alone runs `adb root` before your `[android] shell` commands. On iOS `clock` sets the status bar time only; the simulator's date is not changed. Not run on a device yet.
+
+A failing `[android] shell` command stops the run (exit 2); for `date` and system settings the message says root is the usual reason.
 
 ## Compose apps: selecting by id in every language
 
@@ -83,7 +86,7 @@ and give the elements a `Modifier.testTag("view_week")`. Then `- tapOn: { id: "v
 
 ## What shotfleet will not do for you
 
-It does not change what your backend returns, set the date for you (see above for doing it by hand), log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
+It does not change what your backend returns, set the date on iOS, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
 
 ## Checking that the content is really there
 

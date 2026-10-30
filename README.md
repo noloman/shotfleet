@@ -300,6 +300,7 @@ parallel = 4              # simulators (emulators on Android); default 4
 capacity = "warn"         # warn (default) prints a note when the Mac is short of memory or swapping; "off" silences it; the run is never changed
 stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped and the languages retried (default 900)
 settle_ms = 1000          # before each screenshot, wait up to this many milliseconds for the screen to stop moving (default 1000; 0 turns it off)
+clock = "2026-10-27 10:00"  # a fixed date and time: Android sets the emulator clock and the status bar to it, iOS only the status bar time (default: status bar 9:41, the real date)
 locales = ["de", "ja"]    # default: every language the app ships
 base_locale = "de"        # the language your flow is written in (default en)
 bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
@@ -314,6 +315,7 @@ device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes 
 devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
                           # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
                           # "tablet-7" adds a 7" tablet, 1080x1920 at 280 dpi, exported to sevenInchScreenshots
+root = true               # run `adb root` after boot, before `shell` (Google APIs emulator images only; `clock` turns it on by itself)
 ```
 
 ### Flutter, React Native, .NET MAUI, Unity and translation-platform exports

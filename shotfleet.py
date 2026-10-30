@@ -58,8 +58,8 @@ def inside(root, *parts):
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int, "capacity": str, "settle_ms": int},
-        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
-        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
+        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list, "clock": str},
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list, "root": bool, "clock": str}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not", "key")  # key = the app's own string key; its text, in the screenshot's language, must be on screen
@@ -191,6 +191,7 @@ def check_section(cfg, platform, name):
             raise Fail(f"[{platform}] {key} in {name} should be an emulator name (letters, digits, . _ -), not {cfg[key]!r}")
     if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
         raise Fail(f"[{platform}] locales in {name} is empty. Remove the line to capture every language the app ships, or list some: locales = [\"de\", \"ja\"]")
+    if "clock" in cfg: parse_clock(cfg["clock"], f"[{platform}] clock in {name}")
     for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
         if not all(isinstance(c, str) for c in cfg.get(key, [])):
             raise Fail(f"[{platform}] {key} in {name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
@@ -1357,6 +1358,27 @@ def replace_hung(name, udid):
     print(f"could not delete it, so it is used as it is; to delete it yourself: xcrun simctl delete {udid}", flush=True)
     return False
 
+def parse_clock(value, where):
+    """datetime for a `clock = "2026-10-27 10:00"` setting (seconds optional), or a Fail that shows the shape."""
+    for f in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+        try: return datetime.datetime.strptime(value.strip(), f)
+        except (ValueError, AttributeError): pass
+    raise Fail(f'{where} should look like clock = "2026-10-27 10:00" (year-month-day hour:minute, 24-hour), not {value!r}')
+
+def android_root(e):
+    """`adb root` on a booted emulator, then wait for adbd to come back. Fails with the reason on images that refuse
+    (Play Store images are production builds: only Google APIs images allow root)."""
+    out = e.adb("root", check=False).strip()
+    if "cannot run as root" in out or "production builds" in out:
+        raise Fail(f"{e.serial}: adb root was refused ({out}). Root exists only on Google APIs emulator images, not Play Store ones; "
+                   "change system_image in [android] (or the AVD) to a google_apis image, or remove root and clock from the config")
+    sh([adb_cmd(), "-s", e.serial, "wait-for-device"], timeout=60)
+
+def android_clock(e, when):
+    """Fix the emulator's date and time (needs root): automatic time and time zone off first, or the clock snaps back."""
+    for c in ("settings put global auto_time 0", "settings put global auto_time_zone 0", when.strftime("date %m%d%H%M%Y.%S")):
+        e.adb("shell", c)
+
 def setup_hint(kind, cmd, err):
     """One line on why an [android] shell command probably failed, or "". Setting the clock or a system setting needs root,
     which only Google APIs emulator images allow (not the Play Store ones); `adb shell` runs as the shell user."""
@@ -1383,7 +1405,7 @@ def run_setup(device, kind, commands):
         except RuntimeError as e:
             raise Fail(f"[{'ios' if kind == 'simctl' else 'android'}] {kind} command failed, stopping before the run: {e}{setup_hint(kind, cmd, e)}")
 
-def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
+def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=(), clock=None):
     """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar, run the config's [ios] simctl commands."""
     existing = json.loads(simctl_sh("list", "devices", "-j").stdout)["devices"].get(runtime, [])
     by_name = {d["name"]: d for d in existing if d.get("isAvailable") and d.get("deviceTypeIdentifier", device_type) == device_type}
@@ -1407,7 +1429,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         pool.append(s)
     for s in pool:
         s.run("bootstatus", s.udid, "-b")
-        s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
+        s.run("status_bar", s.udid, "override", "--time", f"{clock.hour}:{clock.minute:02d}" if clock else "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
         # the status bar override doesn't cover banners. iOS 26 posts "Ready for Apple Intelligence" a few minutes after a
@@ -2227,7 +2249,8 @@ def ios_run_inner(cfg, path, only, parallel):
     capacity_warn(cfg, want, "ios", n)
     if not capture: warn_port_7001()
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
-    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()))
+    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()),
+                     **({"clock": parse_clock(cfg["clock"], "[ios] clock")} if cfg.get("clock") else {}))
     OUR_SIMS.update(s.udid for s in pool)
     kill_stale_drivers()
     def install(sims):  # each flow's clearState gives every locale a fresh start
@@ -2596,6 +2619,11 @@ def android_env():
     path = {**os.environ, **java_env()}.get("PATH", "")
     return {"ANDROID_HOME": str(SDK), "PATH": f"{SDK / 'platform-tools'}:{path}" if adb_cmd() != "adb" else path}
 
+def demo_mode(clock=None):
+    """DEMO_MODE with the status bar showing the `clock` time (a datetime) instead of 9:41."""
+    hhmm = clock.strftime("%H%M") if clock else "0941"
+    return [c.replace("-e hhmm 0941", f"-e hhmm {hhmm}") for c in DEMO_MODE]
+
 DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a slow machine shows "Process system isn't responding" otherwise); then SystemUI demo mode: fixed clock, full battery and signal, no notification icons
     "settings put global hide_error_dialogs 1",
     "settings put global window_animation_scale 0",
@@ -2759,7 +2787,10 @@ def android_pool(n, cfg, pool):
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:
-        for c in DEMO_MODE: e.adb("shell", c, check=False)
+        clock = parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None
+        if cfg.get("root") or clock: android_root(e)  # before the commands below: they may need it
+        if clock: android_clock(e, clock)
+        for c in demo_mode(clock): e.adb("shell", c, check=False)
         run_setup(e, "shell", cfg.get("shell", ()))  # after boot, every run: the snapshot boot discards properties
 
 VARS_JS = "shotfleet_vars.js"
@@ -2954,7 +2985,7 @@ def android_run_inner(cfg, path, out, only, parallel):
             for e, lp in zip(pool, lps):
                 e.adb("shell", "pm", "clear", pkg)  # fresh onboarding; also resets the app language, so set it after
                 e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
-                for c in DEMO_MODE: e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
+                for c in demo_mode(parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None): e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
             text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
