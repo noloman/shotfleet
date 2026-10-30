@@ -58,8 +58,8 @@ def inside(root, *parts):
 # Only the build is required: everything else is read from it or defaulted. Unknown or mistyped settings are refused
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int, "capacity": str, "settle_ms": int},
-        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list},
-        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list}}
+        "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list, "clock": str},
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list, "root": bool, "clock": str}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not", "key")  # key = the app's own string key; its text, in the screenshot's language, must be on screen
@@ -191,6 +191,7 @@ def check_section(cfg, platform, name):
             raise Fail(f"[{platform}] {key} in {name} should be an emulator name (letters, digits, . _ -), not {cfg[key]!r}")
     if cfg.get("locales") == []:  # an empty --locales is refused; an empty list in the config would silently capture every language
         raise Fail(f"[{platform}] locales in {name} is empty. Remove the line to capture every language the app ships, or list some: locales = [\"de\", \"ja\"]")
+    if "clock" in cfg: parse_clock(cfg["clock"], f"[{platform}] clock in {name}")
     for key in ("shell", "simctl"):  # commands for the device after boot: every one a string (simctl ones also splittable)
         if not all(isinstance(c, str) for c in cfg.get(key, [])):
             raise Fail(f"[{platform}] {key} in {name} should be a list of commands (strings), e.g. {key} = [{EXAMPLE_SETUP[key]}]")
@@ -1044,6 +1045,9 @@ def translate_flow(flow, base, target, overrides=None, base_only=None):
                                 if v == t and o in base and base[o].casefold() != text.casefold()
                                 and (o.split("_")[0] == k.split("_")[0] or len(base[o].split()) <= 2)})
                 if clash: collisions.append(f"{text!r} -> {t!r} also means {', '.join(map(repr, clash))}")
+        # the same label on several unrelated strings in one language ("Week" is a view tab and a settings row): a tap can hit any of them
+        if len(keys) > 1 and len({k.split("_")[0] for k in keys}) > 1:
+            collisions.append(f"{text!r} is the text of {len(keys)} strings ({', '.join(sorted(keys)[:4])}{', ...' if len(keys) > 4 else ''}); use an id: or index: selector")
         # one English label can map to several keys ("Next" -> Weiter / Nächste): match any of them
         pattern = "|".join(map(regex_literal, cands))
         return yaml_single_quote(pattern if len(cands) == 1 else f"({pattern})")
@@ -1109,6 +1113,10 @@ def print_result(lp, r, expected):
     print(f"{'ok  ' if r['ok'] else 'FAIL'} {lp:8} {r['screenshots']}/{expected} screenshots"
           + (" (retried)" if r.get("retried") or r.get("attempts", 1) > 1 else "")
           + ("" if r["ok"] else f"  {r.get('error') or ''}"[:160]))
+
+def expected_for(report, lp, expected):
+    """How many screenshots language `lp` should take: all of the flow's, less those of blocks left out for it (apply_when_defined)."""
+    return expected - len(report["locales"].get(lp, {}).get("skipped_screenshots", ()))
 
 def count_screenshots(flow):
     return len(re.findall(r"(?m)^\s*- takeScreenshot:", flow))
@@ -1204,6 +1212,66 @@ def apple_locale(lproj):
     """The AppleLocale that goes with an app language: number and date formats follow the store locale (de -> de_DE, zh-Hans -> zh_CN)."""
     store = store_code(lproj, APP_STORE) or lproj
     return {"zh-Hans": "zh_CN", "zh-Hant": "zh_TW"}.get(store, store.replace("-", "_"))
+
+WHEN_DEFINED_RE = re.compile(r"^\s*when:\s*\{\s*defined:\s*([A-Za-z_]\w*)\s*\}\s*(#.*)?$")
+
+def input_defined(inputs, name, lp, base):
+    """True when the [inputs] value `name` is meant for language `lp`. If some [inputs.<locale>] table defines `name`, a language has it
+    only through its own table (exact, else the language part) or, for the base language, through the [inputs] default. If no table
+    defines it, the default is for every language."""
+    inputs = inputs or {}
+    if not any(isinstance(v, dict) and name in v for v in inputs.values()): return isinstance(inputs.get(name), str)
+    if any(isinstance(inputs.get(k), dict) and name in inputs[k] for k in (lp.split("-")[0], lp)): return True
+    return isinstance(inputs.get(name), str) and lp.split("-")[0] == base.split("-")[0]
+
+def apply_when_defined(flow, inputs, lp, base):
+    """Resolve `- runFlow: { when: { defined: <input> }, commands: [...] }` blocks for one language (Maestro has no such condition):
+    the block runs, without the `when`, where the input is defined for the language (input_defined), and is left out where it is not.
+    Returns (flow, screenshot names the left-out blocks would have taken)."""
+    lines, out, skipped, i = flow.splitlines(), [], [], 0
+    while i < len(lines):
+        line = lines[i]; i += 1
+        m = re.match(r"^(\s*)- runFlow:\s*$", line)
+        if not m: out.append(line); continue
+        ind = len(m.group(1))
+        block = []
+        while i < len(lines) and (not lines[i].strip() or len(lines[i]) - len(lines[i].lstrip()) > ind): block.append(lines[i]); i += 1
+        hit = next((k for k, l in enumerate(block) if WHEN_DEFINED_RE.match(l)), None)
+        width = 1
+        if hit is None:  # the two-line form: `when:` then `defined: name` under it
+            hit = next((k for k in range(len(block) - 1) if re.match(r"^\s*when:\s*$", block[k]) and re.match(r"^\s*defined:\s*[A-Za-z_]\w*\s*(#.*)?$", block[k + 1])), None)
+            width = 2
+        if hit is None: out.append(line); out += block; continue
+        name = (WHEN_DEFINED_RE.match(block[hit]) or re.search(r"defined:\s*([A-Za-z_]\w*)", block[hit + 1])).group(1)
+        if input_defined(inputs, name, lp, base): out.append(line); out += block[:hit] + block[hit + width:]
+        else: skipped += [(m2.group(1) if (m2 := SHOT_NAME_RE.match(l)) else "?") for l in block if re.match(r"^\s*- takeScreenshot:", l)]
+    return "\n".join(out) + "\n", skipped
+
+WAIT_EXPECTED_RE = re.compile(r"^(\s*)- waitForExpected:?\s*(\d+|\{\s*timeout:\s*(\d+)\s*\})?\s*(#.*)?$")
+SHOT_NAME_RE = re.compile(r"^\s*- takeScreenshot:\s*[\"']?([^\"'\s#]+)[\"']?\s*(#.*)?$")
+
+def expand_wait_expected(flow, expect, lps):
+    """Turn `- waitForExpected` (or `waitForExpected: 30000`, or `{ timeout: 30000 }`) into extendedWaitUntil steps that wait for the
+    texts the next `takeScreenshot: <name>` expects: the `any` and `all` lists of [expect.<name>] for these languages, so a screen
+    that fills in late (a parser's chips, a list from a server) is waited for in every language without typing the text twice.
+    Returns (flow, notes); a step with nothing to wait for, or no screenshot after it, is dropped with a note."""
+    lines, out, notes = flow.splitlines(), [], []
+    for i, line in enumerate(lines):
+        m = WAIT_EXPECTED_RE.match(line)
+        if not m: out.append(line); continue
+        timeout = int(m.group(3) or m.group(2) or 30000)
+        shot = next((sm.group(1) for l in lines[i + 1:] if (sm := SHOT_NAME_RE.match(l))), None)
+        if shot is None: notes.append("waitForExpected has no takeScreenshot after it, so it was dropped"); continue
+        table = (expect or {}).get(shot)
+        rules = [content_rules(table, shot, lp)[0] for lp in lps] if isinstance(table, dict) else []
+        anys = sorted({t for r in rules for t in r.get("any", [])}); alls = sorted({t for r in rules for t in r.get("all", [])})
+        if not anys and not alls:
+            notes.append(f"waitForExpected before {shot}: [expect.{shot}] has no any/all texts for {', '.join(lps)}, so it was dropped"); continue
+        pad = m.group(1)
+        for texts in ([anys] if anys else []) + [[t] for t in alls]:
+            pattern = ".*(" + "|".join(map(regex_literal, texts)) + ").*" if len(texts) > 1 else ".*" + regex_literal(texts[0]) + ".*"
+            out += [f"{pad}- extendedWaitUntil:", f"{pad}    visible: {yaml_single_quote(pattern)}", f"{pad}    timeout: {timeout}"]
+    return "\n".join(out) + "\n", sorted(set(notes))
 
 def localize_flow(flow, lproj, shots_dir, env=None, settle_ms=0):
     """Make a translated flow self-contained for one locale.
@@ -1354,6 +1422,38 @@ def replace_hung(name, udid):
     print(f"could not delete it, so it is used as it is; to delete it yourself: xcrun simctl delete {udid}", flush=True)
     return False
 
+def parse_clock(value, where):
+    """datetime for a `clock = "2026-10-27 10:00"` setting (seconds optional), or a Fail that shows the shape."""
+    for f in ("%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"):
+        try: return datetime.datetime.strptime(value.strip(), f)
+        except (ValueError, AttributeError): pass
+    raise Fail(f'{where} should look like clock = "2026-10-27 10:00" (year-month-day hour:minute, 24-hour), not {value!r}')
+
+def android_root(e):
+    """`adb root` on a booted emulator, then wait for adbd to come back. Fails with the reason on images that refuse
+    (Play Store images are production builds: only Google APIs images allow root)."""
+    out = e.adb("root", check=False).strip()
+    if "cannot run as root" in out or "production builds" in out:
+        raise Fail(f"{e.serial}: adb root was refused ({out}). Root exists only on Google APIs emulator images, not Play Store ones; "
+                   "change system_image in [android] (or the AVD) to a google_apis image, or remove root and clock from the config")
+    sh([adb_cmd(), "-s", e.serial, "wait-for-device"], timeout=60)
+
+def android_clock(e, when):
+    """Fix the emulator's date and time (needs root): automatic time and time zone off first, or the clock snaps back."""
+    for c in ("settings put global auto_time 0", "settings put global auto_time_zone 0", when.strftime("date %m%d%H%M%Y.%S")):
+        e.adb("shell", c)
+
+def setup_hint(kind, cmd, err):
+    """One line on why an [android] shell command probably failed, or "". Setting the clock or a system setting needs root,
+    which only Google APIs emulator images allow (not the Play Store ones); `adb shell` runs as the shell user."""
+    if kind != "shell": return ""
+    low = str(err).lower()
+    if re.match(r"\s*(date|settings put (global|secure)|setprop (persist|ro)\.)", cmd) or "permission denied" in low or "not permitted" in low or "must be root" in low:
+        return (" (hint: [android] shell runs as the shell user, not root. Commands like `date` need root, which only Google APIs emulator images "
+                "allow (not Play Store images), and turning auto time and auto time zone off first (`settings put global auto_time 0`). "
+                "See docs/screenshot-mode.md, \"Apps that seed demo data relative to now\")")
+    return ""
+
 def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
     or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
@@ -1367,9 +1467,9 @@ def run_setup(device, kind, commands):
             else:
                 device.adb("shell", cmd)
         except RuntimeError as e:
-            raise Fail(f"[{'ios' if kind == 'simctl' else 'android'}] {kind} command failed, stopping before the run: {e}")
+            raise Fail(f"[{'ios' if kind == 'simctl' else 'android'}] {kind} command failed, stopping before the run: {e}{setup_hint(kind, cmd, e)}")
 
-def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
+def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=(), clock=None):
     """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar, run the config's [ios] simctl commands."""
     existing = json.loads(simctl_sh("list", "devices", "-j").stdout)["devices"].get(runtime, [])
     by_name = {d["name"]: d for d in existing if d.get("isAvailable") and d.get("deviceTypeIdentifier", device_type) == device_type}
@@ -1393,7 +1493,7 @@ def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
         pool.append(s)
     for s in pool:
         s.run("bootstatus", s.udid, "-b")
-        s.run("status_bar", s.udid, "override", "--time", "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
+        s.run("status_bar", s.udid, "override", "--time", f"{clock.hour}:{clock.minute:02d}" if clock else "9:41", "--dataNetwork", "wifi", "--wifiMode", "active",
               "--wifiBars", "3", "--cellularMode", "active", "--cellularBars", "4",
               "--batteryState", "charged", "--batteryLevel", "100")
         # the status bar override doesn't cover banners. iOS 26 posts "Ready for Apple Intelligence" a few minutes after a
@@ -2190,6 +2290,7 @@ def ios_run_inner(cfg, path, only, parallel):
 
     # translate every flow first, so selector problems show up before any simulator boots
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
+    same_label_seen = set()
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
@@ -2198,11 +2299,17 @@ def ios_run_inner(cfg, path, only, parallel):
             shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
             report["locales"][lp] = {"untranslated_selectors": []}; continue
         only = []
-        text, missing, clash = translate_flow(flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
-        for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
+        lp_flow, skipped = apply_when_defined(flow, cfg.get("_inputs"), lp, base_locale)
+        if skipped: print(f"note {lp}: input not defined for this language, so {len(skipped)} screenshot(s) are not taken: {', '.join(skipped)}")
+        text, missing, clash = translate_flow(lp_flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
+        for c in clash:
+            if "is the text of" in c and c in same_label_seen: continue  # the same in every language: say it once
+            same_label_seen.add(c); print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
+        text, notes = expand_wait_expected(text, cfg.get("_expect"), [lp])
+        for msg in notes: print(f"warning {lp}: {msg}")
         inside(out, ".work", "flows", f"{lp}.yaml").write_text(localize_flow(text, lp, Path(lp), inputs_for(cfg.get("_inputs"), lp), cfg.get("settle_ms", SETTLE_MS)))
-        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
+        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only, **({"skipped_screenshots": skipped} if skipped else {})}
     print_untranslated(report)
 
     if not report["locales"]:
@@ -2213,7 +2320,8 @@ def ios_run_inner(cfg, path, only, parallel):
     capacity_warn(cfg, want, "ios", n)
     if not capture: warn_port_7001()
     print(f"booting {n} simulators ({cfg['device_type'].split('.')[-1]}, {cfg['runtime'].split('.')[-1]})")
-    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()))
+    pool = make_pool(n, cfg["device_type"], cfg["runtime"], cfg.get("sim_prefix", "shotfleet"), cfg.get("simctl", ()),
+                     **({"clock": parse_clock(cfg["clock"], "[ios] clock")} if cfg.get("clock") else {}))
     OUR_SIMS.update(s.udid for s in pool)
     kill_stale_drivers()
     def install(sims):  # each flow's clearState gives every locale a fresh start
@@ -2260,12 +2368,13 @@ def ios_run_inner(cfg, path, only, parallel):
         for lp in lps:
             shots = len(list((out / "raw" / lp).glob("*.png")))
             # Maestro skips its report when a shard crashes; the screenshots on disk are the ground truth then
-            r_ = res.get(lp) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro{attempt}.log")}
-            if r_["ok"] and shots != expected:
-                r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {expected} screenshots"}
+            want = expected_for(report, lp, expected)
+            r_ = res.get(lp) or {"ok": shots == want, "error": None if shots == want else no_result(out / f"maestro{attempt}.log")}
+            if r_["ok"] and shots != want:
+                r_ = {**r_, "ok": False, "error": f"flow passed but took {shots} of {want} screenshots"}
             if r_["ok"] and (note := blank_note(out / "raw" / lp)):
                 r_ = {**r_, "ok": False, "error": note}
-            out_[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "attempts": attempt}
+            out_[lp] = {**r_, "ok": r_["ok"] and shots == want, "screenshots": shots, "attempts": attempt}
         return out_
 
     def capture_step(sim, lp, work):
@@ -2340,7 +2449,7 @@ def ios_run_inner(cfg, path, only, parallel):
         expected = len(capture_names(out, report["locales"]))
     results = []
     for lp, r_ in final.items():
-        print_result(lp, r_, expected)
+        print_result(lp, r_, expected_for(report, lp, expected))
         if capture: results.append({"lproj": lp, **r_}); continue  # [capture] runs keep xcodebuild's log instead of Maestro's
         debugs = [(out / ".work" / "debug" / f"attempt{a}", lp) for a in range(r_.get("attempts", 1), 0, -1)]
         kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else debugs)
@@ -2582,6 +2691,11 @@ def android_env():
     path = {**os.environ, **java_env()}.get("PATH", "")
     return {"ANDROID_HOME": str(SDK), "PATH": f"{SDK / 'platform-tools'}:{path}" if adb_cmd() != "adb" else path}
 
+def demo_mode(clock=None):
+    """DEMO_MODE with the status bar showing the `clock` time (a datetime) instead of 9:41."""
+    hhmm = clock.strftime("%H%M") if clock else "0941"
+    return [c.replace("-e hhmm 0941", f"-e hhmm {hhmm}") for c in DEMO_MODE]
+
 DEMO_MODE = [  # no ANR or crash dialogs over the screenshot, no animations (a slow machine shows "Process system isn't responding" otherwise); then SystemUI demo mode: fixed clock, full battery and signal, no notification icons
     "settings put global hide_error_dialogs 1",
     "settings put global window_animation_scale 0",
@@ -2745,7 +2859,10 @@ def android_pool(n, cfg, pool):
         time.sleep(2)  # staggered starts avoid adb port races
     wait_booted(pool)
     for e in pool:
-        for c in DEMO_MODE: e.adb("shell", c, check=False)
+        clock = parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None
+        if cfg.get("root") or clock: android_root(e)  # before the commands below: they may need it
+        if clock: android_clock(e, clock)
+        for c in demo_mode(clock): e.adb("shell", c, check=False)
         run_setup(e, "shell", cfg.get("shell", ()))  # after boot, every run: the snapshot boot discards properties
 
 VARS_JS = "shotfleet_vars.js"
@@ -2909,12 +3026,17 @@ def android_run_inner(cfg, path, out, only, parallel):
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
+    same_label_seen = set()
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
         only = []
-        _, missing, clash = translate_flow(flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
-        for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
-        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only}
+        lp_flow, skipped = apply_when_defined(flow, cfg.get("_inputs"), lp, cfg.get("base_locale", "en"))
+        if skipped: print(f"note {lp}: input not defined for this language, so {len(skipped)} screenshot(s) are not taken: {', '.join(skipped)}")
+        _, missing, clash = translate_flow(lp_flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
+        for c in clash:
+            if "is the text of" in c and c in same_label_seen: continue  # the same in every language: say it once
+            same_label_seen.add(c); print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
+        report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only, **({"skipped_screenshots": skipped} if skipped else {})}
         shutil.rmtree(inside(out, "raw", lp), ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
     todo = list(report["locales"])
@@ -2936,13 +3058,22 @@ def android_run_inner(cfg, path, out, only, parallel):
         def round_(lps, tag):
             """One locale per emulator. Maestro shards the identical flows across devices in an order we
             don't control; its log says which flow ran where, and each device's language is known."""
+            base_lp = cfg.get("base_locale", "en")
+            groups = {}  # languages that skip different blocks can't share a flow: one sub-round per kind
+            for lp in lps: groups.setdefault(apply_when_defined(flow, cfg.get("_inputs"), lp, base_lp)[0], []).append(lp)
+            if len(groups) > 1:
+                merged = {}
+                for k, group in enumerate(groups.values()): merged.update(round_(group, f"{tag}w{k + 1}"))
+                return merged
             lang = {}
             for e, lp in zip(pool, lps):
                 e.adb("shell", "pm", "clear", pkg)  # fresh onboarding; also resets the app language, so set it after
                 e.adb("shell", "cmd", "locale", "set-app-locales", pkg, "--locales", lp)
-                for c in DEMO_MODE: e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
+                for c in demo_mode(parse_clock(cfg["clock"], "[android] clock") if cfg.get("clock") else None): e.adb("shell", c, check=False)  # re-assert: SystemUI can drop it after boot
                 lang[e.serial] = lp
-            text, _, _ = translate_flow(flow, base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
+            text, _, _ = translate_flow(apply_when_defined(flow, cfg.get("_inputs"), lps[0], base_lp)[0], base, [with_fallback(strings, lp) for lp in lps], [cfg.get("_overrides", {}).get(lp, {}) for lp in lps])
+            text, notes = expand_wait_expected(text, cfg.get("_expect"), lps)
+            for msg in notes: print(f"warning {','.join(lps)}: {msg}")
             fdir = out / ".work" / "flows" / tag; fdir.mkdir(parents=True)
             staging = out / ".work" / "tmp" / tag; staging.mkdir(parents=True)  # the flows' screenshot names are relative to this
             vars_js, mapped = android_vars(cfg.get("_inputs"), lang)
@@ -2971,10 +3102,11 @@ def android_run_inner(cfg, path, out, only, parallel):
                 shutil.rmtree(dst, ignore_errors=True)
                 collect_shots(staging, dbg, fname, dst)
                 shots = len(list(dst.glob("*.png")))
-                r_ = res.get(fname) or {"ok": shots == expected, "error": None if shots == expected else no_result(out / f"maestro_{tag}.log")}
-                if r_["ok"] and shots == expected and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
-                splash = not (r_["ok"] and shots == expected) and app_splash_showing(next(e for e in pool if e.serial == dev), pkg)  # while the emulator still shows it
-                results[lp] = {**r_, "ok": r_["ok"] and shots == expected, "screenshots": shots, "device": dev, "_maestro": (dbg, fname), "_splash": splash,
+                want = expected_for(report, lp, expected)
+                r_ = res.get(fname) or {"ok": shots == want, "error": None if shots == want else no_result(out / f"maestro_{tag}.log")}
+                if r_["ok"] and shots == want and (note := blank_note(dst)): r_ = {**r_, "ok": False, "error": note}
+                splash = not (r_["ok"] and shots == want) and app_splash_showing(next(e for e in pool if e.serial == dev), pkg)  # while the emulator still shows it
+                results[lp] = {**r_, "ok": r_["ok"] and shots == want, "screenshots": shots, "device": dev, "_maestro": (dbg, fname), "_splash": splash,
                                **({"hierarchy_texts": save_hierarchy_texts(dbg, fname, dst)} if hier else {})}
             for lp in lps:
                 results.setdefault(lp, {"ok": False, "error": "flow never ran (see maestro log)", "screenshots": 0})
@@ -3011,7 +3143,7 @@ def android_run_inner(cfg, path, out, only, parallel):
         r_ = final[lp]; where = r_.pop("_maestro", None); before = r_.pop("_before", None); splash = r_.pop("_splash", False)
         kept = keep_failure_screenshot(out, lp, [] if r_["ok"] else [where, before])
         if kept: r_["failure_screenshot"] = kept.relative_to(out).as_posix()
-        print_result(lp, r_, expected)
+        print_result(lp, r_, expected_for(report, lp, expected))
         if not r_["ok"] and (where or before): print_failure(*(where or before), flow, "android", splash, kept)
         report["locales"][lp].update(r_)
     if not all(r_["ok"] for r_ in final.values()): print(port_clash_note(out, [r_.get("error") for r_ in final.values() if not r_["ok"]]), end="")

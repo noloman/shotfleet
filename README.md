@@ -300,6 +300,7 @@ parallel = 4              # simulators (emulators on Android); default 4
 capacity = "warn"         # warn (default) prints a note when the Mac is short of memory or swapping; "off" silences it; the run is never changed
 stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped and the languages retried (default 900)
 settle_ms = 1000          # before each screenshot, wait up to this many milliseconds for the screen to stop moving (default 1000; 0 turns it off)
+clock = "2026-10-27 10:00"  # a fixed date and time: Android sets the emulator clock and the status bar to it, iOS only the status bar time (default: status bar 9:41, the real date)
 locales = ["de", "ja"]    # default: every language the app ships
 base_locale = "de"        # the language your flow is written in (default en)
 bundle_id = "com.example.myapp"   # default: read from the app (Android: package, read from the APK)
@@ -314,6 +315,7 @@ device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes 
 devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
                           # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
                           # "tablet-7" adds a 7" tablet, 1080x1920 at 280 dpi, exported to sevenInchScreenshots
+root = true               # run `adb root` after boot, before `shell` (Google APIs emulator images only; `clock` turns it on by itself)
 ```
 
 ### Flutter, React Native, .NET MAUI, Unity and translation-platform exports
@@ -404,6 +406,8 @@ key = "benchmarks_title"               # the text of this string key of your app
 ```
 
 `run` checks these automatically; for screenshots you already have, use `shotfleet check out/ --content shotfleet.toml` (free, no licence). A missing or forbidden text is a problem line (`de/01_home.png: expected "Steinmännchen" on screen`), and a table for a screenshot that doesn't exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, `could not verify`, never as a pass; `--ocr-command` helps there. This proves the strings you list are present, not that the data looks right.
+
+**Waiting for a screen that fills in late:** put `- waitForExpected` (or `waitForExpected: 20000`, or `{ timeout: 20000 }`; default 30000 ms) in the flow before a `takeScreenshot: <name>`. In each language it becomes `extendedWaitUntil` steps for the `any` and `all` texts of `[expect.<name>]` (and its language tables), so a late-drawn screen is waited for with the texts you already listed, not one text that is only right in English. It fails the language if the text never shows. The `not` and `key` entries are not waited for. A step with no `any`/`all` texts is dropped with a warning. Not run on a device.
 
 `key` names a string of your app (its key in your `.strings`, `.arb` or `strings.xml`). `check` looks for that string's text in the screenshot's own language, so you don't type the translations, and a green run that captured the wrong screen gets a problem line. It needs the app's strings (`run` has them; for `check` pass `--app` or `--strings`). A wrong key, or a text with a placeholder in it, is reported. Like the other expectations it does nothing until you add an `[expect...]` table.
 

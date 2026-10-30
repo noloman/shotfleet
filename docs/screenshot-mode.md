@@ -61,9 +61,55 @@ shotfleet can run a `setprop` on every emulator right after it boots: put the co
 
 `openLink: myapp://debug/seed?...` works in a flow and is not touched by shotfleet's translation of selectors. On iOS, the first deep link opened on a simulator can show a one-time system confirmation, so tap it optionally in the flow.
 
+## Apps that seed demo data relative to now
+
+If your demo data is built around today's date (a calendar, a planner, a habit tracker), screenshots are only consistent on a fixed date. Set it in `shotfleet.toml`:
+
+```toml
+[android]
+clock = "2026-10-27 10:00"   # date and time, 24-hour, in the emulator's time zone
+```
+
+On Android this runs `adb root`, turns off automatic time and time zone, sets the date and makes the status bar show the same time (instead of 9:41), on every emulator after boot. It needs a **Google APIs** emulator image: Play Store images do not allow root, and shotfleet stops with a message that says so. `root = true` alone runs `adb root` before your `[android] shell` commands. On iOS `clock` sets the status bar time only; the simulator's date is not changed. Not run on a device yet.
+
+A failing `[android] shell` command stops the run (exit 2); for `date` and system settings the message says root is the usual reason.
+
+## Compose apps: selecting by id in every language
+
+Jetpack Compose apps expose no resource ids to Maestro unless you ask for them, so a flow can only select by visible text. Text selectors are translated per language, but one label can sit on several screens ("Week" as a view tab and as a settings row). To make `id:` selectors work, add this in a debug or benchmark build (not the release you ship):
+
+```kotlin
+Modifier.semantics { testTagsAsResourceId = true }   // once, on the root composable
+```
+
+and give the elements a `Modifier.testTag("view_week")`. Then `- tapOn: { id: "view_week" }` works in every language. When a text selector fits more than one string in the app, `run` prints a warning per language naming the strings; use an `id:` or `index:` selector for that step. Not run on a device yet.
+
 ## What shotfleet will not do for you
 
-It does not change what your backend returns, set the date, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
+It does not change what your backend returns, set the date on iOS, log in, or fake in-app purchases or push notifications. If your screens come from a server, point a debug build at a staging account or a local mock server, using a `before_run` hook if you want it automated.
+
+## Steps for only some languages
+
+If an input has a value in only some languages (Quickspan's quick add parses 12 of its 23), wrap the steps in a `runFlow` with `when: { defined: <input> }`:
+
+```yaml
+appId: com.example.myapp
+---
+- launchApp:
+    arguments:
+      SCREENSHOT_MODE: "1"
+- runFlow:
+    when: { defined: phrase }
+    commands:
+      - inputText: ${phrase}
+      - takeScreenshot: 02_chips
+```
+
+shotfleet resolves this per language (Maestro itself has no such condition): the block runs, without the `when`, where `phrase` is defined for the language, and is left out where it is not. "Defined" means an `[inputs.<locale>]` table has it (`pt` covers pt-BR), or, for the base language, the `[inputs]` default has it. If no `[inputs.<locale>]` table has the name at all, the default counts for every language. Write `when:` as shown, with `defined` as its only key. A language that leaves a block out is expected to take fewer screenshots: `run` prints which ones, `run.json` lists them as `skipped_screenshots`, and the run does not fail for them. What `check` and the coverage tables make of the gap is not tested. Not run on a device yet.
+
+## Waiting for a screen that fills in late
+
+A parser, a list from a server or a chip that appears seconds after typing is not there when the screenshot is taken, and the text it shows differs per language ("1:00 PM", "13:00"). Put `- waitForExpected` before the `takeScreenshot: <name>`: in each language it waits for the `any` and `all` texts of `[expect.<name>]`, which you list anyway for the content check (README, "Expected content"). `waitForExpected: 30000` or `{ timeout: 30000 }` sets the limit (default 30000 ms). Texts must be literal; `not` and `key` are not waited for. Not run on a device yet.
 
 ## Checking that the content is really there
 

@@ -75,8 +75,20 @@ class TranslateFlow(unittest.TestCase):
         _, _, clash = sf.translate_flow('- tapOn: "Next"\n', EN, TR)
         self.assertTrue(any("'Next' -> 'İleri' also means 'Advanced'" in c for c in clash), clash)
 
+    def test_same_label_on_unrelated_strings_is_warned(self):
+        base = {"view_week": "Week", "calendar_start_week": "Week", "ok": "OK"}
+        _, _, clash = sf.translate_flow('- tapOn: "Week"\n', base, {"view_week": "Woche", "calendar_start_week": "Woche"})
+        self.assertTrue(any("'Week' is the text of 2 strings" in c and "id: or index:" in c for c in clash), clash)
+        _, _, clash = sf.translate_flow('- tapOn: "Week"\n', {"settings_a": "Week", "settings_b": "Week"}, {})
+        self.assertEqual(clash, [])  # same family: not reported
+
+    def test_root_hint_for_date_failure(self):
+        self.assertIn("Google APIs", sf.setup_hint("shell", "date 10270951", RuntimeError("adb shell date: Operation not permitted")))
+        self.assertEqual(sf.setup_hint("shell", "setprop a b", RuntimeError("boom")), "")
+        self.assertEqual(sf.setup_hint("simctl", "date", RuntimeError("Permission denied")), "")
+
     def test_no_collision_warning_when_words_differ(self):
-        _, _, clash = sf.translate_flow('- tapOn: "Next"\n', EN, DE)
+        _, _, clash = sf.translate_flow('- tapOn: "Advanced"\n', EN, DE)  # ("Next" is two strings now: see the same-label test)
         self.assertEqual(clash, [])
 
     def test_several_targets_match_any_of_their_translations(self):

@@ -35,6 +35,7 @@ Keys valid in `[ios]` and `[android]`:
 | `strings` | string or list | read from the build | translation file globs (relative to the config) for Flutter, React Native, MAUI, Unity, exports |
 | `stall_s` | whole number | 900 | seconds without a new screenshot before a run is stopped as hung (a stuck simulator or flow) and retried once |
 | `settle_ms` | whole number | 1000 | before each screenshot, wait up to this many milliseconds for the screen to stop moving (a `waitForAnimationToEnd` step with that limit); `0` turns it off, 10000 is the most |
+| `clock` | string | none | a fixed date and time, `"2026-10-27 10:00"` (24-hour). Android: sets the emulator's date (needs root, so Google APIs images; auto time and time zone are turned off) and the status bar clock. iOS: sets the status bar time only. Default: the real date, status bar 9:41 |
 | `timeout_s` | whole number | 600 | time limit in seconds for one round of flows (accepted by the config check; not described in the docs) |
 
 `[ios]` only:
@@ -56,6 +57,7 @@ Keys valid in `[ios]` and `[android]`:
 | `package` | read from the APK | refused if it differs |
 | `devices` | phone only | `["phone", "tablet"]`: phone 1080x1920 and tablet 1440x2560; output in `out/<device>/`, exported to `phoneScreenshots` and `tenInchScreenshots`; `"tablet-7"` adds a 7" tablet, 1080x1920 at 280 dpi, exported to `sevenInchScreenshots` |
 | `shell` | none | list of commands run as `adb -s <serial> shell <command>` once per emulator right after boot (after demo mode), e.g. `["setprop debug.myapp.demo 1"]`; not run on a real emulator yet |
+| `root` | false | runs `adb root` after boot and before `shell`; refused with the reason on Play Store images. `clock` implies it |
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the docs) |
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the docs) |
 | `avd_tablet-7` | `shotfleet_android_tablet7` | name of the 7" tablet emulator when `devices` includes `"tablet-7"` (same note) |
