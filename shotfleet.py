@@ -1044,6 +1044,9 @@ def translate_flow(flow, base, target, overrides=None, base_only=None):
                                 if v == t and o in base and base[o].casefold() != text.casefold()
                                 and (o.split("_")[0] == k.split("_")[0] or len(base[o].split()) <= 2)})
                 if clash: collisions.append(f"{text!r} -> {t!r} also means {', '.join(map(repr, clash))}")
+        # the same label on several unrelated strings in one language ("Week" is a view tab and a settings row): a tap can hit any of them
+        if len(keys) > 1 and len({k.split("_")[0] for k in keys}) > 1:
+            collisions.append(f"{text!r} is the text of {len(keys)} strings ({', '.join(sorted(keys)[:4])}{', ...' if len(keys) > 4 else ''}); use an id: or index: selector")
         # one English label can map to several keys ("Next" -> Weiter / Nächste): match any of them
         pattern = "|".join(map(regex_literal, cands))
         return yaml_single_quote(pattern if len(cands) == 1 else f"({pattern})")
@@ -1354,6 +1357,17 @@ def replace_hung(name, udid):
     print(f"could not delete it, so it is used as it is; to delete it yourself: xcrun simctl delete {udid}", flush=True)
     return False
 
+def setup_hint(kind, cmd, err):
+    """One line on why an [android] shell command probably failed, or "". Setting the clock or a system setting needs root,
+    which only Google APIs emulator images allow (not the Play Store ones); `adb shell` runs as the shell user."""
+    if kind != "shell": return ""
+    low = str(err).lower()
+    if re.match(r"\s*(date|settings put (global|secure)|setprop (persist|ro)\.)", cmd) or "permission denied" in low or "not permitted" in low or "must be root" in low:
+        return (" (hint: [android] shell runs as the shell user, not root. Commands like `date` need root, which only Google APIs emulator images "
+                "allow (not Play Store images), and turning auto time and auto time zone off first (`settings put global auto_time 0`). "
+                "See docs/screenshot-mode.md, \"Apps that seed demo data relative to now\")")
+    return ""
+
 def run_setup(device, kind, commands):
     """The user's per-device setup commands ([ios] simctl, [android] shell), once per booted device. `device` is a Sim
     or an Emu. An iOS command is `xcrun simctl <args>` with $UDID replaced; an Android one runs as `adb shell <command>`.
@@ -1367,7 +1381,7 @@ def run_setup(device, kind, commands):
             else:
                 device.adb("shell", cmd)
         except RuntimeError as e:
-            raise Fail(f"[{'ios' if kind == 'simctl' else 'android'}] {kind} command failed, stopping before the run: {e}")
+            raise Fail(f"[{'ios' if kind == 'simctl' else 'android'}] {kind} command failed, stopping before the run: {e}{setup_hint(kind, cmd, e)}")
 
 def make_pool(n, device_type, runtime, prefix="shotfleet", simctl=()):
     """Reuse or create n simulators named <prefix>-<i>, boot them, clean the status bar, run the config's [ios] simctl commands."""
