@@ -5883,5 +5883,21 @@
   "assertion": "Unit tests with fakes; no device.",
   "fix": "",
   "test": "InitNeedsStrings.test_a_framework_build_without_strings_writes_the_config_then_asks"
+ },
+ {
+  "id": "C454",
+  "claim": "What's new 0.1.10: your own Android sizes and landscape in [android] devices, clock and root for Android (clock for iOS), the waitForExpected step, runFlow when defined, the same-label warning and the root hint; all tested with fakes, none run on a device",
+  "where": [
+   "site/public/whats-new.html"
+  ],
+  "where_text": [
+   "These were tested with fakes and unit tests; they were not run on a device for this release."
+  ],
+  "status": "proven",
+  "proof": "CHANGELOG 0.1.10 (#79-#84): tests/test_custom_devices.py, tests/test_clock.py, tests/test_wait_expected.py, tests/test_when_defined.py and tests/test_shotfleet.py. Unit tests with fakes; the page says none of it ran on a device.",
+  "layer": "unit",
+  "assertion": "Unit tests with fakes; no device.",
+  "fix": "",
+  "test": "CustomDevices"
  }
 ]
