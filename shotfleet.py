@@ -2290,6 +2290,7 @@ def ios_run_inner(cfg, path, only, parallel):
 
     # translate every flow first, so selector problems show up before any simulator boots
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
+    same_label_seen = set()
     for lp in locales:
         if lp not in strings:
             print(f"skip {lp}: app has no {lp}.lproj"); continue
@@ -2301,7 +2302,9 @@ def ios_run_inner(cfg, path, only, parallel):
         lp_flow, skipped = apply_when_defined(flow, cfg.get("_inputs"), lp, base_locale)
         if skipped: print(f"note {lp}: input not defined for this language, so {len(skipped)} screenshot(s) are not taken: {', '.join(skipped)}")
         text, missing, clash = translate_flow(lp_flow, en, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
-        for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
+        for c in clash:
+            if "is the text of" in c and c in same_label_seen: continue  # the same in every language: say it once
+            same_label_seen.add(c); print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         shutil.rmtree(raw, ignore_errors=True); raw.mkdir(parents=True)
         text, notes = expand_wait_expected(text, cfg.get("_expect"), [lp])
         for msg in notes: print(f"warning {lp}: {msg}")
@@ -3023,13 +3026,16 @@ def android_run_inner(cfg, path, out, only, parallel):
     for d in ("flows", "tmp", "debug"): shutil.rmtree(out / ".work" / d, ignore_errors=True)
     for f in out.glob("junit*.xml"): f.unlink()
     report = {"locales": {}, "config": cfg.get("_config"), **run_strings(cfg, path)}
+    same_label_seen = set()
     for lp in locales:
         if lp not in strings: print(f"skip {lp}: app has no {lp} strings"); continue
         only = []
         lp_flow, skipped = apply_when_defined(flow, cfg.get("_inputs"), lp, cfg.get("base_locale", "en"))
         if skipped: print(f"note {lp}: input not defined for this language, so {len(skipped)} screenshot(s) are not taken: {', '.join(skipped)}")
         _, missing, clash = translate_flow(lp_flow, base, with_fallback(strings, lp), [cfg.get("_overrides", {}).get(lp, {})], only)
-        for c in clash: print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
+        for c in clash:
+            if "is the text of" in c and c in same_label_seen: continue  # the same in every language: say it once
+            same_label_seen.add(c); print(f"warning {lp}: {c}; anchor that step (below:/above:) if it taps the wrong element")
         report["locales"][lp] = {"untranslated_selectors": missing, "base_only_selectors": only, **({"skipped_screenshots": skipped} if skipped else {})}
         shutil.rmtree(inside(out, "raw", lp), ignore_errors=True)  # as on iOS: a language that fails to run must not leave the last run's screenshots for `check` and `export` to take as new
     print_untranslated(report)
