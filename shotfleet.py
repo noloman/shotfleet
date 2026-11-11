@@ -4516,7 +4516,7 @@ MAESTRO_INTERFACE = {
         "flow": ["launchApp", "clearState", "tapOn", "assertVisible", "takeScreenshot", "waitForAnimationToEnd", "scrollUntilVisible",
                  "repeat", "runScript", "inputText", "extendedWaitUntil", "permissions", "arguments"],
     },
-    "nice_to_have": ["MAESTRO_DEVICE_UDID"],  # lets Android [inputs.<locale>] pick a per-device value (README, Limits)
+    "nice_to_have": ["MAESTRO_DEVICE_UDID"],  # lets Android [inputs.<locale>] pick a per-device value (docs/guide.md, Limits)
 }
 
 MAESTRO_TESTED = ("2.0.10", "2.11.0")  # the Maestros a real fixture e2e passed on (iOS and Android); extend only after a real run
@@ -4917,7 +4917,7 @@ FLOW_TEMPLATE = """# Write this flow in English: shotfleet translates every text
 # Tap and assert by the text the user sees, exactly as it appears in your English strings
 # ("Next", not "next"); take a screenshot for each store image you want. No appId needed:
 # shotfleet uses each build's own id, so this one flow serves iOS and Android.
-# Tips (dialogs, collisions, scrolling): see "Tips" in the README. Maestro's commands: maestro.mobile.dev
+# Tips (dialogs, collisions, scrolling): see "Tips" in docs/guide.md. Maestro's commands: maestro.mobile.dev
 - launchApp
 - waitForAnimationToEnd:
     timeout: 5000

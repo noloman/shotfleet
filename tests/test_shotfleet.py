@@ -2823,7 +2823,7 @@ class G1Doctor(unittest.TestCase):
 
 class G1ReadmeConfigBlocks(unittest.TestCase):
     """C063: every config key the README shows is accepted by the program's own validation, and the keys the claim lists are all shown."""
-    README = (Path(sf.__file__).resolve().parent / "README.md").read_text()
+    README = (Path(sf.__file__).resolve().parent / "docs/guide.md").read_text()
     CLAIMED = {"flow", "out", "parallel", "locales", "base_locale", "bundle_id", "device_type", "runtime", "device_types", "devices"}
 
     def blocks(self):

@@ -16,7 +16,7 @@ PAGES = sorted(PUB.glob("*.html"))
 INDEX = (PUB / "index.html").read_text()
 EXAMPLES = (PUB / "examples.html").read_text()
 TERMS = (PUB / "terms.html").read_text()
-README = (ROOT / "README.md").read_text()
+README = (ROOT / "docs/guide.md").read_text()
 EMAIL = (ROOT / "marketing/launch-email.md").read_text()
 POSTS = (ROOT / "marketing/launch-posts-v2.md").read_text()
 
@@ -143,7 +143,7 @@ class StrayTags(unittest.TestCase):
 
 
 class Style(unittest.TestCase):
-    TEXT_FILES = [*PUB.glob("*"), *(ROOT / "site/draft").glob("*"), ROOT / "README.md", ROOT / "DISTRIBUTION.md", ROOT / "LAUNCH.md",
+    TEXT_FILES = [*PUB.glob("*"), *(ROOT / "site/draft").glob("*"), ROOT / "docs/guide.md", ROOT / "DISTRIBUTION.md", ROOT / "LAUNCH.md",
                   *(ROOT / "marketing").glob("launch-*.md")]
 
     def test_no_em_dash_anywhere_on_the_site_or_in_the_launch_texts(self):
@@ -152,7 +152,7 @@ class Style(unittest.TestCase):
                 self.assertNotIn("—", p.read_text(), p.relative_to(ROOT))
 
     def test_banned_phrases_are_absent(self):
-        files = {**{p.name: p.read_text() for p in PAGES}, "README.md": README, "launch-email.md": EMAIL}
+        files = {**{p.name: p.read_text() for p in PAGES}, "docs/guide.md": README, "launch-email.md": EMAIL}
         for name, text in files.items():
             for phrase in BANNED:
                 self.assertNotIn(phrase, text.lower(), f"{name} says {phrase!r}")
@@ -161,7 +161,7 @@ class Style(unittest.TestCase):
 
 class Offer(unittest.TestCase):
     """shotfleet is free and open source: no price, no refund window, no free tier, anywhere."""
-    DOCS = {"index.html": INDEX, "terms.html": TERMS, "README.md": README}
+    DOCS = {"index.html": INDEX, "terms.html": TERMS, "docs/guide.md": README}
 
     def test_no_price_refund_or_key_is_left(self):
         for name, text in self.DOCS.items():
@@ -290,7 +290,7 @@ class DockerPending(unittest.TestCase):
                 else: self.assertNotIn("noloman/shotfleet-check", re.sub(r"<!--.*?-->", "", text, flags=re.S))
 
     def test_the_readme_follows_the_same_flag(self):
-        text = (ROOT / "README.md").read_text()
+        text = (ROOT / "docs/guide.md").read_text()
         self.assertEqual(text.count("<!-- DOCKER-PENDING"), text.count("DOCKER-PENDING -->"))
         if self.PUBLISHED: self.assertNotIn("DOCKER-PENDING", text, "published: remove the markers")
         else:
@@ -302,7 +302,7 @@ class ByocPending(unittest.TestCase):
     """Bring your own capture ([capture], your own XCUITest tests on iOS). Passed its device test 2026-10-07, so site/BYOC_DEVICE_PROVEN exists and
     no public line may say otherwise. Without the flag, every public line that offers it carries CAVEAT."""
     CAVEAT = "its device test hasn't passed yet"
-    FILES = [ROOT / "README.md"] + [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt")]
+    FILES = [ROOT / "docs/guide.md"] + [p for p in sorted(PUB.glob("*")) if p.suffix in (".html", ".txt")]
     PROVEN = (ROOT / "site/BYOC_DEVICE_PROVEN").exists()
 
     def test_every_line_offering_your_own_xcuitest_tests_says_it_is_not_device_proven(self):
