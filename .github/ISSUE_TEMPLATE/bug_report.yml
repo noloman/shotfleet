@@ -1,0 +1,24 @@
+name: Bug report
+description: Something shotfleet did wrong, or a run that failed
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `shotfleet doctor`
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output of the failing command
+      description: The last lines are usually enough. Remove anything private.
+      render: text
