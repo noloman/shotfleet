@@ -45,7 +45,6 @@ class RunUsesIt(cu.FleetCase):
     OLD = "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max"
 
     def run_ios(self, ios=""):
-        self.buy()
         with mock.patch.object(sf, "default_device_type", return_value=self.OLD) as default:
             code, out, err = self.main("run", self.config(ios=ios, android=None))
         self.assertEqual(code, 0, err)

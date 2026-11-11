@@ -97,14 +97,6 @@ class DoctorForAnIosOnlyBuyer(unittest.TestCase):
         self.assertRegex(out, r"MISSING java 17\+\s+\(both\)\s+-> shotfleet doctor --fix .*brew install openjdk@21")
 
 
-class ActivateHelp(unittest.TestCase):
-    def test_the_key_argument_says_where_the_key_is(self):
-        r = subprocess.run([sys.executable, str(Path(sf.__file__)), "activate", "--help"], capture_output=True, text=True)
-        self.assertEqual(r.returncode, 0, r.stderr)
-        text = " ".join(r.stdout.split())
-        self.assertIn("Gumroad receipt email", text); self.assertIn("needs internet once", text)
-
-
 from tests.test_first_run import Tree  # noqa: E402  (a temp folder with simulator builds, as the other first-run tests use)
 
 

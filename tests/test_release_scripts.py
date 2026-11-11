@@ -472,9 +472,8 @@ class NotaryCheck(Fixture):
         self.assertEqual(self.check("").returncode, 0)
 
     def test_scripts_check_first_and_right_before_each_submit(self):
-        release, golive = (ROOT / "packaging/release.sh").read_text(), (ROOT / "packaging/go-live.sh").read_text()
+        release = (ROOT / "packaging/release.sh").read_text()
         self.assertLess(release.index("packaging/notary-check.sh"), release.index("packaging/build.sh  #"))
-        self.assertLess(golive.index("packaging/notary-check.sh"), golive.index("sed -i ''"))
         for f in ("build.sh", "pkg.sh"):
             code = (ROOT / "packaging" / f).read_text()
             submit = code.index("(set -o pipefail; xcrun notarytool submit")

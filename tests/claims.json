@@ -28,13 +28,13 @@
    "you don’t have an Apple silicon Mac. iOS simulators need a Mac"
   ],
   "status": "fixed",
-  "proof": "2026-10-03: PlatformAndRequirements.test_install_sh_refuses_linux_and_intel_macs_and_lets_apple_silicon_through runs site/public/install.sh with a stubbed uname: Linux x86_64, Linux aarch64 and Darwin x86_64 exit 1 with the message before any download; Darwin arm64 reaches the download. PlatformAndRequirements.test_the_site_terms_and_readme_say_apple_silicon_where_a_buyer_decides reads 'Apple silicon' in the index requirements sentence, the 'Not for you if' line, terms, README Limits and the comparison page. Earlier: Offer.test_apple_silicon_is_said_where_a_buyer_decides. Not run here: the installer on a real Mac.",
+  "proof": "2026-10-03: PlatformAndRequirements.test_install_sh_refuses_linux_and_intel_macs_and_lets_apple_silicon_through runs site/public/install.sh with a stubbed uname: Linux x86_64, Linux aarch64 and Darwin x86_64 exit 1 with the message before any download; Darwin arm64 reaches the download. PlatformAndRequirements.test_the_site_terms_and_readme_say_apple_silicon_where_a_buyer_decides reads 'Apple silicon' in the index requirements sentence, the 'Not for you if' line, terms, README Limits and the comparison page. Earlier: Offer.test_apple_silicon_is_said_where_a_user_decides. Not run here: the installer on a real Mac.",
   "layer": "site",
   "assertion": "Assert index.html (and terms.html) contain 'Apple silicon' near the install/needs sentence, and that install.sh's uname -m guard exists. Intel Mac owners can buy and then cannot install.",
   "fix": "Add 'Apple silicon Mac (M1 or newer)' to 'It needs a Mac, Maestro and Java 17+' and to terms.html; keep until an Intel build ships.",
   "fixed_by": "wording",
   "fixed": "Apple silicon is now said on the page (requirements sentence, price card, 'Not for you if'), in terms and in the README; install.sh refuses non-arm64 (not run here).",
-  "test": "PlatformAndRequirements.test_install_sh_refuses_linux_and_intel_macs_and_lets_apple_silicon_through, PlatformAndRequirements.test_the_site_terms_and_readme_say_apple_silicon_where_a_buyer_decides, Offer.test_apple_silicon_is_said_where_a_buyer_decides"
+  "test": "PlatformAndRequirements.test_install_sh_refuses_linux_and_intel_macs_and_lets_apple_silicon_through, PlatformAndRequirements.test_the_site_terms_and_readme_say_apple_silicon_where_a_buyer_decides, Offer.test_apple_silicon_is_said_where_a_user_decides"
  },
  {
   "id": "C003",
@@ -363,7 +363,7 @@
   ],
   "where_text": [
    "plus the sets the stores ask for.",
-   "iPad and tablets"
+   "iPad and tablets too"
   ],
   "status": "proven",
   "proof": "G1MultiDeviceExport.test_phone_and_tablet_runs_export_to_their_own_play_folders (phone 1080x1920 to phoneScreenshots and tablet 1440x2560 to tenInchScreenshots), G1MultiDeviceExport.test_the_tablet_device_matches_what_google_play_wants_and_the_ipad_size_is_the_13_inch_class, SevenInchTablet.test_export_writes_the_seven_inch_set_next_to_phone_and_ten_inch (the 7-inch slot exists since be96dd8), MultiDevice.test_export_keeps_both_sizes_and_ipad_rule_spans_devices (iPad 13\" next to iPhone, iPad rule across devices). Real: ROADMAP.md (remoti iPhone 6.9\" + iPad 13\" 2064x2752; CrossfitTracker phone + tablet exported, 2026-10-02) and the 2026-10-03 fixture e2e on an iPhone 17 Pro Max plus an iPad 13\" (STATUS.md gate 9). Not run on a device: the 7-inch tablet slot. marketing/launch-posts-v2.md:119 ('Do NOT claim ... Android tablets') is stale and contradicts this claim; see C102.",
@@ -540,23 +540,21 @@
  },
  {
   "id": "C032",
-  "claim": "`check` is free: no licence, no account, in the released build",
+  "claim": "`check` needs no key or account (shotfleet has no license check)",
   "where": [
    "site/public/index.html",
-   "site/public/terms.html",
-   "LAUNCH.md"
+   "README.md"
   ],
   "where_text": [
    "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots",
-   "<code>shotfleet check</code> is free for everyone",
-   "a free tier (`check` plus 2 languages in `run`)"
+   "`check` needs no key or account."
   ],
   "status": "proven",
-  "proof": "shotfleet.py:2267-2285: only `export` and `run` call the licence gate. test_run_without_a_licence_is_the_free_tier_export_is_not covers run/export with sys.frozen=True; no test runs `main(['check', ...])` or doctor/init with frozen=True and no licence. Proven 2026-10-02: with sys.frozen and no licence file, main() runs check, doctor and init without calling require_licence.",
+  "proof": "CheckPromises.test_check_runs_in_the_released_build; TheProgramHasNoPaywall.test_the_license_code_and_its_server_are_gone_from_the_program",
   "layer": "unit",
   "assertion": "With sys.frozen patched True, no LICENCE_FILE and gumroad_verify patched to raise: main(['check', dir]), ['doctor'] and ['init', app] never call them and never return NoLicence.",
   "fix": "",
-  "test": "CheckPromises.test_check_needs_no_licence_in_the_released_build"
+  "test": "CheckPromises.test_check_runs_in_the_released_build"
  },
  {
   "id": "C033",
@@ -576,7 +574,7 @@
   "fix": "README.md:237: 'Needs Xcode for iOS, the Android SDK for Android, Maestro 2.x and Java 17+.'",
   "fixed_by": "wording",
   "fixed": "README Limits and the site now name Java 17+ (and Apple silicon).",
-  "test": "PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things, PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program, Offer.test_apple_silicon_is_said_where_a_buyer_decides"
+  "test": "PlatformAndRequirements.test_every_place_that_lists_the_prerequisites_names_the_same_things, PlatformAndRequirements.test_java_17_is_the_real_floor_in_the_program, Offer.test_apple_silicon_is_said_where_a_user_decides"
  },
  {
   "id": "C034",
@@ -723,11 +721,7 @@
   "where": [
    "site/public/index.html",
    "site/public/index.html",
-   "LAUNCH.md",
-   "marketing/launch-posts-v2.md",
-   "marketing/launch-email.md",
-   "site/draft/alternatives.html",
-   "DISTRIBUTION.md"
+   "site/draft/alternatives.html"
   ],
   "where_text": [
    "launch price, first 100 buyers",
@@ -738,11 +732,13 @@
    "$49 once, $29 founder",
    "`FOUNDER29` $20 off for the first 100"
   ],
-  "status": "proven",
-  "proof": "2026-10-03: PriceAgreement.test_the_only_shotfleet_prices_are_29_and_49 (every $N in the page, terms, README, llms.txt, launch email, launch-posts-v2, the comparison pages' shotfleet row is 29 or 49; LAUNCH.md and DISTRIBUTION.md state $49 with FOUNDER29 = $20 off for 100 uses), PriceAgreement.test_every_first_n_is_100_and_says_buyers_never_the_list (all 'first N buyers/people/on the list' phrases in the site, README, launch texts, LAUNCH, DISTRIBUTION, STRATEGY and the marketing kit say 100; none says 'on the list', 'people' or 'before anyone else'), PriceAgreement.test_wherever_the_29_is_offered_the_49_follows_in_the_same_breath, PriceAgreement.test_structured_data_on_the_page_has_the_same_two_prices_and_a_free_tier (waitlist and go-live versions). STRATEGY.md still said 'first 100 on the list' and was fixed. Scope: the published texts agree with each other. What Gumroad charges (list price $49, FOUNDER29, 100 uses, the page after the 100th use) is a live setting no test here can read (research/gumroad-setup.md section 4). Stale and outside the test: marketing/launch-posts.md and marketing/competitors.md still carry the old $79 plan.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "site",
   "assertion": "Script: collect every $N and 'first 100' phrase in index.html, README, LAUNCH.md, DISTRIBUTION.md, marketing/*.md; assert the set of amounts == {29, 49} and the who-gets-it wording is identical.",
-  "fix": "Say 'the first 100 buyers' everywhere, and delete 'on the list'."
+  "fix": "Say 'the first 100 buyers' everywhere, and delete 'on the list'.",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C043",
@@ -762,24 +758,25 @@
   "fix": "Email: 'The first 100 buyers pay $29 instead of $49.' Posts: drop 'on the list'.",
   "fixed_by": "wording",
   "fixed": "'Before anyone else' would only be true if the email went out before the Buy page is live; go-live.sh deploys the page first and the email is sent by hand afterwards, and reordering is a bigger promise than the founder price needs. So the promise is dropped: the first 100 buyers pay $29, whoever buys first. LAUNCH.md now says so.",
-  "test": "Offer.test_founder_price_is_for_the_first_100_buyers_everywhere, Style.test_banned_phrases_are_absent"
+  "test": "Offer.test_no_price_refund_or_key_is_left, Style.test_banned_phrases_are_absent"
  },
  {
   "id": "C044",
-  "claim": "The licence adds every language and export to fastlane; both platforms and the iPad and tablet sizes are in the free tier too",
+  "claim": "Every language and export to fastlane are free; both platforms and the iPad and tablet sizes too",
   "where": [
    "site/public/index.html",
    "site/public/index.html"
   ],
   "where_text": [
-   "<li>Every language and export to fastlane</li>",
-   "Capture up to 2 languages with <code>run</code>, on both platforms and every device size, iPad and tablets too"
+   "Every command and every language",
+   "iPad and tablets too"
   ],
   "status": "proven",
-  "proof": "TierReachesBothPlatformRuns.test_a_licensed_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_capped_state_gives_exactly_two_to_ios_and_to_android, TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers, TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy_when_licensed (tests/test_claims_unit.py). `main(['run'])` on a frozen build goes through the real ios_run_inner and android_run with stand-ins only below them (simulator pool, emulator pool, Maestro): with a fresh licence file each platform gets all 4 shipped languages, in every iPhone, iPad, phone, tablet and 7-inch set; without one each gets the first 2 and prints the free-tier line (the cap sits inside ios_run_inner/android_run, so a stub of ios_run itself would not show it). `export` without a licence exits 2 with the activate message and with one writes the fastlane folder. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not, GumroadLicence.test_released_build_needs_a_licence_for_run. Not covered: a real purchase or a real licence server (the licence is a file the test writes); sys.frozen is patched, the released binary was not run. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 6): the price card listed 'both platforms, iPad and tablets' as paid, but the cap counts languages only; the card now says the free tier has them too.",
+  "proof": "TierReachesBothPlatformRuns.test_a_run_gives_every_language_to_ios_and_to_android, TierReachesBothPlatformRuns.test_ipad_and_tablet_sets_get_every_language_too, TierReachesBothPlatformRuns.test_the_export_is_the_real_fastlane_copy",
   "layer": "unit",
   "assertion": "With LOCALE_CAP=2 and a stub runner, ios_run and android_run receive exactly 2 locales; export raises NoLicence (exit 2).",
-  "fix": ""
+  "fix": "",
+  "test": "TierReachesBothPlatformRuns.test_a_run_gives_every_language_to_ios_and_to_android"
  },
  {
   "id": "C045",
@@ -788,7 +785,6 @@
    "site/public/index.html",
    "site/public/terms.html",
    "site/public/terms.html",
-   "site/public/whats-new.html",
    "site/public/index.html"
   ],
   "where_text": [
@@ -798,18 +794,19 @@
    "From 0.1.6, a key can be activated 5 times (0.1.5 and earlier stop at 3): use it on up to 3 of your Macs, and the spare activations cover reinstalls. If you run out, email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a> for a reset.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3."
   ],
-  "status": "partial",
-  "proof": "Client: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (the 6th activation is refused and spends nothing; 0.1.5 and earlier stop at the 4th), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_nothing_counts_a_use_except_one_activation (CI key and weekly check take no slot). Gumroad has no per-Mac record: the count is one counter per key, enforced by the program (3 activations, not 3 simultaneous Macs); deactivate cannot give one back and the terms say so. Against the real Gumroad with the live product (creator test purchase, STATUS.md row 5): 2026-10-03 on a frozen build and 2026-10-05 on the signed, notarized release, activate counted one use and activating again on the same Mac counted none; the 4th activation refused by the real Gumroad has not been tried (the test key holds 2 of 3). Two activations at the same instant can pass 3 (fixed by hand). SHOTFLEET_KEY for CI is documented in README and docs. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 3): 'Up to 3 of your Macs' read as 3 Macs at a time; cmd_activate counts a use whenever this Mac's licence.json does not hold the key (shotfleet.py cmd_activate, the `known` test), so deactivate, a new macOS install or a new user account uses another. The card and the terms now say 3 activations per key and what uses one (GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing removes licence.json between activations, as deactivate does). 2026-10-06 (0.1.6, L2, owner decision): '3 activations' made a reinstall burn one of the 3 Macs. MAX_MACS is now 5 and every page says 'use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email hello@shotfleet.com for a reset' (the terms, docs and README also say the key has 5). Exact limit: GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing (activations 1 to 5 work, the 6th is refused and burns nothing); the wording: GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email; pages and code agree: Offer.test_limits_match_the_code. The device assertion below now means: the 6th is refused with 'all 5 activations' and Uses reads 5. Gumroad's own product description must say the same (licence-review/gumroad-description-new.txt; Manu edits Gumroad).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "device",
   "assertion": "Against the real Gumroad product with a 100%-off single-use code: activate the same key 6 times (or by clearing licence.json): the 6th is refused with 'all 5 activations' and the Gumroad Uses row still reads 5; SHOTFLEET_KEY validates and the Uses row does not move.",
-  "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8)."
+  "fix": "Test purchase in Gumroad (research/gumroad-setup.md checklist step 8).",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C046",
   "claim": "The licence is checked online once and then about weekly, and works offline for 30 days",
   "where": [
    "site/public/index.html",
-   "DISTRIBUTION.md",
    "README.md"
   ],
   "where_text": [
@@ -817,32 +814,32 @@
    "re-checks at most weekly, works offline for 30 days",
    "If the licence server can't be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days"
   ],
-  "status": "proven",
-  "proof": "GumroadLicence.test_weekly_recheck_and_offline_grace (8 days -> validate call; 10 days offline ok; 31 days offline refused with '30 days'), GumroadLicence.test_nothing_counts_a_use_except_one_activation (the weekly check sends increment_uses_count=false), GumroadLicence.test_a_gumroad_outage_is_not_a_verdict (a 5xx falls under the offline grace). Same code path for every store (require_licence). Owner decision 2026-10-05: the 30 days apply to an activated Mac only; a SHOTFLEET_KEY (CI) check fails open with no offline limit and nothing stored, pinned by GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days and documented in README, docs.html, DISTRIBUTION.md and the skill. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 5): the separate line under the button was folded into the updates line on the price card, which now says when the key is checked (at activation, then about once a week when run or export is used: require_licence is only called by those), the 30 days offline, the CI key on every run, and that a refused key or 30 days without an answer means the free tier. 2026-10-06 (0.1.6, L1b, owner decision): the CI key no longer fails open. Offline it counts only where it passed a check in the last 30 days (a hash of the key and the date are noted in ci-checked.json next to licence.json; an activated Mac's licence.json with the same key counts too); otherwise NoLicence with 'couldn't be checked'. GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days, FreeTierMessage.test_an_unreachable_licence_server_stops_run_for_a_key_this_machine_never_checked_and_says_why, FreeTierMessage.test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "Already covered.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C047",
   "claim": "Gumroad: a refunded, charged-back or disputed key stops working at the next weekly check (a won dispute keeps working)",
   "where": [
-   "site/public/terms.html",
-   "DISTRIBUTION.md"
+   "site/public/terms.html"
   ],
   "where_text": [
    "ask for a refund within 14 days of buying and you'll get it",
    "refunds, chargebacks and disputes are\n  refused",
    "A refund ends the licence. The key stops unlocking every language and <code>export</code> the next time shotfleet checks it with Gumroad"
   ],
-  "status": "partial",
-  "proof": "Gumroad answers success:true for a refunded purchase, so shotfleet.py gumroad_verify reads purchase.refunded, .chargebacked and .disputed (and .dispute_won) from the answer: refused at activation, NoLicence at the weekly check and for SHOTFLEET_KEY. Field names from Gumroad's licence-key help article (read 2026-10-02) and Keysi's code. Tested only against the fake (GumroadLicence). Unverified: that chargebacked turns true after a chargeback, and whether dispute_won stays false until a win; the code treats a lost or open dispute as invalid and a won one as valid. 2026-10-05 addition: the terms now say a refund ends the licence at the next check (about weekly, up to 30 days offline) and that nothing already made is deleted, and that a CI key is checked on every run (terms, 2026-10-05). Gumroad's own source (antiwork/gumroad, app/modules/purchase/refundable.rb, added 2026-08-19, #7326) disables the key on a full refund, so a refunded key may now answer 404 'This license key has been disabled' instead of success:true with refunded:true; both are refused (GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays). Not seen against live Gumroad: see research/refund-process-2026-10-05.md. CI keys: a refused key is refused only when a run reaches Gumroad; with Gumroad unreachable the run counts as licensed (fail-open, owner decision 2026-10-05), so an outage hides a refunded key, and a CI key has no 30-day limit.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "device",
   "assertion": "Real Gumroad product: buy with a test code, refund the sale in the dashboard, set licence.json 'checked' back 8 days and run `shotfleet export`: it must raise NoLicence ('refunded').",
   "fix": "",
-  "fixed_by": "code",
-  "fixed": "Rewritten for Gumroad 2026-10-02. gumroad_verify checks refunded, chargebacked and disputed (a won dispute keeps the licence) and treats a 5xx as an outage, not a verdict. Not run against live Gumroad: no product exists yet.",
-  "test": "GumroadLicence.test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check, GumroadLicence.test_a_won_dispute_keeps_the_licence, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C048",
@@ -850,7 +847,6 @@
   "where": [
    "site/public/index.html",
    "site/public/index.html",
-   "marketing/launch-posts-v2.md",
    "site/public/index.html",
    "site/public/index.html",
    "site/public/terms.html",
@@ -865,11 +861,13 @@
    "<code>doctor</code> and <code>init</code> are free too, and the 2 free languages work on both platforms and every device size.",
    "`check`, `doctor` and `init` are free for everyone. `run` is free for up to 2 languages, on both platforms and every device size. `export` needs a licence."
   ],
-  "status": "proven",
-  "proof": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so, FreeTierOnAFrozenBuild.test_without_a_locale_list_it_is_the_first_two_of_what_the_app_ships, FreeTierOnAFrozenBuild.test_the_mcp_run_tool_is_capped_the_same_way, FreeTierOnAFrozenBuild.test_no_licence_server_is_contacted_and_no_licence_file_is_written, FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence, FreeTierOnAFrozenBuild.test_the_cap_is_per_run_two_runs_of_two_languages_give_four, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash (tests/test_claims_unit.py). With sys.frozen patched and no licence file, `main(['run', cfg, '--locales', 'de,ja,fr'])` captures exactly de and ja on iOS and on Android, prints 'free tier: capturing 2 of 3 languages (de, ja)', and so does the MCP run tool; any call to a licence server fails the test, and no licence file is written (no account). check, init and doctor never reach require_licence. The cap is per run, not per month (two runs of two languages give four): pinned by a test, and the claim says 'capture 2 languages with run', which stays true per run. Also FreeTier.test_run_without_a_licence_is_the_free_tier_export_is_not. Not covered: the released binary itself (cold-test-2.md #25 had the gate off in that build); sys.frozen is patched. 2026-10-06 (research/site-claims-audit-2026-10-06.md 'Verdict on Free at launch'): the heading said 'Free at launch', the only time-limited wording anywhere; nothing in the code ends the free tier (FREE_LANGUAGES is a constant). It now reads 'Free' and lists check, doctor and init, the 2 languages on both platforms and every device size (TierReachesBothPlatformRuns.test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers), and that export needs a licence (TierReachesBothPlatformRuns.test_export_is_refused_without_a_licence_and_goes_ahead_with_one).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "fixture",
   "assertion": "Frozen-style test: with no licence file and sys.frozen patched, `main(['run','x.toml','--locales','de,ja,fr'])` captures exactly de and ja and prints the 'free tier' line; MCP run does the same.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C049",
@@ -880,14 +878,13 @@
   "where_text": [
    "<code>run</code> is free for up to 2 languages. The licence unlocks every language and <code>export</code>."
   ],
-  "status": "fixed",
-  "proof": "Contradicts the page's own free tier: run works for 2 languages without a licence (index.html free plan, shotfleet.py:2250). Terms say the licence 'unlocks run'.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "site",
   "assertion": "Static: terms.html and index.html agree on what the free tier includes (grep for '2 languages' in both).",
   "fix": "<code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages; the licence unlocks every language and <code>export</code>.",
-  "fixed_by": "wording",
-  "fixed": "terms.html said the licence unlocks run and export; run is free for 2 languages (apply_free_tier). Terms now say check is free, run is free for up to 2 languages, the licence unlocks every language and export; README and DISTRIBUTION say the same and the number is read from FREE_LANGUAGES in the code.",
-  "test": "Offer.test_free_tier_wording_matches_the_code_on_every_page"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C050",
@@ -898,20 +895,20 @@
   "where_text": [
    "A key can be activated 5 times: 3 Macs and 2 spare for reinstalls. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again."
   ],
-  "status": "proven",
-  "proof": "GumroadLicence.test_deactivate_cant_give_the_activation_back_and_says_so (no request is made, the file is removed, the message says it can't give the activation back), GumroadLicence.test_activating_again_on_the_same_mac_does_not_use_another, GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing ('Email hello@shotfleet.com'). The reset itself is Manu's job in Gumroad (Sales, the sale, License key, Uses row: minus or Reset; Gumroad help 76) and has not been tried. 2026-10-06 (research/site-claims-audit-2026-10-06.md item 13): 'a Mac that already holds it' was true only while licence.json has the key; the terms, docs and README now say when the same Mac counts again. 2026-10-06 (0.1.6): 5 activations, GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing and GumroadLicence.test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "Already covered; add: a human resets a Uses row once in the real dashboard.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C051",
   "claim": "A year of updates: a licence covers every version released within a calendar year of the purchase (up to the same date a year later); later versions run as the free tier with a message",
   "where": [
    "site/public/index.html",
-   "site/public/terms.html",
-   "DISTRIBUTION.md",
-   "site/public/whats-new.html"
+   "site/public/terms.html"
   ],
   "where_text": [
    "A year of updates: your key covers every version released within a year of your purchase.",
@@ -919,14 +916,13 @@
    "A year of updates is part of the $49: a key covers every version released within a year of the purchase (the same date a year later)",
    "“A year of updates” now means exactly that: your key covers every shotfleet version released within a year of your purchase. A version that comes out later runs as the free tier and says which versions your key covers; the versions you have keep working. If you bought in October 2026, every version released until October 2027 is covered."
   ],
-  "status": "proven",
-  "proof": "2026-10-06 (0.1.6, L3, owner decision): enforced. packaging/build.sh bakes the build day (UTC) into a module `_release` that PyInstaller freezes into the program's code (not a loose file); shotfleet.py baked_release_date reads it (None from source; a released build without a usable date warns on stderr, still runs, and with a known sale date is NOT treated as covered). gumroad_verify reads purchase.sale_timestamp; activate, the weekly check and a CI key's check store it in licence.json / ci-checked.json as `sale`, so offline use works; check_update_window raises NoLicence (export refuses, run is the free tier) when the release date is after the same date a year after the sale (calendar year; 29 February counts to 1 March), and `activate` refuses such a key before it spends an activation, with a message naming the last release day the key covers, this version and its date, that the versions you have keep working, and 'email hello@shotfleet.com' for a renewal. The clock is never used: UpdateWindow.test_moving_the_clock_back_does_not_stretch_the_window. Edges: UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not, UpdateWindow.test_a_missing_sale_date_or_no_release_date_decides_nothing, UpdateWindow.test_the_release_date_is_baked_into_the_frozen_code_by_the_build_and_a_missing_or_bad_one_warns_and_means_none, UpdateWindow.test_a_released_build_without_a_release_date_is_not_covered_but_a_source_run_is, UpdateWindow.test_bad_sale_dates_never_crash_and_a_year_is_a_calendar_year, UpdateWindow.test_a_refunded_key_is_still_refused_inside_and_outside_the_window, UpdateWindow.test_a_hand_edited_sale_date_is_overwritten_from_gumroad_at_the_next_online_check, UpdateWindow.test_offline_the_stored_sale_date_decides_and_the_30_days_still_apply, UpdateWindow.test_october_2026_builds_work_for_every_current_buyer, UpdateWindow.test_an_out_of_window_key_is_refused_before_it_spends_an_activation_and_a_new_version_runs_as_the_free_tier. Limits: the build day is a few days before the publish day, which errs in the buyer's favour; licence.json is unsigned, so a hand-edited sale date holds until the next online check (about weekly); downloads stay public, so the check is the only enforcement. Not run on a real build or against the real Gumroad (the sale_timestamp field is from Gumroad's docs and the live purchase object, not a verify call made today).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "Unit: as the tests named. Device: a release-candidate build with a release date more than 365 days after a fake sale is the free tier with the message.",
   "fix": "",
-  "fixed_by": "code",
-  "fixed": "0.1.6: the year is now enforced against the build's baked-in release date and Gumroad's sale date (it was wording only, with nothing enforcing it). The terms, price card, docs, README, llms.txt and skill say what the code does.",
-  "test": "UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C052",
@@ -937,14 +933,13 @@
   "where_text": [
    "The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run"
   ],
-  "status": "proven",
-  "proof": "GumroadLicenceShape.test_a_success_answer_is_valid_and_its_use_count_is_read, GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag, GumroadLicenceShape.test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not, GumroadLicenceShape.test_an_unknown_key_is_a_404_with_a_message_and_is_invalid, GumroadLicenceShape.test_an_outage_is_not_a_verdict, GumroadLicenceShape.test_the_age_of_the_purchase_decides_nothing, GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check, GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicenceShape.test_the_terms_say_what_the_code_does (tests/test_claims_unit.py). Pins the answers the code reads (Gumroad: success, uses, message, purchase.refunded/chargebacked/disputed/dispute_won) as fixtures and the decision made from each; a purchase of any age stays valid, the check runs about weekly, an outage never invalidates, 30 days offline stops it, and the Terms sentence matches (Offer.test_limits_match_the_code). The fixtures follow Gumroad's licence-key documentation and are not captured from the live API: if Gumroad changes the shape, or unpublishes the product, the promise as worded in the Terms ('as long as the licence check can run') is the disclosed limit. Earlier: GumroadLicence.test_a_gumroad_outage_is_not_a_verdict. 2026-10-06 (0.1.6): reworded with L3; a version released within the year keeps passing for a purchase 800 days old (GumroadLicenceShape.test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check now sets the release date 100 days after the sale).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "Release gate that pins the Gumroad licence answer shape used (success, uses, purchase.refunded/chargebacked/disputed).",
   "fix": "'... keeps working for as long as macOS, Xcode and Maestro let it, provided the licence server (Gumroad) is reachable at least once every 30 days.'",
-  "fixed_by": "wording",
-  "fixed": "Terms now say it exactly: the version keeps working as long as macOS, Xcode and Maestro let it and the licence check can run (about weekly, offline for up to 30 days). The weekly/30-day numbers are read from the code in a test.",
-  "test": "Offer.test_limits_match_the_code"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C053",
@@ -955,23 +950,20 @@
   "where_text": [
    "The renewal isn't on sale yet, so for now email <a href=\"mailto:hello@shotfleet.com\">hello@shotfleet.com</a>."
   ],
-  "status": "fixed",
-  "proof": "No renewal product exists: LAUNCH.md lists exactly one Gumroad product (shotfleet, 49 USD one-time); STRATEGY.md:56 says 'optional renewal for updates later'; the client has no renewal logic. 2026-10-06 (0.1.6): the window is enforced (C051), so the terms now say a later version needs a renewal that isn't on sale yet, and to email; the program's message says the same (UpdateWindow.test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "A Gumroad product 'shotfleet renewal' exists and its key extends the update window.",
   "fix": "After a year, I plan to offer an optional renewal for further updates (not available yet).",
-  "fixed_by": "wording",
-  "fixed": "No renewal product exists (LAUNCH.md has one product; STRATEGY.md says later). Building and testing a renewal in the store is not half a day. Terms now say 'I plan to offer an optional renewal for further updates after the first year; it is not available yet.' 0.1.6: 'email hello@shotfleet.com' for now, as the program says.",
-  "test": "Offer.test_the_updates_promise_is_not_an_unconditional_forever"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C054",
   "claim": "14-day refund, no questions asked",
   "where": [
    "site/public/index.html",
-   "site/public/terms.html",
-   "marketing/launch-email.md",
-   "LAUNCH.md"
+   "site/public/terms.html"
   ],
   "where_text": [
    "14-day refund.",
@@ -979,32 +971,33 @@
    "Reply within 14 days and I'll refund you, no questions asked.",
    "14-day refunds"
   ],
-  "status": "partial",
-  "proof": "Consistent everywhere (14 days). Operational only: refunds are done by hand in Gumroad (merchant of record), which also shows the product's refund policy at checkout and includes it in card disputes; nothing in code or tests except tools/golive/storefront.sh, which fails when the product page's refund policy is missing or not 14 days (Storefront tests use a fake page). Unverified: that Gumroad's editor offers a 14-day option (its help pages mention 7 days or more and 30 days); Gumroad may also refund on its own in the first 90 days (the terms say so). The conditional 'if shotfleet doesn't work for your app' was removed from terms.html and the launch email on 2026-10-05; Gumroad's live policy says 'You do not have to explain'.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "Human: confirm in Gumroad's product editor that a 14-day refund policy can be set, then run tools/golive/storefront.sh.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "2026-10-05: terms.html no longer says 'If shotfleet doesn't work for your app' before 'no questions asked'. Gumroad's live refund policy (read 2026-10-05) is unconditional: '14-day money back guarantee ... You do not have to explain.' The launch email (marketing/launch-email.md) now says 'Reply within 14 days and I'll refund you, no questions asked.'"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C055",
   "claim": "Payment goes through Gumroad as merchant of record, which handles VAT; I never see your card details",
   "where": [
    "site/public/terms.html",
-   "site/public/privacy.html",
-   "LAUNCH.md"
+   "site/public/privacy.html"
   ],
   "where_text": [
    "You buy through Gumroad, which sells shotfleet to you as the merchant of record.",
    "which sells shotfleet to you as the merchant of record",
    "Payments are on **Gumroad** (merchant of record since 2025-01-01"
   ],
-  "status": "evidence",
-  "proof": "Gumroad's own pages read 2026-10-02 say it is merchant of record for all sales since 2025-01-01 and collects and remits VAT and sales tax worldwide (gumroad.com/pricing; help 121 and 10; its terms). Prices are before VAT (Gumroad cannot make a digital price VAT-inclusive), which the page, terms and README now say. Not seen on a live shotfleet checkout: no product exists yet.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "Human: open the live checkout from a Dutch IP or card country and see VAT added on top of $29; check the receipt.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C056",
@@ -1015,13 +1008,13 @@
   "where_text": [
    "It gives the $29 price by itself to the first 100 sales, so you see what you’ll pay before you pay. I can’t show you how many are left."
   ],
-  "status": "fixed",
-  "proof": "Live since 2026-10-04 (STATUS.md 'Gumroad'): FOUNDER29, $20 off the $49 list price, limit 100 uses, applied automatically; the public product page JSON shows price_cents 4900 and the discount_code (fetched 2026-10-06, research/site-claims-audit-2026-10-06.md item 7). The 100 limit is not visible to buyers, so the page no longer says 'the first 100 buyers pay the founder price' as if anyone could follow it, and says plainly that no count is shown. Still open: what the page shows after use 100, whether the creator test purchase used one, and whether a refunded FOUNDER29 sale still counts (research/refund-process-2026-10-05.md:40, an inference from Gumroad's source).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "Human: open the product page in a private window and read $49 crossed out and $29 in the order summary; after a test of the limit (or at 100 uses) it must read $49.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "The page said the price 'applies automatically', which depends on a Gumroad discount code that is not set up yet and whose behaviour after 100 uses is undocumented. It now promises only the outcome: the first 100 buyers pay the founder price. How it is applied is Manu's checklist (research/gumroad-setup.md). 2026-10-06: worded the way Gumroad applies it (by itself, to the first 100 sales), with no claim of a counter buyers can see."
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C057",
@@ -1347,7 +1340,7 @@
    "site/public/privacy.html"
   ],
   "where_text": [
-   "Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.",
+   "Whatever you choose, on the home page the site adds one to a running total for each page view and for a few actions (reaching the run or free section, clicking a button), split by day, by the site or link you came from, and by your browser's language.",
    "Those totals are not linked to you and your IP address is not stored."
   ],
   "status": "partial",
@@ -1416,7 +1409,7 @@
    "The waitlist is closed and I never emailed it. Any address still on it will be deleted, and you can remove yours yourself below, or ask me."
   ],
   "status": "partial",
-  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence. 2026-10-03: WorkerBehaviour.test_c081_the_purge_step_exists_and_the_privacy_page_and_launch_checklist_agree checks the sentence, signups.sh --purge-waitlist and the LAUNCH.md step, and that worker.js sets no expiry. 2026-10-07: reworded after the 0.1.6 site review, because no waitlist email was ever sent (signups were 0): the page now says the waitlist is closed and any address still on it will be deleted, with no date. Deleting what is stored is still a manual step (site/signups.sh --purge-waitlist; not done by the review pass). Nothing here can test that it is done, and msg: records are covered by the separate 'kept until answered' sentence.",
+  "proof": "Nothing automates it: worker.js put() has no expirationTtl and wrangler.toml has no cron trigger. It is a manual task, and msg: records (contact messages with reply addresses) are not covered by the sentence. 2026-10-03: WorkerBehaviour.test_c081_the_purge_step_exists_and_the_privacy_page_agrees checks the sentence, signups.sh --purge-waitlist and the LAUNCH.md step, and that worker.js sets no expiry. 2026-10-07: reworded after the 0.1.6 site review, because no waitlist email was ever sent (signups were 0): the page now says the waitlist is closed and any address still on it will be deleted, with no date. Deleting what is stored is still a manual step (site/signups.sh --purge-waitlist; not done by the review pass). Nothing here can test that it is done, and msg: records are covered by the separate 'kept until answered' sentence.",
   "layer": "site",
   "assertion": "Assert wrangler.toml has a scheduled purge or worker.js passes expirationTtl to put(); or a signups.sh --purge exists and the launch checklist (LAUNCH.md) lists it.",
   "fix": "Add the 30-day purge to LAUNCH.md and implement it; extend the sentence to messages.",
@@ -1481,14 +1474,13 @@
   "where_text": [
    "It sends Gumroad your key, the product ID, and whether the call should count as an activation. Activating makes two calls: the first only looks at the key, and the second counts it, and that second call is made only when this Mac doesn't have the key saved yet. The weekly check never counts. It sends no Mac name, no activation id and no program version, and the request carries your IP address and Python's standard user-agent string."
   ],
-  "status": "proven",
-  "proof": "GumroadLicence.test_nothing_counts_a_use_except_one_activation records the raw form fields the fake server receives: exactly product_id, license_key and increment_uses_count (no label, no hostname, no activation id), and the request has no custom User-Agent (Python's default is sent). The CLI's `doctor` also asks this site for /download/VERSION (said on the page). 2026-10-06 (research/site-claims-audit-2026-10-06.md item 9): the page said 'only the first call on a new Mac' counts; it is the second call of an activation (GumroadLicenceShape.test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag: the first is increment_uses_count=false, the second true).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "Already covered.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "Rewritten for Gumroad 2026-10-02: Gumroad's licence API takes only product_id, license_key and increment_uses_count, so the Mac name, activation id and program version an earlier store path sent are gone from the text.",
-  "test": "PrivacyPage.test_privacy_says_what_the_program_and_the_site_really_do, GumroadLicence.test_nothing_counts_a_use_except_one_activation"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C086",
@@ -1499,13 +1491,13 @@
   "where_text": [
    "Gumroad passes me the details of your order, which can include your name, email and country (its privacy policy says exactly what), so I can support you."
   ],
-  "status": "fixed",
-  "proof": "Depends on Gumroad's seller dashboard and sales export (name, email, country are in the sale record); no sale exists yet.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "Human: check what Gumroad's order export contains once the first sale lands.",
   "fix": "",
-  "fixed_by": "wording",
-  "fixed": "The privacy page said 'I receive your name, email, country and order details', which depends on what Gumroad's seller dashboard shows (no sale exists yet to check). It now says Gumroad passes me the order details, which can include name, email and country, and points to Gumroad's policy for the exact list."
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C087",
@@ -1545,16 +1537,18 @@
   "id": "C089",
   "claim": "go-live switches the page from the waitlist to Buy (both versions of the text are audited)",
   "where": [
-   "LAUNCH.md"
+   "CHANGELOG.md"
   ],
   "where_text": [
    "turns the page into \"Buy shotfleet\" with your product URL"
   ],
-  "status": "evidence",
-  "proof": "Audit snippet 2026-10-02 applying packaging/go-live.sh's two regexes in memory to the current index.html: no 'waitlist', 'early access', 'isn’t released', '@CHECKOUT@' or signup form remains; three Buy links; heading becomes 'Buy shotfleet'. The WAITLIST/SALE markers sit on 4-space-indented lines in the header, hero and price card, which the regexes require. The page was being edited during the audit (reveal.js added): this must be re-run after the redesign settles.",
+  "status": "removed",
+  "proof": "Removed with packaging/go-live.sh and LAUNCH.md.",
   "layer": "site",
   "assertion": "Commit the snippet as a test: run the go-live transform on index.html and assert the remnants list is empty and exactly one SALE install block and one 'checked online once and then about weekly' line remain.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "The go-live switch (waitlist to Buy) was removed on 2026-11-11 with packaging/go-live.sh: the site now says shotfleet is free and open source."
  },
  {
   "id": "C090",
@@ -1572,7 +1566,7 @@
   "fix": "`check`, `doctor`, `init` free; `run` free up to 2 languages; every language and `export` need a key",
   "fixed_by": "wording",
   "fixed": "DISTRIBUTION.md still said run needs a key. Row now: check, doctor, init free; run free up to 2 languages; every language and export need a key.",
-  "test": "Offer.test_free_tier_wording_matches_the_code_on_every_page"
+  "test": "Offer.test_no_price_refund_or_key_is_left"
  },
  {
   "id": "C091",
@@ -1610,22 +1604,24 @@
   "fix": "arm64 only; curl install.sh (Homebrew formula kept for later)",
   "fixed_by": "wording",
   "fixed": "Intel support is not being built (decided). DISTRIBUTION.md now says Apple silicon only (arm64), curl install, no Homebrew formula published; install.sh refuses non-arm64 and the site, terms and README say Apple silicon. 2026-10-06: a Homebrew cask now exists, but in noloman/homebrew-tap (brew install noloman/tap/shotfleet), still arm64 only; the old noloman/shotfleet tap name stays banned (C181).",
-  "test": "Offer.test_apple_silicon_is_said_where_a_buyer_decides, Style.test_banned_phrases_are_absent"
+  "test": "Offer.test_apple_silicon_is_said_where_a_user_decides, Style.test_banned_phrases_are_absent"
  },
  {
   "id": "C093",
   "claim": "Licence: only Gumroad keys work (5 activations, one count per key); a key from any other store, and a saved licence from one, are refused; refunded, charged-back and disputed Gumroad keys are refused",
   "where": [
-   "DISTRIBUTION.md"
+   "CHANGELOG.md"
   ],
   "where_text": [
    "Gumroad is the store: its licence keys count activations (5 per key, for 3 Macs plus reinstalls;"
   ],
-  "status": "proven",
-  "proof": "GumroadLicence.test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing, GumroadLicence.test_refunded_and_unknown_keys_are_refused_without_using_an_activation, GumroadLicence.test_nothing_counts_a_use_except_one_activation, GumroadLicence.test_key_formats_do_not_collide; Licence.test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call and Licence.test_a_saved_licence_from_another_store_is_refused_and_can_be_removed (no network call in either). Only Gumroad is sold (LAUNCH.md); Polar was dropped and its code removed 2026-10-02 because Stripe asks a Dutch resident for a KvK; the Lemon Squeezy code was removed 2026-10-03.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "Already covered.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C094",
@@ -1745,15 +1741,15 @@
  },
  {
   "id": "C101",
-  "claim": "Buy link https://shotfleet.com/#price points at the price section",
+  "claim": "Link https://shotfleet.com/#free points at the free and open source section",
   "where": [
    "marketing/launch-email.md"
   ],
   "where_text": [
-   "Buy: https://shotfleet.com/#price"
+   "Buy: https://shotfleet.com/#free"
   ],
   "status": "proven",
-  "proof": "2026-10-03: LinksResolve.test_the_buy_link_in_the_launch_email_lands_on_the_price_section (id=\"price\" is the pricing section, in the waitlist page and the page after go-live.sh), LinksResolve.test_every_address_in_the_texts_resolves_to_a_published_file_and_anchor (every https://shotfleet.com address in README, LAUNCH, DISTRIBUTION, the launch email, launch-posts-v2 and llms.txt is a page or file of the site, its #anchor an id on that page; /download/ names are the release files), LinksResolve.test_relative_links_in_the_readme_exist, LinksResolve.test_kit_addresses_point_at_the_site_or_at_a_guide_that_is_drafted_or_planned. Marketing kit links to the three guides still point at unpublished drafts (they 404 until the guides are published) and one planned article. The live site was not requested.",
+  "proof": "LinksResolve.test_the_free_section_is_where_the_home_page_sends_you; LinksResolve.test_every_address_in_the_texts_resolves_to_a_published_file_and_anchor",
   "layer": "site",
   "assertion": "Static: every internal href/anchor in README, posts and email resolves to an id in index.html.",
   "fix": ""
@@ -1801,7 +1797,7 @@
    "<td><span class=\"yes\">Yes</span></td>"
   ],
   "status": "partial",
-  "proof": "Same evidence as the claims above; nothing is wrong, but a table of 'Yes' cells without footnotes cannot be tested. Draft only; /alternatives returns 404 live. 2026-10-03: ComparisonTable.test_the_shotfleet_row_of_the_published_table_reads_yes_yes_yes_both_and_the_real_price, ComparisonTable.test_the_draft_table_says_yes_to_five_things_and_each_is_a_command_or_option_the_program_has, ComparisonTable.test_one_english_flow_becomes_a_flow_in_each_language_from_the_apps_own_strings, ComparisonTable.test_check_finds_a_screenshot_in_the_wrong_language (checks, one flow per language, --parallel, --platform android and the price cell are shown to exist in the program). Still missing: 'captures the real app' and 'parallel' need simulators or emulators on a Mac, and every cell about the other tools rests on their pages read by hand on 2026-10-02. The published table (site/public/alternatives.html) has since replaced this draft's columns.",
+  "proof": "Same evidence as the claims above; nothing is wrong, but a table of 'Yes' cells without footnotes cannot be tested. Draft only; /alternatives returns 404 live. 2026-10-03: ComparisonTable.test_the_shotfleet_row_of_the_published_table_reads_yes_yes_yes_both_and_free, ComparisonTable.test_the_draft_table_says_yes_to_five_things_and_each_is_a_command_or_option_the_program_has, ComparisonTable.test_one_english_flow_becomes_a_flow_in_each_language_from_the_apps_own_strings, ComparisonTable.test_check_finds_a_screenshot_in_the_wrong_language (checks, one flow per language, --parallel, --platform android and the price cell are shown to exist in the program). Still missing: 'captures the real app' and 'parallel' need simulators or emulators on a Mac, and every cell about the other tools rests on their pages read by hand on 2026-10-02. The published table (site/public/alternatives.html) has since replaced this draft's columns.",
   "layer": "site",
   "assertion": "Static: the draft cell values match a machine-readable features.json that the tests above feed.",
   "fix": ""
@@ -1891,41 +1887,42 @@
   "id": "C110",
   "claim": "The founder price is plain text ('first 100 buyers') with no counter number; a live 'N of 100 left' counter does not exist yet",
   "where": [
-   "site/public/index.html",
-   "LAUNCH.md"
+   "site/public/index.html"
   ],
   "where_text": [
    "launch price, first 100 buyers",
    "A live \"N of 100 left\" counter is not built."
   ],
-  "status": "proven",
-  "proof": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text keeps the text and rejects any counter number after the go-live transform; Smoke.test_a_counter_number_that_nothing_feeds_fails makes the live smoke test fail on one. LAUNCH.md open item: Gumroad shows FOUNDER29's use count in the dashboard only, so no live counter is planned.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "site",
   "assertion": "After go-live, the live page says 'first 100 buyers' and shows no number of buyers left (tools/golive/smoke.sh checks this).",
   "fix": "",
-  "test": "DryRun.test_the_copy_has_the_checkout_link_and_no_markers_and_the_static_founder_text"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C111",
   "claim": "packaging/go-live.sh --dry-run rehearses the go-live on a copy: no build, notarization, deploy, push or change to the working tree",
   "where": [
-   "LAUNCH.md"
+   "CHANGELOG.md"
   ],
   "where_text": [
    "packaging/go-live.sh --dry-run"
   ],
-  "status": "proven",
-  "proof": "DryRun.test_the_dry_run_passes_and_says_what_it_would_do, DryRun.test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed (fake npx, xcrun, codesign and swiftc record any call; HEAD and the two edited files are unchanged), DryRun.test_bad_inputs_fail_the_dry_run. The sed and the page transform are the real run's own code (test_site.go_live extracts the same heredoc).",
+  "status": "removed",
+  "proof": "Removed with packaging/go-live.sh.",
   "layer": "site",
   "assertion": "Run it with the real checkout link before the real go-live; it ends with 'dry run clean'. Not checked offline: the notarytool profile and the Cloudflare login (listed in LAUNCH.md step 3).",
   "fix": "",
-  "test": "DryRun.test_the_real_tree_is_untouched_and_nothing_was_deployed_or_pushed"
+  "fixed_by": "removed",
+  "fixed": "packaging/go-live.sh was removed on 2026-11-11: the launch is long done and shotfleet no longer has a storefront to switch on."
  },
  {
   "id": "C112",
   "claim": "tools/golive/smoke.sh checks the live site after the deploy (pages, install.sh, VERSION, archive and checksum, CSP, robots and sitemap, https redirect) without installing anything",
   "where": [
-   "LAUNCH.md"
+   "packaging/README.md"
   ],
   "where_text": [
    "tools/golive/smoke.sh https://shotfleet.com"
@@ -2584,17 +2581,17 @@
  },
  {
   "id": "C160",
-  "claim": "With AI agents: activate the Mac once and the agent uses the CLI without seeing the key; use the SHOTFLEET_KEY secret in CI; claude mcp add --env would store the key in plain text in ~/.claude.json",
+  "claim": "With AI agents: nothing to sign in to, the agent uses the same free CLI",
   "where": [
-   "site/public/docs.html",
-   "README.md"
+   "README.md",
+   "site/public/docs.html"
   ],
   "where_text": [
-   "After that your agent uses the CLI and never sees the key.",
-   "Don't pass the key with `claude mcp add --env`: it ends up in"
+   "Nothing to sign in to: the agent uses the same free CLI you do.",
+   "Nothing to sign in to: your agent uses the same free CLI you do."
   ],
   "status": "evidence",
-  "proof": "Code: every licensed path (CLI and the MCP `run` tool) goes through require_licence(), which reads LICENCE_FILE (~/Library/Application Support/shotfleet/licence.json) or SHOTFLEET_KEY, so nothing asks the agent for the key; FreeTierOnAFrozenBuild.test_the_mcp_run_tool_is_capped_the_same_way (tests/test_claims_unit.py) shows the MCP path uses the same licence check. The skills tell the agent never to ask for the key or read licence.json (skill/shotfleet/references/licence.md). ~/.claude.json: Claude Code MCP docs (code.claude.com/docs/en/mcp, read 2026-10-05) say local- and user-scope servers, including --env values, are stored in ~/.claude.json. Not run with Claude Code on this Mac.",
+  "proof": "Code: shotfleet has no license check, so no path asks the agent for a key (TheProgramHasNoPaywall.test_the_license_code_and_its_server_are_gone_from_the_program, TheProgramHasNoPaywall.test_the_mcp_run_tool_does_not_mention_a_license).",
   "layer": "unit",
   "assertion": "Already covered for the licence path; the ~/.claude.json part is vendor documentation.",
   "fix": ""
@@ -2751,11 +2748,13 @@
    "Prices are before VAT or sales tax, which Gumroad adds where it applies;",
    "before VAT or sales tax where it applies"
   ],
-  "status": "evidence",
-  "proof": "research/gumroad-setup.md:33: Gumroad adds tax on top of the price; terms.html already said Gumroad collects 'sales tax or VAT'. A US buyer in a state with sales tax pays sales tax, not VAT (research/site-claims-audit-2026-10-06.md item 8). Not checked: a real checkout from a US state.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "legal",
   "assertion": "Human: a Gumroad checkout from an EU and a US address shows the tax added on top of $29 or $49.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C171",
@@ -2782,11 +2781,13 @@
   "where_text": [
    "when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier."
   ],
-  "status": "proven",
-  "proof": "GumroadLicenceShape.test_the_check_can_run_offline_for_30_days_and_then_cannot, GumroadLicence.test_weekly_recheck_and_offline_grace, GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days, FreeTierOnAFrozenBuild.test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash. Code: LICENCE_RECHECK_DAYS, LICENCE_OFFLINE_DAYS = 7, 30; require_licence is called only by run (apply_free_tier) and export. Since 0.1.6 a CI key that can't reach Gumroad counts only where it passed a check in the last 30 days, which docs.html says.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "As the tests named.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C173",
@@ -2961,11 +2962,13 @@
    "Open-source maintainers and students can email me for a free licence: a 100%-off code for the same licence.",
    "Open-source maintainers and students can email hello@shotfleet.com"
   ],
-  "status": "policy",
+  "status": "removed",
   "layer": "legal",
-  "proof": "The owner's decision, 2026-10-06 (approved in the coordination session from research/reach-roadmap-2026-10-06.md item 3). Gumroad offer codes can be 100% off with a quantity of 1 (research/gumroad-setup.md); a code is made by hand per request. The terms' one-developer, 3-activation licence is unchanged: the code buys the same product.",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "assertion": "None: a policy, not program behaviour.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C183",
@@ -2982,11 +2985,13 @@
    "Gumroad makes an invoice from your receipt if you need one. I don't take purchase orders.",
    "Gumroad makes an invoice from the receipt; there are no purchase orders."
   ],
-  "status": "policy",
+  "status": "removed",
   "layer": "legal",
-  "proof": "The owner's decision, 2026-10-06 (approved in the coordination session from research/reach-roadmap-2026-10-06.md item 3). Gumroad is the merchant of record and generates the invoice from the receipt (name, address, VAT number), see research/reach-roadmap-2026-10-06.md section 2.8 and research/gumroad-setup.md; the terms' Payment section already says Gumroad sends the receipt.",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "assertion": "None: a policy, not program behaviour.",
-  "fix": ""
+  "fix": "",
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C187",
@@ -2997,9 +3002,9 @@
    "site/draft/docker-pending.txt"
   ],
   "where_text": [
-   "in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check`. It's free, needs no licence, and is built for amd64 and arm64.",
+   "It's free and is built for amd64 and arm64.",
    "It holds the compiled program, Tesseract and aapt2 (for <code>--app app.apk</code>).",
-   "(free, no licence, amd64 and arm64)"
+   "(free, amd64 and arm64)"
   ],
   "status": "evidence",
   "layer": "fixture",
@@ -3521,7 +3526,7 @@
    "- You don't have an Apple silicon Mac."
   ],
   "status": "proven",
-  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). InstallScript.test_install_sh_refuses_an_intel_mac (C113); Offer.test_apple_silicon_is_said_where_a_buyer_decides.",
+  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). InstallScript.test_install_sh_refuses_an_intel_mac (C113); Offer.test_apple_silicon_is_said_where_a_user_decides.",
   "layer": "site",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": "",
@@ -3546,19 +3551,19 @@
  },
  {
   "id": "C217",
-  "claim": "Docs FAQ: check, doctor and init free for everyone; run free for up to 2 languages; a licence unlocks every language and export",
+  "claim": "Docs FAQ: shotfleet is free and open source (MIT): every command and every language, no key and no account",
   "where": [
    "site/public/docs.html"
   ],
   "where_text": [
-   "<code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>"
+   "Yes. shotfleet is free and open source (MIT license): every command and every language, no key and no account."
   ],
   "status": "proven",
-  "proof": "Added by the SEO pass of 2026-10-06 (research/seo-audit-2026-10-06.md). Same proof as C048 (FreeTierOnAFrozenBuild tests) and C044; sf.FREE_LANGUAGES is 2. The docs name no price (DocsPage.test_it_does_not_promise_an_upload_or_a_price).",
+  "proof": "TheProjectIsOpenSource.test_the_readme_the_site_and_the_contributing_guide_say_so_and_link_sponsors, TierReachesBothPlatformRuns.test_a_run_gives_every_language_to_ios_and_to_android",
   "layer": "fixture",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": "",
-  "test": "FreeTierOnAFrozenBuild.test_run_with_three_languages_captures_the_first_two_and_says_so"
+  "test": "TierReachesBothPlatformRuns.test_a_run_gives_every_language_to_ios_and_to_android"
  },
  {
   "id": "C218",
@@ -3808,12 +3813,13 @@
    "It's paid like any `run`: 2 languages without a licence, and `check` stays free.",
    "It's paid like any <code>run</code>: 2 languages without a licence, and <code>check</code> stays free."
   ],
-  "status": "proven",
+  "status": "removed",
   "layer": "unit",
-  "proof": "CaptureRun.test_without_a_licence_three_languages_become_two_like_a_maestro_run, CaptureRun.test_two_languages_without_a_licence_are_free, CaptureRun.test_check_stays_free_on_capture_output.",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "assertion": "A released build without a licence runs 2 of 3 [capture] languages and prints the free-tier line; 2 languages run without it; check never asks for a licence.",
   "fix": "",
-  "test": "CaptureRun.test_without_a_licence_three_languages_become_two_like_a_maestro_run"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C234",
@@ -3997,12 +4003,12 @@
    "site/public/guides/fastlane-snapshot-screenshots-all-english.html"
   ],
   "where_text": [
-   "it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders.",
+   "it is free: no key, no account. It does not capture anything and does not touch your fastlane folders.",
    "problems outlined in red) goes to <code>./shotfleet-check</code>"
   ],
   "status": "proven",
   "layer": "unit",
-  "proof": "FreeTierOnAFrozenBuild.test_check_init_and_doctor_never_ask_for_a_licence (tests/test_claims_unit.py), CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone (tests/test_cli_claims.py); the grid: cmd_check calls write_gallery, whose docstring and README 'Review out/index.html' say one row per language, one column per screen, flagged screenshots outlined in red (C028, C032, C048).",
+  "proof": "CheckPromises.test_check_runs_in_the_released_build (tests/test_cli_claims.py), CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone (tests/test_cli_claims.py); the grid: cmd_check calls write_gallery, whose docstring and README 'Review out/index.html' say one row per language, one column per screen, flagged screenshots outlined in red (C028, C032, C048).",
   "assertion": "The proof's tests.",
   "fix": "",
   "test": "CheckPromises.test_check_writes_its_report_to_shotfleet_check_and_leaves_the_folder_alone"
@@ -4100,7 +4106,7 @@
  },
  {
   "id": "C249",
-  "claim": "Guides 1 and 2: Apple silicon Macs only (the installer refuses Intel); run is free for up to 2 languages; a licence unlocks every language and export, $29 for the first 100 buyers then $49 once, 14-day refund",
+  "claim": "Guides 1 and 2: Apple silicon Macs only (the installer refuses Intel); shotfleet is free and open source (MIT)",
   "where": [
    "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
    "site/public/guides/fastlane-snapshot-screenshots-all-english.html",
@@ -4108,8 +4114,8 @@
   ],
   "where_text": [
    "only runs on an Apple silicon Mac (the installer refuses Intel)",
-   "$29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund",
-   "$29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund"
+   "shotfleet is free and open source (MIT): every language, no key.",
+   "shotfleet is free and open source (MIT), with every language and <code>export</code> and no key."
   ],
   "status": "evidence",
   "layer": "site",
@@ -4213,19 +4219,18 @@
   "id": "C255",
   "claim": "A released build ignores SHOTFLEET_GUMROAD_API: the licence check can't be pointed at another server",
   "where": [
-   "DISTRIBUTION.md"
+   "CHANGELOG.md"
   ],
   "where_text": [
    "no secret in the app, one use count per key, 5 activations"
   ],
-  "status": "proven",
-  "proof": "0.1.6 (L1a, 'Defect 2' in research/review-2026-10-03.md): shotfleet.py gumroad_api honours SHOTFLEET_GUMROAD_API only from source (tests) or in a build whose product id starts with RCTEST (tools/release-candidate.sh's test build, which needs its fake server); a released build always asks api.gumroad.com. GumroadLicence.test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source (frozen, real product id, override at a dead host: activation still reaches the configured server, and a made-up SHOTFLEET_KEY is refused). Not tried on the binary itself.",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "As the test named.",
   "fix": "",
-  "fixed_by": "code",
-  "fixed": "Pointing the override at a dead host plus any well-formed SHOTFLEET_KEY was a full licence. Fixed in code: the override is read at call time and ignored when frozen with a real product id.",
-  "test": "GumroadLicence.test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C256",
@@ -4240,14 +4245,13 @@
    "On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers.",
    "works offline only on a machine where it passed a check in the last 30 days"
   ],
-  "status": "proven",
-  "proof": "0.1.6 (L1b, 'Defect 3'): GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days (offline and never checked: refused with 'couldn't be checked'; a made-up key with Gumroad blocked: refused; online: no use counted, no licence.json, the record holds a hash, not the key; offline after a check: fine at 29 days, refused at 31 days and with a future date; an activated Mac with the same key counts as checked), GumroadLicence.test_nothing_counts_a_use_except_one_activation, FreeTierMessage.test_an_unreachable_licence_server_stops_run_for_a_key_this_machine_never_checked_and_says_why, FreeTierMessage.test_an_unreachable_licence_server_is_no_cap_for_a_key_that_passed_a_check_here. tools/release-candidate.sh also checks a fresh HOME is refused during an outage (not run in this change). Limit: a CI job on a fresh runner fails to license during a Gumroad outage (run captures 2 languages, export exits 2).",
+  "status": "removed",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "layer": "unit",
   "assertion": "As the tests named.",
   "fix": "",
-  "fixed_by": "code",
-  "fixed": "Was fail-open with no limit (owner decision 2026-10-05), so any well-formed key passed with Gumroad blocked. Owner decision 2026-10-06: offline only after a good check on that machine, for 30 days.",
-  "test": "GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C257",
@@ -4274,19 +4278,19 @@
   "id": "C258",
   "claim": "What's new 0.1.6: in CI a SHOTFLEET_KEY that is refused or can't be checked stops run with exit 2; with Gumroad unreachable a key counts only where it passed a check in the last 30 days; cache ci-checked.json between jobs",
   "where": [
-   "site/public/whats-new.html",
-   "site/public/whats-new.html"
+   "CHANGELOG.md"
   ],
   "where_text": [
    "now stops <code>run</code> with exit 2, instead of quietly capturing 2 languages",
    "<code>~/Library/Application Support/shotfleet/ci-checked.json</code> between jobs"
   ],
-  "status": "proven",
+  "status": "removed",
   "layer": "unit",
-  "proof": "LicenceHardening.test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages (run exits 2 with 'stops here'), GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days. CHANGELOG 0.1.6 (SHOTFLEET_KEY is a gate in CI). Added to What's new after the 0.1.6 site review, 2026-10-07.",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "assertion": "The proof's tests; the quoted words on the page.",
   "fix": "",
-  "test": "GumroadLicence.test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C259",
@@ -4305,12 +4309,13 @@
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3."
   ],
-  "status": "proven",
+  "status": "removed",
   "layer": "unit",
-  "proof": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6. CHANGELOG 0.1.6 (the 5 activations bullet: 0.1.5 and earlier still stop at 3; every version stays downloadable). Site review 2026-10-07 row 16.",
+  "proof": "Removed: the license check, shotfleet activate and the price were taken out of the program, the README and the site. See tests/test_open_source.py.",
   "assertion": "The quoted sentence is on all five files.",
   "fix": "",
-  "test": "ActivationCaveat.test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6"
+  "fixed_by": "removed",
+  "fixed": "shotfleet became free and open source (MIT) on 2026-11-11: there is no license, price, refund, activation or free tier any more, so this promise is gone."
  },
  {
   "id": "C260",

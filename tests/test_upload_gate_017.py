@@ -162,7 +162,7 @@ class PrintUpload(unittest.TestCase):
         (out / "check.json").write_text(json.dumps({"problems": []}))
         for flag, shown in (([], False), (["--print-upload"], True)):
             buf = io.StringIO()
-            with mock.patch.object(sf, "require_licence"), mock.patch.object(sf, "sh") as sh, mock.patch.object(sf.subprocess, "run") as run, \
+            with mock.patch.object(sf, "sh") as sh, mock.patch.object(sf.subprocess, "run") as run, \
                  contextlib.redirect_stdout(buf):
                 code = sf.main(["export", str(out), "--fastlane", str(d / "fl"), "--no-hooks", *flag])
             self.assertEqual(code, 0)

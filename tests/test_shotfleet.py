@@ -1276,21 +1276,8 @@ class Mcp(unittest.TestCase):
         self.assertEqual(s["reports"], [str((Path(rep) / "check.json").resolve())])
         self.assertEqual(len(json.loads(full)["screenshots"]), 400)
 
-    def test_the_run_summary_has_a_note_when_the_free_tier_capped_the_languages(self):
-        for cap, noted in ((2, True), (None, False)):
-            with tempfile.TemporaryDirectory() as d, self.fake_check(1, 1), contextlib.redirect_stdout(io.StringIO()), \
-                 mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "config_commands", return_value=[]):
-                def fake_run(*a):
-                    with mock.patch.object(sf, "LOCALE_CAP", cap): sf.cap_locales(["de", "ja", "fr"])
-                    sf.check_any(d, report=str(Path(d) / "rep")); return 0
-                with mock.patch.object(sf, "cmd_run", fake_run):
-                    text, err = sf.mcp_call("run", {"config": str(Path(d) / "shotfleet.toml")})
-            self.assertFalse(err, text); s = json.loads(text)
-            self.assertEqual("note" in s, noted)
-            if noted: self.assertIn("2 of 3 languages (de, ja)", s["note"]); self.assertIn("activate", s["note"])
-
     def test_a_run_that_wrote_no_report_returns_its_output(self):
-        with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", lambda *a: print("stopped early") or 2):
+        with mock.patch.object(sf, "cmd_run", lambda *a: print("stopped early") or 2):
             text, err = sf.mcp_call("run", {"config": "x.toml"})
         self.assertFalse(err); self.assertEqual(text.strip(), "stopped early")
 
@@ -1301,7 +1288,7 @@ class Mcp(unittest.TestCase):
             seen = []
             def fake_run(config, locales):  # the hook call a real run makes first, without booting anything
                 seen.append(sf.run_hook({"before_run": "touch ran"}, "before_run", config, {})); return 0
-            with mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", fake_run):
+            with mock.patch.object(sf, "cmd_run", fake_run):
                 sf.mcp_call("run", {"config": str(cfg)})
                 self.assertFalse((Path(d) / "ran").exists())
                 sf.mcp_call("run", {"config": str(cfg), "hooks": True})
@@ -1312,8 +1299,7 @@ class Mcp(unittest.TestCase):
     def call_in_process(self, *msgs):
         out = io.StringIO()
         with mock.patch.object(sf.sys, "stdin", io.StringIO("\n".join(map(json.dumps, msgs)) + "\n")), \
-             mock.patch.object(sf.sys, "__stdout__", out), mock.patch.object(sf, "MCP_HEARTBEAT_S", 0.05), \
-             mock.patch.object(sf, "apply_free_tier"):
+             mock.patch.object(sf.sys, "__stdout__", out), mock.patch.object(sf, "MCP_HEARTBEAT_S", 0.05):
             sf.cmd_mcp()
         return [json.loads(l) for l in out.getvalue().splitlines()]
 
@@ -1340,526 +1326,12 @@ class Mcp(unittest.TestCase):
         self.assertIn("hour", tools["run"]["description"])
 
 
-class Licence(unittest.TestCase):
-    """Only Gumroad keys work. Nothing here may touch the network: a key from any other store is refused on its shape."""
-    def setUp(self):
-        self.dir = Path(tempfile.mkdtemp())
-        def no_network(*a, **k): raise AssertionError("the licence server was contacted")
-        self.patches = [mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
-                        mock.patch.object(sf, "gumroad_verify", side_effect=no_network),
-                        mock.patch.object(sf.sys, "frozen", True, create=True)]
-        for p in self.patches: p.start()
-
-    def tearDown(self):
-        for p in self.patches: p.stop()
-
-    def quiet(self, f, *a):
-        with contextlib.redirect_stdout(io.StringIO()): return f(*a)
-
-    def test_a_key_that_is_not_a_gumroad_key_is_refused_without_a_network_call(self):
-        for key in ("GOOD", "38b1460a-5104-4067-a91d-77b872934d51"):  # the second is a UUID, as another store would issue
-            with self.assertRaisesRegex(sf.Fail, "doesn't look like a shotfleet key"): self.quiet(sf.cmd_activate, key)
-        self.assertFalse(sf.LICENCE_FILE.exists())
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "GOOD"}), self.assertRaisesRegex(sf.Fail, "SHOTFLEET_KEY"): sf.require_licence()
-
-    def test_a_saved_licence_from_another_store_is_refused_and_can_be_removed(self):
-        sf.LICENCE_FILE.write_text(json.dumps({"key": "GOOD", "instance": "x", "checked": time.time()}))  # the old format: no "store"
-        with self.assertRaisesRegex(sf.Fail, "store shotfleet no longer uses"): sf.require_licence()
-        self.quiet(sf.cmd_deactivate)
-        self.assertFalse(sf.LICENCE_FILE.exists())
-
-    def test_a_licence_file_with_a_future_or_non_numeric_date_is_refused(self):
-        for checked in (time.time() + 10 * 86400, 9999999999, "2099-01-01", None, True):
-            with self.subTest(checked=checked):
-                sf.LICENCE_FILE.write_text(json.dumps({"key": "ABCDEF12-34567890-ABCDEF12-34567890", "store": "gumroad", "checked": checked}))
-                with mock.patch.object(sf, "gumroad_verify", side_effect=OSError("offline")), self.assertRaisesRegex(sf.Fail, "future|unreadable"): sf.require_licence()
-
-    def test_source_checkout_never_asks(self):
-        with mock.patch.object(sf.sys, "frozen", False): sf.require_licence()
 
 
-class GumroadLicence(unittest.TestCase):
-    """Against a fake Gumroad /v2/licenses/verify (shape from Gumroad's licence-key help article and antiwork/gumroad licenses_controller.rb)."""
-    GOOD, REFUNDED = "ABCDEF12-34567890-ABCDEF12-34567890", "11111111-22222222-33333333-44444444"
-
-    def setUp(self):
-        import http.server, threading, urllib.parse
-        self.uses, self.calls, self.flags, self.status, test = {self.GOOD: 0, self.REFUNDED: 0}, [], {self.REFUNDED: {"refunded": True}}, 200, self
-        self.junk = None  # bytes: answer every call with this 200 body
-        self.disabled = set()  # keys Gumroad disabled (it does that itself on a full refund; the seller can too)
-        self.sales = {}  # key -> purchase.sale_timestamp (left out when a key has none)
-        class H(http.server.BaseHTTPRequestHandler):
-            def do_POST(self):
-                b = dict(urllib.parse.parse_qsl(self.rfile.read(int(self.headers["Content-Length"])).decode()))
-                test.calls.append(b)
-                key = b.get("license_key")
-                if test.status >= 500:
-                    self.send_response(test.status); self.end_headers(); self.wfile.write(b'{"success":false,"message":"boom"}'); return
-                if test.junk is not None:  # a captive portal answers every request with a 200 page
-                    self.send_response(200); self.end_headers(); self.wfile.write(test.junk); return
-                if key in test.disabled:
-                    self.send_response(404); self.end_headers(); self.wfile.write(b'{"success":false,"message":"This license key has been disabled."}'); return
-                if key not in test.uses or b.get("product_id") != "prod1":
-                    self.send_response(404); self.end_headers()
-                    self.wfile.write(b'{"success":false,"message":"That license does not exist for the provided product."}'); return
-                if b.get("increment_uses_count") != "false": test.uses[key] += 1
-                purchase = {"refunded": False, "chargebacked": False, "disputed": False, "dispute_won": False, **test.flags.get(key, {})}
-                if key in test.sales: purchase["sale_timestamp"] = test.sales[key]
-                self.send_response(200); self.end_headers(); self.wfile.write(json.dumps({"success": True, "uses": test.uses[key], "purchase": purchase}).encode())
-            def log_message(self, *a): pass
-        self.server = http.server.HTTPServer(("127.0.0.1", 0), H)
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
-        d = Path(tempfile.mkdtemp())
-        self.patches = [mock.patch.object(sf, "GUMROAD_API", f"http://127.0.0.1:{self.server.server_port}/v2/licenses"),
-                        mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "prod1"),
-                        mock.patch.object(sf, "LICENCE_FILE", d / "licence.json"),
-                        mock.patch.object(sf.sys, "frozen", True, create=True)]
-        for p in self.patches: p.start()
-
-    def tearDown(self):
-        for p in self.patches: p.stop()
-        self.server.shutdown()
-
-    def activate(self, key):
-        with contextlib.redirect_stdout(io.StringIO()): return sf.cmd_activate(key)
-
-    def stale(self):  # make the weekly re-check due
-        sf.LICENCE_FILE.write_text(json.dumps({**json.loads(sf.LICENCE_FILE.read_text()), "checked": time.time() - 8 * 86400}))
-
-    def test_key_formats_do_not_collide(self):
-        self.assertTrue(sf.is_gumroad_key(self.GOOD))
-        self.assertFalse(sf.is_gumroad_key("38b1460a-5104-4067-a91d-77b872934d51"))  # a UUID is not a Gumroad key
-
-    def test_five_activations_then_the_sixth_is_refused_and_the_refusal_costs_nothing(self):
-        for n in range(5):  # five different Macs (or reinstalls): every one works, no off-by-one
-            self.activate(self.GOOD); sf.LICENCE_FILE.unlink(); self.assertEqual(self.uses[self.GOOD], n + 1)
-        with self.assertRaisesRegex(sf.Fail, "all 5 activations"): self.activate(self.GOOD)
-        with self.assertRaisesRegex(sf.Fail, "hello@shotfleet.com"): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 5)  # a refused attempt never burns a use
-        self.assertFalse(sf.LICENCE_FILE.exists())
-
-    def test_three_macs_and_two_reinstalls_fit_and_a_third_reinstall_needs_an_email(self):
-        """The wording: up to 3 of your Macs, spare activations for reinstalls, then an email for a reset."""
-        macs = [Path(tempfile.mkdtemp()) / "licence.json" for _ in range(3)]
-        for lic in macs:
-            with mock.patch.object(sf, "LICENCE_FILE", lic): self.activate(self.GOOD)
-        for _ in range(2):  # a reinstall wipes the saved key: that Mac counts again, from the spares
-            macs[0].unlink()
-            with mock.patch.object(sf, "LICENCE_FILE", macs[0]): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 5)
-        for lic in macs[1:]:  # Macs that still hold the key keep working and can activate again for free
-            with mock.patch.object(sf, "LICENCE_FILE", lic): self.activate(self.GOOD); sf.require_licence()
-        macs[0].unlink()
-        with mock.patch.object(sf, "LICENCE_FILE", macs[0]), self.assertRaisesRegex(sf.Fail, "Email hello@shotfleet.com and I'll reset the count"):
-            self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 5)
-
-    def test_the_api_override_is_ignored_by_a_released_build_and_honoured_from_source(self):
-        """SHOTFLEET_GUMROAD_API pointed at a dead host (or a fake server) must not change what a released build asks."""
-        with mock.patch.dict(os.environ, {"SHOTFLEET_GUMROAD_API": "http://127.0.0.1:9/dead"}):
-            self.assertEqual(sf.gumroad_api(), sf.GUMROAD_API)  # frozen, real product id: the override is ignored
-            self.activate(self.GOOD); self.assertEqual(self.uses[self.GOOD], 1)  # so the real (here: fake) server answered
-            sf.LICENCE_FILE.unlink()
-            with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "00000000-00000000-00000000-00000000"}), self.assertRaisesRegex(sf.NoLicence, "does not exist"):
-                sf.require_licence()  # a made-up key plus a dead override is no longer a licence
-            with mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "RCTESTPRODUCT0001abc=="):  # tools/release-candidate.sh's test build
-                self.assertEqual(sf.gumroad_api(), "http://127.0.0.1:9/dead")
-            with mock.patch.object(sf.sys, "frozen", False):
-                self.assertEqual(sf.gumroad_api(), "http://127.0.0.1:9/dead")  # source runs and tests may use it
-
-    def test_activating_again_on_the_same_mac_does_not_use_another(self):
-        for _ in range(5): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 1)
-
-    def test_deactivate_cant_give_the_activation_back_and_says_so(self):
-        self.activate(self.GOOD)
-        with contextlib.redirect_stdout(io.StringIO()) as out: sf.cmd_deactivate()
-        self.assertFalse(sf.LICENCE_FILE.exists()); self.assertIn("can't give the activation back", out.getvalue())
-        self.assertEqual(len(self.calls), 2)  # activate's look and count; deactivate made no request
-
-    def test_refunded_and_unknown_keys_are_refused_without_using_an_activation(self):
-        with self.assertRaisesRegex(sf.Fail, "refunded"): self.activate(self.REFUNDED)
-        with self.assertRaisesRegex(sf.Fail, "does not exist"): self.activate("99999999-99999999-99999999-99999999")
-        self.assertEqual(self.uses[self.REFUNDED], 0)
-        with self.assertRaisesRegex(sf.Fail, "Gumroad receipt"): self.activate(self.REFUNDED)
-
-    def test_refunded_chargebacked_and_disputed_keys_stop_working_at_the_next_check(self):
-        for flags, why in (({"refunded": True}, "refunded"), ({"chargebacked": True}, "charged back"), ({"disputed": True}, "disputed")):
-            with self.subTest(flags=flags):
-                self.flags[self.GOOD] = {}; self.activate(self.GOOD); self.stale()
-                sf.require_licence()  # still fine
-                self.flags[self.GOOD] = flags; self.stale()
-                with self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
-                with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, why): sf.require_licence()
-                sf.LICENCE_FILE.unlink()
-
-    def test_a_key_gumroad_disabled_is_refused_with_a_reason_and_the_licence_file_stays(self):
-        self.activate(self.GOOD); self.stale(); sf.require_licence()
-        self.disabled.add(self.GOOD); self.stale()
-        with self.assertRaisesRegex(sf.NoLicence, "disabled, as Gumroad does after a full refund"): sf.require_licence()
-        self.assertTrue(sf.LICENCE_FILE.exists())  # nothing is deleted; `deactivate` or a fresh activation is the buyer's call
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, "disabled"): sf.require_licence()
-        sf.LICENCE_FILE.unlink()
-        with self.assertRaisesRegex(sf.Fail, "didn't activate: the key was disabled"): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 1)  # the refused attempt burned no activation
-
-    def test_a_won_dispute_keeps_the_licence(self):
-        self.flags[self.GOOD] = {"disputed": True, "dispute_won": True}
-        self.activate(self.GOOD); self.stale(); sf.require_licence()
-
-    def test_nothing_counts_a_use_except_one_activation(self):
-        self.activate(self.GOOD); self.stale(); sf.require_licence()
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
-        self.assertTrue(all(set(c) == {"product_id", "license_key", "increment_uses_count"} for c in self.calls))  # nothing else is sent
-        counted = [c for c in self.calls if c["increment_uses_count"] != "false"]
-        self.assertEqual(len(counted), 1); self.assertEqual(self.uses[self.GOOD], 1)
-        self.assertEqual(self.calls[-1]["increment_uses_count"], "false")
-
-    def test_a_gumroad_outage_is_not_a_verdict(self):
-        self.activate(self.GOOD); self.stale(); self.status = 503
-        sf.require_licence()  # offline grace, the licence stays
-        self.assertTrue(sf.LICENCE_FILE.exists())
-        with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
-
-    def test_a_ci_key_works_offline_only_where_it_passed_a_check_in_the_last_30_days(self):
-        """0.1.6 (owner decision 2026-10-06): with Gumroad unreachable a SHOTFLEET_KEY counts only on a machine where it passed a check
-        in the last 30 days. Any well-formed key used to pass by blocking Gumroad. Online it is checked every run and counts no use."""
-        record = sf.LICENCE_FILE.with_name("ci-checked.json")
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}):
-            self.status = 503
-            with self.assertRaisesRegex(sf.NoLicence, "couldn't be checked .*passed a check in the last 30 days"): sf.require_licence()
-            self.status = 200; sf.require_licence()  # online: fine, and noted
-            self.assertEqual(self.uses[self.GOOD], 0)  # no activation used
-            self.assertFalse(sf.LICENCE_FILE.exists())  # not an activation
-            self.assertNotIn(self.GOOD, record.read_text())  # a hash, never the key
-            self.status = 503; sf.require_licence()  # offline, checked here before: fine
-            rec = json.loads(record.read_text())
-            for days, ok in ((29, True), (31, False), (-2, False)):  # 30 days, and a date in the future is no good
-                with self.subTest(days_since_the_check=days):
-                    record.write_text(json.dumps({**rec, "checked": time.time() - days * 86400}))
-                    if ok: sf.require_licence()
-                    else:
-                        with self.assertRaisesRegex(sf.NoLicence, "couldn't be checked"): sf.require_licence()
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "ABCDEF12-00000000-ABCDEF12-00000000"}), self.assertRaisesRegex(sf.NoLicence, "couldn't be checked"):
-            sf.require_licence()  # a made-up key with Gumroad blocked: refused
-        record.unlink(); self.status = 200; self.activate(self.GOOD); self.status = 503
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()  # an activated Mac with the same key counts as checked
-        sf.LICENCE_FILE.unlink()  # (an activated Mac falls back to its activation: test_a_refused_or_unverifiable_key_falls_back_to_this_macs_activation)
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.REFUNDED}), self.assertRaisesRegex(sf.NoLicence, "refunded"):
-            self.status = 200; sf.require_licence()
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": "not-a-key"}), self.assertRaisesRegex(sf.NoLicence, "not a shotfleet key"): sf.require_licence()
-
-    def test_a_200_that_is_not_json_is_offline_not_a_verdict(self):
-        self.activate(self.GOOD)
-        for junk in (b"<html>Sign in to the hotel Wi-Fi</html>", b"[1, 2]", b"\xff\xfe"):
-            with self.subTest(junk=junk):
-                self.junk = junk; self.stale()
-                with self.assertRaises(OSError): sf.gumroad_verify(self.GOOD, count_use=False)
-                sf.require_licence()  # inside the 30 days offline grace the licence stays, and no cryptic JSON error reaches the buyer
-                self.assertTrue(sf.LICENCE_FILE.exists())
-        lic = json.loads(sf.LICENCE_FILE.read_text())
-        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 31 * 86400}))
-        with self.assertRaisesRegex(sf.Fail, "30 days"): sf.require_licence()  # and the grace still ends
-
-    def test_released_build_needs_a_licence_for_run(self):
-        with self.assertRaisesRegex(sf.Fail, "shotfleet activate"): sf.require_licence()
-        with self.assertRaisesRegex(sf.Fail, "didn't activate"): self.activate(self.REFUNDED)
-        self.activate(self.GOOD)
-        n = len(self.calls); sf.require_licence()  # fresh: no network call
-        self.assertEqual(len(self.calls), n)
-
-    def test_weekly_recheck_and_offline_grace(self):
-        self.activate(self.GOOD); n = len(self.calls)
-        self.stale(); sf.require_licence(); self.assertEqual(len(self.calls), n + 1)  # 8 days: one more check
-        lic = json.loads(sf.LICENCE_FILE.read_text())
-        with mock.patch.object(sf, "GUMROAD_API", "http://127.0.0.1:9/nope"):  # unreachable
-            sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 10 * 86400}))
-            sf.require_licence()  # within 30 days offline
-            sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - 31 * 86400}))
-            with self.assertRaisesRegex(sf.Fail, "30 days"): sf.require_licence()
-
-    def test_a_build_without_a_product_id_fails_loudly(self):
-        with mock.patch.object(sf, "GUMROAD_PRODUCT_ID", ""), self.assertRaisesRegex(sf.Fail, "no Gumroad product id"): self.activate(self.GOOD)
 
 
-class LicenceHardening(unittest.TestCase):
-    """0.1.6 review fixes (code-review-2026-10-07 licence.md F1-F13 and licence-fixes-branch.md N1-N9), against the fake Gumroad of GumroadLicence."""
-    GOOD, REFUNDED = GumroadLicence.GOOD, GumroadLicence.REFUNDED
-    setUp, tearDown, activate, stale = GumroadLicence.setUp, GumroadLicence.tearDown, GumroadLicence.activate, GumroadLicence.stale
-
-    def tmp_files(self): return sorted(p.name for p in sf.LICENCE_FILE.parent.iterdir())
-
-    def real_verify_then(self, after):
-        """gumroad_verify that does the real call, then `after(count_use)` (to lose the answer, or to let someone else in first)."""
-        real = sf.gumroad_verify
-        def verify(key, count_use):
-            r = real(key, count_use); after(count_use); return r
-        return mock.patch.object(sf, "gumroad_verify", verify)
-
-    def test_F1_an_unwritable_folder_fails_before_gumroad_counts_and_costs_nothing(self):
-        folder = sf.LICENCE_FILE.parent; os.chmod(folder, 0o500); self.addCleanup(os.chmod, folder, 0o700)
-        if os.access(folder, os.W_OK): self.skipTest("running as a user that ignores folder permissions")
-        for _ in range(3):
-            with self.assertRaisesRegex(sf.Fail, "can't save the licence in .*Nothing was used from your activations"): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 0)
-        os.chmod(folder, 0o700); self.activate(self.GOOD); self.assertEqual(self.uses[self.GOOD], 1)
-
-    def test_F2_a_lost_answer_after_gumroad_counted_is_remembered_and_the_retry_counts_nothing(self):
-        def lose(count_use):
-            if count_use: raise OSError("can't reach the licence server (timed out)")
-        with self.real_verify_then(lose), self.assertRaisesRegex(sf.Fail, "may have counted .*won't use another one"): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 1)
-        with self.assertRaisesRegex(sf.NoLicence, "didn't finish"): sf.require_licence()  # a half-done activation is not a licence
-        for _ in range(3): self.activate(self.GOOD)  # retries on this Mac only look
-        self.assertEqual(self.uses[self.GOOD], 1)
-        sf.require_licence(); self.assertNotIn("pending", json.loads(sf.LICENCE_FILE.read_text()))
-
-    def test_F3_state_files_are_written_atomically_privately_and_an_unreadable_one_costs_no_activation(self):
-        sf.write_json_atomic(sf.LICENCE_FILE, {"a": 1}); self.assertEqual(oct(sf.LICENCE_FILE.stat().st_mode & 0o777), "0o600")
-        with mock.patch.object(sf.os, "replace", side_effect=OSError("disk full")), self.assertRaises(OSError): sf.write_json_atomic(sf.LICENCE_FILE, {"a": 2})
-        self.assertEqual(json.loads(sf.LICENCE_FILE.read_text()), {"a": 1}); self.assertEqual(self.tmp_files(), ["licence.json"])  # old file intact, no litter
-        sf.LICENCE_FILE.unlink()
-        self.activate(self.GOOD); self.stale(); sf.require_licence()
-        self.assertEqual(self.tmp_files(), ["licence.json"]); self.assertEqual(oct(sf.LICENCE_FILE.stat().st_mode & 0o777), "0o600")
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
-        self.assertEqual(oct(sf.LICENCE_FILE.with_name("ci-checked.json").stat().st_mode & 0o777), "0o600")
-        sf.LICENCE_FILE.write_text('{"key": "ABCDEF12-34567890-ABC')  # a torn file from a crash
-        self.activate(self.GOOD); self.assertEqual(self.uses[self.GOOD], 1)  # the one from above: this re-checks online, costs nothing
-        sf.require_licence()
-
-    def test_F4_a_licence_activated_while_the_process_runs_lifts_the_free_tier_cap(self):
-        with contextlib.redirect_stderr(io.StringIO()): sf.apply_free_tier()
-        self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES)  # the MCP server is long-lived: this cap used to stay forever
-        self.activate(self.GOOD); sf.apply_free_tier()
-        self.assertIsNone(sf.LOCALE_CAP)
-
-    def test_F6_a_refusal_at_the_weekly_check_is_remembered_when_gumroad_is_blocked_afterwards(self):
-        self.activate(self.GOOD); self.flags[self.GOOD] = {"refunded": True}; self.stale()
-        with self.assertRaisesRegex(sf.NoLicence, "refunded"): sf.require_licence()
-        self.status = 503; self.stale()
-        with self.assertRaisesRegex(sf.NoLicence, "no longer valid \\(the purchase was refunded\\)"): sf.require_licence()
-        self.status = 200; self.flags[self.GOOD] = {}  # a won dispute, say: activating again checks it and lifts the mark
-        self.activate(self.GOOD); sf.require_licence(); self.assertNotIn("refused", json.loads(sf.LICENCE_FILE.read_text()))
-
-    def test_N5_a_refused_ci_key_loses_its_record_so_blocking_gumroad_does_not_bring_it_back(self):
-        record = sf.LICENCE_FILE.with_name("ci-checked.json")
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}):
-            sf.require_licence(); self.assertTrue(record.exists())
-            self.flags[self.GOOD] = {"refunded": True}
-            with self.assertRaisesRegex(sf.NoLicence, "refunded"): sf.require_licence()
-            self.assertFalse(record.exists()); self.status = 503
-            with self.assertRaisesRegex(sf.NoLicence, "couldn't be checked"): sf.require_licence()
-        self.status = 200; self.flags[self.GOOD] = {}; self.activate(self.GOOD); self.flags[self.GOOD] = {"refunded": True}  # an activation of the same key is marked too
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaises(sf.NoLicence): sf.require_licence()
-        self.status = 503
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaises(sf.NoLicence): sf.require_licence()
-
-    def test_F5_a_counted_answer_above_the_limit_is_refused_and_saves_nothing(self):
-        self.uses[self.GOOD] = sf.MAX_MACS - 1
-        def someone_else_got_in_first(count_use):
-            if not count_use: self.uses[self.GOOD] += 1  # between our look and our count
-        with self.real_verify_then(someone_else_got_in_first), self.assertRaisesRegex(sf.Fail, "used all 5 activations .*same moment"): self.activate(self.GOOD)
-        self.assertFalse(sf.LICENCE_FILE.exists())
-
-    def test_F7_F10_odd_network_replies_are_the_friendly_unreachable_path_never_a_traceback_or_invalid_key(self):
-        import http.client
-        def reply(code, body): return urllib.error.HTTPError("u", code, "x", {}, io.BytesIO(body))
-        class R:
-            def __init__(self, body): self.body = body
-            def __enter__(self): return self
-            def __exit__(self, *a): return False
-            def read(self): return self.body
-        outcomes = [http.client.BadStatusLine("garbage"), http.client.IncompleteRead(b"ab", 5), reply(403, b""), reply(407, b""), reply(429, b'{"error":"rate limited"}'),
-                    reply(404, b"<html>nope</html>"), R(b""), R(b"<html>login</html>"), R(b'{"success":"yes"}'), R(b'{"uses":1}'), R(b"[1]"), R(b"\xff"), R(b"[" * 100000)]
-        for out in outcomes:
-            def urlopen(req, timeout=None, context=None, out=out):
-                if isinstance(out, BaseException) or isinstance(out, urllib.error.HTTPError): raise out
-                return out
-            with self.subTest(out=repr(out)[:50]), mock.patch.object(sf.urllib.request, "urlopen", urlopen), self.assertRaisesRegex(OSError, "can't reach the licence server"):
-                sf.gumroad_verify(self.GOOD, False)
-        for body in (b'{"success":true,"uses":null}', b'{"success":true,"uses":"1","purchase":[1]}', b'{"success":false,"message":null}',
-                     b'{"success":false,"message":["x"]}', b'{"success":true,"purchase":{"sale_timestamp":[1],"refunded":null}}'):
-            with self.subTest(body=body), mock.patch.object(sf.urllib.request, "urlopen", lambda *a, body=body, **k: R(body)):
-                self.assertIsInstance(sf.gumroad_verify(self.GOOD, False)[0], bool)
-        err = io.StringIO()
-        with mock.patch.object(sf.urllib.request, "urlopen", side_effect=http.client.BadStatusLine("x")), contextlib.redirect_stderr(err):
-            self.assertEqual(sf.main(["activate", self.GOOD]), 2)  # friendly, not a traceback
-        self.assertIn("can't reach the licence server", err.getvalue()); self.assertNotIn("Traceback", err.getvalue()); self.assertNotIn(self.GOOD, err.getvalue())
-        sf.LICENCE_FILE.write_text(json.dumps({"key": 123, "store": "gumroad", "checked": time.time()}))
-        with self.assertRaisesRegex(sf.NoLicence, "unreadable"): sf.require_licence()
-
-    def test_F12_a_licence_call_has_a_total_time_limit(self):
-        def slow(*a, **k): time.sleep(3)
-        t0 = time.time()
-        with mock.patch.object(sf, "GUMROAD_TOTAL_SECONDS", 0.3), mock.patch.object(sf.urllib.request, "urlopen", slow), self.assertRaisesRegex(OSError, "no answer within"):
-            sf.gumroad_verify(self.GOOD, False)
-        self.assertLess(time.time() - t0, 2)
-
-    def test_F11_a_licence_file_that_cannot_be_rewritten_does_not_stop_run(self):
-        self.activate(self.GOOD); self.stale(); folder = sf.LICENCE_FILE.parent; os.chmod(folder, 0o500); self.addCleanup(os.chmod, folder, 0o700)
-        if os.access(folder, os.W_OK): self.skipTest("running as a user that ignores folder permissions")
-        sf.apply_free_tier(); sf.require_licence(); self.assertIsNone(sf.LOCALE_CAP)  # the licence is valid; only the new date wasn't saved
-
-    def test_F9_a_clock_that_was_fast_during_a_check_does_not_lock_a_paying_user_out(self):
-        self.activate(self.GOOD)
-        sf.LICENCE_FILE.write_text(json.dumps({**json.loads(sf.LICENCE_FILE.read_text()), "checked": time.time() + 8 * 86400}))
-        sf.require_licence()  # re-checked online, and today's date saved
-        self.assertLessEqual(json.loads(sf.LICENCE_FILE.read_text())["checked"], time.time())
-        sf.LICENCE_FILE.write_text(json.dumps({**json.loads(sf.LICENCE_FILE.read_text()), "checked": time.time() + 8 * 86400})); self.status = 503
-        with self.assertRaisesRegex(sf.NoLicence, "dated in the future"): sf.require_licence()  # offline, a future date still can't be trusted
-
-    def test_F13_N6_a_refused_or_unverifiable_key_in_the_environment_falls_back_to_this_macs_activation_with_a_warning(self):
-        self.activate(self.GOOD)
-        for key, offline in ((self.REFUNDED, False), ("not-a-key", False), ("99999999-99999999-99999999-99999999", True)):
-            with self.subTest(key=key):
-                self.status = 503 if offline else 200
-                if offline: self.stale()  # the activation is 8 days old: its own offline grace carries it
-                with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": key}), contextlib.redirect_stderr(io.StringIO()) as err:
-                    sf.apply_free_tier()
-                self.assertIsNone(sf.LOCALE_CAP); self.assertIn("SHOTFLEET_KEY was not accepted", err.getvalue()); self.assertNotIn(key, err.getvalue())
-        sf.LICENCE_FILE.unlink(); self.status = 200  # without an activation there is nothing to fall back on
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.REFUNDED}), self.assertRaisesRegex(sf.NoLicence, "refunded"): sf.require_licence()
-
-    def test_N1_run_with_a_refused_key_stops_instead_of_going_green_on_two_languages(self):
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.REFUNDED}), self.assertRaisesRegex(sf.Fail, "refunded.*stops here"): sf.apply_free_tier()
-        self.assertIsNone(sf.LOCALE_CAP)
-        err = io.StringIO()
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.REFUNDED}), contextlib.redirect_stderr(err):
-            self.assertEqual(sf.main(["run", "/nonexistent.toml"]), 2)
-        self.assertIn("stops here", err.getvalue())
-        with contextlib.redirect_stderr(io.StringIO()): sf.apply_free_tier()  # no key at all: still the free tier
-        self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES)
-
-    def test_N9_ci_offline_allows_a_day_of_clock_skew_and_the_refusal_says_what_is_wrong(self):
-        record = sf.LICENCE_FILE.with_name("ci-checked.json")
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}):
-            sf.require_licence(); rec = json.loads(record.read_text()); self.status = 503
-            record.write_text(json.dumps({**rec, "checked": time.time() + 3600})); sf.require_licence()  # an hour in the future: skew, fine
-            record.write_text(json.dumps({**rec, "checked": time.time() - 31 * 86400}))
-            with self.assertRaisesRegex(sf.NoLicence, "has no such check"): sf.require_licence()
 
 
-class UpdateWindow(GumroadLicence):
-    """L3 (0.1.6): a licence covers every version released within 365 days of the purchase. The build's baked-in release date is compared
-    with Gumroad's sale date, never with today's date. Inherits GumroadLicence, so all of its tests run again with a release date and sale dates set."""
-    SOLD = "2026-10-06T09:30:00Z"
-
-    def setUp(self):
-        super().setUp()
-        self.sales[self.GOOD] = self.sales[self.REFUNDED] = self.SOLD
-        self.release(2026, 10, 20)
-
-    def release(self, *ymd):
-        p = mock.patch.object(sf, "RELEASE_DATE", sf.datetime.date(*ymd) if ymd else None); p.start(); self.addCleanup(p.stop)
-
-    def test_a_version_released_exactly_365_days_after_the_purchase_is_covered_and_the_next_day_is_not(self):
-        self.activate(self.GOOD)
-        self.release(2027, 10, 6); sf.require_licence()
-        self.release(2027, 10, 7)
-        with self.assertRaisesRegex(sf.NoLicence, r"covers every shotfleet version released until 2027-10-06 .*this one, " + re.escape(sf.VERSION)
-                                    + r", came out on 2027-10-07.*keep working.*email hello@shotfleet.com"):
-            sf.require_licence()
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, "until 2027-10-06"): sf.require_licence()
-
-    def test_october_2026_builds_work_for_every_current_buyer(self):
-        for sold in ("2026-10-01T00:00:00Z", "2026-10-05T23:59:59Z", "2026-10-31T12:00:00Z"):
-            for built in ((2026, 10, 6), (2026, 10, 31)):
-                with self.subTest(sold=sold, built=built):
-                    self.sales[self.GOOD] = sold; self.release(*built)
-                    self.activate(self.GOOD); self.stale(); sf.require_licence()
-                    with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()
-                    sf.LICENCE_FILE.unlink(); self.uses[self.GOOD] = 0  # the next round is a fresh buyer
-
-    def test_a_missing_sale_date_or_no_release_date_decides_nothing(self):
-        del self.sales[self.GOOD]; self.release(2040, 1, 1)
-        self.activate(self.GOOD); self.stale(); sf.require_licence()  # Gumroad sent no sale date: the benefit of the doubt
-        self.assertIsNone(json.loads(sf.LICENCE_FILE.read_text())["sale"])
-        self.sales[self.GOOD] = "2020-01-01T00:00:00Z"; self.release()  # a source run
-        with mock.patch.object(sf.sys, "frozen", False): self.stale(); sf.require_licence()
-
-    def test_the_release_date_is_baked_into_the_frozen_code_by_the_build_and_a_missing_or_bad_one_warns_and_means_none(self):
-        with contextlib.redirect_stderr(io.StringIO()): self.assertIsNone(sf.baked_release_date())  # no _release module here
-        mod = type(sys)("_release")
-        for value, want in (("2026-10-20", sf.datetime.date(2026, 10, 20)), ("<!-- RELEASE_DATE -->", None), ("", None), ("2026-13-01", None), (None, None)):
-            with self.subTest(value=value), mock.patch.dict(sys.modules, {"_release": mod}), contextlib.redirect_stderr(io.StringIO()) as err:
-                mod.RELEASE_DATE = value; self.assertEqual(sf.baked_release_date(), want)
-                self.assertEqual("release date" in err.getvalue(), want is None)  # a build with no usable date warns and still runs
-        with mock.patch.dict(sys.modules, {"_release": None}), contextlib.redirect_stderr(io.StringIO()) as err:  # the module is missing
-            self.assertIsNone(sf.baked_release_date()); self.assertIn("no usable release date", err.getvalue())
-        with mock.patch.object(sf.sys, "frozen", False), mock.patch.dict(sys.modules, {"_release": None}), contextlib.redirect_stderr(io.StringIO()) as err:
-            self.assertIsNone(sf.baked_release_date()); self.assertEqual(err.getvalue(), "")  # a source run says nothing
-        build = (sf.HERE / "packaging/build.sh").read_text()
-        self.assertIn('printf \'RELEASE_DATE = "%s"\\n\' "$(date -u +%Y-%m-%d)" > build/_release.py', build)  # a module in the frozen code, not a loose file
-        self.assertIn('--paths "$PWD/build" --hidden-import _release', build)
-        self.assertNotIn("release-date", build)
-        self.assertIn("sale=2020-01-01", (sf.HERE / "tools/release-candidate.sh").read_text())  # the built binary must show it knows its release date
-
-    def test_a_refunded_key_is_still_refused_inside_and_outside_the_window(self):
-        for built in ((2026, 10, 20), (2028, 1, 1)):
-            with self.subTest(built=built):
-                self.release(*built)
-                with self.assertRaisesRegex(sf.Fail, "refunded"): self.activate(self.REFUNDED)
-                with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.REFUNDED}), self.assertRaisesRegex(sf.NoLicence, "refunded"): sf.require_licence()
-
-    def test_moving_the_clock_back_does_not_stretch_the_window(self):
-        self.activate(self.GOOD); self.release(2028, 1, 1)
-        lic = json.loads(sf.LICENCE_FILE.read_text())
-        then = sf.datetime.datetime(2026, 10, 7, tzinfo=sf.datetime.timezone.utc).timestamp()  # the Mac's clock set to the day after the purchase
-        sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": then}))
-        with mock.patch.object(sf.time, "time", return_value=then), self.assertRaisesRegex(sf.NoLicence, "until 2027-10-06"): sf.require_licence()
-
-    def test_a_hand_edited_sale_date_is_overwritten_from_gumroad_at_the_next_online_check(self):
-        self.activate(self.GOOD); self.release(2028, 1, 1)
-        lic = json.loads(sf.LICENCE_FILE.read_text())
-        self.assertEqual(lic["sale"], sf.sale_time(self.SOLD))  # the sale date is stored, for offline use
-        sf.LICENCE_FILE.write_text(json.dumps({**lic, "sale": time.time(), "checked": time.time() - 8 * 86400}))  # edited to "bought today"
-        with self.assertRaisesRegex(sf.NoLicence, "until 2027-10-06"): sf.require_licence()
-        self.assertEqual(json.loads(sf.LICENCE_FILE.read_text())["sale"], sf.sale_time(self.SOLD))  # Gumroad's date is back
-
-    def test_offline_the_stored_sale_date_decides_and_the_30_days_still_apply(self):
-        self.activate(self.GOOD); lic = json.loads(sf.LICENCE_FILE.read_text()); self.status = 503
-        for days, built, ok in ((10, (2026, 10, 20), True), (10, (2028, 1, 1), False), (31, (2026, 10, 20), False)):
-            with self.subTest(days_offline=days, built=built):
-                self.release(*built); sf.LICENCE_FILE.write_text(json.dumps({**lic, "checked": time.time() - days * 86400}))
-                if ok: sf.require_licence()
-                else:
-                    with self.assertRaises(sf.NoLicence): sf.require_licence()
-        self.release(2026, 10, 20); self.status = 200
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}): sf.require_licence()  # a CI key's check stores the sale date too
-        self.status = 503; self.release(2028, 1, 1)
-        with mock.patch.dict(os.environ, {"SHOTFLEET_KEY": self.GOOD}), self.assertRaisesRegex(sf.NoLicence, "until 2027-10-06"): sf.require_licence()
-
-    def test_an_out_of_window_key_is_refused_before_it_spends_an_activation_and_a_new_version_runs_as_the_free_tier(self):
-        """N3: nothing is counted or saved for a key that doesn't cover this build. An older build's activation, then a newer build: free tier."""
-        self.release(2028, 1, 1)
-        with self.assertRaisesRegex(sf.Fail, "no activation was used: your licence covers every shotfleet version released until 2027-10-06"): self.activate(self.GOOD)
-        self.assertEqual(self.uses[self.GOOD], 0); self.assertFalse(sf.LICENCE_FILE.exists())
-        self.assertEqual([c["increment_uses_count"] for c in self.calls], ["false"])  # only the look
-        self.release(2026, 10, 20); self.activate(self.GOOD); self.release(2028, 1, 1)
-        with mock.patch.object(sf, "LOCALE_CAP", None), contextlib.redirect_stderr(io.StringIO()) as err:
-            sf.apply_free_tier(); self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES)
-        self.assertIn("runs as the free tier", err.getvalue())
-        with self.assertRaises(sf.NoLicence): sf.require_licence()  # what `export` calls
-
-    def test_a_released_build_without_a_release_date_is_not_covered_but_a_source_run_is(self):
-        self.release()
-        with self.assertRaisesRegex(sf.NoLicence, "has no release date"): sf.check_update_window(sf.sale_time(self.SOLD))
-        sf.check_update_window(None)  # no sale date: nothing to compare
-        with mock.patch.object(sf.sys, "frozen", False): sf.check_update_window(sf.sale_time(self.SOLD))
-
-    def test_bad_sale_dates_never_crash_and_a_year_is_a_calendar_year(self):
-        for bad in (1e20, float("nan"), float("inf"), -1e15, -1, "x", None, True, 4102444800 * 100):
-            with self.subTest(sale=bad): self.assertIsNone(sf.updates_until(bad)); sf.check_update_window(bad)
-        self.assertIsNone(sf.sale_time("9999-12-31T23:59:59Z") and sf.updates_until(sf.sale_time("9999-12-31T23:59:59Z")))
-        for sold, end in (("2027-03-01T00:00:00Z", (2028, 3, 1)), ("2020-01-01T00:00:00Z", (2021, 1, 1)), ("2028-02-29T10:00:00Z", (2029, 3, 1)),
-                          ("2026-10-06T09:30:00Z", (2027, 10, 6))):
-            with self.subTest(sold=sold): self.assertEqual(sf.updates_until(sf.sale_time(sold)), sf.datetime.date(*end))
-
-    def test_a_hand_edited_junk_sale_date_in_licence_json_is_ignored_not_a_traceback(self):
-        self.activate(self.GOOD)
-        for junk in (1e20, float("nan"), -1e15, "9999-12-31"):
-            sf.LICENCE_FILE.write_text(json.dumps({**json.loads(sf.LICENCE_FILE.read_text()), "sale": junk}))
-            sf.require_licence()
 
 
 class ScreenText(unittest.TestCase):
@@ -2244,22 +1716,6 @@ class FrameworkFixes(unittest.TestCase):
         self.assertEqual(buf.getvalue(), "")
 
 
-class FreeTier(unittest.TestCase):
-    """`run` without a licence is the free tier; `export` is not."""
-    def setUp(self):
-        self.dir = Path(tempfile.mkdtemp())
-        self.patches = [mock.patch.object(sf, "LICENCE_FILE", self.dir / "licence.json"),
-                        mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LOCALE_CAP", None)]
-        for p in self.patches: p.start(); self.addCleanup(p.stop)
-
-    def test_run_without_a_licence_is_the_free_tier_export_is_not(self):
-        with mock.patch.object(sf, "cmd_run", return_value=0):
-            self.assertEqual(sf.main(["run", "x.toml"]), 0); self.assertEqual(sf.LOCALE_CAP, 2)
-        with mock.patch.object(sf, "LOCALE_CAP", None): self.assertEqual(sf.main(["export", "x", "--fastlane", "y"]), 2)
-        with mock.patch.object(sf, "LOCALE_CAP", 2):
-            self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja"]); self.assertEqual(sf.cap_locales(["de"]), ["de"])
-        sf.LOCALE_CAP = None  # (main() set it above; the setUp patch restores it afterwards)
-        self.assertEqual(sf.cap_locales(["de", "ja", "fr"]), ["de", "ja", "fr"])
 
 
 class AutoTesseract(unittest.TestCase):
@@ -2802,34 +2258,6 @@ class TypedTextPerLanguage(unittest.TestCase):
         self.assertIn('name: "Alex"', text); self.assertNotIn("田中", text)
 
 
-class CorruptLicenceFile(unittest.TestCase):
-    """A half-written licence.json (a crash, a full disk) must never crash a command or lock the user out of the free tier."""
-    BAD = ("", "{", '{"key": "ABC', "[]", '"text"', "null", "{}", '{"key": ""}')
-
-    def run_with(self, content):
-        d = Path(tempfile.mkdtemp()); f = d / "licence.json"; f.write_text(content)
-        return mock.patch.object(sf, "LICENCE_FILE", f), f
-
-    def test_every_command_survives_an_unreadable_file(self):
-        for content in self.BAD:
-            patch, f = self.run_with(content)
-            with patch, mock.patch.object(sys, "frozen", True, create=True), mock.patch.dict(os.environ, {}, clear=False):  # the gate only applies to released builds
-                os.environ.pop("SHOTFLEET_KEY", None)
-                self.assertIsNone(sf.read_licence(), content)
-                with self.assertRaises(sf.NoLicence) as cm: sf.require_licence()   # export is refused, with a way out
-                self.assertIn("activate again", str(cm.exception))
-                sf.LOCALE_CAP = None
-                with contextlib.redirect_stderr(io.StringIO()): sf.apply_free_tier()
-                self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES, content)         # run falls back to the free tier
-                sf.LOCALE_CAP = None
-                out = io.StringIO()
-                with contextlib.redirect_stdout(out): self.assertEqual(sf.cmd_deactivate(), 0)
-                self.assertFalse(f.exists(), content)                                 # the broken file is removed
-                self.assertIn("unreadable", out.getvalue())
-
-    def test_a_good_file_still_reads(self):
-        patch, _ = self.run_with(json.dumps({"key": "K", "store": "gumroad", "checked": 1}))
-        with patch: self.assertEqual(sf.read_licence()["key"], "K")
 
 
 def shots_with_texts(d, spec, ocr=False):
@@ -3000,7 +2428,7 @@ class SetupCommands(unittest.TestCase):
             sf.run_setup(Boom(), "shell", ["setprop a b"])
         # as the CLI sees it: exit 2, one line, no traceback
         boom = sf.Fail("[ios] simctl command failed, stopping before the run: simctl ui U9 appearance dark: Unable to set")
-        with mock.patch.object(sf, "cmd_run", side_effect=boom), mock.patch.object(sf, "apply_free_tier"), \
+        with mock.patch.object(sf, "cmd_run", side_effect=boom), \
              mock.patch.object(sf.shutil, "which", return_value=None), contextlib.redirect_stderr(io.StringIO()) as err:
             self.assertEqual(sf.main(["run"]), 2)
         self.assertEqual(err.getvalue().strip(), f"shotfleet: {boom}")
@@ -3516,14 +2944,14 @@ class G1StatusBar(unittest.TestCase):
 
 
 class G1NothingLeavesTheMac(unittest.TestCase):
-    """C004: the only network calls in the program are a local driver call, one version lookup and the licence calls; `check` and `export`
+    """C004: the only network calls in the program are a local driver call, one version lookup; `check` and `export`
     work with the network cut off (so no screenshot or app file is sent anywhere)."""
     def test_every_network_call_site_is_a_known_one(self):
         tree = ast.parse((Path(sf.__file__).resolve()).read_text())
         owners = {fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
                   and any(isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "urlopen" for n in ast.walk(fn))}
         # download and fetch_text are only for `doctor --fix` (test_downloads_are_only_reachable_from_doctor_fix)
-        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "gumroad_fetch", "go", "download", "fetch_text"})  # go: gumroad_fetch's worker thread
+        self.assertEqual(owners, {"ios_screen_texts", "latest_release", "download", "fetch_text"})
 
     def test_downloads_are_only_reachable_from_doctor_fix(self):
         tree = ast.parse((Path(sf.__file__).resolve()).read_text())

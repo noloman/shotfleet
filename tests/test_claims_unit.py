@@ -1,5 +1,4 @@
-"""Unit-layer proofs for claims in tests/claims.json (2026-10-03): the licence tier reaches both platform runs (C044, C048), the licence
-answers the code depends on (C052), the hook environment and exit codes (C068), a translated caption over an English UI (C100), and
+"""Unit-layer proofs for claims in tests/claims.json (2026-10-03): every language reaches both platform runs (C044), the hook environment and exit codes (C068), a translated caption over an English UI (C100), and
 the framework matrix of `init` (C121).
 
 Fake tools only: no simulator, emulator, Maestro, network, Xcode or Gradle. Everything runs on Linux and on a Mac; to run it as if on an
@@ -16,12 +15,7 @@ import shotfleet as sf
 sf.USE_DEVICE_LOCK = False  # fake runs touch no device; two test suites at once must not refuse each other
 
 ROOT = Path(__file__).resolve().parent.parent
-GUMROAD_KEY = "ABCDEF12-34567890-ABCDEF12-34567890"
 WORDS = {"en": "Next", "de": "Weiter", "ja": "次へ", "fr": "Suivant"}  # the app ships these four languages
-
-
-def no_network(*a, **k):
-    raise AssertionError("a licence server was contacted")
 
 
 def fake_sh(cmd, **kw):
@@ -45,9 +39,7 @@ class FleetCase(unittest.TestCase):
             (self.d / "locales" / lp).mkdir(parents=True); (self.d / "locales" / lp / "translation.json").write_text(json.dumps({"next": word}, ensure_ascii=False))
         (self.d / "a.apk").write_bytes(b"x")
         (self.d / "flow.yaml").write_text("- launchApp\n- tapOn: Next\n- takeScreenshot: 01\n")
-        self.licence = self.d / "licence.json"
-        for p in (mock.patch.object(sf, "LICENCE_FILE", self.licence), mock.patch.object(sf.sys, "frozen", True, create=True),
-                  mock.patch.object(sf, "LOCALE_CAP", None), mock.patch.object(sf, "NO_HOOKS", False),
+        for p in (mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "NO_HOOKS", False),
                   mock.patch.object(sf, "maestro_cmd", return_value="/usr/bin/maestro"), mock.patch.object(sf, "read_maestro_version", return_value="2.0.10"),
                   mock.patch.object(sf, "java_env", return_value={}), mock.patch.object(sf, "fit_parallel", side_effect=lambda n: n),
                   mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "shutdown_sims"), mock.patch.object(sf, "OUR_SIMS", set()),
@@ -99,13 +91,9 @@ class FleetCase(unittest.TestCase):
         (self.d / "shotfleet.toml").write_text(text + extra)
         return str(self.d / "shotfleet.toml")
 
-    def buy(self, age_days=0):
-        """A Gumroad licence file, checked `age_days` ago; the weekly re-check is not due, so nothing needs the network."""
-        self.licence.write_text(json.dumps({"key": GUMROAD_KEY, "store": "gumroad", "checked": time.time() - age_days * 86400}))
-
     def main(self, *argv):
         out, err = io.StringIO(), io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), mock.patch.object(sf.urllib.request, "urlopen", no_network):
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err), mock.patch.object(sf.urllib.request, "urlopen", side_effect=AssertionError("the network was used")):
             code = sf.main(list(argv))
         return code, out.getvalue(), err.getvalue()
 
@@ -117,208 +105,31 @@ class TierReachesBothPlatformRuns(FleetCase):
     def shipped(self):
         return sf.shipped_locales({lp: {"next": w} for lp, w in WORDS.items()})
 
-    def test_a_licensed_run_gives_every_language_to_ios_and_to_android(self):
+    def test_a_run_gives_every_language_to_ios_and_to_android(self):
         every = self.shipped()
         self.assertEqual(len(every), 4)  # the fixture ships four languages: capping at 2 would be visible
-        self.buy()
         code, out, err = self.main("run", self.config())
         self.assertEqual(code, 0, err)
         self.assertEqual([sorted(v) for v in self.ios.values()], [every])
         self.assertEqual({k: sorted(v) for k, v in self.android.items()}, {"phone": every})
-        self.assertNotIn("free tier", out + err)
 
-    def test_the_capped_state_gives_exactly_two_to_ios_and_to_android(self):
-        every = self.shipped()
-        code, out, err = self.main("run", self.config())  # no licence file: the free tier
-        self.assertEqual(code, 0, err)
-        self.assertEqual(sf.LOCALE_CAP, 2)
-        self.assertEqual(list(self.ios.values()), [every[:2]])
-        self.assertEqual(self.android, {"phone": every[:2]})
-        self.assertEqual(out.count("free tier: capturing 2 of 4 languages"), 2)  # once per platform, naming the two
-
-    def test_the_cap_counts_languages_only_so_ipad_and_tablet_sets_run_in_both_tiers(self):
+    def test_ipad_and_tablet_sets_get_every_language_too(self):
         every = self.shipped()
         ipad = "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB"
         iphone = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
         cfg = self.config(ios=f'device_types = ["{iphone}", "{ipad}"]\n', android='devices = ["phone", "tablet", "tablet-7"]\n')
-        for licensed, want in ((True, every), (False, every[:2])):
-            with self.subTest(licensed=licensed):
-                self.ios.clear(); self.android.clear(); self.device_types.clear(); self.licence.unlink(missing_ok=True)
-                if licensed: self.buy()
-                self.main("run", cfg)
-                self.assertEqual({k: sorted(v) for k, v in self.ios.items()}, {iphone: sorted(want), ipad: sorted(want)})
-                self.assertEqual({k: sorted(v) for k, v in self.android.items()}, {d: sorted(want) for d in ("phone", "tablet", "tablet-7")})
+        want = every
+        self.main("run", cfg)
+        self.assertEqual({k: sorted(v) for k, v in self.ios.items()}, {iphone: sorted(want), ipad: sorted(want)})
+        self.assertEqual({k: sorted(v) for k, v in self.android.items()}, {d: sorted(want) for d in ("phone", "tablet", "tablet-7")})
 
-    def test_export_is_refused_without_a_licence_and_goes_ahead_with_one(self):
-        out = self.d / "out"; out.mkdir()
-        with mock.patch.object(sf, "export_with_hooks", return_value=0) as export:
-            code, _, err = self.main("export", str(out), "--fastlane", str(self.d / "fl"))
-            self.assertEqual(code, 2); export.assert_not_called()
-            self.assertIn("shotfleet activate <key>", err); self.assertIn("`export` and every language in `run` need a licence", err)
-            self.buy()
-            self.assertEqual(self.main("export", str(out), "--fastlane", str(self.d / "fl"))[0], 0)
-            export.assert_called_once()
-
-    def test_the_export_is_the_real_fastlane_copy_when_licensed(self):
+    def test_the_export_is_the_real_fastlane_copy(self):
         out = self.d / "out"; (out / "raw/de").mkdir(parents=True); (out / "raw/de/01.png").write_bytes(b"x")
         (out / "check.json").write_text(json.dumps({"problems": []}))
         (out / "run.json").write_text(json.dumps({"platform": "ios", "locales": {"de": {"ok": True}}}))
-        self.buy()
         code, text, err = self.main("export", str(out), "--fastlane", str(self.d / "fl"))
         self.assertEqual(code, 0, err)
         self.assertTrue((self.d / "fl/screenshots/de-DE/01.png").is_file(), text)
-
-
-class FreeTierOnAFrozenBuild(FleetCase):
-    """C048: a released build with no licence file captures 2 languages with `run`, needs no account and no network for that, and
-    leaves `check`, `init` and `doctor` ungated. (`sys.frozen` is patched: this is the released build's code path, not the binary.)"""
-    def test_run_with_three_languages_captures_the_first_two_and_says_so(self):
-        code, out, err = self.main("run", self.config(), "--locales", "de,ja,fr")
-        self.assertEqual(code, 0, err)
-        self.assertEqual(list(self.ios.values()), [["de", "ja"]])
-        self.assertEqual(self.android, {"phone": ["de", "ja"]})
-        self.assertIn("free tier: capturing 2 of 3 languages (de, ja)", out)
-        self.assertIn("`shotfleet activate <key>` unlocks every language", out)
-        self.assertFalse(self.licence.exists())  # nothing was activated or stored: no account
-
-    def test_without_a_locale_list_it_is_the_first_two_of_what_the_app_ships(self):
-        self.main("run", self.config(), "--platform", "ios")
-        self.assertEqual(list(self.ios.values()), [sf.shipped_locales({lp: {"next": w} for lp, w in WORDS.items()})[:2]])
-
-    def test_the_mcp_run_tool_is_capped_the_same_way(self):
-        text, is_error = sf.mcp_call("run", {"config": self.config(), "locales": ["de", "ja", "fr"]})
-        self.assertFalse(is_error, text)
-        self.assertEqual(list(self.ios.values()), [["de", "ja"]]); self.assertEqual(self.android, {"phone": ["de", "ja"]})
-        self.assertIn("free tier: capturing 2 of 3 languages (de, ja)", text)
-
-    def test_no_licence_server_is_contacted_and_no_licence_file_is_written(self):
-        # self.main() makes every network call an AssertionError; Gumroad goes through urlopen too
-        with mock.patch.object(sf, "gumroad_verify", side_effect=no_network):
-            self.assertEqual(self.main("run", self.config(), "--locales", "de,ja,fr")[0], 0)
-        self.assertFalse(self.licence.exists())
-
-    def test_the_cap_is_per_run_two_runs_of_two_languages_give_four(self):  # the limit the claim does not state: pinned, not hidden
-        self.main("run", self.config(), "--platform", "ios", "--locales", "de,ja,fr"); self.main("run", self.config(), "--platform", "ios", "--locales", "fr,en,de")
-        self.assertEqual(sorted(sum(self.ios.values(), [])), ["de", "en", "fr", "ja"])  # de,ja from the first run; fr,en from the second: four languages in all
-
-    def test_check_init_and_doctor_never_ask_for_a_licence(self):
-        with mock.patch.object(sf, "require_licence", side_effect=AssertionError("asked for a licence")), \
-             mock.patch.object(sf, "check_any", return_value=0) as check, mock.patch.object(sf, "cmd_init", return_value=0) as init, \
-             mock.patch.object(sf, "cmd_doctor", return_value=0) as doctor:
-            self.assertEqual([self.main("check", str(self.d))[0], self.main("init")[0], self.main("doctor")[0]], [0, 0, 0])
-        check.assert_called_once(); init.assert_called_once(); doctor.assert_called_once()
-
-    def test_a_licence_file_that_is_stale_and_unreachable_falls_back_to_the_free_tier_not_to_a_crash(self):
-        self.buy(age_days=40)  # past the 30 offline days
-        with mock.patch.object(sf.urllib.request, "urlopen", side_effect=urllib.error.URLError("offline")), \
-             mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "prod1"), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
-            code = sf.main(["run", self.config(), "--platform", "ios", "--locales", "de,ja,fr"])
-        self.assertEqual(code, 0); self.assertEqual(list(self.ios.values()), [["de", "ja"]])
-        self.assertIn("couldn't reach the licence server for 30 days", err.getvalue())
-
-
-# ---------------------------------------------------------------------------------------------------------------------
-# C052: what the licence check needs from Gumroad, and what it decides with it
-# ---------------------------------------------------------------------------------------------------------------------
-def gumroad_answer(**purchase):
-    """The success answer of POST /v2/licenses/verify as Gumroad's licence-key documentation shows it (written from that
-    documentation, not captured from a live call): success, uses, and a purchase object with the refund flags."""
-    return {"success": True, "uses": 1, "purchase": {
-        "seller_id": "seller1", "product_id": "prod1", "product_name": "shotfleet", "permalink": "shotfleet", "email": "buyer@example.com",
-        "price": 2900, "currency": "usd", "quantity": 1, "order_number": 1, "sale_id": "sale1", "sale_timestamp": "2024-09-01T10:00:00Z",
-        "license_key": GUMROAD_KEY, "ip_country": "NL", "refunded": False, "chargebacked": False, "disputed": False, "dispute_won": False,
-        "created_at": "2024-09-01T10:00:00Z", "custom_fields": [], "subscription_ended_at": None, **purchase}}
-
-
-class Reply:
-    """What urlopen returns: a context manager with read()."""
-    def __init__(self, body): self.body = json.dumps(body).encode()
-    def __enter__(self): return self
-    def __exit__(self, *a): return False
-    def read(self): return self.body
-
-
-def http_error(code, body):
-    return urllib.error.HTTPError("https://api.example/verify", code, "x", {}, io.BytesIO(json.dumps(body).encode()))
-
-
-class GumroadLicenceShape(unittest.TestCase):
-    """C052: the answers the code depends on, as fixtures; and that a purchase older than the year of updates keeps the version working."""
-    def setUp(self):
-        self.d = Path(tempfile.mkdtemp()); self.addCleanup(shutil.rmtree, self.d, True)
-        self.sent = []
-        for p in (mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "prod1"), mock.patch.object(sf, "LICENCE_FILE", self.d / "licence.json"),
-                  mock.patch.object(sf.sys, "frozen", True, create=True)):
-            p.start(); self.addCleanup(p.stop)
-
-    def answer(self, body=None, error=None):
-        def urlopen(req, timeout=None, context=None):
-            self.sent.append(req)
-            if error: raise error
-            return Reply(body)
-        return mock.patch.object(sf.urllib.request, "urlopen", urlopen)
-
-    def test_a_success_answer_is_valid_and_its_use_count_is_read(self):
-        with self.answer(gumroad_answer()): self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (True, 1, None))
-
-    def test_the_request_is_a_form_post_of_exactly_product_key_and_the_counting_flag(self):
-        import urllib.parse
-        with self.answer(gumroad_answer()):
-            sf.gumroad_verify(" " + GUMROAD_KEY + " ", count_use=False); sf.gumroad_verify(GUMROAD_KEY, count_use=True)
-        first, second = self.sent
-        self.assertTrue(first.full_url.endswith("/v2/licenses/verify"), first.full_url)
-        self.assertEqual(urllib.parse.parse_qs(first.data.decode()), {"product_id": ["prod1"], "license_key": [GUMROAD_KEY], "increment_uses_count": ["false"]})
-        self.assertEqual(urllib.parse.parse_qs(second.data.decode())["increment_uses_count"], ["true"])
-
-    def test_refunded_chargebacked_and_lost_disputes_are_invalid_with_a_reason_and_a_won_dispute_is_not(self):
-        for flags, valid, why in (({"refunded": True}, False, "the purchase was refunded"), ({"chargebacked": True}, False, "the purchase was charged back"),
-                                  ({"disputed": True}, False, "the purchase is disputed"), ({"disputed": True, "dispute_won": True}, True, None),
-                                  ({}, True, None)):
-            with self.subTest(flags=flags), self.answer(gumroad_answer(**flags)):
-                self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (valid, 1, why))
-
-    def test_an_unknown_key_is_a_404_with_a_message_and_is_invalid(self):
-        gone = {"success": False, "message": "That license does not exist for the provided product."}
-        with self.answer(error=http_error(404, gone)):
-            self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (False, 0, "That license does not exist for the provided product"))
-        with self.answer(gone):  # the same answer with a 200 status
-            self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[0], False)
-
-    def test_an_outage_is_not_a_verdict(self):
-        for error in (http_error(503, {"success": False}), urllib.error.URLError("offline"), TimeoutError()):
-            with self.subTest(error=type(error).__name__), self.answer(error=error), self.assertRaises(OSError):
-                sf.gumroad_verify(GUMROAD_KEY, count_use=False)
-
-    def test_the_age_of_the_purchase_decides_nothing(self):
-        # the year of updates is a promise about new versions, not a licence expiry: the same answer for a sale from today and from 10 years ago
-        for days in (0, 800, 3650):
-            stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - days * 86400))
-            with self.subTest(days_old=days), self.answer(gumroad_answer(created_at=stamp, sale_timestamp=stamp)):
-                self.assertEqual(sf.gumroad_verify(GUMROAD_KEY, count_use=False)[:3], (True, 1, None))
-
-    def test_a_licence_from_a_purchase_over_a_year_old_keeps_passing_the_weekly_check(self):
-        old = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 800 * 86400))
-        sf.LICENCE_FILE.write_text(json.dumps({"key": GUMROAD_KEY, "store": "gumroad", "checked": time.time() - 8 * 86400}))  # the recheck is due
-        built = sf.datetime.date.fromtimestamp(time.time() - 700 * 86400)  # this version came out 100 days after the purchase: it keeps working
-        with self.answer(gumroad_answer(created_at=old, sale_timestamp=old)), mock.patch.object(sf, "RELEASE_DATE", built):
-            sf.require_licence()
-        self.assertEqual(len(self.sent), 1)  # it asked Gumroad (weekly) and Gumroad said yes
-        self.assertLess(time.time() - json.loads(sf.LICENCE_FILE.read_text())["checked"], 60)
-
-    def test_the_check_can_run_offline_for_30_days_and_then_cannot(self):  # the 'as long as the licence check can run' part of the promise
-        for days, ok in ((8, True), (29, True), (31, False)):
-            with self.subTest(days_since_the_last_good_check=days), self.answer(error=urllib.error.URLError("offline")):
-                sf.LICENCE_FILE.write_text(json.dumps({"key": GUMROAD_KEY, "store": "gumroad", "checked": time.time() - days * 86400}))
-                if ok: sf.require_licence()
-                else:
-                    with self.assertRaisesRegex(sf.NoLicence, "30 days"): sf.require_licence()
-
-    def test_the_terms_say_what_the_code_does(self):
-        terms = re.sub(r"<[^>]+>", "", (ROOT / "site/public/terms.html").read_text())
-        self.assertIn("The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run: "
-                      "it asks Gumroad about once a week, and works offline for up to 30 days", terms)
-        self.assertIn("your licence covers every shotfleet version released within a year of your purchase", terms)
-        self.assertEqual((sf.LICENCE_RECHECK_DAYS, sf.LICENCE_OFFLINE_DAYS), (7, 30))
 
 
 # ---------------------------------------------------------------------------------------------------------------------

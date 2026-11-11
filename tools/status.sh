@@ -30,12 +30,7 @@ print(f"green (proven+fixed) {green}, needs work (everything else except removed
 E
 
 echo "== release state in the repo"
-for k in GUMROAD_PRODUCT_ID; do
-  v=$(sed -n "s/^$k = \"\\([^\"]*\\)\".*/\\1/p" shotfleet.py | head -1)
-  echo "$k in shotfleet.py: ${v:+set}${v:-EMPTY (go-live.sh sets it)}"
-done
 echo "version in shotfleet.py: $(sed -n 's/^VERSION = "\(.*\)"/\1/p' shotfleet.py)"
-if grep -q 'WAITLIST' site/public/index.html; then echo "site/public/index.html: waitlist mode (sale not switched on)"; else echo "site/public/index.html: sale mode"; fi
 [ -d site/public/download ] && echo "site/public/download: present" || echo "site/public/download: absent (no release copied yet)"
 
 echo "== live site ($SITE)"
@@ -47,7 +42,7 @@ printf '%-40s %s\n' "www -> apex" "$(curl -s -o /dev/null -w '%{http_code} %{red
 printf '%-40s %s\n' "CSP header" "$(curl -sI --max-time 15 "$SITE/" | grep -ic '^content-security-policy')"
 live=$(mktemp); curl -s --max-time 15 "$SITE/" -o "$live"
 if cmp -s "$live" site/public/index.html; then echo "live index.html == repo"; else echo "live index.html DIFFERS from repo (undeployed changes, or the page is in flux)"; fi
-echo "live page mentions: waitlist $(grep -ci waitlist "$live"), polar $(grep -ci polar "$live") (should be 0), gumroad $(grep -ci gumroad "$live"), buy link $(grep -c 'gumroad.com/l/' "$live")"
+echo "live page mentions: gumroad $(grep -ci gumroad "$live") (should be 0), GitHub Sponsors link $(grep -c github.com/sponsors/noloman "$live") (should be 1 or more)"
 rm -f "$live"
 
 echo "== git"

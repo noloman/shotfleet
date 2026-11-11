@@ -19,7 +19,7 @@ The cloud session that wrote them had no Mac, no simulator, no hardware virtuali
 - **A real purchase and refund against the live Gumroad product** (`STATUS.md` gate 5; `tools/release-candidate.sh` is the harness). An agent cannot spend money.
 - **Tax and registration question** (`research/tax-nl-2026-10.md`), **go-live approval**, **a clean macOS user and 2 to 3 outside developers for the cold test**, **publishing and posting** everything in `marketing/`.
 - **Decisions** listed at the end of `research/profit-plan-2026-10-03.md` section 9.
-- **Team and CI interest block on the site.** Proposed, not added: the wording is a pricing decision (the old reason, the WAITLIST/SALE markup that `packaging/go-live.sh` rewrites, is moot: go-live ran on 2026-10-05). Proposed copy for the pricing section, to go in after the licence card: *Running shotfleet in CI for a team? A per-repository plan (about $149 a year) is an idea, not a product. Tell me what you would check there: hello@shotfleet.com.* Measure replies and count them against the thresholds in the profit plan section 7.
+- **Team and CI interest block on the site.** Proposed, not added: the wording is a pricing decision (the old reason, the WAITLIST/SALE markup that the old go-live script (removed) rewrites, is moot: go-live ran on 2026-10-05). Proposed copy for the pricing section, to go in after the licence card: *Running shotfleet in CI for a team? A per-repository plan (about $149 a year) is an idea, not a product. Tell me what you would check there: hello@shotfleet.com.* Measure replies and count them against the thresholds in the profit plan section 7.
 
 ## E1 state
 

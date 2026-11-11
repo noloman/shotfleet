@@ -1,5 +1,7 @@
 # How shotfleet gets to buyers
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 > History: written before the sale opened. The sale has been live since 2026-10-05, so the waitlist wording below (for example the waitlist as the only list to email) describes the pre-sale state.
 
 ## What a buyer's Mac has today (measured 2026-10-01)

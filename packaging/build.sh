@@ -36,11 +36,7 @@ swiftc -O -target "$ARCH-apple-macos${MACOS_MIN:-13.0}" ocr.swift -o build/ocr
 "$PYTHON" -m venv build/venv  # fresh every build (build/ was just removed)
 build/venv/bin/python -m pip install --quiet --disable-pip-version-check --only-binary=:all: --require-hashes -r packaging/requirements-build.txt \
   || { echo "build: installing packaging/requirements-build.txt failed (a hash mismatch means the file is not the recorded one: do not build; see pip's message above)" >&2; exit 1; }
-# The release date the licence's year of updates is measured against (shotfleet.py baked_release_date): the build day, in UTC.
-# A build is published days after it is made, never before, so this errs in the buyer's favour. It goes into a module that PyInstaller
-# freezes into the program's code (not a loose file in _internal, which anyone could delete).
-printf 'RELEASE_DATE = "%s"\n' "$(date -u +%Y-%m-%d)" > build/_release.py
-set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." --add-data "$PWD/skill:skill" --paths "$PWD/build" --hidden-import _release \
+set -- --onedir --name shotfleet --add-binary "$PWD/build/ocr:." --add-data "$PWD/skill:skill" \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN
 if [ -n "${DEVELOPER_ID:-}" ]; then  # PyInstaller signs the bundled pieces too, with hardened-runtime entitlements
   codesign --force --options runtime --timestamp --sign "$DEVELOPER_ID" build/ocr

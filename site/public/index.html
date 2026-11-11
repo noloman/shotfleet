@@ -56,34 +56,16 @@
   "name": "Manuel Lorenzo Parejo",
   "url": "https://manulorenzo.me"
  },
- "offers": [
-  {
-   "@type": "Offer",
-   "name": "Free tier",
-   "price": "0",
-   "priceCurrency": "USD",
-   "description": "shotfleet check, doctor and init are free for everyone; run is free for up to 2 languages, on both platforms and every device size; export needs a licence.",
-   "availability": "https://schema.org/InStock"
-  },
-  {
-   "@type": "Offer",
-   "name": "Licence, launch price",
-   "price": "29",
-   "priceCurrency": "USD",
-   "description": "Every language and export to fastlane. Launch price for the first 100 buyers, once per developer, use it on up to 3 of your Macs, a year of updates, 14-day refund.",
-   "availability": "https://schema.org/InStock",
-   "url": "https://8954369651852.gumroad.com/l/shotfleet"
-  },
-  {
-   "@type": "Offer",
-   "name": "Licence, standard price",
-   "price": "49",
-   "priceCurrency": "USD",
-   "description": "The price after the first 100 buyers: once per developer, use it on up to 3 of your Macs, a year of updates, 14-day refund.",
-   "availability": "https://schema.org/InStock",
-   "url": "https://8954369651852.gumroad.com/l/shotfleet"
-  }
- ]
+ "isAccessibleForFree": true,
+ "license": "https://opensource.org/licenses/MIT",
+ "offers": {
+  "@type": "Offer",
+  "name": "shotfleet is free and open source (MIT)",
+  "price": "0",
+  "priceCurrency": "USD",
+  "description": "Every command and every language, no key and no account. Open source under the MIT license; supported through GitHub Sponsors.",
+  "availability": "https://schema.org/InStock"
+ }
 }
 </script>
 <link rel="preload" href="/fonts/geist-mono-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -96,8 +78,8 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="#price">Pricing</a><a href="/whats-new">What’s new</a></span>
-    <a class="btn sm" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a>
+    <span class="links"><a href="#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="#free">Free</a><a href="/whats-new">What’s new</a></span>
+    <a class="btn sm" href="https://github.com/noloman/shotfleet">GitHub<span class="ico" aria-hidden="true">↗</span></a>
   </nav>
 </header>
 
@@ -107,7 +89,7 @@
     <span class="flag b">Mac command-line tool · Apple silicon</span>
     <h1>Store screenshots in every language your app has.</h1>
     <p class="sub">You write one Maestro flow, in English. <b>shotfleet runs it in every language your app has, on iOS and Android, and checks every screenshot.</b> It’s a command-line tool for your Mac that makes the App Store and Google Play screenshots for you, on top of <a href="https://maestro.mobile.dev">Maestro</a>, the UI-flow tool.</p>
-    <p class="cta"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a><a class="btn ghost" href="#run">See a real run</a></p>
+    <p class="cta"><a class="btn" href="#free">Install shotfleet</a><a class="btn ghost" href="#run">See a real run</a></p>
   </div>
   <div class="hero-art" role="group" aria-label="The same app screen in Arabic, Japanese and German, each checked">
     <figure class="ship">
@@ -238,32 +220,27 @@ app = "<span class="y">MyApp.app</span>"</pre>
     </div>
   </section>
 
-  <section class="wrap section" id="price" aria-labelledby="price-h">
-    <h2 id="price-h" class="reveal">Buy shotfleet</h2>
+  <section class="wrap section" id="free" aria-labelledby="free-h">
+    <h2 id="free-h" class="reveal">Free and open source</h2>
     <p class="muted lede-small">It needs an Apple silicon Mac, Maestro and Java 17+. On iOS it can run your own XCUITest screenshot tests instead of a Maestro flow, and then it needs neither. That part is new in 0.1.6. Which macOS versions I have tested is in the <a href="/docs#requirements">requirements</a>. It reads native iOS and Android strings and Compose Multiplatform; Flutter and React Native work from your translation files (run end to end on a real Flutter app, wger, and a real Expo app, the obytes template, on iOS and Android, 2026-10-03; other apps and bare React Native not yet run).</p>
     <div class="plans">
       <div class="plan main reveal">
-        <h3>Licence</h3>
-        <p class="amount">$29<span>launch price, first 100 buyers</span></p>
-        <p class="founder">Then <b>$49</b> once, per developer. Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies.</p>
+        <h3>shotfleet</h3>
+        <p class="amount">Free<span>MIT license</span></p>
         <ul>
-          <li>Every language and export to fastlane</li>
-          <li>Use it on up to 3 of your Apple silicon Macs; there are spare activations for reinstalls, and if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset. Your CI uses none. The spare activations work from 0.1.6; 0.1.5 and older stop at 3. Unlimited apps.</li>
-          <li>A year of updates: your key covers every version released within a year of your purchase. Versions you have keep working while macOS and your tools allow, and while they can check the key with Gumroad: when you activate, then about once a week when you use <code>run</code> or <code>export</code>. It works offline for 30 days, and a CI key is checked on every run. If Gumroad refuses the key, or can’t be reached for 30 days, you’re back to the free tier.</li>
-          <li>14-day refund. <a href="/terms">Licence and refunds</a></li>
+          <li>Every command and every language: <code>init</code>, <code>run</code>, <code>check</code> and <code>export</code> to fastlane</li>
+          <li>Both platforms and every device size, iPad and tablets too. Unlimited apps and Macs, and CI works like on a Mac</li>
+          <li>No key, no account, no license server. shotfleet never asks for a network connection to run</li>
+          <li>Open source on <a href="https://github.com/noloman/shotfleet">GitHub</a> under the MIT license: read it, fork it, send a fix</li>
         </ul>
-    <p><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet</a></p>
-    <p class="small">Checkout is on Gumroad. It gives the $29 price by itself to the first 100 sales, so you see what you’ll pay before you pay. I can’t show you how many are left. Your key comes in the Gumroad receipt email. Then install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code><br><code>shotfleet activate &lt;your key&gt;</code></p>
-    <p class="small">Maintain an open-source project, or a student? Email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> with a link to your open-source repo or proof that you’re a student, and I’ll send you a 100%-off code.</p>
-    <p class="small">Need an invoice? Gumroad makes one from your receipt. I don’t take purchase orders.</p>
+        <p><a class="btn" href="https://github.com/noloman/shotfleet">View on GitHub</a></p>
+        <p class="small">Install it:<br><code>curl -fsSL https://shotfleet.com/install.sh | sh</code></p>
+        <p class="small">shotfleet is built and maintained by one person. If it saves you time, <a href="https://github.com/sponsors/noloman">sponsor it on GitHub</a>. It is how the next fixes get paid for.</p>
       </div>
       <div class="plan reveal">
-        <h3>Free</h3>
+        <h3>Already use fastlane?</h3>
         <ul>
-          <li><code>check</code>, <code>doctor</code> and <code>init</code>, with no licence. Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots, no Maestro needed. Point it at your fastlane folder and your app build</li>
-          <li>Capture up to 2 languages with <code>run</code>, on both platforms and every device size, iPad and tablets too</li>
-          <li><code>export</code> to fastlane needs a licence</li>
-          <li>No account</li>
+          <li>Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots, no Maestro needed. Point it at your fastlane folder and your app build</li>
         </ul>
         <p class="cmd" aria-label="Example command"><span>$</span> shotfleet check fastlane/ --app MyApp.app</p>
       </div>
@@ -274,7 +251,7 @@ app = "<span class="y">MyApp.app</span>"</pre>
 <footer>
   <div class="wrap">
     <span>shotfleet by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span class="foot-links"><a href="/docs">Docs</a> <a href="/whats-new">What’s new</a> <a href="/guides">Guides</a> <a href="/alternatives">Alternatives</a> <a href="/terms">Licence and refunds</a> <a href="/privacy">Privacy</a> <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span class="foot-links"><a href="/docs">Docs</a> <a href="/whats-new">What’s new</a> <a href="/guides">Guides</a> <a href="/alternatives">Alternatives</a> <a href="/terms">License</a> <a href="https://github.com/sponsors/noloman">Sponsor</a> <a href="/privacy">Privacy</a> <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 

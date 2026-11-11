@@ -318,26 +318,6 @@ class DoctorCommand(FixTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class LicenceCallsUseTheSameCaBundle(unittest.TestCase):
-    """A buyer behind a proxy that re-signs HTTPS must be able to activate: the licence calls honour SSL_CERT_FILE like the downloads."""
-    def test_licence_calls_ask_tls_context_at_call_time(self):
-        seen = []
-        class Resp:
-            status = 200
-            def __enter__(self): return self
-            def __exit__(self, *a): return False
-            def read(self): return b'{"success": false}'
-        def fake_urlopen(req, timeout=None, context=None): seen.append(context); return Resp()
-        marker = object()
-        with mock.patch.object(sf, "tls_context", lambda: marker), mock.patch.object(sf.urllib.request, "urlopen", fake_urlopen), \
-                mock.patch.object(sf, "GUMROAD_PRODUCT_ID", "pid"):
-            sf.gumroad_verify("k", False)
-        self.assertEqual(len(seen), 1)
-        self.assertTrue(all(c is marker for c in seen), seen)
-
-
 class MaestroZipLayouts(FixTestCase):
     def test_a_zip_without_the_maestro_folder_installs_too(self):
         flat = zip_bytes({"bin/maestro": b"#!/bin/sh\necho 2.99.0\n", "lib/x.jar": b"j"}, {"bin/maestro": 0o755})

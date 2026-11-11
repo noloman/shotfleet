@@ -195,10 +195,8 @@ class CheckPromises(unittest.TestCase):
         self.assertNotRegex(page, r'el/1\.png"><img [^>]*class="bad"')
         self.assertIn('<td class="missing">missing</td>', page)  # and a missing screen is a red cell
 
-    def test_check_needs_no_licence_in_the_released_build(self):
+    def test_check_runs_in_the_released_build(self):
         with tempfile.TemporaryDirectory() as d, mock.patch.object(sf.sys, "frozen", True, create=True), \
-             mock.patch.object(sf, "LICENCE_FILE", Path(d) / "none.json"), \
-             mock.patch.object(sf, "require_licence", side_effect=AssertionError("check must not ask for a licence")), \
              mock.patch.object(sf, "cmd_check", return_value=0), mock.patch.object(sf, "cmd_doctor", return_value=0), \
              mock.patch.object(sf, "cmd_init", return_value=0):
             self.assertEqual(sf.main(["check", d]), 0)

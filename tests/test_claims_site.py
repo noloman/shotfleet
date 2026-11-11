@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "tests"))
 import shotfleet as sf
-from test_site import Page, go_live, LIVE, INDEX as INDEX_HTML
+from test_site import Page, INDEX as INDEX_HTML
 from test_cli_claims import fixture, fake_vision, STRINGS
 
 PUB = ROOT / "site/public"
@@ -91,93 +91,16 @@ class PlatformAndRequirements(unittest.TestCase):
         sf.java_env.cache_clear()
 
 
-# --------------------------------------------------------------------------------------------------------------------- C042
-class PriceAgreement(unittest.TestCase):
-    """$29 for the first 100 buyers, then $49 once per developer: every text that says so says the same."""
-    CUSTOMER = ["site/public/index.html", "site/public/terms.html", "site/public/alternatives.html", "site/public/llms.txt", "README.md",
-                "marketing/launch-email.md", "marketing/launch-posts-v2.md", "site/draft/alternatives.html"]
-    INTERNAL = ["LAUNCH.md", "DISTRIBUTION.md", "STRATEGY.md", *sorted(str(p.relative_to(ROOT)) for p in (ROOT / "marketing/kit").glob("*.md"))]
-    OWN_ROW = {"site/public/alternatives.html": r"<th scope=\"row\">shotfleet</th>.*?</tr>", "site/draft/alternatives.html": r"<td>shotfleet</td>.*?</tr>"}
-
-    def text(self, rel):
-        raw = read(rel)
-        if rel in self.OWN_ROW:  # the comparison pages quote other tools' prices too; only shotfleet's own row is ours
-            raw = re.search(self.OWN_ROW[rel], raw, flags=re.S).group(0)
-        return plain(raw) if rel.endswith(".html") else raw
-
-    def segments(self, rel):
-        """Every stretch of text around a 'first N buyers/people/on the list' phrase."""
-        t = self.text(rel)
-        return [(m.group(1), t[max(0, m.start() - 160):m.end() + 160]) for m in re.finditer(r"first (\d+)\*{0,2} (?:buyers|people|on the list)", t)]
-
-    def test_the_only_shotfleet_prices_are_29_and_49(self):
-        for rel in self.CUSTOMER:
-            with self.subTest(file=rel):
-                found = set(re.findall(r"\$(\d+)", self.text(rel)))
-                if rel in ("site/public/index.html", "README.md", "marketing/launch-email.md", "site/public/llms.txt", "marketing/launch-posts-v2.md"):
-                    self.assertTrue({"29", "49"} <= found, found)
-                if rel == "marketing/launch-posts-v2.md": found -= {"99", "180"}  # other tools' prices, quoted in the comparison bullets
-                self.assertLessEqual(found, {"29", "49"})
-        # amounts quoted beside the offer in the operating docs: the discount is the difference, the rest are fees
-        launch = read("LAUNCH.md")
-        self.assertIn("**$49** once, **$29 for the first 100**", launch); self.assertIn("($20 off, limit 100 uses, applied automatically)", launch)
-        self.assertEqual(49 - 20, 29)
-        self.assertIn("`FOUNDER29` $20 off for the first 100", read("DISTRIBUTION.md"))
-        self.assertIn("$29 founder price for the first 100 buyers", read("STRATEGY.md"))
-
-    def test_every_first_n_is_100_and_says_buyers_never_the_list(self):
-        seen = 0
-        for rel in self.CUSTOMER + self.INTERNAL:
-            for n, seg in self.segments(rel):
-                seen += 1
-                with self.subTest(file=rel, around=seg[150:200]):
-                    self.assertEqual(n, "100")
-        self.assertGreaterEqual(seen, 20, "the phrase collector found too little: is it broken?")
-        for rel in self.CUSTOMER + self.INTERNAL:
-            t = self.text(rel)
-            for bad in ("first 100 on the list", "first 100 people", "before anyone else", "founder price for the list"):
-                with self.subTest(file=rel, bad=bad): self.assertNotIn(bad, t)
-
-    def test_wherever_the_29_is_offered_the_49_follows_in_the_same_breath(self):
-        strict = ["site/public/index.html", "site/public/alternatives.html", "site/public/llms.txt", "README.md", "marketing/launch-email.md"]
-        for rel in self.CUSTOMER + [r for r in self.INTERNAL if r.startswith("marketing/kit/")]:
-            both = [seg for n, seg in self.segments(rel) if "$29" in seg and "$49" in seg]
-            alone = [seg for n, seg in self.segments(rel) if "$29" in seg and "$49" not in seg]
-            with self.subTest(file=rel):
-                if rel in strict: self.assertEqual(alone, []); self.assertTrue(both)  # every offer sentence names the later price too
-                elif rel in self.CUSTOMER and (both or alone): self.assertTrue(both)               # the posts and drafts state the whole offer at least once; their notes only refer back to it
-        card = plain(INDEX_HTML)
-        self.assertRegex(card, r"\$29 ?launch price, first 100 buyers Then \$49 once, per developer\.")
-        self.assertIn("Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies", card)
-
-    def test_structured_data_on_the_page_has_the_same_two_prices_and_a_free_tier(self):
-        pages = [re.sub(r"<!-- SALE\n.*?    SALE -->", "", INDEX_HTML, flags=re.S)]  # the waitlist page as served ...
-        if not LIVE: pages.append(go_live(INDEX_HTML))                                       # ... and the sale page after go-live.sh
-        for page in pages:
-            blocks = [json.loads(b) for b in re.findall(r'<script type="application/ld\+json">(.*?)</script>', page, flags=re.S)]
-            offers = [o for b in blocks for o in (b.get("offers") if isinstance(b.get("offers"), list) else [])]
-            self.assertEqual(sorted(o["price"] for o in offers), ["0", "29", "49"])
-            by = {o["price"]: o["description"] for o in offers}
-            self.assertIn("first 100 buyers", by["29"]); self.assertIn("after the first 100 buyers", by["49"])
-
-    def test_the_free_tier_in_the_same_sentences_matches_the_code(self):
-        self.assertEqual(sf.FREE_LANGUAGES, 2)
-        for rel in ("README.md", "site/public/llms.txt"):
-            self.assertRegex(self.text(rel), r"up to 2 languages|run` is free for 2 languages|2 languages in `run`")
-
-
 # --------------------------------------------------------------------------------------------------------------------- C101
 class LinksResolve(unittest.TestCase):
     """Every shotfleet.com address and relative link in the README, the launch texts and the docs lands on something the site has."""
-    TEXTS = ["README.md", "LAUNCH.md", "DISTRIBUTION.md", "marketing/launch-email.md", "marketing/launch-posts-v2.md", "site/public/llms.txt"]
+    TEXTS = ["README.md", "DISTRIBUTION.md", "marketing/launch-email.md", "marketing/launch-posts-v2.md", "site/public/llms.txt"]
     KIT = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "marketing/kit").glob("*.md"))
     RELEASE_FILES = {"VERSION", "shotfleet-macos-arm64.tar.gz", "shotfleet-macos-arm64.tar.gz.sha256", "shotfleet-macos-arm64.pkg"}  # built by packaging/release.sh, not kept in the repo
     URL = re.compile(r"https://shotfleet\.com(/[^\s)>\]`'\"*,;<]*)?")
 
     def index_ids(self):
-        ids = [Page(INDEX_HTML).ids]
-        if not LIVE: ids.append(Page(go_live(INDEX_HTML)).ids)  # the page the day the sale opens
-        return ids
+        return [Page(INDEX_HTML).ids]
 
     def ids_for(self, path):
         """Lists of id sets the page can have (index has two while the waitlist is up). None: the path is not a page."""
@@ -206,14 +129,13 @@ class LinksResolve(unittest.TestCase):
                     if frag: self.assertTrue(all(frag in ids for ids in idsets), f"#{frag} is not an id on {path or '/'}")
         self.assertGreaterEqual(checked, 12)
 
-    def test_the_buy_link_in_the_launch_email_lands_on_the_price_section(self):
-        self.assertIn("Buy: https://shotfleet.com/#price", read("marketing/launch-email.md"))
-        for ids in self.index_ids(): self.assertIn("price", ids)
-        section = re.search(r'<section[^>]*id="price"[^>]*>(.*?)</section>', INDEX_HTML, flags=re.S)
-        self.assertIsNotNone(section); self.assertIn("launch price", plain(section.group(1)))  # it is the pricing section, not some other block
+    def test_the_free_section_is_where_the_home_page_sends_you(self):
+        for ids in self.index_ids(): self.assertIn("free", ids)
+        section = re.search(r'<section[^>]*id="free"[^>]*>(.*?)</section>', INDEX_HTML, flags=re.S)
+        self.assertIsNotNone(section); self.assertIn("MIT license", plain(section.group(1)))  # the section says shotfleet is free and open source
 
     def test_relative_links_in_the_readme_exist(self):
-        for rel in ("README.md", "LAUNCH.md", "DISTRIBUTION.md"):
+        for rel in ("README.md", "DISTRIBUTION.md"):
             for target in re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+)(?:#[^)]*)?\)", read(rel)):
                 with self.subTest(file=rel, target=target): self.assertTrue((ROOT / target).exists(), target)
 
@@ -286,9 +208,9 @@ class WorkerBehaviour(unittest.TestCase):
                  "the limiter is asked about the client IP address, once per request",
                  "page views are not rate limited, so they never reach the limiter")
 
-    def test_c081_the_purge_step_exists_and_the_privacy_page_and_launch_checklist_agree(self):
+    def test_c081_the_purge_step_exists_and_the_privacy_page_agrees(self):
         self.assertIn("The waitlist is closed and I never emailed it. Any address still on it will be deleted", read("site/public/privacy.html"))
-        self.assertIn("--purge-waitlist", read("site/signups.sh")); self.assertIn("--purge-waitlist", read("LAUNCH.md"))
+        self.assertIn("--purge-waitlist", read("site/signups.sh"))
         self.assertNotIn("expirationTtl", read("site/worker.js"))  # nothing deletes by itself: the promise is a manual step
 
 
@@ -355,9 +277,9 @@ class PrivacyPageListsWhatIsStored(unittest.TestCase):
         self.assertIn("Beyond that, the only things stored are your analytics choice, in your own browser, and what you sent if you joined the early-access list before the sale opened, or send when you write to me.", self.PRIVACY)
 
     def test_c077_the_counter_is_described_as_the_code_does_it(self):
-        self.assertIn("one to a running total for each page view and for a few actions (reaching the run or pricing section, clicking a button), split by day, by the site or link you came from, and by your browser's language.", self.PRIVACY)
+        self.assertIn("one to a running total for each page view and for a few actions (reaching the run or free section, clicking a button), split by day, by the site or link you came from, and by your browser's language.", self.PRIVACY)
         js = read("site/public/analytics.js"); code = re.sub(r"//.*", "", js)  # the comments say "cookie-free"; look at the code
-        self.assertEqual(set(re.findall(r'\["(\w+)", "(\w+)"\]', js)), {("price", "pricing"), ("run", "runs")})
+        self.assertEqual(set(re.findall(r'\["(\w+)", "(\w+)"\]', js)), {("free", "pricing"), ("run", "runs")})
         self.assertEqual(sorted(re.findall(r"\b(?:send)\(\"(\w+)\"\)", js)), ["cta", "view"])
         for forbidden in ("cookie", "localStorage", "sessionStorage", "userAgent", "navigator."): self.assertNotIn(forbidden, code)
         self.assertEqual(re.findall(r"JSON\.stringify\((\{[^}]*\})\)", js), ["{ src: src, ev: ev }"])
@@ -383,7 +305,7 @@ class BrowserBehaviour(unittest.TestCase):
     def test_the_browser_run_passes(self):
         self.assertEqual(self.code, 0, self.out[-3000:]); self.assertNotRegex(self.out, r"(?m)^FAIL")
 
-    @unittest.skipIf(LIVE, "the sale page has no waitlist form")
+    @unittest.skip("the live page has no waitlist form")
     def test_c077_the_counter_sends_only_src_and_ev_sets_no_cookie_and_runs_whatever_the_analytics_choice(self):
         for choice in ("declined", "undecided"):
             self.has(f"the counter sends a view with analytics {choice}", f"every counter call sends only src and ev, to /api/hit ({choice})",
@@ -409,19 +331,19 @@ class ComparisonTable(unittest.TestCase):
             if cells: out[cells[0]] = cells[1:]
         return out
 
-    def test_the_shotfleet_row_of_the_published_table_reads_yes_yes_yes_both_and_the_real_price(self):
+    def test_the_shotfleet_row_of_the_published_table_reads_yes_yes_yes_both_and_free(self):
         table = self.rows(read("site/public/alternatives.html"))
         head = next(r for r in re.findall(r"<thead>(.*?)</thead>", read("site/public/alternatives.html"), flags=re.S))
         self.assertEqual([plain(c).strip() for c in re.findall(r"<th[^>]*>(.*?)</th>", head)][1:5],
                          ["Takes the screenshots from your running app", "One flow for every language", "Checks the language of the result", "iOS and Android"])
         row = table["shotfleet"]
         self.assertEqual(row[:4], ["Yes", "Yes", "Yes", "Both"])
-        self.assertEqual(row[4], "$49 once, with a year of updates ($29 for the first 100 buyers). Free: check and 2 languages in run")
+        self.assertEqual(row[4], "Free and open source (MIT)")
 
     def test_the_draft_table_says_yes_to_five_things_and_each_is_a_command_or_option_the_program_has(self):
         table = self.rows(read("site/draft/alternatives.html"))
         self.assertEqual(table["shotfleet"][:5], ["Yes"] * 5)
-        self.assertEqual(table["shotfleet"][5], "$49 once, $29 founder")
+        self.assertEqual(table["shotfleet"][5], "Free and open source (MIT)")
         self.assertIn("run", sf.COMMANDS); self.assertIn("check", sf.COMMANDS)
         parser_src = read("shotfleet.py")
         self.assertIn('p.add_argument("--parallel", type=int', parser_src)           # parallel capture
@@ -444,8 +366,6 @@ class ComparisonTable(unittest.TestCase):
         self.assertIn("el/2.png: shows en strings", out.getvalue()); self.assertNotEqual(code, 0)
         self.assertIn("2.png", json.dumps(report))
 
-    def test_free_tier_in_the_price_cell_is_the_programs(self):
-        self.assertEqual(sf.FREE_LANGUAGES, 2)
 
 
 if __name__ == "__main__":

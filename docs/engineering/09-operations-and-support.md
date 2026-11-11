@@ -1,5 +1,7 @@
 # 9. Operations and support
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 Scope: how to run the business side as an engineer once shotfleet is on sale: who answers support, where refunds, key resets and chargebacks are handled, how to see whether the live site and the install path are healthy, what the weekend watchdog probes, and a troubleshooting table for the four things that go wrong most (install, text recognition, device overload, licence checks). Nothing here changes any account; every Gumroad or Cloudflare action named is the owner's to take.
 
 **Who is allowed to do what.** The owner (Manu) is the only person with the Gumroad, Cloudflare, Apple Developer and GitHub accounts. An engineer or agent reads, diagnoses and drafts; it does not refund, reset a key, deploy, publish or post unless the owner approves that exact action (see [10](10-contributing.md)). Never paste a licence key, a buyer's email address or a card detail into a chat, an issue or the repo.

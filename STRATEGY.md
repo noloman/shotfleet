@@ -1,5 +1,7 @@
 # How shotfleet beats the competition
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 Who we're for: indie developers and small teams shipping a **native iOS and/or Android app in 10+ languages**,
 who already use fastlane or Maestro. Promise: **one English flow, every language, both stores, checked.**
 

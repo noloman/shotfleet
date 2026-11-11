@@ -4,7 +4,7 @@
   "display_name": "shotfleet",
   "version": "0.1.10",
   "description": "Check and capture localized App Store and Google Play screenshots. Needs the shotfleet program installed on your Mac (Apple silicon).",
-  "long_description": "This connects your AI app to shotfleet, a macOS command-line tool that captures your App Store and Google Play screenshots in every language your app ships and checks that each screenshot is really in the right language.\n\nThe bundle contains no shotfleet program. It starts `shotfleet mcp` from your Mac, so install shotfleet first: curl -fsSL https://shotfleet.com/install.sh | sh. It works on macOS with Apple silicon only.\n\nTools: check (check a folder of screenshots, free), doctor (is Maestro, Xcode and the Android SDK ready; changes nothing), run (capture every language from a shotfleet.toml; boots simulators, takes minutes, 2 languages free, more needs a licence).\n\nCommands written in a config do not run over MCP unless a call passes hooks: true. Never put your licence key in an MCP setting: run `shotfleet activate <key>` once in Terminal.",
+  "long_description": "This connects your AI app to shotfleet, a macOS command-line tool that captures your App Store and Google Play screenshots in every language your app ships and checks that each screenshot is really in the right language.\n\nThe bundle contains no shotfleet program. It starts `shotfleet mcp` from your Mac, so install shotfleet first: curl -fsSL https://shotfleet.com/install.sh | sh. It works on macOS with Apple silicon only.\n\nTools: check (check a folder of screenshots), doctor (is Maestro, Xcode and the Android SDK ready; changes nothing), run (capture every language from a shotfleet.toml; boots simulators, takes minutes).\n\nCommands written in a config do not run over MCP unless a call passes hooks: true. shotfleet is free and open source (MIT) and needs no key.",
   "author": {
     "name": "Manuel Lorenzo Parejo",
     "url": "https://shotfleet.com"
@@ -16,7 +16,7 @@
     "type": "git",
     "url": "https://github.com/noloman/shotfleet-skills"
   },
-  "license": "Proprietary, see https://shotfleet.com/terms.html",
+  "license": "MIT",
   "privacy_policies": ["https://shotfleet.com/privacy.html"],
   "keywords": ["screenshots", "localization", "app-store", "google-play", "fastlane", "maestro"],
   "server": {

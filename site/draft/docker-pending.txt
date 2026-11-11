@@ -6,7 +6,7 @@ When they are: put these blocks back, add site/DOCKER_PUBLISHED, and drop the gu
 <!-- DOCKER-PENDING (the Linux image and the GitHub Action are not published yet; see packaging/README.md step 9, then delete these two marker lines and add site/DOCKER_PUBLISHED)
 ## Linux and CI
 
-- `check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check` (free, no licence, amd64 and arm64): `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk`
+- `check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check` (free, amd64 and arm64): `docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk`
 - GitHub Action: `uses: noloman/shotfleet-check-action@v1` with `folder:` and `app:` (also `locale:`, `args:`, `warn-only:`), on `ubuntu-latest`. Outputs: the problem count, the report folder and the JSON from `check --json`. Tested locally with `docker run`; not yet run on GitHub's runners.
 - What doesn't work on Linux: `run` and `export` (the image only runs `check`; capturing and exporting need a Mac), and macOS text recognition (Tesseract reads fewer scripts; the image has data for 34 common languages).
 - Without `--app` (or `--strings`) the wrong-language check is much weaker on Linux, because Tesseract doesn't say which language it read. Copies, missing screens and store rules are still checked.
@@ -22,7 +22,7 @@ DOCKER-PENDING -->
 
   <!-- DOCKER-PENDING (not published yet: packaging/README.md step 9)
   <h2 id="linux">Linux and CI</h2>
-  <p><code>check</code> also runs on Linux, in a Docker image with Tesseract inside: <code>ghcr.io/noloman/shotfleet-check</code>. It's free, needs no licence, and is built for amd64 and arm64. It holds the compiled program, Tesseract and aapt2 (for <code>--app app.apk</code>).</p>
+  <p><code>check</code> also runs on Linux, in a Docker image with Tesseract inside: <code>ghcr.io/noloman/shotfleet-check</code>. It's free and is built for amd64 and arm64. It holds the compiled program, Tesseract and aapt2 (for <code>--app app.apk</code>).</p>
 <pre><code>docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk</code></pre>
   <p>On GitHub there's an Action for it, <a href="https://github.com/noloman/shotfleet-check-action">noloman/shotfleet-check-action</a>, that runs on <code>ubuntu-latest</code>. It fails the job when <code>check</code> finds a problem (<code>warn-only: true</code> turns problems into warnings), and its outputs are the problem count, the report folder and the JSON from <code>check --json</code>. I tested it locally with <code>docker run</code> and the same inputs GitHub passes; it hasn't run on GitHub's runners yet.</p>
 <pre><code>- uses: noloman/shotfleet-check-action@v1

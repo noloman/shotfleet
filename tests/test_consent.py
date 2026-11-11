@@ -68,9 +68,9 @@ class Consent(unittest.TestCase):
 
     def test_funnel_events_mirror_the_first_party_counter(self):
         first_party = (PUB / "analytics.js").read_text()
-        self.assertIn('[["price", "pricing"], ["run", "runs"]]', first_party)
+        self.assertIn('[["free", "pricing"], ["run", "runs"]]', first_party)
         self.assertIn('closest("a.btn, button.btn")', first_party)
-        self.assertIn('[["price", "pricing_view"], ["run", "runs_view"]]', GA)  # same two section ids as analytics.js
+        self.assertIn('[["free", "pricing_view"], ["run", "runs_view"]]', GA)  # same two section ids as analytics.js
         self.assertIn('closest("a.btn, button.btn")', GA)
         for ev in ("cta_click", "pricing_view", "runs_view", "signup"): self.assertIn(f'"{ev}"', GA)
         self.assertIn('document.addEventListener("shotfleet:signup"', GA)

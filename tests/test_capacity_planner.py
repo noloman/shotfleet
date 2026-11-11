@@ -151,7 +151,7 @@ class Wiring(unittest.TestCase):
         args = type("A", (), {"cmd": "run", "config": "x.toml", "locales": None, "parallel": None, "platform": None, "no_hooks": False})()
         err = io.StringIO()
         with mock.patch.dict(sf.MAESTRO_BAD, {"2.12.0": "broken"}), mock.patch.object(sf, "maestro_cmd", return_value="/x/maestro"), \
-             mock.patch.object(sf, "read_maestro_version", return_value="2.12.0"), mock.patch.object(sf, "apply_free_tier"), \
+             mock.patch.object(sf, "read_maestro_version", return_value="2.12.0"), \
              mock.patch.object(sf, "cmd_run", return_value=0) as run, contextlib.redirect_stderr(err):
             code = sf.main_dispatch(args)
         self.assertEqual(code, 2); run.assert_not_called(); self.assertIn("2.12.0", err.getvalue())

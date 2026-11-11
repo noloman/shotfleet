@@ -1,5 +1,7 @@
 # shotfleet architecture guide
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 This is the entry point for engineers who will change shotfleet's code. It explains how the program works, why it is built the way it is, and
 how to change it without breaking it. It describes the code, not the marketing. Where a doc disagrees with the code, the doc is wrong and the
 mismatch is listed in [appendix: doc/code mismatches](architecture/13-mismatches.md).

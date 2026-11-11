@@ -1,5 +1,7 @@
 # Support sheet for a launch weekend
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 One page for whoever answers `hello@shotfleet.com` (it forwards to the owner's Gmail). Facts come from `site/public/terms.html`, `site/public/install.sh`, `shotfleet.py` messages and `docs/refund-runbook.md`. Gumroad screens marked **[unverified]** were not seen live (nobody has bought yet); trust the screen over this page.
 
 Rules: reply within two business days; never ask for or paste a licence key, card detail or buyer email into a chat or repo; never buy shotfleet with your own card (Gumroad treats it as card testing); never delete or recreate the Gumroad product (every key would stop working).

@@ -8,8 +8,6 @@
 # Options:
 #   --base URL        where --download looks (default https://shotfleet.com/download, as install.sh)
 #   --quarantine      mark the program as downloaded from a browser (the flag Gatekeeper judges), then run it
-#   --licence-probe   also run `shotfleet activate` with a made-up key: sends that key to Gumroad's verify endpoint (one HTTPS request,
-#                     nothing is stored), proves the packaged program can reach and trust Gumroad. Off by default.
 #   --hide-tools      (for a Mac that has Homebrew, Java, Android tools) hide /opt/homebrew, /usr/local, /Library/Java and the
 #                     Android, Maestro and shotfleet folders of your home from the program with sandbox-exec: a stand-in for a clean Mac
 #   --keep            do not delete the throwaway folder at the end (its path is printed)
@@ -22,7 +20,7 @@
 # Exit 0 = PASS, 1 = FAIL, 2 = wrong usage.
 REAL_PATH=$PATH
 PATH=/usr/bin:/bin:/usr/sbin:/sbin; export PATH
-MODE=; SRC=; BASE=https://shotfleet.com/download; QUAR=0; PROBE=0; HIDE=0; KEEP=0
+MODE=; SRC=; BASE=https://shotfleet.com/download; QUAR=0; HIDE=0; KEEP=0
 usage() { sed -n '2,/^# Exit 0/p' "$0" | sed 's/^# \{0,1\}//'; }
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -31,7 +29,6 @@ while [ $# -gt 0 ]; do
     --download) MODE=download ;;
     --base) BASE=${2:?--base needs a URL}; shift ;;
     --quarantine) QUAR=1 ;;
-    --licence-probe|--license-probe) PROBE=1 ;;
     --hide-tools) HIDE=1 ;;
     --keep) KEEP=1 ;;
     -h|--help) usage; exit 0 ;;
@@ -113,7 +110,7 @@ run() {  # run SECONDS cmd args...: clean environment, time limit, optional sand
 }
 bad() { grep -qiE "symbol not found|dyld|library not loaded|Bad CPU type|killed: 9" "$1"; }
 
-V=FAIL; D=FAIL; C=FAIL; P=skipped; VOUT=; DRC=-; CRC=-
+V=FAIL; D=FAIL; C=FAIL; VOUT=; DRC=-; CRC=-
 if [ "$STEP_INSTALL" = ok ]; then
   say "== shotfleet --version"
   run 90 "$EXE" --version >"$W/v.out" 2>&1 </dev/null; VRC=$?; cat "$W/v.out" | tee -a "$LOG"
@@ -162,16 +159,11 @@ EOF
       C=skipped; say "could not draw the screenshots: $(head -1 "$W/draw.out")"
     fi
 
-    if [ "$PROBE" = 1 ]; then
-      say "== licence probe: shotfleet activate with a made-up key"
-      run 60 "$EXE" activate 00000000-00000000-00000000-00000000 >"$W/p.out" 2>&1 </dev/null; tail -3 "$W/p.out" | tee -a "$LOG"
-      if grep -q "didn't activate" "$W/p.out" && ! grep -qi "can't reach" "$W/p.out"; then P=ok; else P=FAIL; fi
-    fi
   fi
 fi
 
 RES=PASS
-[ "$STEP_INSTALL" = ok ] && [ "$V" = ok ] && [ "$D" = ok ] && [ "$C" != FAIL ] && [ "$P" != FAIL ] || RES=FAIL
+[ "$STEP_INSTALL" = ok ] && [ "$V" = ok ] && [ "$D" = ok ] && [ "$C" != FAIL ] || RES=FAIL
 [ "$C" = skipped ] && RES="$RES (check was skipped)"
 OCR=$(grep -E "^(ok|MISSING|WARN)[ ]+text recognition" "$W/d.out" 2>/dev/null | head -1 | cut -c1-110)
 IOS=$(grep -iE "ios runtime|simulator runtime" "$W/d.out" 2>/dev/null | head -1 | cut -c1-110)
@@ -187,7 +179,6 @@ echo "--version: $V   ${VOUT}"
 echo "doctor: $D (exit $DRC)   $OCR"
 [ -n "$IOS" ] && echo "doctor, iOS: $IOS"
 echo "check on 2 drawn screenshots: $C (exit $CRC)   $N"
-echo "licence probe: $P"
 echo "paste everything between the two ===== lines into your reply (no file names or user name are printed)"
 echo "===== end ====="
 [ "${RES%% *}" = PASS ]

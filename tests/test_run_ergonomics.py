@@ -77,7 +77,7 @@ class DevicesFlag(unittest.TestCase):
 
     def test_run_passes_the_flag_on(self):
         seen = []
-        with mock.patch.object(sf, "cmd_run", lambda *a, **k: seen.append(sf.DEVICES_ONLY) or 0), mock.patch.object(sf, "apply_free_tier"), \
+        with mock.patch.object(sf, "cmd_run", lambda *a, **k: seen.append(sf.DEVICES_ONLY) or 0), \
              mock.patch.object(sf, "maestro_cmd", return_value=None):
             sf.main(["run", "x.toml", "--devices", "phone, tablet"])
         self.assertEqual(seen, [["phone", "tablet"]])

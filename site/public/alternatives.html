@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>fastlane snapshot alternatives, and when not to buy shotfleet</title>
+<title>fastlane snapshot alternatives, and when not to use shotfleet</title>
 <meta name="description" content="shotfleet vs fastlane snapshot, simshot, ButterKit and AppScreens for localized App Store and Play screenshots, with prices and who should skip shotfleet.">
-<meta property="og:title" content="fastlane snapshot alternatives, and when not to buy shotfleet">
-<meta property="og:description" content="How shotfleet compares with the free and paid tools, and who should not buy it.">
+<meta property="og:title" content="fastlane snapshot alternatives, and when not to use shotfleet">
+<meta property="og:description" content="How shotfleet compares with the free and paid tools, and who should not use it.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -52,13 +52,13 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#price">Pricing</a><a href="/whats-new">What’s new</a></span>
+    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#free">Free</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 
 <main class="wrap" id="main">
   <section class="page wide">
-    <h1>fastlane snapshot alternatives, and when not to buy shotfleet</h1>
+    <h1>fastlane snapshot alternatives, and when not to use shotfleet</h1>
     <p class="lede">There are a few good tools for localized store screenshots, and some of them are free. This page shows how shotfleet compares, and when you should use something else.</p>
 
     <h2>Feature comparison</h2>
@@ -69,7 +69,7 @@
         <tr><th scope="col">Tool</th><th scope="col">Takes the screenshots from your running app</th><th scope="col">One flow for every language</th><th scope="col">Checks the language of the result</th><th scope="col">iOS and Android</th><th scope="col">Price</th></tr>
       </thead>
       <tbody>
-        <tr><th scope="row">shotfleet</th><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Both</span></td><td>$49 once, with a year of updates ($29 for the first 100 buyers). Free: <code>check</code> and 2 languages in <code>run</code></td></tr>
+        <tr><th scope="row">shotfleet</th><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span></td><td><span class="yes">Both</span></td><td>Free and open source (MIT)</td></tr>
         <tr><th scope="row">fastlane snapshot and screengrab</th><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span> <span class="note">(UI-test code in your app, one per platform)</span></td><td><span class="no">No</span></td><td><span class="yes">Both</span> <span class="note">(two tools)</span></td><td>Free</td></tr>
         <tr><th scope="row">simshot</th><td><span class="yes">Yes</span></td><td><span class="yes">Yes</span> <span class="note">(a few lines added to your app)</span></td><td><span class="no">No</span></td><td><span class="no">iOS only</span></td><td>Free</td></tr>
         <tr><th scope="row">ButterKit</th><td><span class="yes">Yes</span> <span class="note">(from the Simulator)</span></td><td><span class="note">Not stated on its pricing page</span></td><td><span class="no">Not stated</span></td><td><span class="note">Not stated</span></td><td>Free (watermarked), Pro $99 once</td></tr>
@@ -77,7 +77,7 @@
       </tbody>
     </table>
     </div>
-    <p class="cta-row"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a></p>
+    <p class="cta-row"><a class="btn" href="https://github.com/noloman/shotfleet">View on GitHub<span class="ico" aria-hidden="true">↗</span></a></p>
     <p class="note">Checked on 2026-10-02 from each tool's own pages and docs. "Not stated" means the page doesn't say, not that the answer is no. If I got something wrong, tell me and I'll fix it the same day.</p>
 
     <h2>What each tool does</h2>
@@ -101,11 +101,11 @@
     <h3 id="appscreens">AppScreens</h3>
     <p>A web editor. You upload screenshots and add device frames, text and backgrounds, for iOS and Android. Free covers one project with no localizations; Pro is $99 a year (10 languages) and Scale $180 a year (80+ locales). It makes marketing images from what you upload. It doesn't take screenshots from your app.</p>
 
-    <h2>When you shouldn't buy shotfleet</h2>
+    <h2>When you shouldn't use shotfleet</h2>
     <div class="when-not">
       <h3>Skip it if one of these sounds like you</h3>
       <ul>
-        <li>Your app has one or two languages. fastlane snapshot or simshot (both free) will do the job, and shotfleet's own free tier covers 2 languages.</li>
+        <li>Your app has one or two languages. fastlane snapshot or simshot (both free) will do the job.</li>
         <li>Your fastlane UI tests already work well, and you don't mind running them once per language.</li>
         <li>You want frames, captions, or store upload. ButterKit and AppScreens are made for that; shotfleet doesn't do it.</li>
         <li>Your app is Flutter or React Native. shotfleet reads translation files from those stacks and has been run end to end on one real Flutter app (wger) and one real Expo app (the obytes template), not on other apps or on bare React Native.</li>
@@ -117,14 +117,14 @@
     <p>I have a workout app in 18 languages. A Maestro flow finds buttons by the text on them, so every flow I wrote only worked in English.</p>
     <p>So I wrote shotfleet. My flow stays in English, and shotfleet changes it for each language, on both platforms, then checks what comes out. On the first full run, the onboarding button was out of reach in Japanese, Korean, Chinese and Arabic on small phones. The text was taller and the page didn't scroll. The fix in my app was small: I made two pages scroll. Nobody had noticed, because the English screenshots fit fine.</p>
     <p>ButterKit, AppScreens and fastlane do other jobs: frames, mockups and UI tests. shotfleet does one smaller job. It makes sure the raw screenshots of your app are really in the right language.</p>
-    <p class="cta-row"><a class="btn" href="https://8954369651852.gumroad.com/l/shotfleet">Buy shotfleet<span class="ico" aria-hidden="true">↗</span></a></p>
+    <p class="cta-row"><a class="btn" href="https://github.com/noloman/shotfleet">View on GitHub<span class="ico" aria-hidden="true">↗</span></a></p>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/terms">License</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 <script src="/ga.js" defer></script>

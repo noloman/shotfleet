@@ -16,7 +16,7 @@ shotfleet into Homebrew's bin, `/usr/local/bin` or `~/.local/bin`. The script lo
 
 The spec has no CPU field, so the manifest says `darwin` and the description and the script say Apple silicon.
 
-Your licence key never goes in the bundle or an MCP setting. Run `shotfleet activate <key>` once in Terminal.
+shotfleet is free and open source (MIT): there is no key to set.
 
 Build (local, publishes nothing): `sh build.sh`, which validates and packs with the pinned official `mcpb` package.
 Bump `version` in `manifest.json` with each shotfleet release; `build.sh` refuses a mismatch with `shotfleet.py`.

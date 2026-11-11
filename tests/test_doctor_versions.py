@@ -108,7 +108,7 @@ class MaestroVersion(Fakes):
         args = type("A", (), {"cmd": "run", "config": "x.toml", "locales": None, "parallel": None, "platform": None, "no_hooks": False})()
         err = io.StringIO()
         with mock.patch.dict(os.environ, {"PATH": f"{self.bin}:{os.environ['PATH']}"}), mock.patch.object(sf, "java_env", return_value={}), \
-             mock.patch.object(sf, "apply_free_tier"), mock.patch.object(sf, "cmd_run", return_value=0) as run, contextlib.redirect_stderr(err):
+             mock.patch.object(sf, "cmd_run", return_value=0) as run, contextlib.redirect_stderr(err):
             code = sf.main_dispatch(args)
         self.assertEqual(code, 0); run.assert_called_once()
         return err.getvalue()

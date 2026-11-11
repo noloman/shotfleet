@@ -5,7 +5,7 @@ reading the README:
 
 | Skill | Use |
 |---|---|
-| `shotfleet/` | the main skill: decision tree, commands, exit codes, `--json`, flow writing, `references/` (troubleshooting, flow-writing, config, ci, licence) |
+| `shotfleet/` | the main skill: decision tree, commands, exit codes, `--json`, flow writing, `references/` (troubleshooting, flow-writing, config, ci) |
 | `shotfleet-ci/` | add `shotfleet check` to GitHub Actions or another CI |
 | `shotfleet-review/` | read a check report and turn it into a fix list |
 
@@ -59,5 +59,5 @@ If your team wants the rules in the repo too, paste the block from
 | Claude Code | `CLAUDE.md` |
 | Gemini CLI | `GEMINI.md` |
 
-The block names what shotfleet is, the six commands (`doctor`, `init`, `run`, `check`, `export`, `activate`) and the
+The block names what shotfleet is, the five commands (`doctor`, `init`, `run`, `check`, `export`) and the
 rules. For more detail it points at the installed skill (`shotfleet skill install --project`).
