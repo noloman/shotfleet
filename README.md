@@ -15,6 +15,10 @@ captured 18/18 locales in 534s on 4 simulators
 checked 72 screenshots in 18 languages: 0 problem(s)
 ```
 
+![The shotfleet review page for a real run: Quickspan, 5 languages x 5 screenshots, 0 problems](docs/images/review-page.png)
+
+*The review page from a real run on [Quickspan](https://github.com/noloman/adaptive-calendar) (Android phone, en, de, ja, ko, es): 25 screenshots, 0 problems, 343 s to capture on one emulator.*
+
 ## The problem
 
 Localized screenshots often end up as the English set copied into every language folder. The UI script taps English buttons ("Next", "Settings"), so it can't run in German or Japanese without a separate copy per language, and nobody maintains 20 copies.
