@@ -116,7 +116,7 @@
      "name": "Is it free?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "check, doctor and init are free for everyone. run is free for up to 2 languages. A licence unlocks every language and export; the price is on the home page."
+      "text": "Yes. shotfleet is free and open source (MIT license): every command and every language, no key and no account. See the license page."
      }
     },
     {
@@ -140,7 +140,7 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#price">Pricing</a><a href="/whats-new">What’s new</a></span>
+    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#free">Free</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 <main class="wrap" id="main">
@@ -165,7 +165,7 @@
       <li><a href="#flow-tips">Flow tips for every language</a></li>
       <li><a href="#device-setup">Device setup</a></li>
       <li><a href="#expect">Expected content</a></li>
-      <li><a href="#licence">Licence</a></li>
+      <li><a href="#licence">License</a></li>
       <li><a href="#ci">In CI</a></li>
       <li><a href="#agents">With AI agents</a></li>
       <li><a href="#limits">Limits</a></li>
@@ -188,10 +188,10 @@
   <h2 id="install">Install</h2>
 <pre><code>curl -fsSL https://shotfleet.com/install.sh | sh   # then open a new Terminal window
 shotfleet doctor --fix           # checks Maestro, Java, Xcode, Android SDK; shows what is missing, asks once, then fetches Maestro and Java</code></pre>
-  <p>Make sure the right Xcode is selected (<code>xcode-select -p</code> shows which one). If your app is iOS only, you can ignore the Android part of <code>doctor</code>. The first <code>doctor</code> can take a minute while macOS gets its text recognition ready. You only need <code>shotfleet activate &lt;your key&gt;</code> (the key is in your Gumroad receipt email) after your first run, when you want every language. <code>check</code> works without a licence.</p>
-  <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. <code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; see <a href="/terms">licence and refunds</a>. Without a valid licence, <code>run</code> captures only 2 languages (the first two of your app's languages unless you pick them with <code>--locales de,ja</code>) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If <code>SHOTFLEET_KEY</code> is set but refused, that line says why. <code>check</code>, <code>doctor</code> and <code>init</code> are always free.</p>
+  <p>Make sure the right Xcode is selected (<code>xcode-select -p</code> shows which one). If your app is iOS only, you can ignore the Android part of <code>doctor</code>. The first <code>doctor</code> can take a minute while macOS gets its text recognition ready.</p>
+  <p>The installer downloads the Apple silicon archive, compares it with its published SHA-256 checksum, and puts a link to <code>shotfleet</code> on your PATH. shotfleet is free and open source (<a href="/terms">MIT license</a>): every command and every language, with no key.</p>
 
-  <p>To update, run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). <code>shotfleet doctor</code> tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.</p>
+  <p>To update, run the install line again. It replaces the program. <code>shotfleet doctor</code> tells you when a newer version is out.</p>
 
   <p>There is also an installer you can double-click. Each release is published as a signed, notarized package, <code>https://shotfleet.com/download/shotfleet-macos-arm64.pkg</code>. It puts the program in <code>/usr/local/lib/shotfleet</code> and links <code>shotfleet</code> into <code>/usr/local/bin</code>; macOS asks for your password. Use it if you can't use the <code>curl</code> line, or if a browser-downloaded copy shows "Apple could not verify ...".</p>
 
@@ -205,7 +205,7 @@ shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator b
   <ol>
     <li>Edit the generated <code>flow.yaml</code>: <a href="https://maestro.mobile.dev">Maestro</a> steps in English. Navigate by the text users see and add a <code>takeScreenshot:</code> for each store image. No <code>appId</code> is needed: shotfleet uses each build's own id, so one flow serves iOS and Android.</li>
     <li>Try one language: <code>shotfleet run --locales en</code></li>
-    <li>When you want every language: <code>shotfleet activate &lt;your key&gt;</code> (from your Gumroad receipt email; <code>check</code> and 2 languages in <code>run</code> work without one).</li>
+    <li>Run it on every language your app ships: <code>shotfleet run shotfleet.toml</code>.</li>
     <li>Run them all: <code>shotfleet run</code> (finds <code>./shotfleet.toml</code>; both platforms if the file has both, <code>--platform ios</code> for one).</li>
     <li>Review <code>out/index.html</code> (<code>out-ios/</code> and <code>out-android/</code> if the config has both platforms). It is a grid with a row per language and a column per screen, and problems are outlined in red and marked &quot;problem&quot; in words. Every screenshot has alt text (language, screen, verdict) for screen readers.</li>
     <li>Export to fastlane: <code>shotfleet export out --fastlane fastlane/</code> (<code>out-ios</code> or <code>out-android</code> if the config has both). That writes <code>deliver</code>'s <code>screenshots/&lt;locale&gt;/</code> or <code>supply</code>'s <code>metadata/android/&lt;locale&gt;/images/phoneScreenshots/</code>. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.</li>
@@ -277,7 +277,7 @@ timeout = 900                     # seconds per language</code></pre>
     <li><code>XCTAttachment</code>: give each screenshot a name (<code>a.name = "01Home"</code>) and <code>a.lifetime = .keepAlways</code>. Without <code>.keepAlways</code> Xcode throws the screenshots away when the test passes. The name becomes the file name, <code>out/raw/de/01Home.png</code>.</li>
     <li>fastlane <code>SnapshotHelper</code>: it writes into <code>~/Library/Caches/tools.fastlane/screenshots</code>, one folder for all simulators, and only if that folder exists. shotfleet creates it if it's missing, takes each simulator's files by the simulator's name, and moves fastlane's <code>language.txt</code>, <code>locale.txt</code> and <code>snapshot-launch_arguments.txt</code> out of the way during the run (they would force one language on every simulator). It puts them back afterwards, also when the run fails. Keep calling <code>setupSnapshot(app)</code> before <code>app.launch()</code>.</li>
     <li>A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.</li>
-    <li><code>check</code> and <code>export</code> work on the output like on any other run. It's paid like any <code>run</code>: 2 languages without a licence, and <code>check</code> stays free.</li>
+    <li><code>check</code> and <code>export</code> work on the output like on any other run.</li>
   </ul>
   <p>iOS only for now: on Android, <code>run</code> still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's <code>SnapshotHelper</code> test, where <code>check</code> found a real bug. The device test for the finished feature (<code>tools/fixture-byoc-e2e.sh</code>) passed on 2026-10-07, on iOS 26.4 simulators: your tests with <code>XCTAttachment</code> and with <code>SnapshotHelper</code>, German and Japanese on two simulators at once, and the missing-<code>.keepAlways</code> case, which is reported as a failed language.</p>
 
@@ -492,21 +492,21 @@ all = ["Steinmännchen"]                # every one of these is on screen
 not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show
 [expect.02_benchmarks]
 key = "benchmarks_title"               # the text of this string key of your app, in each language, is on screen</code></pre>
-  <p><code>run</code> checks these automatically; for screenshots you already have, use <code>shotfleet check out/ --content shotfleet.toml</code> (free, no licence). A missing or forbidden text is a problem line, and a table for a screenshot that does not exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, <code>could not verify</code>, never as a pass. This proves the strings you list are present, not that the data looks right.</p>
+  <p><code>run</code> checks these automatically; for screenshots you already have, use <code>shotfleet check out/ --content shotfleet.toml</code> (no key or account). A missing or forbidden text is a problem line, and a table for a screenshot that does not exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, <code>could not verify</code>, never as a pass. This proves the strings you list are present, not that the data looks right.</p>
   <p><code>key</code> names a string of your app (its key in your <code>.strings</code>, <code>.arb</code> or <code>strings.xml</code>). <code>check</code> looks for that string's text in the screenshot's own language, so you do not type the translations, and a green run that captured the wrong screen gets a problem line. It needs the app's strings (<code>run</code> has them; for <code>check</code> pass <code>--app</code> or <code>--strings</code>). A wrong key, or a text with a placeholder in it, is reported. Like the other expectations it does nothing until you add an <code>[expect...]</code> table.</p>
 
   <h3 id="more">Plugins and the rest</h3>
   <p><code>shotfleet foo</code> runs <code>shotfleet-foo</code> from your PATH (like <code>git</code> and <code>gh</code>), when <code>foo</code> is not a built-in command. <code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code> and use stable exit codes, so they script like any other tool; <code>SHOTFLEET_OCR</code> or <code>--ocr-command</code> swaps the text reader; <code>strings = "glob"</code> swaps the translation source.</p>
 
-  <h2 id="licence">Licence</h2>
-  <p><code>shotfleet activate &lt;key&gt;</code> stores your key on this Mac. Use it on up to 3 of your Macs; there are spare activations for reinstalls (the key has 5), and if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset. The spare activations work from 0.1.6; 0.1.5 and older stop at 3. Activating again on a Mac that still has the key saved counts nothing; after <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes it from this Mac but does not give the activation back. The licence is checked online when you activate and about once a week after; if the server cannot be reached, the Mac keeps working for up to 30 days after the last good check. A refunded or disabled key is refused at its next check; <code>check</code> and the 2 free languages keep working and nothing you made is deleted. In CI, set <code>SHOTFLEET_KEY</code> (no activation is used; see <a href="#ci">In CI</a>). Your key covers every version released within a year of your purchase; a later version runs as the free tier and says which versions your key covers, and the ones you have keep working.</p>
-  <p>The messages you may see are "that key didn't activate: &lt;reason&gt;", "the key was disabled, as Gumroad does after a full refund" and "this licence is no longer valid". Terms and refunds are on the <a href="/terms">licence and refunds</a> page.</p>
-  <p>Maintain an open-source project, or a student? Email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> with a link to your open-source repo or proof that you're a student, and I'll send you a 100%-off code.</p>
-  <p>Need an invoice? Gumroad makes one from your receipt. I don't take purchase orders.</p>
+  <h2 id="licence">License</h2>
+  <p>shotfleet is free and open source under the <a href="https://github.com/noloman/shotfleet/blob/main/LICENSE">MIT license</a>. There is no key, no activation and no license server, and every command works in every language. The source is on <a href="https://github.com/noloman/shotfleet">GitHub</a>. If shotfleet saves you time, you can <a href="https://github.com/sponsors/noloman">sponsor it on GitHub</a>. See <a href="/terms">the license page</a> for the terms.</p>
+
+
+
 
   <h2 id="ci">In CI</h2>
   <p><code>run</code>, <code>check</code> and <code>export</code> take <code>--json</code>: the result goes to stdout as JSON (<code>exit</code>, <code>screenshots</code>, <code>problems</code>, <code>notes</code> and <code>unverified</code> for <code>run</code> and <code>check</code>, plus <code>coverage</code> when check can tell the store and <code>compare</code> with <code>--compare</code>, merged over every device or platform checked, plus <code>reports</code> (one <code>{report, problems}</code> each) when there are several; <code>exit</code>, <code>exported</code>, <code>skipped</code> for <code>export</code>) and progress goes to stderr. Exit codes: <code>0</code> all good, <code>1</code> problems found, <code>2</code> setup error (the message says what to fix), <code>130</code> interrupted.</p>
-  <p>Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. <code>check</code> is free and needs no licence. The recipe as written (the build step, then check with --app) has not been run on GitHub yet. The installer, shotfleet --version, doctor and check on sample screenshots did run on GitHub's macos-14 and macos-15 runners (version 0.1.1 on 2026-10-05, version 0.1.6 on 2026-10-08).</p>
+  <p>Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. <code>check</code> needs no key or account. The recipe as written (the build step, then check with --app) has not been run on GitHub yet. The installer, shotfleet --version, doctor and check on sample screenshots did run on GitHub's macos-14 and macos-15 runners (version 0.1.1 on 2026-10-05, version 0.1.6 on 2026-10-08).</p>
 <pre><code># .github/workflows/screenshots.yml
 on: pull_request
 jobs:
@@ -524,8 +524,8 @@ jobs:
           path: |
             check.json
             shotfleet-check/</code></pre>
-  <p>To use <code>run</code> or <code>export</code> in CI, set <code>SHOTFLEET_KEY</code> to your licence key (keep it in a secret). It is checked online on each run and uses none of your activations. If the licence server cannot be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days (shotfleet notes a hash of the key and the date there, never the key itself). On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers. A Mac where you ran <code>shotfleet activate</code> re-checks about weekly and stops after 30 days offline. If the key is refused or can't be checked, <code>export</code> and <code>run</code> both stop with exit 2 and say why, so a CI job never goes green on 2 languages by accident (unset <code>SHOTFLEET_KEY</code> to get the free tier). On hosted CI runners, which start fresh every time, cache <code>~/Library/Application Support/shotfleet/ci-checked.json</code> between jobs to keep that 30-day grace during a Gumroad outage; it holds a hash and a date, no secret.</p>
-  <p>With <code>--json</code>, progress goes to stderr, including the "free tier:" line, so a CI job that must capture every language should fail when that line appears, or compare the language count in <code>run.json</code>.</p>
+  <p>In CI, <code>run</code> and <code>export</code> work like on a Mac: there is no key or license server to reach.</p>
+
 
   <h2 id="agents">With AI agents</h2>
   <p><code>shotfleet mcp</code> is an MCP server with <code>check</code>, <code>run</code> and <code>doctor</code> tools. Add it to Claude Code with <code>claude mcp add shotfleet -- shotfleet mcp</code>, or to any MCP client as the command <code>shotfleet mcp</code>.</p>
@@ -536,7 +536,7 @@ shotfleet skill install --project
 shotfleet skill install --dir &lt;folder&gt;</code></pre>
   <p><code>shotfleet skill install</code> copies them into <code>~/.claude/skills</code> (Claude Code and Cursor read it) and <code>~/.agents/skills</code> (Codex, Gemini CLI, GitHub Copilot and Cursor read it). With <code>--project</code> they go into <code>./.claude/skills</code> and <code>./.agents/skills</code> in your project, so you can commit them for your team. <code>--dir &lt;folder&gt;</code> copies them into one folder you choose. Skills that are already there are kept unless you pass <code>--force</code>. Start a new agent session after you install them.</p>
   <p>The skills are also in a public repo, so you can install them without shotfleet first. In Claude Code: <code>/plugin marketplace add noloman/shotfleet-skills</code>, then <code>/plugin install shotfleet@shotfleet</code> (the skills plus the MCP server). For other agents: <code>gh skill install noloman/shotfleet-skills --all --scope user</code>. More in the <a href="https://github.com/noloman/shotfleet-skills">repo's README</a>.</p>
-  <p>Your licence key: on your Mac, run <code>shotfleet activate</code> once yourself. After that your agent uses the CLI and never sees the key. In CI, use the <code>SHOTFLEET_KEY</code> secret. Don't pass the key with <code>claude mcp add --env</code>: it ends up in plain text in <code>~/.claude.json</code>.</p>
+  <p>Nothing to sign in to: your agent uses the same free CLI you do.</p>
   <h2 id="limits">Limits</h2>
   <ul>
     <li><strong>Where strings come from:</strong> <code>.strings</code>, <code>.stringsdict</code> and String Catalogs on iOS (including those in frameworks, Swift packages and a Watch app), <code>strings.xml</code> and <code>&lt;plurals&gt;</code> on Android, and Compose Multiplatform resources on both. Other frameworks read source files (see above). Labels with numbers ("Round 2 of 12") are matched and translated with the same numbers, in every plural form.</li>
@@ -581,17 +581,17 @@ shotfleet skill install --dir &lt;folder&gt;</code></pre>
   <h3>Does it add device frames or marketing captions?</h3>
   <p>No. It takes and checks the raw screenshots of your app. For frames and captions, look at ButterKit or AppScreens (<a href="/alternatives">how they compare</a>).</p>
   <h3>Is it free?</h3>
-  <p><code>check</code>, <code>doctor</code> and <code>init</code> are free for everyone. <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>; the price is on the <a href="/#price">home page</a>.</p>
+  <p>Yes. shotfleet is free and open source (MIT license): every command and every language, no key and no account. See the <a href="/terms">license page</a>.</p>
   <h3>Is shotfleet or this site in my language?</h3>
   <p>No, the site, the docs and the tool's messages are in English. What it captures is whatever languages your app ships.</p>
 
-  <p class="small">Manuel Lorenzo Parejo · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></p>
+  <p class="small">Manuel Lorenzo Parejo · <a href="/terms">License</a> · <a href="/privacy">Privacy</a></p>
  </div>
 </main>
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">License</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

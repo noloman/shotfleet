@@ -72,7 +72,7 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#price">Pricing</a><a href="/whats-new">What’s new</a></span>
+    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#free">Free</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 <main class="wrap" id="main">
@@ -122,7 +122,7 @@ adb -s emulator-5554 shell cmd locale set-app-locales com.example.myapp --locale
 <p><strong>4. Parallel runs on Android.</strong> Two separate <code>maestro test</code> processes on two devices on one Mac were unreliable for me on Maestro 2.0.10. With two emulators and two <code>maestro test</code> processes started together, one of the two failed in both attempts (a <code>TimeoutException</code>, or an exception on Maestro's own log folder), while each passed alone. A Maestro process listened on TCP 7001 while it ran, which is my guess for the shared resource; I did not prove it. Run one device at a time, or use one run that shards across devices (<code>--shard-split</code>, which I did not test), and check the images of both devices.</p>
 <p>Two smaller ones. System permission dialogs are drawn by the OS in the device language, which stays English while your app is German (I measured this on iOS 26.4 with Maps launched in German; I did not test Android), so write those taps in English. <code>launchApp</code> also takes a <code>permissions</code> setting (see its docs page); I did not test it against a permission dialog. And long languages push buttons off the screen: use <code>scrollUntilVisible</code> before the tap, with <code>direction: DOWN</code> (it happened to me: <a href="https://shotfleet.com/#catch-h">a Next button nobody could reach</a> in four languages).</p>
 <h2>Read the images, not the exit code</h2>
-<p>All four traps pass. The only way to catch them is to look at the output, or to have something look for you: <code>shotfleet check shots/ --app path/to/MyApp.app</code> reads each image back and reports wrong-language and duplicate images. It is free (no licence, no account) and works on any folder of screenshots, fastlane's too (<a href="https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english">how to check a fastlane snapshot folder</a>).</p>
+<p>All four traps pass. The only way to catch them is to look at the output, or to have something look for you: <code>shotfleet check shots/ --app path/to/MyApp.app</code> reads each image back and reports wrong-language and duplicate images. It is free (no key, no account) and works on any folder of screenshots, fastlane's too (<a href="https://shotfleet.com/guides/fastlane-snapshot-screenshots-all-english">how to check a fastlane snapshot folder</a>).</p>
 <h2>Where shotfleet fits</h2>
 <p>Doing all of the above by hand for 18 languages on two platforms is a lot of scripting, and that is the work shotfleet does. It reads the translations compiled into your build and rewrites every text selector in your English flow for each language, so <code>tapOn: "Next"</code> becomes <code>Weiter</code> in German, or <code>(Nächste|Weiter)</code> if your app has two translations for it. It runs the languages in parallel on simulators and emulators and checks each image. On my own app, 18 languages by 4 screens (72 screenshots) took 9 minutes on iOS (four simulators in parallel) and 15 on Android, on one Mac. That is one app and Maestro 2.0.10, so treat it as a data point. <code>run</code> is free for 2 languages; a licence unlocks every language and <code>export</code>: $29 for the first 100 buyers, then $49 once, 14-day refund.</p>
 <h2>When not to use shotfleet</h2>
@@ -132,7 +132,7 @@ adb -s emulator-5554 shell cmd locale set-app-locales com.example.myapp --locale
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">License</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

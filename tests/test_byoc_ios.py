@@ -238,7 +238,7 @@ class CaptureRun(unittest.TestCase):
                   mock.patch.object(sf, "kill_stale_drivers"), mock.patch.object(sf, "shutdown_sims"), mock.patch.object(sf, "OUR_SIMS", set()),
                   mock.patch.object(sf, "latest_ios_runtime", return_value="com.apple.CoreSimulator.SimRuntime.iOS-27-0"),
                   mock.patch.object(sf, "default_device_type", return_value=sf.DEFAULT_IPHONE), mock.patch.object(sf, "maestro_cmd", return_value=None),
-                  mock.patch.object(sf, "cmd_check", return_value=0), mock.patch.object(sf, "LOCALE_CAP", None), mock.patch.object(sf, "NO_BUILD", False),
+                  mock.patch.object(sf, "cmd_check", return_value=0), mock.patch.object(sf, "NO_BUILD", False),
                   mock.patch.dict(os.environ, {"SHOTFLEET_HOME": str(self.d / "sfhome")})):
             p.start(); self.addCleanup(p.stop)
 
@@ -389,29 +389,6 @@ class CaptureRun(unittest.TestCase):
     def test_attachments_only_never_touches_the_fastlane_folder(self):
         code, out = self.run_it()
         self.assertEqual(code, 0, out); self.assertFalse(self.cache.parent.exists())
-
-    def test_without_a_licence_three_languages_become_two_like_a_maestro_run(self):
-        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", self.d / "no-licence.json"), \
-             mock.patch.dict(os.environ, {"SHOTFLEET_KEY": ""}):
-            code, out = self.run_it("--locales", "de,ja,tr")
-        self.assertEqual(code, 0, out)
-        self.assertEqual(sf.LOCALE_CAP, sf.FREE_LANGUAGES)
-        self.assertIn("free tier: capturing 2 of 3 languages", out)
-        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja"])
-
-    def test_two_languages_without_a_licence_are_free(self):
-        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", self.d / "no-licence.json"), \
-             mock.patch.dict(os.environ, {"SHOTFLEET_KEY": ""}):
-            code, out = self.run_it()
-        self.assertEqual(code, 0, out); self.assertNotIn("free tier: capturing", out)
-        self.assertEqual(sorted(r["lp"] for r in self.xcodebuild), ["de", "ja"])
-
-    def test_check_stays_free_on_capture_output(self):
-        self.run_it()
-        with mock.patch.object(sf.sys, "frozen", True, create=True), mock.patch.object(sf, "LICENCE_FILE", self.d / "no-licence.json"), \
-             mock.patch.object(sf, "require_licence", side_effect=AssertionError("check must not ask for a licence")):
-            with contextlib.redirect_stdout(io.StringIO()): self.assertEqual(sf.main(["check", str(self.d / "out")]), 0)
-
 
 
 class Doctor(unittest.TestCase):

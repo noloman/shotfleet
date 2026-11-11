@@ -1,5 +1,7 @@
 # What is left, and how to do it
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 Written 2026-10-03 at the end of a session that could not run anything on a device. Each item says **what it needs** (the reason it was not
 done), **the steps**, **how you know it passed**, and **where to record it**. Evidence goes into `STATUS.md` (the row named) and, if a promise
 changes, into `tests/claims.json` and the README in the same commit. The rule of this repo stands: nothing is called "tested" without a run.
@@ -22,7 +24,7 @@ Written 2026-10-11 evening, against `origin/main` at `13a1d69`. Each fact here w
 - **Homebrew tap** (`noloman/tap`, commit `8d9ee54`) and the **public skills repo** (`noloman/shotfleet-skills`, commit `5bb01fd`) are on 0.1.9. The weekend watchdog (`/Users/manu/Developer/shotfleet-rc-build/weekend-watch/watch.sh`) expects 0.1.9.
 - **Site:** redeployed from main on 2026-10-11 at 17:57 after the post-release review; nothing under `site/public` has changed on main since. Showcases live: WOD Tracker, AnywhereRoles, Kuokka (iPhone and Android) and wger. The wger page went up after the maintainer answered the courtesy note (wger-project/flutter discussion 1389).
 - **Press:** Android Weekly issue 748 features the Maestro guide (checked 2026-10-11).
-- **Gumroad refunds and disabled keys, checked live.** Gumroad support said a full refund disables the key (verify answers 404 "This license key has been disabled"), a partial refund leaves it valid, and a chargeback does not disable it; there is no refund test mode. On 2026-10-09 a test sale's key was disabled and re-enabled from the Gumroad sales page and shotfleet answered correctly both times (refused with the refund-style message, then accepted with the use count unchanged). `shotfleet.py` matches this and needed no change. Still unproven: a refund of a real paid sale, which needs a buyer other than Manu. The live test is only in the coordinator log; the background is in `docs/refund-runbook.md` and `research/refund-process-2026-10-05.md`.
+- **Gumroad refunds and disabled keys, checked live.** Gumroad support said a full refund disables the key (verify answers 404 "This license key has been disabled"), a partial refund leaves it valid, and a chargeback does not disable it; there is no refund test mode. On 2026-10-09 a test sale's key was disabled and re-enabled from the Gumroad sales page and shotfleet answered correctly both times (refused with the refund-style message, then accepted with the use count unchanged). `shotfleet.py` matches this and needed no change. Still unproven: a refund of a real paid sale, which needs a buyer other than Manu. The live test is only in the coordinator log; the background is in the old refund runbook (removed) and `research/refund-process-2026-10-05.md`.
 
 ### On branches, not on main
 
@@ -236,7 +238,7 @@ History: 0.1.1 was live from 13:27 to 16:07 on 2026-10-05; section 17 is the cur
 - **Catalan finding:** the same Catalan screenshot was skipped on macOS 14.8.9 ("macOS can't read the script of ca") and judged "looks like 'en'" on 15.7.9: older macOS reads fewer languages than the 33 of macOS 27 (`research/limits-catalan-check-macos-2026-10-05.md`). README and docs now say so.
 - **Gradle-daemon lesson:** idle Gradle daemons from several projects held about 21 GB; four simulators then thrashed (the 0.1.1 gate took 55 minutes instead of about 25 until seven daemons were stopped). Run `./gradlew --stop` once per Gradle version before a device job (`docs/owner-note-0.1.1.md`).
 - **Docs refresh:** the audit `research/docs-audit-2026-10-05.md` (branch `claude/docs-audit`) was applied on `claude/docs-refresh`; `research/README.md` lists what was applied and what was not.
-- **Next:** `research/0.1.2-plan.md`. A refund or a disabled key: `docs/refund-runbook.md`.
+- **Next:** `research/0.1.2-plan.md`. Refunds ended with the paid period (see the banner at the top).
 
 ## 15. State after 0.1.2 (2026-10-05, evening)
 

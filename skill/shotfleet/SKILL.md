@@ -13,17 +13,16 @@ Needs an Apple silicon Mac, Maestro (tested with 2.0.10 and 2.11.0) and Java 17+
 Start with `shotfleet --version`. If it is missing, the installer from https://shotfleet.com/docs is
 `curl -fsSL https://shotfleet.com/install.sh | sh`: ask the user before running a remote script.
 
-Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.
+Update: run the install line again. It replaces the program. `shotfleet doctor` tells you when a newer version is out.
 
 ## Which path?
 
-1. **The user has screenshots (fastlane or any folder) and wants to know if they are right** -> [Check](#check). No simulators, no licence.
+1. **The user has screenshots (fastlane or any folder) and wants to know if they are right** -> [Check](#check). No simulators, no key.
 2. **The user wants to capture screenshots in many languages** -> [Capture](#capture): `doctor`, `init`, write the flow, `run` one language, then all.
 3. **The app is Flutter, React Native, .NET MAUI or Unity** -> same paths, plus `strings = "<glob>"` in the config or `--strings '<glob>'` on `check`, pointing at the translation files. Details in [references/config.md](references/config.md). Run `shotfleet init` in the project folder first: it recognises these projects, finds the build where the framework puts it, writes the `strings` line itself and prints the framework's own build command when there is no build yet (EAS `.tar.gz` builds are unpacked).
 4. **The user wants it in CI** -> use the `shotfleet-ci` skill, or [references/ci.md](references/ci.md).
 5. **There is a check report to explain** -> use the `shotfleet-review` skill.
 6. **A command printed an error or a hint** -> [references/troubleshooting.md](references/troubleshooting.md) (grep the message).
-7. **Licence, activation, free tier** -> [references/licence.md](references/licence.md).
 
 ## Check
 
@@ -35,7 +34,7 @@ shotfleet check <fastlane-dir> --app <MyApp.app | app.apk> --json --report <repo
 - `--app` is a simulator build (`Debug-iphonesimulator/*.app`, never an `.ipa` or archive) or a debug `.apk`. Without it only language detection runs and short screens can't be judged.
 - Translation files instead of a build: `--strings 'lib/l10n/*.arb'` (repeatable).
 - Put `--report` outside the fastlane folder (default is `./shotfleet-check` in the current directory). shotfleet never edits the checked folder.
-- `--content [shotfleet.toml]` (after the folder) also requires the `[expect.<screenshot>]` texts from the config to be on screen (`any`, `all`, `not`, per language); free, no licence, and `run` does it by itself. Missing texts are `problems`; texts OCR can't read are `notes` ("could not verify"). See [references/config.md](references/config.md).
+- `--content [shotfleet.toml]` (after the folder) also requires the `[expect.<screenshot>]` texts from the config to be on screen (`any`, `all`, `not`, per language); no key or account, and `run` does it by itself. Missing texts are `problems`; texts OCR can't read are `notes` ("could not verify"). See [references/config.md](references/config.md).
 - First text recognition after a restart can take 30 s to minutes and prints nothing. It is not a hang: wait.
 - Scripts macOS can't read (Greek, Hebrew, most Indic): `check` says which screens it only checked weakly; for full checks add `--ocr-command "tesseract {image} stdout -l {tesseract}"` (needs `brew install tesseract tesseract-lang`).
 
@@ -47,14 +46,14 @@ shotfleet doctor --fix                             # or let it download Maestro,
 shotfleet init <MyApp.app> <app-debug.apk> --dir <dir>   # either build or both; writes shotfleet.toml and flow.yaml
 shotfleet run <dir>/shotfleet.toml --locales en    # ONE language first: boots simulators, takes minutes
 shotfleet run <dir>/shotfleet.toml --json          # all languages
-shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that passed; needs a licence
+shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that passed
 ```
 
 1. The build must be a **Debug simulator build** for iOS (`xcodebuild -scheme <Scheme> -sdk iphonesimulator -configuration Debug build`) or an APK (`./gradlew assembleDebug`, API 33+ emulators).
 2. Edit `flow.yaml` (English Maestro steps, one `takeScreenshot:` per store image): see [references/flow-writing.md](references/flow-writing.md).
 3. `run` prints `warning <lang>: ... also means ...` for translation collisions and `selectors not found in the app's strings` for labels it could not translate. Fix those before the full run (anchor with `below:`/`above:`, or `[overrides.<lang>]`).
 4. `export` writes into the user's fastlane folder (it replaces same-size PNGs in the listing folders). Run it only when asked, after `check` is clean.
-5. Free tier: `run` captures 2 languages without a licence and `export` refuses. Never ask the user to paste the key into chat. `activate` comes after the first run, when the user wants every language ([references/licence.md](references/licence.md)).
+5. shotfleet is free and open source (MIT): every language and `export` work without a key or account.
 6. Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition.
 
 ## Exit codes (run, check, export, doctor)
@@ -89,7 +88,6 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 - Do not say screenshots are correct without running `check` and reading `problems`.
 - Do not upload to App Store Connect or Google Play; fastlane does that and the user decides.
 - Do not edit, move or delete files in the fastlane folder; only `export`, when asked, writes there.
-- Do not put the licence key in a repo, a config file, a command you echo, or chat. Never print `licence.json`.
 - Do not claim Flutter or React Native work beyond reading their translation files (run end to end only on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android, 2026-10-03; say "not yet run" for any other app or bare React Native).
 - Do not translate typed text: `inputText` is not rewritten, so demo data stays the same in every language.
 - Do not write one flow per language; write one English flow.
@@ -98,6 +96,6 @@ shotfleet export <dir>/out --fastlane <fastlane-dir>   # only languages that pas
 ## More
 
 [references/troubleshooting.md](references/troubleshooting.md), [references/flow-writing.md](references/flow-writing.md),
-[references/config.md](references/config.md), [references/ci.md](references/ci.md), [references/licence.md](references/licence.md).
+[references/config.md](references/config.md), [references/ci.md](references/ci.md).
 The tool also ships an MCP server (`shotfleet mcp`) with `check`, `run` and `doctor`; its `check` writes the report into `./shotfleet-check` in the server's working directory (never into the folder it
 checks) unless you pass its `report` argument. Its replies are a short summary with the path to `check.json`; pass `full: true` for the whole report. Over MCP, no command written in the config runs unless you pass `hooks: true`: `run` skips `[hooks]` and refuses a config with a `[capture]` build, `[ios] simctl` or `[android] shell`; `check` takes no `ocr_command` (that is the CLI's `--ocr-command`).

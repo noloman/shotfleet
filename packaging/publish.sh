@@ -3,7 +3,7 @@
 # exact files, record their hashes, then publish them. The full flow is in packaging/README.md.
 #
 #   packaging/publish.sh --make-manifest <version> <tarball> <pkg>      > manifest.txt   (record what was tested)
-#   SHOTFLEET_RELEASE_DIR=<durable dir> packaging/publish.sh [--dry-run] --manifest manifest.txt --artifacts <dir> [--checkout <url>] [--tree <dir>] [--staging]
+#   SHOTFLEET_RELEASE_DIR=<durable dir> packaging/publish.sh [--dry-run] --manifest manifest.txt --artifacts <dir> [--tree <dir>] [--staging]
 #
 # --staging targets the throwaway worker shotfleet-staging (site/wrangler.staging.toml: no routes, no bindings) instead of production, for
 # rehearsals. It needs PUBLISH_BASE=https://shotfleet-staging.<account>.workers.dev, passes --config/--name to every wrangler call, keeps its
@@ -21,7 +21,7 @@
 # /download/<file> and /download/VERSION stay "latest" (no-cache); /download/<version>/<file> never changes (immutable, site/public/_headers).
 #
 # Variables: SHOTFLEET_RELEASE_DIR (required, not under /tmp: gets state/ and archive/), PUBLISH_BASE (https://shotfleet.com),
-# WRANGLER ("npx --yes wrangler@latest"), PUBLISH_SMOKE (command run as: env -i $PUBLISH_SMOKE <base> [<checkout>]; default tools/golive/smoke.sh),
+# WRANGLER ("npx --yes wrangler@latest"), PUBLISH_SMOKE (command run as: env -i $PUBLISH_SMOKE <base>; default tools/golive/smoke.sh),
 # PUBLISH_ALLOW_BRANCH=1 (publish a tree whose HEAD is not origin/main), SHOTFLEET_ALLOW_TMP_DIR=1 (lets the release dir be under /tmp: tests only).
 set -eu
 PATH=$PATH:/usr/bin:/bin; export PATH
@@ -39,13 +39,12 @@ if [ "${1:-}" = --make-manifest ]; then
   exit 0
 fi
 
-DRY=0; MANIFEST=; ARTIFACTS=; CHECKOUT=; TREE=; STAGING=0
+DRY=0; MANIFEST=; ARTIFACTS=; TREE=; STAGING=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY=1 ;;
     --manifest) MANIFEST=${2:?--manifest needs a file}; shift ;;
     --artifacts) ARTIFACTS=${2:?--artifacts needs a folder}; shift ;;
-    --checkout) CHECKOUT=${2:?--checkout needs a URL}; shift ;;
     --tree) TREE=${2:?--tree needs a folder}; shift ;;
     --staging) STAGING=1 ;;
     -h|--help) usage; exit 0 ;;
@@ -226,7 +225,7 @@ if [ "$DRY" = 1 ]; then
   done
   echo "  would: write the rollback id $OLDID to $STATE/rollback-$VERSION-$STAMP.txt"
   echo "  would: wrangler deploy$( [ "$STAGING" = 1 ] && echo " (STAGING: --config $STAGING_CONFIG --name $STAGING_NAME)" ) in $TREE/site"
-  echo "  would: verify $BASE: /download/VERSION = $VERSION, tarball, .sha256 and pkg hashes, every /download/<version>/ file above, install.sh 200, env -i $SMOKE $BASE ${CHECKOUT}, a live install into a temp HOME"
+  echo "  would: verify $BASE: /download/VERSION = $VERSION, tarball, .sha256 and pkg hashes, every /download/<version>/ file above, install.sh 200, env -i $SMOKE $BASE, a live install into a temp HOME"
   echo "  would, on any failure: wrangler rollback $OLDID -y in $TREE/site"
   echo "== dry run clean: every check passed; nothing was deployed =="
   exit 0
@@ -305,7 +304,7 @@ log "versioned downloads verified: $(printf '%s' "$PLAN" | awk '{ print $1 }' | 
 cc=$(curl -sI --max-time 20 "$BASE/download/$VERSION/shotfleet-macos-arm64.tar.gz" | tr -d '\r' | grep -i '^cache-control:' || true)
 case "$cc" in *immutable*) log "versioned $cc" ;; *) warn "/download/$VERSION/ is not served as immutable (${cc:-no Cache-Control}): check site/public/_headers" ;; esac
 # shellcheck disable=SC2086  # $SMOKE is a command with arguments
-env -i $SMOKE_ENV $SMOKE "$BASE" ${CHECKOUT:+"$CHECKOUT"} > "$T/smoke.out" 2>&1 || { tail -5 "$T/smoke.out"; bad "smoke test failed"; }
+env -i $SMOKE_ENV $SMOKE "$BASE" > "$T/smoke.out" 2>&1 || { tail -5 "$T/smoke.out"; bad "smoke test failed"; }
 log "smoke passed: $(tail -1 "$T/smoke.out")"
 if [ "$(uname -s)-$(uname -m)" = Darwin-arm64 ]; then
   mkdir -p "$T/home"; curl -s --max-time 30 "$BASE/install.sh" | sed 's|^for DIR in .*; do|for DIR in "$HOME/.local/bin"; do|' > "$T/home/install.sh"

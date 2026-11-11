@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Licence and refunds · shotfleet</title>
-<meta name="description" content="What you get with a shotfleet licence, and how updates and refunds work.">
+<title>License · shotfleet</title>
+<meta name="description" content="shotfleet is free and open source under the MIT license.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0a121c" media="(prefers-color-scheme: dark)">
-<meta property="og:title" content="Licence and refunds · shotfleet">
-<meta property="og:description" content="What you get with a shotfleet licence, and how updates and refunds work.">
+<meta property="og:title" content="License · shotfleet">
+<meta property="og:description" content="shotfleet is free and open source under the MIT license.">
 <meta property="og:image" content="https://shotfleet.com/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -31,38 +31,31 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#price">Pricing</a><a href="/whats-new">What’s new</a></span>
+    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#free">Free</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 <main class="wrap" id="main">
  <div class="page">
-  <p class="label">Licence</p>
-  <h1>What you get when you buy shotfleet.</h1>
+  <p class="label">License</p>
+  <h1>shotfleet is free and open source.</h1>
   <p class="lede">Plain terms, no surprises. If anything here isn't clear, email me.</p>
 
-  <h2>The licence</h2>
+  <h2>The license</h2>
   <ul>
-    <li>One licence is for one developer. Use it on up to 3 of your Macs; there are spare activations for reinstalls, and if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> for a reset. Your CI uses none. The spare activations work from 0.1.6; 0.1.5 and older stop at 3.</li>
-    <li>Unlimited apps and projects, including client and commercial work.</li>
-    <li><code>shotfleet check</code> is free for everyone, and <code>run</code> is free for up to 2 languages. The licence unlocks every language and <code>export</code>. <code>doctor</code> and <code>init</code> are free too, and the 2 free languages work on both platforms and every device size.</li>
+    <li>shotfleet is released under the <a href="https://github.com/noloman/shotfleet/blob/main/LICENSE">MIT license</a>. You can use it, copy it, change it and share it, including for client and commercial work. Keep the license notice when you redistribute it.</li>
+    <li>Every command and every language is free: <code>doctor</code>, <code>init</code>, <code>run</code>, <code>check</code> and <code>export</code>. There is no key, no account and no license server.</li>
+    <li>Unlimited apps, projects and Macs. CI works like on a Mac.</li>
     <li>shotfleet needs a Mac with Apple silicon for now. There's no Intel build yet.</li>
-    <li>Don't share your key or publish it. A key can be activated 5 times: 3 Macs and 2 spare for reinstalls. Activating again on a Mac that still has the key saved counts nothing. After <code>shotfleet deactivate</code>, a new macOS install or a new user account, the same Mac counts again. <code>shotfleet deactivate</code> removes the key from a Mac, but Gumroad can't give the activation back from there: if you run out, email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> and I'll reset the count.</li>
-    <li>Open-source maintainers and students can email me for a free licence: a 100%-off code for the same licence.</li>
   </ul>
 
-  <h2>Updates</h2>
-  <p>A year of updates is included: your licence covers every shotfleet version released within a year of your purchase. A version released after that runs as the free tier with your key and tells you so; to get it, you'd need a renewal. The renewal isn't on sale yet, so for now email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
-  <p>The versions you already have keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run: it asks Gumroad about once a week, and works offline for up to 30 days (a CI key, <code>SHOTFLEET_KEY</code>, is checked online on every run, and works offline only on a machine where it passed a check in the last 30 days). Every version stays downloadable at <code>shotfleet.com/download/&lt;version&gt;/shotfleet-macos-arm64.tar.gz</code>.</p>
+  <h2>Sponsoring</h2>
+  <p>shotfleet is built and maintained by one person. If it saves you time, you can sponsor it on <a href="https://github.com/sponsors/noloman">GitHub Sponsors</a>. Sponsoring is optional, it unlocks nothing, and it doesn't change what you can do with shotfleet.</p>
 
-  <h2>Refunds</h2>
-  <p>You can ask for a refund within 14 days of buying and you'll get it, no questions asked, and you don't have to say why. Email <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a> with your order email.</p>
-  <p>A refund ends the licence. The key stops unlocking every language and <code>export</code> the next time shotfleet checks it with Gumroad, which happens about once a week (up to 30 days later if the Mac is offline); a CI key is checked on every run, so it stops as soon as a run reaches Gumroad. <code>check</code> and the 2 free languages keep working, and nothing you already made is deleted.</p>
-
-  <h2>Payment</h2>
-  <p>You buy through Gumroad, which sells shotfleet to you as the merchant of record. Gumroad handles the payment, collects and pays sales tax or VAT, and sends your receipt and licence key. Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies, so a buyer in the EU pays the price plus VAT; a business with a VAT ID can enter it at checkout. I never see your card details. Refunds go through Gumroad too: the money, including any VAT, goes back to the way you paid, and a card refund usually takes 5 to 10 business days to show up. Gumroad may also refund a purchase on its own in the first 90 days, and buyers in Brazil have a 7-day right of withdrawal. Gumroad makes an invoice from your receipt if you need one. I don't take purchase orders.</p>
+  <h2>Earlier versions</h2>
+  <p>Versions up to 0.1.10 were sold with a license key that unlocked every language and <code>export</code>. If you bought one, thank you. From the first free release on, shotfleet no longer checks a key, so nothing is left to renew or activate. Every version stays downloadable at <code>shotfleet.com/download/&lt;version&gt;/shotfleet-macos-arm64.tar.gz</code>. Questions about an old purchase: <a href="mailto:hello@shotfleet.com">hello@shotfleet.com</a>.</p>
 
   <h2>No warranty</h2>
-  <p>shotfleet is provided as it is. I fix bugs as fast as I can, but I can't promise it will work with every app, every Xcode or every emulator. If something goes wrong, my liability is limited to what you paid.</p>
+  <p>shotfleet is provided as it is. I fix bugs as fast as I can, but I can't promise it will work with every app, every Xcode or every emulator. If something goes wrong, my liability is limited as the MIT license says.</p>
 
   <p class="small">Manuel Lorenzo Parejo · <a href="/privacy">Privacy</a></p>
  </div>
@@ -70,7 +63,7 @@
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">License</a> · <a href="/privacy">Privacy</a> · <a href="/privacy#analytics" id="analytics-settings">Analytics settings</a></span>
   </div>
 </footer>
 <script src="/ga.js" defer></script>

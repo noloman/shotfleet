@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **shotfleet is free and open source (MIT):** every command and every language works with no key, no account and no license server. The license check, `shotfleet activate` and `shotfleet deactivate`, the 2-language free tier, `SHOTFLEET_KEY` and the Gumroad calls are gone, so shotfleet never contacts a license server any more. A leftover `licence.json` or `ci-checked.json` in `~/Library/Application Support/shotfleet/` is no longer read and can be deleted. The README, the site and the skills now say it is free, link GitHub Sponsors (`.github/FUNDING.yml`) and add a LICENSE and CONTRIBUTING.md. Versions up to 0.1.10 keep working with their keys.
+- **`check`: a screenshot a language skipped on purpose is not missing (#107).**
+
 ## 0.1.10 (2026-10-30)
 - **System UI recipes (#85):** docs/screenshot-mode.md shows how to screenshot the notification shade and a notification card on Android (a controlled notification posted from `[android] shell`, the shade opened by a swipe in the flow) and says what stays out of scope (microphone screens). Not run on a device.
 - **Jetpack Compose and foldables (#97, #99):** `init` and `run` say when the APK is a Jetpack Compose app and none of its screens exposed a resource id, with the fix (`testTagsAsResourceId`), so a flow that taps by id isn't a mystery. New devices `fold`, `fold-book` and `fold-tabletop` run on one foldable emulator (`avd_fold` names it) in the unfolded, book and tabletop postures, one language at a time; the inner display is captured through the emulator console (a local server called from the flow after each `takeScreenshot`), because `adb screencap` is black there. Fakes only, not run on a device.

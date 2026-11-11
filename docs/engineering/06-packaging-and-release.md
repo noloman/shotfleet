@@ -1,5 +1,7 @@
 # 6. Packaging and release engineering
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 This chapter explains how shotfleet turns a commit into the signed, notarized files that buyers download, how those files are tested before anyone
 sees them, how they are published to shotfleet.com, and how to undo a bad release. It is written for an engineer who has never seen the project: it
 names every script, every flag that matters, the files that carry the version, the evidence files that say what happened in past releases, and the

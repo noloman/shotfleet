@@ -81,7 +81,7 @@ class Layout(unittest.TestCase):
         self.assertLess(len((ROOT / "skill/shotfleet/SKILL.md").read_text().splitlines()), 200)
 
     def test_references_exist_and_every_link_resolves(self):
-        refs = ["troubleshooting.md", "flow-writing.md", "config.md", "ci.md", "licence.md"]
+        refs = ["troubleshooting.md", "flow-writing.md", "config.md", "ci.md"]
         self.assertEqual(sorted(p.name for p in (ROOT / "skill/shotfleet/references").glob("*.md")), sorted(refs))
         main = (ROOT / "skill/shotfleet/SKILL.md").read_text()
         for r in refs: self.assertIn(f"references/{r}", main, f"SKILL.md never points at {r}")
@@ -187,7 +187,7 @@ class Commands(unittest.TestCase):
 
     def test_the_agents_snippet_names_the_six_commands(self):
         snippet = (ROOT / "docs/AGENTS-snippet.md").read_text()
-        for c in ("doctor", "init", "run", "check", "export", "activate"):
+        for c in ("doctor", "init", "run", "check", "export"):
             self.assertIn(f"`shotfleet {c}", snippet)
 
 
@@ -241,9 +241,7 @@ class AgainstTheProgram(unittest.TestCase):
                 with self.subTest(doc=doc.name, var=var):
                     self.assertIn(var, SOURCE)
 
-    def test_exit_codes_and_the_free_tier_match_the_program(self):
-        self.assertEqual(sf.FREE_LANGUAGES, 2)
-        self.assertIn("2 languages", (ROOT / "skill/shotfleet/references/licence.md").read_text())
+    def test_exit_codes_match_the_program(self):
         for p in ("skill/shotfleet/SKILL.md", "skill/shotfleet-ci/SKILL.md", "docs/AGENTS-snippet.md"):
             text = (ROOT / p).read_text()
             for code in ("130", "2", "1", "0"): self.assertRegex(text, rf"\b{code}\b", p)
@@ -264,13 +262,11 @@ class AgainstTheProgram(unittest.TestCase):
 
 
 class LlmsTxt(unittest.TestCase):
-    def test_only_prices_that_match_the_site(self):
-        prices = set(re.findall(r"\$(\d+)", LLMS))
-        self.assertEqual(prices, set(re.findall(r"\$(\d+)", INDEX)))
-        self.assertEqual(prices, {"29", "49"})
-        self.assertIn("first 100 buyers", LLMS)
-        self.assertIn(f"up to {sf.FREE_LANGUAGES} languages", LLMS)
-        self.assertIn("14-day refund", LLMS)
+    def test_it_says_shotfleet_is_free_and_open_source_and_has_no_price(self):
+        self.assertNotRegex(LLMS, r"\$\d")
+        self.assertIn("free and open source under the MIT license", LLMS)
+        self.assertIn("https://github.com/sponsors/noloman", LLMS)
+        self.assertNotIn("refund", LLMS)
 
     def test_links_are_the_site_pages_and_they_exist(self):
         links = re.findall(r"\]\((https?://[^)]+)\)", LLMS)

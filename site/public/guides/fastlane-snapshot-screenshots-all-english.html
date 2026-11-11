@@ -72,7 +72,7 @@
 <header class="top">
   <nav class="pill" aria-label="Main">
     <a class="brand" href="/"><svg viewBox="46 46 420 420" aria-hidden="true"><defs><mask id="sf-check"><rect x="40" y="40" width="432" height="432" fill="#fff"/><path d="M208 248l40 40 68-74" fill="none" stroke="#000" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(-16 256 456)" opacity="0.45"/><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor" transform="rotate(16 256 456)" opacity="0.45"/><g mask="url(#sf-check)"><rect x="160" y="86" width="192" height="312" rx="38" fill="currentColor"/></g></svg>shotfleet</a>
-    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#price">Pricing</a><a href="/whats-new">What’s new</a></span>
+    <span class="links"><a href="/#run">How it works</a><a href="/examples">Examples</a><a href="/docs">Docs</a><a href="/#free">Free</a><a href="/whats-new">What’s new</a></span>
   </nav>
 </header>
 <main class="wrap" id="main">
@@ -95,7 +95,7 @@
 <h2>Then: look at every image</h2>
 <p>With 18 languages and 4 screens that is 72 images. Opening them by hand works until the day you skip one. A faster way is to compare each screenshot with the text your app really contains.</p>
 <h2>Then: check the folder you already have</h2>
-<p>shotfleet's <code>check</code> command does that, and it is free: no licence, no account. It does not capture anything and does not touch your fastlane folders. It runs on a Mac and reads each image with the text recognition built into macOS. Give it a simulator build of your app, so it knows your real strings:</p>
+<p>shotfleet's <code>check</code> command does that, and it is free: no key, no account. It does not capture anything and does not touch your fastlane folders. It runs on a Mac and reads each image with the text recognition built into macOS. Give it a simulator build of your app, so it knows your real strings:</p>
 <pre><code class="language-bash">xcodebuild -scheme MyApp -sdk iphonesimulator -configuration Debug \
   -derivedDataPath build build
 
@@ -112,14 +112,14 @@ shotfleet check fastlane/ \
 <h2>When not to use shotfleet</h2>
 <p>If your screenshots are already right in every language, you do not need it. If you have only two or three languages, looking at the images yourself is fine. If you already have a maintained UI-test suite and snapshot works for you, keep snapshot; it is free and <code>check</code> can sit next to it. If you would rather capture with Maestro, <a href="https://shotfleet.com/guides/maestro-one-flow-every-language">one Maestro flow in every language</a> shows how, without shotfleet. The tool only runs on an Apple silicon Mac (the installer refuses Intel), and capturing with <code>shotfleet run</code> is a separate step with its own requirements (Xcode, the Android SDK for Android, Maestro 2.x, Java 17+, and a Maestro flow you write). It does not make frames or captions and does not upload to the stores. I also have no data yet on how often modern fastlane versions hit the problem in this article; the issue threads are old.</p>
 <h2>Where to go from here</h2>
-<p>If <code>check</code> finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. <code>run</code> needs Maestro, Java and a flow; on iOS, your own XCUITest or <code>SnapshotHelper</code> tests work instead (new in 0.1.6). <code>run</code> is free for up to 2 languages. A licence unlocks every language and <code>export</code>: $29 for the first 100 buyers, then $49 once, with a year of updates and a 14-day refund. Details at <a href="https://shotfleet.com/#price">shotfleet.com/#price</a>.</p>
+<p>If <code>check</code> finds wrong-language images and you would rather not maintain per-language UI tests at all, shotfleet also captures: one English Maestro flow, every language your app ships, on iOS and Android. <code>run</code> needs Maestro, Java and a flow; on iOS, your own XCUITest or <code>SnapshotHelper</code> tests work instead (new in 0.1.6). shotfleet is free and open source (MIT): every language, no key. Details at <a href="https://shotfleet.com/#free">shotfleet.com/#free</a>.</p>
 <p>The free part is the <code>check</code> command above. Install it, point it at your <code>fastlane/</code> folder and read the grid.</p>
  </div>
 </main>
 <footer>
   <div class="wrap">
     <span>shotfleet · by <a href="https://manulorenzo.me">Manuel Lorenzo Parejo</a></span>
-    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">Licence and refunds</a> · <a href="/privacy">Privacy</a></span>
+    <span><a href="/">Home</a> · <a href="/docs">Docs</a> · <a href="/whats-new">What’s new</a> · <a href="/guides">Guides</a> · <a href="/alternatives">Alternatives</a> · <a href="/terms">License</a> · <a href="/privacy">Privacy</a></span>
   </div>
 </footer>
 </body>

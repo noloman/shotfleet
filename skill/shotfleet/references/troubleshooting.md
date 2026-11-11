@@ -93,20 +93,12 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 | `the app this run used is gone` | a shotfleet output folder whose `.app` or `.apk` moved | pass `--app` |
 | `--ocr-command failed on` | the custom OCR command failed; if it says language data: `brew install tesseract-lang` | fix the command |
 
-## Export and licence errors
+## Export errors
 
 | Fragment | Cause | Fix |
 |---|---|---|
 | `no shotfleet run in` | `export` pointed at a folder without `run.json` | pass the `run` output folder (`out`, `out-ios`, `out-android`) |
 | `hasn't been checked` | no `check.json` in it | `shotfleet check <out>` |
-| `need a licence` | `export`, or `run` past 2 languages, without a licence | the user runs `shotfleet activate <key>`; see licence.md |
-| `that key didn't activate` | wrong, disabled (`the key was disabled`), refunded or charged-back key | the user checks the key in the Gumroad receipt email |
-| `activations. Email hello@shotfleet.com` | the key has used all 5 activations (3 Macs plus 2 spare for reinstalls); `deactivate` does not give one back | the user emails hello@shotfleet.com to have the count reset |
-| `SHOTFLEET_KEY couldn't be checked` | Gumroad unreachable and the key never passed a check on this machine in the last 30 days | run again once the network reaches Gumroad |
-| `your licence covers every shotfleet version released until` | this version came out more than a year after the purchase | keep using a version from within the year, or email hello@shotfleet.com about a renewal |
-| `SHOTFLEET_KEY isn't a valid licence` | bad key in CI | fix the secret |
-| `this licence is no longer valid` | refunded, charged back or disabled (the reason is in the parentheses) | the user contacts support |
-| `couldn't reach the licence server for 30 days` | offline too long | connect once |
 
 ## Warnings and notes (not errors)
 
@@ -122,7 +114,6 @@ message the program prints. Run `shotfleet doctor` first for anything about tool
 | `blank: nothing is drawn on it yet` | the same, found by `check` on a folder | the same wait |
 | a login flow works in English but the password field stays empty in Arabic (iOS) | iOS drops Latin letters typed into a secure field while the app runs in Arabic; digits are typed | use a numeric demo password (`123456`) |
 | Maestro: `Element not found: Text matching regex` on a Flutter row | Flutter joins a row's title and detail into one label (`Title\nDetail`) | tap it as `"Title.*"` |
-| `free tier: capturing` | no licence: 2 languages captured | see licence.md |
 | `memory pressure is elevated` | shotfleet halved the simulators | close apps |
 | `this Mac was short of memory` | printed only when a failed flow's error is `Unknown error` or `Unable to clear state` on a loaded Mac: usually a slow simulator, not the app | close other simulators, `shotfleet run --locales <failed codes>` |
 | `failed step:` | under a `FAIL <lang>` line: the step Maestro stopped on, with its selector, as Maestro's log names it | compare the selector with what `on screen:` shows |

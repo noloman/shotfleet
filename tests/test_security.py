@@ -21,7 +21,6 @@ class McpRunRunsNoConfigCommandUnlessAsked(unittest.TestCase):
     def setUp(self):
         self.d = Path(tempfile.mkdtemp()).resolve()
         self.marker = self.d / "MARKER"
-        p = mock.patch.object(sf, "apply_free_tier"); p.start(); self.addCleanup(p.stop)
 
     def config(self, text):
         cfg = self.d / "shotfleet.toml"; cfg.write_text(text); return str(cfg)

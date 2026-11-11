@@ -1,12 +1,12 @@
 ---
 name: shotfleet-ci
-description: Add shotfleet check to CI so a pull request fails when localized App Store or Google Play screenshots are in the wrong language, copied, missing or out of store spec. Use when the user wants to run shotfleet in GitHub Actions or another CI, gate a pull request on screenshots, parse shotfleet --json output, or use SHOTFLEET_KEY. Uses only what the shotfleet docs say.
+description: Add shotfleet check to CI so a pull request fails when localized App Store or Google Play screenshots are in the wrong language, copied, missing or out of store spec. Use when the user wants to run shotfleet in GitHub Actions or another CI, gate a pull request on screenshots, or parse shotfleet --json output. Uses only what the shotfleet docs say.
 ---
 
 # shotfleet in CI
 
-`shotfleet check` needs only a Mac runner (macOS text recognition) and no simulators. It is free and needs no
-licence. It takes `--json`: stdout is only JSON, progress goes to stderr.
+`shotfleet check` needs only a Mac runner (macOS text recognition) and no simulators. It needs no key or
+account. It takes `--json`: stdout is only JSON, progress goes to stderr.
 
 ## Exit codes
 
@@ -46,9 +46,7 @@ jobs:
 
 ## `run` and `export` in CI
 
-Need the licence: set `SHOTFLEET_KEY` from the CI secret store (GitHub: `env: SHOTFLEET_KEY: ${{ secrets.SHOTFLEET_KEY }}`).
-It is checked online each run and uses no activation. With the licence server unreachable, the run still counts as licensed only on a machine where that key passed a check in the last 30 days; on a fresh machine it is refused until Gumroad answers. An activated Mac also stops after 30 days offline.
-With an invalid key `export` refuses and `run` captures only 2 languages. The docs give no CI recipe for `run`
+There is no key or license server: `run` and `export` work in CI like on a Mac. The docs give no CI recipe for `run`
 (it needs simulators and Maestro on the runner); do not invent one.
 
 ## Reading `check.json`
@@ -58,7 +56,6 @@ the job summary; a count of issues is the number of root causes, not lines (see 
 
 ## Do not
 
-- Do not put the licence key in the workflow, the repo, a log or an artifact.
 - Do not let CI upload to the stores or edit the fastlane folder; `check` never touches it.
 - Do not use an Intel runner; the installer refuses Intel Macs.
 - Do not claim more than the docs do: details in the `shotfleet` skill, `references/ci.md`.

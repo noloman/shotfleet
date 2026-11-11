@@ -176,8 +176,7 @@ class CheckOnlyImage(unittest.TestCase):
     """The Docker image (SHOTFLEET_IMAGE=check) has no simulators, emulators or Maestro: `run` and `export` stop with one line."""
     def test_run_and_export_refuse_in_one_line_and_check_still_runs(self):
         for argv in (["run"], ["export", "out", "--fastlane", "fastlane"]):
-            with self.subTest(argv=argv), mock.patch.dict(sf.os.environ, {"SHOTFLEET_IMAGE": "check"}), \
-                 mock.patch.object(sf, "require_licence", side_effect=AssertionError("licence checked first")):
+            with self.subTest(argv=argv), mock.patch.dict(sf.os.environ, {"SHOTFLEET_IMAGE": "check"}):
                 err = io.StringIO()
                 with contextlib.redirect_stderr(err): code = sf.main(argv)
                 self.assertEqual(code, 2)

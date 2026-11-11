@@ -43,7 +43,7 @@ const GA_ID = "G-6NY43DB3F4";
   // The same moments analytics.js counts first-party, plus signup (forms.js dispatches shotfleet:signup on success).
   function funnel() {
     if ("IntersectionObserver" in window) {
-      [["price", "pricing_view"], ["run", "runs_view"]].forEach(function (p) {
+      [["free", "pricing_view"], ["run", "runs_view"]].forEach(function (p) {
         var el = document.getElementById(p[0]);
         if (!el) return;
         var io = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { event(p[1]); io.disconnect(); } }, { threshold: 0.25 });

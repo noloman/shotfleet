@@ -71,4 +71,4 @@ Not judged: <scripts macOS can't read / no --app>
 
 - Do not call screenshots fine because only `notes` remain without saying so.
 - Do not recapture a language to fix an app-side problem; the same wrong screenshot comes back.
-- Do not touch the user's fastlane folder, upload anything, or expose the licence key.
+- Do not touch the user's fastlane folder, or upload anything.

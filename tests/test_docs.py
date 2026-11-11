@@ -113,7 +113,7 @@ class DocsPage(unittest.TestCase):
                 try: ns = parse(argv)
                 except SystemExit as e: self.fail(f"argparse refused: {cmd!r} (exit {e.code})")
                 self.assertEqual(ns.cmd, argv[0])
-        for needed in ("init", "run", "check", "export", "skill", "activate", "doctor"):
+        for needed in ("init", "run", "check", "export", "skill", "doctor"):
             self.assertTrue(any(c.split()[1] == needed for c in cmds), f"no `shotfleet {needed}` example")
 
     def test_every_config_key_listed_exists_and_every_toml_example_is_accepted(self):
@@ -143,7 +143,7 @@ class DocsPage(unittest.TestCase):
 
     def test_hooks_variables_and_events_match_the_code(self):
         for event in sf.HOOK_EVENTS: self.assertIn(event, DOCS)
-        for name in ("SHOTFLEET_EVENT", "SHOTFLEET_PLATFORM", "SHOTFLEET_PROBLEMS", "SHOTFLEET_FASTLANE", "SHOTFLEET_KEY", "SHOTFLEET_OCR"):
+        for name in ("SHOTFLEET_EVENT", "SHOTFLEET_PLATFORM", "SHOTFLEET_PROBLEMS", "SHOTFLEET_FASTLANE", "SHOTFLEET_OCR"):
             self.assertIn(name, DOCS)
             self.assertIn(name.removeprefix("SHOTFLEET_"), (ROOT / "shotfleet.py").read_text().upper())
         for code in ("0", "1", "2", "130"): self.assertRegex(DOCS, rf"<code>{code}</code> ")

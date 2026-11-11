@@ -115,15 +115,15 @@ How it works, and what your tests need:
 - `XCTAttachment`: give each screenshot a name (`a.name = "01Home"`) and `a.lifetime = .keepAlways`. Without `.keepAlways` Xcode throws the screenshots away when the test passes. The name becomes the file name, `out/raw/de/01Home.png`.
 - fastlane `SnapshotHelper`: it writes into `~/Library/Caches/tools.fastlane/screenshots`, one folder for all simulators, and only if that folder exists. shotfleet creates it if it's missing, takes each simulator's files by the simulator's name, and moves fastlane's `language.txt`, `locale.txt` and `snapshot-launch_arguments.txt` out of the way during the run (they would force one language on every simulator). It puts them back afterwards, also when the run fails. Keep calling `setupSnapshot(app)` before `app.launch()`.
 - A passing test proves nothing on its own. If a language saved no screenshots, or is missing a screen another language has, that language fails, with a hint about what to fix.
-- `check` and `export` work on the output like on any other run. It's paid like any `run`: 2 languages without a licence, and `check` stays free.
+- `check` and `export` work on the output like on any other run.
 
 iOS only for now: on Android, `run` still needs a Maestro flow. I tried this by hand first, on my fixture app (2 simulators at once, German and Japanese) and on a real app's `SnapshotHelper` test, where `check` found a real bug. The device test for the finished feature (`tools/fixture-byoc-e2e.sh`) passed on 2026-10-07, on iOS 26.4 simulators: your tests with `XCTAttachment` and with `SnapshotHelper`, German and Japanese on two simulators at once, and the missing-`.keepAlways` case, which is reported as a failed language.
 
-## Free and paid
+## Free and open source
 
-`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`: $29 for the first 100 buyers, then $49 once per developer, before VAT or sales tax where it applies, with a year of updates and a 14-day refund. Checkout is on Gumroad (see the site's licence page).
+shotfleet is free and open source under the [MIT license](LICENSE): every command, every language, no key, no account. If it saves you time, you can support its development through [GitHub Sponsors](https://github.com/sponsors/noloman).
 
-`shotfleet activate <key>` stores your key on this Mac. Use it on up to 3 of your Macs; there are spare activations for reinstalls (the key has 5), and if you run out, email hello@shotfleet.com for a reset. The spare activations work from 0.1.6; 0.1.5 and older stop at 3. Activating again on a Mac that still has the key saved counts nothing; after `shotfleet deactivate`, a new macOS install or a new user account, the same Mac counts again. `shotfleet deactivate` removes it from this Mac but does not give the activation back. Your key covers every version released within a year of your purchase; a later version runs as the free tier and says which versions your key covers, and the ones you have keep working. Without a valid licence, `run` captures only 2 languages (the first two of your app's languages unless you pick them with `--locales de,ja`) and says so on a line that starts with "free tier:"; the exit code is 0 if those two pass. If `SHOTFLEET_KEY` is set but refused, `run` stops with exit 2 instead (the key is a CI gate). A `SHOTFLEET_KEY` in CI keeps working while the licence server is down only on a machine where it passed a check in the last 30 days (see "In CI" below). `check`, `doctor` and `init` are always free, and the 2 free languages work on both platforms and every device size.
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports and ideas go in [GitHub issues](https://github.com/noloman/shotfleet/issues).
 
 ## Quickstart (build the app once for the simulator first)
 
@@ -135,11 +135,11 @@ shotfleet init                                     # in your project folder: use
 shotfleet init path/to/MyApp.app path/to/app-debug.apk   # or name a simulator build (Debug-iphonesimulator) and/or an APK yourself
 ```
 
-Notes: Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition. After `init`, try `shotfleet run --locales en`, and run `shotfleet activate <your key>` when you want every language (steps below).
+Notes: Xcode must be the selected one (`xcode-select -p` shows which); the Android block of `doctor` can be ignored by iOS-only apps; the first `doctor` can take a minute while macOS prepares text recognition. After `init`, try `shotfleet run --locales en` (steps below).
 
 Without the installer (you would rather not pipe a script to a shell): the program is one Python file. Clone this repository and run `python3 shotfleet.py doctor --fix` from it (Python 3.11 or newer, see Limits); it is the same program, and it worked on Python 3.15 in one Android run. The installer's build brings its own Python and macOS text-recognition helper; from source the helper is compiled on first use.
 
-Update: run the install line again. It replaces the program and keeps your licence (the key is stored outside the program folder). `shotfleet doctor` tells you when a newer version is out. A year of updates is included: every version released within a year of your purchase.
+Update: run the install line again. It replaces the program. `shotfleet doctor` tells you when a newer version is out.
 
 `shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first: Maestro 2.11.0 (a version the real runs passed on, checked against a pinned SHA-256), a Java 21 runtime (checksum from Adoptium) and Google's Android command-line tools with the SDK pieces `doctor` lists (it accepts the Android SDK licences, which the plan says). It asks once, `--yes` skips the question for CI, it stops at the first step that fails, and it never uses `sudo`, edits your shell files or touches Xcode. Maestro and Java go into `~/.shotfleet` (`SHOTFLEET_HOME` changes that); Android tools go where `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) points, else into the SDK shotfleet found or Android Studio's default folder. Behind a proxy that re-signs HTTPS, point `SSL_CERT_FILE` at its CA bundle. Tried on a Linux machine with none of these installed: `doctor` then reported Maestro 2.0.10 and the Android toolchain as ok, and the Java download was run separately against Adoptium's real API (Java 21.0.12 ran). Run on a Mac (Apple silicon, macOS 27, 2026-10-03) in a throwaway home folder, with Maestro 2.0.10 as the pin of that day; not yet run with the 2.11.0 download, and not on a separate clean user account.
 
@@ -151,7 +151,7 @@ Prefer Homebrew? `brew install noloman/tap/shotfleet` installs the same signed, 
 
 1. Edit the generated `flow.yaml`: [Maestro](https://maestro.mobile.dev) steps in English. Navigate by the text users see and add a `takeScreenshot:` for each store image. No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android.
 2. Try one language: `shotfleet run --locales en`.
-3. When you want every language: `shotfleet activate <your key>` (from your Gumroad receipt email; `check` and 2 languages in `run` work without one).
+3. Run it on every language your app ships: `shotfleet run shotfleet.toml`.
 4. Run them all: `shotfleet run` (finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one).
 5. Review `out/index.html` (`out-ios/` and `out-android/` if the config has both platforms). It's a grid with a row per language and a column per screen, and problems are outlined in red and marked "problem" in words. Every screenshot has alt text (language, screen, verdict) for screen readers.
 6. Export to fastlane: `shotfleet export out --fastlane fastlane/` (`out-ios` or `out-android` if the config has both). That writes `deliver`'s `screenshots/<locale>/` or `supply`'s `metadata/android/<locale>/images/phoneScreenshots/`. Languages that failed a check are skipped, so a bad screenshot never reaches a listing.
@@ -179,7 +179,7 @@ Prefer the [asc CLI](https://github.com/rorkai/App-Store-Connect-CLI)? Its READM
 
 `run`, `check` and `export` take `--json`: the result goes to stdout as JSON (`exit`, `screenshots`, `problems`, `notes` and `unverified` for `run` and `check`, merged over every device or platform checked, plus `reports` (one `{report, problems}` each) when there are several; `exit`, `exported`, `skipped` for `export`) and progress goes to stderr. Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted.
 
-Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. `check` is free and needs no licence. (The recipe as written (the build step, then check with --app) has not been run on GitHub yet. The installer, shotfleet --version, doctor and check on sample screenshots did run on GitHub's macos-14 and macos-15 runners (2026-10-05).)
+Checking needs only a Mac (it uses macOS text recognition), with no simulators, so it fits a pull-request job on GitHub's macOS runners. `check` needs no key or account. (The recipe as written (the build step, then check with --app) has not been run on GitHub yet. The installer, shotfleet --version, doctor and check on sample screenshots did run on GitHub's macos-14 and macos-15 runners (2026-10-05).)
 
 ```yaml
 # .github/workflows/screenshots.yml
@@ -201,14 +201,14 @@ jobs:
             shotfleet-check/
 ```
 
-To use `run` or `export` in CI, set `SHOTFLEET_KEY` to your licence key (keep it in a secret). It's checked online on each run and uses none of your activations. If the licence server can't be reached, the run still counts as licensed on a machine where that key passed a check in the last 30 days (shotfleet notes a hash of the key and the date there, never the key itself). On a fresh machine that has never reached Gumroad with the key, it can't be checked, so it is refused until Gumroad answers. A Mac where you ran `shotfleet activate` re-checks about weekly and stops after 30 days offline. If the key is refused or can't be checked, `export` and `run` both stop with exit 2 and say why, so a CI job never goes green on 2 languages by accident (unset `SHOTFLEET_KEY` to get the free tier). On hosted CI runners, which start fresh every time, cache `~/Library/Application Support/shotfleet/ci-checked.json` between jobs to keep that 30-day grace during a Gumroad outage; it holds a hash and a date, no secret.
+In CI, `run` and `export` work like on a Mac: there is no key or license server to reach.
 
-With `--json`, progress goes to stderr, including the "free tier:" line (only when no `SHOTFLEET_KEY` is set; with one, a refused key stops `run`).
+With `--json`, progress goes to stderr.
 
 <!-- DOCKER-PENDING (not published yet: packaging/README.md step 9)
 ## Linux and CI
 
-`check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check`. It's free, needs no licence, and is built for amd64 and arm64. It holds the compiled program, Tesseract and aapt2 (for `--app app.apk`).
+`check` also runs on Linux, in a Docker image with Tesseract inside: `ghcr.io/noloman/shotfleet-check`. It's free and is built for amd64 and arm64. It holds the compiled program, Tesseract and aapt2 (for `--app app.apk`).
 
 ```sh
 docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/work" ghcr.io/noloman/shotfleet-check check fastlane/metadata/android --app app-release.apk
@@ -246,9 +246,7 @@ The skills are also in a public repo, so you can install them without shotfleet 
 `/plugin marketplace add noloman/shotfleet-skills`, then `/plugin install shotfleet@shotfleet` (the skills plus the
 MCP server). For other agents: `gh skill install noloman/shotfleet-skills --all --scope user`.
 
-Your licence key: on your Mac, run `shotfleet activate` once yourself. After that your agent uses the CLI and never
-sees the key. In CI, use the `SHOTFLEET_KEY` secret. Don't pass the key with `claude mcp add --env`: it ends up in
-plain text in `~/.claude.json`.
+Nothing to sign in to: the agent uses the same free CLI you do.
 
 ### What the MCP tools do
 
@@ -414,7 +412,7 @@ not = ["No workouts yet", "Keine Workouts"]   # the empty state must not show
 key = "benchmarks_title"               # the text of this string key of your app, in each language, is on screen
 ```
 
-`run` checks these automatically; for screenshots you already have, use `shotfleet check out/ --content shotfleet.toml` (free, no licence). A missing or forbidden text is a problem line (`de/01_home.png: expected "Steinmännchen" on screen`), and a table for a screenshot that doesn't exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, `could not verify`, never as a pass; `--ocr-command` helps there. This proves the strings you list are present, not that the data looks right.
+`run` checks these automatically; for screenshots you already have, use `shotfleet check out/ --content shotfleet.toml` (no key or account). A missing or forbidden text is a problem line (`de/01_home.png: expected "Steinmännchen" on screen`), and a table for a screenshot that doesn't exist is reported too. Case, accents and spacing are ignored. On iOS the text is the app's own, so a match is exact in any script. On Android it is read from the picture: a text in a script macOS cannot read (Greek, Hebrew, most Indic) is reported as a note, `could not verify`, never as a pass; `--ocr-command` helps there. This proves the strings you list are present, not that the data looks right.
 
 **Waiting for a screen that fills in late:** put `- waitForExpected` (or `waitForExpected: 20000`, or `{ timeout: 20000 }`; default 30000 ms) in the flow before a `takeScreenshot: <name>`. In each language it becomes `extendedWaitUntil` steps for the `any` and `all` texts of `[expect.<name>]` (and its language tables), so a late-drawn screen is waited for with the texts you already listed, not one text that is only right in English. It fails the language if the text never shows. The `not` and `key` entries are not waited for. A step with no `any`/`all` texts is dropped with a warning. Not run on a device.
 

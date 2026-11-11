@@ -12,9 +12,7 @@ rm -rf build dist && mkdir -p build
 python3 -m venv build/venv
 # the same hash-checked inputs as the macOS build (requirements-build.txt also holds PyInstaller's Linux wheel hashes)
 build/venv/bin/pip install --quiet --only-binary=:all: --require-hashes -r packaging/requirements-build.txt
-# the release date (shotfleet.py baked_release_date), frozen into the program like packaging/build.sh does: the build day, in UTC
-printf 'RELEASE_DATE = "%s"\n' "$(date -u +%Y-%m-%d)" > build/_release.py
-build/venv/bin/pyinstaller --onedir --name shotfleet --add-data "$PWD/skill:skill" --paths "$PWD/build" --hidden-import _release \
+build/venv/bin/pyinstaller --onedir --name shotfleet --add-data "$PWD/skill:skill" \
   --distpath dist --workpath build/pyi --specpath build --noconfirm --log-level WARN shotfleet.py
 dist/shotfleet/shotfleet --version
 tar -C dist -czf "dist/shotfleet-$VERSION-linux-$ARCH.tar.gz" shotfleet

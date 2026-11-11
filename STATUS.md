@@ -1,5 +1,7 @@
 # shotfleet status
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 > Handoff for agents: start with [docs/handoff.md](docs/handoff.md), section "State as of 2026-10-11" (what is live, what is on branches or held, how to release, open items); its older sections are history. Also [docs/session-handoff-2026-10-03.md](docs/session-handoff-2026-10-03.md). Sharing this Mac's devices between sessions: [docs/device-queue.md](docs/device-queue.md).
 
 Single source of truth for "what is left to have a sellable project". Evidence and commands behind every row: [research/sellable-audit.md](research/sellable-audit.md). Refresh the numbers with `tools/status.sh`.

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Publish a release on the shotfleet site: build (signed + notarized), copy it to site/public/download, deploy.
 # Buyers install with: curl -fsSL https://shotfleet.com/install.sh | sh
-# NOTE (0.1.2): this builds AND deploys in one run, so it ships different bytes than it tested. Used once, by go-live.sh. For later releases use
+# NOTE (0.1.2): this builds AND deploys in one run, so it ships different bytes than it tested. Used once, at the first launch. For later releases use
 # packaging/build.sh, test those files, then packaging/publish.sh (see packaging/README.md).
 set -eu
 cd "$(dirname "$0")/.."

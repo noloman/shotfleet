@@ -13,9 +13,7 @@ RUN python -m venv /venv && /venv/bin/pip install --quiet --disable-pip-version-
     --require-hashes -r packaging/requirements-build.txt
 COPY shotfleet.py ./
 COPY skill skill
-# the release date (shotfleet.py baked_release_date), frozen into the program like packaging/build.sh does: the build day, in UTC
-RUN mkdir build && printf 'RELEASE_DATE = "%s"\n' "$(date -u +%Y-%m-%d)" > build/_release.py
-RUN /venv/bin/pyinstaller --onedir --name shotfleet --add-data "/src/skill:skill" --paths /src/build --hidden-import _release --distpath /dist --workpath /tmp/pyi \
+RUN /venv/bin/pyinstaller --onedir --name shotfleet --add-data "/src/skill:skill" --distpath /dist --workpath /tmp/pyi \
     --specpath /tmp --noconfirm --log-level WARN shotfleet.py \
  && /dist/shotfleet/shotfleet --version \
  && ! find /dist -name '*.py' | grep .

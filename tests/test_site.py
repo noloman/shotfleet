@@ -19,8 +19,6 @@ TERMS = (PUB / "terms.html").read_text()
 README = (ROOT / "README.md").read_text()
 EMAIL = (ROOT / "marketing/launch-email.md").read_text()
 POSTS = (ROOT / "marketing/launch-posts-v2.md").read_text()
-CHECKOUT = "https://example.gumroad.com/l/shotfleet"
-LIVE = "<!-- WAITLIST -->" not in INDEX  # go-live.sh already ran: the waitlist copy is gone on purpose
 
 # Phrases that were true once, or never were. None may come back on the site, in the README or in the launch email.
 BANNED = ["tested on sample projects", "tested with sample files", "works with every", "works with any app", "ai-powered", "ai powered",
@@ -69,17 +67,6 @@ class Page(HTMLParser):
         return re.sub(r"\s+", " ", "".join(self.text))
 
 
-def go_live(index_html, checkout=CHECKOUT):
-    """Run the very transform packaging/go-live.sh runs (its python heredoc, not a copy) on a throwaway copy of index.html."""
-    script = (ROOT / "packaging/go-live.sh").read_text()
-    code = re.search(r"<<'PY'\n(.*?)\nPY\n", script, flags=re.S).group(1)
-    with tempfile.TemporaryDirectory() as d:
-        (Path(d) / "site/public").mkdir(parents=True)
-        (Path(d) / "site/public/index.html").write_text(index_html)
-        subprocess.run([sys.executable, "-", checkout], input=code, text=True, cwd=d, check=True)
-        return (Path(d) / "site/public/index.html").read_text()
-
-
 def resolve(ref, page_ids):
     """Does a local href/src point at something that exists? (Cloudflare serves /terms from terms.html and / from index.html.)"""
     u = urlparse(ref)
@@ -96,7 +83,6 @@ def resolve(ref, page_ids):
 class Structure(unittest.TestCase):
     def pages(self):
         yield from ((p.name, Page(p.read_text())) for p in PAGES)
-        if not LIVE: yield "index.html after go-live", Page(go_live(INDEX))
 
     def test_every_local_link_image_and_script_exists_and_anchors_resolve(self):
         for name, page in self.pages():
@@ -174,73 +160,24 @@ class Style(unittest.TestCase):
 
 
 class Offer(unittest.TestCase):
-    """One price, one refund window, one founder count, one free tier, everywhere."""
-    DOCS = {"index.html": INDEX, "terms.html": TERMS, "README.md": README, "launch-email.md": EMAIL}
+    """shotfleet is free and open source: no price, no refund window, no free tier, anywhere."""
+    DOCS = {"index.html": INDEX, "terms.html": TERMS, "README.md": README}
 
-    def test_prices_are_29_launch_and_49_standard_everywhere(self):
-        for name, text in self.DOCS.items():
-            self.assertLessEqual(set(re.findall(r"\$(\d+)", text)), {"29", "49"}, name)
-        for name in ("index.html", "README.md", "launch-email.md"):
-            self.assertEqual(set(re.findall(r"\$(\d+)", self.DOCS[name])), {"29", "49"}, name)
-
-    def test_founder_price_is_for_the_first_100_buyers_everywhere(self):
-        for name in ("index.html", "README.md", "launch-email.md"):
-            self.assertEqual(set(re.findall(r"first (\d+)", self.DOCS[name])), {"100"}, name)
-            self.assertIn("first 100 buyers", self.DOCS[name], name)
-
-    def test_refund_window_is_14_days_everywhere(self):
-        for name, text in self.DOCS.items():
-            found = set(re.findall(r"(\d+)[- ]day refund", text)) | set(re.findall(r"within (\d+) days(?! of (?:your|the) purchase)", text))
-            if name in ("index.html", "terms.html", "launch-email.md", "README.md"): self.assertEqual(found, {"14"}, name)
-
-    def test_free_tier_wording_matches_the_code_on_every_page(self):
+    def test_no_price_refund_or_key_is_left(self):
         for name, text in self.DOCS.items():
             plain = re.sub(r"<[^>]+>", "", text)
-            if name != "launch-email.md": self.assertEqual(set(re.findall(r"up to (\d+) languages", plain)), {str(sf.FREE_LANGUAGES)}, name)
-        self.assertRegex(re.sub(r"<[^>]+>", "", INDEX), r"Capture up to 2 languages with run")
-        self.assertRegex(re.sub(r"<[^>]+>", "", TERMS), r"check is free for everyone, and run is free for up to 2 languages\. The licence unlocks every language and export\.")
-        self.assertIn("`shotfleet check` is free for everyone, and `run` is free for up to 2 languages. A licence unlocks every language and `export`", README)
+            self.assertNotRegex(plain, r"\$\d", name)
+            self.assertNotRegex(plain, r"(?i)refund|first 100 buyers|free tier|activations?\b|shotfleet activate|gumroad", name)
 
-    def test_limits_match_the_code(self):
-        self.assertEqual(sf.MAX_MACS, 5); self.assertIn(f"A key can be activated {sf.MAX_MACS} times: 3 Macs and 2 spare for reinstalls", TERMS)
-        for text in (INDEX, TERMS): self.assertIn("there are spare activations for reinstalls, and if you run out, email", text)
-        self.assertNotRegex(INDEX + TERMS + README, r"\b3 activations")
-        self.assertIn(f"works offline for {sf.LICENCE_OFFLINE_DAYS} days", INDEX); self.assertIn(f"up to {sf.LICENCE_OFFLINE_DAYS} days", TERMS)
-        self.assertIn("about once a week", TERMS); self.assertEqual(sf.LICENCE_RECHECK_DAYS, 7)
+    def test_the_license_and_sponsors_are_said_on_every_page_that_decides(self):
+        for name, text in self.DOCS.items():
+            self.assertIn("MIT", text, name)
+            self.assertIn("https://github.com/sponsors/noloman", text, name)
 
-    def test_apple_silicon_is_said_where_a_buyer_decides(self):
+    def test_apple_silicon_is_said_where_a_user_decides(self):
         for text in (INDEX, TERMS, README): self.assertIn("Apple silicon", text)
-        self.assertEqual(INDEX.count("needs an Apple silicon Mac, Maestro and Java 17+"), 1 if LIVE else 2)  # waitlist and sale versions
+        self.assertEqual(INDEX.count("needs an Apple silicon Mac, Maestro and Java 17+"), 1)
         self.assertIn("arm64", (PUB / "install.sh").read_text())  # and the installer really refuses anything else
-
-    def test_the_updates_promise_is_not_an_unconditional_forever(self):
-        self.assertIn("The renewal isn't on sale yet, so for now email", TERMS)  # renewal
-        self.assertNotIn("you can renew", TERMS)
-        self.assertIn("Versions you have keep working while macOS and your tools allow", INDEX)
-        self.assertIn("keep working for as long as macOS, Xcode and Maestro let them, and as long as the licence check can run", TERMS)
-
-
-@unittest.skipIf(LIVE, "the site is already live; the waitlist blocks are gone")
-class GoLive(unittest.TestCase):
-    def test_the_waitlist_and_sale_blocks_are_balanced(self):
-        self.assertEqual(INDEX.count("<!-- WAITLIST -->"), INDEX.count("<!-- /WAITLIST -->"))
-        self.assertGreaterEqual(INDEX.count("<!-- WAITLIST -->"), 3)
-        self.assertEqual(INDEX.count("    <!-- SALE\n"), INDEX.count("    SALE -->"))
-        self.assertGreaterEqual(INDEX.count("    <!-- SALE\n"), 3)
-
-    def test_go_live_turns_it_into_a_sale_page_with_a_checkout_link_and_no_markers(self):
-        live = go_live(INDEX)
-        for marker in ("WAITLIST", "SALE", "@CHECKOUT@", "@GUMROAD@", "data-signup", "id=\"signup", "isn’t released yet", "Get early access", "Join the list"):
-            self.assertNotIn(marker, live, marker)
-        self.assertGreaterEqual(live.count(f'href="{CHECKOUT}"'), 3)  # nav, hero, price card
-        self.assertEqual(live.count("curl -fsSL https://shotfleet.com/install.sh | sh"), 1)
-        self.assertIn("Buy shotfleet", live); self.assertNotIn("Early access", live)
-        self.assertIn("It needs an Apple silicon Mac, Maestro and Java 17+.", live)
-        for must in ("<h1>", 'id="price"', 'data-full="img/full/stressi_ja.jpg"', "/forms.js", "/tabs.js"): self.assertIn(must, live)
-
-    def test_the_waitlist_page_still_has_its_signup_form_and_no_checkout_placeholder_outside_comments(self):
-        visible = re.sub(r"<!--.*?-->", "", INDEX, flags=re.S)
-        self.assertIn("data-signup", visible); self.assertNotIn("@CHECKOUT@", visible)
 
 
 class Security(unittest.TestCase):
@@ -258,8 +195,8 @@ class Security(unittest.TestCase):
         self.assertNotIn("unsafe-eval", " ".join(sum(csp.values(), [])))
 
     def test_pages_have_no_inline_script_and_no_event_handler_attributes(self):
-        for p in PAGES + ([] if LIVE else [None]):
-            name, page = (p.name, Page(p.read_text())) if p else ("index.html after go-live", Page(go_live(INDEX)))
+        for p in PAGES:
+            name, page = p.name, Page(p.read_text())
             self.assertEqual(page.inline_scripts, [], name)
             self.assertEqual(page.handlers, [], name)
 
@@ -298,7 +235,7 @@ esac
 class PrivacyPage(unittest.TestCase):
     def test_privacy_says_what_the_program_and_the_site_really_do(self):
         text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", (PUB / "privacy.html").read_text()))
-        for must in ("about once a week", "the product ID", "count as an activation", "shotfleet doctor", "latest version number",
+        for must in ("no license key, no account and no license server", "shotfleet doctor", "latest version number",
                      "by day, by the site or link you came from, and by your browser's language", "your IP address is not stored",
                      "The waitlist is closed and I never emailed it. Any address still on it will be deleted",
                      "kept until I've answered them", "I delete them on request", "Your app and screenshots are never uploaded"):
@@ -388,12 +325,6 @@ class ByocPending(unittest.TestCase):
                     with self.subTest(file=p.name, line=n):
                         if not self.PROVEN: self.assertIn(self.CAVEAT, line.replace("’", "'"), "this line says no Maestro or Java for XCUITest tests: say it is not device-proven")
         self.assertGreaterEqual(seen, 6)  # README and docs lead + needs sentence, home page, llms.txt, alternatives
-
-
-class ActivationCaveat(unittest.TestCase):
-    def test_every_page_that_promises_spare_activations_says_they_start_with_0_1_6(self):
-        for path in (PUB / "docs.html", PUB / "terms.html", PUB / "index.html", PUB / "llms.txt", ROOT / "README.md"):
-            with self.subTest(page=path.name): self.assertIn("The spare activations work from 0.1.6; 0.1.5 and older stop at 3.", path.read_text())
 
 
 class SecurityTxt(unittest.TestCase):

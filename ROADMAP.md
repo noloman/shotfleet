@@ -1,5 +1,7 @@
 # shotfleet roadmap
 
+> **Update, 2026-11-11:** shotfleet is now free and open source (MIT), funded through GitHub Sponsors. The license check, `shotfleet activate`, the price, the free tier, refunds and the Gumroad product were removed (versions up to 0.1.10 were sold). Wherever this document describes them, it describes the paid period and no longer applies; `LICENSE`, `README.md` and `CHANGELOG.md` are current.
+
 Built from: research/audit.md (code audit), research/first-run.md (cold user test), research/market-2026.md
 (competitors, store rules), research/all-languages.md (language and format limits), research/real-apps.md
 (trials on other apps). Effort: S < 1 day, M 1–3 days, L > 3 days.

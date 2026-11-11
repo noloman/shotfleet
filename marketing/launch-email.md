@@ -14,7 +14,7 @@ What it caught on my own apps while I built it:
 
 It also checks screenshot sizes against App Store Connect's rules.
 
-Buy: https://shotfleet.com/#price
+Buy: https://shotfleet.com/#free
 Install: curl -fsSL https://shotfleet.com/install.sh | sh
 Then: shotfleet activate <your key>
 

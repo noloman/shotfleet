@@ -1,12 +1,11 @@
 #!/bin/sh
 # Post-deploy smoke test of the live site (or of any server that serves a copy of it):
-#   tools/golive/smoke.sh https://shotfleet.com [<checkout link the page must use>]
+#   tools/golive/smoke.sh https://shotfleet.com
 # Read-only: it fetches pages and the release, verifies them in a temp dir and installs nothing (install.sh is run
 # only up to its checksum check, with a fake Apple silicon uname, and its HOME is the temp dir).
 # Works from a clean environment: env -i sh tools/golive/smoke.sh https://shotfleet.com
 PATH=/usr/bin:/bin:/usr/sbin:/sbin; export PATH
-BASE=${1:?usage: tools/golive/smoke.sh <base url, e.g. https://shotfleet.com> [<checkout link>]}; BASE=${BASE%/}
-CHECKOUT=${2:-}
+BASE=${1:?usage: tools/golive/smoke.sh <base url, e.g. https://shotfleet.com>}; BASE=${BASE%/}
 ARCHIVE=shotfleet-macos-arm64.tar.gz  # the names install.sh asks for
 T=$(mktemp -d) && trap 'rm -rf "$T"' EXIT
 N=0; BAD=0
@@ -21,19 +20,12 @@ status200() { get "$1" "$2"; if [ "$CODE" = 200 ]; then ok "$1 is 200"; else fai
 echo "== smoke: $BASE =="
 if status200 / page; then
   P=$T/page
-  for m in WAITLIST SALE @CHECKOUT@ @GUMROAD@ data-signup 'id="signup' "Join the list" "Early access" "isn’t released yet"; do
-    if grep -qF -- "$m" "$P"; then fail "sale page still contains: $m"; else ok "sale page has no $m"; fi
+  for m in WAITLIST SALE @CHECKOUT@ @GUMROAD@ data-signup 'id="signup' "Join the list" "Early access" "isn’t released yet" gumroad.com "Buy shotfleet"; do
+    if grep -qF -- "$m" "$P"; then fail "home page still contains: $m"; else ok "home page has no $m"; fi
   done
-  if [ -n "$CHECKOUT" ]; then
-    C=$(grep -cF "href=\"$CHECKOUT\"" "$P" || true)
-    if [ "$C" -ge 3 ]; then ok "checkout link $CHECKOUT in $C places"; else fail "checkout link $CHECKOUT in $C places (want 3: nav, hero, price card)"; fi
-  else
-    C=$(grep -o 'href="https://[^"]*"' "$P" | grep -v 'href="https://shotfleet.com' | grep -c 'gumroad\|checkout' || true)
-    if [ "$C" -ge 1 ]; then ok "page has a checkout link (pass the link as 2nd argument to check it exactly)"; else fail "no checkout link on the page"; fi
-  fi
-  if grep -qF "Buy shotfleet" "$P"; then ok "page says Buy shotfleet"; else fail "page does not say Buy shotfleet"; fi
-  if grep -qF "first 100 buyers" "$P"; then ok 'founder price is the static text "first 100 buyers"'; else fail 'page lacks "first 100 buyers"'; fi
-  if grep -Eiq '[0-9]+ (of 100|left|remaining)|spots? left' "$P"; then fail "page shows a counter number nothing feeds"; else ok "page shows no counter number"; fi
+  if grep -qF 'href="https://github.com/noloman/shotfleet"' "$P"; then ok "home page links to the GitHub repository"; else fail "home page has no link to https://github.com/noloman/shotfleet"; fi
+  if grep -qF 'href="https://github.com/sponsors/noloman"' "$P"; then ok "home page links to GitHub Sponsors"; else fail "home page has no link to https://github.com/sponsors/noloman"; fi
+  if grep -qF "Free and open source" "$P"; then ok "home page says free and open source"; else fail "home page does not say Free and open source"; fi
   CSP=$(grep -i '^content-security-policy:' "$T/page.h" || true)
   case "$CSP" in
     *"default-src 'self'"*"script-src 'self'"*) ok "CSP header present, scripts only from self" ;;

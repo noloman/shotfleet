@@ -62,7 +62,7 @@ const server = http.createServer((req, res) => {
       await page.waitForTimeout(200);
       check(`the counter sends a view with analytics ${choice}`, calls.length >= 1 && calls[0].path === "/api/hit" && calls[0].body.ev === "view");
       await page.evaluate(() => document.getElementById("run").scrollIntoView()); await page.waitForTimeout(150);
-      await page.evaluate(() => document.getElementById("price").scrollIntoView()); await page.waitForTimeout(150);
+      await page.evaluate(() => document.getElementById("free").scrollIntoView()); await page.waitForTimeout(150);
       await page.evaluate(() => document.querySelector("a.btn, button.btn").click());
       await page.waitForTimeout(150);
       const evs = calls.map(c => c.body.ev);

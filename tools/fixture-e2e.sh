@@ -14,8 +14,7 @@
 #                         `--platform-only android` runs: needs /dev/kvm, 6 GB free memory, Tesseract with deu, jpn, ara and tur data
 #   --skip-android        no Android, even with SHOTFLEET_E2E_ANDROID=1
 #   --keep                keep the temp work dir (it is also kept when anything fails)
-# SHOTFLEET_BIN=/path/to/shotfleet tests a built binary instead of ./shotfleet.py (a built binary needs a licence for the
-# export step: activate it, or set SHOTFLEET_KEY). Exit 0 only if every assertion passed.
+# SHOTFLEET_BIN=/path/to/shotfleet tests a built binary instead of ./shotfleet.py. Exit 0 only if every assertion passed.
 set -eu
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 KEEP=0; IOS=1; ANDROID=0; [ "${SHOTFLEET_E2E_ANDROID:-}" = 1 ] && ANDROID=1
