@@ -314,6 +314,8 @@ device_types = ["iPhone 17 Pro Max", "iPad Pro 13-inch (M5)"]   # several sizes 
 [android]
 devices = ["phone", "tablet"]   # phone 1080x1920 and tablet 1440x2560 (both 9:16, so Play can recommend the
                           # listing); out/<device>/, exported to phoneScreenshots / tenInchScreenshots
+                          # tablets: shotfleet disables the emulator's launcher so the taskbar and the "app handle" menu stay out of the shots
+                          # (the emulator is reset each run); hide_system_chrome = false keeps them
                           # "tablet-7" adds a 7" tablet, 1080x1920 at 280 dpi, exported to sevenInchScreenshots
                           # "fold", "fold-book", "fold-tabletop": a foldable (unfolded, half open like a book, half open like a laptop),
                           # one emulator, run one at a time, exported to tenInchScreenshots; the inner display is captured through the emulator
