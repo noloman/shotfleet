@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+
+## 0.1.12 (2026-11-11)
 - Website and README: the Quickspan case study notes that a Maestro 2.11.0 rerun typed the per-language phrases.
 - Website: the examples page has a fifth real run, Quickspan on Android in five languages, with the review page and what it does not cover (#89).
 
