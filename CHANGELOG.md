@@ -5,7 +5,7 @@
 ## 0.1.11 (2026-11-11)
 - Android: `pt-BR` is no longer skipped when the app's Brazilian strings are in `values-pt` next to `values-pt-rPT` (#110).
 - Android: output folders are named after the language you asked for (`id`, `he`, `pt-BR`), not the legacy code the app uses (`in`, `iw`, `pt`) (#111).
-- Android tablets: the launcher is disabled for the run so the taskbar and the Android 17 "app handle" tooltip and menu no longer show in screenshots or steal taps. `hide_system_chrome = false` in `[android]` turns it off (#109).
+- Android tablets: the launcher is disabled for the run so the taskbar no longer shows in screenshots. `hide_system_chrome = false` in `[android]` turns it off. The Android 17 "app handle" tooltip and menu still show on the API 37 image; that part of #109 stays open.
 - **shotfleet is free and open source (MIT):** every command and every language works with no key, no account and no license server. The license check, `shotfleet activate` and `shotfleet deactivate`, the 2-language free tier, `SHOTFLEET_KEY` and the Gumroad calls are gone, so shotfleet never contacts a license server any more. A leftover `licence.json` or `ci-checked.json` in `~/Library/Application Support/shotfleet/` is no longer read and can be deleted. The README, the site and the skills now say it is free, link GitHub Sponsors (`.github/FUNDING.yml`) and add a LICENSE and CONTRIBUTING.md. Versions up to 0.1.10 keep working with their keys.
 - **`check`: a screenshot a language skipped on purpose is not missing (#107).**
 

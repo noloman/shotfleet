@@ -63,7 +63,7 @@ Keys valid in `[ios]` and `[android]`:
 | `avd` | `shotfleet_android` | name of the phone emulator (accepted by the config check; not described in the docs) |
 | `avd_tablet` | `shotfleet_android_tablet` | name of the tablet emulator when `devices` includes `"tablet"` (accepted by the config check; not described in the docs) |
 | `avd_fold` | `shotfleet_android_fold` | name of the foldable emulator when `devices` includes `"fold"`, `"fold-book"` or `"fold-tabletop"` (same note) |
-| `hide_system_chrome` | `true` | on tablets, disable the emulator launcher so the taskbar and the app-handle menu stay out of the shots; `false` keeps them |
+| `hide_system_chrome` | `true` | on tablets, disable the emulator launcher so the taskbar stays out of the shots (the API 37 app handle is not hidden yet); `false` keeps them |
 | `avd_tablet-7` | `shotfleet_android_tablet7` | name of the 7" tablet emulator when `devices` includes `"tablet-7"` (same note) |
 | `system_image` | newest installed arm64 `google_apis` or `google_apis_playstore` image of API 33+, else `system-images;android-36;google_apis;arm64-v8a` | image for the emulator shotfleet creates (same note) |
 

@@ -22,7 +22,7 @@ class InstallerWording(unittest.TestCase):
     def test_the_next_step_is_doctor_then_init_in_the_app_folder(self):
         line = next(l for l in INSTALL.splitlines() if l.startswith('echo "next:'))
         self.assertLess(line.index("shotfleet doctor"), line.index("shotfleet init"))
-        self.assertIn("shotfleet activate", line)
+        self.assertNotIn("activate", line)
 
 
 class XcodeNotSelected(unittest.TestCase):
