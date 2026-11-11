@@ -25,4 +25,4 @@ done
 ln -sf "$APP/shotfleet" "$DIR/shotfleet"
 echo "installed $("$DIR/shotfleet" --version) to $DIR"
 case ":$PATH:" in *":$DIR:"*) ;; *) echo "add it to your PATH: echo 'export PATH=\"$DIR:\$PATH\"' >> ~/.zshrc, then open a new Terminal window (until you do, \"shotfleet\" is not found)";; esac
-echo "next: shotfleet doctor (add --fix to fetch Maestro and Java), then shotfleet init in your app's folder. Your key: shotfleet activate <key> (check is free without one)"
+echo "next: shotfleet doctor (add --fix to fetch Maestro and Java), then shotfleet init in your app's folder."
