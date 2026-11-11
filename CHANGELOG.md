@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Website: the examples page has a fifth real run, Quickspan on Android in five languages, with the review page and what it does not cover (#89).
 
 ## 0.1.11 (2026-11-11)
 - Android: `pt-BR` is no longer skipped when the app's Brazilian strings are in `values-pt` next to `values-pt-rPT` (#110).

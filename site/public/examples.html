@@ -329,6 +329,15 @@
     </div>
     <p class="small muted reveal">wger, the open-source workout app, is licensed under the AGPL-3.0-or-later with an app-store exception: <a href="https://github.com/wger-project/flutter">github.com/wger-project/flutter</a>. These are screenshots of the open-source wger app, captured by me with shotfleet from a debug build I compiled myself (version 2.1.1). The project isn’t affiliated with shotfleet and doesn’t endorse it. The only logo is the one the app draws itself.</p>
   </section>
+  <section class="wrap section" id="showcase-quickspan" aria-labelledby="showcase-quickspan-h">
+    <div class="reveal">
+      <h2 id="showcase-quickspan-h">And a fifth: Quickspan, run end to end.</h2>
+      <p class="muted lede-small">Quickspan is my calendar app, and the first app I ran shotfleet 0.1.11 on from scratch with a real flow. Android phone, five languages (en, de, ja, ko, es), five screenshots each: 25 screenshots, 0 problems found, 343 seconds to capture on one emulator, about 69 seconds per language. The whole command took 6 minutes 15 seconds. The run used Maestro 2.0.10 on a 1080x1920 emulator.</p>
+      <p class="muted lede-small">An earlier run on the same app caught 5 real problems: the Privacy policy screenshot opened the Chrome first-run screen instead of the policy. I fixed the flow and ran again.</p>
+      <p><img src="img/quickspan-review.webp" alt="The shotfleet review page for Quickspan: five languages, 25 screenshots, 0 problems" width="1100" height="1330" loading="lazy"></p>
+      <p class="muted lede-small">What this run does not show: it is Android phone only, no iPhone and no tablet. The text typed in the first column is the same in every language, because Maestro 2.0.10 ignores per-language <code>[inputs]</code> on Android (Maestro 2.11.0 does not). The quick-add bar is tapped by position. The notes from the run are in the <a href="https://github.com/noloman/adaptive-calendar/blob/main/docs/release/shotfleet/FRICTION.md">Quickspan repo</a>.</p>
+    </div>
+  </section>
   <section class="wrap section" id="apps" aria-labelledby="apps-h">
     <div class="reveal">
       <h2 id="apps-h">What my other apps look like in five languages.</h2>
