@@ -66,7 +66,7 @@
       <li>shotfleet is now free and open source under the MIT license. Every command and every language works, with no key, no account and no license server: <code>run</code> captures every language and <code>export</code> needs nothing. <code>shotfleet activate</code>, <code>deactivate</code> and <code>SHOTFLEET_KEY</code> are gone. If you bought a key, thank you; versions up to 0.1.10 keep working with it.</li>
       <li>The code is on <a href="https://github.com/noloman/shotfleet">GitHub</a>, and you can support it through <a href="https://github.com/sponsors/noloman">GitHub Sponsors</a>.</li>
       <li><code>check</code> no longer calls a screenshot that a language skips on purpose missing.</li>
-      <li>Android: <code>pt-BR</code> is captured when the app only has <code>values-pt</code>, output folders are named after the language you asked for (<code>id</code>, <code>he</code>, <code>pt-BR</code>), and tablet screenshots no longer show the taskbar or the app handle (<code>hide_system_chrome = false</code> turns that off).</li>
+      <li>Android: <code>pt-BR</code> is captured when the app only has <code>values-pt</code>, output folders are named after the language you asked for (<code>id</code>, <code>he</code>, <code>pt-BR</code>), and tablet screenshots no longer show the taskbar or the Android 17 app handle: tablets use an API 33 to 35 image when one is installed (shotfleet warns if not) and the launcher is disabled for the run (<code>hide_system_chrome = false</code> turns that off).</li>
     </ul>
 
     <h2 id="v0-1-10">0.1.10, 2026-10-30</h2>

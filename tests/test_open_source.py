@@ -58,3 +58,21 @@ class TheProjectIsOpenSource(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TabletImage(unittest.TestCase):
+    """#109: a tablet avoids the API 37 image (its "app handle" and tooltip show in screenshots)."""
+    def test_a_tablet_picks_an_older_image_and_an_emulator_named_after_it(self):
+        import tempfile
+        from pathlib import Path
+        d = Path(tempfile.mkdtemp())
+        for api in ("android-34", "android-37"):
+            p = d / "system-images" / api / "google_apis" / sf.ABI; p.mkdir(parents=True); (p / "package.xml").write_text("x")
+        old = sf.SDK; sf.SDK = d
+        try:
+            self.assertIn("android-34", sf.tablet_image({}, "tablet"))
+            self.assertEqual(sf.android_avd_name({}, "tablet"), "shotfleet_android_tablet_api34")
+            self.assertEqual(sf.android_avd_name({}, "phone"), "shotfleet_android")  # a phone keeps the newest
+            self.assertIsNone(sf.tablet_image({"system_image": "x"}, "tablet"))  # the config's own choice wins
+            self.assertEqual(sf.android_avd_name({"system_image": "x"}, "tablet"), "shotfleet_android_tablet")
+        finally: sf.SDK = old

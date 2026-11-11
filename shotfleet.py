@@ -2720,13 +2720,13 @@ def cmdline_tool(name, sdk=None):
               Path(shutil.which(name) or "/nonexistent"), BREW / "bin" / name):
         if p.is_file(): return p
 
-def find_image(sdk=None, abi=None):
+def find_image(sdk=None, abi=None, max_api=None):
     """Package id of the best installed image of API 33+ for this machine's architecture (per-app languages need 33), or
-    None: newest API first, google_apis before google_apis_playstore."""
+    None: newest API first, google_apis before google_apis_playstore. `max_api` caps the API level."""
     sdk, best = sdk or SDK, []
     for d in (sdk / "system-images").glob(f"android-*/google_apis*/{abi or ABI}"):
         api = re.fullmatch(r"android-(\d+)(?:\.(\d+))?", d.parent.parent.name)
-        if api and int(api[1]) >= 33 and any((d / f).is_file() for f in ("package.xml", "source.properties")):
+        if api and int(api[1]) >= 33 and (max_api is None or int(api[1]) <= max_api) and any((d / f).is_file() for f in ("package.xml", "source.properties")):
             best.append(((int(api[1]), int(api[2] or 0), d.parent.name == "google_apis"), f"system-images;{d.parent.parent.name};{d.parent.name};{abi or ABI}"))
     return max(best)[1] if best else None
 
@@ -2935,10 +2935,24 @@ def require_api33(image, source):
                    f"Your app's minSdk can stay as low as it is: it runs on a newer emulator. Install an image with: {commands_text(sdkmanager_commands([DEFAULT_IMAGE]))}, "
                    "then set system_image (or avd, for an emulator that already exists) in the config")
 
-def android_avd_name(cfg, device):
-    """The emulator a device runs on: the config's `avd` (phone), `avd_<device>`, or `avd_fold` for the foldable devices, else the default name."""
+TABLET_FOLDERS = ("tenInchScreenshots", "sevenInchScreenshots")
+
+def tablet_image(cfg, device):
+    """The image a tablet picks for itself: the newest installed API 33 to 35 one, because Android 17 (API 37) puts an "app handle"
+    and its tooltip on the top of a large screen and a tap under it opens its menu (#109). None when the config names the image or
+    the emulator, the device is not a tablet, or no such image is installed."""
     kind = ANDROID_DEVICES[device]
-    return cfg.get(kind.get("avd_key") or ("avd" if device == "phone" else f"avd_{device}"), kind["avd"])
+    if kind.get("folder") not in TABLET_FOLDERS or kind.get("fold") is not None: return None
+    if cfg.get("system_image") or cfg.get(kind.get("avd_key") or f"avd_{device}"): return None
+    return find_image(max_api=35)
+
+def android_avd_name(cfg, device):
+    """The emulator a device runs on: the config's `avd` (phone), `avd_<device>`, or `avd_fold` for the foldable devices, else the default name
+    (a tablet that picked an older image gets that API level in the name, so an emulator made earlier on API 37 is not reused)."""
+    kind = ANDROID_DEVICES[device]
+    name = cfg.get(kind.get("avd_key") or ("avd" if device == "phone" else f"avd_{device}"), kind["avd"])
+    image = tablet_image(cfg, device)
+    return f"{name}_api{image.split(';')[1].removeprefix('android-')}" if image else name
 
 def fold_profile(avdmanager):
     """The hardware profile id of a foldable in this SDK (`avdmanager list device -c`): a pixel fold one, else any with 'fold' in its id, else None."""
@@ -2969,7 +2983,11 @@ def android_pool(n, cfg, pool):
         except OSError: sysdir = None
         require_api33(sysdir and sysdir[1], f"the emulator {avd}")
     else:
-        image = cfg.get("system_image") or find_image() or DEFAULT_IMAGE
+        image = cfg.get("system_image") or tablet_image(cfg, device) or find_image() or DEFAULT_IMAGE
+        if kind.get("folder") in TABLET_FOLDERS and kind.get("fold") is None and re.search(r"android-3[6-9]|android-[4-9]\d", image) and not cfg.get("system_image"):
+            print("warning: no Android image of API 35 or lower is installed, so this tablet runs on " + image.split(";")[1] + ", which shows an app handle and "
+                  "its tooltip on top of the screen. Install an older one for clean tablet shots: "
+                  + commands_text(sdkmanager_commands([f"system-images;android-34;google_apis;{ABI}"])), flush=True)
         require_api33(image, f"the system image {image}")
         avdmanager = cmdline_tool("avdmanager")
         if not avdmanager:
