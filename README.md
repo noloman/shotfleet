@@ -17,7 +17,7 @@ checked 72 screenshots in 18 languages: 0 problem(s)
 
 ![The shotfleet review page for a real run: Quickspan, 5 languages x 5 screenshots, 0 problems](docs/images/review-page.png)
 
-*The review page from a real run on [Quickspan](https://github.com/noloman/adaptive-calendar) (Android phone, en, de, ja, ko, es): 25 screenshots, 0 problems, 343 s to capture on one emulator.*
+*The review page from a real run on [Quickspan](https://github.com/noloman/adaptive-calendar) (Android phone, en, de, ja, ko, es): 25 screenshots, 0 problems, 343 s to capture on one emulator. The text typed in the first column is the same in every language because Maestro 2.0.10 ignores per-language `[inputs]` on Android; Maestro 2.11.0 doesn't.*
 
 ## The problem
 
