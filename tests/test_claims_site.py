@@ -60,11 +60,11 @@ class PlatformAndRequirements(unittest.TestCase):
         self.assertIn("It needs an Apple silicon Mac, Maestro and Java 17+.", text)
         self.assertIn("you don’t have an Apple silicon Mac. iOS simulators need a Mac", text)
         self.assertRegex(plain(read("site/public/terms.html")), r"Apple silicon")
-        self.assertIn("macOS on Apple silicon only (the installer refuses Intel Macs)", read("README.md"))
+        self.assertIn("macOS on Apple silicon only (the installer refuses Intel Macs)", read("docs/guide.md"))
         self.assertIn("Apple silicon", read("site/public/alternatives.html"))
 
     def test_every_place_that_lists_the_prerequisites_names_the_same_things(self):
-        readme = read("README.md"); limits = next(l for l in readme.splitlines() if "Needs Xcode for iOS" in l)
+        readme = read("docs/guide.md"); limits = next(l for l in readme.splitlines() if "Needs Xcode for iOS" in l)
         ld = set(re.findall(r'"softwareRequirements": "([^"]+)"', INDEX_HTML)); self.assertEqual(len(ld), 1)
         places = {"README Limits": limits, "index.html data": ld.pop(), "llms.txt": read("site/public/llms.txt")}
         for name, text in places.items():
@@ -75,7 +75,7 @@ class PlatformAndRequirements(unittest.TestCase):
         self.assertIn("tested with 2.0.10", limits)
         self.assertEqual(sf.MAESTRO_TESTED, ("2.0.10", "2.11.0"))
         # the one-sentence version on the page is a subset of that set and never names another Java
-        for rel in ("README.md", "site/public/index.html", "site/public/llms.txt", "site/public/alternatives.html", "site/public/terms.html"):
+        for rel in ("docs/guide.md", "site/public/index.html", "site/public/llms.txt", "site/public/alternatives.html", "site/public/terms.html"):
             self.assertNotRegex(plain(read(rel)), r"Java (1[0-6]|[0-9])\b(?!\.)", rel)
 
     def test_java_17_is_the_real_floor_in_the_program(self):
@@ -94,7 +94,7 @@ class PlatformAndRequirements(unittest.TestCase):
 # --------------------------------------------------------------------------------------------------------------------- C101
 class LinksResolve(unittest.TestCase):
     """Every shotfleet.com address and relative link in the README, the launch texts and the docs lands on something the site has."""
-    TEXTS = ["README.md", "DISTRIBUTION.md", "marketing/launch-email.md", "marketing/launch-posts-v2.md", "site/public/llms.txt"]
+    TEXTS = ["docs/guide.md", "DISTRIBUTION.md", "marketing/launch-email.md", "marketing/launch-posts-v2.md", "site/public/llms.txt"]
     KIT = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "marketing/kit").glob("*.md"))
     RELEASE_FILES = {"VERSION", "shotfleet-macos-arm64.tar.gz", "shotfleet-macos-arm64.tar.gz.sha256", "shotfleet-macos-arm64.pkg"}  # built by packaging/release.sh, not kept in the repo
     URL = re.compile(r"https://shotfleet\.com(/[^\s)>\]`'\"*,;<]*)?")
@@ -135,9 +135,9 @@ class LinksResolve(unittest.TestCase):
         self.assertIsNotNone(section); self.assertIn("MIT license", plain(section.group(1)))  # the section says shotfleet is free and open source
 
     def test_relative_links_in_the_readme_exist(self):
-        for rel in ("README.md", "DISTRIBUTION.md"):
+        for rel in ("README.md", "docs/guide.md", "DISTRIBUTION.md"):
             for target in re.findall(r"\]\((?!https?:|#|mailto:)([^)#\s]+)(?:#[^)]*)?\)", read(rel)):
-                with self.subTest(file=rel, target=target): self.assertTrue((ROOT / target).exists(), target)
+                with self.subTest(file=rel, target=target): self.assertTrue(((ROOT / rel).parent / target).exists(), target)
 
     def test_kit_addresses_point_at_the_site_or_at_a_guide_that_is_drafted_or_planned(self):
         drafts = {p.stem for p in (ROOT / "site/draft/guides").glob("*.html")}

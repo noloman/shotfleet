@@ -149,7 +149,7 @@
   "claim": "Every image is read back and compared with your app's own strings",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "it reads every image back and compares the text with your app’s own strings",
@@ -165,8 +165,8 @@
   "id": "C010",
   "claim": "The same fixed status bar on every screenshot: 9:41, full battery",
   "where": [
-   "README.md",
-   "README.md"
+   "docs/guide.md",
+   "docs/guide.md"
   ],
   "where_text": [
    "`simctl status_bar` override: 9:41, full battery",
@@ -183,7 +183,7 @@
   "claim": "Then one command puts the passing screenshots into fastlane's folders",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "one command puts the passing App Store and Google Play screenshots into fastlane’s folders.",
@@ -219,7 +219,7 @@
   "claim": "shotfleet found it / the first run found a button nobody could reach",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "The first run found a button nobody could reach.",
@@ -258,7 +258,7 @@
   "claim": "shotfleet reads the translations compiled into your build and rewrites every text selector",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "shotfleet reads the translations compiled into your build and rewrites every text selector.",
@@ -274,7 +274,7 @@
   "id": "C016",
   "claim": "If 'Next' has two keys, German matches (Nächste|Weiter); id: selectors pass through untouched",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "If \"Next\" has two keys, German matches `(Nächste|Weiter)`. Selectors that use `id:` pass through untouched."
@@ -290,7 +290,7 @@
   "claim": "When two words clash in a language, it warns you before anything runs (Turkish: Next also means Advanced)",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "If two words clash in a language, it warns you before anything runs.",
@@ -307,7 +307,7 @@
   "claim": "Setup is one command and a two-line config; the Maestro flow is the only thing you maintain",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "After install, setup is <code>shotfleet init</code> and a two-line config.",
@@ -323,7 +323,7 @@
   "id": "C019",
   "claim": "Quickstart takes about 10 minutes",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "## Quickstart (build the app once for the simulator first)"
@@ -375,7 +375,7 @@
   "id": "C022",
   "claim": "The check includes the App Store/Play size, count, transparency and iPad rules",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "marketing/launch-posts-v2.md"
   ],
   "where_text": [
@@ -392,7 +392,7 @@
   "id": "C023",
   "claim": "Store codes are mapped back to the app's languages (de-DE to de, no to nb, zh-CN to zh-Hans)",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Store codes are mapped back to your app's languages (`de-DE` to `de`, `no` to `nb`, `zh-CN` to `zh-Hans`)"
@@ -407,7 +407,7 @@
   "id": "C024",
   "claim": "The check finds listings in a language the app does not have",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "**Languages your app doesn't have:**"
@@ -422,8 +422,8 @@
   "id": "C025",
   "claim": "Copies: the same image in two languages / Missing: a language that didn't produce every screenshot",
   "where": [
-   "README.md",
-   "README.md"
+   "docs/guide.md",
+   "docs/guide.md"
   ],
   "where_text": [
    "**Copies:** the same image in two languages.",
@@ -439,7 +439,7 @@
   "id": "C026",
   "claim": "Wrong language: the German folder actually shows English or Japanese strings",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "**Wrong language:** the German folder actually shows English or Japanese strings."
@@ -454,7 +454,7 @@
   "id": "C027",
   "claim": "On iOS the text is read straight from the app while each screenshot is on screen (exact, in every script)",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "On iOS, shotfleet reads the text straight from the app while each screenshot is on screen (exact, in every script)"
@@ -469,7 +469,7 @@
   "id": "C028",
   "claim": "The report (check.json, index.html) goes to ./shotfleet-check and your fastlane folders are never touched",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "and your fastlane folders are never touched"
@@ -485,7 +485,7 @@
   "id": "C029",
   "claim": "Index grid: a row per language, a column per screen, problems outlined in red and marked \"problem\" in words; alt text (language, screen, verdict) on every screenshot",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "It's a grid with a row per language and a column per screen, and problems are outlined in red and marked \"problem\" in words. Every screenshot has alt text (language, screen, verdict) for screen readers."
@@ -501,8 +501,8 @@
   "id": "C030",
   "claim": "On 220 real AnywhereRoles iOS screenshots (20 languages) check took 57 to 86 seconds warm, 2026-10-06; earlier, on WOD Tracker's committed fastlane screenshots, it found one real problem (Chinese captions over an English app); planted errors were reported",
   "where": [
-   "README.md",
-   "README.md"
+   "docs/guide.md",
+   "docs/guide.md"
   ],
   "where_text": [
    "On 220 real iOS screenshots of another of my apps (AnywhereRoles, 20 languages) it took 57 to 86 seconds with macOS text recognition already warmed up. The first check after macOS updates its text model can take much longer.",
@@ -518,7 +518,7 @@
   "id": "C031",
   "claim": "Check screenshots you already have: fastlane snapshot/screengrab, a plain folder per language, by hand (other tools' exports were not tried)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/index.html",
    "marketing/kit/show-hn.md",
    "site/public/docs.html"
@@ -543,7 +543,7 @@
   "claim": "`check` needs no key or account (shotfleet has no license check)",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Already use fastlane snapshot or screengrab? <code>check</code> works on those screenshots",
@@ -561,7 +561,7 @@
   "claim": "Needs a Mac, Maestro and Java 17+ (README Limits omit Java)",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "It needs an Apple silicon Mac, Maestro and Java 17+.",
@@ -581,7 +581,7 @@
   "claim": "It reads native iOS and Android strings and Compose Multiplatform",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "It reads native iOS and Android strings and Compose Multiplatform;",
@@ -598,7 +598,7 @@
   "claim": "Flutter and React Native work from your translation files (run end to end on wger, a Flutter app, and the obytes template, an Expo app, on iOS and Android)",
   "where": [
    "site/public/index.html",
-   "README.md",
+   "docs/guide.md",
    "site/public/alternatives.html"
   ],
   "where_text": [
@@ -616,7 +616,7 @@
   "id": "C036",
   "claim": "Supported translation formats: .arb, i18next/react-intl .json, .xcstrings, .strings, .stringsdict, strings.xml, XLIFF, .resx, .po, .properties, CSV; ICU plurals and placeholders; language from @@locale, file name or folder",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Supported: `.arb`, i18next/react-intl `.json`"
@@ -807,7 +807,7 @@
   "claim": "The licence is checked online once and then about weekly, and works offline for 30 days",
   "where": [
    "site/public/index.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "It works offline for 30 days, and a CI key is checked on every run.",
@@ -1021,7 +1021,7 @@
   "claim": "Install: curl -fsSL .../install.sh | sh, then shotfleet activate <key> (checksum-verified, on the PATH)",
   "where": [
    "site/public/index.html",
-   "README.md",
+   "docs/guide.md",
    "marketing/launch-email.md"
   ],
   "where_text": [
@@ -1039,8 +1039,8 @@
   "id": "C058",
   "claim": "The installed program is signed and notarized (Apple silicon), brings its own Python and needs no Gatekeeper prompt",
   "where": [
-   "README.md",
-   "README.md"
+   "docs/guide.md",
+   "docs/guide.md"
   ],
   "where_text": [
    "# signed, notarized; Apple silicon",
@@ -1056,7 +1056,7 @@
   "id": "C059",
   "claim": "doctor checks Maestro, Java, Xcode and the Android SDK and says how to fix what is missing",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "# checks Maestro, Java, Xcode, Android SDK"
@@ -1071,7 +1071,7 @@
   "id": "C060",
   "claim": "init writes a starter config and flow; no appId needed, one flow serves iOS and Android",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "No `appId` needed: shotfleet uses each build's own id, so one flow serves iOS and Android."
@@ -1086,7 +1086,7 @@
   "id": "C061",
   "claim": "shotfleet run finds ./shotfleet.toml and runs both platforms; --platform ios for one; --locales for some",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "finds `./shotfleet.toml`; both platforms if the file has both, `--platform ios` for one"
@@ -1101,7 +1101,7 @@
   "id": "C062",
   "claim": "A typo or a wrong type in the config is refused with a one-line message before anything runs",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "A typo or a wrong type is refused"
@@ -1116,8 +1116,8 @@
   "id": "C063",
   "claim": "Config keys documented in the README (flow, out, parallel, locales, base_locale, bundle_id, device_type, runtime, device_types, devices)",
   "where": [
-   "README.md",
-   "README.md"
+   "docs/guide.md",
+   "docs/guide.md"
   ],
   "where_text": [
    "device_types = [\"iPhone 17 Pro Max\", \"iPad Pro 13-inch (M5)\"]",
@@ -1133,7 +1133,7 @@
   "id": "C064",
   "claim": "Exit codes: 0 all good, 1 problems found, 2 setup error, 130 interrupted; run and check take --json",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Exit codes: `0` all good, `1` problems found, `2` setup error (the message says what to fix), `130` interrupted."
@@ -1148,7 +1148,7 @@
   "id": "C065",
   "claim": "run, check and export all take --json",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "`run`, `check` and `export` take `--json` and use stable exit codes"
@@ -1166,7 +1166,7 @@
   "id": "C066",
   "claim": "CI recipe: GitHub Actions job running python3 shotfleet.py check ... --json",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "shotfleet check fastlane/ --app build/Build/Products/Debug-iphonesimulator/MyApp.app --json > check.json"
@@ -1184,7 +1184,7 @@
   "id": "C067",
   "claim": "shotfleet mcp is an MCP server with check, run and doctor tools",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "`shotfleet mcp` is an MCP server with `check`, `run` and `doctor` tools."
@@ -1199,7 +1199,7 @@
   "id": "C068",
   "claim": "Hooks (before/after run and export) and --no-hooks; failing before_* stops (exit 2), failing after_* makes exit 1; documented variables",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "A failing `before_*` hook stops the command (exit 2); a failing `after_*` hook makes the exit code 1, so CI notices."
@@ -1214,7 +1214,7 @@
   "id": "C069",
   "claim": "Overrides ([overrides.tr]) and shotfleet-<name> plugins on the PATH",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "**Plugins**: `shotfleet foo` runs `shotfleet-foo` from your PATH"
@@ -1229,7 +1229,7 @@
   "id": "C070",
   "claim": "Permission prompts are drawn in the device language (English); write those taps in English, shotfleet keeps the English text matchable; Android installs with every permission granted",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Write those taps in English; shotfleet keeps the English text matchable."
@@ -1244,7 +1244,7 @@
   "id": "C071",
   "claim": "Text recognition reads 33 languages incl. Latin, Cyrillic, Arabic, Thai, Devanagari, Chinese, Japanese, Korean; others only get the weaker checks",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Text recognition is macOS's. It reads 33 languages"
@@ -1259,7 +1259,7 @@
   "id": "C072",
   "claim": "If macOS text recognition gets stuck, check switches to Tesseract automatically when installed; otherwise it finishes after at most 8 minutes of waiting in all, judges screens with the app's own text, marks the rest not verified (unverified in --json, exit 0, --strict exit 1; identical unread screens are a note, not a copy problem) and says to run again later or install Tesseract (no restart needed); concurrent checks take turns warming it up",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -1276,7 +1276,7 @@
   "id": "C073",
   "claim": "Android needs API 33+ emulators; typed text isn't translated",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Android needs API 33+ emulators for per-app languages."
@@ -1291,7 +1291,7 @@
   "id": "C074",
   "claim": "Tips: dismiss late dialogs with a repeat/while loop; each language starts from a clean install (iOS clearState, Android app data cleared by shotfleet)",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "**Fresh state:** each language starts from a clean install."
@@ -1306,7 +1306,7 @@
   "id": "C075",
   "claim": "README upload recipes (fastlane deliver / supply flags) upload screenshots only and touch nothing else",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "fastlane deliver --skip_binary_upload --skip_metadata --overwrite_screenshots --force"
@@ -1872,7 +1872,7 @@
   "id": "C109",
   "claim": "With a Flutter, React Native, .NET MAUI or Unity build, init, run and check tell you what to add (the strings = line for your translation files) and warn about Flutter and React Native debug builds, without stopping the run",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "shotfleet tells you what to add: a `hint:` on stderr with the `strings =` line for your translation files"
@@ -1955,7 +1955,7 @@
   "id": "C114",
   "claim": "[inputs] sets the text a flow types per language on iOS (Maestro env entry in that language's flow); on Android a per-language value is read from shotfleet_vars.js by MAESTRO_DEVICE_UDID, which Maestro 2.11.0 sets to the emulator's serial and Maestro 2.0.10 does not define (there Android runs use the defaults only)",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "The value goes into that language's flow as a Maestro `env:` entry.",
@@ -1971,7 +1971,7 @@
   "id": "C115",
   "claim": "`shotfleet init` with no arguments only reads folders: it never runs xcodebuild or gradle, creates nothing outside --dir, uses explicit builds exactly as before, and when it finds nothing exits with the exact build commands (never silently)",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "`shotfleet init` without arguments only reads folders, never builds.",
@@ -1988,7 +1988,7 @@
   "id": "C116",
   "claim": "`shotfleet init` with no arguments picks the newest Debug-iphonesimulator app in Xcode's default DerivedData whose info.plist points at an Xcode project in this folder, and the newest Gradle debug APK (not the Wear or androidTest one), and says in one line which and how old",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "For iOS it takes the newest `Debug-iphonesimulator` app in Xcode's default DerivedData folder",
@@ -2004,7 +2004,7 @@
   "id": "C117",
   "claim": "Android setup: the SDK is found in ANDROID_HOME, ANDROID_SDK_ROOT, ~/Library/Android/sdk, Homebrew's android-commandlinetools or beside an adb on the PATH; any installed arm64 google_apis(_playstore) image of API 33+ is used; doctor prints the exact sdkmanager commands for what is missing",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "shotfleet finds the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `~/Library/Android/sdk`",
@@ -2038,7 +2038,7 @@
   "claim": "check --content / run verifies that the texts you list in [expect.<screenshot>] are on (or off) each screen, per language, and never passes a text OCR cannot read",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "could not verify",
@@ -2055,7 +2055,7 @@
   "claim": "[ios] simctl and [android] shell run your commands once per simulator or emulator after boot; a failing command stops the run with exit 2 and the command printed",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "A command that fails stops the run before anything is captured (exit 2)",
@@ -2071,7 +2071,7 @@
   "id": "C121",
   "claim": "init in a Flutter, React Native, Expo, Capacitor, MAUI or Kotlin Multiplatform project folder finds the framework's build, writes the strings line and prints the framework's build commands",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "**Run `shotfleet init` in the project folder** and it does the finding for you."
@@ -2086,7 +2086,7 @@
   "id": "C122",
   "claim": "An EAS .tar.gz or a .zip simulator build is unpacked by init",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Give it an EAS `.tar.gz` or a `.zip` build and it unpacks it next to the config."
@@ -2101,7 +2101,7 @@
   "id": "C123",
   "claim": "Translations written as an object in code (.ts, .js) are read as data and never run",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "translations written as an object in code (`.ts`, `.js`: Ignite, i18n-js, vue-i18n; read as data, never run"
@@ -2131,7 +2131,7 @@
   "id": "C125",
   "claim": "check and the Android readers run on Linux with Tesseract; run on a Linux emulator is untried",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Linux: `check` and the Android readers run from source on Linux"
@@ -2146,7 +2146,7 @@
   "id": "C126",
   "claim": "doctor --fix downloads Maestro, a Java runtime and the Android tools after one question, with checksums, never using sudo",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "`shotfleet doctor --fix` fetches what `doctor` found missing and shows you the plan first"
@@ -2161,7 +2161,7 @@
   "id": "C127",
   "claim": "check flags a screenshot with nothing drawn on it but the status bar, and run captures that language again once",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -2178,7 +2178,7 @@
   "id": "C128",
   "claim": "A selector written as Title.* or .*Title has the title translated, which is how a Flutter row (one label of title and detail) is tapped",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "so tap it as `\"Self-hosted.*\"`; shotfleet translates the part before the `.*`"
@@ -2194,7 +2194,7 @@
   "id": "C129",
   "claim": "run warns before capturing when you ask for a language the app only half translates; a standalone check of a run folder reads the same translation files as the run",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "`run` warns when you ask for such a language by name"
@@ -2210,7 +2210,7 @@
   "id": "C130",
   "claim": "A run that produces no new screenshot for 15 minutes (a hung simulator or flow) is stopped and retried; stall_s sets the limit",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "stall_s = 900             # seconds without a new screenshot before a hung simulator or flow is stopped"
@@ -2226,7 +2226,7 @@
   "id": "C131",
   "claim": "Built to run on macOS 13 or later on Apple silicon (minos 13.0, tools/verify-release.sh), not run on 13; full runs only on macOS 27; installer, doctor and check on macOS 14 and 15 (0.1.6) and 26.2 in a VM (0.1.2); other versions not tested",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/index.html",
    "site/public/alternatives.html",
@@ -2248,7 +2248,7 @@
   "id": "C132",
   "claim": "On Android with Maestro 2.7.0 or newer the screen text is read from the UI hierarchy (a marker step after each screenshot), exact in every script",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "on Android it does the same with Maestro 2.7.0 or newer, from the screen hierarchy Maestro saves for a marker step after each screenshot"
@@ -2564,7 +2564,7 @@
   "where": [
    "site/public/docs.html",
    "site/public/docs.html",
-   "README.md",
+   "docs/guide.md",
    "site/public/llms.txt"
   ],
   "where_text": [
@@ -2583,7 +2583,7 @@
   "id": "C160",
   "claim": "With AI agents: nothing to sign in to, the agent uses the same free CLI",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -2601,7 +2601,7 @@
   "claim": "With AI agents: the skills are in the public repo noloman/shotfleet-skills; Claude Code installs them with /plugin marketplace add noloman/shotfleet-skills and /plugin install shotfleet@shotfleet (skills plus the MCP server); other agents with gh skill install noloman/shotfleet-skills --all --scope user",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "/plugin marketplace add noloman/shotfleet-skills",
@@ -2740,7 +2740,7 @@
    "site/public/index.html",
    "site/public/terms.html",
    "site/public/llms.txt",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Prices are before VAT or sales tax, which Gumroad adds at checkout where it applies.",
@@ -2825,7 +2825,7 @@
   "id": "C175",
   "claim": "`run` needs Maestro, `check` doesn't: check works on fastlane snapshot (XCUITest) and screengrab (Espresso) folders, screengrab's timestamped file names included (the iOS clause 'or your own XCUITest tests' of the same sentences is C235)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/index.html",
    "site/public/llms.txt"
@@ -2847,7 +2847,7 @@
   "id": "C176",
   "claim": "Without --app, check looks for the app build the way init does, in the folder it runs from, and says in one line which build it used or that it found none",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -2865,7 +2865,7 @@
   "id": "C177",
   "claim": "A ready-made fastlane lane: snapshot or screengrab, then shotfleet check, and any problem fails the lane before deliver/supply uploads",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -2883,7 +2883,7 @@
   "id": "C178",
   "claim": "Paparazzi, Roborazzi or Compose preview renders: copy each language into its own folder (same names) and check the parent; --locale for one flat folder; check can't judge whether a drawn screen looks like the app on a phone; not tried on a real Paparazzi folder",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -2915,7 +2915,7 @@
   "id": "C180",
   "claim": "fastlane users don't need export: snapshot and screengrab already write into fastlane's folders",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -2932,7 +2932,7 @@
   "id": "C181",
   "claim": "brew install noloman/tap/shotfleet installs the same signed, notarized build; Homebrew links it into /opt/homebrew/bin; brew upgrade updates it; Homebrew doesn't install Maestro or Java (doctor --fix does); install.sh stays the main way",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/llms.txt"
   ],
@@ -2997,7 +2997,7 @@
   "id": "C187",
   "claim": "check runs on Linux in the Docker image ghcr.io/noloman/shotfleet-check: free, no licence, amd64 and arm64, with the compiled program, Tesseract and aapt2",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/draft/docker-pending.txt",
    "site/draft/docker-pending.txt"
   ],
@@ -3016,7 +3016,7 @@
   "id": "C188",
   "claim": "The GitHub Action noloman/shotfleet-check-action runs check on ubuntu-latest, fails the job on a problem (warn-only turns them into warnings), outputs the problem count, report folder and JSON; tested locally only",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/draft/docker-pending.txt"
   ],
   "where_text": [
@@ -3033,7 +3033,7 @@
   "id": "C189",
   "claim": "In the Docker image, run and export stop with one line saying the image only runs check",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/draft/docker-pending.txt"
   ],
   "where_text": [
@@ -3051,7 +3051,7 @@
   "id": "C184",
   "claim": "No macOS text recognition on Linux: Tesseract reads fewer scripts; the image has Tesseract data for 34 common languages",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/draft/docker-pending.txt",
    "site/draft/docker-pending.txt"
   ],
@@ -3070,7 +3070,7 @@
   "id": "C185",
   "claim": "Without --app or --strings the wrong-language check is much weaker on Linux; copies, missing screens and store rules are still checked",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/draft/docker-pending.txt",
    "site/draft/docker-pending.txt"
   ],
@@ -3089,7 +3089,7 @@
   "id": "C186",
   "claim": "On a real 72-screenshot, 18-language Android set the image with --app gave the Mac's verdict: 0 problems clean, all 3 planted faults found; without --app the English screen in de/ was missed",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/draft/docker-pending.txt"
   ],
   "where_text": [
@@ -3752,7 +3752,7 @@
   "id": "C230",
   "claim": "[capture] replaces flow for iOS: a config has one or the other, and build/xctestrun/only_testing/screenshots/timeout are checked before anything builds",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3770,7 +3770,7 @@
   "id": "C231",
   "claim": "With [capture], a language that saved no screenshots, or lacks a screen another language saved, fails even when the test passed",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3788,7 +3788,7 @@
   "id": "C232",
   "claim": "With [capture], shotfleet sets each simulator's language itself, adds -AppleLanguages/-AppleLocale to a copy of the .xctestrun, and moves fastlane's language files aside and back, also when the run fails",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3806,7 +3806,7 @@
   "id": "C233",
   "claim": "[capture] runs are paid like any run: 2 languages without a licence; check stays free",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3825,7 +3825,7 @@
   "id": "C234",
   "claim": "init --capture writes the [capture] table from the shared scheme with UI tests, and doctor stops asking for Maestro for iOS when the config has [capture] (doctor reads ./shotfleet.toml, or the config path given as its argument)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3843,17 +3843,17 @@
   "id": "C235",
   "claim": "With [capture], run builds the team's XCUITest bundle once and runs it on several simulators at once, one language each, then collects and checks the screenshots; every public sentence that offers it (also 'run needs Maestro, or on iOS your own XCUITest tests' and 'needs neither') says it is new in 0.1.6, and none says its device test hasn't passed",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/index.html",
    "site/public/llms.txt",
    "site/public/alternatives.html",
    "site/public/docs.html",
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -3880,7 +3880,7 @@
   "id": "C236",
   "claim": "Bring your own capture was tried by hand first: fixture app on 2 simulators at once in German and Japanese, and a real app's SnapshotHelper test where check found a real bug",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4236,7 +4236,7 @@
   "id": "C256",
   "claim": "A CI key is checked online on every run, uses no activation, and works offline only on a machine where it passed a check in the last 30 days",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/terms.html"
   ],
@@ -4257,7 +4257,7 @@
   "id": "C257",
   "claim": "Over MCP no command written in the config runs without hooks: true: run skips [hooks] and refuses a config with a [capture] build, [ios] simctl or [android] shell commands; check takes no ocr_command (README, docs, What's new 0.1.6)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/whats-new.html",
    "site/public/whats-new.html"
@@ -4300,7 +4300,7 @@
    "site/public/terms.html",
    "site/public/index.html",
    "site/public/llms.txt",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "The spare activations work from 0.1.6; 0.1.5 and older stop at 3.",
@@ -4431,7 +4431,7 @@
   "id": "C280",
   "claim": "With no `runtime` in the config, `run` skips iOS 27.0 and uses the newest other installed runtime, saying which and why in one line; if only iOS 27.0 is installed it uses it and warns; `doctor` warns too",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4449,7 +4449,7 @@
   "id": "C267",
   "claim": "A runtime set in the config is never second-guessed",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "a runtime you set is never second-guessed."
@@ -4465,7 +4465,7 @@
   "id": "C268",
   "claim": "iOS 27.0 simulators froze at boot in some of the owner's own runs",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "iOS 27.0 simulators:** they froze at boot in some of my own runs"
@@ -4480,7 +4480,7 @@
   "id": "C269",
   "claim": "run prints one warning when the Mac is very busy (swap 90% full or more, critical memory pressure, or load far above the cores), suggests fewer parallel devices, checks again before a retry and between Android rounds, warns at most once, never refuses; capacity = \"off\" silences it",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4498,7 +4498,7 @@
   "id": "C270",
   "claim": "Every simctl and adb call has a time limit, so a simulator that stops answering ends the run with a message instead of hanging it",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Every `simctl` and `adb` call has a time limit, so a simulator that stops answering ends the run with a message instead of hanging it."
@@ -4514,7 +4514,7 @@
   "id": "C271",
   "claim": "A language that fails because the device broke is retried once by itself; a flow or app failure is not; run.json counts the tries (attempts)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html",
    "site/public/whats-new.html"
   ],
@@ -4534,7 +4534,7 @@
   "id": "C272",
   "claim": "run --retry-failed reruns only the languages that failed in the last run, keeps the passed ones listed in run.json, adds up the tries, refuses --locales and a missing run.json",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "To rerun only the languages that failed in this config's last run, use `shotfleet run --retry-failed`. The languages that passed stay as they were and are still listed in `run.json`, and the tries of the retried ones add up. It can't be combined with `--locales`, and it stops with a message if there is no earlier `run.json`."
@@ -4550,7 +4550,7 @@
   "id": "C273",
   "claim": "check ends with a language x device-class table per store (App Store: iPhone 6.9, 6.5, iPad 13; Play: phone, 7 and 10 inch tablet), each cell ok, missing, too many or wrong size",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4568,7 +4568,7 @@
   "id": "C274",
   "claim": "The coverage table says in plain words what is short, e.g. ja: iPad 13\" missing (the App Store needs it because your app runs on iPad)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4586,7 +4586,7 @@
   "id": "C275",
   "claim": "The coverage is in index.html and as coverage in check.json and --json, and it changes no exit code",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4604,7 +4604,7 @@
   "id": "C276",
   "claim": "check --compare lists per language and screen what is new, removed or changed (a different image, plus text lines added and removed when both sides have the app's .texts.json)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4622,7 +4622,7 @@
   "id": "C277",
   "claim": "check --compare reads nothing with text recognition, is a report only (exit code unchanged) and is in check.json as compare",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4640,7 +4640,7 @@
   "id": "C278",
   "claim": "export --print-upload prints the fastlane upload command with your folder in it; it only prints and shotfleet never uploads or sees your credentials",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4658,7 +4658,7 @@
   "id": "C279",
   "claim": "The asc CLI has an asc screenshots upload command with --version-localization, --path, --device-type, --replace and --confirm, one language and device type at a time",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4794,7 +4794,7 @@
   "id": "C288",
   "claim": "scrollUntilVisible's plain-text element and its object form are both translated for each language",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4811,7 +4811,7 @@
   "id": "C289",
   "claim": "Before every takeScreenshot shotfleet adds a waitForAnimationToEnd step with a limit of 1 second; settle_ms changes the limit and 0 turns it off",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4828,7 +4828,7 @@
   "id": "C290",
   "claim": "A wait for a still screen cannot help when the app keeps one splash image on screen for several seconds; wait for a text on the first real screen instead",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4845,7 +4845,7 @@
   "id": "C291",
   "claim": "A language code the app ships under another name (zh-Hans and zh-CN, zh-Hant and zh-TW, pt and pt-BR) is mapped to the shipped code, and two possible answers are not guessed",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4862,7 +4862,7 @@
   "id": "C292",
   "claim": "[expect.<screenshot>] key = \"...\" requires the app's own text for that string key, in each screenshot's language, to be on screen; a wrong key or a text with a placeholder is reported; nothing happens without an [expect] table",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4879,7 +4879,7 @@
   "id": "C293",
   "claim": "Below Maestro 2.7.0 (2.0.10 is one) Android has no screen hierarchy, so check reads Android screenshots by text recognition; run says so and suggests 2.11.0",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4896,7 +4896,7 @@
   "id": "C294",
   "claim": "check --app on a Flutter build says to pass --strings 'lib/l10n/*.arb', and --strings together with --app uses the translation files",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4913,7 +4913,7 @@
   "id": "C295",
   "claim": "shotfleet doctor names the iOS runtime run will use and why, or the one the config sets",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4930,7 +4930,7 @@
   "id": "C296",
   "claim": "Pool simulators are named shotfleet-1, shotfleet-2 and so on; a stuck one is deleted and made again under the same name with a new id",
   "where": [
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "If one stops answering, the next run deletes it and makes a new one with the same name. The id changes, so a script that finds simulators by name keeps working and one that remembers ids doesn't."
@@ -4945,7 +4945,7 @@
   "id": "C297",
   "claim": "Maestro's iOS driver not starting in time counts as a device failure and is retried once",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4962,7 +4962,7 @@
   "id": "C298",
   "claim": "With device_types, check out reports a missing 13-inch iPad set as a problem in each device's check (iPad column missing) and the exit code agrees",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -4980,7 +4980,7 @@
   "claim": "Flow tips: in Turkish 'İleri' means both Next and Advanced; an onboarding tap on Next hit the Advanced option and Turkish failed on every Android screenshot (0 of 6)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "and the tap on \"Next\" hit the option, so Turkish failed on every screenshot on Android (0 of 6)",
@@ -4997,7 +4997,7 @@
   "claim": "Flow tips: in Chinese a card pill and the Benchmarks row both read 基准, so a scrollUntilVisible stopped at the pill and the later tap found nothing",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "A scroll that waits for the text stopped at the pill, and the tap on the row found nothing.",
@@ -5014,7 +5014,7 @@
   "claim": "Flow tips: a WOD Tracker iPhone attempt exited 0 with 8 of 8 screenshots and check said 0 problems, but the Hindi Benchmarks frame showed the Train screen because the tap hit the tab bar; found by looking",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "but the Hindi \"Benchmarks\" frame showed the Train screen",
@@ -5031,7 +5031,7 @@
   "claim": "Flow tips: Maestro takes scrollUntilVisible's element as a plain string or as a selector object; in 0.1.7 and older shotfleet translated the text in the object form only and the plain string stayed English (Hindi and Turkish iPhone run failed, 0 of 2); from 0.1.8 both forms are translated",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Use it on 0.1.7 and older: those versions translate the text in the object form and leave the plain string in English",
@@ -5048,7 +5048,7 @@
   "claim": "Flow tips: a text-plus-below: tap pins the Next button and was run on iOS and Android, Turkish included (Maestro 2.0.10, WOD Tracker)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Ran on iOS and Android, Turkish included (Maestro 2.0.10, WOD Tracker, 2026-10-07).",
@@ -5065,7 +5065,7 @@
   "claim": "Flow tips: four fixed swipes to the end of the list, then a plain tap on the row, ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (Maestro 2.0.10, WOD Tracker)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Ran on an iPhone simulator in Chinese, Polish, Dutch and Portuguese (Maestro 2.0.10, WOD Tracker, 2026-10-07).",
@@ -5082,7 +5082,7 @@
   "claim": "Flow tips: tapping by id ran on iOS and Android (Maestro 2.0.10, obytes Expo template, 2026-10-03); shotfleet leaves id selectors alone",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Ran on iOS and Android (Maestro 2.0.10, the obytes Expo template, 2026-10-03).",
@@ -5099,7 +5099,7 @@
   "claim": "Flow tips: Maestro counts index from 0; index: 1 is the second match (from Maestro's docs, not run on a device)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Maestro counts from 0, so <code>index: 1</code> is the second match. Not run",
@@ -5116,7 +5116,7 @@
   "claim": "Flow tips: scrollUntilVisible defaults to direction DOWN and a 20000 ms timeout and fails when it runs out; centerElement: true keeps scrolling until the element is more than 30% from the screen edge (from Maestro's docs, centerElement not run)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "keeps scrolling until the element is more than 30% away from the edge of the screen (not run)",
@@ -5133,7 +5133,7 @@
   "claim": "Flow tips: waitForAnimationToEnd does not fail; Maestro carries on when its timeout (15000 ms by default) runs out",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Maestro's docs say it carries on when its timeout (15000 ms by default) runs out",
@@ -5150,7 +5150,7 @@
   "claim": "Flow tips: extendedWaitUntil on a text only the screen has, then waitForAnimationToEnd, then takeScreenshot, ran on iOS (Maestro 2.0.10, WOD Tracker)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Ran on iOS (Maestro 2.0.10, WOD Tracker).",
@@ -5167,7 +5167,7 @@
   "claim": "Flow tips: an assertVisible between the tap and the screenshot fails the language when the tap went wrong; the [expect] tables can do the same after the run (not run for this case; no such guard was in the wrong-frame attempt)",
   "where": [
    "site/public/docs.html",
-   "README.md"
+   "docs/guide.md"
   ],
   "where_text": [
    "Not run; I had no such guard in that attempt, which is the point.",
@@ -5554,7 +5554,7 @@
   "id": "C350",
   "claim": "run warns by name about a regex or format-string text selector that matches an app text but cannot be translated per language (it only matches in the base language), and suggests an id or a label the app translates; 0.1.7 and older skipped it",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5571,7 +5571,7 @@
   "id": "C351",
   "claim": "run warns before it starts when another process listens on port 7001 (Maestro's driver port), naming the pid and command and saying it is another Maestro driver when the command is Maestro's, and after a failure with io.grpc.StatusRuntimeException: UNAVAILABLE it says the same; it needs lsof, says nothing without it, and stops nothing",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5588,7 +5588,7 @@
   "id": "C352",
   "claim": "After a failed step on Android, run asks the emulator for dumpsys window and, if the app's splash window is still up, says the app's splash screen is still showing and that taps can't reach the app (the listed texts are labelled as behind it); on iOS it reads the failure screenshot and, when the picture shows none of the tree's texts, prints what the picture reads next to what the tree lists",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5605,7 +5605,7 @@
   "id": "C353",
   "claim": "When a language fails, run copies the failure screenshot into out/failures/<language>.png, names it in the failure message and in run.json (failure_screenshot); if the retry saved none, the first try's is kept as <language>-first-try.png and the message says so; a language that passes later loses its old picture",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5622,7 +5622,7 @@
   "id": "C370",
   "claim": "On Maestro 2.0.10 with an iOS 26.4 simulator, the back step did not pop the navigation stack in one app; tapping the nav bar's back chevron (a point tap or its id) did",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5638,7 +5638,7 @@
   "id": "C371",
   "claim": "The back-step problem has not been checked on Maestro 2.11.0",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5654,7 +5654,7 @@
   "id": "C372",
   "claim": "A web-view detail page was captured blank until the flow waited for a text from the page (extendedWaitUntil visible, then waitForAnimationToEnd)",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5670,7 +5670,7 @@
   "id": "C373",
   "claim": "shotfleet's own wait before a screenshot helps with animations, not with late network or web content",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5686,7 +5686,7 @@
   "id": "C374",
   "claim": "With two Android emulators in parallel, one lost its Wi-Fi status icon in the screenshots; svc wifi enable in the [android] shell list fixed it",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5702,7 +5702,7 @@
   "id": "C375",
   "claim": "shotfleet runs the [android] shell commands on every emulator after it boots, on every run",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [
@@ -5799,7 +5799,7 @@
   "id": "C422",
   "claim": "The README and the docs say that a Flutter, React Native, MAUI or Unity build without translation files stops check, run and init with exit 2 instead of going on with the libraries' own text",
   "where": [
-   "README.md",
+   "docs/guide.md",
    "site/public/docs.html"
   ],
   "where_text": [

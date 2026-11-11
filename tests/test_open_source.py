@@ -40,7 +40,7 @@ class TheProjectIsOpenSource(unittest.TestCase):
         self.assertEqual((ROOT / ".github/FUNDING.yml").read_text().strip(), "github: noloman")
 
     def test_the_readme_the_site_and_the_contributing_guide_say_so_and_link_sponsors(self):
-        for f in ("README.md", "site/public/index.html", "site/public/terms.html", "CONTRIBUTING.md"):
+        for f in ("docs/guide.md", "site/public/index.html", "site/public/terms.html", "CONTRIBUTING.md"):
             text = (ROOT / f).read_text()
             self.assertIn("MIT", text, f)
             self.assertIn("https://github.com/sponsors/noloman", text, f)
