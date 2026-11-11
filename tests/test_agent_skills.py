@@ -281,7 +281,7 @@ class LlmsTxt(unittest.TestCase):
             self.assertTrue((ROOT / f"site/public/{page}.html").is_file(), url)
 
     def test_requirements_match_the_readme(self):
-        readme = (ROOT / "README.md").read_text()
+        readme = (ROOT / "docs/guide.md").read_text()
         for fact in ("Apple silicon", "Java 17+"):
             self.assertIn(fact, readme)
             self.assertIn(fact, LLMS)

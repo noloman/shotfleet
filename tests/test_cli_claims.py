@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 import shotfleet as sf
 
 INDEX = (ROOT / "site/public/index.html").read_text()
-README = (ROOT / "README.md").read_text()
+README = (ROOT / "docs/guide.md").read_text()
 SOURCE = (ROOT / "shotfleet.py").read_text()
 
 
@@ -63,7 +63,7 @@ def run_main(*argv):
 
 class TerminalSample(unittest.TestCase):
     """The sample run on the site and in the README is the program's real output format."""
-    SAMPLES = {"index.html": INDEX, "README.md": README}
+    SAMPLES = {"index.html": INDEX, "docs/guide.md": README}
 
     def lines(self, text):
         text = re.sub(r"<[^>]+>", "", text)
