@@ -21,6 +21,12 @@ Localized screenshots often end up as the English set copied into every language
 
 shotfleet reads the translations **compiled into your app** and rewrites your script for each language: "Next" becomes "Weiter", "次へ" or "İleri". Then it runs every language at once and **checks the result**, so a wrong-language, copied, blank or missing screenshot never reaches a store listing.
 
+## Why it matters
+
+Doing this by hand is slow and it doesn't scale. When I captured the store screenshots for my own app by hand, 17 screenshots in 2 languages took about 1.5 hours, roughly 2.5 minutes per screenshot per language. At that rate 20 languages is around 15 hours of tapping, and it all repeats at every release. With shotfleet the flow is written once and each release is a single command.
+
+It is for solo developers and small teams who ship an app in several languages and want store listings that look native in every one of them, without a localization agency or a week of manual work. Localized screenshots are one of the cheapest ways to make a store listing convert better in another country, and the part that was missing was a way to do it that doesn't fall apart on the second release.
+
 ## What you get
 
 - **One flow, every language.** Write the Maestro steps once in English; shotfleet translates the taps from your app's own strings.
@@ -43,6 +49,12 @@ shotfleet run --locales en                         # try one language, then: sho
 ```
 
 Then edit `flow.yaml` (plain Maestro steps in English, a `takeScreenshot:` per store image), review `out/index.html`, and export with `shotfleet export out --fastlane fastlane/`. The [guide](docs/guide.md) has the details: install options, config, CI, tips for tricky screens and the honest list of limits.
+
+## How it works
+
+1. **Write the flow once** in English with [Maestro](https://maestro.mobile.dev): navigate by the text users see and add a `takeScreenshot:` for each store image.
+2. **shotfleet translates it per language** from the strings in your built app, runs all languages in parallel and takes the screenshots.
+3. **It checks every screenshot** against your app's own text and the store rules, then exports clean folders for fastlane.
 
 ## Support shotfleet
 
