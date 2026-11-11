@@ -27,13 +27,15 @@ checked 72 screenshots in 18 languages: 0 problem(s)
 
 ## The problem
 
-Localized store screenshots often end up as **the English set copied into every language folder**. The UI script that drives the app taps English buttons ("Next", "Settings"), so it can't run in German or Japanese without a separate copy per language. Nobody wants to maintain 18 copies, so the translated listing ships with an English app in it.
+You ship in 18 languages. Your store listing says so. But open the German screenshots and half of them show English, because the UI script taps "Next" and "Settings" and can't run in German. So you either keep 18 copies of the script, re-shoot by hand every release, or ship an English app under a translated caption. Reviewers, and your users in Tokyo and São Paulo, notice.
 
 ## What shotfleet does
 
+**18 languages, 72 screenshots, 9 minutes, one flow you wrote once** (a real run: 534 s on 4 simulators).
+
 - **One flow, every language.** It reads the translations compiled into your app and rewrites your [Maestro](https://maestro.mobile.dev) flow for each language: "Next" becomes "Weiter", "次へ" or "İleri".
 - **Parallel.** Several simulators and emulators at once, iOS and Android from the same file.
-- **It checks the result.** Wrong language, the same image in two languages, blank frames, missing screens, sizes and counts the stores reject. A bad screenshot never reaches a listing.
+- **It catches what you would miss.** Wrong language, the same image in two languages, blank frames, missing screens, sizes and counts the stores reject. A bad screenshot never reaches a listing.
 - **Ready for fastlane.** `export` writes the folders `deliver` and `supply` read. shotfleet never uploads anything and never sees your Apple or Google credentials.
 - **Already use fastlane snapshot or screengrab?** `shotfleet check fastlane/` works on those screenshots, no Maestro needed.
 - **Works with your agent.** An MCP server and agent skills for Claude Code, Cursor, Codex, Gemini CLI and Copilot.
@@ -54,20 +56,20 @@ shotfleet run --locales en                         # try one language, then: sho
 
 Prefer Homebrew? `brew install noloman/tap/shotfleet`. A double-click `.pkg` and a from-source install are in the [guide](docs/guide.md#quickstart-build-the-app-once-for-the-simulator-first).
 
-## Free, and kept going by sponsors
+## Free for everyone. Sponsored by the people who rely on it.
 
-shotfleet is **free and open source (MIT)**: every command, every language, no key, no account, no license server. It is built and maintained by one person.
+shotfleet is **free and open source (MIT)**: every command, every language, no key, no account, no license server. It will stay that way. It is also built and maintained by one person, and the apps it serves change under it every year.
 
-If shotfleet saves you or your team time, please consider [sponsoring it on GitHub](https://github.com/sponsors/noloman). Sponsorship is what pays for the unglamorous work that keeps a tool like this usable:
+**If your team ships localized apps, you are who this is for.** Think of what an English screenshot in a German listing, a hand re-shoot before every release, or a day lost to a broken Xcode update costs your team, and of what a sponsorship costs next to that.
 
-- keeping up with new Xcode, Android, Maestro and macOS releases, which break things every year
-- testing on real apps and more languages and scripts
-- answering issues and fixing bugs quickly
-- new features such as more frameworks, more device sizes and better checks
+[**Sponsor shotfleet on GitHub**](https://github.com/sponsors/noloman) and you pay for:
 
-Companies that ship localized apps get the most from it. A sponsorship is a small cost next to a day of someone re-shooting screenshots by hand.
+- **Staying current:** every new Xcode, Android, Maestro and macOS release, fixed before it breaks your release day
+- **More coverage:** more languages and scripts, more frameworks, more device sizes, sharper checks
+- **Fast fixes:** issues read and bugs fixed quickly, by the person who wrote the code
+- **A tool that stays free and open** for solo developers and small teams who can't sponsor
 
-Not able to sponsor? A star, a bug report, or telling a colleague helps too.
+Can't sponsor? A star, a bug report, or telling a colleague helps too.
 
 ## Documentation
 
