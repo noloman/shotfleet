@@ -153,7 +153,7 @@ case $RC in 0|2) ok "doctor exit code is 0 or 2 (is: $RC)";; *) fail "doctor exi
 printf '%s' "$OUT" | grep -q '^ok   *swiftc' && ok "doctor does not need swiftc in the frozen build (OCR helper is bundled)" || fail "doctor wants swiftc"
 SK=$RUN/skills
 sfrun "$H0" skill install --dir "$SK"
-chk "skill install --dir copies the skills" 0 "installed $SK/shotfleet"
+chk "skill install --dir copies the skills" 0 "installed shotfleet, shotfleet-ci, shotfleet-review"
 [ -f "$SK/shotfleet/SKILL.md" ] && [ -f "$SK/shotfleet-ci/SKILL.md" ] && [ -f "$SK/shotfleet-review/SKILL.md" ] && ok "three SKILL.md files are on disk" || fail "skills missing in $SK"
 python3 "$PY" fixture "$RUN/fx"
 SFX="SHOTFLEET_OCR='cat {image}.txt'"

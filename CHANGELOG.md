@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+## 0.1.11 (2026-11-11)
 - Android: `pt-BR` is no longer skipped when the app's Brazilian strings are in `values-pt` next to `values-pt-rPT` (#110).
 - Android: output folders are named after the language you asked for (`id`, `he`, `pt-BR`), not the legacy code the app uses (`in`, `iw`, `pt`) (#111).
 - Android tablets: the launcher is disabled for the run so the taskbar and the Android 17 "app handle" tooltip and menu no longer show in screenshots or steal taps. `hide_system_chrome = false` in `[android]` turns it off (#109).

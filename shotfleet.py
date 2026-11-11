@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import NamedTuple, Optional
 
 HERE = Path(__file__).resolve().parent
-VERSION = "0.1.10"
+VERSION = "0.1.11"
 
 class Fail(Exception):
     """A user-facing error: printed as one line, no traceback."""
