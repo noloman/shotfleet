@@ -59,7 +59,7 @@ def inside(root, *parts):
 # early, because a typo like `ipd = true` would otherwise cost a multi-minute run.
 KEYS = {"common": {"flow": str, "out": str, "parallel": int, "locales": list, "base_locale": str, "strings": (str, list), "timeout_s": int, "stall_s": int, "capacity": str, "settle_ms": int},
         "ios": {"app": str, "bundle_id": str, "device_type": str, "device_types": list, "runtime": str, "simctl": list, "clock": str},
-        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list, "root": bool, "clock": str, "avd_fold": str}}
+        "android": {"apk": str, "package": str, "avd": str, "avd_tablet": str, "avd_tablet-7": str, "system_image": str, "devices": list, "shell": list, "root": bool, "clock": str, "avd_fold": str, "hide_system_chrome": bool}}
 REQUIRED = {"ios": ("app",), "android": ("apk",)}
 TABLES = ("ios", "android", "hooks", "overrides", "inputs", "expect", "capture")  # the optional tables [hooks], [overrides.<locale>], [inputs], [expect.<screenshot>] and [capture] are documented in the README
 EXPECT_KEYS = ("any", "all", "not", "key")  # key = the app's own string key; its text, in the screenshot's language, must be on screen
@@ -3010,6 +3010,8 @@ def android_pool(n, cfg, pool):
         if cfg.get("root") or clock: android_root(e)  # before the commands below: they may need it
         if clock: android_clock(e, clock)
         for c in demo_mode(clock): e.adb("shell", c, check=False)
+        if kind.get("folder") in ("tenInchScreenshots", "sevenInchScreenshots") and kind.get("fold") is None and cfg.get("hide_system_chrome", True):
+            e.adb("shell", "pm", "disable-user", "--user", "0", "com.google.android.apps.nexuslauncher", check=False)  # #109: the tablet taskbar and app handle live in the launcher
         run_setup(e, "shell", cfg.get("shell", ()))  # after boot, every run: the snapshot boot discards properties
 
 INNER_JS = "shotfleet_inner.js"
@@ -3257,6 +3259,10 @@ def android_run_inner(cfg, path, out, only, parallel):
     asked, notes = match_locales(only or cfg.get("locales") or [], strings)
     for n in notes: print(n if n.startswith("note:") else f"warning: {n}", flush=True)
     locales = (asked or shipped_locales(strings))
+    for req in (only or cfg.get("locales") or []):  # #110, #111: name the output after the code the user asked for (id, he, pt-BR), not the code the app's resources use (in, iw, pt)
+        got = match_locales([req], strings)[0]
+        if len(got) == 1 and got[0] != req and got[0] in locales and req not in strings:
+            strings[req] = strings[got[0]]; locales = [req if l == got[0] else l for l in locales]
     flow = with_app_id(path(cfg["flow"]).read_text().replace("\r\n", "\n"), pkg)
     expected = count_screenshots(flow)
     if any(isinstance(v, dict) for v in cfg.get("_inputs", {}).values()):
@@ -5922,6 +5928,8 @@ def match_locales(asked, have):
             lang = c.split("-")[0]
             if not same and lang != "zh":  # a Chinese script is never guessed
                 kin = [h for h in have if canon(h).split("-")[0] == lang]
+                bare = [h for h in kin if "-" not in h]
+                if code.casefold() == PRIMARY.get(lang, "").casefold() and len(bare) == 1: kin = bare  # pt-BR -> values-pt even when values-pt-rPT exists: Android resolves it the same way
                 same = kin if len(kin) == 1 and ("-" not in code or ("-" not in kin[0] and code.casefold() == PRIMARY.get(lang, "").casefold())) else []  # pt-BR -> pt (bare pt means pt-BR here), not de-DE -> de
             if len(same) != 1:
                 many = sorted(same) if len(same) > 1 else sorted(kin) if kin and len(kin) > 1 and "-" not in code else []

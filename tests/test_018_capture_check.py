@@ -100,6 +100,7 @@ class LocaleCodesPerPlatform(unittest.TestCase):  # item 3
 
     def test_pt_and_pt_br_map_only_when_the_app_has_no_other_pt(self):
         self.assertEqual(sf.match_locales(["pt"], {"pt-BR": {}, "de": {}})[0], ["pt-BR"])
+        self.assertEqual(sf.match_locales(["pt-BR"], {"en": {}, "pt": {}, "pt-PT": {}})[0], ["pt"])  # #110: values-pt is Brazilian even beside values-pt-rPT
         self.assertEqual(sf.match_locales(["pt-BR"], {"pt": {}})[0], ["pt"])
         self.assertEqual(sf.match_locales(["PT-br"], {"pt-BR": {}})[0], ["pt-BR"])  # only the case was off
 
