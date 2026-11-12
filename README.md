@@ -79,6 +79,7 @@ Not ready to sponsor? Starring the repo, telling a teammate and filing a good bu
 
 - [Guide](docs/guide.md): everything in detail, including what `check` looks at, config, CI and limits
 - [Linux and CI](docs/linux.md)
+- [Flutter example](examples/flutter/shotfleet.toml) and its [Maestro flow](examples/flutter/flow.yaml): copy both to your Flutter project root, replace the relative app-path placeholder, and keep the `lib/l10n/*.arb` strings glob.
 - [shotfleet.com](https://shotfleet.com): docs, guides and what's new
 - [Agent skills](https://github.com/noloman/shotfleet-skills)
 
