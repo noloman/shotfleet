@@ -30,7 +30,7 @@ Posting tips that apply to all of them:
 >
 > It was a paid product for a short while with zero sales, so I made it free and MIT licensed. If it's useful to you there's a GitHub Sponsors link in the README, but nothing is gated. Feedback on frameworks that don't work well is the most useful thing you could give me.
 >
-> Repo: https://github.com/noloman/shotfleet — Site: https://shotfleet.com
+> Repo: https://github.com/noloman/shotfleet. Site: https://shotfleet.com
 
 ---
 
@@ -139,4 +139,4 @@ It needs a Mac and it depends on Maestro. The [guide](https://github.com/noloman
 
 I originally sold it, and it sold nothing, so it is now free and MIT licensed. If it saves you time and you want to support its upkeep (keeping up with Xcode, Android and Maestro changes), there's a [GitHub Sponsors](https://github.com/sponsors/noloman) page. Starring the repo or filing a good bug report helps just as much.
 
-Repo: https://github.com/noloman/shotfleet — Site: https://shotfleet.com
+Repo: https://github.com/noloman/shotfleet. Site: https://shotfleet.com
