@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.13 (2026-11-21)
+
+- Security maintenance: refreshed the pinned Python build dependencies and the demo video dependency lockfile to resolve Dependabot alerts.
 
 ## 0.1.12 (2026-11-11)
 - Website and README: the Quickspan case study notes that a Maestro 2.11.0 rerun typed the per-language phrases.
