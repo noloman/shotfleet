@@ -29,7 +29,7 @@ class PinnedBuildInputs(unittest.TestCase):
         for name in ("pyinstaller", "pyinstaller-hooks-contrib", "certifi", "altgraph", "macholib", "packaging", "setuptools"):
             self.assertIn(name, reqs)
         self.assertEqual(reqs["pyinstaller"][0], "6.22.3")  # what 0.1.1 shipped with
-        self.assertEqual(reqs["certifi"][0], "2026.6.17")
+        self.assertEqual(reqs["certifi"][0], "2026.10.19")
         for name, (version, hashes) in reqs.items():
             self.assertTrue(hashes, name)
 
