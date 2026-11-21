@@ -1,0 +1,9 @@
+# Flutter iOS example based on the recorded wger run.
+# Copy this file and flow.yaml to your Flutter project root, then replace the app path.
+[ios]
+app = "path/to/Runner.app"
+strings = "lib/l10n/*.arb"   # Flutter translations; retain the ARB glob.
+flow = "flow.yaml"
+runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-4"   # Adjust to an installed runtime.
+parallel = 1
+out = "out-ios"
